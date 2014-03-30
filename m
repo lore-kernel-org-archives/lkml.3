@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185AbaC3Xll (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:41:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36424 "EHLO
+	id S1754162AbaC3Xlj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:41:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36412 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753063AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753049AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ralf Baechle" <ralf@linux-mips.org>,
-        "James Rodriguez" <jamesr@juniper.net>
+CC: akpm@linux-foundation.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Lan Tianyu" <tianyu.lan@intel.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.542911354@decadent.org.uk>
+Message-ID: <lsq.1396221815.195880280@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 114/200] MIPS: Fix potencial corruption
+Subject: [PATCH 3.2 142/200] ACPI / processor: Rework processor throttling
+ with work_on_cpu()
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,62 +33,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ralf Baechle <ralf@linux-mips.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit a16dad7763420a3b46cff1e703a9070827796cfc upstream.
+commit f3ca4164529b875374c410193bbbac0ee960895f upstream.
 
-Normally r4k_dma_cache_inv should only ever be called with cacheline
-aligned addresses.  If however, it isn't there is the theoretical
-possibility of data corruption.  There is no correct way of handling this
-and anyway, it should only happen if the DMA API is used incorrectly
-so drop
+acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
+sure that the (struct acpi_processor)->acpi_processor_set_throttling()
+callback will run on the right CPU.  However, the function may be
+called from a worker thread already bound to a different CPU in which
+case that won't work.
 
-There is a different corruption scenario with these CACHE instructions
-removed but again there is no way of handling this correctly and it can
-be triggered only through incorrect use of the DMA API.
+Make acpi_processor_set_throttling() use work_on_cpu() as appropriate
+instead of abusing set_cpus_allowed_ptr().
 
-So just get rid of the complexity.
-
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Reported-by: James Rodriguez <jamesr@juniper.net>
+Reported-and-tested-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+[rjw: Changelog]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/mips/mm/c-r4k.c | 11 -----------
- 1 file changed, 11 deletions(-)
+ drivers/acpi/processor_throttling.c | 69 +++++++++++++++++--------------------
+ 1 file changed, 32 insertions(+), 37 deletions(-)
 
---- a/arch/mips/mm/c-r4k.c
-+++ b/arch/mips/mm/c-r4k.c
-@@ -633,9 +633,6 @@ static void r4k_dma_cache_inv(unsigned l
- 		if (size >= scache_size)
- 			r4k_blast_scache();
- 		else {
--			unsigned long lsize = cpu_scache_line_size();
--			unsigned long almask = ~(lsize - 1);
+--- a/drivers/acpi/processor_throttling.c
++++ b/drivers/acpi/processor_throttling.c
+@@ -59,6 +59,12 @@ struct throttling_tstate {
+ 	int target_state;		/* target T-state */
+ };
+ 
++struct acpi_processor_throttling_arg {
++	struct acpi_processor *pr;
++	int target_state;
++	bool force;
++};
++
+ #define THROTTLING_PRECHANGE       (1)
+ #define THROTTLING_POSTCHANGE      (2)
+ 
+@@ -1063,16 +1069,24 @@ static int acpi_processor_set_throttling
+ 	return 0;
+ }
+ 
++static long acpi_processor_throttling_fn(void *data)
++{
++	struct acpi_processor_throttling_arg *arg = data;
++	struct acpi_processor *pr = arg->pr;
++
++	return pr->throttling.acpi_processor_set_throttling(pr,
++			arg->target_state, arg->force);
++}
++
+ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 						int state, bool force)
+ {
+-	cpumask_var_t saved_mask;
+ 	int ret = 0;
+ 	unsigned int i;
+ 	struct acpi_processor *match_pr;
+ 	struct acpi_processor_throttling *p_throttling;
++	struct acpi_processor_throttling_arg arg;
+ 	struct throttling_tstate t_state;
+-	cpumask_var_t online_throttling_cpus;
+ 
+ 	if (!pr)
+ 		return -EINVAL;
+@@ -1083,14 +1097,6 @@ int acpi_processor_set_throttling(struct
+ 	if ((state < 0) || (state > (pr->throttling.state_count - 1)))
+ 		return -EINVAL;
+ 
+-	if (!alloc_cpumask_var(&saved_mask, GFP_KERNEL))
+-		return -ENOMEM;
 -
- 			/*
- 			 * There is no clearly documented alignment requirement
- 			 * for the cache instruction on MIPS processors and
-@@ -644,9 +641,6 @@ static void r4k_dma_cache_inv(unsigned l
- 			 * hit ops with insufficient alignment.  Solved by
- 			 * aligning the address to cache line size.
- 			 */
--			cache_op(Hit_Writeback_Inv_SD, addr & almask);
--			cache_op(Hit_Writeback_Inv_SD,
--				 (addr + size - 1) & almask);
- 			blast_inv_scache_range(addr, addr + size);
- 		}
- 		__sync();
-@@ -656,12 +650,7 @@ static void r4k_dma_cache_inv(unsigned l
- 	if (cpu_has_safe_index_cacheops && size >= dcache_size) {
- 		r4k_blast_dcache();
- 	} else {
--		unsigned long lsize = cpu_dcache_line_size();
--		unsigned long almask = ~(lsize - 1);
+-	if (!alloc_cpumask_var(&online_throttling_cpus, GFP_KERNEL)) {
+-		free_cpumask_var(saved_mask);
+-		return -ENOMEM;
+-	}
 -
- 		R4600_HIT_CACHEOP_WAR_IMPL;
--		cache_op(Hit_Writeback_Inv_D, addr & almask);
--		cache_op(Hit_Writeback_Inv_D, (addr + size - 1)  & almask);
- 		blast_inv_dcache_range(addr, addr + size);
+ 	if (cpu_is_offline(pr->id)) {
+ 		/*
+ 		 * the cpu pointed by pr->id is offline. Unnecessary to change
+@@ -1099,17 +1105,15 @@ int acpi_processor_set_throttling(struct
+ 		return -ENODEV;
  	}
+ 
+-	cpumask_copy(saved_mask, &current->cpus_allowed);
+ 	t_state.target_state = state;
+ 	p_throttling = &(pr->throttling);
+-	cpumask_and(online_throttling_cpus, cpu_online_mask,
+-		    p_throttling->shared_cpu_map);
++
+ 	/*
+ 	 * The throttling notifier will be called for every
+ 	 * affected cpu in order to get one proper T-state.
+ 	 * The notifier event is THROTTLING_PRECHANGE.
+ 	 */
+-	for_each_cpu(i, online_throttling_cpus) {
++	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+ 		t_state.cpu = i;
+ 		acpi_processor_throttling_notifier(THROTTLING_PRECHANGE,
+ 							&t_state);
+@@ -1121,21 +1125,18 @@ int acpi_processor_set_throttling(struct
+ 	 * it can be called only for the cpu pointed by pr.
+ 	 */
+ 	if (p_throttling->shared_type == DOMAIN_COORD_TYPE_SW_ANY) {
+-		/* FIXME: use work_on_cpu() */
+-		if (set_cpus_allowed_ptr(current, cpumask_of(pr->id))) {
+-			/* Can't migrate to the pr->id CPU. Exit */
+-			ret = -ENODEV;
+-			goto exit;
+-		}
+-		ret = p_throttling->acpi_processor_set_throttling(pr,
+-						t_state.target_state, force);
++		arg.pr = pr;
++		arg.target_state = state;
++		arg.force = force;
++		ret = work_on_cpu(pr->id, acpi_processor_throttling_fn, &arg);
+ 	} else {
+ 		/*
+ 		 * When the T-state coordination is SW_ALL or HW_ALL,
+ 		 * it is necessary to set T-state for every affected
+ 		 * cpus.
+ 		 */
+-		for_each_cpu(i, online_throttling_cpus) {
++		for_each_cpu_and(i, cpu_online_mask,
++		    p_throttling->shared_cpu_map) {
+ 			match_pr = per_cpu(processors, i);
+ 			/*
+ 			 * If the pointer is invalid, we will report the
+@@ -1156,13 +1157,12 @@ int acpi_processor_set_throttling(struct
+ 					"on CPU %d\n", i));
+ 				continue;
+ 			}
+-			t_state.cpu = i;
+-			/* FIXME: use work_on_cpu() */
+-			if (set_cpus_allowed_ptr(current, cpumask_of(i)))
+-				continue;
+-			ret = match_pr->throttling.
+-				acpi_processor_set_throttling(
+-				match_pr, t_state.target_state, force);
++
++			arg.pr = match_pr;
++			arg.target_state = state;
++			arg.force = force;
++			ret = work_on_cpu(pr->id, acpi_processor_throttling_fn,
++				&arg);
+ 		}
+ 	}
+ 	/*
+@@ -1171,17 +1171,12 @@ int acpi_processor_set_throttling(struct
+ 	 * affected cpu to update the T-states.
+ 	 * The notifier event is THROTTLING_POSTCHANGE
+ 	 */
+-	for_each_cpu(i, online_throttling_cpus) {
++	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+ 		t_state.cpu = i;
+ 		acpi_processor_throttling_notifier(THROTTLING_POSTCHANGE,
+ 							&t_state);
+ 	}
+-	/* restore the previous state */
+-	/* FIXME: use work_on_cpu() */
+-	set_cpus_allowed_ptr(current, saved_mask);
+-exit:
+-	free_cpumask_var(online_throttling_cpus);
+-	free_cpumask_var(saved_mask);
++
+ 	return ret;
+ }
  
 
