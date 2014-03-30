@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145AbaC3Hwz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 03:52:55 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:63077 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaC3Hwy (ORCPT
+	id S1753076AbaC3IIp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 04:08:45 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:33982 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaC3IIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 03:52:54 -0400
-Message-ID: <5337CDA3.7000906@gmail.com>
-Date: Sun, 30 Mar 2014 09:54:11 +0200
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sun, 30 Mar 2014 04:08:38 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Can't umount /mnt/dev after calling dd(1) and with /mnt/dev is
- a bind mount
-References: <532DBFC8.4020202@gmail.com>
-In-Reply-To: <532DBFC8.4020202@gmail.com>
+In-Reply-To: <20140330024701.GA22728@two.firstfloor.org>
+References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
+	<1396017924-7754-9-git-send-email-jovi.zhangwei@gmail.com>
+	<20140330024701.GA22728@two.firstfloor.org>
+Date: Sun, 30 Mar 2014 16:02:49 +0800
+Message-ID: <CAGdX0WG6Nid66iuRWqLbfmH89XacEXuUNYCNjnB7j=HYiyCKBw@mail.gmail.com>
+Subject: Re: [PATCH v2 08/29] ktap: add bytecode reader(kernel/trace/ktap/kp_bcread.[c|h])
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-up
+On Sun, Mar 30, 2014 at 10:47 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> +/* Read debug info of a prototype. */
+>> +static void bcread_dbg(BCReadCtx *ctx, ktap_proto_t *pt, int sizedbg)
+>> +{
+>> +     void *lineinfo = (void *)proto_lineinfo(pt);
+>> +
+>> +     bcread_block(ctx, lineinfo, sizedbg);
+>> +     /* Swap lineinfo if the endianess differs. */
+>
+>
+> Why does this care about endianness? Can't that be handled in the user
+> space? And why would the user space create different endianness than
+> the host is?
+>
+That's designed for portability initially, it means we can just run bytecode
+without compile script file everywhere, especially when compilation  is
+a heavily task for some embedded platform, even though ktap compilation
+is extremely fast.
 
-On 03/22/2014 05:52 PM, Francis Moreau wrote:
-> Hello,
-> 
-> I'm posting here because it might be a behaviour related to the kernel
-> internals that I can't explain from my user point of view :)
-> 
-> Basically I'm doing this:
-> 
->   mount -o bind /dev/ /mnt/dev &&
->   chroot /mnt dd bs=440 conv=notrunc count=1 if=gptmbr.bin of=/dev/loop0
->   umount /mnt/dev
-> 
-> but umount gives the following error: "umount: /mnt/dev: target is busy"
-> 
-> I tried to see if any processes were still using a file in dev with
-> fuser(1) but there weren't. Futhermore inserting a call to fuser(1)
-> right before umount fixed the issue, so it really seems a timing issue.
-> 
-> stracing umount showed that umount failed here:
-> umount("/mnt/dev", 0)                   = -1 EBUSY (Device or resource busy)
-> 
-> I replaced the bind mount of /dev by:
->     mount -t devtmpfs none /mnt/dev
-> and it worked.
-> 
-> Could anybody tell me what I'm doing wrong ?
-> 
-> Thanks.
-> 
+I doubt maybe there will have this bytecode portability requirement in future?
 
+>> +     for (i = 0; i < sizekgc; i++, kr++) {
+>> +             int tp = bcread_uint32(ctx);
+>> +             if (tp >= BCDUMP_KGC_STR) {
+>
+> The signedness handling all over this file is a scary.
+> What happens if the user puts in negative values or near overflow
+> values.
+>
+> Most likely a lot of these checks should be unsigned
+> and need to be audited again (and ideally fuzzed too)
+>
+>> +
+>> +     /* Allocate prototype object and initialize its fields. */
+>> +     pt = (ktap_proto_t *)kp_obj_new(ctx->ks, (int)sizept);
+>
+> Error check?
+>
+> Lots of other similar cases.
+>
+I will take more check in kp_bcread.c file, will fix in next version.
+
+Thanks.
+
+Jovi
