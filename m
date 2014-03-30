@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbaCaAQd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:16:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36392 "EHLO
+	id S1754789AbaCaAR5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:17:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36376 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753014AbaC3XZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:25:02 -0400
+	Sun, 30 Mar 2014 19:25:01 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "Jani Nikula" <jani.nikula@intel.com>
+CC: akpm@linux-foundation.org, "Ethan Wilson" <ethan.wilson@shiftmail.org>,
+        "NeilBrown" <neilb@suse.de>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.678600418@decadent.org.uk>
+Message-ID: <lsq.1396221815.385525986@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 110/200] drm/i915/dp: increase native aux defer retry
- timeout
+Subject: [PATCH 3.2 041/200] md/raid5: fix long-standing problem with
+ bitmap handling on write failure.
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,39 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 04eada25d1f72efdecd32d702706594f81de65d5 upstream.
+commit 9f97e4b128d2ea90a5f5063ea0ee3b0911f4c669 upstream.
 
-Give more slack to sink devices before retrying on native aux
-defer. AFAICT the 100 us timeout was not based on the DP spec.
+Before a write starts we set a bit in the write-intent bitmap.
+When the write completes we clear that bit if the write was successful
+to all devices.  However if the write wasn't fully successful we
+should not clear the bit.  If the faulty drive is subsequently
+re-added, the fact that the bit is still set ensure that we will
+re-write the data that is missing.
 
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: adjust context]
+This logic is mediated by the STRIPE_DEGRADED flag - we only clear the
+bitmap bit when this flag is not set.
+Currently we correctly set the flag if a write starts when some
+devices are failed or missing.  But we do *not* set the flag if some
+device failed during the write attempt.
+This is wrong and can result in clearing the bit inappropriately.
+
+So: set the flag when a write fails.
+
+This bug has been present since bitmaps were introduces, so the fix is
+suitable for any -stable kernel.
+
+Reported-by: Ethan Wilson <ethan.wilson@shiftmail.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
+[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_dp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -500,7 +500,7 @@ intel_dp_aux_native_write(struct intel_d
- 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
- 			break;
- 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
--			udelay(100);
-+			usleep_range(400, 500);
- 		else
- 			return -EIO;
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1693,6 +1693,7 @@ static void raid5_end_write_request(stru
  	}
-@@ -549,7 +549,7 @@ intel_dp_aux_native_read(struct intel_dp
- 			return ret - 1;
- 		}
- 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
--			udelay(100);
-+			usleep_range(400, 500);
- 		else
- 			return -EIO;
- 	}
+ 
+ 	if (!uptodate) {
++		set_bit(STRIPE_DEGRADED, &sh->state);
+ 		set_bit(WriteErrorSeen, &conf->disks[i].rdev->flags);
+ 		set_bit(R5_WriteError, &sh->dev[i].flags);
+ 	} else if (is_badblock(conf->disks[i].rdev, sh->sector, STRIPE_SECTORS,
 
