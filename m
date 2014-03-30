@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaC3Xnz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:43:55 -0400
+	id S1754222AbaC3Xrn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:47:43 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754706AbaC3Xnv (ORCPT
+	by vger.kernel.org with ESMTP id S1754803AbaC3Xny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:51 -0400
+	Sun, 30 Mar 2014 19:43:54 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Drew Richardson" <drew.richardson@arm.com>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Will Deacon" <will.deacon@arm.com>, "Ingo Molnar" <mingo@kernel.org>
+CC: akpm@linux-foundation.org, "Marc Kleine-Budde" <mkl@pengutronix.de>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.83415776@decadent.org.uk>
+Message-ID: <lsq.1396221815.145685826@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 151/200] perf: Fix hotplug splat
+Subject: [PATCH 3.2 155/200] can: flexcan: fix shutdown: first disable
+ chip, then all interrupts
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,64 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
+commit 5be93bdda64e85450598c6e97f79fb8f6acf30e0 upstream.
 
-Drew Richardson reported that he could make the kernel go *boom* when hotplugging
-while having perf events active.
+When shutting down the CAN interface (ifconfig canX down) during high CAN bus
+loads, the CAN core might hang and freeze the whole CPU.
 
-It turned out that when you have a group event, the code in
-__perf_event_exit_context() fails to remove the group siblings from
-the context.
+This patch fixes the shutdown sequence by first disabling the CAN core then
+disabling all interrupts.
 
-We then proceed with destroying and freeing the event, and when you
-re-plug the CPU and try and add another event to that CPU, things go
-*boom* because you've still got dead entries there.
-
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/events/core.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/can/flexcan.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7101,14 +7101,14 @@ static void perf_pmu_rotate_stop(struct
- static void __perf_event_exit_context(void *__info)
- {
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_event *event;
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -777,14 +777,16 @@ static void flexcan_chip_stop(struct net
+ 	struct flexcan_regs __iomem *regs = priv->base;
+ 	u32 reg;
  
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
- 		__perf_remove_from_context(event);
-+	rcu_read_unlock();
- }
- 
- static void perf_event_exit_cpu_context(int cpu)
-@@ -7132,11 +7132,11 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
-+
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
+-	/* Disable all interrupts */
+-	flexcan_write(0, &regs->imask1);
 -
--	perf_event_exit_cpu_context(cpu);
- }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
+ 	/* Disable + halt module */
+ 	reg = flexcan_read(&regs->mcr);
+ 	reg |= FLEXCAN_MCR_MDIS | FLEXCAN_MCR_HALT;
+ 	flexcan_write(reg, &regs->mcr);
+ 
++	/* Disable all interrupts */
++	flexcan_write(0, &regs->imask1);
++	flexcan_write(priv->reg_ctrl_default & ~FLEXCAN_CTRL_ERR_ALL,
++		      &regs->ctrl);
++
+ 	flexcan_transceiver_switch(priv, 0);
+ 	priv->can.state = CAN_STATE_STOPPED;
+ 
 
