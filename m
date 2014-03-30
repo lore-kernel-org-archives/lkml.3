@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952AbaC3Xww (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:52:52 -0400
+	id S1755110AbaC3XxP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:53:15 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753524AbaC3Xng (ORCPT
+	by vger.kernel.org with ESMTP id S1754669AbaC3Xnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:36 -0400
+	Sun, 30 Mar 2014 19:43:33 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mike Galbraith" <bitbucket@online.de>,
-        "Ingo Molnar" <mingo@elte.hu>,
-        "Stanislav Fomichev" <stfomichev@yandex-team.ru>,
-        "Dan Williams" <dan.j.williams@intel.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Steven Rostedt" <rostedt@goodmis.org>
+CC: akpm@linux-foundation.org,
+        "=?UTF-8?q?=E5=BC=A0=E5=90=9B?=" <zjn77777@163.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Jun zhang" <zhang.jun92@zte.com.cn>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.827313154@decadent.org.uk>
+Message-ID: <lsq.1396221815.259696350@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 141/200] ioat: fix tasklet tear down
+Subject: [PATCH 3.2 008/200] usb: option: add new zte 3g modem pids to
+ option driver
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,218 +34,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: 张君 <zjn77777@163.com>
 
-commit da87ca4d4ca101f177fffd84f1f0a5e4c0343557 upstream.
+commit 4d90b819ae4c7ea8fd5e2bb7edc68c0f334be2e4 upstream.
 
-Since commit 77873803363c "net_dma: mark broken" we no longer pin dma
-engines active for the network-receive-offload use case.  As a result
-the ->free_chan_resources() that occurs after the driver self test no
-longer has a NET_DMA induced ->alloc_chan_resources() to back it up.  A
-late firing irq can lead to ksoftirqd spinning indefinitely due to the
-tasklet_disable() performed by ->free_chan_resources().  Only
-->alloc_chan_resources() can clear this condition in affected kernels.
-
-This problem has been present since commit 3e037454bcfa "I/OAT: Add
-support for MSI and MSI-X" in 2.6.24, but is now exposed. Given the
-NET_DMA use case is deprecated we can revisit moving the driver to use
-threaded irqs.  For now, just tear down the irq and tasklet properly by:
-
-1/ Disable the irq from triggering the tasklet
-
-2/ Disable the irq from re-arming
-
-3/ Flush inflight interrupts
-
-4/ Flush the timer
-
-5/ Flush inflight tasklets
-
-References:
-https://lkml.org/lkml/2014/1/27/282
-https://lkml.org/lkml/2014/2/19/672
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Reported-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Tested-by: Mike Galbraith <bitbucket@online.de>
-Tested-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - As there is no ioatdma_device::irq_mode member, check
-   pci_dev::msix_enabled instead]
+Signed-off-by: Jun zhang <zhang.jun92@zte.com.cn>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -75,7 +75,8 @@ static irqreturn_t ioat_dma_do_interrupt
- 	attnstatus = readl(instance->reg_base + IOAT_ATTNSTATUS_OFFSET);
- 	for_each_set_bit(bit, &attnstatus, BITS_PER_LONG) {
- 		chan = ioat_chan_by_index(instance, bit);
--		tasklet_schedule(&chan->cleanup_task);
-+		if (test_bit(IOAT_RUN, &chan->state))
-+			tasklet_schedule(&chan->cleanup_task);
- 	}
+ drivers/usb/serial/option.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1461,6 +1461,17 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xffe9, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8b, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8c, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8d, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8e, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8f, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff90, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff91, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff92, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
  
- 	writeb(intrctrl, instance->reg_base + IOAT_INTRCTRL_OFFSET);
-@@ -91,7 +92,8 @@ static irqreturn_t ioat_dma_do_interrupt
- {
- 	struct ioat_chan_common *chan = data;
- 
--	tasklet_schedule(&chan->cleanup_task);
-+	if (test_bit(IOAT_RUN, &chan->state))
-+		tasklet_schedule(&chan->cleanup_task);
- 
- 	return IRQ_HANDLED;
- }
-@@ -113,7 +115,6 @@ void ioat_init_channel(struct ioatdma_de
- 	chan->timer.function = device->timer_fn;
- 	chan->timer.data = data;
- 	tasklet_init(&chan->cleanup_task, device->cleanup_fn, data);
--	tasklet_disable(&chan->cleanup_task);
- }
- 
- /**
-@@ -356,13 +357,43 @@ static int ioat1_dma_alloc_chan_resource
- 	writel(((u64) chan->completion_dma) >> 32,
- 	       chan->reg_base + IOAT_CHANCMP_OFFSET_HIGH);
- 
--	tasklet_enable(&chan->cleanup_task);
-+	set_bit(IOAT_RUN, &chan->state);
- 	ioat1_dma_start_null_desc(ioat);  /* give chain to dma device */
- 	dev_dbg(to_dev(chan), "%s: allocated %d descriptors\n",
- 		__func__, ioat->desccount);
- 	return ioat->desccount;
- }
- 
-+void ioat_stop(struct ioat_chan_common *chan)
-+{
-+	struct ioatdma_device *device = chan->device;
-+	struct pci_dev *pdev = device->pdev;
-+	int chan_id = chan_num(chan);
-+
-+	/* 1/ stop irq from firing tasklets
-+	 * 2/ stop the tasklet from re-arming irqs
-+	 */
-+	clear_bit(IOAT_RUN, &chan->state);
-+
-+	/* flush inflight interrupts */
-+#ifdef CONFIG_PCI_MSI
-+	if (pdev->msix_enabled) {
-+		struct msix_entry *msix = &device->msix_entries[chan_id];
-+		synchronize_irq(msix->vector);
-+	} else
-+#endif
-+		synchronize_irq(pdev->irq);
-+
-+	/* flush inflight timers */
-+	del_timer_sync(&chan->timer);
-+
-+	/* flush inflight tasklet runs */
-+	tasklet_kill(&chan->cleanup_task);
-+
-+	/* final cleanup now that everything is quiesced and can't re-arm */
-+	device->cleanup_fn((unsigned long) &chan->common);
-+}
-+
- /**
-  * ioat1_dma_free_chan_resources - release all the descriptors
-  * @chan: the channel to be cleaned
-@@ -381,9 +412,7 @@ static void ioat1_dma_free_chan_resource
- 	if (ioat->desccount == 0)
- 		return;
- 
--	tasklet_disable(&chan->cleanup_task);
--	del_timer_sync(&chan->timer);
--	ioat1_cleanup(ioat);
-+	ioat_stop(chan);
- 
- 	/* Delay 100ms after reset to allow internal DMA logic to quiesce
- 	 * before removing DMA descriptor resources.
-@@ -528,8 +557,11 @@ ioat1_dma_prep_memcpy(struct dma_chan *c
- static void ioat1_cleanup_event(unsigned long data)
- {
- 	struct ioat_dma_chan *ioat = to_ioat_chan((void *) data);
-+	struct ioat_chan_common *chan = &ioat->base;
- 
- 	ioat1_cleanup(ioat);
-+	if (!test_bit(IOAT_RUN, &chan->state))
-+		return;
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
- 
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -344,6 +344,7 @@ bool ioat_cleanup_preamble(struct ioat_c
- 			   dma_addr_t *phys_complete);
- void ioat_kobject_add(struct ioatdma_device *device, struct kobj_type *type);
- void ioat_kobject_del(struct ioatdma_device *device);
-+void ioat_stop(struct ioat_chan_common *chan);
- extern const struct sysfs_ops ioat_sysfs_ops;
- extern struct ioat_sysfs_entry ioat_version_attr;
- extern struct ioat_sysfs_entry ioat_cap_attr;
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -189,8 +189,11 @@ static void ioat2_cleanup(struct ioat2_d
- void ioat2_cleanup_event(unsigned long data)
- {
- 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
-+	struct ioat_chan_common *chan = &ioat->base;
- 
- 	ioat2_cleanup(ioat);
-+	if (!test_bit(IOAT_RUN, &chan->state))
-+		return;
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
- 
-@@ -542,10 +545,10 @@ int ioat2_alloc_chan_resources(struct dm
- 	ioat->issued = 0;
- 	ioat->tail = 0;
- 	ioat->alloc_order = order;
-+	set_bit(IOAT_RUN, &chan->state);
- 	spin_unlock_bh(&ioat->prep_lock);
- 	spin_unlock_bh(&chan->cleanup_lock);
- 
--	tasklet_enable(&chan->cleanup_task);
- 	ioat2_start_null_desc(ioat);
- 
- 	/* check that we got off the ground */
-@@ -555,7 +558,6 @@ int ioat2_alloc_chan_resources(struct dm
- 	} while (i++ < 20 && !is_ioat_active(status) && !is_ioat_idle(status));
- 
- 	if (is_ioat_active(status) || is_ioat_idle(status)) {
--		set_bit(IOAT_RUN, &chan->state);
- 		return 1 << ioat->alloc_order;
- 	} else {
- 		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
-@@ -798,11 +800,8 @@ void ioat2_free_chan_resources(struct dm
- 	if (!ioat->ring)
- 		return;
- 
--	tasklet_disable(&chan->cleanup_task);
--	del_timer_sync(&chan->timer);
--	device->cleanup_fn((unsigned long) c);
-+	ioat_stop(chan);
- 	device->reset_hw(chan);
--	clear_bit(IOAT_RUN, &chan->state);
- 
- 	spin_lock_bh(&chan->cleanup_lock);
- 	spin_lock_bh(&ioat->prep_lock);
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -325,8 +325,11 @@ static void ioat3_cleanup(struct ioat2_d
- static void ioat3_cleanup_event(unsigned long data)
- {
- 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
-+	struct ioat_chan_common *chan = &ioat->base;
- 
- 	ioat3_cleanup(ioat);
-+	if (!test_bit(IOAT_RUN, &chan->state))
-+		return;
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
- 
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
 
