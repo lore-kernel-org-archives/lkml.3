@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaC3Xln (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:41:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36422 "EHLO
+	id S1754263AbaC3Xmf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:42:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753055AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753812AbaC3Xmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:25:02 -0400
+	Sun, 30 Mar 2014 19:42:31 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>,
-        "Johannes Berg" <johannes.berg@intel.com>
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Lai Jiangshan" <laijs@cn.fujitsu.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.351725412@decadent.org.uk>
+Message-ID: <lsq.1396221815.149912745@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 147/200] iwlwifi: fix TX status for aggregated packets
+Subject: [PATCH 3.2 128/200] workqueue: ensure @task is valid across
+ kthread_stop()
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,72 +32,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 143582c6847cb285b361804c613127c25de60ca4 upstream.
+commit 5bdfff96c69a4d5ab9c49e60abf9e070ecd2acbb upstream.
 
-Only the first packet is currently handled correctly, but then
-all others are assumed to have failed which is problematic. Fix
-this, marking them all successful instead (since if they're not
-then the firmware will have transmitted them as single frames.)
+When a kworker should die, the kworkre is notified through WORKER_DIE
+flag instead of kthread_should_stop().  This, IIRC, is primarily to
+keep the test synchronized inside worker_pool lock.  WORKER_DIE is
+first set while holding pool->lock, the lock is dropped and
+kthread_stop() is called.
 
-This fixes the lost packet reporting.
+Unfortunately, this means that there's a slight chance that the target
+kworker may see WORKER_DIE before kthread_stop() finishes and exits
+and frees the target task before or during kthread_stop().
 
-Also do a tiny variable scoping cleanup.
+Fix it by pinning the target task before setting WORKER_DIE and
+putting it after kthread_stop() is done.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[Add the dvm part]
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-[bwh: Backported to 3.2:
- - Drop the mvm part
- - Adjust filename, context]
+tj: Improved patch description and comment.  Moved pinning above
+    WORKER_DIE for better signify what it's protecting.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-@@ -854,8 +854,6 @@ int iwlagn_rx_reply_compressed_ba(struct
- 	struct iwl_compressed_ba_resp *ba_resp = &pkt->u.compressed_ba;
- 	struct iwl_ht_agg *agg;
- 	struct sk_buff_head reclaimed_skbs;
--	struct ieee80211_tx_info *info;
--	struct ieee80211_hdr *hdr;
- 	struct sk_buff *skb;
- 	unsigned long flags;
- 	int sta_id;
-@@ -941,24 +939,32 @@ int iwlagn_rx_reply_compressed_ba(struct
- 			  0, &reclaimed_skbs);
- 	freed = 0;
- 	while (!skb_queue_empty(&reclaimed_skbs)) {
-+		struct ieee80211_hdr *hdr;
-+		struct ieee80211_tx_info *info;
+ kernel/workqueue.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1474,12 +1474,19 @@ static void destroy_worker(struct worker
+ 	if (worker->flags & WORKER_IDLE)
+ 		gcwq->nr_idle--;
  
- 		skb = __skb_dequeue(&reclaimed_skbs);
--		hdr = (struct ieee80211_hdr *)skb->data;
-+		hdr = (void *)skb->data;
-+		info = IEEE80211_SKB_CB(skb);
- 
- 		if (ieee80211_is_data_qos(hdr->frame_control))
- 			freed++;
- 		else
- 			WARN_ON_ONCE(1);
- 
--		info = IEEE80211_SKB_CB(skb);
- 		kmem_cache_free(priv->tx_cmd_pool, (info->driver_data[1]));
- 
-+		memset(&info->status, 0, sizeof(info->status));
-+		/* Packet was transmitted successfully, failures come as single
-+		 * frames because before failing a frame the firmware transmits
-+		 * it without aggregation at least once.
-+		 */
-+		info->flags |= IEEE80211_TX_STAT_ACK;
++	/*
++	 * Once WORKER_DIE is set, the kworker may destroy itself at any
++	 * point.  Pin to ensure the task stays until we're done with it.
++	 */
++	get_task_struct(worker->task);
 +
- 		if (freed == 1) {
- 			/* this is the first skb we deliver in this batch */
- 			/* put the rate scaling data there */
- 			info = IEEE80211_SKB_CB(skb);
- 			memset(&info->status, 0, sizeof(info->status));
--			info->flags |= IEEE80211_TX_STAT_ACK;
- 			info->flags |= IEEE80211_TX_STAT_AMPDU;
- 			info->status.ampdu_ack_len = ba_resp->txed_2_done;
- 			info->status.ampdu_len = ba_resp->txed;
+ 	list_del_init(&worker->entry);
+ 	worker->flags |= WORKER_DIE;
+ 
+ 	spin_unlock_irq(&gcwq->lock);
+ 
+ 	kthread_stop(worker->task);
++	put_task_struct(worker->task);
+ 	kfree(worker);
+ 
+ 	spin_lock_irq(&gcwq->lock);
 
