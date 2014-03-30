@@ -1,86 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaC3XJB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:09:01 -0400
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:10926 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855AbaC3XI5 (ORCPT
+	id S1753005AbaC3XJI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:09:08 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:53503 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967AbaC3XJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:08:57 -0400
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: mingo@kernel.org, tglx@linutronix.de
-Cc: peterz@infradead.org, davidlohr@hp.com, aswin@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] futex: add plist_del + atomic_dec helper
-Date: Sun, 30 Mar 2014 16:08:48 -0700
-Message-Id: <1396220928-4426-3-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1396220928-4426-1-git-send-email-davidlohr@hp.com>
-References: <1396220928-4426-1-git-send-email-davidlohr@hp.com>
+	Sun, 30 Mar 2014 19:09:04 -0400
+Date: Sun, 30 Mar 2014 16:08:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: fweisbec@gmail.com, mathieu.desnoyers@efficios.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Promela/spin model for NO_HZ_FULL_SYSIDLE code
+Message-ID: <20140330230856.GA21498@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14033023-0928-0000-0000-000000C965AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When removing a waiter from the plist, we always decrement the
-hb waiters to reflect such logic. Add an unqueue_waiter() helper,
-thus preventing any future changes that might not do so.
+For whatever it is worth, the following model claims safety and progress
+for the sysidle state machine.
 
-For the enqueuing, this isn't worth it since we will increment the
-hb waiters before doing the plist_add().
+Thoughts?
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- kernel/futex.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+							Thanx, Paul
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 395e285..b9ef521 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -291,6 +291,13 @@ static inline int hb_waiters_pending(struct futex_hash_bucket *hb)
- #endif
- }
- 
-+static inline void unqueue_waiter(struct futex_q *q,
-+				  struct futex_hash_bucket *hb)
-+{
-+	plist_del(&q->list, &hb->chain);
-+	hb_waiters_dec(hb);
-+}
-+
- /*
-  * We hash on the keys returned from get_futex_key (see below).
-  */
-@@ -972,8 +979,7 @@ static void __unqueue_futex(struct futex_q *q)
- 		return;
- 
- 	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
--	plist_del(&q->list, &hb->chain);
--	hb_waiters_dec(hb);
-+	unqueue_waiter(q, hb);
- }
- 
- /*
-@@ -1276,8 +1282,7 @@ void requeue_futex(struct futex_q *q, struct futex_hash_bucket *hb1,
- 	 * requeue.
- 	 */
- 	if (likely(&hb1->chain != &hb2->chain)) {
--		plist_del(&q->list, &hb1->chain);
--		hb_waiters_dec(hb1);
-+		unqueue_waiter(q, hb1);
- 		plist_add(&q->list, &hb2->chain);
- 		hb_waiters_inc(hb2);
- 		q->lock_ptr = &hb2->lock;
-@@ -2375,8 +2380,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
- 		 * We were woken prior to requeue by a timeout or a signal.
- 		 * Unqueue the futex_q and determine which it was.
- 		 */
--		plist_del(&q->list, &hb->chain);
--		hb_waiters_dec(hb);
-+		unqueue_waiter(q, hb);
- 
- 		/* Handle spurious wakeups gracefully */
- 		ret = -EWOULDBLOCK;
--- 
-1.8.1.4
+------------------------------------------------------------------------
+sysidle.sh
+------------------------------------------------------------------------
+spin -a sysidle.spin
+cc -DNP -o pan pan.c
+# Fair scheduling to focus progress checks in timekeeper.
+./pan -f -l -m1280000 -w22
+
+------------------------------------------------------------------------
+sysidle.spin
+------------------------------------------------------------------------
+/*
+ * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
+ * This model assumes that the dyntick-idle bit manipulation works based
+ * on long usage, and substitutes a per-thread boolean "am_busy[]" array
+ * for the Linux kernel's dyntick-idle masks.  The focus of this model
+ * is therefore on the state machine itself.  Checks for both safety and
+ * forward progress.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, you can access it online at
+ * http://www.gnu.org/licenses/gpl-2.0.html.
+ *
+ * Copyright IBM Corporation, 2014
+ *
+ * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+ */
+
+#define NUM_WORKERS 3
+
+byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
+
+#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
+#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
+#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
+#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
+#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
+
+byte full_sysidle_state = RCU_SYSIDLE_NOT;
+
+byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
+byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not idle. */
+
+/*
+ * Non-timekeeping CPU going into and out of dyntick-idle state.
+ */
+proctype worker(byte me)
+{
+	byte oldstate;
+
+	do
+	:: 1 ->
+		/* Go idle. */
+		am_setup[me] = 0;
+		am_busy[me] = 0;
+
+		/* Dyntick-idle in the following loop. */
+		do
+		:: 1 -> skip;
+		:: 1 -> break;
+		od;
+
+		/* Exit idle loop, model getting out of dyntick idle state. */
+		am_busy[me] = 1;
+
+		/* Get state out of full-system idle states. */
+		atomic {
+			oldstate = full_sysidle_state;
+			if
+			:: oldstate > RCU_SYSIDLE_SHORT ->
+				full_sysidle_state = RCU_SYSIDLE_NOT;
+			:: else -> skip;
+			fi;
+		}
+
+		/* If needed, wake up the timekeeper. */
+		if
+		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
+			wakeup_timekeeper = 1;
+		:: else -> skip;
+		fi;
+
+		/* Mark ourselves fully awake and operational. */
+		am_setup[me] = 1;
+
+		/* We are fully awake, so timekeeper must not be asleep. */
+		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
+
+		/* Running in kernel in the following loop. */
+		do
+		:: 1 -> skip;
+		:: 1 -> break;
+		od;
+	od
+}
+
+/*
+ * Are all the workers in dyntick-idle state?
+ */
+#define check_idle() \
+	i = 0; \
+	idle = 1; \
+	do \
+	:: i < NUM_WORKERS -> \
+		if \
+		:: am_busy[i] == 1 -> idle = 0; \
+		:: else -> skip; \
+		fi; \
+		i++; \
+	:: i >= NUM_WORKERS -> break; \
+	od
+
+/*
+ * Timekeeping CPU.
+ */
+proctype timekeeper()
+{
+	byte i;
+	byte idle;
+	byte curstate;
+	byte newstate;
+
+	do
+	:: 1 ->
+		/* Capture current state. */
+		check_idle();
+		curstate = full_sysidle_state;
+		newstate = curstate;
+
+		/* Check for acceptance state. */
+		if
+		:: idle == 0 ->
+progress_idle:
+			skip;
+		:: curstate == RCU_SYSIDLE_NOT ->
+progress_idle_reset:
+			skip;
+		:: else -> skip;
+		fi;
+
+		/* Manage state... */
+		if
+		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
+			/* Idle, advance to next state. */
+			atomic {
+				if
+				:: full_sysidle_state == curstate ->
+					newstate = curstate + 1;
+					full_sysidle_state = newstate;
+				:: else -> skip;
+				fi;
+			}
+		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
+			/* Non-idle and state advanced, revert to base state. */
+			full_sysidle_state = RCU_SYSIDLE_NOT;
+		:: else -> skip;
+		fi;
+
+		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
+		do
+		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
+		   wakeup_timekeeper == 1 ->
+			assert(0); /* Should never get here. */
+		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
+		   wakeup_timekeeper == 0 ->
+			break;
+		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
+		   wakeup_timekeeper == 1 ->
+progress_full_system_idle_1:
+			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
+		   	wakeup_timekeeper = 0;
+			break;
+		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
+		   wakeup_timekeeper == 0 ->
+progress_full_system_idle_2:
+
+			/* We are asleep, so all workers better be idle. */
+			atomic {
+				i = 0;
+				idle = 1;
+				do
+				:: i < NUM_WORKERS ->
+					if
+					:: am_setup[i] -> idle = 0;
+					:: else -> skip;
+					fi;
+					i++;
+				:: i >= NUM_WORKERS -> break;
+				od;
+				assert(idle == 1 ||
+				       full_sysidle_state < RCU_SYSIDLE_FULL);
+			}
+		od;
+		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
+	od;
+}
+
+init {
+	byte i = 0;
+
+	do
+	:: i < NUM_WORKERS ->
+		am_busy[i] = 1;
+		am_setup[i] = 1;
+		run worker(i);
+		i++;
+	:: i >= NUM_WORKERS -> break;
+	od;
+	run timekeeper();
+}
 
