@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaC3W5S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 18:57:18 -0400
-Received: from mail.tomasu.net ([192.241.222.217]:46144 "EHLO mail.tomasu.net"
+	id S1752779AbaC3XH7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:07:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20930 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532AbaC3W5R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 18:57:17 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-To: Marc Burkhardt <marc@marc.ngoe.de>
-Reply-To: thomas@fjellstrom.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: turbo on lenovo w530 causing over-temp warnings
-Date: Sun, 30 Mar 2014 16:57:15 -0600
-Message-ID: <4819075.C0MTBkDfgh@balsa>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <7286ed3d-6e07-4276-9f43-1b51eca23d18@email.android.com>
-References: <2113542.FNB0FtJayJ@balsa> <7286ed3d-6e07-4276-9f43-1b51eca23d18@email.android.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1752643AbaC3XH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 19:07:58 -0400
+Message-ID: <1396220874.6974.5.camel@localhost>
+Subject: [PATCH for v3.14] AUDIT: Allow login in non-init namespaces
+From: Eric Paris <eparis@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-audit@redhat.com, rgb@redhat.com
+Date: Sun, 30 Mar 2014 19:07:54 -0400
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've just installed mcelog, if it'll help me figure out what is going on I'll 
-try it. But the actual reboots come from an actual thermal alert, I've seen 
-them appear in the console just before the machine shuts off. It seems at 
-around 100-110c, something (lmsensors? Kernel?) will 'shutdown -h now', which 
-totally makes sense. What doesn't make sense is why is it even reaching that 
-temperature to begin with.
+It its possible to configure your PAM stack to refuse login if
+audit messages (about the login) were unable to be sent.  This is common
+in many distros and thus normal configuration of many containers. The
+PAM modules determine if audit is enabled/disabled in the kernel based
+on the return value from sending an audit message on the netlink socket.
+If userspace gets back ECONNREFUSED it believes audit is disabled in the
+kernel.  If it gets any other error else it refuses to let the login
+proceed.
 
-I was under the impression that the intel Turbo tech automatically (ie: in 
-cpu) throttle back to a lower boost clock when certain thermal targets are 
-hit. It doesn't seem to be doing that very well. At best it limits all 4 cores 
-to 3.4Ghz, instead of occasionally hitting 3.6Ghz. Even 3.4Ghz is way too high 
-when all 4 cores are pegged.
+Just about ever since the introduction of namespaces the kernel audit
+subsystem has returned EPERM if the task sending a message was not in
+the init user or pid namespace.  So many forms of containers have never
+worked if audit was enabled in the kernel.
 
-On Sun 30 Mar 2014 12:45:32 PM Marc Burkhardt wrote:
-> Have you configured to catch 'Machine Check Exceptions' / MCE?
-> 
-> Regards,
-> Marc
-> 
-> On 30. März 2014 11:13:57 MESZ, Thomas Fjellstrom <thomas@fjellstrom.ca> 
-wrote:
-> >I have a lenovo w530 laptop with an intel i7-3720QM processor, and when
-> >
-> >running something with high cpu use causes the cpu to be put into the
-> >highest
-> >turbo mode and stays there as long as the core is being used. It
-> >doesn't scale
-> >back to the real max frequency once temperatures rise.
-> >
-> >I've had my laptop shut itself down after a few minutes due to a
-> >thermal
-> >warning a few times. I was attempting to try the latest stable stock
-> >(non
-> >debian) kernel to see if maybe it was a weird distro config issue (it
-> >happens),
-> >but as I was compiling the kernel, CPU temps hit 90c, and were climbing
-> >after
-> >only a few minutes. If I had let it go longer, I am 100% sure it would
-> >have
-> >shut itself off again.
-> >
-> >I just tried seeing what would happen if I just ran a straight up make
-> >on the
-> >kernel with no -j option. So only one core at a time would be pegged,
-> >and it
-> >caused all 4 cores to spike to 3.4Ghz+ and stay there till I killed the
-> >job.
-> >
-> >Is this a known problem? Is there something obvious I've missed?
-> >
-> >I've been trying to find relevant info online about this, but a lot of
-> >it is
-> >fairly old and references the intel_pstep driver causing tubo to be
-> >stuck on
-> >100% of the time. In my case its only stuck at full turbo while there
-> >is a
-> >certain amount of cpu use. It does drop back if nothing is running.
-> >
-> >Currently running kernel is the debian 3.13.7-1 kernel from sid. I will
-> >
-> >attempt to try the stock latest stable, as well as the latest rc, but I
-> >won't
-> >be able to get around to both till tomorrow.
-> >
-> >Thanks.
+BUT if the container was not in net_init then the kernel network code
+would send ECONNREFUSED (instead of the audit code sending EPERM).  Thus
+by pure accident/dumb luck/bug if an admin configured the PAM stack to
+reject all logins that didn't talk to audit, but then ran the login
+untility in the non-init_net namespace, it would work!!  Clearly this
+was a bug, but it is a bug some people expected.
 
+With the introduction of network namespace support in 3.14-rc1 the two
+bugs stopped cancelling each other out.  Now, containers in the
+non-init_net namespace refused to let users log in (just like PAM was
+configfured!)  Obviously some people were not happy that what used to
+let users log in, now didn't!
+
+This fix is kinda hacky.  We return ECONNREFUSED for all non-init
+relevant namespaces.  That means that not only will the old broken
+non-init_net setups continue to work, now the broken non-init_pid or
+non-init_user setups will 'work'.  They don't really work, since audit
+isn't logging things.  But it's what most users want.
+
+In 3.15 we should have patches to support not only the non-init_net
+(3.14) namespace but also the non-init_pid and non-init_user namespace.
+So all will be right in the world.  This just opens the doors wide open
+on 3.14 and hopefully makes users happy, if not the audit system...
+
+Reported-by: Andre Tomt <andre@tomt.net>
+Reported-by: Adam Richter <adam_richter2004@yahoo.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
+ kernel/audit.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 3392d3e..95a20f3 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -608,9 +608,19 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+ 	int err = 0;
+ 
+ 	/* Only support the initial namespaces for now. */
++	/*
++	 * We return ECONNREFUSED because it tricks userspace into thinking
++	 * that audit was not configured into the kernel.  Lots of users
++	 * configure their PAM stack (because that's what the distro does)
++	 * to reject login if unable to send messages to audit.  If we return
++	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
++	 * configured in and will let login proceed.  If we return EPERM
++	 * userspace will reject all logins.  This should be removed when we
++	 * support non init namespaces!!
++	 */
+ 	if ((current_user_ns() != &init_user_ns) ||
+ 	    (task_active_pid_ns(current) != &init_pid_ns))
+-		return -EPERM;
++		return -ECONNREFUSED;
+ 
+ 	switch (msg_type) {
+ 	case AUDIT_LIST:
 -- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+1.8.5.3
+
+
+
