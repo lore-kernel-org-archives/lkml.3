@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaC3Qqg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 12:46:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35373 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751591AbaC3Qqe (ORCPT
+	id S1752222AbaC3Qxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 12:53:40 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:53713 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaC3Qxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 12:46:34 -0400
-Message-ID: <1396197987.2898.107.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 1/2] TTY: pmac_zilog, check existence of ports in
- pmz_console_init()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, stable <stable@vger.kernel.org>,
-        linux-serial@vger.kernel.org, Linux/m68k <linux-m68k@vger.kernel.org>,
+	Sun, 30 Mar 2014 12:53:38 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>
+Cc: Stefani Seibold <stefani@seibold.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Sun, 30 Mar 2014 17:46:27 +0100
-In-Reply-To: <CAMuHMdVcqiNQiMHD3pgRWUzt7n3+F0dwmeXVnmZtgCxyo=GmFw@mail.gmail.com>
-References: <1385135247-9068-1-git-send-email-geert@linux-m68k.org>
-	 <CAMuHMdVcqiNQiMHD3pgRWUzt7n3+F0dwmeXVnmZtgCxyo=GmFw@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-QLTcni1/4CI/WtFmZlQx"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/6] x86: Clean up and unify the vdso
+Date: Sun, 30 Mar 2014 09:53:26 -0700
+Message-Id: <cover.1396198036.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This rewrites a bunch of the vdso code.  After these patches, the vvar
+and hpet pages are mapped directly after the vdso text on all five vdso
+variants.  The fixmaps are gone on 64-bit systems.
 
---=-QLTcni1/4CI/WtFmZlQx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+It would be possible to build the x32 vdso the normal way on top of
+these patches.
 
-On Tue, 2013-12-24 at 15:39 +0100, Geert Uytterhoeven wrote:
-> On Fri, Nov 22, 2013 at 4:47 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > When booting a multi-platform m68k kernel on a non-Mac with "console=3D=
-ttyS0"
-> > on the kernel command line, it crashes with:
->=20
-> Can we please get this in stable, too?
->=20
-> commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a
-[...]
+I haven't touched the pvclock code.  I'd want to understand why it
+exists, why it isn't using rdtsc, and why it has two rdtsc_barrier calls
+before rearranging it.
 
-I've queued this up for 3.2; sorry for the delay.
+This is most likely 3.16 material.
 
-Ben.
+Andy Lutomirski (6):
+  x86: Clean up 32-bit vs 64-bit vdso params
+  x86: Move syscall and sysenter setup into kernel/cpu/common.c
+  x86: Reimplement vdso.so preparation in build-time C
+  x86: Move the 32-bit vdso special pages after the text
+  x86: Move the vvar and hpet mappings next to the 64-bit vDSO
+  x86: Remove vestiges of VDSO_PRELINK and some outdated comments
 
---=20
-Ben Hutchings
-If more than one person is responsible for a bug, no one is at fault.
+ arch/x86/ia32/ia32_signal.c          |   8 +-
+ arch/x86/include/asm/elf.h           |  35 +++---
+ arch/x86/include/asm/fixmap.h        |  10 +-
+ arch/x86/include/asm/mmu.h           |   2 +-
+ arch/x86/include/asm/proto.h         |   2 -
+ arch/x86/include/asm/vdso.h          |  74 +++++-------
+ arch/x86/include/asm/vdso32.h        |  11 --
+ arch/x86/include/asm/vvar.h          |  20 +---
+ arch/x86/include/uapi/asm/vsyscall.h |   7 +-
+ arch/x86/kernel/cpu/common.c         |  33 ++++++
+ arch/x86/kernel/hpet.c               |   3 -
+ arch/x86/kernel/signal.c             |   6 +-
+ arch/x86/kernel/vsyscall_64.c        |  15 +--
+ arch/x86/mm/fault.c                  |   5 +-
+ arch/x86/mm/init_64.c                |  13 +-
+ arch/x86/um/vdso/vma.c               |   2 +-
+ arch/x86/vdso/.gitignore             |   5 +-
+ arch/x86/vdso/Makefile               |  91 ++++++--------
+ arch/x86/vdso/vclock_gettime.c       |  26 ++--
+ arch/x86/vdso/vdso-layout.lds.S      |  49 ++++----
+ arch/x86/vdso/vdso.S                 |   3 -
+ arch/x86/vdso/vdso.lds.S             |   7 +-
+ arch/x86/vdso/vdso2c.c               | 156 ++++++++++++++++++++++++
+ arch/x86/vdso/vdso2c.h               | 154 ++++++++++++++++++++++++
+ arch/x86/vdso/vdso32-setup.c         | 195 ++++--------------------------
+ arch/x86/vdso/vdso32.S               |   9 --
+ arch/x86/vdso/vdso32/vdso32.lds.S    |  15 +--
+ arch/x86/vdso/vdsox32.S              |   3 -
+ arch/x86/vdso/vdsox32.lds.S          |   7 +-
+ arch/x86/vdso/vma.c                  | 222 +++++++++++++++++++----------------
+ arch/x86/xen/mmu.c                   |   8 +-
+ arch/x86/xen/setup.c                 |  11 +-
+ kernel/sysctl.c                      |   5 +
+ 33 files changed, 650 insertions(+), 562 deletions(-)
+ delete mode 100644 arch/x86/include/asm/vdso32.h
+ delete mode 100644 arch/x86/vdso/vdso.S
+ create mode 100644 arch/x86/vdso/vdso2c.c
+ create mode 100644 arch/x86/vdso/vdso2c.h
+ delete mode 100644 arch/x86/vdso/vdso32.S
+ delete mode 100644 arch/x86/vdso/vdsox32.S
 
---=-QLTcni1/4CI/WtFmZlQx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+-- 
+1.9.0
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUzhKY+e/yOyVhhEJAQoCgQ//d0eD2jEhagQ3aCkR/zgGpuaFKr8abPwy
-DnkrD2cXoFZ+ULvFK5mWlGsqR/rnwCjCfkZQ7W4MVUCb7zSOXZbPGTKbiwgmrrjr
-7KOZxtQqRlBdg1bEan5ZDzz1K0koJ+/7fXJHbweGfWZP1vLOT8uAW3C4Ltl58jJJ
-4iPceV6iKl35S+PLkCXwh+IPAV7Zv+KdQHkpE/U1ElGLvBI1RH1md1hzk4uBQ7me
-BomNsZjMcH1eN0tH+dfhMXPhHBE1ylstMG8FHvrVgC69q7Y7/cfRRtSIxTWP3rwL
-YjZvSiBy4skIEpB6MTqT1aYMtZY2vOuNrmnqhqabqWQJgKPRQRoszmLstCVniDob
-ruGXZlDLZ0w9GUHTlaSb8JmxTsOM1X7VdykIkaJto3VO20aHcmHAuoMrIogmG8ha
-fxO9XU21dAYLsvdAmkfu6SghUZngkke8YpTLPsxjIjqL+QGEgUMlRRY1Cz3/MrOv
-J8sc375x/U/gDSn6jMmLMXktlE1LezNXh7bi0bsONUuGouMPiuEGiL48vcnBr1IY
-uZCMW99vDY579UGbxBQHhs189xtAutx7zSB5g6nQUWVwfqKx3qobsqZelI/2fDHo
-Fs2ssq/7Lp8QyUjdIohEgmC+RjFza/4mjYYmxecY7v8A/5od2NaEBSUPGrf6ak8s
-tBvdUtaLxGk=
-=wZdD
------END PGP SIGNATURE-----
-
---=-QLTcni1/4CI/WtFmZlQx--
