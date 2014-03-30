@@ -1,51 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaC3VcG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 17:32:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830AbaC3Vb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 17:31:56 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: Franky Lin <frankyl@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>
-Subject: [PATCH 4/4] brcm80211: deinline brcmf_sdio_clrintr, save 8979 bytes
-Date: Sun, 30 Mar 2014 23:31:19 +0200
-Message-Id: <1396215079-7541-4-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1396215079-7541-1-git-send-email-dvlasenk@redhat.com>
-References: <1396215079-7541-1-git-send-email-dvlasenk@redhat.com>
+	id S1752565AbaC3Vr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 17:47:27 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:15780 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150AbaC3Vr0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 17:47:26 -0400
+Message-ID: <1396216043.2579.11.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc: constify ipc_ops
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        PaX Team <pageexec@freemail.hu>, Nadia Derbey <Nadia.Derbey@bull.net>,
+        Manfred Spraul <manfred@colorfullife.com>
+Date: Sun, 30 Mar 2014 14:47:23 -0700
+In-Reply-To: <1396186538-3378-1-git-send-email-minipli@googlemail.com>
+References: <1396186538-3378-1-git-send-email-minipli@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Automated script discovered that without forced inlining,
-gcc-4.7 generates smaller code for this function.
+On Sun, 2014-03-30 at 15:35 +0200, Mathias Krause wrote:
+> There is no need to recreate the very same ipc_ops structure on every
+> kernel entry for msgget/semget/shmget. Just declare it static and be
+> done with it.
+> While at it, constify it as we don't modify the structure at runtime.
 
-There is no need to declare static functions inline anyway:
-nowadays gcc detects single-callsite static functions
-which benefit from inlining.
+Seems reasonable.
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
----
- drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Found in the PaX patch, written by the PaX Team.
+> 
+> Cc: PaX Team <pageexec@freemail.hu>
+> Cc: Nadia Derbey <Nadia.Derbey@bull.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Mathias Krause <minipli@googlemail.com>
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-index 47a6f39..55a6d0d 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-@@ -2516,7 +2516,7 @@ static void brcmf_sdio_bus_stop(struct device *dev)
- 	bus->tx_seq = bus->rx_seq = 0;
- }
- 
--static inline void brcmf_sdio_clrintr(struct brcmf_sdio *bus)
-+static void brcmf_sdio_clrintr(struct brcmf_sdio *bus)
- {
- 	unsigned long flags;
- 
--- 
-1.8.1.4
+In the future, for ipc changes, please CC me and Manfred as well.
+
+One comment below, otherwise:
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+
+> ---
+>  ipc/msg.c  |    9 ++++-----
+>  ipc/sem.c  |   10 +++++-----
+>  ipc/shm.c  |   10 +++++-----
+>  ipc/util.c |    8 ++++----
+>  ipc/util.h |    2 +-
+>  5 files changed, 19 insertions(+), 20 deletions(-)
+> 
+> diff --git a/ipc/msg.c b/ipc/msg.c
+> index 649853105a..35e4018de5 100644
+> --- a/ipc/msg.c
+> +++ b/ipc/msg.c
+> @@ -306,15 +306,14 @@ static inline int msg_security(struct kern_ipc_perm *ipcp, int msgflg)
+>  SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
+>  {
+>  	struct ipc_namespace *ns;
+> -	struct ipc_ops msg_ops;
+> +	static const struct ipc_ops msg_ops = {
+> +		.getnew = newque,
+> +		.associate = msg_security,
+
+For completeness, please add .more_checks = NULL as well.
+
+> +	};
+>  	struct ipc_params msg_params;
+>  
+>  	ns = current->nsproxy->ipc_ns;
+>  
+> -	msg_ops.getnew = newque;
+> -	msg_ops.associate = msg_security;
+> -	msg_ops.more_checks = NULL;
+> -
+>  	msg_params.key = key;
+>  	msg_params.flg = msgflg;
+>  
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index bee5554173..3fcbc96abe 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -564,7 +564,11 @@ static inline int sem_more_checks(struct kern_ipc_perm *ipcp,
+>  SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
+>  {
+>  	struct ipc_namespace *ns;
+> -	struct ipc_ops sem_ops;
+> +	static const struct ipc_ops sem_ops = {
+> +		.getnew = newary,
+> +		.associate = sem_security,
+> +		.more_checks = sem_more_checks,
+> +	};
+>  	struct ipc_params sem_params;
+>  
+>  	ns = current->nsproxy->ipc_ns;
+> @@ -572,10 +576,6 @@ SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
+>  	if (nsems < 0 || nsems > ns->sc_semmsl)
+>  		return -EINVAL;
+>  
+> -	sem_ops.getnew = newary;
+> -	sem_ops.associate = sem_security;
+> -	sem_ops.more_checks = sem_more_checks;
+> -
+>  	sem_params.key = key;
+>  	sem_params.flg = semflg;
+>  	sem_params.u.nsems = nsems;
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 76459616a7..b54c93f6d1 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -609,15 +609,15 @@ static inline int shm_more_checks(struct kern_ipc_perm *ipcp,
+>  SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
+>  {
+>  	struct ipc_namespace *ns;
+> -	struct ipc_ops shm_ops;
+> +	static const struct ipc_ops shm_ops = {
+> +		.getnew = newseg,
+> +		.associate = shm_security,
+> +		.more_checks = shm_more_checks,
+> +	};
+>  	struct ipc_params shm_params;
+>  
+>  	ns = current->nsproxy->ipc_ns;
+>  
+> -	shm_ops.getnew = newseg;
+> -	shm_ops.associate = shm_security;
+> -	shm_ops.more_checks = shm_more_checks;
+> -
+>  	shm_params.key = key;
+>  	shm_params.flg = shmflg;
+>  	shm_params.u.size = size;
+> diff --git a/ipc/util.c b/ipc/util.c
+> index e1b4c6db8a..314ebeb3d7 100644
+> --- a/ipc/util.c
+> +++ b/ipc/util.c
+> @@ -317,7 +317,7 @@ int ipc_addid(struct ipc_ids *ids, struct kern_ipc_perm *new, int size)
+>   * when the key is IPC_PRIVATE.
+>   */
+>  static int ipcget_new(struct ipc_namespace *ns, struct ipc_ids *ids,
+> -		struct ipc_ops *ops, struct ipc_params *params)
+> +		const struct ipc_ops *ops, struct ipc_params *params)
+>  {
+>  	int err;
+>  
+> @@ -344,7 +344,7 @@ static int ipcget_new(struct ipc_namespace *ns, struct ipc_ids *ids,
+>   */
+>  static int ipc_check_perms(struct ipc_namespace *ns,
+>  			   struct kern_ipc_perm *ipcp,
+> -			   struct ipc_ops *ops,
+> +			   const struct ipc_ops *ops,
+>  			   struct ipc_params *params)
+>  {
+>  	int err;
+> @@ -375,7 +375,7 @@ static int ipc_check_perms(struct ipc_namespace *ns,
+>   * On success, the ipc id is returned.
+>   */
+>  static int ipcget_public(struct ipc_namespace *ns, struct ipc_ids *ids,
+> -		struct ipc_ops *ops, struct ipc_params *params)
+> +		const struct ipc_ops *ops, struct ipc_params *params)
+>  {
+>  	struct kern_ipc_perm *ipcp;
+>  	int flg = params->flg;
+> @@ -678,7 +678,7 @@ out:
+>   * Common routine called by sys_msgget(), sys_semget() and sys_shmget().
+>   */
+>  int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+> -			struct ipc_ops *ops, struct ipc_params *params)
+> +			const struct ipc_ops *ops, struct ipc_params *params)
+>  {
+>  	if (params->key == IPC_PRIVATE)
+>  		return ipcget_new(ns, ids, ops, params);
+> diff --git a/ipc/util.h b/ipc/util.h
+> index 9c47d6f6c7..e1153ad574 100644
+> --- a/ipc/util.h
+> +++ b/ipc/util.h
+> @@ -201,7 +201,7 @@ static inline bool ipc_valid_object(struct kern_ipc_perm *perm)
+>  
+>  struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
+>  int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+> -			struct ipc_ops *ops, struct ipc_params *params);
+> +			const struct ipc_ops *ops, struct ipc_params *params);
+>  void free_ipcs(struct ipc_namespace *ns, struct ipc_ids *ids,
+>  		void (*free)(struct ipc_namespace *, struct kern_ipc_perm *));
+>  #endif
+
 
