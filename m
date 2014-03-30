@@ -1,87 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaCaAM4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:12:56 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43829 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775AbaCaAMx (ORCPT
+	id S1754107AbaC3Xlg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:41:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36401 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753051AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 20:12:53 -0400
+	Sun, 30 Mar 2014 19:25:02 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-In-Reply-To: <1396164244.28950.15.camel@marge.simpson.net>
-References: <1396164244.28950.15.camel@marge.simpson.net>
-Date: Sun, 30 Mar 2014 17:12:52 -0700
-X-Google-Sender-Auth: wg8EWqGuRLNBbq9JdoYmDGMaGhk
-Message-ID: <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
-Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Olivier Langlois" <olivier@trillion01.com>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 31 Mar 2014 00:23:35 +0100
+Message-ID: <lsq.1396221815.380384568@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 113/200] rtlwifi: rtl8192ce: Fix too long disable of IRQs
+In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch looks fine, but the changelog is so chock-full of odd
-language that I don't know what to do with the patch.
+3.2.56-rc1 review patch.  If anyone has any objections, please let me know.
 
-Is this actually a problem in real life, or just in the drug-induced
-wonderland that Mike was in when writing the changelog?
+------------------
 
-               Linus
+From: Olivier Langlois <olivier@trillion01.com>
 
-On Sun, Mar 30, 2014 at 12:24 AM, Mike Galbraith
-<umgwanakikbuti@gmail.com> wrote:
-> NEWSFLASH: Wimpy latent scheduler buglet turns axe-murderer...
->
-> Root cause being us staying in kernel for weeks at a time during boot:
->
-> Subverting ftrace, we see below that updates _can_ be skipped for AGES,
-> which can make very bad things happen.  It's supposed to skip ONE, as an
-> optimization. not lord knows how many.  Here we see we've been skipping
-> since 4915630446, resulting in the watchdog being credited with a 137ms
-> delta_exec.  Bogus, and..
->
->         modprobe-134   [000]     5.027903: update_rq_clock <-scheduler_tick
->         modprobe-134   [000]     5.037857: update_rq_clock <-scheduler_tick
->         modprobe-134   [000]     5.037864: update_rq_clock <-enqueue_task
->         modprobe-134   [000]     5.037866: enqueue_task_watchdog: WATCHDOG/0 enqueue 4915630446
->         modprobe-134   [000]     5.044965: update_rq_clock <-scheduler_tick
->         modprobe-134   [000]     5.046275: update_rq_clock <-scheduler_tick
->         modprobe-134   [000]     5.050274: update_rq_clock <-scheduler_tick
->         modprobe-134   [000]     5.052862: update_rq_clock <-dequeue_task
->         modprobe-134   [000]     5.052866: pick_next_task_watchdog: WATCHDOG/0 select 4915630446
->       watchdog/0-7     [000]     5.052868: finish_task_switch: WATCHDOG/0 runs 5052867644
->       watchdog/0-7     [000]     5.052869: watchdog: WATCHDOG/0 DELAYED 137238048 max: 137238048
->       watchdog/0-7     [000]     5.052872: update_rq_clock <-dequeue_task
->       watchdog/0-7     [000]     5.052873: dequeue_task_watchdog: WATCHDOG/0 dequeue 5052872018
->       watchdog/0-7     [000]     5.052874: put_prev_task_watchdog: WATCHDOG/0 STOP trace : delta_exec 137241572 sum_exec 137254287
->
-> ..delta_exec was sufficient in a NOPREEMPT kernel on zillion disk box
-> that disk discovery combined with swsusp wanting to find out if it needs
-> to resume, that the featherweight watchdog was credited with delta_exec
-> HUGE enough to be incapacitated by the rt throttle long enough for the
-> hard lockup detector to trigger.
->
-> Throttled watchdog is bad juju, led to -ENOBOOT for IO beast.
->
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by:  Mike Galbraith <umgwanakikbuti@gmail.com>
-> ---
->  kernel/sched/core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -118,7 +118,7 @@ void update_rq_clock(struct rq *rq)
->  {
->         s64 delta;
->
-> -       if (rq->skip_clock_update > 0)
-> +       if (rq->skip_clock_update-- > 0)
->                 return;
->
->         delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
->
->
+commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 upstream.
+
+rtl8192ce is disabling for too long the local interrupts during hw initiatialisation when performing scans
+
+The observable symptoms in dmesg can be:
+
+- underruns from ALSA playback
+- clock freezes (tstamps do not change for several dmesg entries until irqs are finaly reenabled):
+
+[  250.817669] rtlwifi:rtl_op_config():<0-0-0> 0x100
+[  250.817685] rtl8192ce:_rtl92ce_phy_set_rf_power_state():<0-1-0> IPS Set eRf nic enable
+[  250.817732] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.817796] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.817910] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818024] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818139] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818253] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818367] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
+[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:98053f15:10
+[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
+[  250.818472] rtl8192c_common:rtl92c_download_fw():<0-1-0> Firmware Version(49), Signature(0x88c1),Size(32)
+[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> PairwiseEncAlgorithm = 0 GroupEncAlgorithm = 0
+[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> The SECR-value cc
+[  250.818472] rtl8192c_common:rtl92c_dm_check_txpower_tracking_thermal_meter():<0-1-0> Schedule TxPowerTracking direct call!!
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> rtl92c_dm_txpower_tracking_callback_thermalmeter
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial pathA ele_d reg0xc80 = 0x40000000, ofdm_index=0xc
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial reg0xa24 = 0x90e1317, cck_index=0xc, ch14 0
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf delta 0x1 delta_lck 0x0 delta_iqk 0x0
+[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> <===
+[  250.818472] rtl8192c_common:rtl92c_dm_initialize_txpower_tracking_thermalmeter():<0-1-0> pMgntInfo->txpower_tracking = 1
+[  250.818472] rtl8192ce:rtl92ce_led_control():<0-1-0> ledaction 3
+[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
+[  250.818472] rtlwifi:rtl_ips_nic_on():<0-1-0> before spin_unlock_irqrestore
+[  251.154656] PCM: Lost interrupts? [Q]-0 (stream=0, delta=15903, new_hw_ptr=293408, old_hw_ptr=277505)
+
+The exact code flow that causes that is:
+
+1. wpa_supplicant send a start_scan request to the nl80211 driver
+2. mac80211 module call rtl_op_config with IEEE80211_CONF_CHANGE_IDLE
+3.   rtl_ips_nic_on is called which disable local irqs
+4.     rtl92c_phy_set_rf_power_state() is called
+5.       rtl_ps_enable_nic() is called and hw_init()is executed and then the interrupts on the device are enabled
+
+A good solution could be to refactor the code to avoid calling rtl92ce_hw_init() with the irqs disabled
+but a quick and dirty solution that has proven to work is
+to reenable the irqs during the function rtl92ce_hw_init().
+
+I think that it is safe doing so since the device interrupt will only be enabled after the init function succeed.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -905,14 +905,26 @@ int rtl92ce_hw_init(struct ieee80211_hw
+ 	bool is92c;
+ 	int err;
+ 	u8 tmp_u1b;
++	unsigned long flags;
+ 
+ 	rtlpci->being_init_adapter = true;
++
++	/* Since this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
++
+ 	rtlpriv->intf_ops->disable_aspm(hw);
+ 	rtstatus = _rtl92ce_init_mac(hw);
+ 	if (rtstatus != true) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ("Init MAC failed\n"));
+ 		err = 1;
+-		return err;
++		goto exit;
+ 	}
+ 
+ 	err = rtl92c_download_fw(hw);
+@@ -922,7 +934,7 @@ int rtl92ce_hw_init(struct ieee80211_hw
+ 			  "without FW now..\n"));
+ 		err = 1;
+ 		rtlhal->fw_ready = false;
+-		return err;
++		goto exit;
+ 	} else {
+ 		rtlhal->fw_ready = true;
+ 	}
+@@ -985,6 +997,8 @@ int rtl92ce_hw_init(struct ieee80211_hw
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, ("under 1.5V\n"));
+ 	}
+ 	rtl92c_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpci->being_init_adapter = false;
+ 	return err;
+ }
+
