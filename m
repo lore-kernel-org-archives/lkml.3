@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaCaA0w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:26:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36272 "EHLO
+	id S1754864AbaCaA1F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:27:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36267 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752905AbaC3XZA (ORCPT
+	by vger.kernel.org with ESMTP id S1752896AbaC3XZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:00 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nicolas Ferre" <nicolas.ferre@atmel.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        "Chris Ball" <cjb@laptop.org>
+CC: akpm@linux-foundation.org, "Marcelo Tosatti" <mtosatti@redhat.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>,
+        "Jan Kiszka" <jan.kiszka@siemens.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.728347403@decadent.org.uk>
+Message-ID: <lsq.1396221815.38176321@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 033/200] mmc: atmel-mci: fix timeout errors in SDIO
- mode when using DMA
+Subject: [PATCH 3.2 040/200] KVM: x86: limit PIT timer frequency
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,48 +32,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
+commit 9ed96e87c5748de4c2807ef17e81287c7304186c upstream.
 
-With some SDIO devices, timeout errors can happen when reading data.
-To solve this issue, the DMA transfer has to be activated before sending
-the command to the device. This order is incorrect in PDC mode. So we
-have to take care if we are using DMA or PDC to know when to send the
-MMC command.
+Limit PIT timer frequency similarly to the limit applied by
+LAPIC timer.
 
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/ps->period/pt->period/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/atmel-mci.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ arch/x86/kvm/i8254.c | 18 ++++++++++++++++++
+ arch/x86/kvm/lapic.c |  3 ---
+ arch/x86/kvm/x86.c   |  3 +++
+ arch/x86/kvm/x86.h   |  2 ++
+ 4 files changed, 23 insertions(+), 3 deletions(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1014,11 +1014,22 @@ static void atmci_start_request(struct a
- 	iflags |= ATMCI_CMDRDY;
- 	cmd = mrq->cmd;
- 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
--	atmci_send_command(host, cmd, cmdflags);
-+
+--- a/arch/x86/kvm/i8254.c
++++ b/arch/x86/kvm/i8254.c
+@@ -38,6 +38,7 @@
+ 
+ #include "irq.h"
+ #include "i8254.h"
++#include "x86.h"
+ 
+ #ifndef CONFIG_X86_64
+ #define mod_64(x, y) ((x) - (y) * div64_u64(x, y))
+@@ -364,6 +365,23 @@ static void create_pit_timer(struct kvm
+ 	atomic_set(&pt->pending, 0);
+ 	ps->irq_ack = 1;
+ 
 +	/*
-+	 * DMA transfer should be started before sending the command to avoid
-+	 * unexpected errors especially for read operations in SDIO mode.
-+	 * Unfortunately, in PDC mode, command has to be sent before starting
-+	 * the transfer.
++	 * Do not allow the guest to program periodic timers with small
++	 * interval, since the hrtimers are not throttled by the host
++	 * scheduler.
 +	 */
-+	if (host->submit_data != &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
- 
- 	if (data)
- 		host->submit_data(host, data);
- 
-+	if (host->submit_data == &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
++	if (ps->is_periodic) {
++		s64 min_period = min_timer_period_us * 1000LL;
 +
- 	if (mrq->stop) {
- 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
- 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
++		if (pt->period < min_period) {
++			pr_info_ratelimited(
++			    "kvm: requested %lld ns "
++			    "i8254 timer period limited to %lld ns\n",
++			    pt->period, min_period);
++			pt->period = min_period;
++		}
++	}
++
+ 	hrtimer_start(&pt->timer, ktime_add_ns(ktime_get(), interval),
+ 		      HRTIMER_MODE_ABS);
+ }
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -68,9 +68,6 @@
+ #define VEC_POS(v) ((v) & (32 - 1))
+ #define REG_POS(v) (((v) >> 5) << 4)
+ 
+-static unsigned int min_timer_period_us = 500;
+-module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
+-
+ static inline u32 apic_get_reg(struct kvm_lapic *apic, int reg_off)
+ {
+ 	return *((u32 *) (apic->regs + reg_off));
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -92,6 +92,9 @@ EXPORT_SYMBOL_GPL(kvm_x86_ops);
+ int ignore_msrs = 0;
+ module_param_named(ignore_msrs, ignore_msrs, bool, S_IRUGO | S_IWUSR);
+ 
++unsigned int min_timer_period_us = 500;
++module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
++
+ bool kvm_has_tsc_control;
+ EXPORT_SYMBOL_GPL(kvm_has_tsc_control);
+ u32  kvm_max_guest_tsc_khz;
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -125,4 +125,6 @@ int kvm_write_guest_virt_system(struct x
+ 	gva_t addr, void *val, unsigned int bytes,
+ 	struct x86_exception *exception);
+ 
++extern unsigned int min_timer_period_us;
++
+ #endif
 
