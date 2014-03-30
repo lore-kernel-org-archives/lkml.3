@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155AbaCaAEZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:04:25 -0400
+	id S1755243AbaCaAEq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:04:46 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753719AbaC3Xm6 (ORCPT
+	by vger.kernel.org with ESMTP id S1754430AbaC3Xmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:42:58 -0400
+	Sun, 30 Mar 2014 19:42:54 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.629299830@decadent.org.uk>
+Message-ID: <lsq.1396221815.480066253@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 092/200] Drivers: hv: vmbus: Don't timeout during the
- initial connection with host
+Subject: [PATCH 3.2 058/200] ACPI / init: Flag use of ACPI and ACPI idioms
+ for power supplies to regulator API
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,54 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit 269f979467cf49f2ea8132316c1f00f8c9678f7c upstream.
+commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
 
-When the guest attempts to connect with the host when there may already be a
-connection with the host (as would be the case during the kdump/kexec path),
-it is difficult to guarantee timely response from the host. Starting with
-WS2012 R2, the host supports this ability to re-connect with the host
-(explicitly to support kexec). Prior to responding to the guest, the host
-needs to ensure that device states based on the previous connection to
-the host have been properly torn down. This may introduce unbounded delays.
-To deal with this issue, don't do a timed wait during the initial connect
-with the host.
+There is currently no facility in ACPI to express the hookup of voltage
+regulators, the expectation is that the regulators that exist in the
+system will be handled transparently by firmware if they need software
+control at all. This means that if for some reason the regulator API is
+enabled on such a system it should assume that any supplies that devices
+need are provided by the system at all relevant times without any software
+intervention.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+Tell the regulator core to make this assumption by calling
+regulator_has_full_constraints(). Do this as soon as we know we are using
+ACPI so that the information is available to the regulator core as early
+as possible. This will cause the regulator core to pretend that there is
+an always on regulator supplying any supply that is requested but that has
+not otherwise been mapped which is the behaviour expected on a system with
+ACPI.
+
+Should the ability to specify regulators be added in future revisions of
+ACPI then once we have support for ACPI mappings in the kernel the same
+assumptions will apply. It is also likely that systems will default to a
+mode of operation which does not require any interpretation of these
+mappings in order to be compatible with existing operating system releases
+so it should remain safe to make these assumptions even if the mappings
+exist but are not supported by the kernel.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hv/connection.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ drivers/acpi/bus.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -45,7 +45,6 @@ struct vmbus_connection vmbus_connection
- int vmbus_connect(void)
- {
- 	int ret = 0;
--	int t;
- 	struct vmbus_channel_msginfo *msginfo = NULL;
- 	struct vmbus_channel_initiate_contact *msg;
- 	unsigned long flags;
-@@ -132,16 +131,7 @@ int vmbus_connect(void)
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -33,6 +33,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/acpi.h>
+ #include <linux/slab.h>
++#include <linux/regulator/machine.h>
+ #ifdef CONFIG_X86
+ #include <asm/mpspec.h>
+ #endif
+@@ -917,6 +918,14 @@ void __init acpi_early_init(void)
+ 		goto error0;
  	}
  
- 	/* Wait for the connection response */
--	t =  wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
--	if (t == 0) {
--		spin_lock_irqsave(&vmbus_connection.channelmsg_lock,
--				flags);
--		list_del(&msginfo->msglistentry);
--		spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock,
--					flags);
--		ret = -ETIMEDOUT;
--		goto cleanup;
--	}
-+	wait_for_completion(&msginfo->waitevent);
++	/*
++	 * If the system is using ACPI then we can be reasonably
++	 * confident that any regulators are managed by the firmware
++	 * so tell the regulator core it has everything it needs to
++	 * know.
++	 */
++	regulator_has_full_constraints();
++
+ 	return;
  
- 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
- 	list_del(&msginfo->msglistentry);
+       error0:
 
