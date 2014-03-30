@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026AbaCaABA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:01:00 -0400
+	id S1753398AbaC3XnK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:43:10 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753392AbaC3XnN (ORCPT
+	by vger.kernel.org with ESMTP id S1754469AbaC3XnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:13 -0400
+	Sun, 30 Mar 2014 19:43:02 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David Rientjes" <rientjes@google.com>,
-        "Cong Wang" <cwang@twopensource.com>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.286800043@decadent.org.uk>
+Message-ID: <lsq.1396221815.342484099@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 100/200] fs/file.c:fdtable: avoid triggering OOMs from
- alloc_fdmem
+Subject: [PATCH 3.2 061/200] drm/radeon/DCE4+: clear bios scratch dpms bit
+ (v2)
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,62 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
+commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
 
-Recently due to a spike in connections per second memcached on 3
-separate boxes triggered the OOM killer from accept.  At the time the
-OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
-problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-hold a bitmap, and there was sufficient fragmentation that the largest
-page available was 8KiB.
+The BlankCrtc table in some DCE8 boards has some
+logic shortcuts for the vbios when this bit is set.
+Clear it for driver use.
 
-I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-but I do agree that order 3 allocations are very likely to succeed.
+v2: fix typo
 
-There are always pathologies where order > 0 allocations can fail when
-there are copious amounts of free memory available.  Using the pigeon
-hole principle it is easy to show that it requires 1 page more than 50%
-of the pages being free to guarantee an order 1 (8KiB) allocation will
-succeed, 1 page more than 75% of the pages being free to guarantee an
-order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-the pages being free to guarantee an order 3 allocate will succeed.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73420
 
-A server churning memory with a lot of small requests and replies like
-memcached is a common case that if anything can will skew the odds
-against large pages being available.
-
-Therefore let's not give external applications a practical way to kill
-linux server applications, and specify __GFP_NORETRY to the kmalloc in
-alloc_fdmem.  Unless I am misreading the code and by the time the code
-reaches should_alloc_retry in __alloc_pages_slowpath (where
-__GFP_NORETRY becomes signification).  We have already tried everything
-reasonable to allocate a page and the only thing left to do is wait.  So
-not waiting and falling back to vmalloc immediately seems like the
-reasonable thing to do even if there wasn't a chance of triggering the
-OOM killer.
-
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -47,7 +47,7 @@ static void *alloc_fdmem(unsigned int si
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
- 	}
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2735,6 +2735,10 @@ void radeon_atom_initialize_bios_scratch
+ 	/* tell the bios not to handle mode switching */
+ 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
+ 
++	/* clear the vbios dpms state */
++	if (ASIC_IS_DCE4(rdev))
++		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
++
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
 
