@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaC3HtZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 03:49:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2068 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353AbaC3HtX convert rfc822-to-8bit (ORCPT
+	id S1753145AbaC3Hwz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 03:52:55 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:63077 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaC3Hwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 03:49:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,759,1389772800"; 
-   d="scan'208";a="502412853"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Monam Agarwal <monamagarwal123@gmail.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "eliad@wizery.com" <eliad@wizery.com>,
-        "Lifshitz, Eytan" <eytan.lifshitz@intel.com>,
-        "eyal@wizery.com" <eyal@wizery.com>,
-        "Stepanov, Max" <Max.Stepanov@intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] drivers/net/wireless: Use RCU_INIT_POINTER(x, NULL) in
- iwlwifi/mvm/sta.c
-Thread-Topic: [PATCH] drivers/net/wireless: Use RCU_INIT_POINTER(x, NULL) in
- iwlwifi/mvm/sta.c
-Thread-Index: AQHPRsb1Ft+w9jln4k2cAk6aJZfk7Zr5S2Bg
-Date: Sun, 30 Mar 2014 07:49:17 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB303DBDB42@HASMSX103.ger.corp.intel.com>
-References: <1395599756-7861-1-git-send-email-monamagarwal123@gmail.com>
-In-Reply-To: <1395599756-7861-1-git-send-email-monamagarwal123@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 30 Mar 2014 03:52:54 -0400
+Message-ID: <5337CDA3.7000906@gmail.com>
+Date: Sun, 30 Mar 2014 09:54:11 +0200
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Can't umount /mnt/dev after calling dd(1) and with /mnt/dev is
+ a bind mount
+References: <532DBFC8.4020202@gmail.com>
+In-Reply-To: <532DBFC8.4020202@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x,
-> NULL)
-> 
-> The rcu_assign_pointer() ensures that the initialization of a structure
-> is carried out before storing a pointer to that structure.
-> And in the case of the NULL pointer, there is no structure to initialize.
-> So, rcu_assign_pointer(p, NULL) can be safely converted to
-> RCU_INIT_POINTER(p, NULL)
-> 
-> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
-> ---
->  drivers/net/wireless/iwlwifi/mvm/sta.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
+up
 
-Applied - with small change in commit log.
-Thank you for your contribution.
+On 03/22/2014 05:52 PM, Francis Moreau wrote:
+> Hello,
+> 
+> I'm posting here because it might be a behaviour related to the kernel
+> internals that I can't explain from my user point of view :)
+> 
+> Basically I'm doing this:
+> 
+>   mount -o bind /dev/ /mnt/dev &&
+>   chroot /mnt dd bs=440 conv=notrunc count=1 if=gptmbr.bin of=/dev/loop0
+>   umount /mnt/dev
+> 
+> but umount gives the following error: "umount: /mnt/dev: target is busy"
+> 
+> I tried to see if any processes were still using a file in dev with
+> fuser(1) but there weren't. Futhermore inserting a call to fuser(1)
+> right before umount fixed the issue, so it really seems a timing issue.
+> 
+> stracing umount showed that umount failed here:
+> umount("/mnt/dev", 0)                   = -1 EBUSY (Device or resource busy)
+> 
+> I replaced the bind mount of /dev by:
+>     mount -t devtmpfs none /mnt/dev
+> and it worked.
+> 
+> Could anybody tell me what I'm doing wrong ?
+> 
+> Thanks.
+> 
 
