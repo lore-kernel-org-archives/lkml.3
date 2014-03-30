@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaC3Xmq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:42:46 -0400
+	id S1754220AbaCaAHZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:07:25 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753812AbaC3Xmk (ORCPT
+	by vger.kernel.org with ESMTP id S1753802AbaC3Xmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:42:40 -0400
+	Sun, 30 Mar 2014 19:42:45 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mike Snitzer" <snitzer@redhat.com>,
-        "Mikulas Patocka" <mpatocka@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Trond Myklebust" <trond.myklebust@primarydata.com>,
+        "Weston Andros Adamson" <dros@primarydata.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.155205142@decadent.org.uk>
+Message-ID: <lsq.1396221815.513551172@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 026/200] dm: wait until embedded kobject is released
- before destroying a device
+Subject: [PATCH 3.2 037/200] nfs4.1: properly handle ENOTSUP in
+ SECINFO_NO_NAME
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,123 +33,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Weston Andros Adamson <dros@primarydata.com>
 
-commit be35f486108227e10fe5d96fd42fb2b344c59983 upstream.
+commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
 
-There may be other parts of the kernel holding a reference on the dm
-kobject.  We must wait until all references are dropped before
-deallocating the mapped_device structure.
+Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
+by nfs4_stat_to_errno.
 
-The dm_kobject_release method signals that all references are dropped
-via completion.  But dm_kobject_release doesn't free the kobject (which
-is embedded in the mapped_device structure).
+This allows the client to mount v4.1 servers that don't support
+SECINFO_NO_NAME by falling back to the "guess and check" method of
+nfs4_find_root_sec.
 
-This is the sequence of operations:
-* when destroying a DM device, call kobject_put from dm_sysfs_exit
-* wait until all users stop using the kobject, when it happens the
-  release method is called
-* the release method signals the completion and should return without
-  delay
-* the dm device removal code that waits on the completion continues
-* the dm device removal code drops the dm_mod reference the device had
-* the dm device removal code frees the mapped_device structure that
-  contains the kobject
-
-Using kobject this way should avoid the module unload race that was
-mentioned at the beginning of this thread:
-https://lkml.org/lkml/2014/1/4/83
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-sysfs.c | 10 +++++++++-
- drivers/md/dm.c       | 11 +++++++++++
- drivers/md/dm.h       |  2 ++
- 3 files changed, 22 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-sysfs.c
-+++ b/drivers/md/dm-sysfs.c
-@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_o
- 	.show	= dm_attr_show,
- };
- 
-+static void dm_kobject_release(struct kobject *kobj)
-+{
-+	complete(dm_get_completion_from_kobject(kobj));
-+}
-+
- /*
-  * dm kobject is embedded in mapped_device structure
-  * no need to define release function here
-@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_o
- static struct kobj_type dm_ktype = {
- 	.sysfs_ops	= &dm_sysfs_ops,
- 	.default_attrs	= dm_attrs,
-+	.release	= dm_kobject_release,
- };
- 
- /*
-@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *
-  */
- void dm_sysfs_exit(struct mapped_device *md)
- {
--	kobject_put(dm_kobject(md));
-+	struct kobject *kobj = dm_kobject(md);
-+	kobject_put(kobj);
-+	wait_for_completion(dm_get_completion_from_kobject(kobj));
- }
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -195,6 +195,9 @@ struct mapped_device {
- 	/* sysfs handle */
- 	struct kobject kobj;
- 
-+	/* wait until the kobject is released */
-+	struct completion kobj_completion;
-+
- 	/* zero-length flush that will be cloned and submitted to targets */
- 	struct bio flush_bio;
- };
-@@ -1891,6 +1894,7 @@ static struct mapped_device *alloc_dev(i
- 	init_waitqueue_head(&md->wait);
- 	INIT_WORK(&md->work, dm_wq_work);
- 	init_waitqueue_head(&md->eventq);
-+	init_completion(&md->kobj_completion);
- 
- 	md->disk->major = _major;
- 	md->disk->first_minor = minor;
-@@ -2705,6 +2709,13 @@ struct mapped_device *dm_get_from_kobjec
- 	return md;
- }
- 
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
-+{
-+	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
-+
-+	return &md->kobj_completion;
-+}
-+
- int dm_suspended_md(struct mapped_device *md)
- {
- 	return test_bit(DMF_SUSPENDED, &md->flags);
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -15,6 +15,7 @@
- #include <linux/list.h>
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
-+#include <linux/completion.h>
- 
- /*
-  * Suspend feature flags
-@@ -123,6 +124,7 @@ int dm_sysfs_init(struct mapped_device *
- void dm_sysfs_exit(struct mapped_device *md);
- struct kobject *dm_kobject(struct mapped_device *md);
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
- 
- /*
-  * Targets for linear and striped mappings
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6197,7 +6197,7 @@ nfs41_proc_secinfo_no_name(struct nfs_se
+ 		switch (err) {
+ 		case 0:
+ 		case -NFS4ERR_WRONGSEC:
+-		case -NFS4ERR_NOTSUPP:
++		case -ENOTSUPP:
+ 			goto out;
+ 		default:
+ 			err = nfs4_handle_exception(server, err, &exception);
+@@ -6229,7 +6229,7 @@ nfs41_find_root_sec(struct nfs_server *s
+ 	 * Fall back on "guess and check" method if
+ 	 * the server doesn't support SECINFO_NO_NAME
+ 	 */
+-	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
++	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
+ 		err = nfs4_find_root_sec(server, fhandle, info);
+ 		goto out_freepage;
+ 	}
 
