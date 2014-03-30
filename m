@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748AbaC3XbZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:31:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36520 "EHLO
+	id S1754042AbaC3XdV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:33:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36518 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753153AbaC3XZF (ORCPT
+	by vger.kernel.org with ESMTP id S1753133AbaC3XZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:25:05 -0400
+	Sun, 30 Mar 2014 19:25:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Borkmann" <dborkman@redhat.com>,
-        "Vlad Yasevich" <yasevich@gmail.com>,
-        "Vlad Yasevich" <vyasevich@gmail.com>,
-        "Neil Horman" <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Veaceslav Falico" <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, "Jiri Bohac" <jbohac@suse.cz>,
+        "Jiri Bohac" <jiri@boha.cz>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.688775033@decadent.org.uk>
+Message-ID: <lsq.1396221815.791276165@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 199/200] net: sctp: fix sctp_sf_do_5_1D_ce to verify
- if we/peer is  AUTH capable
+Subject: [PATCH 3.2 190/200] bonding: 802.3ad: make aggregator_identifier
+ bond-private
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,138 +33,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Jiri Bohac <jiri@boha.cz>
 
-[ Upstream commit ec0223ec48a90cb605244b45f7c62de856403729 ]
+[ Upstream commit 163c8ff30dbe473abfbb24a7eac5536c87f3baa9 ]
 
-RFC4895 introduced AUTH chunks for SCTP; during the SCTP
-handshake RANDOM; CHUNKS; HMAC-ALGO are negotiated (CHUNKS
-being optional though):
+aggregator_identifier is used to assign unique aggregator identifiers
+to aggregators of a bond during device enslaving.
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
+aggregator_identifier is currently a global variable that is zeroed in
+bond_3ad_initialize().
 
-A special case is when an endpoint requires COOKIE-ECHO
-chunks to be authenticated:
+This sequence will lead to duplicate aggregator identifiers for eth1 and eth3:
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  ------------------ AUTH; COOKIE-ECHO ---------------->
-  <-------------------- COOKIE-ACK ---------------------
+create bond0
+change bond0 mode to 802.3ad
+enslave eth0 to bond0 		//eth0 gets agg id 1
+enslave eth1 to bond0 		//eth1 gets agg id 2
+create bond1
+change bond1 mode to 802.3ad
+enslave eth2 to bond1		//aggregator_identifier is reset to 0
+				//eth2 gets agg id 1
+enslave eth3 to bond0 		//eth3 gets agg id 2
 
-RFC4895, section 6.3. Receiving Authenticated Chunks says:
+Fix this by making aggregator_identifier private to the bond.
 
-  The receiver MUST use the HMAC algorithm indicated in
-  the HMAC Identifier field. If this algorithm was not
-  specified by the receiver in the HMAC-ALGO parameter in
-  the INIT or INIT-ACK chunk during association setup, the
-  AUTH chunk and all the chunks after it MUST be discarded
-  and an ERROR chunk SHOULD be sent with the error cause
-  defined in Section 4.1. [...] If no endpoint pair shared
-  key has been configured for that Shared Key Identifier,
-  all authenticated chunks MUST be silently discarded. [...]
-
-  When an endpoint requires COOKIE-ECHO chunks to be
-  authenticated, some special procedures have to be followed
-  because the reception of a COOKIE-ECHO chunk might result
-  in the creation of an SCTP association. If a packet arrives
-  containing an AUTH chunk as a first chunk, a COOKIE-ECHO
-  chunk as the second chunk, and possibly more chunks after
-  them, and the receiver does not have an STCB for that
-  packet, then authentication is based on the contents of
-  the COOKIE-ECHO chunk. In this situation, the receiver MUST
-  authenticate the chunks in the packet by using the RANDOM
-  parameters, CHUNKS parameters and HMAC_ALGO parameters
-  obtained from the COOKIE-ECHO chunk, and possibly a local
-  shared secret as inputs to the authentication procedure
-  specified in Section 6.3. If authentication fails, then
-  the packet is discarded. If the authentication is successful,
-  the COOKIE-ECHO and all the chunks after the COOKIE-ECHO
-  MUST be processed. If the receiver has an STCB, it MUST
-  process the AUTH chunk as described above using the STCB
-  from the existing association to authenticate the
-  COOKIE-ECHO chunk and all the chunks after it. [...]
-
-Commit bbd0d59809f9 introduced the possibility to receive
-and verification of AUTH chunk, including the edge case for
-authenticated COOKIE-ECHO. On reception of COOKIE-ECHO,
-the function sctp_sf_do_5_1D_ce() handles processing,
-unpacks and creates a new association if it passed sanity
-checks and also tests for authentication chunks being
-present. After a new association has been processed, it
-invokes sctp_process_init() on the new association and
-walks through the parameter list it received from the INIT
-chunk. It checks SCTP_PARAM_RANDOM, SCTP_PARAM_HMAC_ALGO
-and SCTP_PARAM_CHUNKS, and copies them into asoc->peer
-meta data (peer_random, peer_hmacs, peer_chunks) in case
-sysctl -w net.sctp.auth_enable=1 is set. If in INIT's
-SCTP_PARAM_SUPPORTED_EXT parameter SCTP_CID_AUTH is set,
-peer_random != NULL and peer_hmacs != NULL the peer is to be
-assumed asoc->peer.auth_capable=1, in any other case
-asoc->peer.auth_capable=0.
-
-Now, if in sctp_sf_do_5_1D_ce() chunk->auth_chunk is
-available, we set up a fake auth chunk and pass that on to
-sctp_sf_authenticate(), which at latest in
-sctp_auth_calculate_hmac() reliably dereferences a NULL pointer
-at position 0..0008 when setting up the crypto key in
-crypto_hash_setkey() by using asoc->asoc_shared_key that is
-NULL as condition key_id == asoc->active_key_id is true if
-the AUTH chunk was injected correctly from remote. This
-happens no matter what net.sctp.auth_enable sysctl says.
-
-The fix is to check for net->sctp.auth_enable and for
-asoc->peer.auth_capable before doing any operations like
-sctp_sf_authenticate() as no key is activated in
-sctp_auth_asoc_init_active_key() for each case.
-
-Now as RFC4895 section 6.3 states that if the used HMAC-ALGO
-passed from the INIT chunk was not used in the AUTH chunk, we
-SHOULD send an error; however in this case it would be better
-to just silently discard such a maliciously prepared handshake
-as we didn't even receive a parameter at all. Also, as our
-endpoint has no shared key configured, section 6.3 says that
-MUST silently discard, which we are doing from now onwards.
-
-Before calling sctp_sf_pdiscard(), we need not only to free
-the association, but also the chunk->auth_chunk skb, as
-commit bbd0d59809f9 created a skb clone in that case.
-
-I have tested this locally by using netfilter's nfqueue and
-re-injecting packets into the local stack after maliciously
-modifying the INIT chunk (removing RANDOM; HMAC-ALGO param)
-and the SCTP packet containing the COOKIE_ECHO (injecting
-AUTH chunk before COOKIE_ECHO). Fixed with this patch applied.
-
-Fixes: bbd0d59809f9 ("[SCTP]: Implement the receive and verification of AUTH chunk")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <yasevich@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/sm_statefuns.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/bonding/bond_3ad.c | 6 ++----
+ drivers/net/bonding/bond_3ad.h | 1 +
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index cb1c430..f131caf 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -747,6 +747,13 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(const struct sctp_endpoint *ep,
- 		struct sctp_chunk auth;
- 		sctp_ierror_t ret;
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 0ae0d7c..aaa7999 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -1854,8 +1854,6 @@ void bond_3ad_initiate_agg_selection(struct bonding *bond, int timeout)
+ 	BOND_AD_INFO(bond).agg_select_timer = timeout;
+ }
  
-+		/* Make sure that we and the peer are AUTH capable */
-+		if (!sctp_auth_enable || !new_asoc->peer.auth_capable) {
-+			kfree_skb(chunk->auth_chunk);
-+			sctp_association_free(new_asoc);
-+			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
-+		}
-+
- 		/* set-up our fake chunk so that we can process it */
- 		auth.skb = chunk->auth_chunk;
- 		auth.asoc = chunk->asoc;
+-static u16 aggregator_identifier;
+-
+ /**
+  * bond_3ad_initialize - initialize a bond's 802.3ad parameters and structures
+  * @bond: bonding struct to work on
+@@ -1869,7 +1867,7 @@ void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution)
+ 	if (MAC_ADDRESS_COMPARE(&(BOND_AD_INFO(bond).system.sys_mac_addr),
+ 				bond->dev->dev_addr)) {
+ 
+-		aggregator_identifier = 0;
++		BOND_AD_INFO(bond).aggregator_identifier = 0;
+ 
+ 		BOND_AD_INFO(bond).system.sys_priority = 0xFFFF;
+ 		BOND_AD_INFO(bond).system.sys_mac_addr = *((struct mac_addr *)bond->dev->dev_addr);
+@@ -1941,7 +1939,7 @@ int bond_3ad_bind_slave(struct slave *slave)
+ 		ad_initialize_agg(aggregator);
+ 
+ 		aggregator->aggregator_mac_address = *((struct mac_addr *)bond->dev->dev_addr);
+-		aggregator->aggregator_identifier = (++aggregator_identifier);
++		aggregator->aggregator_identifier = ++BOND_AD_INFO(bond).aggregator_identifier;
+ 		aggregator->slave = slave;
+ 		aggregator->is_active = 0;
+ 		aggregator->num_of_ports = 0;
+diff --git a/drivers/net/bonding/bond_3ad.h b/drivers/net/bonding/bond_3ad.h
+index 235b2cc..20d9c78 100644
+--- a/drivers/net/bonding/bond_3ad.h
++++ b/drivers/net/bonding/bond_3ad.h
+@@ -253,6 +253,7 @@ struct ad_system {
+ struct ad_bond_info {
+ 	struct ad_system system;	    /* 802.3ad system structure */
+ 	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
++	u16 aggregator_identifier;
+ };
+ 
+ struct ad_slave_info {
 
