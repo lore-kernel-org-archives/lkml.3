@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398AbaCaAWR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:22:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36313 "EHLO
+	id S1755379AbaCaAWP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:22:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36317 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752943AbaC3XZA (ORCPT
+	by vger.kernel.org with ESMTP id S1752946AbaC3XZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:00 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Michael Krufky" <mkrufky@linuxtv.org>,
+        "Dave Jones" <davej@fedoraproject.org>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.428120792@decadent.org.uk>
+Message-ID: <lsq.1396221815.366299252@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 081/200] ALSA: hda/realtek - Avoid invalid COEFs for
- ALC271X
+Subject: [PATCH 3.2 073/200] [media] mxl111sf: Fix compile when
+ CONFIG_DVB_USB_MXL111SF is unset
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,37 +33,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dave Jones <davej@fedoraproject.org>
 
-commit d3c56568f43807135f2c2a09582a69f809f0d8b7 upstream.
+commit 13e1b87c986100169b0695aeb26970943665eda9 upstream.
 
-We've seen often problems after suspend/resume on Acer Aspire One
-AO725 with ALC271X codec as reported in kernel bugzilla, and it turned
-out that some COEFs doesn't work and triggers the codec communication
-stall.
+Fix the following build error:
 
-Since these magic COEF setups are specific to ALC269VB for some PLL
-configurations, the machine works even without these manual
-adjustment.  So, let's simply avoid applying them for ALC271X.
+drivers/media/usb/dvb-usb-v2/
+mxl111sf-tuner.h:72:9: error: expected ‘;’, ‘,’ or ‘)’ before ‘struct’
+         struct mxl111sf_tuner_config *cfg)
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52181
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: return 0]
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_realtek.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/dvb/dvb-usb/mxl111sf-tuner.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5157,6 +5157,9 @@ static int alc269_fill_coef(struct hda_c
- 
- 	if (spec->codec_variant != ALC269_TYPE_ALC269VB)
- 		return 0;
-+	/* ALC271X doesn't seem to support these COEFs (bko#52181) */
-+	if (!strcmp(codec->chip_name, "ALC271X"))
-+		return 0;
- 
- 	if ((alc_get_coef0(codec) & 0x00ff) < 0x015) {
- 		alc_write_coef_idx(codec, 0xf, 0x960b);
+--- a/drivers/media/dvb/dvb-usb/mxl111sf-tuner.h
++++ b/drivers/media/dvb/dvb-usb/mxl111sf-tuner.h
+@@ -69,7 +69,7 @@ struct dvb_frontend *mxl111sf_tuner_atta
+ #else
+ static inline
+ struct dvb_frontend *mxl111sf_tuner_attach(struct dvb_frontend *fe,
+-					   struct mxl111sf_state *mxl_state
++					   struct mxl111sf_state *mxl_state,
+ 					   struct mxl111sf_tuner_config *cfg)
+ {
+ 	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
 
