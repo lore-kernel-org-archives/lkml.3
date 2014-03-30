@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296AbaCaAWH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:22:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36315 "EHLO
+	id S1755222AbaCaAWD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:22:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36323 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752951AbaC3XZA (ORCPT
+	by vger.kernel.org with ESMTP id S1752967AbaC3XZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:00 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dave Young" <dyoung@redhat.com>,
-        "Matt Fleming" <matt.fleming@intel.com>,
-        "Borislav Petkov" <bp@suse.de>, "Toshi Kani" <toshi.kani@hp.com>
+CC: akpm@linux-foundation.org, "Rob Herring" <robh@kernel.org>,
+        "Kleber Sacilotto de Souza" <klebers@linux.vnet.ibm.com>,
+        "Grant Likely" <grant.likely@linaro.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.444261984@decadent.org.uk>
+Message-ID: <lsq.1396221815.494146005@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 012/200] x86/efi: Fix off-by-one bug in EFI Boot
- Services reservation
+Subject: [PATCH 3.2 083/200] of: fix PCI bus match for PCIe slots
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,37 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Young <dyoung@redhat.com>
+From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 
-commit a7f84f03f660d93574ac88835d056c0d6468aebe upstream.
+commit 14e2abb732e485ee57d9d5b2cb8884652238e5c1 upstream.
 
-Current code check boot service region with kernel text region by:
-start+size >= __pa_symbol(_text)
-The end of the above region should be start + size - 1 instead.
+On IBM pseries systems the device_type device-tree property of a PCIe
+bridge contains the string "pciex". The of_bus_pci_match() function was
+looking only for "pci" on this property, so in such cases the bus
+matching code was falling back to the default bus, causing problems on
+functions that should be using "assigned-addresses" for region address
+translation. This patch fixes the problem by also looking for "pciex" on
+the PCI bus match function.
 
-I see this problem in ovmf + Fedora 19 grub boot:
-text start: 1000000 md start: 800000 md size: 800000
+v2: added comment
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Toshi Kani <toshi.kani@hp.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[bwh: Backported to 3.2: s/__pa_symbol/virt_to_phys/]
+Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/platform/efi/efi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/of/address.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -424,7 +424,7 @@ void __init efi_reserve_boot_services(vo
- 		 * - Not within any part of the kernel
- 		 * - Not the bios reserved area
- 		*/
--		if ((start+size >= virt_to_phys(_text)
-+		if ((start + size > virt_to_phys(_text)
- 				&& start <= virt_to_phys(_end)) ||
- 			!e820_all_mapped(start, start+size, E820_RAM) ||
- 			memblock_x86_check_reserved_size(&start, &size,
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -98,11 +98,12 @@ static unsigned int of_bus_default_get_f
+ static int of_bus_pci_match(struct device_node *np)
+ {
+ 	/*
++ 	 * "pciex" is PCI Express
+ 	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
+ 	 * "ht" is hypertransport
+ 	 */
+-	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
+-		!strcmp(np->type, "ht");
++	return !strcmp(np->type, "pci") || !strcmp(np->type, "pciex") ||
++		!strcmp(np->type, "vci") || !strcmp(np->type, "ht");
+ }
+ 
+ static void of_bus_pci_count_cells(struct device_node *np,
 
