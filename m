@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaC3XZt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:25:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36515 "EHLO
+	id S1753365AbaC3XZs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:25:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36401 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752706AbaC3XZg (ORCPT
+	by vger.kernel.org with ESMTP id S1752602AbaC3XZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:25:36 -0400
+	Sun, 30 Mar 2014 19:25:31 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Liam Girdwood" <liam.r.girdwood@linux.intel.com>,
-        "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>,
-        "Mark Brown" <broonie@linaro.org>, "Takashi Iwai" <tiwai@suse.de>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
+CC: akpm@linux-foundation.org, "Colin Cross" <ccross@android.com>,
+        "John Stultz" <john.stultz@linaro.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.141355990@decadent.org.uk>
+Message-ID: <lsq.1396221815.717778186@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 133/200] ASoC: wm8770: Fix wrong number of enum items
+Subject: [PATCH 3.2 185/200] timekeeping: fix 32-bit overflow in
+ get_monotonic_boottime
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,35 +33,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Colin Cross <ccross@android.com>
 
-commit 7a6c0a58dc824523966f212c76322d47c5b0e6fe upstream.
+fixed upstream in v3.6 by ec145babe754f9ea1079034a108104b6001e001c
 
-wm8770 codec driver defines ain_enum with a wrong number of items.
+get_monotonic_boottime adds three nanonsecond values stored
+in longs, followed by an s64.  If the long values are all
+close to 1e9 the first three additions can overflow and
+become negative when added to the s64.  Cast the first
+value to s64 so that all additions are 64 bit.
 
-Use SOC_ENUM_DOUBLE_DECL() macro and it's automatically fixed.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Acked-by: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Colin Cross <ccross@android.com>
+[jstultz: Fished this out of the AOSP commong.git tree. This was
+fixed upstream in v3.6 by ec145babe754f9ea1079034a108104b6001e001c]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/wm8770.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/time/timekeeping.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8770.c
-+++ b/sound/soc/codecs/wm8770.c
-@@ -163,8 +163,8 @@ static const char *ain_text[] = {
- 	"AIN5", "AIN6", "AIN7", "AIN8"
- };
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1161,7 +1161,7 @@ void get_monotonic_boottime(struct times
+ 	} while (read_seqretry(&xtime_lock, seq));
  
--static const struct soc_enum ain_enum =
--	SOC_ENUM_DOUBLE(WM8770_ADCMUX, 0, 4, 8, ain_text);
-+static SOC_ENUM_DOUBLE_DECL(ain_enum,
-+			    WM8770_ADCMUX, 0, 4, ain_text);
+ 	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec + sleep.tv_sec,
+-			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
++		(s64)ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
+ }
+ EXPORT_SYMBOL_GPL(get_monotonic_boottime);
  
- static const struct snd_kcontrol_new ain_mux =
- 	SOC_DAPM_ENUM("Capture Mux", ain_enum);
 
