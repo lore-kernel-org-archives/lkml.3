@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004AbaC3X7w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:59:52 -0400
+	id S1754529AbaC3XnR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:43:17 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754511AbaC3XnS (ORCPT
+	by vger.kernel.org with ESMTP id S1754511AbaC3XnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:18 -0400
+	Sun, 30 Mar 2014 19:43:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>,
-        "Vegard Nossum" <vegard.nossum@oracle.com>
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Hin-Tak Leung" <htl10@users.sourceforge.net>,
+        "Stanislaw Gruszka" <stf_xl@wp.pl>,
+        "Larry Finger" <Larry.Finger@lwfinger.next>,
+        "Petr Pisar" <petr.pisar@atlas.cz>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.164043404@decadent.org.uk>
+Message-ID: <lsq.1396221815.100223102@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 119/200] ext4: don't leave i_crtime.tv_sec uninitialized
+Subject: [PATCH 3.2 115/200] rtl8187: fix regression on MIPS without
+ coherent DMA
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,31 +35,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
+commit b6213e413a4e0c66548153516b074df14f9d08e0 upstream.
 
-If the i_crtime field is not present in the inode, don't leave the
-field uninitialized.
+This patch fixes regression caused by commit a16dad77634 "MIPS: Fix
+potencial corruption". That commit fixes one corruption scenario in
+cost of adding another one, which actually start to cause crashes
+on Yeeloong laptop when rtl8187 driver is used.
 
-Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
-Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
-Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+For correct DMA read operation on machines without DMA coherence, kernel
+have to invalidate cache, such it will refill later with new data that
+device wrote to memory, when that data is needed to process. We can only
+invalidate full cache line. Hence when cache line includes both dma
+buffer and some other data (written in cache, but not yet in main
+memory), the other data can not hit memory due to invalidation. That
+happen on rtl8187 where struct rtl8187_priv fields are located just
+before and after small buffers that are passed to USB layer and DMA
+is performed on them.
+
+To fix the problem we align buffers and reserve space after them to make
+them match cache line.
+
+This patch does not resolve all possible MIPS problems entirely, for
+that we have to assure that we always map cache aligned buffers for DMA,
+what can be complex or even not possible. But patch fixes visible and
+reproducible regression and seems other possible corruptions do not
+happen in practice, since Yeeloong laptop works stable without rtl8187
+driver.
+
+Bug report:
+https://bugzilla.kernel.org/show_bug.cgi?id=54391
+
+Reported-by: Petr Pisar <petr.pisar@atlas.cz>
+Bisected-by: Tom Li <biergaizi2009@gmail.com>
+Reported-and-tested-by: Tom Li <biergaizi2009@gmail.com>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.next>
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/ext4.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rtl818x/rtl8187/rtl8187.h | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -745,6 +745,8 @@ do {									       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
- 		(einode)->xtime.tv_sec = 				       \
- 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
-+	else								       \
-+		(einode)->xtime.tv_sec = 0;				       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
- 		ext4_decode_extra_time(&(einode)->xtime,		       \
- 				       raw_inode->xtime ## _extra);	       \
+--- a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
++++ b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
+@@ -15,6 +15,8 @@
+ #ifndef RTL8187_H
+ #define RTL8187_H
+ 
++#include <linux/cache.h>
++
+ #include "rtl818x.h"
+ #include "leds.h"
+ 
+@@ -131,7 +133,10 @@ struct rtl8187_priv {
+ 	u8 aifsn[4];
+ 	u8 rfkill_mask;
+ 	struct {
+-		__le64 buf;
++		union {
++			__le64 buf;
++			u8 dummy1[L1_CACHE_BYTES];
++		} ____cacheline_aligned;
+ 		struct sk_buff_head queue;
+ 	} b_tx_status; /* This queue is used by both -b and non-b devices */
+ 	struct mutex io_mutex;
+@@ -139,7 +144,8 @@ struct rtl8187_priv {
+ 		u8 bits8;
+ 		__le16 bits16;
+ 		__le32 bits32;
+-	} *io_dmabuf;
++		u8 dummy2[L1_CACHE_BYTES];
++	} *io_dmabuf ____cacheline_aligned;
+ 	bool rfkill_off;
+ };
+ 
 
