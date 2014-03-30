@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716AbaCaAQg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:16:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36385 "EHLO
+	id S1754516AbaCaAQd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:16:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36392 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753024AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753031AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Clemens Ladisch" <clemens@ladisch.de>,
-        "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Daniel Vetter" <daniel.vetter@ffwll.ch>,
+        "Jani Nikula" <jani.nikula@intel.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.511865767@decadent.org.uk>
+Message-ID: <lsq.1396221815.678600418@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 121/200] ALSA: usb-audio: work around KEF X300A
- firmware bug
+Subject: [PATCH 3.2 110/200] drm/i915/dp: increase native aux defer retry
+ timeout
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,44 +32,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 624aef494f86ed0c58056361c06347ad62b26806 upstream.
+commit 04eada25d1f72efdecd32d702706594f81de65d5 upstream.
 
-When the driver tries to access Function Unit 10, the KEF X300A
-speakers' firmware apparently locks up, making even PCM streaming
-impossible.  Work around this by ignoring this FU.
+Give more slack to sink devices before retrying on native aux
+defer. AFAICT the 100 us timeout was not based on the DP spec.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/mixer_maps.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/usb/mixer_maps.c
-+++ b/sound/usb/mixer_maps.c
-@@ -304,6 +304,11 @@ static struct usbmix_name_map hercules_u
- 	{ 0 }				/* terminator */
- };
- 
-+static const struct usbmix_name_map kef_x300a_map[] = {
-+	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
-+	{ 0 }
-+};
-+
- /*
-  * Control map entries
-  */
-@@ -371,6 +376,10 @@ static struct usbmix_ctl_map usbmix_ctl_
- 		.map = scratch_live_map,
- 		.ignore_ctl_error = 1,
- 	},
-+	{
-+		.id = USB_ID(0x27ac, 0x1000),
-+		.map = kef_x300a_map,
-+	},
- 	{ 0 } /* terminator */
- };
- 
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -500,7 +500,7 @@ intel_dp_aux_native_write(struct intel_d
+ 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+ 			break;
+ 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+-			udelay(100);
++			usleep_range(400, 500);
+ 		else
+ 			return -EIO;
+ 	}
+@@ -549,7 +549,7 @@ intel_dp_aux_native_read(struct intel_dp
+ 			return ret - 1;
+ 		}
+ 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+-			udelay(100);
++			usleep_range(400, 500);
+ 		else
+ 			return -EIO;
+ 	}
 
