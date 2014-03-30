@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaC3XnU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:43:20 -0400
+	id S1755004AbaC3X7w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:59:52 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754469AbaC3XnL (ORCPT
+	by vger.kernel.org with ESMTP id S1754511AbaC3XnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:11 -0400
+	Sun, 30 Mar 2014 19:43:18 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Vrabel" <david.vrabel@citrix.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>,
+        "Vegard Nossum" <vegard.nossum@oracle.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.454360554@decadent.org.uk>
+Message-ID: <lsq.1396221815.164043404@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 096/200] xen-blkfront: handle backend CLOSED without
- CLOSING
+Subject: [PATCH 3.2 119/200] ext4: don't leave i_crtime.tv_sec uninitialized
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,42 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 3661371701e714f0cea4120f6a365340858fb4e4 upstream.
+commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
 
-Backend drivers shouldn't transistion to CLOSED unless the frontend is
-CLOSED.  If a backend does transition to CLOSED too soon then the
-frontend may not see the CLOSING state and will not properly shutdown.
+If the i_crtime field is not present in the inode, don't leave the
+field uninitialized.
 
-So, treat an unexpected backend CLOSED state the same as CLOSING.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
+Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
+Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/xen-blkfront.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ext4/ext4.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1281,13 +1281,16 @@ static void blkback_changed(struct xenbu
- 	case XenbusStateReconfiguring:
- 	case XenbusStateReconfigured:
- 	case XenbusStateUnknown:
--	case XenbusStateClosed:
- 		break;
- 
- 	case XenbusStateConnected:
- 		blkfront_connect(info);
- 		break;
- 
-+	case XenbusStateClosed:
-+		if (dev->state == XenbusStateClosed)
-+			break;
-+		/* Missed the backend's Closing state -- fallthrough */
- 	case XenbusStateClosing:
- 		blkfront_closing(info);
- 		break;
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -745,6 +745,8 @@ do {									       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
+ 		(einode)->xtime.tv_sec = 				       \
+ 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
++	else								       \
++		(einode)->xtime.tv_sec = 0;				       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
+ 		ext4_decode_extra_time(&(einode)->xtime,		       \
+ 				       raw_inode->xtime ## _extra);	       \
 
