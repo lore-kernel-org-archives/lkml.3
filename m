@@ -1,123 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaC3Udz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 16:33:55 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:37189 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188AbaC3Udy (ORCPT
+	id S1752504AbaC3Uea (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 16:34:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35839 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752401AbaC3Ue1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 16:33:54 -0400
-Date: Sun, 30 Mar 2014 16:33:30 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Haggai Eran <haggaie@mellanox.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Rapoport <mike.rapoport@ravellosystems.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
-        Shachar Raindel <raindel@mellanox.com>
-Subject: Re: [PATCH] mm/mmu_notifier: restore set_pte_at_notify semantics
-Message-ID: <20140330203328.GA4859@gmail.com>
-References: <1389778834-21200-1-git-send-email-mike.rapoport@ravellosystems.com>
- <20140122131046.GF14193@redhat.com>
- <52DFCF2B.1010603@mellanox.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52DFCF2B.1010603@mellanox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 30 Mar 2014 16:34:27 -0400
+Message-ID: <1396211650.1241.17.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [v3.2.y][PATCH 1/1] cifs: set MAY_SIGN when sec=krb5
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: sfrench@samba.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Sun, 30 Mar 2014 21:34:10 +0100
+In-Reply-To: <4f795fd099859c91c56b7a05996bc38a040bc9c0.1393535604.git.joseph.salisbury@canonical.com>
+References: <cover.1393535604.git.joseph.salisbury@canonical.com>
+	 <4f795fd099859c91c56b7a05996bc38a040bc9c0.1393535604.git.joseph.salisbury@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-sbrzFLE0MmY3nuwGj2K0"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 22, 2014 at 04:01:15PM +0200, Haggai Eran wrote:
-> On 22/01/2014 15:10, Andrea Arcangeli wrote:
-> > On Wed, Jan 15, 2014 at 11:40:34AM +0200, Mike Rapoport wrote:
-> >> Commit 6bdb913f0a70a4dfb7f066fb15e2d6f960701d00 (mm: wrap calls to
-> >> set_pte_at_notify with invalidate_range_start and invalidate_range_end)
-> >> breaks semantics of set_pte_at_notify. When calls to set_pte_at_notify
-> >> are wrapped with mmu_notifier_invalidate_range_start and
-> >> mmu_notifier_invalidate_range_end, KVM zaps pte during
-> >> mmu_notifier_invalidate_range_start callback and set_pte_at_notify has
-> >> no spte to update and therefore it's called for nothing.
-> >>
-> >> As Andrea suggested (1), the problem is resolved by calling
-> >> mmu_notifier_invalidate_page after PT lock has been released and only
-> >> for mmu_notifiers that do not implement change_ptr callback.
-> >>
-> >> (1) http://thread.gmane.org/gmane.linux.kernel.mm/111710/focus=111711
-> >>
-> >> Reported-by: Izik Eidus <izik.eidus@ravellosystems.com>
-> >> Signed-off-by: Mike Rapoport <mike.rapoport@ravellosystems.com>
-> >> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> >> Cc: Haggai Eran <haggaie@mellanox.com>
-> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >> ---
-> >>  include/linux/mmu_notifier.h | 31 ++++++++++++++++++++++++++-----
-> >>  kernel/events/uprobes.c      | 12 ++++++------
-> >>  mm/ksm.c                     | 15 +++++----------
-> >>  mm/memory.c                  | 14 +++++---------
-> >>  mm/mmu_notifier.c            | 24 ++++++++++++++++++++++--
-> >>  5 files changed, 64 insertions(+), 32 deletions(-)
-> > 
-> > Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> 
-> Hi Andrea, Mike,
-> 
-> Did you get a chance to consider the scenario I wrote about in the other
-> thread?
-> 
-> I'm worried about the following scenario:
-> 
-> Given a read-only page, suppose one host thread (thread 1) writes to
-> that page, and performs COW, but before it calls the
-> mmu_notifier_invalidate_page_if_missing_change_pte function another host
-> thread (thread 2) writes to the same page (this time without a page
-> fault). Then we have a valid entry in the secondary page table to a
-> stale page, and someone (thread 3) may read stale data from there.
-> 
-> Here's a diagram that shows this scenario:
-> 
-> Thread 1                                | Thread 2        | Thread 3
-> ========================================================================
-> do_wp_page(page 1)                      |                 |
->   ...                                   |                 |
->   set_pte_at_notify                     |                 |
->   ...                                   | write to page 1 |
->                                         |                 | stale access
->   pte_unmap_unlock                      |                 |
->   invalidate_page_if_missing_change_pte |                 |
-> 
-> This is currently prevented by the use of the range start and range end
-> notifiers.
-> 
-> Do you agree that this scenario is possible with the new patch, or am I
-> missing something?
-> 
 
-I believe you are right, but of all the upstream user of the mmu_notifier
-API only xen would suffer from this ie any user that do not have a proper
-change_pte callback can see the bogus scenario you describe above.
+--=-sbrzFLE0MmY3nuwGj2K0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The issue i see is with user that want to/or might sleep when they are
-invalidation the secondary page table. The issue being that change_pte is
-call with the cpu page table locked (well at least for the affected pmd).
+On Fri, 2014-02-28 at 16:07 -0500, Joseph Salisbury wrote:
+> Backport from mainline commit: 0b7bc84000d71f3647ca33ab1bf5bd928535c846.
+> This backport was done so including mainline commit
+> 8830d7e07a5e38bc47650a7554b7c1cfd49902bf is not needed.
+>=20
+> BugLink: http://bugs.launchpad.net/bugs/1285723
+>=20
+> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
 
-I would rather keep the invalidate_range_start/end bracket around change_pte
-and invalidate page. I think we can fix the kvm regression by other means.
+Queued up for 3.2, thanks.
 
-Cheers,
-Jérôme
+Please include the original patch header in future.
 
+Ben.
 
-> Regards,
-> Haggai
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> ---
+>  fs/cifs/connect.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+> index 56c152d..49d6e21 100644
+> --- a/fs/cifs/connect.c
+> +++ b/fs/cifs/connect.c
+> @@ -1113,7 +1113,8 @@ cifs_parse_mount_options(const char *mountdata, con=
+st char *devname,
+>  				cERROR(1, "Krb5 cifs privacy not supported");
+>  				goto cifs_parse_mount_err;
+>  			} else if (strnicmp(value, "krb5", 4) =3D=3D 0) {
+> -				vol->secFlg |=3D CIFSSEC_MAY_KRB5;
+> +				vol->secFlg |=3D CIFSSEC_MAY_KRB5 |=20
+> +					CIFSSEC_MAY_SIGN;
+>  			} else if (strnicmp(value, "ntlmsspi", 8) =3D=3D 0) {
+>  				vol->secFlg |=3D CIFSSEC_MAY_NTLMSSP |
+>  					CIFSSEC_MUST_SIGN;
+
+--=20
+Ben Hutchings
+If more than one person is responsible for a bug, no one is at fault.
+
+--=-sbrzFLE0MmY3nuwGj2K0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUzh/wue/yOyVhhEJAQp3HQ//S6rNKgEqUitPHomdUt/LZJ90jwMmQ/cy
+9FyixNvwssHsIf9ATbWOzvaqFkIUvoFhND6H8R4ZZnOdQ3Tvol7T0hadbqNMvlzS
+T7qtF3B1vwQEErdwA4W81Bl8H0TC+cutH1PnuHB/b2bsqqRrbZ/q11xLV5Yt6ZV+
+AoSjYY92aphHKXr6d4FmYGNgGijobVAcjmkvEZnsxbahkUSmMHYWIICInrzWkql1
+PoYuVZGhUNTUhvmlZZJO5Z602iy+eeODT43NITQ5bFFZAVwi04pyPcyPxKLjYSm3
+z1PmrZkYscew3onEBIdGzjJ8DT6wAhjeceR9tZm4UnXlpVvIPVv0DyieZSHOrB11
+/qCDuFHZn+6MCiZxEmAyUxudhztRoH1nVBc3u+C4y3uYjjETRdOjxJ7yelJPR1t8
+lVXTI9Xlvy8ZBTiMojVkipGenkB1uZEmddTTFYuu/K6zWkJ/ciwL4f7nssTonqEr
+GccMq8WBHVgdy/d8UVUGqdkPwiHGUZUNRLBZQoNirgyfWjTUOZKna9o8bXvkzSjK
+BiXlN95emUFYV8yY6h6XTAyr4xCIzEvSSALqDHT0Nw+NoSLLi8u70ZHGGlpRMac0
+i9yPlhoaGf00XQe3NvS/PrOUttC8uXLDNwnODox0LgncY3Ziu4GtQxXisR6y7uWR
+zWiyscaG/9U=
+=MNhB
+-----END PGP SIGNATURE-----
+
+--=-sbrzFLE0MmY3nuwGj2K0--
