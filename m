@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbaC3XgP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:36:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36488 "EHLO
+	id S1753530AbaC3XgL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:36:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36480 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753118AbaC3XZE (ORCPT
+	by vger.kernel.org with ESMTP id S1753123AbaC3XZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Maciej Patelczyk" <maciej.patelczyk@intel.com>,
-        "James Bottomley" <JBottomley@Parallels.com>,
-        "Dan Williams" <dan.j.williams@intel.com>,
-        "Lukasz Dorau" <lukasz.dorau@intel.com>
+CC: akpm@linux-foundation.org, "Peter Zijlstra" <peterz@infradead.org>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, "Tejun Heo" <tj@kernel.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>, "Jiri Olsa" <jolsa@redhat.com>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.85696577@decadent.org.uk>
+Message-ID: <lsq.1396221815.23182856@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 170/200] [SCSI] isci: correct erroneous
- for_each_isci_host macro
+Subject: [PATCH 3.2 034/200] ftrace: Use schedule_on_each_cpu() as a heavy
+ synchronize_sched()
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,73 +36,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukasz Dorau <lukasz.dorau@intel.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit c59053a23d586675c25d789a7494adfdc02fba57 upstream.
+commit 7614c3dc74733dff4b0e774f7a894b9ea6ec508c upstream.
 
-In the first place, the loop 'for' in the macro 'for_each_isci_host'
-(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
-the 3rd element of 2 element array. After the 2nd iteration it executes
-the instruction:
-        ihost = to_pci_info(pdev)->hosts[2]
-(while the size of the 'hosts' array equals 2) and reads an
-out of range element.
+The function tracer uses preempt_disable/enable_notrace() for
+synchronization between reading registered ftrace_ops and unregistering
+them.
 
-In the second place, this loop is incorrectly optimized by GCC v4.8
-(see http://marc.info/?l=linux-kernel&m=138998871911336&w=2).
-As a result, on platforms with two SCU controllers,
-the loop is executed more times than it can be (for i=0,1 and 2).
-It causes kernel panic during entering the S3 state
-and the following oops after 'rmmod isci':
+Most of the ftrace_ops are global permanent structures that do not
+require this synchronization. That is, ops may be added and removed from
+the hlist but are never freed, and wont hurt if a synchronization is
+missed.
 
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Oops: 0000 [#1] SMP
-RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Call Trace:
-  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
-  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
-  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
-  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
-  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
-  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
-  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
-  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
-  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
-  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
-  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
-  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
-  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
-  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
-  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
-  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
+But this is not true for dynamically created ftrace_ops or control_ops,
+which are used by the perf function tracing.
 
-The loop has been corrected.
-This patch fixes kernel panic during entering the S3 state
-and the above oops.
+The problem here is that the function tracer can be used to trace
+kernel/user context switches as well as going to and from idle.
+Basically, it can be used to trace blind spots of the RCU subsystem.
+This means that even though preempt_disable() is done, a
+synchronize_sched() will ignore CPUs that haven't made it out of user
+space or idle. These can include functions that are being traced just
+before entering or exiting the kernel sections.
 
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+To implement the RCU synchronization, instead of using
+synchronize_sched() the use of schedule_on_each_cpu() is performed. This
+means that when a dynamically allocated ftrace_ops, or a control ops is
+being unregistered, all CPUs must be touched and execute a ftrace_sync()
+stub function via the work queues. This will rip CPUs out from idle or
+in dynamic tick mode. This only happens when a user disables perf
+function tracing or other dynamically allocated function tracers, but it
+allows us to continue to debug RCU and context tracking with function
+tracing.
+
+Link: http://lkml.kernel.org/r/1369785676.15552.55.camel@gandalf.local.home
+
+Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bwh: Backported to 3.2: drop change for control ops]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/isci/host.h | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ kernel/trace/ftrace.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/isci/host.h
-+++ b/drivers/scsi/isci/host.h
-@@ -309,9 +309,8 @@ static inline struct isci_pci_info *to_p
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -283,6 +283,17 @@ static int __register_ftrace_function(st
+ 	return 0;
  }
  
- #define for_each_isci_host(id, ihost, pdev) \
--	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
--	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
--	     ihost = to_pci_info(pdev)->hosts[++id])
-+	for (id = 0; id < SCI_MAX_CONTROLLERS && \
-+	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
- 
- static inline enum isci_status isci_host_get_state(struct isci_host *isci_host)
++static void ftrace_sync(struct work_struct *work)
++{
++	/*
++	 * This function is just a stub to implement a hard force
++	 * of synchronize_sched(). This requires synchronizing
++	 * tasks even in userspace and idle.
++	 *
++	 * Yes, function tracing is rude.
++	 */
++}
++
+ static int __unregister_ftrace_function(struct ftrace_ops *ops)
  {
+ 	int ret;
+@@ -311,9 +322,13 @@ static int __unregister_ftrace_function(
+ 	/*
+ 	 * Dynamic ops may be freed, we must make sure that all
+ 	 * callers are done before leaving this function.
++	 *
++	 * Again, normal synchronize_sched() is not good enough.
++	 * We need to do a hard force of sched synchronization.
+ 	 */
+ 	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
+-		synchronize_sched();
++		schedule_on_each_cpu(ftrace_sync);
++
+ 
+ 	return 0;
+ }
 
