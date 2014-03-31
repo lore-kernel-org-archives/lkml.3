@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaCaNZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:25:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35864 "EHLO
+	id S1754616AbaCaN0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:26:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35891 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345AbaCaNZA (ORCPT
+	with ESMTP id S1754531AbaCaNZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:25:00 -0400
+	Mon, 31 Mar 2014 09:25:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 67/71] libata: disable LPM for some WD SATA-I devices
-Date: Mon, 31 Mar 2014 14:23:13 +0100
-Message-Id: <1396272197-13394-68-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 71/71] ioat: fix tasklet tear down
+Date: Mon, 31 Mar 2014 14:23:17 +0100
+Message-Id: <1396272197-13394-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,145 +29,235 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit ecd75ad514d73efc1bbcc5f10a13566c3ace5f53 upstream.
+commit da87ca4d4ca101f177fffd84f1f0a5e4c0343557 upstream.
 
-For some reason, some early WD drives spin up and down drives
-erratically when the link is put into slumber mode which can reduce
-the life expectancy of the device significantly.  Unfortunately, we
-don't have full list of devices and given the nature of the issue it'd
-be better to err on the side of false positives than the other way
-around.  Let's disable LPM on all WD devices which match one of the
-known problematic model prefixes and are SATA-I.
+Since commit 77873803363c "net_dma: mark broken" we no longer pin dma
+engines active for the network-receive-offload use case.  As a result
+the ->free_chan_resources() that occurs after the driver self test no
+longer has a NET_DMA induced ->alloc_chan_resources() to back it up.  A
+late firing irq can lead to ksoftirqd spinning indefinitely due to the
+tasklet_disable() performed by ->free_chan_resources().  Only
+->alloc_chan_resources() can clear this condition in affected kernels.
 
-As horkage list doesn't support matching SATA capabilities, this is
-implemented as two horkages - WD_BROKEN_LPM and NOLPM.  The former is
-set for the known prefixes and sets the latter if the matched device
-is SATA-I.
+This problem has been present since commit 3e037454bcfa "I/OAT: Add
+support for MSI and MSI-X" in 2.6.24, but is now exposed. Given the
+NET_DMA use case is deprecated we can revisit moving the driver to use
+threaded irqs.  For now, just tear down the irq and tasklet properly by:
 
-Note that this isn't optimal as this disables all LPM operations and
-partial link power state reportedly works fine on these; however, the
-way LPM is implemented in libata makes it difficult to precisely map
-libata LPM setting to specific link power state.  Well, these devices
-are already fairly outdated.  Let's just disable whole LPM for now.
+1/ Disable the irq from triggering the tasklet
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-and-tested-by: Nikos Barkas <levelwol@gmail.com>
-Reported-and-tested-by: Ioannis Barkas <risc4all@yahoo.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=57211
+2/ Disable the irq from re-arming
+
+3/ Flush inflight interrupts
+
+4/ Flush the timer
+
+5/ Flush inflight tasklets
+
+References:
+https://lkml.org/lkml/2014/1/27/282
+https://lkml.org/lkml/2014/2/19/672
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Mike Galbraith <bitbucket@online.de>
+Reported-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Tested-by: Mike Galbraith <bitbucket@online.de>
+Tested-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 [bwh: Backported to 3.2:
  - Adjust context
- - Use literal 76 instead of ATA_ID_SATA_CAPABILITY]
+ - As there is no ioatdma_device::irq_mode member, check
+   pci_dev::msix_enabled instead]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-core.c | 27 +++++++++++++++++++++++++++
- drivers/ata/libata-scsi.c | 18 +++++++++++++++---
- include/linux/libata.h    |  2 ++
- 3 files changed, 44 insertions(+), 3 deletions(-)
+ drivers/dma/ioat/dma.c    | 46 +++++++++++++++++++++++++++++++++++++++-------
+ drivers/dma/ioat/dma.h    |  1 +
+ drivers/dma/ioat/dma_v2.c | 11 +++++------
+ drivers/dma/ioat/dma_v3.c |  3 +++
+ 4 files changed, 48 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index f3d75fe..f268c54 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2195,6 +2195,16 @@ int ata_dev_configure(struct ata_device *dev)
- 	if (rc)
- 		return rc;
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index 73b2b65..662bec1 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -77,7 +77,8 @@ static irqreturn_t ioat_dma_do_interrupt(int irq, void *data)
+ 	attnstatus = readl(instance->reg_base + IOAT_ATTNSTATUS_OFFSET);
+ 	for_each_set_bit(bit, &attnstatus, BITS_PER_LONG) {
+ 		chan = ioat_chan_by_index(instance, bit);
+-		tasklet_schedule(&chan->cleanup_task);
++		if (test_bit(IOAT_RUN, &chan->state))
++			tasklet_schedule(&chan->cleanup_task);
+ 	}
  
-+	/* some WD SATA-1 drives have issues with LPM, turn on NOLPM for them */
-+	if ((dev->horkage & ATA_HORKAGE_WD_BROKEN_LPM) &&
-+	    (id[76] & 0xe) == 0x2)
-+		dev->horkage |= ATA_HORKAGE_NOLPM;
-+
-+	if (dev->horkage & ATA_HORKAGE_NOLPM) {
-+		ata_dev_warn(dev, "LPM support broken, forcing max_power\n");
-+		dev->link->ap->target_lpm_policy = ATA_LPM_MAX_POWER;
-+	}
-+
- 	/* let ACPI work its magic */
- 	rc = ata_acpi_on_devcfg(dev);
- 	if (rc)
-@@ -4154,6 +4164,23 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	{ "PIONEER DVD-RW  DVR-212D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 
-+	/*
-+	 * Some WD SATA-I drives spin up and down erratically when the link
-+	 * is put into the slumber mode.  We don't have full list of the
-+	 * affected devices.  Disable LPM if the device matches one of the
-+	 * known prefixes and is SATA-1.  As a side effect LPM partial is
-+	 * lost too.
-+	 *
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=57211
-+	 */
-+	{ "WDC WD800JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD1200JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD1600JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD2000JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD2500JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD3000JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD3200JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+
- 	/* End Marker */
- 	{ }
- };
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 970c6ad..8a0e07a 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -111,12 +111,14 @@ static const char *ata_lpm_policy_names[] = {
- 	[ATA_LPM_MIN_POWER]	= "min_power",
- };
- 
--static ssize_t ata_scsi_lpm_store(struct device *dev,
-+static ssize_t ata_scsi_lpm_store(struct device *device,
- 				  struct device_attribute *attr,
- 				  const char *buf, size_t count)
+ 	writeb(intrctrl, instance->reg_base + IOAT_INTRCTRL_OFFSET);
+@@ -93,7 +94,8 @@ static irqreturn_t ioat_dma_do_interrupt_msix(int irq, void *data)
  {
--	struct Scsi_Host *shost = class_to_shost(dev);
-+	struct Scsi_Host *shost = class_to_shost(device);
- 	struct ata_port *ap = ata_shost_to_port(shost);
-+	struct ata_link *link;
-+	struct ata_device *dev;
- 	enum ata_lpm_policy policy;
- 	unsigned long flags;
+ 	struct ioat_chan_common *chan = data;
  
-@@ -132,10 +134,20 @@ static ssize_t ata_scsi_lpm_store(struct device *dev,
- 		return -EINVAL;
+-	tasklet_schedule(&chan->cleanup_task);
++	if (test_bit(IOAT_RUN, &chan->state))
++		tasklet_schedule(&chan->cleanup_task);
  
- 	spin_lock_irqsave(ap->lock, flags);
-+
-+	ata_for_each_link(link, ap, EDGE) {
-+		ata_for_each_dev(dev, &ap->link, ENABLED) {
-+			if (dev->horkage & ATA_HORKAGE_NOLPM) {
-+				count = -EOPNOTSUPP;
-+				goto out_unlock;
-+			}
-+		}
-+	}
-+
- 	ap->target_lpm_policy = policy;
- 	ata_port_schedule_eh(ap);
-+out_unlock:
- 	spin_unlock_irqrestore(ap->lock, flags);
--
- 	return count;
+ 	return IRQ_HANDLED;
+ }
+@@ -116,7 +118,6 @@ void ioat_init_channel(struct ioatdma_device *device, struct ioat_chan_common *c
+ 	chan->timer.function = device->timer_fn;
+ 	chan->timer.data = data;
+ 	tasklet_init(&chan->cleanup_task, device->cleanup_fn, data);
+-	tasklet_disable(&chan->cleanup_task);
  }
  
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index 7e13eb4..c6fa0eb 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -394,6 +394,8 @@ enum {
- 	ATA_HORKAGE_BROKEN_FPDMA_AA	= (1 << 15),	/* skip AA */
- 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
- 	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
-+	ATA_HORKAGE_NOLPM	= (1 << 20),	/* don't use LPM */
-+	ATA_HORKAGE_WD_BROKEN_LPM = (1 << 21),	/* some WDs have broken LPM */
+ /**
+@@ -354,13 +355,43 @@ static int ioat1_dma_alloc_chan_resources(struct dma_chan *c)
+ 	writel(((u64) chan->completion_dma) >> 32,
+ 	       chan->reg_base + IOAT_CHANCMP_OFFSET_HIGH);
  
- 	 /* DMA mask for user DMA control: User visible values; DO NOT
- 	    renumber */
+-	tasklet_enable(&chan->cleanup_task);
++	set_bit(IOAT_RUN, &chan->state);
+ 	ioat1_dma_start_null_desc(ioat);  /* give chain to dma device */
+ 	dev_dbg(to_dev(chan), "%s: allocated %d descriptors\n",
+ 		__func__, ioat->desccount);
+ 	return ioat->desccount;
+ }
+ 
++void ioat_stop(struct ioat_chan_common *chan)
++{
++	struct ioatdma_device *device = chan->device;
++	struct pci_dev *pdev = device->pdev;
++	int chan_id = chan_num(chan);
++
++	/* 1/ stop irq from firing tasklets
++	 * 2/ stop the tasklet from re-arming irqs
++	 */
++	clear_bit(IOAT_RUN, &chan->state);
++
++	/* flush inflight interrupts */
++#ifdef CONFIG_PCI_MSI
++	if (pdev->msix_enabled) {
++		struct msix_entry *msix = &device->msix_entries[chan_id];
++		synchronize_irq(msix->vector);
++	} else
++#endif
++		synchronize_irq(pdev->irq);
++
++	/* flush inflight timers */
++	del_timer_sync(&chan->timer);
++
++	/* flush inflight tasklet runs */
++	tasklet_kill(&chan->cleanup_task);
++
++	/* final cleanup now that everything is quiesced and can't re-arm */
++	device->cleanup_fn((unsigned long) &chan->common);
++}
++
+ /**
+  * ioat1_dma_free_chan_resources - release all the descriptors
+  * @chan: the channel to be cleaned
+@@ -379,9 +410,7 @@ static void ioat1_dma_free_chan_resources(struct dma_chan *c)
+ 	if (ioat->desccount == 0)
+ 		return;
+ 
+-	tasklet_disable(&chan->cleanup_task);
+-	del_timer_sync(&chan->timer);
+-	ioat1_cleanup(ioat);
++	ioat_stop(chan);
+ 
+ 	/* Delay 100ms after reset to allow internal DMA logic to quiesce
+ 	 * before removing DMA descriptor resources.
+@@ -526,8 +555,11 @@ ioat1_dma_prep_memcpy(struct dma_chan *c, dma_addr_t dma_dest,
+ static void ioat1_cleanup_event(unsigned long data)
+ {
+ 	struct ioat_dma_chan *ioat = to_ioat_chan((void *) data);
++	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	ioat1_cleanup(ioat);
++	if (!test_bit(IOAT_RUN, &chan->state))
++		return;
+ 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+ }
+ 
+diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+index 5e8fe01..ee17c80 100644
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -321,6 +321,7 @@ bool ioat_cleanup_preamble(struct ioat_chan_common *chan,
+ 			   dma_addr_t *phys_complete);
+ void ioat_kobject_add(struct ioatdma_device *device, struct kobj_type *type);
+ void ioat_kobject_del(struct ioatdma_device *device);
++void ioat_stop(struct ioat_chan_common *chan);
+ extern const struct sysfs_ops ioat_sysfs_ops;
+ extern struct ioat_sysfs_entry ioat_version_attr;
+ extern struct ioat_sysfs_entry ioat_cap_attr;
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index 8689576..ae39935 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -190,8 +190,11 @@ static void ioat2_cleanup(struct ioat2_dma_chan *ioat)
+ void ioat2_cleanup_event(unsigned long data)
+ {
+ 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
++	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	ioat2_cleanup(ioat);
++	if (!test_bit(IOAT_RUN, &chan->state))
++		return;
+ 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+ }
+ 
+@@ -539,10 +542,10 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+ 	ioat->issued = 0;
+ 	ioat->tail = 0;
+ 	ioat->alloc_order = order;
++	set_bit(IOAT_RUN, &chan->state);
+ 	spin_unlock_bh(&ioat->prep_lock);
+ 	spin_unlock_bh(&chan->cleanup_lock);
+ 
+-	tasklet_enable(&chan->cleanup_task);
+ 	ioat2_start_null_desc(ioat);
+ 
+ 	/* check that we got off the ground */
+@@ -552,7 +555,6 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+ 	} while (i++ < 20 && !is_ioat_active(status) && !is_ioat_idle(status));
+ 
+ 	if (is_ioat_active(status) || is_ioat_idle(status)) {
+-		set_bit(IOAT_RUN, &chan->state);
+ 		return 1 << ioat->alloc_order;
+ 	} else {
+ 		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+@@ -795,11 +797,8 @@ void ioat2_free_chan_resources(struct dma_chan *c)
+ 	if (!ioat->ring)
+ 		return;
+ 
+-	tasklet_disable(&chan->cleanup_task);
+-	del_timer_sync(&chan->timer);
+-	device->cleanup_fn((unsigned long) c);
++	ioat_stop(chan);
+ 	device->reset_hw(chan);
+-	clear_bit(IOAT_RUN, &chan->state);
+ 
+ 	spin_lock_bh(&chan->cleanup_lock);
+ 	spin_lock_bh(&ioat->prep_lock);
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index ed0e8b7..178d199 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -325,8 +325,11 @@ static void ioat3_cleanup(struct ioat2_dma_chan *ioat)
+ static void ioat3_cleanup_event(unsigned long data)
+ {
+ 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
++	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	ioat3_cleanup(ioat);
++	if (!test_bit(IOAT_RUN, &chan->state))
++		return;
+ 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+ }
+ 
 -- 
 1.9.1
 
