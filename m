@@ -1,79 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaCaMuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:50:40 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:47984
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751310AbaCaMuj (ORCPT
+	id S1753052AbaCaMwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:52:13 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:32893 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565AbaCaMwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:50:39 -0400
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zz98dI9371Ic89bh936eI542I328cMzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h1de097hz2dh109h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
-X-WSS-ID: 0N3AX06-08-7ZY-02
-X-M-MSG: 
-From: "Skidanov, Alexey" <Alexey.Skidanov@amd.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: CONFIG_PREEMPT_COUNT
-Thread-Topic: CONFIG_PREEMPT_COUNT
-Thread-Index: Ac9MzRkbuCbbxoUOSeu2AxrjYz5GfQAMKgqAAAfdxOA=
-Date: Mon, 31 Mar 2014 12:50:30 +0000
-Message-ID: <AD975D71AAD7784D8D1265DF6444C2FD0132AD98@storexdag03.amd.com>
-References: <AD975D71AAD7784D8D1265DF6444C2FD0132AD51@storexdag03.amd.com>
- <1396268697.2110.15.camel@x220>
-In-Reply-To: <1396268697.2110.15.camel@x220>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.0.144]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 31 Mar 2014 08:52:12 -0400
+Date: Mon, 31 Mar 2014 14:52:08 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/cleanups for v3.15
+Message-ID: <20140331125208.GA9690@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2VCojsi026418
 
-Paul,
-Thank you for your answer. We have PREEMT_VOLUNTARY  defined, so that is the reason why the CONFIG_PREEMPT_COUNT is undefined. 
-The second question (that was badly formatted in original message) was:
+Linus,
 
-In the previous kernel versions, spin_lock() and spin_unlock() call preempt_enable() and preempt_disable() respectively,
-ensuring that the current task will not be preempted by any other task while lock is held. Is this still ensured with these macros defined as ‚Äúdo nothing‚Äù ?
+Please pull the latest x86-cleanups-for-linus git tree from:
 
------Original Message-----
-From: Paul Bolle [mailto:pebolle@tiscali.nl] 
-Sent: Monday, March 31, 2014 3:25 PM
-To: Skidanov, Alexey
-Cc: linux-kernel@vger.kernel.org; Gabbay, Oded
-Subject: Re: CONFIG_PREEMPT_COUNT
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cleanups-for-linus
 
-Alexey,
+   # HEAD: b82ad3d3944193e5f95319c30fd24e39d0d7b510 x86, pageattr: Correct WBINVD spelling in comment
 
-On Mon, 2014-03-31 at 10:38 +0000, Skidanov, Alexey wrote:
-> What is the purpose of CONFIG_PREEMPT_COUNT define and how I can 
-> define it?
+Various smaller cleanups.
 
-CONFIG_PREEMPT_COUNT is a Kconfig macro, ie it's (in short) to be defined as a result one of the "*config" make targets. And doing
-    git grep -nw PREEMPT_COUNT
+ Thanks,
 
-gives
-    kernel/Kconfig.preempt:38:      select PREEMPT_COUNT
-    kernel/Kconfig.preempt:57:config PREEMPT_COUNT
-    lib/Kconfig.debug:964:  select PREEMPT_COUNT
+	Ingo
 
-And looking at those hits it seems PREEMPT_COUNT will be set, and therefore CONFIG_PREEMPT_COUNT defined, if either PREEMPT or DEBUG_ATOMIC_SLEEP are set in a .config.
-
-(I'm not familiar with PREEMPT_COUNT. I think I never used it.)
-
-Hope this helps,
+------------------>
+Borislav Petkov (3):
+      x86, boot: Correct max ramdisk size name
+      x86, crash: Unify ifdef
+      x86, pageattr: Correct WBINVD spelling in comment
 
 
-Paul Bolle
+ Documentation/x86/boot.txt | 4 ++--
+ arch/x86/boot/header.S     | 2 +-
+ arch/x86/kernel/crash.c    | 2 --
+ arch/x86/mm/pageattr.c     | 6 +++---
+ 4 files changed, 6 insertions(+), 8 deletions(-)
 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index cb81741d..a75e3ad 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -182,7 +182,7 @@ Offset	Proto	Name		Meaning
+ 0226/1	2.02+(3 ext_loader_ver	Extended boot loader version
+ 0227/1	2.02+(3	ext_loader_type	Extended boot loader ID
+ 0228/4	2.02+	cmd_line_ptr	32-bit pointer to the kernel command line
+-022C/4	2.03+	ramdisk_max	Highest legal initrd address
++022C/4	2.03+	initrd_addr_max	Highest legal initrd address
+ 0230/4	2.05+	kernel_alignment Physical addr alignment required for kernel
+ 0234/1	2.05+	relocatable_kernel Whether kernel is relocatable or not
+ 0235/1	2.10+	min_alignment	Minimum alignment, as a power of two
+@@ -534,7 +534,7 @@ Protocol:	2.02+
+   zero, the kernel will assume that your boot loader does not support
+   the 2.02+ protocol.
+ 
+-Field name:	ramdisk_max
++Field name:	initrd_addr_max
+ Type:		read
+ Offset/size:	0x22c/4
+ Protocol:	2.03+
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index ec3b8ba..46f5a22 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -350,7 +350,7 @@ cmd_line_ptr:	.long	0		# (Header version 0x0202 or later)
+ 					# can be located anywhere in
+ 					# low memory 0x10000 or higher.
+ 
+-ramdisk_max:	.long 0x7fffffff
++initrd_addr_max: .long 0x7fffffff
+ 					# (Header version 0x0203 or later)
+ 					# The highest safe address for
+ 					# the contents of an initrd
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index a57902e..507de80 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -57,9 +57,7 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
+ {
+ #ifdef CONFIG_X86_32
+ 	struct pt_regs fixed_regs;
+-#endif
+ 
+-#ifdef CONFIG_X86_32
+ 	if (!user_mode_vm(regs)) {
+ 		crash_fixup_ss_esp(&fixed_regs, regs);
+ 		regs = &fixed_regs;
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index b3b19f4..ba957c9 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1377,10 +1377,10 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+ 	cache = cache_attr(mask_set);
+ 
+ 	/*
+-	 * On success we use clflush, when the CPU supports it to
+-	 * avoid the wbindv. If the CPU does not support it and in the
++	 * On success we use CLFLUSH, when the CPU supports it to
++	 * avoid the WBINVD. If the CPU does not support it and in the
+ 	 * error case we fall back to cpa_flush_all (which uses
+-	 * wbindv):
++	 * WBINVD):
+ 	 */
+ 	if (!ret && cpu_has_clflush) {
+ 		if (cpa.flags & (CPA_PAGES_ARRAY | CPA_ARRAY)) {
