@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaCaNl5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:41:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35680 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014AbaCaNYL (ORCPT
+	id S1755026AbaCaNmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:42:35 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46249 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753617AbaCaNme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:11 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 34/71] mwifiex: copy AP's HT capability info correctly
-Date: Mon, 31 Mar 2014 14:22:40 +0100
-Message-Id: <1396272197-13394-35-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
-References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 31 Mar 2014 09:42:34 -0400
+Date: Mon, 31 Mar 2014 16:42:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Denis Pithon <denis.pithon@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, khoroshilov@ispras.ru
+Subject: Re: [PATCH] staging/wlan-ng fix small coding style issue
+Message-ID: <20140331134227.GP6991@mwanda>
+References: <1396271603-12142-1-git-send-email-denis.pithon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396271603-12142-1-git-send-email-denis.pithon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Mar 31, 2014 at 03:13:23PM +0200, Denis Pithon wrote:
+> Signed-off-by: Denis Pithon <denis.pithon@gmail.com>
 
-------------------
+Changeglog sucks.  It doesn't even exist, actually.  What coding style
+issue did you fix?
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+> ---
+>  drivers/staging/wlan-ng/prism2usb.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
+> index 4739c14..ccb2c2e 100644
+> --- a/drivers/staging/wlan-ng/prism2usb.c
+> +++ b/drivers/staging/wlan-ng/prism2usb.c
+> @@ -293,6 +293,7 @@ static int prism2sta_suspend(struct usb_interface *interface,
+>  	hfa384x_t *hw = NULL;
+>  	wlandevice_t *wlandev;
+>  	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
+> +
+>  	if (!wlandev)
+>  		return -ENODEV;
 
-commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
+The blank line should go be one line earlier.
 
-While preparing association request, intersection of device's HT
-capability information and corresponding fields advertised by AP
-is used.
+	wlandevice_t *wlandev;
+	[blank]
+	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
 
-This patch fixes an error while copying this field from AP's
-beacon.
+>  
+> @@ -315,6 +316,7 @@ static int prism2sta_resume(struct usb_interface *interface)
+>  	hfa384x_t *hw = NULL;
+>  	wlandevice_t *wlandev;
+>  	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
+> +
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/wireless/mwifiex/11n.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Same.
 
-diff --git a/drivers/net/wireless/mwifiex/11n.c b/drivers/net/wireless/mwifiex/11n.c
-index fe8ebfe..d5ad81d 100644
---- a/drivers/net/wireless/mwifiex/11n.c
-+++ b/drivers/net/wireless/mwifiex/11n.c
-@@ -340,8 +340,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifiex_private *priv,
- 		ht_cap->header.len =
- 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
- 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *) bss_desc->bcn_ht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_ht_cap,
- 		       le16_to_cpu(ht_cap->header.len));
- 
- 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
--- 
-1.9.1
+>  	if (!wlandev)
+>  		return -ENODEV;
+
+regards,
+dan carpenter
 
