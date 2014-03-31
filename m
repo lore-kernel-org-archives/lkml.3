@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247AbaCaNYd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:24:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35726 "EHLO
+	id S1754767AbaCaNft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:35:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35755 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022AbaCaNYX (ORCPT
+	with ESMTP id S1754217AbaCaNYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:23 -0400
+	Mon, 31 Mar 2014 09:24:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        Shreyas Bhatewara <sbhatewara@vmware.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Daniel J Blueman <daniel@numascale.com>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 42/71] vmxnet3: fix netpoll race condition
-Date: Mon, 31 Mar 2014 14:22:48 +0100
-Message-Id: <1396272197-13394-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 48/71] x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
+Date: Mon, 31 Mar 2014 14:22:54 +0100
+Message-Id: <1396272197-13394-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -30,80 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Daniel J Blueman <daniel@numascale.com>
 
-commit d25f06ea466ea521b563b76661180b4e44714ae6 upstream.
+commit 847d7970defb45540735b3fb4e88471c27cacd85 upstream.
 
-vmxnet3's netpoll driver is incorrectly coded.  It directly calls
-vmxnet3_do_poll, which is the driver internal napi poll routine.  As the netpoll
-controller method doesn't block real napi polls in any way, there is a potential
-for race conditions in which the netpoll controller method and the napi poll
-method run concurrently.  The result is data corruption causing panics such as this
-one recently observed:
-PID: 1371   TASK: ffff88023762caa0  CPU: 1   COMMAND: "rs:main Q:Reg"
- #0 [ffff88023abd5780] machine_kexec at ffffffff81038f3b
- #1 [ffff88023abd57e0] crash_kexec at ffffffff810c5d92
- #2 [ffff88023abd58b0] oops_end at ffffffff8152b570
- #3 [ffff88023abd58e0] die at ffffffff81010e0b
- #4 [ffff88023abd5910] do_trap at ffffffff8152add4
- #5 [ffff88023abd5970] do_invalid_op at ffffffff8100cf95
- #6 [ffff88023abd5a10] invalid_op at ffffffff8100bf9b
-    [exception RIP: vmxnet3_rq_rx_complete+1968]
-    RIP: ffffffffa00f1e80  RSP: ffff88023abd5ac8  RFLAGS: 00010086
-    RAX: 0000000000000000  RBX: ffff88023b5dcee0  RCX: 00000000000000c0
-    RDX: 0000000000000000  RSI: 00000000000005f2  RDI: ffff88023b5dcee0
-    RBP: ffff88023abd5b48   R8: 0000000000000000   R9: ffff88023a3b6048
-    R10: 0000000000000000  R11: 0000000000000002  R12: ffff8802398d4cd8
-    R13: ffff88023af35140  R14: ffff88023b60c890  R15: 0000000000000000
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #7 [ffff88023abd5b50] vmxnet3_do_poll at ffffffffa00f204a [vmxnet3]
- #8 [ffff88023abd5b80] vmxnet3_netpoll at ffffffffa00f209c [vmxnet3]
- #9 [ffff88023abd5ba0] netpoll_poll_dev at ffffffff81472bb7
+For systems with multiple servers and routed fabric, all
+northbridges get assigned to the first server. Fix this by also
+using the node reported from the PCI bus. For single-fabric
+systems, the northbriges are on PCI bus 0 by definition, which
+are on NUMA node 0 by definition, so this is invarient on most
+systems.
 
-The fix is to do as other drivers do, and have the poll controller call the top
-half interrupt handler, which schedules a napi poll properly to recieve frames
+Tested on fam10h and fam15h single and multi-fabric systems and
+candidate for stable.
 
-Tested by myself, successfully.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Shreyas Bhatewara <sbhatewara@vmware.com>
-CC: "VMware, Inc." <pv-drivers@vmware.com>
-CC: "David S. Miller" <davem@davemloft.net>
-Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+Acked-by: Steffen Persvold <sp@numascale.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1394710981-3596-1-git-send-email-daniel@numascale.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/vmxnet3/vmxnet3_drv.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ arch/x86/kernel/quirks.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 3f04ba0..2f07e26 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -1728,12 +1728,18 @@ static void
- vmxnet3_netpoll(struct net_device *netdev)
- {
- 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
-+	int i;
+diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+index 03920a1..28a3e62 100644
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -525,7 +525,7 @@ static void __init quirk_amd_nb_node(struct pci_dev *dev)
+ 		return;
  
--	if (adapter->intr.mask_mode == VMXNET3_IMM_ACTIVE)
--		vmxnet3_disable_all_intrs(adapter);
--
--	vmxnet3_do_poll(adapter, adapter->rx_queue[0].rx_ring[0].size);
--	vmxnet3_enable_all_intrs(adapter);
-+	switch (adapter->intr.type) {
-+	case VMXNET3_IT_MSIX:
-+		for (i = 0; i < adapter->num_rx_queues; i++)
-+			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
-+		break;
-+	case VMXNET3_IT_MSI:
-+	default:
-+		vmxnet3_intr(0, adapter->netdev);
-+		break;
-+	}
- 
- }
- #endif	/* CONFIG_NET_POLL_CONTROLLER */
+ 	pci_read_config_dword(nb_ht, 0x60, &val);
+-	node = val & 7;
++	node = pcibus_to_node(dev->bus) | (val & 7);
+ 	/*
+ 	 * Some hardware may return an invalid node ID,
+ 	 * so check it first:
 -- 
 1.9.1
 
