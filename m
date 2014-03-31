@@ -1,133 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaCaMQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:16:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46420 "EHLO mga11.intel.com"
+	id S1753041AbaCaMSA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:18:00 -0400
+Received: from mail.efficios.com ([78.47.125.74]:42270 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749AbaCaMQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:16:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,764,1389772800"; 
-   d="scan'208";a="510938110"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Sabrina Dubroca <sd@queasysnail.net>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] gpio / ACPI: Don't crash on NULL chip->dev
-Date: Mon, 31 Mar 2014 15:16:49 +0300
-Message-Id: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752154AbaCaMR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 08:17:58 -0400
+Date: Mon, 31 Mar 2014 12:17:54 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Takashi Iwai <tiwai@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Message-ID: <713183051.2823.1396268274121.JavaMail.zimbra@efficios.com>
+In-Reply-To: <87eh1jovj2.fsf@rustcorp.com.au>
+References: <1392355106-26104-1-git-send-email-mathieu.desnoyers@efficios.com> <20140226154012.7985f91c@gandalf.local.home> <87siqmvrnk.fsf@rustcorp.com.au> <s5hbnwr66wf.wl%tiwai@suse.de> <87eh1jovj2.fsf@rustcorp.com.au>
+Subject: Re: [PATCH] Fix: module signature vs tracepoints: add new
+ TAINT_UNSIGNED_MODULE
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Linux)/8.0.5_GA_5839)
+Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+Thread-Index: w7+d0dKsPFjQ9abRx0GwVbpNwK4k3Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit aa92b6f689ac (gpio / ACPI: Allocate ACPI specific data directly in
-acpi_gpiochip_add()) moved ACPI handle checking to acpi_gpiochip_add() but
-forgot to check whether chip->dev is NULL before dereferencing it.
+----- Original Message -----
+> From: "Rusty Russell" <rusty@rustcorp.com.au>
+> To: "Takashi Iwai" <tiwai@suse.de>
+> Cc: "Steven Rostedt" <rostedt@goodmis.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
+> linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "David
+> Howells" <dhowells@redhat.com>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>, "Kay Sievers"
+> <kay.sievers@vrfy.org>
+> Sent: Monday, March 31, 2014 12:13:21 AM
+> Subject: Re: [PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+> 
+> Takashi Iwai <tiwai@suse.de> writes:
+> > At Thu, 13 Mar 2014 11:30:47 +1030,
+> > Rusty Russell wrote:
+> >> 
+> >> Steven Rostedt <rostedt@goodmis.org> writes:
+> >> > Mathieu, you should have added a v2 to the subject ie: [PATCH V2]
+> >> >
+> >> > Rusty,
+> >> >
+> >> > If you want to take this, please add my
+> >> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> >> 
+> >> Thanks, I updated my copy and have pushed this into modules-next.
+> >
+> > The letter 'X' has been already used for SUSE kernels for very long
+> > time, to indicate the external supported modules.  Can the new flag be
+> > changed to another letter for avoiding conflict...?
+> > (BTW, we also use 'N' for "no support", too.)
+> 
+> Sure...  As I've already applied it, I've had to add this new patch:
+> 
+> Subject: Use 'E' instead of 'X' for unsigned module taint flag.
 
-Since chip->dev pointer is optional we can end up with crash like following:
+Does this 'E' stand for the "evil" bit ? ;)
 
- BUG: unable to handle kernel NULL pointer dereference at 00000138
- IP: [<c126c2b3>] acpi_gpiochip_add+0x13/0x190
- *pde = 00000000
- Oops: 0000 [#1] PREEMPT SMP
- Modules linked in: ssb(+) ...
- CPU: 0 PID: 512 Comm: modprobe Tainted: G        W     3.14.0-rc7-next-20140324-t1 #24
- Hardware name: Dell Inc. Latitude D830                   /0UY141, BIOS A02 06/07/2007
- task: f5799900 ti: f543e000 task.ti: f543e000
- EIP: 0060:[<c126c2b3>] EFLAGS: 00010282 CPU: 0
- EIP is at acpi_gpiochip_add+0x13/0x190
- EAX: 00000000 EBX: f57824c4 ECX: 00000000 EDX: 00000000
- ESI: f57824c4 EDI: 00000010 EBP: f543fc54 ESP: f543fc40
-  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
- CR0: 8005003b CR2: 00000138 CR3: 355f8000 CR4: 000007d0
- Stack:
-  f543fc5c fd1f7790 f57824c4 000000be 00000010 f543fc84 c1269f4e f543fc74
-  fd1f78bd 00008002 f57822b0 f5782090 fd1f8400 00000286 fd1f9994 00000000
-  f5782000 f543fc8c fd1f7e39 f543fcc8 fd1f0bd8 000000c0 00000000 00000000
- Call Trace:
-  [<fd1f7790>] ? ssb_pcie_mdio_write+0xa0/0xd0 [ssb]
-  [<c1269f4e>] gpiochip_add+0xee/0x300
-  [<fd1f78bd>] ? ssb_pcicore_serdes_workaround+0xfd/0x140 [ssb]
-  [<fd1f7e39>] ssb_gpio_init+0x89/0xa0 [ssb]
-  [<fd1f0bd8>] ssb_attach_queued_buses+0xc8/0x2d0 [ssb]
-  [<fd1f0f65>] ssb_bus_register+0x185/0x1f0 [ssb]
-  [<fd1f3120>] ? ssb_pci_xtal+0x220/0x220 [ssb]
-  [<fd1f106c>] ssb_bus_pcibus_register+0x2c/0x80 [ssb]
-  [<fd1f40dc>] ssb_pcihost_probe+0x9c/0x110 [ssb]
-  [<c1276c8f>] pci_device_probe+0x6f/0xc0
-  [<c11bdb55>] ? sysfs_create_link+0x25/0x40
-  [<c131d8b9>] driver_probe_device+0x79/0x360
-  [<c1276512>] ? pci_match_device+0xb2/0xc0
-  [<c131dc51>] __driver_attach+0x71/0x80
-  [<c131dbe0>] ? __device_attach+0x40/0x40
-  [<c131bd87>] bus_for_each_dev+0x47/0x80
-  [<c131d3ae>] driver_attach+0x1e/0x20
-  [<c131dbe0>] ? __device_attach+0x40/0x40
-  [<c131d007>] bus_add_driver+0x157/0x230
-  [<c131e219>] driver_register+0x59/0xe0
-  ...
+FWIW:
 
-Fix this by checking chip->dev pointer against NULL first. Also we can now
-remove redundant check in acpi_gpiochip_request/free_interrupts().
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-Reported-by: Sabrina Dubroca <sd@queasysnail.net>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
-Sabrina,
+Thanks!
 
-Can you please re-test this and provide your tested-by? I changed the patch
-a bit to remove redundant checks. Just to be sure that I don't accidentally
-break something.
+Mathieu
 
-Thanks.
+> 
+> 66cc69e34e86a231fbe68d8918c6119e3b7549a3 added 'X' for unsigned module
+> taints, but Takashi Iwai <tiwai@suse.de> says:
+> 
+>    The letter 'X' has been already used for SUSE kernels for very long
+>    time, to indicate the external supported modules.  Can the new flag be
+>    changed to another letter for avoiding conflict...?
+>    (BTW, we also use 'N' for "no support", too.)
+> 
+> Note: this code should be cleaned up, so we don't have such maps in
+> three places!
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-module
+> b/Documentation/ABI/testing/sysfs-module
+> index b9a29cdbaccb..66a110b4c48a 100644
+> --- a/Documentation/ABI/testing/sysfs-module
+> +++ b/Documentation/ABI/testing/sysfs-module
+> @@ -49,4 +49,4 @@ Description:	Module taint flags:
+>  			O - out-of-tree module
+>  			F - force-loaded module
+>  			C - staging driver module
+> -			X - unsigned module
+> +			E - unsigned module
+> diff --git a/Documentation/module-signing.txt
+> b/Documentation/module-signing.txt
+> index b6af42e4d790..db1c49e17aa2 100644
+> --- a/Documentation/module-signing.txt
+> +++ b/Documentation/module-signing.txt
+> @@ -54,7 +54,7 @@ This has a number of options available:
+>       If this is off (ie. "permissive"), then modules for which the key is
+>       not
+>       available and modules that are unsigned are permitted, but the kernel
+>       will
+>       be marked as being tainted, and the concerned modules will be marked as
+> -     tainted, shown with the character 'X'.
+> +     tainted, shown with the character 'E'.
+>  
+>       If this is on (ie. "restrictive"), only modules that have a valid
+>       signature that can be verified by a public key in the kernel's
+>       possession
+> diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+> index 879abe289523..fa86b85d2821 100644
+> --- a/Documentation/oops-tracing.txt
+> +++ b/Documentation/oops-tracing.txt
+> @@ -265,7 +265,7 @@ characters, each representing a particular tainted value.
+>  
+>   13: 'O' if an externally-built ("out-of-tree") module has been loaded.
+>  
+> - 14: 'X' if an unsigned module has been loaded in a kernel supporting
+> + 14: 'E' if an unsigned module has been loaded in a kernel supporting
+>       module signature.
+>  
+>  The primary reason for the 'Tainted: ' string is to tell kernel
+> diff --git a/kernel/module.c b/kernel/module.c
+> index c1acb0c5b637..6d620199b892 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -1014,7 +1014,7 @@ static size_t module_flags_taint(struct module *mod,
+> char *buf)
+>  	if (mod->taints & (1 << TAINT_CRAP))
+>  		buf[l++] = 'C';
+>  	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
+> -		buf[l++] = 'X';
+> +		buf[l++] = 'E';
+>  	/*
+>  	 * TAINT_FORCED_RMMOD: could be added.
+>  	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index 0e25fe10871e..dbee7fe2a0c0 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -210,7 +210,7 @@ static const struct tnt tnts[] = {
+>  	{ TAINT_CRAP,			'C', ' ' },
+>  	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
+>  	{ TAINT_OOT_MODULE,		'O', ' ' },
+> -	{ TAINT_UNSIGNED_MODULE,	'X', ' ' },
+> +	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+>  };
+>  
+>  /**
+> @@ -229,7 +229,7 @@ static const struct tnt tnts[] = {
+>   *  'C' - modules from drivers/staging are loaded.
+>   *  'I' - Working around severe firmware bug.
+>   *  'O' - Out-of-tree module has been loaded.
+> - *  'X' - Unsigned module has been loaded.
+> + *  'E' - Unsigned module has been loaded.
+>   *
+>   *	The string is overwritten by the next call to print_tainted().
+>   */
+> 
 
- drivers/gpio/gpiolib-acpi.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index bf0f8b476696..d5be56fe689e 100644
---- a/drivers/gpio/gpiolib-acpi.c
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -233,7 +233,7 @@ static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
- {
- 	struct gpio_chip *chip = acpi_gpio->chip;
- 
--	if (!chip->dev || !chip->to_irq)
-+	if (!chip->to_irq)
- 		return;
- 
- 	INIT_LIST_HEAD(&acpi_gpio->events);
-@@ -253,7 +253,7 @@ static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
- 	struct acpi_gpio_event *event, *ep;
- 	struct gpio_chip *chip = acpi_gpio->chip;
- 
--	if (!chip->dev || !chip->to_irq)
-+	if (!chip->to_irq)
- 		return;
- 
- 	list_for_each_entry_safe_reverse(event, ep, &acpi_gpio->events, node) {
-@@ -501,6 +501,9 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
- 	acpi_handle handle;
- 	acpi_status status;
- 
-+	if (!chip || !chip->dev)
-+		return;
-+
- 	handle = ACPI_HANDLE(chip->dev);
- 	if (!handle)
- 		return;
-@@ -531,6 +534,9 @@ void acpi_gpiochip_remove(struct gpio_chip *chip)
- 	acpi_handle handle;
- 	acpi_status status;
- 
-+	if (!chip || !chip->dev)
-+		return;
-+
- 	handle = ACPI_HANDLE(chip->dev);
- 	if (!handle)
- 		return;
 -- 
-1.9.1
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
