@@ -1,173 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaCaMSA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:18:00 -0400
-Received: from mail.efficios.com ([78.47.125.74]:42270 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154AbaCaMR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:17:58 -0400
-Date: Mon, 31 Mar 2014 12:17:54 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Takashi Iwai <tiwai@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Message-ID: <713183051.2823.1396268274121.JavaMail.zimbra@efficios.com>
-In-Reply-To: <87eh1jovj2.fsf@rustcorp.com.au>
-References: <1392355106-26104-1-git-send-email-mathieu.desnoyers@efficios.com> <20140226154012.7985f91c@gandalf.local.home> <87siqmvrnk.fsf@rustcorp.com.au> <s5hbnwr66wf.wl%tiwai@suse.de> <87eh1jovj2.fsf@rustcorp.com.au>
-Subject: Re: [PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
+	id S1753224AbaCaMSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:18:35 -0400
+Received: from smtp-out-226.synserver.de ([212.40.185.226]:1030 "EHLO
+	smtp-out-024.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752161AbaCaMSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 08:18:34 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 8482
+Message-ID: <53395D4B.1010805@metafoo.de>
+Date: Mon, 31 Mar 2014 14:19:23 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Alessandro Zummo <a.zummo@towertech.it>
+CC: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
+        Greg KH <greg@kroah.com>, rtc-linux@googlegroups.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernfs/rtc: circular dependency between kernfs and ops_lock
+References: <5308E3AE.3040405@oracle.com> <20140222205217.GC16272@mtj.dyndns.org> <20140224120427.6394d5dd@linux.lan.towertech.it> <5331FA9E.20506@oracle.com> <20140325233936.655a798e@linux.lan.towertech.it> <53321D04.2040102@oracle.com> <5337653D.6020002@oracle.com> <53384080.9020502@oracle.com> <20140331114627.5e1a4609@linux.lan.towertech.it> <53393AE4.505@metafoo.de> <20140331124351.43033c93@linux.lan.towertech.it> <53394C5E.2030207@metafoo.de> <20140331140344.6030c7da@linux.lan.towertech.it>
+In-Reply-To: <20140331140344.6030c7da@linux.lan.towertech.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Linux)/8.0.5_GA_5839)
-Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-Thread-Index: w7+d0dKsPFjQ9abRx0GwVbpNwK4k3Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Rusty Russell" <rusty@rustcorp.com.au>
-> To: "Takashi Iwai" <tiwai@suse.de>
-> Cc: "Steven Rostedt" <rostedt@goodmis.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
-> linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "David
-> Howells" <dhowells@redhat.com>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>, "Kay Sievers"
-> <kay.sievers@vrfy.org>
-> Sent: Monday, March 31, 2014 12:13:21 AM
-> Subject: Re: [PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-> 
-> Takashi Iwai <tiwai@suse.de> writes:
-> > At Thu, 13 Mar 2014 11:30:47 +1030,
-> > Rusty Russell wrote:
-> >> 
-> >> Steven Rostedt <rostedt@goodmis.org> writes:
-> >> > Mathieu, you should have added a v2 to the subject ie: [PATCH V2]
-> >> >
-> >> > Rusty,
-> >> >
-> >> > If you want to take this, please add my
-> >> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> >> 
-> >> Thanks, I updated my copy and have pushed this into modules-next.
-> >
-> > The letter 'X' has been already used for SUSE kernels for very long
-> > time, to indicate the external supported modules.  Can the new flag be
-> > changed to another letter for avoiding conflict...?
-> > (BTW, we also use 'N' for "no support", too.)
-> 
-> Sure...  As I've already applied it, I've had to add this new patch:
-> 
-> Subject: Use 'E' instead of 'X' for unsigned module taint flag.
+On 03/31/2014 02:03 PM, Alessandro Zummo wrote:
+> On Mon, 31 Mar 2014 13:07:10 +0200
+> Lars-Peter Clausen <lars@metafoo.de> wrote:
+>
+>> It doesn't really matter where it is unregistered. device_unregister() will
+>> (somewhere down it's callchain) take the kernfs lock, hence it must be
+>> callled with the rtc mutex being held.
+>
+>   Maybe device_remove_attrs could be called in the rtc base class,
+>   before the device removal?
+>
 
-Does this 'E' stand for the "evil" bit ? ;)
-
-FWIW:
-
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-Thanks!
-
-Mathieu
-
-> 
-> 66cc69e34e86a231fbe68d8918c6119e3b7549a3 added 'X' for unsigned module
-> taints, but Takashi Iwai <tiwai@suse.de> says:
-> 
->    The letter 'X' has been already used for SUSE kernels for very long
->    time, to indicate the external supported modules.  Can the new flag be
->    changed to another letter for avoiding conflict...?
->    (BTW, we also use 'N' for "no support", too.)
-> 
-> Note: this code should be cleaned up, so we don't have such maps in
-> three places!
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-module
-> b/Documentation/ABI/testing/sysfs-module
-> index b9a29cdbaccb..66a110b4c48a 100644
-> --- a/Documentation/ABI/testing/sysfs-module
-> +++ b/Documentation/ABI/testing/sysfs-module
-> @@ -49,4 +49,4 @@ Description:	Module taint flags:
->  			O - out-of-tree module
->  			F - force-loaded module
->  			C - staging driver module
-> -			X - unsigned module
-> +			E - unsigned module
-> diff --git a/Documentation/module-signing.txt
-> b/Documentation/module-signing.txt
-> index b6af42e4d790..db1c49e17aa2 100644
-> --- a/Documentation/module-signing.txt
-> +++ b/Documentation/module-signing.txt
-> @@ -54,7 +54,7 @@ This has a number of options available:
->       If this is off (ie. "permissive"), then modules for which the key is
->       not
->       available and modules that are unsigned are permitted, but the kernel
->       will
->       be marked as being tainted, and the concerned modules will be marked as
-> -     tainted, shown with the character 'X'.
-> +     tainted, shown with the character 'E'.
->  
->       If this is on (ie. "restrictive"), only modules that have a valid
->       signature that can be verified by a public key in the kernel's
->       possession
-> diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
-> index 879abe289523..fa86b85d2821 100644
-> --- a/Documentation/oops-tracing.txt
-> +++ b/Documentation/oops-tracing.txt
-> @@ -265,7 +265,7 @@ characters, each representing a particular tainted value.
->  
->   13: 'O' if an externally-built ("out-of-tree") module has been loaded.
->  
-> - 14: 'X' if an unsigned module has been loaded in a kernel supporting
-> + 14: 'E' if an unsigned module has been loaded in a kernel supporting
->       module signature.
->  
->  The primary reason for the 'Tainted: ' string is to tell kernel
-> diff --git a/kernel/module.c b/kernel/module.c
-> index c1acb0c5b637..6d620199b892 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -1014,7 +1014,7 @@ static size_t module_flags_taint(struct module *mod,
-> char *buf)
->  	if (mod->taints & (1 << TAINT_CRAP))
->  		buf[l++] = 'C';
->  	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
-> -		buf[l++] = 'X';
-> +		buf[l++] = 'E';
->  	/*
->  	 * TAINT_FORCED_RMMOD: could be added.
->  	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index 0e25fe10871e..dbee7fe2a0c0 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -210,7 +210,7 @@ static const struct tnt tnts[] = {
->  	{ TAINT_CRAP,			'C', ' ' },
->  	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
->  	{ TAINT_OOT_MODULE,		'O', ' ' },
-> -	{ TAINT_UNSIGNED_MODULE,	'X', ' ' },
-> +	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
->  };
->  
->  /**
-> @@ -229,7 +229,7 @@ static const struct tnt tnts[] = {
->   *  'C' - modules from drivers/staging are loaded.
->   *  'I' - Working around severe firmware bug.
->   *  'O' - Out-of-tree module has been loaded.
-> - *  'X' - Unsigned module has been loaded.
-> + *  'E' - Unsigned module has been loaded.
->   *
->   *	The string is overwritten by the next call to print_tainted().
->   */
-> 
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Just move the device_unregister() call outside the lock. I think the only 
+thing that needs to be protected is the ops = NULL assignment. Moving the 
+unregister after the unlock also means that the extra 
+get_device()/put_device() pair can be removed.
