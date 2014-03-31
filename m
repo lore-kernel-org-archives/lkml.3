@@ -1,86 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766AbaCaWVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 18:21:20 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:39926 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739AbaCaWVS (ORCPT
+	id S1751433AbaCaW2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 18:28:04 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:55749 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaCaW2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 18:21:18 -0400
+	Mon, 31 Mar 2014 18:28:00 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: X.org doesn't start with 3.14: [KMS] drm report modesetting isn't supported
+Date: Mon, 31 Mar 2014 18:27:58 -0400
+Message-ID: <001101cf4d30$782fa0f0$688ee2d0$@lucidpixels.com>
 MIME-Version: 1.0
-In-Reply-To: <20140331151337.f6a46a8fcab6206f4d21be08@linux-foundation.org>
-References: <1396120235-27844-1-git-send-email-cse.cem@gmail.com>
-	<20140331151337.f6a46a8fcab6206f4d21be08@linux-foundation.org>
-Date: Mon, 31 Mar 2014 15:21:17 -0700
-Message-ID: <CAG6CVpV6sxOc2ZH_xWRGc28N6W+M9iK6QbX-4bx326FON8B9GA@mail.gmail.com>
-Subject: Re: [PATCH v2] fs: FAT: Add support for DOS 1.x formatted volumes
-From: Conrad Meyer <cse.cem@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Conrad Meyer <cemeyer@uw.edu>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark <markk@clara.co.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac9NMBcSXI2D+gRXTHa8n8a8Ts3oCA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 3:13 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat, 29 Mar 2014 12:10:35 -0700 Conrad Meyer <cemeyer@uw.edu> wrote:
->
->> +     .nr_sectors = 360 * KB_IN_SECTORS,
->> +     .sec_per_clus = 2,
->> +     .dir_entries = 112,
->> +     .media = 0xFD,
->> +     .fat_length = 2,
->> +},
->> +{ 0 } };
->
-> We don't really need this EOF element.
+Hello,
 
-Ah, right, I forgot about ARRAY_SIZE. This is an old version of this
-patch, see v3 here: https://lkml.org/lkml/2014/3/31/275
+Do I need some updated ATI firmware (I believe this might have happened in
+the past)..?
+I booted back to 3.13.6, Xorg starts up fine, but with 3.14 it does not
+start.
+Thoughts?
 
-But the same criticism is valid there, too.
+3.13.6:
+$ ps auxww|grep X
+root      4368  5.3  0.0 296648 37364 tty7     Ssl+ 18:23   0:00 /usr/bin/X
+:0 vt7 -nolisten tcp
 
->> +     if (get_unaligned_le16(&b->sector_size) != 0 || b->sec_per_clus != 0 ||
->> +             b->reserved != 0 || b->fats != 0 ||
->> +             get_unaligned_le16(&b->dir_entries) != 0 ||
->> +             get_unaligned_le16(&b->sectors) != 0 || b->media != 0 ||
->> +             b->fat_length != 0 || b->secs_track != 0 || b->heads != 0 ||
->> +             b->secs_track != 0 || b->heads != 0)
->
-> Impressive!
+3.14:
+[   346.490] (**) ModulePath set to "/usr/lib/xorg/modules"
+[   346.490] (WW) Hotplugging is on, devices using drivers 'kbd', 'mouse' or
+'vmmouse' will be disabled.
+[   346.490] (WW) Disabling Mouse0
+[   346.490] (WW) Disabling Keyboard0
+[   346.490] (II) [KMS] drm report modesetting isn't supported.
+[   346.490] (EE)
+[   346.490] (EE) Backtrace:
+[   346.490] (EE) 0: Xorg (xorg_backtrace+0x48) [0x7fbbbd731c58]
+[   346.490] (EE) 1: Xorg (0x7fbbbd58a000+0x1ab949) [0x7fbbbd735949]
+[   346.490] (EE) 2: /lib/x86_64-linux-gnu/libpthread.so.0
+(0x7fbbbc3c5000+0xf880) [0x7fbbbc3d4880]
+[   346.490] (EE)
+[   346.490] (EE) Segmentation fault at address 0x0
+[   346.490] (EE)
+Fatal server error:
+[   346.491] (EE) Caught signal 11 (Segmentation fault). Server aborting
+[   346.491] (EE)
+[   346.491] (EE)
+Please consult the The X.Org Foundation support
+   at http://wiki.x.org
+ for help.
+[   346.491] (EE) Please also check the log file at "/var/log/Xorg.0.log"
+for additional information.
+[   346.491] (EE)
 
-I aim to please. Not sure what would be better -- memcmp() part of the
-struct to a zeroed array?
+Kernel config:
+http://home.comcast.net/~jpiszcz/20140331/3.14.txt
 
->
->> +             return;
->> +
->> +     bd_sects = part_nr_sects_read(sb->s_bdev->bd_part);
->> +     for (di = floppy_defaults; di->nr_sectors; di++) {
->
-> Can do something like
->
->         for (di = floppy_defaults;
->                 di < floppy_defaults + ARRAY_SIZE(floppy_defaults); di++) {
+Kernel diffs:
 
-Yep, I should revise and send a v4 patch. Thanks.
+$ diff -u config-20140331.1396303540 config-20140320.1395308867 | grep \^+
++++ config-20140320.1395308867  2014-03-20 05:47:47.508584015 -0400
++# Linux/x86 3.13.6 Kernel Configuration
++CONFIG_UIDGID_STRICT_TYPE_CHECKS=y
++CONFIG_MICROCODE_INTEL_LIB=y
++# CONFIG_CC_STACKPROTECTOR is not set
++# CONFIG_SCSI_AIC7XXX_OLD is not set
++# CONFIG_CPU_THERMAL is not set
++# CONFIG_GENERIC_PHY is not set
 
->
->> +             if (di->nr_sectors == bd_sects)
->> +                     break;
->> +     }
->> +     if (di->nr_sectors == 0) {
->> +             fat_msg(sb, KERN_WARNING,
->> +                     "DOS volume lacks BPB and isn't a recognized floppy size (%ld sectors)",
->> +                     (long)bd_sects);
->
-> sector_t can be u64 on 32-bit so one should really use %Lu and cast to
-> u64.
+$ diff -u config-20140331.1396303540 config-20140320.1395308867 | grep \^-
+--- config-20140331.1396303540  2014-03-31 18:05:40.775863929 -0400
+-# Linux/x86 3.14.0 Kernel Configuration
+-CONFIG_HAVE_CC_STACKPROTECTOR=y
+-# CONFIG_CC_STACKPROTECTOR is not set
+-CONFIG_CC_STACKPROTECTOR_NONE=y
+-# CONFIG_CC_STACKPROTECTOR_REGULAR is not set
+-# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+-# CONFIG_ZSMALLOC is not set
+-# CONFIG_NETFILTER_XT_MATCH_IPCOMP is not set
+-# CONFIG_NETFILTER_XT_MATCH_L2TP is not set
+-# CONFIG_GENWQE is not set
+-# CONFIG_I40EVF is not set
+-CONFIG_ARCH_MIGHT_HAVE_PC_SERIO=y
+-# CONFIG_I2C_DESIGNWARE_PLATFORM is not set
+-# CONFIG_I2C_ROBOTFUZZ_OSIF is not set
+-# CONFIG_ACPI_INT3403_THERMAL is not set
+-# CONFIG_DW_WATCHDOG is not set
+-# CONFIG_MFD_MAX14577 is not set
+-# CONFIG_MFD_LP3943 is not set
+-# CONFIG_DRM_I915 is not set
+-# CONFIG_DRM_BOCHS is not set
+-# CONFIG_FB_OPENCORES is not set
+-# CONFIG_USB_MUSB_HDRC is not set
+-# CONFIG_USB_DWC2 is not set
+-# CONFIG_USB_SERIAL_MXUPORT is not set
+-# CONFIG_USB_OTG_FSM is not set
+-# CONFIG_RTC_DRV_ISL12057 is not set
+-# CONFIG_HP_WIRELESS is not set
+-CONFIG_GENERIC_PHY=y
+-# CONFIG_BCM_KONA_USB2_PHY is not set
+-CONFIG_DMI_SCAN_MACHINE_NON_EFI_FALLBACK=y
+-CONFIG_PANIC_TIMEOUT=0
 
-Thanks, will fix.
 
-Conrad
+
+Justin.
+
