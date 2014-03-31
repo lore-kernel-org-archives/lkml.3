@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666AbaCaN2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:28:08 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:33667 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaCaN2E (ORCPT
+	id S1754431AbaCaNY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:24:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35823 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345AbaCaNYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:28:04 -0400
-Date: Mon, 31 Mar 2014 09:30:52 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
-In-Reply-To: <alpine.DEB.2.02.1403311201520.14882@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.10.1403310926060.7985@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403201609540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403201724430.23339@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403210956000.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403211610430.30801@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403221118060.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403221419000.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403231613230.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1403240017430.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403251702110.19541@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403252220110.4094@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403261731390.26530@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403262248170.31401@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403270940250.27563@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403311201520.14882@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 31 Mar 2014 09:24:51 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 61/71] deb-pkg: Fix cross-building linux-headers package
+Date: Mon, 31 Mar 2014 14:23:07 +0100
+Message-Id: <1396272197-13394-62-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Mar 2014, Thomas Gleixner wrote:
-> 
-> Vince, can you please disable CONFIG_DEBUG_KOBJECT_RELEASE and remove
-> all the debug patches to see whether the issue goes away?
+3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
 
-It makes the crash on boot go away, but it is still possible to trigger
-a similar crash (hrtimer oopsing due to corrupt rbtree) using the 
-perf_fuzzer.
+------------------
 
-This all started because when trying to debug the perf_fuzzer crash I 
-was told to turn on the extra debugging, and then that caused the crash at 
-boot.
+From: Ben Hutchings <ben@decadent.org.uk>
 
-The fuzzer related crash happens on both a core2 and a haswell machine
-and it triggers pretty quickly when fuzzing, I'll have to go back and see 
-how repeatable it is.
+commit f8ce239dfc7ba9add41d9ecdc5e7810738f839fa upstream.
 
-Vince
+builddeb generates a control file that says the linux-headers package
+can only be built for the build system primary architecture.  This
+breaks cross-building configurations.  We should use $debarch for this
+instead.
+
+Since $debarch is not yet set when generating the control file, set
+Architecture: any and use control file variables to fill in the
+description.
+
+Fixes: cd8d60a20a45 ('kbuild: create linux-headers package in deb-pkg')
+Reported-and-tested-by: "Niew, Sh." <shniew@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ scripts/package/builddeb | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index c95fdda..ca29f92 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -62,7 +62,7 @@ create_package() {
+ 	fi
+ 
+ 	# Create the package
+-	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
++	dpkg-gencontrol -isp $forcearch -Vkernel:debarch="${debarch:-$(dpkg --print-architecture)}" -p$pname -P"$pdir"
+ 	dpkg --build "$pdir" ..
+ }
+ 
+@@ -252,15 +252,14 @@ mkdir -p "$destdir"
+ (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
+ ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
+ rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+-arch=$(dpkg --print-architecture)
+ 
+ cat <<EOF >> debian/control
+ 
+ Package: $kernel_headers_packagename
+ Provides: linux-headers, linux-headers-2.6
+-Architecture: $arch
+-Description: Linux kernel headers for $KERNELRELEASE on $arch
+- This package provides kernel header files for $KERNELRELEASE on $arch
++Architecture: any
++Description: Linux kernel headers for $KERNELRELEASE on \${kernel:debarch}
++ This package provides kernel header files for $KERNELRELEASE on \${kernel:debarch}
+  .
+  This is useful for people who need to build external modules
+ EOF
+-- 
+1.9.1
+
