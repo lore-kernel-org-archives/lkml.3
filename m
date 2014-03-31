@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbaC3Xli (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:41:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36430 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753068AbaC3XZC (ORCPT
+	id S1753357AbaCaAM4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:12:56 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43829 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775AbaCaAMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:25:02 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Sun, 30 Mar 2014 20:12:53 -0400
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chen Gang" <gang.chen.5i5j@gmail.com>,
-        "Hans-Christian Egtvedt" <hegtvedt@cisco.com>
-Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.844830473@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 123/200] avr32: Makefile: add '-D__linux__' flag for
- gcc-4.4.7 use
-In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1396164244.28950.15.camel@marge.simpson.net>
+References: <1396164244.28950.15.camel@marge.simpson.net>
+Date: Sun, 30 Mar 2014 17:12:52 -0700
+X-Google-Sender-Auth: wg8EWqGuRLNBbq9JdoYmDGMaGhk
+Message-ID: <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
+Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.56-rc1 review patch.  If anyone has any objections, please let me know.
+The patch looks fine, but the changelog is so chock-full of odd
+language that I don't know what to do with the patch.
 
-------------------
+Is this actually a problem in real life, or just in the drug-induced
+wonderland that Mike was in when writing the changelog?
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+               Linus
 
-commit 8d80390cfc9434d5aa4fb9e5f9768a66b30cb8a6 upstream.
-
-For avr32 cross compiler, do not define '__linux__' internally, so it
-will cause issue with allmodconfig.
-
-The related error:
-
-    CC [M]  fs/coda/psdev.o
-  In file included from include/linux/coda.h:64,
-                   from fs/coda/psdev.c:45:
-  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
-
-The related toolchain version (which only download, not re-compile):
-
-  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
-  Using built-in specs.
-  Target: avr32
-  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
-.atmel.com/avr
-  Thread model: single
-  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-Acked-by: Hans-Christian Egtvedt <hegtvedt@cisco.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/avr32/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/avr32/Makefile
-+++ b/arch/avr32/Makefile
-@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
- 
- KBUILD_DEFCONFIG	:= atstk1002_defconfig
- 
--KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
-+KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
- KBUILD_AFLAGS	+= -mrelax -mno-pic
- KBUILD_CFLAGS_MODULE += -mno-relax
- LDFLAGS_vmlinux	+= --relax
-
+On Sun, Mar 30, 2014 at 12:24 AM, Mike Galbraith
+<umgwanakikbuti@gmail.com> wrote:
+> NEWSFLASH: Wimpy latent scheduler buglet turns axe-murderer...
+>
+> Root cause being us staying in kernel for weeks at a time during boot:
+>
+> Subverting ftrace, we see below that updates _can_ be skipped for AGES,
+> which can make very bad things happen.  It's supposed to skip ONE, as an
+> optimization. not lord knows how many.  Here we see we've been skipping
+> since 4915630446, resulting in the watchdog being credited with a 137ms
+> delta_exec.  Bogus, and..
+>
+>         modprobe-134   [000]     5.027903: update_rq_clock <-scheduler_tick
+>         modprobe-134   [000]     5.037857: update_rq_clock <-scheduler_tick
+>         modprobe-134   [000]     5.037864: update_rq_clock <-enqueue_task
+>         modprobe-134   [000]     5.037866: enqueue_task_watchdog: WATCHDOG/0 enqueue 4915630446
+>         modprobe-134   [000]     5.044965: update_rq_clock <-scheduler_tick
+>         modprobe-134   [000]     5.046275: update_rq_clock <-scheduler_tick
+>         modprobe-134   [000]     5.050274: update_rq_clock <-scheduler_tick
+>         modprobe-134   [000]     5.052862: update_rq_clock <-dequeue_task
+>         modprobe-134   [000]     5.052866: pick_next_task_watchdog: WATCHDOG/0 select 4915630446
+>       watchdog/0-7     [000]     5.052868: finish_task_switch: WATCHDOG/0 runs 5052867644
+>       watchdog/0-7     [000]     5.052869: watchdog: WATCHDOG/0 DELAYED 137238048 max: 137238048
+>       watchdog/0-7     [000]     5.052872: update_rq_clock <-dequeue_task
+>       watchdog/0-7     [000]     5.052873: dequeue_task_watchdog: WATCHDOG/0 dequeue 5052872018
+>       watchdog/0-7     [000]     5.052874: put_prev_task_watchdog: WATCHDOG/0 STOP trace : delta_exec 137241572 sum_exec 137254287
+>
+> ..delta_exec was sufficient in a NOPREEMPT kernel on zillion disk box
+> that disk discovery combined with swsusp wanting to find out if it needs
+> to resume, that the featherweight watchdog was credited with delta_exec
+> HUGE enough to be incapacitated by the rt throttle long enough for the
+> hard lockup detector to trigger.
+>
+> Throttled watchdog is bad juju, led to -ENOBOOT for IO beast.
+>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by:  Mike Galbraith <umgwanakikbuti@gmail.com>
+> ---
+>  kernel/sched/core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -118,7 +118,7 @@ void update_rq_clock(struct rq *rq)
+>  {
+>         s64 delta;
+>
+> -       if (rq->skip_clock_update > 0)
+> +       if (rq->skip_clock_update-- > 0)
+>                 return;
+>
+>         delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
+>
+>
