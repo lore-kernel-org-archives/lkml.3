@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaCaWcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 18:32:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50747 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327AbaCaWce (ORCPT
+	id S1751616AbaCaWfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 18:35:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36991 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaCaWfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 18:32:34 -0400
-Date: Mon, 31 Mar 2014 15:32:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Conrad Meyer <cse.cem@gmail.com>
-Cc: Conrad Meyer <cemeyer@uw.edu>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark <markk@clara.co.uk>
-Subject: Re: [PATCH v2] fs: FAT: Add support for DOS 1.x formatted volumes
-Message-Id: <20140331153232.1ea27e25cb4690e64da63782@linux-foundation.org>
-In-Reply-To: <CAG6CVpV6sxOc2ZH_xWRGc28N6W+M9iK6QbX-4bx326FON8B9GA@mail.gmail.com>
-References: <1396120235-27844-1-git-send-email-cse.cem@gmail.com>
-	<20140331151337.f6a46a8fcab6206f4d21be08@linux-foundation.org>
-	<CAG6CVpV6sxOc2ZH_xWRGc28N6W+M9iK6QbX-4bx326FON8B9GA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Mar 2014 18:35:15 -0400
+Date: Tue, 1 Apr 2014 00:35:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: Re: [patch 00/12] can: c_can: Fix a series of serious bugs and
+ improve the performance
+In-Reply-To: <20140318171007.528610837@linutronix.de>
+Message-ID: <alpine.DEB.2.02.1403312355280.14882@ionos.tec.linutronix.de>
+References: <20140318171007.528610837@linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Mar 2014 15:21:17 -0700 Conrad Meyer <cse.cem@gmail.com> wrote:
+Dear Maintainers,
 
-> >> +     if (get_unaligned_le16(&b->sector_size) != 0 || b->sec_per_clus != 0 ||
-> >> +             b->reserved != 0 || b->fats != 0 ||
-> >> +             get_unaligned_le16(&b->dir_entries) != 0 ||
-> >> +             get_unaligned_le16(&b->sectors) != 0 || b->media != 0 ||
-> >> +             b->fat_length != 0 || b->secs_track != 0 || b->heads != 0 ||
-> >> +             b->secs_track != 0 || b->heads != 0)
-> >
-> > Impressive!
+On Tue, 18 Mar 2014, Thomas Gleixner wrote:
+> The driver is full of serious bugs:
 > 
-> I aim to please.
+>     - Two HW init routines are not spec compliant.
+> 
+>     - Completely defective message buffer handling in several ways
+>       That leads to interrupt storms and complete lockups.
+> 
+>     - Complete lack of SMP awareness
+> 
+> What's amazing is that people "optimize" and "fix" the driver over and
+> over, but nobody bothered to understand the manual and repair the code
+> for real.
+> 
+> The series fixes _ALL_ bugs which I found so far, but I'm sure there
+> are more issues burried in that unreadable mess. I'm just not able to
+> trigger them.
 
-No great improvements immediately occur to me ;)
+What's the state of this series?
 
-One could do
+The only reaction so far was a hasty commit of cosmetic add ons to my
+findings at [1] accompanied with the following mail which was not a
+direct reply to my patches but merily a new mail to the can mailing
+list:
 
-	/* nice comment */
-	if (get_unaligned_le16(&b->sector_size) != 0)
-		return;
-	/* another nice comment */
-	if (b->sec_per_clus != 0)
-		return;
-	...
+  " Subject: [PATCH 1/2] can: c_can: improve error checking
 
-but one would quickly run out of nice comments.
+    as mentioned in the other mail, a patch that adds return value
+    checking to all users of c_can_set_bittiming(). Another patch adds
+    the missing netif_napi_del(). Feel free to include the patches in
+    your series or use the testing-c_can branch [1] as your git base.
+  "
 
-You could do s/ != 0//g.
+I'm really grateful, that you allowed me to include these patches to
+my series. But that does not help anything at all:
 
-> Not sure what would be better -- memcmp() part of the
-> struct to a zeroed array?
+ - The driver is still broken as it has been for years
 
-memcmp would be hacky.  And possibly buggy if there are holes in the
-struct, which is arch-dependent, shudder.
+ - You as the maintainer reacted by submitting a pointless patch to
+   base my series on instead of applying the obvious and well
+   documented bug fixes right away.
+
+ - Just for the record, the series fixes the fatal issues of that
+   driver with and without the extra cosmetic fixes which are just a
+   supplement for the real issues.
+  
+What's going on here?  Are we going to have another few kernel
+releases with a completely defunct driver in place?
+
+Thanks,
+
+	tglx
+---
+[1] git://gitorious.org/linux-can/linux-can-next.git testing-c_can
 
