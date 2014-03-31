@@ -1,137 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaCaItd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 04:49:33 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:34604 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145AbaCaIta (ORCPT
+	id S1753459AbaCaIvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 04:51:55 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:54619 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531AbaCaIvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 04:49:30 -0400
-Date: Mon, 31 Mar 2014 10:48:58 +0200
+	Mon, 31 Mar 2014 04:51:53 -0400
 From: Johan Hovold <jhovold@gmail.com>
-To: Michele Baldessari <michele@acksyn.org>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes serial cards
-Message-ID: <20140331084858.GI22587@localhost>
-References: <1396126512-25372-1-git-send-email-michele@acksyn.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396126512-25372-1-git-send-email-michele@acksyn.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michele Baldessari <michele@acksyn.org>,
+        stable <stable@vger.kernel.org>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes serial cards
+Date: Mon, 31 Mar 2014 10:51:00 +0200
+Message-Id: <1396255860-4533-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20140331084858.GI22587@localhost>
+References: <20140331084858.GI22587@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 08:55:11PM +0000, Michele Baldessari wrote:
-> Custom VID/PIDs for Brainboxes cards as reported in
-> https://bugzilla.redhat.com/show_bug.cgi?id=1071914
+From: Michele Baldessari <michele@acksyn.org>
 
-Thanks for including the remaining PIDs from the report.
+Custom VID/PIDs for Brainboxes cards as reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=1071914
 
-There was a duplicate entry in the device-id table below, but I'll fix
-that here (and also sort the defines numerically) before sending it to
-Greg.
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/usb/serial/ftdi_sio.c     | 33 +++++++++++++++++++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+)
 
-Thanks again,
-Johan
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 44ab12986805..7c6e1dedeb06 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -909,6 +909,39 @@ static const struct usb_device_id id_table_combined[] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
+ 	/* Cressi Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
++	/* Brainboxes Devices */
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
+ 	{ }					/* Terminating entry */
+ };
+ 
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index e599fbfcde5f..993c93df6874 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1326,3 +1326,40 @@
+  * Manufacturer: Cressi
+  */
+ #define FTDI_CRESSI_PID		0x87d0
++
++/*
++ * Brainboxes devices
++ */
++#define BRAINBOXES_VID			0x05d1
++#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
++#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
++#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
++#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
++#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
++#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
++#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
++#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
++#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
++#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
++#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
++#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
++#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
++#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
++#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
++#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
+-- 
+1.8.3.2
 
-> Signed-off-by: Michele Baldessari <michele@acksyn.org>
-> ---
->  drivers/usb/serial/ftdi_sio.c     | 34 ++++++++++++++++++++++++++++++++++
->  drivers/usb/serial/ftdi_sio_ids.h | 38 ++++++++++++++++++++++++++++++++++++++
->  2 files changed, 72 insertions(+)
-> 
-> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-> index 44ab12986805..ccfa3c55212c 100644
-> --- a/drivers/usb/serial/ftdi_sio.c
-> +++ b/drivers/usb/serial/ftdi_sio.c
-> @@ -909,6 +909,40 @@ static const struct usb_device_id id_table_combined[] = {
->  	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
->  	/* Cressi Devices */
->  	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
-> +	/* Brainbox Devices */
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
->  	{ }					/* Terminating entry */
->  };
->  
-> diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-> index e599fbfcde5f..84d351e70f9c 100644
-> --- a/drivers/usb/serial/ftdi_sio_ids.h
-> +++ b/drivers/usb/serial/ftdi_sio_ids.h
-> @@ -1326,3 +1326,41 @@
->   * Manufacturer: Cressi
->   */
->  #define FTDI_CRESSI_PID		0x87d0
-> +
-> +/*
-> + * Product: Brainboxes devices
-> + * Manufacturer: Brainboxes
-> + */
-> +#define BRAINBOXES_VID			0x05d1
-> +#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
-> +#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
-> +#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
-> +#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
-> +#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
-> +#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
-> +#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
-> +#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
-> +#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
-> +#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
-> +#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
-> +#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
-> +#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
-> +#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
-> +#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
-> +#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
-> +#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
-> +#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
-> +#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
-> +#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
-> +#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
-> +#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
-> +#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
-> +#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
-> +#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
-> +#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
-> +#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
-> +#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
-> +#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
-> +#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
-> +#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
-> +#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
