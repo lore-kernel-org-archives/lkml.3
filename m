@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaCaK5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 06:57:39 -0400
-Received: from natasha.panasas.com ([209.166.131.148]:55728 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaCaK5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 06:57:38 -0400
-Message-ID: <53394A11.6060204@panasas.com>
-Date: Mon, 31 Mar 2014 13:57:21 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [do_xor_speed] WARNING: CPU: 0 PID: 1 at init/main.c:708 do_one_initcall()
-References: <20140331003825.GA11782@localhost> <53391483.9010800@panasas.com> <20140331081346.GA5349@localhost>
-In-Reply-To: <20140331081346.GA5349@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1752667AbaCaK5y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 06:57:54 -0400
+Received: from ozlabs.org ([203.10.76.45]:36057 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188AbaCaK5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 06:57:52 -0400
+Date: Mon, 31 Mar 2014 21:57:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build warning after merge of the tip tree
+Message-Id: <20140331215743.a357aa685a63c06ea303dbba@canb.auug.org.au>
+In-Reply-To: <alpine.DEB.2.02.1403311140180.14882@ionos.tec.linutronix.de>
+References: <20140224151732.7461213fabef4fc1bbca8213@canb.auug.org.au>
+	<20140306150010.e873f440ac5a22d8812268a4@canb.auug.org.au>
+	<20140328165238.7d9e0804a2781eaaa88a4fa5@canb.auug.org.au>
+	<alpine.DEB.2.02.1403311140180.14882@ionos.tec.linutronix.de>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__31_Mar_2014_21_57_43_+1100_BceNixUCjzmq_68a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 11:13 AM, Fengguang Wu wrote:
-> On Mon, Mar 31, 2014 at 10:08:51AM +0300, Boaz Harrosh wrote:
->> Sorry about that I forgot about the experimental rule, fixed now.
->>
->> Is there a way for a white list. With -experimental I need to say
->> every branch I do not want included is there a way to say only
->> the branches I do want included?
-> 
-> Yes, sure. You can tell me a list of branch patterns that is suitable
-> for testing and I can blacklist everything else in your tree.
-> 
-> Thanks,
-> Fengguang
-> 
+--Signature=_Mon__31_Mar_2014_21_57_43_+1100_BceNixUCjzmq_68a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Wu, I hate to be trouble. Am I the only one who has this
-problem ? Its that I use this git tree also as a public development
-tree, when need of collaboration.
+Hi Thomas,
 
-For now it is good, I'll try to remember when I push new branches
 
-Thanks
-Boaz
+On Mon, 31 Mar 2014 11:45:24 +0200 (CEST) Thomas Gleixner <tglx@linutronix.=
+de> wrote:
+>
+> commit 8783dd3a37a5853689e1a8fa728827a50905b912
+> Author: Stephen Boyd <sboyd@codeaurora.org>
+> Date:   Tue Mar 4 16:40:30 2014 -0800
+>=20
+>     irqchip: Remove asmlinkage from static functions
+>=20
+> which is in the tip tree since March 12th.
 
+Thanks for that.
+
+An i386_defconfig produces this:
+
+arch/x86/kernel/syscall_32.c:14:1: warning: 'externally_visible' attribute =
+ignored [-Wattributes]
+arch/x86/kernel/machine_kexec_32.c: In function 'machine_kexec':
+arch/x86/kernel/machine_kexec_32.c:191:12: warning: 'externally_visible' at=
+tribute have effect only on public objects [-Wattributes]
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__31_Mar_2014_21_57_43_+1100_BceNixUCjzmq_68a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTOUotAAoJEMDTa8Ir7ZwVZxQP/28RWX/GKCoIWuDnDipOx5nF
+6cpSnnEfz61Qg5OZAOmV0L0DWh/LrBSF4cgEYTVxC3VX7apOTHyjkXMHoBNABD6U
+EC3xQoYfrMbDyCIhobXB5uD1OVWJGmkeOiI3PdGKAQi0qk6dDiSx1VSfPO4Heshq
+d0G0HrdozCf6mxRmGH8JY8eHSjgON4PYHD7C+gUfeaER21m2kWOyDU9sBn/wBRol
+MO+jHqmkmcsYKF+ZOls1ow/m7XHTxKqbtCQtrpjkZLxI63iaRJ8j/Z+Us8zBjGOP
+e/fKD8E78RIwGIrLtZtiPXO06QlmQVopbz5vsPHSgW0gASHS+DvEMjUDSK4nzL1W
+P3My9E8xt5682GcOP2IGZW60mIA1ZAhpdeUKXO0I6Ny5S/Si5k/2QD/DzEQXsElw
+GXMun0RXSmZkLKHml0C5pAF8htBbuei+B67qUbDEz8mbXdb/qDn0N6zpFdDvB5D8
+LeEzS1CY98CjCL2ZBQwk1ncdtusmO9BVysOuUfuLwsqG+Y5ae9jwJuL9SfyJ77mh
+wrOlLZfvlxHfi1KN0B9FRMfV0rHmVEI2b+0YQJ+tepiEMyKBoPp+L8LsPTkfdpwq
+48DZ9uIt1VWcK2rdf/YRPnZK+vrYuCQEq5cCiB48AuxbpSDVuywj2Zoox7bM0O/h
+2Ky+/L1pt6QLYKWPbgUF
+=xKZO
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__31_Mar_2014_21_57_43_+1100_BceNixUCjzmq_68a--
