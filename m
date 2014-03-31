@@ -1,262 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaCaKQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 06:16:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45201 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614AbaCaKQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 06:16:23 -0400
-X-IronPort-AV: E=Sophos;i="4.97,763,1389715200"; 
-   d="scan'208";a="9799974"
-Message-ID: <53393E47.5070600@cn.fujitsu.com>
-Date: Mon, 31 Mar 2014 18:07:03 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: ??? <jaegeuk.kim@samsung.com>, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [f2fs-dev] [PATCH 2/2] f2fs: use list_for_each_entry{_safe} for
- simplyfying code
-References: <000001cf4aff$baaf99e0$300ecda0$@samsung.com>
-In-Reply-To: <000001cf4aff$baaf99e0$300ecda0$@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/31 18:13:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/31 18:13:06,
-	Serialize complete at 2014/03/31 18:13:06
+	id S1754098AbaCaKQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 06:16:54 -0400
+Received: from dan.rpsys.net ([93.97.175.187]:64848 "EHLO dan.rpsys.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753256AbaCaKQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 06:16:52 -0400
+Message-ID: <1396260981.14790.65.camel@ted>
+Subject: Re: [PATCH/RFC v2 1/8] leds: Add sysfs and kernel internal API for
+ flash LEDs
+From: Richard Purdie <richard.purdie@linuxfoundation.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
+        Bryan Wu <cooloney@gmail.com>
+Date: Mon, 31 Mar 2014 11:16:21 +0100
+In-Reply-To: <1396020545-15727-2-git-send-email-j.anaszewski@samsung.com>
+References: <1396020545-15727-1-git-send-email-j.anaszewski@samsung.com>
+	 <1396020545-15727-2-git-send-email-j.anaszewski@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yu,
-On 03/29/2014 11:33 AM, Chao Yu wrote:
-
-> This patch use list_for_each_entry{_safe} instead of list_for_each{_safe} for
-> simplfying code.
+On Fri, 2014-03-28 at 16:28 +0100, Jacek Anaszewski wrote:
+> Some LED devices support two operation modes - torch and
+> flash. This patch provides support for flash LED devices
+> in the LED subsystem by introducing new sysfs attributes
+> and kernel internal interface. The attributes being
+> introduced are: flash_brightness, flash_strobe, flash_timeout,
+> max_flash_timeout, max_flash_brightness, flash_fault and
+> hw_triggered. All the flash related features are placed
+> in a separate module.
+> The modifications aim to be compatible with V4L2 framework
+> requirements related to the flash devices management. The
+> design assumes that V4L2 sub-device can take of the LED class
+> device control and communicate with it through the kernel
+> internal interface. The LED sysfs interface is made
+> unavailable then.
 > 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
 > ---
->  fs/f2fs/checkpoint.c |   37 ++++++++++++++-----------------------
->  fs/f2fs/node.c       |   16 ++++++----------
->  fs/f2fs/recovery.c   |    6 ++----
->  fs/f2fs/segment.c    |    6 ++----
->  4 files changed, 24 insertions(+), 41 deletions(-)
+>  drivers/leds/Kconfig        |    8 +
+>  drivers/leds/Makefile       |    1 +
+>  drivers/leds/led-class.c    |   56 +++++--
+>  drivers/leds/led-flash.c    |  375 +++++++++++++++++++++++++++++++++++++++++++
+>  drivers/leds/led-triggers.c |   16 +-
+>  drivers/leds/leds.h         |    3 +
+>  include/linux/leds.h        |   24 ++-
+>  include/linux/leds_flash.h  |  189 ++++++++++++++++++++++
+>  8 files changed, 658 insertions(+), 14 deletions(-)
+>  create mode 100644 drivers/leds/led-flash.c
+>  create mode 100644 include/linux/leds_flash.h
 > 
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> index d877f46..4aa521a 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -308,16 +308,15 @@ void release_orphan_inode(struct f2fs_sb_info *sbi)
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index 2062682..1e1c81f 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -19,6 +19,14 @@ config LEDS_CLASS
+>  	  This option enables the led sysfs class in /sys/class/leds.  You'll
+>  	  need this to do anything useful with LEDs.  If unsure, say N.
 >  
->  void add_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
+> +config LEDS_CLASS_FLASH
+> +	tristate "Flash LEDs Support"
+> +	depends on LEDS_CLASS
+> +	help
+> +	  This option enables support for flash LED devices. Say Y if you
+> +	  want to use flash specific features of a LED device, if they
+> +	  are supported.
+> +
+>  comment "LED drivers"
+>  
+>  config LEDS_88PM860X
+> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> index 3cd76db..8861b86 100644
+> --- a/drivers/leds/Makefile
+> +++ b/drivers/leds/Makefile
+> @@ -2,6 +2,7 @@
+>  # LED Core
+>  obj-$(CONFIG_NEW_LEDS)			+= led-core.o
+>  obj-$(CONFIG_LEDS_CLASS)		+= led-class.o
+> +obj-$(CONFIG_LEDS_CLASS_FLASH)		+= led-flash.o
+>  obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o
+>  
+>  # LED Platform Drivers
+> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+> index f37d63c..5bac140 100644
+> --- a/drivers/leds/led-class.c
+> +++ b/drivers/leds/led-class.c
+> @@ -9,16 +9,18 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> -#include <linux/module.h>
+> -#include <linux/kernel.h>
+> +#include <linux/ctype.h>
+> +#include <linux/device.h>
+> +#include <linux/err.h>
+>  #include <linux/init.h>
+> +#include <linux/kernel.h>
+>  #include <linux/list.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+>  #include <linux/spinlock.h>
+> -#include <linux/device.h>
+>  #include <linux/timer.h>
+> -#include <linux/err.h>
+> -#include <linux/ctype.h>
+>  #include <linux/leds.h>
+> +#include <linux/leds_flash.h>
+>  #include "leds.h"
+>  
+>  static struct class *leds_class;
+> @@ -45,28 +47,38 @@ static ssize_t brightness_store(struct device *dev,
 >  {
-> -	struct list_head *head, *this;
-> -	struct orphan_inode_entry *new = NULL, *orphan = NULL;
-> +	struct list_head *head;
-> +	struct orphan_inode_entry *new, *orphan;
+>  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+>  	unsigned long state;
+> -	ssize_t ret = -EINVAL;
+> +	ssize_t ret;
+> +
+> +	mutex_lock(&led_cdev->led_lock);
+> +
+> +	if (led_sysfs_is_locked(led_cdev)) {
+> +		ret = -EBUSY;
+> +		goto unlock;
+> +	}
 >  
->  	new = f2fs_kmem_cache_alloc(orphan_entry_slab, GFP_ATOMIC);
->  	new->ino = ino;
+>  	ret = kstrtoul(buf, 10, &state);
+>  	if (ret)
+> -		return ret;
+> +		goto unlock;
 >  
->  	spin_lock(&sbi->orphan_inode_lock);
->  	head = &sbi->orphan_inode_list;
-> -	list_for_each(this, head) {
-> -		orphan = list_entry(this, struct orphan_inode_entry, list);
-> +	list_for_each_entry(orphan, head, list) {
->  		if (orphan->ino == ino) {
->  			spin_unlock(&sbi->orphan_inode_lock);
->  			kmem_cache_free(orphan_entry_slab, new);
-> @@ -326,14 +325,10 @@ void add_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
+>  	if (state == LED_OFF)
+>  		led_trigger_remove(led_cdev);
+>  	__led_set_brightness(led_cdev, state);
+> +	ret = size;
 >  
->  		if (orphan->ino > ino)
->  			break;
-> -		orphan = NULL;
->  	}
->  
-> -	/* add new_oentry into list which is sorted by inode number */
-> -	if (orphan)
-> -		list_add(&new->list, this->prev);
-> -	else
-> -		list_add_tail(&new->list, head);
-> +	/* add new orphan entry into list which is sorted by inode number */
-> +	list_add_tail(&new->list, &orphan->list);
-
-It seems that the logic can not be changed here, otherwise the orphan list will not be in order if
-the new ino is bigger than all the in-list ones.
-E.g.
-ino:5
-1-->2-->3-->4
-==>
-1-->2-->3-->5-->4
-
-Regards,
-Gu
-
->  	spin_unlock(&sbi->orphan_inode_lock);
+> -	return size;
+> +unlock:
+> +	mutex_unlock(&led_cdev->led_lock);
+> +	return ret;
 >  }
+>  static DEVICE_ATTR_RW(brightness);
 >  
-> @@ -561,14 +556,12 @@ static int __add_dirty_inode(struct inode *inode, struct dir_inode_entry *new)
+> -static ssize_t led_max_brightness_show(struct device *dev,
+> +static ssize_t max_brightness_show(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
 >  {
->  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
->  	struct list_head *head = &sbi->dir_inode_list;
-> -	struct list_head *this;
-> +	struct dir_inode_entry *entry;
+>  	struct led_classdev *led_cdev = dev_get_drvdata(dev);
 >  
-> -	list_for_each(this, head) {
-> -		struct dir_inode_entry *entry;
-> -		entry = list_entry(this, struct dir_inode_entry, list);
-> +	list_for_each_entry(entry, head, list)
->  		if (unlikely(entry->inode == inode))
->  			return -EEXIST;
-> -	}
-> +
->  	list_add_tail(&new->list, head);
->  	stat_inc_dirty_dir(sbi);
->  	return 0;
-> @@ -618,7 +611,8 @@ void add_dirty_dir_inode(struct inode *inode)
->  void remove_dirty_dir_inode(struct inode *inode)
->  {
->  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> -	struct list_head *this, *head;
-> +	struct list_head *head;
-> +	struct dir_inode_entry *entry;
->  
->  	if (!S_ISDIR(inode->i_mode))
->  		return;
-> @@ -630,9 +624,7 @@ void remove_dirty_dir_inode(struct inode *inode)
->  	}
->  
->  	head = &sbi->dir_inode_list;
-> -	list_for_each(this, head) {
-> -		struct dir_inode_entry *entry;
-> -		entry = list_entry(this, struct dir_inode_entry, list);
-> +	list_for_each_entry(entry, head, list) {
->  		if (entry->inode == inode) {
->  			list_del(&entry->list);
->  			stat_dec_dirty_dir(sbi);
-> @@ -654,15 +646,14 @@ done:
->  struct inode *check_dirty_dir_inode(struct f2fs_sb_info *sbi, nid_t ino)
->  {
->  
-> -	struct list_head *this, *head;
-> +	struct list_head *head;
->  	struct inode *inode = NULL;
-> +	struct dir_inode_entry *entry;
->  
->  	spin_lock(&sbi->dir_inode_lock);
->  
->  	head = &sbi->dir_inode_list;
-> -	list_for_each(this, head) {
-> -		struct dir_inode_entry *entry;
-> -		entry = list_entry(this, struct dir_inode_entry, list);
-> +	list_for_each_entry(entry, head, list) {
->  		if (entry->inode->i_ino == ino) {
->  			inode = entry->inode;
->  			break;
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 0021056..afda3d3 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1452,7 +1452,6 @@ bool alloc_nid(struct f2fs_sb_info *sbi, nid_t *nid)
->  {
->  	struct f2fs_nm_info *nm_i = NM_I(sbi);
->  	struct free_nid *i = NULL;
-> -	struct list_head *this;
->  retry:
->  	if (unlikely(sbi->total_valid_node_count + 1 >= nm_i->max_nid))
->  		return false;
-> @@ -1462,11 +1461,9 @@ retry:
->  	/* We should not use stale free nids created by build_free_nids */
->  	if (nm_i->fcnt && !on_build_free_nids(nm_i)) {
->  		f2fs_bug_on(list_empty(&nm_i->free_nid_list));
-> -		list_for_each(this, &nm_i->free_nid_list) {
-> -			i = list_entry(this, struct free_nid, list);
-> +		list_for_each_entry(i, &nm_i->free_nid_list, list)
->  			if (i->state == NID_NEW)
->  				break;
-> -		}
->  
->  		f2fs_bug_on(i->state != NID_NEW);
->  		*nid = i->nid;
-> @@ -1781,7 +1778,7 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
->  	struct f2fs_nm_info *nm_i = NM_I(sbi);
->  	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_HOT_DATA);
->  	struct f2fs_summary_block *sum = curseg->sum_blk;
-> -	struct list_head *cur, *n;
-> +	struct nat_entry *ne, *cur;
->  	struct page *page = NULL;
->  	struct f2fs_nat_block *nat_blk = NULL;
->  	nid_t start_nid = 0, end_nid = 0;
-> @@ -1793,18 +1790,17 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
->  		mutex_lock(&curseg->curseg_mutex);
->  
->  	/* 1) flush dirty nat caches */
-> -	list_for_each_safe(cur, n, &nm_i->dirty_nat_entries) {
-> -		struct nat_entry *ne;
-> +	list_for_each_entry_safe(ne, cur, &nm_i->dirty_nat_entries, list) {
->  		nid_t nid;
->  		struct f2fs_nat_entry raw_ne;
->  		int offset = -1;
->  		block_t new_blkaddr;
->  
-> -		ne = list_entry(cur, struct nat_entry, list);
-> -		nid = nat_get_nid(ne);
-> -
->  		if (nat_get_blkaddr(ne) == NEW_ADDR)
->  			continue;
-> +
-> +		nid = nat_get_nid(ne);
-> +
->  		if (flushed)
->  			goto to_nat_page;
->  
-> diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> index bbef4ed..b1ae89f 100644
-> --- a/fs/f2fs/recovery.c
-> +++ b/fs/f2fs/recovery.c
-> @@ -27,14 +27,12 @@ bool space_for_roll_forward(struct f2fs_sb_info *sbi)
->  static struct fsync_inode_entry *get_fsync_inode(struct list_head *head,
->  								nid_t ino)
->  {
-> -	struct list_head *this;
->  	struct fsync_inode_entry *entry;
->  
-> -	list_for_each(this, head) {
-> -		entry = list_entry(this, struct fsync_inode_entry, list);
-> +	list_for_each_entry(entry, head, list)
->  		if (entry->inode->i_ino == ino)
->  			return entry;
-> -	}
-> +
->  	return NULL;
+>  	return sprintf(buf, "%u\n", led_cdev->max_brightness);
 >  }
+> -static DEVICE_ATTR(max_brightness, 0444, led_max_brightness_show, NULL);
+> +static DEVICE_ATTR_RO(max_brightness);
 >  
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index 570ab9a..cb49e63 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -340,8 +340,7 @@ static void set_prefree_as_free_segments(struct f2fs_sb_info *sbi)
->  void clear_prefree_segments(struct f2fs_sb_info *sbi)
+>  #ifdef CONFIG_LEDS_TRIGGERS
+>  static DEVICE_ATTR(trigger, 0644, led_trigger_show, led_trigger_store);
+> @@ -173,7 +185,15 @@ EXPORT_SYMBOL_GPL(led_classdev_suspend);
+>   */
+>  void led_classdev_resume(struct led_classdev *led_cdev)
 >  {
->  	struct list_head *head = &(SM_I(sbi)->discard_list);
-> -	struct list_head *this, *next;
-> -	struct discard_entry *entry;
-> +	struct discard_entry *entry, *this;
->  	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
->  	unsigned long *prefree_map = dirty_i->dirty_segmap[PRE];
->  	unsigned int total_segs = TOTAL_SEGS(sbi);
-> @@ -370,8 +369,7 @@ void clear_prefree_segments(struct f2fs_sb_info *sbi)
->  	mutex_unlock(&dirty_i->seglist_lock);
+> +	struct led_flash *flash = led_cdev->flash;
+> +
+>  	led_cdev->brightness_set(led_cdev, led_cdev->brightness);
+> +	if (flash) {
+> +		call_flash_op(brightness_set, led_cdev,
+> +				flash->brightness);
+> +		call_flash_op(timeout_set, led_cdev,
+> +				&flash->timeout);
+> +	}
+>  	led_cdev->flags &= ~LED_SUSPENDED;
+>  }
+>  EXPORT_SYMBOL_GPL(led_classdev_resume);
+> @@ -210,14 +230,24 @@ static const struct dev_pm_ops leds_class_dev_pm_ops = {
+>   */
+>  int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
+>  {
+> +	int ret;
+> +
+>  	led_cdev->dev = device_create(leds_class, parent, 0, led_cdev,
+>  				      "%s", led_cdev->name);
+>  	if (IS_ERR(led_cdev->dev))
+>  		return PTR_ERR(led_cdev->dev);
 >  
->  	/* send small discards */
-> -	list_for_each_safe(this, next, head) {
-> -		entry = list_entry(this, struct discard_entry, list);
-> +	list_for_each_entry_safe(entry, this, head, list) {
->  		f2fs_issue_discard(sbi, entry->blkaddr, entry->len);
->  		list_del(&entry->list);
->  		SM_I(sbi)->nr_discards -= entry->len;
+> +	ret = led_classdev_init_flash(led_cdev);
+> +	if (ret < 0) {
+> +		dev_dbg(parent,
+> +			"Flash LED initialization failed for the %s\n device", led_cdev->name);
+> +		goto error_flash_init;
+> +	}
+> +
+
+Thanks for moving things to the separate file, I think it is cleaner.
+The trouble is that because of the above call to
+led_classdev_init_flash(), you can't have the led core loaded without
+the flash module too. There are a few other calls which also give the
+same end result.
+
+I guess what I'm wondering is whether this can work the other way
+around, the flash class wraps around the led core and extends it for
+those devices with flash capable LEDs? There may be some internals need
+accessing from led-core but it would mean you can have one module loaded
+without the other. This would mean a new registration function for flash
+capable LED devices but in reality that shouldn't be much of an issue?
+
+I appreciate this may seem like a small issue since RAM is cheap and who
+cares about the kernel size, but these small pieces all mount up. I wish
+more people thought about how to make the kernel modules work more
+effectively...
+
+Cheers,
+
+Richard
+
 
 
