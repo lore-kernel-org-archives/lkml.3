@@ -1,1393 +1,812 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaCaJat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 05:30:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48521 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753520AbaCaJaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 05:30:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,764,1389772800"; 
-   d="scan'208";a="511412418"
-Message-ID: <1396258236.3376.21.camel@smile.fi.intel.com>
-Subject: Re: [PATCH 2/2] dma: Add Xilinx AXI Direct Memory Access Engine
- driver support
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org, lars@metafoo.de,
-        jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 31 Mar 2014 12:30:36 +0300
-In-Reply-To: <1396106920-19015-2-git-send-email-sthokal@xilinx.com>
-References: <1396106920-19015-1-git-send-email-sthokal@xilinx.com>
-	 <1396106920-19015-2-git-send-email-sthokal@xilinx.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753898AbaCaJbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 05:31:37 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:55658 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854AbaCaJbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 05:31:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395933906-2268-1-git-send-email-harinik@xilinx.com>
+References: <1395933906-2268-1-git-send-email-harinik@xilinx.com>
+Date: Mon, 31 Mar 2014 11:23:15 +0200
+Message-ID: <CAPDyKFo4R9izP=jcoU+jqd74Nbeh+-5A1T8c_=EL4cmzja_29A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] GPIO: Add driver for Zynq GPIO controller
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Harini Katakam <harinik@xilinx.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, gnurou@gmail.com,
+        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        linux-gpio@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, michals@xilinx.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-29 at 20:58 +0530, Srikanth Thokala wrote:
-> This is the driver for the AXI Direct Memory Access (AXI DMA)
-> core, which is a soft Xilinx IP core that provides high-
-> bandwidth direct memory access between memory and AXI4-Stream
-> type target peripherals.
-> 
-> This module works on Zynq (ARM Based SoC) and Microblaze platforms.
-
-Few nitpicks below.
-
-> 
-> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+On 27 March 2014 16:25, Harini Katakam <harinik@xilinx.com> wrote:
+> Add support for GPIO controller used by Xilinx Zynq
+>
+> Signed-off-by: Harini Katakam <harinik@xilinx.com>
 > ---
-> - This driver patch is created on top of earlier series,
->   1/2 - "dma: Add Xilinx Video DMA DT Binding Documentation"
->   2/2 - "dma: Add Xilinx AXI Video Direct Memory Access Engine driver support"
-> - Rebased on v3.14.0-rc8
-> ---
->  drivers/dma/Kconfig             |   13 +
->  drivers/dma/xilinx/Makefile     |    1 +
->  drivers/dma/xilinx/xilinx_dma.c | 1225 +++++++++++++++++++++++++++++++++++++++
->  include/linux/amba/xilinx_dma.h |   17 +
->  4 files changed, 1256 insertions(+)
->  create mode 100644 drivers/dma/xilinx/xilinx_dma.c
-> 
-> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> index 44b312e..8cfcc74 100644
-> --- a/drivers/dma/Kconfig
-> +++ b/drivers/dma/Kconfig
-> @@ -365,6 +365,19 @@ config XILINX_VDMA
->  	  channels, Memory Mapped to Stream (MM2S) and Stream to
->  	  Memory Mapped (S2MM) for the data transfers.
->  
-> +config XILINX_DMA
-> +	tristate "Xilinx AXI DMA Engine"
-> +	depends on (ARCH_ZYNQ || MICROBLAZE)
-> +	select DMA_ENGINE
-> +	help
-> +	  Enable support for Xilinx AXI DMA Soft IP.
+>  drivers/gpio/Kconfig     |    7 +
+>  drivers/gpio/Makefile    |    1 +
+>  drivers/gpio/gpio-zynq.c |  690 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 698 insertions(+)
+>  create mode 100644 drivers/gpio/gpio-zynq.c
+>
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 903f24d..67a22a6 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -313,6 +313,13 @@ config GPIO_XTENSA
+>           Say yes here to support the Xtensa internal GPIO32 IMPWIRE (input)
+>           and EXPSTATE (output) ports
+>
+> +config GPIO_ZYNQ
+> +       bool "Xilinx ZYNQ GPIO support"
+> +       depends on ARCH_ZYNQ
+> +       select GENERIC_IRQ_CHIP
+> +       help
+> +        Say yes here to support Xilinx ZYNQ GPIO controller.
 > +
-> +	  This engine provides high-bandwidth direct memory access
-> +	  between memory and AXI4-Stream type target peripherals.
-> +	  It has two stream interfaces/channels, Memory Mapped to
-> +	  Stream (MM2S) and Stream to Memory Mapped (S2MM) for the
-> +	  data transfers.
-> +
->  config DMA_ENGINE
->  	bool
->  
-> diff --git a/drivers/dma/xilinx/Makefile b/drivers/dma/xilinx/Makefile
-> index 3c4e9f2..6224a49 100644
-> --- a/drivers/dma/xilinx/Makefile
-> +++ b/drivers/dma/xilinx/Makefile
-> @@ -1 +1,2 @@
->  obj-$(CONFIG_XILINX_VDMA) += xilinx_vdma.o
-> +obj-$(CONFIG_XILINX_DMA) += xilinx_dma.o
-> diff --git a/drivers/dma/xilinx/xilinx_dma.c b/drivers/dma/xilinx/xilinx_dma.c
+>  config GPIO_VR41XX
+>         tristate "NEC VR4100 series General-purpose I/O Uint support"
+>         depends on CPU_VR41XX
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 5d50179..439f23a 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -99,3 +99,4 @@ obj-$(CONFIG_GPIO_WM8350)     += gpio-wm8350.o
+>  obj-$(CONFIG_GPIO_WM8994)      += gpio-wm8994.o
+>  obj-$(CONFIG_GPIO_XILINX)      += gpio-xilinx.o
+>  obj-$(CONFIG_GPIO_XTENSA)      += gpio-xtensa.o
+> +obj-$(CONFIG_GPIO_ZYNQ)                += gpio-zynq.o
+> diff --git a/drivers/gpio/gpio-zynq.c b/drivers/gpio/gpio-zynq.c
 > new file mode 100644
-> index 0000000..9f1a4f2
+> index 0000000..1f5fdfc
 > --- /dev/null
-> +++ b/drivers/dma/xilinx/xilinx_dma.c
-> @@ -0,0 +1,1225 @@
+> +++ b/drivers/gpio/gpio-zynq.c
+> @@ -0,0 +1,690 @@
 > +/*
-> + * DMA driver for Xilinx DMA Engine
+> + * Xilinx Zynq GPIO device driver
 > + *
-> + * Copyright (C) 2010 - 2014 Xilinx, Inc. All rights reserved.
+> + * Copyright (C) 2009 - 2014 Xilinx, Inc.
 > + *
-> + * Based on the Freescale DMA driver.
-> + *
-> + * Description:
-> + *  The AXI DMA, is a soft IP, which provides high-bandwidth Direct Memory
-> + *  Access between memory and AXI4-Stream-type target peripherals. It can be
-> + *  configured to have one channel or two channels and if configured as two
-> + *  channels, one is to transmit data from memory to a device and another is
-> + *  to receive from a device.
-> + *
-> + * This program is free software: you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation, either version 2 of the License, or
-> + * (at your option) any later version.
+> + * This program is free software; you can redistribute it and/or modify it under
+> + * the terms of the GNU General Public License as published by the Free Software
+> + * Foundation; either version 2 of the License, or (at your option) any later
+> + * version.
 > + */
 > +
-> +#include <linux/amba/xilinx_dma.h>
-> +#include <linux/bitops.h>
+> +#include <linux/clk.h>
+> +#include <linux/gpio.h>
 > +#include <linux/init.h>
 > +#include <linux/interrupt.h>
 > +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqchip/chained_irq.h>
+> +#include <linux/irqdomain.h>
 > +#include <linux/module.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_dma.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/slab.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pm_runtime.h>
 > +
-> +#include "../dmaengine.h"
+> +#define DRIVER_NAME "zynq-gpio"
+> +#define ZYNQ_GPIO_NR_GPIOS     118
 > +
-> +/* Register Offsets */
-> +#define XILINX_DMA_REG_CONTROL		0x00
-> +#define XILINX_DMA_REG_STATUS		0x04
-> +#define XILINX_DMA_REG_CURDESC		0x08
-> +#define XILINX_DMA_REG_TAILDESC		0x10
-> +#define XILINX_DMA_REG_SRCADDR		0x18
-> +#define XILINX_DMA_REG_DSTADDR		0x20
-> +#define XILINX_DMA_REG_BTT		0x28
+> +static struct irq_domain *irq_domain;
 > +
-> +/* Channel/Descriptor Offsets */
-> +#define XILINX_DMA_MM2S_CTRL_OFFSET	0x00
-> +#define XILINX_DMA_S2MM_CTRL_OFFSET	0x30
+> +/* Register offsets for the GPIO device */
 > +
-> +/* General register bits definitions */
-> +#define XILINX_DMA_CR_RUNSTOP_MASK	BIT(0)
-> +#define XILINX_DMA_CR_RESET_MASK	BIT(2)
+> +/* LSW Mask & Data -WO */
+> +#define ZYNQ_GPIO_DATA_LSW_OFFSET(BANK)        (0x000 + (8 * BANK))
+> +/* MSW Mask & Data -WO */
+> +#define ZYNQ_GPIO_DATA_MSW_OFFSET(BANK)        (0x004 + (8 * BANK))
+> +/* Data Register-RW */
+> +#define ZYNQ_GPIO_DATA_OFFSET(BANK)    (0x040 + (4 * BANK))
+> +/* Direction mode reg-RW */
+> +#define ZYNQ_GPIO_DIRM_OFFSET(BANK)    (0x204 + (0x40 * BANK))
+> +/* Output enable reg-RW */
+> +#define ZYNQ_GPIO_OUTEN_OFFSET(BANK)   (0x208 + (0x40 * BANK))
+> +/* Interrupt mask reg-RO */
+> +#define ZYNQ_GPIO_INTMASK_OFFSET(BANK) (0x20C + (0x40 * BANK))
+> +/* Interrupt enable reg-WO */
+> +#define ZYNQ_GPIO_INTEN_OFFSET(BANK)   (0x210 + (0x40 * BANK))
+> +/* Interrupt disable reg-WO */
+> +#define ZYNQ_GPIO_INTDIS_OFFSET(BANK)  (0x214 + (0x40 * BANK))
+> +/* Interrupt status reg-RO */
+> +#define ZYNQ_GPIO_INTSTS_OFFSET(BANK)  (0x218 + (0x40 * BANK))
+> +/* Interrupt type reg-RW */
+> +#define ZYNQ_GPIO_INTTYPE_OFFSET(BANK) (0x21C + (0x40 * BANK))
+> +/* Interrupt polarity reg-RW */
+> +#define ZYNQ_GPIO_INTPOL_OFFSET(BANK)  (0x220 + (0x40 * BANK))
+> +/* Interrupt on any, reg-RW */
+> +#define ZYNQ_GPIO_INTANY_OFFSET(BANK)  (0x224 + (0x40 * BANK))
 > +
-> +#define XILINX_DMA_CR_DELAY_SHIFT	24
-> +#define XILINX_DMA_CR_COALESCE_SHIFT	16
+> +/* Read/Write access to the GPIO PS registers */
+> +static inline u32 zynq_gpio_readreg(void __iomem *offset)
+> +{
+> +       return readl_relaxed(offset);
+> +}
 > +
-> +#define XILINX_DMA_CR_DELAY_MAX		GENMASK(7, 0)
-> +#define XILINX_DMA_CR_COALESCE_MAX	GENMASK(7, 0)
+> +static inline void zynq_gpio_writereg(void __iomem *offset, u32 val)
+> +{
+> +       writel_relaxed(val, offset);
+> +}
 > +
-> +#define XILINX_DMA_SR_HALTED_MASK	BIT(0)
-> +#define XILINX_DMA_SR_IDLE_MASK		BIT(1)
+> +static unsigned int zynq_gpio_pin_table[] = {
+> +       31, /* 0 - 31 */
+> +       53, /* 32 - 53 */
+> +       85, /* 54 - 85 */
+> +       117 /* 86 - 117 */
+> +};
 > +
-> +#define XILINX_DMA_XR_IRQ_IOC_MASK	BIT(12)
-> +#define XILINX_DMA_XR_IRQ_DELAY_MASK	BIT(13)
-> +#define XILINX_DMA_XR_IRQ_ERROR_MASK	BIT(14)
-> +#define XILINX_DMA_XR_IRQ_ALL_MASK	GENMASK(14, 12)
+> +/* Maximum banks */
+> +#define ZYNQ_GPIO_MAX_BANK     4
 > +
-> +/* BD definitions */
-> +#define XILINX_DMA_BD_STS_ALL_MASK	GENMASK(31, 28)
-> +#define XILINX_DMA_BD_SOP		BIT(27)
-> +#define XILINX_DMA_BD_EOP		BIT(26)
+> +/* Disable all interrupts mask */
+> +#define ZYNQ_GPIO_IXR_DISABLE_ALL      0xFFFFFFFF
 > +
-> +/* Hw specific definitions */
-> +#define XILINX_DMA_MAX_CHANS_PER_DEVICE	0x2
-> +#define XILINX_DMA_MAX_TRANS_LEN	GENMASK(22, 0)
+> +/* GPIO pin high */
+> +#define ZYNQ_GPIO_PIN_HIGH 1
 > +
-> +/* Delay loop counter to prevent hardware failure */
-> +#define XILINX_DMA_LOOP_COUNT		1000000
+> +/* Mid pin number of a bank */
+> +#define ZYNQ_GPIO_MID_PIN_NUM 16
 > +
-> +/* Maximum number of Descriptors */
-> +#define XILINX_DMA_NUM_DESCS		64
-> +
-> +/**
-> + * struct xilinx_dma_desc_hw - Hardware Descriptor
-> + * @next_desc: Next Descriptor Pointer @0x00
-> + * @pad1: Reserved @0x04
-> + * @buf_addr: Buffer address @0x08
-> + * @pad2: Reserved @0x0C
-> + * @pad3: Reserved @0x10
-> + * @pad4: Reserved @0x14
-> + * @control: Control field @0x18
-> + * @status: Status field @0x1C
-> + * @app: APP Fields @0x20 - 0x30
-> + */
-> +struct xilinx_dma_desc_hw {
-> +	u32 next_desc;
-> +	u32 pad1;
-> +	u32 buf_addr;
-> +	u32 pad2;
-> +	u32 pad3;
-> +	u32 pad4;
-> +	u32 control;
-> +	u32 status;
-> +	u32 app[XILINX_DMA_NUM_APP_WORDS];
-> +} __aligned(64);
+> +/* GPIO upper 16 bit mask */
+> +#define ZYNQ_GPIO_UPPER_MASK 0xFFFF0000
 > +
 > +/**
-> + * struct xilinx_dma_tx_segment - Descriptor segment
-> + * @hw: Hardware descriptor
-> + * @node: Node in the descriptor segments list
-> + * @phys: Physical address of segment
+> + * struct zynq_gpio - gpio device private data structure
+> + * @chip:      instance of the gpio_chip
+> + * @base_addr: base address of the GPIO device
+> + * @irq:       irq associated with the controller
+> + * @irq_base:  base of IRQ number for interrupt
+> + * @clk:       clock resource for this controller
 > + */
-> +struct xilinx_dma_tx_segment {
-> +	struct xilinx_dma_desc_hw hw;
-> +	struct list_head node;
-> +	dma_addr_t phys;
-> +} __aligned(64);
-> +
-> +/**
-> + * struct xilinx_dma_tx_descriptor - Per Transaction structure
-> + * @async_tx: Async transaction descriptor
-> + * @segments: TX segments list
-> + * @node: Node in the channel descriptors list
-> + */
-> +struct xilinx_dma_tx_descriptor {
-> +	struct dma_async_tx_descriptor async_tx;
-> +	struct list_head segments;
-> +	struct list_head node;
+> +struct zynq_gpio {
+> +       struct gpio_chip chip;
+> +       void __iomem *base_addr;
+> +       unsigned int irq;
+> +       unsigned int irq_base;
+> +       struct clk *clk;
 > +};
 > +
 > +/**
-> + * struct xilinx_dma_chan - Driver specific DMA channel structure
-> + * @xdev: Driver specific device structure
-> + * @ctrl_offset: Control registers offset
-> + * @lock: Descriptor operation lock
-> + * @pending_list: Descriptors waiting
-> + * @active_desc: Active descriptor
-> + * @allocated_desc: Allocated descriptor
-> + * @done_list: Complete descriptors
-> + * @free_seg_list: Free descriptors
-> + * @common: DMA common channel
-> + * @seg_v: Statically allocated segments base
-> + * @seg_p: Physical allocated segments base
-> + * @dev: The dma device
-> + * @irq: Channel IRQ
-> + * @id: Channel ID
-> + * @direction: Transfer direction
-> + * @has_sg: Support scatter transfers
-> + * @err: Channel has errors
-> + * @tasklet: Cleanup work after irq
-> + * @residue: Residue
+> + * zynq_gpio_get_bank_pin - Get the bank number and pin number within that bank
+> + * for a given pin in the GPIO device
+> + * @pin_num:   gpio pin number within the device
+> + * @bank_num:  an output parameter used to return the bank number of the gpio
+> + *             pin
+> + * @bank_pin_num: an output parameter used to return pin number within a bank
+> + *               for the given gpio pin
+> + *
+> + * Returns the bank number.
 > + */
-> +struct xilinx_dma_chan {
-> +	struct xilinx_dma_device *xdev;
-> +	u32 ctrl_offset;
-> +	spinlock_t lock;
-> +	struct list_head pending_list;
-> +	struct xilinx_dma_tx_descriptor *active_desc;
-> +	struct xilinx_dma_tx_descriptor *allocated_desc;
-> +	struct list_head done_list;
-> +	struct list_head free_seg_list;
-> +	struct dma_chan common;
-> +	struct xilinx_dma_tx_segment *seg_v;
-> +	dma_addr_t seg_p;
-> +	struct device *dev;
-> +	int irq;
-> +	int id;
-> +	enum dma_transfer_direction direction;
-> +	bool has_sg;
-> +	int err;
-> +	struct tasklet_struct tasklet;
-> +	u32 residue;
+> +static inline void zynq_gpio_get_bank_pin(unsigned int pin_num,
+> +                                         unsigned int *bank_num,
+> +                                         unsigned int *bank_pin_num)
+> +{
+> +       for (*bank_num = 0; *bank_num < ZYNQ_GPIO_MAX_BANK; (*bank_num)++)
+> +               if (pin_num <= zynq_gpio_pin_table[*bank_num])
+> +                       break;
+> +
+> +       if (!(*bank_num))
+> +               *bank_pin_num = pin_num;
+> +       else
+> +               *bank_pin_num = pin_num %
+> +                               (zynq_gpio_pin_table[*bank_num - 1] + 1);
+> +}
+> +
+> +/**
+> + * zynq_gpio_get_value - Get the state of the specified pin of GPIO device
+> + * @chip:      gpio_chip instance to be worked on
+> + * @pin:       gpio pin number within the device
+> + *
+> + * This function reads the state of the specified pin of the GPIO device.
+> + *
+> + * Return: 0 if the pin is low, 1 if pin is high.
+> + */
+> +static int zynq_gpio_get_value(struct gpio_chip *chip, unsigned int pin)
+> +{
+> +       unsigned int bank_num, bank_pin_num, data;
+> +       struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
+> +
+> +       zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
+> +
+> +       data = zynq_gpio_readreg(gpio->base_addr +
+> +                                ZYNQ_GPIO_DATA_OFFSET(bank_num));
+> +       return (data >> bank_pin_num) & ZYNQ_GPIO_PIN_HIGH;
+> +}
+> +
+> +/**
+> + * zynq_gpio_set_value - Modify the state of the pin with specified value
+> + * @chip:      gpio_chip instance to be worked on
+> + * @pin:       gpio pin number within the device
+> + * @state:     value used to modify the state of the specified pin
+> + *
+> + * This function calculates the register offset (i.e to lower 16 bits or
+> + * upper 16 bits) based on the given pin number and sets the state of a
+> + * gpio pin to the specified value. The state is either 0 or non-zero.
+> + */
+> +static void zynq_gpio_set_value(struct gpio_chip *chip, unsigned int pin,
+> +                               int state)
+> +{
+> +       unsigned int reg_offset, bank_num, bank_pin_num;
+> +       struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
+> +
+> +       zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
+> +
+> +       if (bank_pin_num >= ZYNQ_GPIO_MID_PIN_NUM) {
+> +               /* only 16 data bits in bit maskable reg */
+> +               bank_pin_num -= ZYNQ_GPIO_MID_PIN_NUM;
+> +               reg_offset = ZYNQ_GPIO_DATA_MSW_OFFSET(bank_num);
+> +       } else {
+> +               reg_offset = ZYNQ_GPIO_DATA_LSW_OFFSET(bank_num);
+> +       }
+> +
+> +       /*
+> +        * get the 32 bit value to be written to the mask/data register where
+> +        * the upper 16 bits is the mask and lower 16 bits is the data
+> +        */
+> +       if (state)
+> +               state = 1;
+> +       state = ~(1 << (bank_pin_num + ZYNQ_GPIO_MID_PIN_NUM)) &
+> +               ((state << bank_pin_num) | ZYNQ_GPIO_UPPER_MASK);
+> +
+> +       zynq_gpio_writereg(gpio->base_addr + reg_offset, state);
+> +}
+> +
+> +/**
+> + * zynq_gpio_dir_in - Set the direction of the specified GPIO pin as input
+> + * @chip:      gpio_chip instance to be worked on
+> + * @pin:       gpio pin number within the device
+> + *
+> + * This function uses the read-modify-write sequence to set the direction of
+> + * the gpio pin as input.
+> + *
+> + * Return: 0 always
+> + */
+> +static int zynq_gpio_dir_in(struct gpio_chip *chip, unsigned int pin)
+> +{
+> +       unsigned int reg, bank_num, bank_pin_num;
+> +       struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
+> +
+> +       zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
+> +       /* clear the bit in direction mode reg to set the pin as input */
+> +       reg = zynq_gpio_readreg(gpio->base_addr +
+> +                               ZYNQ_GPIO_DIRM_OFFSET(bank_num));
+> +       reg &= ~(1 << bank_pin_num);
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_DIRM_OFFSET(bank_num),
+> +                          reg);
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * zynq_gpio_dir_out - Set the direction of the specified GPIO pin as output
+> + * @chip:      gpio_chip instance to be worked on
+> + * @pin:       gpio pin number within the device
+> + * @state:     value to be written to specified pin
+> + *
+> + * This function sets the direction of specified GPIO pin as output, configures
+> + * the Output Enable register for the pin and uses zynq_gpio_set to set
+> + * the state of the pin to the value specified.
+> + *
+> + * Return: 0 always
+> + */
+> +static int zynq_gpio_dir_out(struct gpio_chip *chip, unsigned int pin,
+> +                            int state)
+> +{
+> +       struct zynq_gpio *gpio = container_of(chip, struct zynq_gpio, chip);
+> +       unsigned int reg, bank_num, bank_pin_num;
+> +
+> +       zynq_gpio_get_bank_pin(pin, &bank_num, &bank_pin_num);
+> +
+> +       /* set the GPIO pin as output */
+> +       reg = zynq_gpio_readreg(gpio->base_addr +
+> +                               ZYNQ_GPIO_DIRM_OFFSET(bank_num));
+> +       reg |= 1 << bank_pin_num;
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_DIRM_OFFSET(bank_num),
+> +                          reg);
+> +
+> +       /* configure the output enable reg for the pin */
+> +       reg = zynq_gpio_readreg(gpio->base_addr +
+> +                               ZYNQ_GPIO_OUTEN_OFFSET(bank_num));
+> +       reg |= 1 << bank_pin_num;
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_OUTEN_OFFSET(bank_num),
+> +                          reg);
+> +
+> +       /* set the state of the pin */
+> +       zynq_gpio_set_value(chip, pin, state);
+> +       return 0;
+> +}
+> +
+> +static int zynq_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       return irq_find_mapping(irq_domain, offset);
+> +}
+> +
+> +/**
+> + * zynq_gpio_irq_ack - Acknowledge the interrupt of a gpio pin
+> + * @irq_data:  irq data containing irq number of gpio pin for the interrupt
+> + *             to ack
+> + *
+> + * This function calculates gpio pin number from irq number and sets the bit
+> + * in the Interrupt Status Register of the corresponding bank, to ACK the irq.
+> + */
+> +static void zynq_gpio_irq_ack(struct irq_data *irq_data)
+> +{
+> +       struct zynq_gpio *gpio = (struct zynq_gpio *)
+> +                                irq_data_get_irq_chip_data(irq_data);
+> +       unsigned int device_pin_num, bank_num, bank_pin_num;
+> +
+> +       device_pin_num = irq_data->hwirq;
+> +       zynq_gpio_get_bank_pin(device_pin_num, &bank_num, &bank_pin_num);
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_INTSTS_OFFSET(bank_num),
+> +                          1 << bank_pin_num);
+> +}
+> +
+> +/**
+> + * zynq_gpio_irq_mask - Disable the interrupts for a gpio pin
+> + * @irq_data:  per irq and chip data passed down to chip functions
+> + *
+> + * This function calculates gpio pin number from irq number and sets the
+> + * bit in the Interrupt Disable register of the corresponding bank to disable
+> + * interrupts for that pin.
+> + */
+> +static void zynq_gpio_irq_mask(struct irq_data *irq_data)
+> +{
+> +       struct zynq_gpio *gpio = (struct zynq_gpio *)
+> +                                irq_data_get_irq_chip_data(irq_data);
+> +       unsigned int device_pin_num, bank_num, bank_pin_num;
+> +
+> +       device_pin_num = irq_data->hwirq;
+> +       zynq_gpio_get_bank_pin(device_pin_num, &bank_num, &bank_pin_num);
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_INTDIS_OFFSET(bank_num),
+> +                          1 << bank_pin_num);
+> +}
+> +
+> +/**
+> + * zynq_gpio_irq_unmask - Enable the interrupts for a gpio pin
+> + * @irq_data:  irq data containing irq number of gpio pin for the interrupt
+> + *             to enable
+> + *
+> + * This function calculates the gpio pin number from irq number and sets the
+> + * bit in the Interrupt Enable register of the corresponding bank to enable
+> + * interrupts for that pin.
+> + */
+> +static void zynq_gpio_irq_unmask(struct irq_data *irq_data)
+> +{
+> +       struct zynq_gpio *gpio = irq_data_get_irq_chip_data(irq_data);
+> +       unsigned int device_pin_num, bank_num, bank_pin_num;
+> +
+> +       device_pin_num = irq_data->hwirq;
+> +       zynq_gpio_get_bank_pin(device_pin_num, &bank_num, &bank_pin_num);
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_INTEN_OFFSET(bank_num),
+> +                          1 << bank_pin_num);
+> +}
+> +
+> +/**
+> + * zynq_gpio_set_irq_type - Set the irq type for a gpio pin
+> + * @irq_data:  irq data containing irq number of gpio pin
+> + * @type:      interrupt type that is to be set for the gpio pin
+> + *
+> + * This function gets the gpio pin number and its bank from the gpio pin number
+> + * and configures the INT_TYPE, INT_POLARITY and INT_ANY registers.
+> + *
+> + * Return: 0, negative error otherwise.
+> + * TYPE-EDGE_RISING,  INT_TYPE - 1, INT_POLARITY - 1,  INT_ANY - 0;
+> + * TYPE-EDGE_FALLING, INT_TYPE - 1, INT_POLARITY - 0,  INT_ANY - 0;
+> + * TYPE-EDGE_BOTH,    INT_TYPE - 1, INT_POLARITY - NA, INT_ANY - 1;
+> + * TYPE-LEVEL_HIGH,   INT_TYPE - 0, INT_POLARITY - 1,  INT_ANY - NA;
+> + * TYPE-LEVEL_LOW,    INT_TYPE - 0, INT_POLARITY - 0,  INT_ANY - NA
+> + */
+> +static int zynq_gpio_set_irq_type(struct irq_data *irq_data, unsigned int type)
+> +{
+> +       struct zynq_gpio *gpio = irq_data_get_irq_chip_data(irq_data);
+> +       unsigned int device_pin_num, bank_num, bank_pin_num;
+> +       unsigned int int_type, int_pol, int_any;
+> +
+> +       device_pin_num = irq_data->hwirq;
+> +       zynq_gpio_get_bank_pin(device_pin_num, &bank_num, &bank_pin_num);
+> +
+> +       int_type = zynq_gpio_readreg(gpio->base_addr +
+> +                                    ZYNQ_GPIO_INTTYPE_OFFSET(bank_num));
+> +       int_pol = zynq_gpio_readreg(gpio->base_addr +
+> +                                   ZYNQ_GPIO_INTPOL_OFFSET(bank_num));
+> +       int_any = zynq_gpio_readreg(gpio->base_addr +
+> +                                   ZYNQ_GPIO_INTANY_OFFSET(bank_num));
+> +
+> +       /*
+> +        * based on the type requested, configure the INT_TYPE, INT_POLARITY
+> +        * and INT_ANY registers
+> +        */
+> +       switch (type) {
+> +       case IRQ_TYPE_EDGE_RISING:
+> +               int_type |= (1 << bank_pin_num);
+> +               int_pol |= (1 << bank_pin_num);
+> +               int_any &= ~(1 << bank_pin_num);
+> +               break;
+> +       case IRQ_TYPE_EDGE_FALLING:
+> +               int_type |= (1 << bank_pin_num);
+> +               int_pol &= ~(1 << bank_pin_num);
+> +               int_any &= ~(1 << bank_pin_num);
+> +               break;
+> +       case IRQ_TYPE_EDGE_BOTH:
+> +               int_type |= (1 << bank_pin_num);
+> +               int_any |= (1 << bank_pin_num);
+> +               break;
+> +       case IRQ_TYPE_LEVEL_HIGH:
+> +               int_type &= ~(1 << bank_pin_num);
+> +               int_pol |= (1 << bank_pin_num);
+> +               break;
+> +       case IRQ_TYPE_LEVEL_LOW:
+> +               int_type &= ~(1 << bank_pin_num);
+> +               int_pol &= ~(1 << bank_pin_num);
+> +               break;
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +
+> +       zynq_gpio_writereg(gpio->base_addr +
+> +                          ZYNQ_GPIO_INTTYPE_OFFSET(bank_num), int_type);
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_INTPOL_OFFSET(bank_num),
+> +                          int_pol);
+> +       zynq_gpio_writereg(gpio->base_addr + ZYNQ_GPIO_INTANY_OFFSET(bank_num),
+> +                          int_any);
+> +       return 0;
+> +}
+> +
+> +static int zynq_gpio_set_wake(struct irq_data *data, unsigned int on)
+> +{
+> +       if (on)
+> +               zynq_gpio_irq_unmask(data);
+> +       else
+> +               zynq_gpio_irq_mask(data);
+> +
+> +       return 0;
+> +}
+> +
+> +/* irq chip descriptor */
+> +static struct irq_chip zynq_gpio_irqchip = {
+> +       .name           = DRIVER_NAME,
+> +       .irq_ack        = zynq_gpio_irq_ack,
+> +       .irq_mask       = zynq_gpio_irq_mask,
+> +       .irq_unmask     = zynq_gpio_irq_unmask,
+> +       .irq_set_type   = zynq_gpio_set_irq_type,
+> +       .irq_set_wake   = zynq_gpio_set_wake,
 > +};
 > +
 > +/**
-> + * struct xilinx_dma_device - DMA device structure
-> + * @regs: I/O mapped base address
-> + * @dev: Device Structure
-> + * @common: DMA device structure
-> + * @chan: Driver specific DMA channel
-> + * @has_sg: Specifies whether Scatter-Gather is present or not
+> + * zynq_gpio_irqhandler - IRQ handler for the gpio banks of a gpio device
+> + * @irq:       irq number of the gpio bank where interrupt has occurred
+> + * @desc:      irq descriptor instance of the 'irq'
+> + *
+> + * This function reads the Interrupt Status Register of each bank to get the
+> + * gpio pin number which has triggered an interrupt. It then acks the triggered
+> + * interrupt and calls the pin specific handler set by the higher layer
+> + * application for that pin.
+> + * Note: A bug is reported if no handler is set for the gpio pin.
 > + */
-> +struct xilinx_dma_device {
-> +	void __iomem *regs;
-> +	struct device *dev;
-> +	struct dma_device common;
-> +	struct xilinx_dma_chan *chan[XILINX_DMA_MAX_CHANS_PER_DEVICE];
-> +	bool has_sg;
+> +static void zynq_gpio_irqhandler(unsigned int irq, struct irq_desc *desc)
+> +{
+> +       struct zynq_gpio *gpio = (struct zynq_gpio *)irq_get_handler_data(irq);
+> +       int gpio_irq = gpio->irq_base;
+> +       unsigned int int_sts, int_enb, bank_num;
+> +       struct irq_desc *gpio_irq_desc;
+> +       struct irq_chip *chip = irq_desc_get_chip(desc);
+> +
+> +       chained_irq_enter(chip, desc);
+> +
+> +       for (bank_num = 0; bank_num < ZYNQ_GPIO_MAX_BANK; bank_num++) {
+> +               int_sts = zynq_gpio_readreg(gpio->base_addr +
+> +                                           ZYNQ_GPIO_INTSTS_OFFSET(bank_num));
+> +               int_enb = zynq_gpio_readreg(gpio->base_addr +
+> +                                           ZYNQ_GPIO_INTMASK_OFFSET(bank_num));
+> +               int_sts &= ~int_enb;
+> +
+> +               for (; int_sts != 0; int_sts >>= 1, gpio_irq++) {
+> +                       if (!(int_sts & 1))
+> +                               continue;
+> +                       gpio_irq_desc = irq_to_desc(gpio_irq);
+> +                       BUG_ON(!gpio_irq_desc);
+> +                       chip = irq_desc_get_chip(gpio_irq_desc);
+> +                       BUG_ON(!chip);
+> +                       chip->irq_ack(&gpio_irq_desc->irq_data);
+> +
+> +                       /* call the pin specific handler */
+> +                       generic_handle_irq(gpio_irq);
+> +               }
+> +               /* shift to first virtual irq of next bank */
+> +               gpio_irq = gpio->irq_base + zynq_gpio_pin_table[bank_num] + 1;
+> +       }
+> +
+> +       chip = irq_desc_get_chip(desc);
+> +       chained_irq_exit(chip, desc);
+> +}
+> +
+> +static int __maybe_unused zynq_gpio_suspend(struct device *dev)
+> +{
+> +       struct platform_device *pdev = to_platform_device(dev);
+> +       struct zynq_gpio *gpio = platform_get_drvdata(pdev);
+> +
+> +       if (!device_may_wakeup(dev)) {
+> +               if (!pm_runtime_suspended(dev))
+
+Would it not be more convenient to use pm_runtime_force_suspend() here?
+
+> +                       clk_disable(gpio->clk);
+> +               return 0;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int __maybe_unused zynq_gpio_resume(struct device *dev)
+> +{
+> +       struct platform_device *pdev = to_platform_device(dev);
+> +       struct zynq_gpio *gpio = platform_get_drvdata(pdev);
+> +
+> +       if (!device_may_wakeup(dev)) {
+> +               if (!pm_runtime_suspended(dev))
+
+Would it not be more convenient to use pm_runtime_force_resume() here?
+
+> +                       return clk_enable(gpio->clk);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int __maybe_unused zynq_gpio_runtime_suspend(struct device *dev)
+> +{
+> +       struct platform_device *pdev = to_platform_device(dev);
+> +       struct zynq_gpio *gpio = platform_get_drvdata(pdev);
+> +
+> +       clk_disable(gpio->clk);
+
+You should be able can use clk_disable_unprepare() here.
+
+> +
+> +       return 0;
+> +}
+> +
+> +static int __maybe_unused zynq_gpio_runtime_resume(struct device *dev)
+> +{
+> +       struct platform_device *pdev = to_platform_device(dev);
+> +       struct zynq_gpio *gpio = platform_get_drvdata(pdev);
+> +
+> +       return clk_enable(gpio->clk);
+
+You should be able can use clk_prepare_enable() here.
+
+> +}
+> +
+> +static int __maybe_unused zynq_gpio_idle(struct device *dev)
+> +{
+> +       return pm_schedule_suspend(dev, 1);
+> +}
+
+You don't need this runtime PM idle callback, just set it to NULL.
+
+> +
+> +static int zynq_gpio_request(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       int ret;
+> +
+> +       ret = pm_runtime_get_sync(chip->dev);
+> +
+> +       /*
+> +        * If the device is already active pm_runtime_get() will return 1 on
+> +        * success, but gpio_request still needs to return 0.
+> +        */
+> +       return ret < 0 ? ret : 0;
+> +}
+> +
+> +static void zynq_gpio_free(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       pm_runtime_put_sync(chip->dev);
+
+You don't need the "sync" version here, using pm_runtime_put() should be enough.
+
+> +}
+> +
+> +static const struct dev_pm_ops zynq_gpio_dev_pm_ops = {
+> +       SET_SYSTEM_SLEEP_PM_OPS(zynq_gpio_suspend, zynq_gpio_resume)
+> +       SET_RUNTIME_PM_OPS(zynq_gpio_runtime_suspend, zynq_gpio_runtime_resume,
+> +                          zynq_gpio_idle)
+
+Converting to use pm_runtime_force_suspend|resume(), means you need
+use the SET_PM_RUNTIME_PM_OPS macro.
+
 > +};
 > +
-> +/* Macros */
-> +#define to_xilinx_chan(chan) \
-> +	container_of(chan, struct xilinx_dma_chan, common)
-> +#define to_dma_tx_descriptor(tx) \
-> +	container_of(tx, struct xilinx_dma_tx_descriptor, async_tx)
-> +
-> +/* IO accessors */
-> +static inline u32 dma_read(struct xilinx_dma_chan *chan, u32 reg)
-> +{
-> +	return ioread32(chan->xdev->regs + reg);
-> +}
-> +
-> +static inline void dma_write(struct xilinx_dma_chan *chan, u32 reg, u32 value)
-> +{
-> +	iowrite32(value, chan->xdev->regs + reg);
-> +}
-> +
-> +static inline u32 dma_ctrl_read(struct xilinx_dma_chan *chan, u32 reg)
-> +{
-> +	return dma_read(chan, chan->ctrl_offset + reg);
-> +}
-> +
-> +static inline void dma_ctrl_write(struct xilinx_dma_chan *chan, u32 reg,
-> +					u32 value)
-> +{
-> +	dma_write(chan, chan->ctrl_offset + reg, value);
-> +}
-> +
-> +static inline void dma_ctrl_clr(struct xilinx_dma_chan *chan, u32 reg, u32 clr)
-> +{
-> +	dma_ctrl_write(chan, reg, dma_ctrl_read(chan, reg) & ~clr);
-> +}
-> +
-> +static inline void dma_ctrl_set(struct xilinx_dma_chan *chan, u32 reg, u32 set)
-> +{
-> +	dma_ctrl_write(chan, reg, dma_ctrl_read(chan, reg) | set);
-> +}
-> +
-> +/* -----------------------------------------------------------------------------
-> + * Descriptors and segments alloc and free
-> + */
-> +
 > +/**
-> + * xilinx_dma_alloc_tx_segment - Allocate transaction segment
-> + * @chan: Driver specific dma channel
+> + * zynq_gpio_probe - Initialization method for a zynq_gpio device
+> + * @pdev:      platform device instance
 > + *
-> + * Return: The allocated segment on success and NULL on failure.
-> + */
-> +static struct xilinx_dma_tx_segment *
-> +xilinx_dma_alloc_tx_segment(struct xilinx_dma_chan *chan)
-> +{
-> +	struct xilinx_dma_tx_segment *segment = NULL;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +	if (!list_empty(&chan->free_seg_list)) {
-> +		segment = list_first_entry(&chan->free_seg_list,
-> +						struct xilinx_dma_tx_segment,
-> +						node);
-> +		list_del(&segment->node);
-> +	}
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +	return segment;
-> +}
-> +
-> +/**
-> + * xilinx_dma_clean_hw_desc - Clean hardware descriptor
-> + * @hw: HW descriptor to clean
-> + */
-> +static void xilinx_dma_clean_hw_desc(struct xilinx_dma_desc_hw *hw)
-> +{
-> +	u32 next_desc = hw->next_desc;
-> +
-> +	memset(hw, 0, sizeof(struct xilinx_dma_desc_hw));
-> +
-> +	hw->next_desc = next_desc;
-> +}
-> +
-> +/**
-> + * xilinx_dma_free_tx_segment - Free transaction segment
-> + * @chan: Driver specific dma channel
-> + * @segment: dma transaction segment
-> + */
-> +static void xilinx_dma_free_tx_segment(struct xilinx_dma_chan *chan,
-> +					struct xilinx_dma_tx_segment *segment)
-> +{
-> +	xilinx_dma_clean_hw_desc(&segment->hw);
-> +
-> +	list_add_tail(&segment->node, &chan->free_seg_list);
-> +}
-> +
-> +/**
-> + * xilinx_dma_tx_descriptor - Allocate transaction descriptor
-> + * @chan: Driver specific dma channel
+> + * This function allocates memory resources for the gpio device and registers
+> + * all the banks of the device. It will also set up interrupts for the gpio
+> + * pins.
+> + * Note: Interrupts are disabled for all the banks during initialization.
 > + *
-> + * Return: The allocated descriptor on success and NULL on failure.
+> + * Return: 0 on success, negative error otherwise.
 > + */
-> +static struct xilinx_dma_tx_descriptor *
-> +xilinx_dma_alloc_tx_descriptor(struct xilinx_dma_chan *chan)
+> +static int zynq_gpio_probe(struct platform_device *pdev)
 > +{
-> +	struct xilinx_dma_tx_descriptor *desc;
-> +	unsigned long flags;
+> +       int ret, pin_num, bank_num, gpio_irq;
+> +       unsigned int irq_num;
+> +       struct zynq_gpio *gpio;
+> +       struct gpio_chip *chip;
+> +       struct resource *res;
 > +
-> +	if (chan->allocated_desc)
-> +		return chan->allocated_desc;
+> +       gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
+> +       if (!gpio)
+> +               return -ENOMEM;
 > +
-> +	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-> +	if (!desc)
-> +		return NULL;
+> +       platform_set_drvdata(pdev, gpio);
 > +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +	chan->allocated_desc = desc;
-> +	spin_unlock_irqrestore(&chan->lock, flags);
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       gpio->base_addr = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(gpio->base_addr))
+> +               return PTR_ERR(gpio->base_addr);
 > +
-> +	INIT_LIST_HEAD(&desc->segments);
+> +       irq_num = platform_get_irq(pdev, 0);
+> +       gpio->irq = irq_num;
 > +
-> +	return desc;
-> +}
+> +       /* configure the gpio chip */
+> +       chip = &gpio->chip;
+> +       chip->label = "zynq_gpio";
+> +       chip->owner = THIS_MODULE;
+> +       chip->dev = &pdev->dev;
+> +       chip->get = zynq_gpio_get_value;
+> +       chip->set = zynq_gpio_set_value;
+> +       chip->request = zynq_gpio_request;
+> +       chip->free = zynq_gpio_free;
+> +       chip->direction_input = zynq_gpio_dir_in;
+> +       chip->direction_output = zynq_gpio_dir_out;
+> +       chip->to_irq = zynq_gpio_to_irq;
+> +       chip->dbg_show = NULL;
+> +       chip->base = 0;         /* default pin base */
+> +       chip->ngpio = ZYNQ_GPIO_NR_GPIOS;
+> +       chip->can_sleep = 0;
 > +
-> +/**
-> + * xilinx_dma_free_tx_descriptor - Free transaction descriptor
-> + * @chan: Driver specific dma channel
-> + * @desc: dma transaction descriptor
-> + */
-> +static void
-> +xilinx_dma_free_tx_descriptor(struct xilinx_dma_chan *chan,
-> +			       struct xilinx_dma_tx_descriptor *desc)
-> +{
-> +	struct xilinx_dma_tx_segment *segment, *next;
+> +       gpio->irq_base = irq_alloc_descs(-1, 0, chip->ngpio, 0);
+> +       if (gpio->irq_base < 0) {
+> +               dev_err(&pdev->dev, "Couldn't allocate IRQ numbers\n");
+> +               return -ENODEV;
+> +       }
 > +
-> +	if (!desc)
-> +		return;
+> +       irq_domain = irq_domain_add_legacy(pdev->dev.of_node,
+> +                                          chip->ngpio, gpio->irq_base, 0,
+> +                                          &irq_domain_simple_ops, NULL);
 > +
-> +	list_for_each_entry_safe(segment, next, &desc->segments, node) {
-> +		list_del(&segment->node);
-> +		xilinx_dma_free_tx_segment(chan, segment);
-> +	}
+> +       /* report a bug if gpio chip registration fails */
+> +       ret = gpiochip_add(chip);
+> +       if (ret < 0)
+> +               return ret;
 > +
-> +	kfree(desc);
-> +}
+> +       /* Enable GPIO clock */
+> +       gpio->clk = devm_clk_get(&pdev->dev, NULL);
+> +       if (IS_ERR(gpio->clk)) {
+> +               dev_err(&pdev->dev, "input clock not found.\n");
+> +               if (gpiochip_remove(chip))
+> +                       dev_err(&pdev->dev, "Failed to remove gpio chip\n");
+> +               return PTR_ERR(gpio->clk);
+> +       }
+> +       ret = clk_prepare_enable(gpio->clk);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "Unable to enable clock.\n");
+> +               if (gpiochip_remove(chip))
+> +                       dev_err(&pdev->dev, "Failed to remove gpio chip\n");
+> +               return ret;
+> +       }
 > +
-> +/**
-> + * xilinx_dma_free_desc_list - Free descriptors list
-> + * @chan: Driver specific dma channel
-> + * @list: List to parse and delete the descriptor
-> + */
-> +static void xilinx_dma_free_desc_list(struct xilinx_dma_chan *chan,
-> +					struct list_head *list)
-> +{
-> +	struct xilinx_dma_tx_descriptor *desc, *next;
+> +       /* disable interrupts for all banks */
+> +       for (bank_num = 0; bank_num < ZYNQ_GPIO_MAX_BANK; bank_num++) {
+> +               zynq_gpio_writereg(gpio->base_addr +
+> +                                  ZYNQ_GPIO_INTDIS_OFFSET(bank_num),
+> +                                  ZYNQ_GPIO_IXR_DISABLE_ALL);
+> +       }
 > +
-> +	list_for_each_entry_safe(desc, next, list, node) {
-> +		list_del(&desc->node);
-> +		xilinx_dma_free_tx_descriptor(chan, desc);
-> +	}
-> +}
+> +       /*
+> +        * set the irq chip, handler and irq chip data for callbacks for
+> +        * each pin
+> +        */
+> +       for (pin_num = 0; pin_num < min_t(int, ZYNQ_GPIO_NR_GPIOS,
+> +                                         (int)chip->ngpio); pin_num++) {
+> +               gpio_irq = irq_find_mapping(irq_domain, pin_num);
+> +               irq_set_chip_and_handler(gpio_irq, &zynq_gpio_irqchip,
+> +                                        handle_simple_irq);
+> +               irq_set_chip_data(gpio_irq, (void *)gpio);
+> +               set_irq_flags(gpio_irq, IRQF_VALID);
+> +       }
 > +
-> +/**
-> + * xilinx_dma_free_descriptors - Free channel descriptors
-> + * @chan: Driver specific dma channel
-> + */
-> +static void xilinx_dma_free_descriptors(struct xilinx_dma_chan *chan)
-> +{
-> +	unsigned long flags;
+> +       irq_set_handler_data(irq_num, (void *)gpio);
+> +       irq_set_chained_handler(irq_num, zynq_gpio_irqhandler);
 > +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +
-> +	xilinx_dma_free_desc_list(chan, &chan->pending_list);
-> +	xilinx_dma_free_desc_list(chan, &chan->done_list);
-> +
-> +	xilinx_dma_free_tx_descriptor(chan, chan->active_desc);
-> +	chan->active_desc = NULL;
-> +
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +}
-> +
-> +/**
-> + * xilinx_dma_free_chan_resources - Free channel resources
-> + * @dchan: DMA channel
-> + */
-> +static void xilinx_dma_free_chan_resources(struct dma_chan *dchan)
-> +{
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-> +
-> +	xilinx_dma_free_descriptors(chan);
-> +
-> +	dma_free_coherent(chan->dev,
-> +				sizeof(*chan->seg_v) * XILINX_DMA_NUM_DESCS,
-> +				chan->seg_v, chan->seg_p);
-> +}
-> +
-> +/**
-> + * xilinx_dma_chan_desc_cleanup - Clean channel descriptors
-> + * @chan: Driver specific dma channel
-> + */
-> +static void xilinx_dma_chan_desc_cleanup(struct xilinx_dma_chan *chan)
-> +{
-> +	struct xilinx_dma_tx_descriptor *desc, *next;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +
-> +	list_for_each_entry_safe(desc, next, &chan->done_list, node) {
-> +		dma_async_tx_callback callback;
-> +		void *callback_param;
-> +
-> +		/* Remove from the list of running transactions */
-> +		list_del(&desc->node);
-> +
-> +		/* Run the link descriptor callback function */
-> +		callback = desc->async_tx.callback;
-> +		callback_param = desc->async_tx.callback_param;
-> +		if (callback) {
-> +			spin_unlock_irqrestore(&chan->lock, flags);
-> +			callback(callback_param);
-> +			spin_lock_irqsave(&chan->lock, flags);
-> +		}
-> +
-> +		/* Run any dependencies, then free the descriptor */
-> +		dma_run_dependencies(&desc->async_tx);
-> +		xilinx_dma_free_tx_descriptor(chan, desc);
-> +	}
-> +
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +}
-> +
-> +/**
-> + * xilinx_dma_do_tasklet - Schedule completion tasklet
-> + * @data: Pointer to the Xilinx dma channel structure
-> + */
-> +static void xilinx_dma_do_tasklet(unsigned long data)
-> +{
-> +	struct xilinx_dma_chan *chan = (struct xilinx_dma_chan *)data;
-> +
-> +	xilinx_dma_chan_desc_cleanup(chan);
-> +}
-> +
-> +/**
-> + * xilinx_dma_alloc_chan_resources - Allocate channel resources
-> + * @dchan: DMA channel
-> + *
-> + * Return: '0' on success and failure value on error
-> + */
-> +static int xilinx_dma_alloc_chan_resources(struct dma_chan *dchan)
-> +{
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-> +	int i;
-> +
-> +	/* Allocate the buffer descriptors. */
-> +	chan->seg_v = dma_zalloc_coherent(chan->dev,
-> +						sizeof(*chan->seg_v) *
-> +						XILINX_DMA_NUM_DESCS,
-> +						&chan->seg_p, GFP_KERNEL);
-> +	if (!chan->seg_v) {
-> +		dev_err(chan->dev,
-> +			"unable to allocate channel %d descriptors\n",
-> +			chan->id);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	for (i = 0; i < XILINX_DMA_NUM_DESCS; i++) {
-> +		chan->seg_v[i].hw.next_desc =
-> +				chan->seg_p + sizeof(*chan->seg_v) *
-> +				((i + 1) % XILINX_DMA_NUM_DESCS);
-> +		chan->seg_v[i].phys =
-> +				chan->seg_p + sizeof(*chan->seg_v) *
-> +				(i % XILINX_DMA_NUM_DESCS);
 
-i can't be higher than NUM_DESCS - 1, thus, i % XILINX_DMA_NUM_DESCS =
-i.
+add pm_runtime_set_active() to reflect the current state of the device.
 
-> +		list_add_tail(&chan->seg_v[i].node, &chan->free_seg_list);
-> +	}
+> +       pm_runtime_enable(&pdev->dev);
 > +
-> +	dma_cookie_init(dchan);
-> +	return 0;
+> +       device_set_wakeup_capable(&pdev->dev, 1);
+> +
+> +       return 0;
 > +}
 > +
 > +/**
-> + * xilinx_dma_tx_status - Get dma transaction status
-> + * @dchan: DMA channel
-> + * @cookie: Transaction identifier
-> + * @txstate: Transaction state
+> + * zynq_gpio_remove - Driver removal function
+> + * @pdev:      platform device instance
 > + *
-> + * Return: DMA transaction status
+> + * Return: 0 always
 > + */
-> +static enum dma_status xilinx_dma_tx_status(struct dma_chan *dchan,
-> +					dma_cookie_t cookie,
-> +					struct dma_tx_state *txstate)
+> +static int zynq_gpio_remove(struct platform_device *pdev)
 > +{
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-> +	enum dma_status ret;
-> +	unsigned long flags;
+> +       struct zynq_gpio *gpio = platform_get_drvdata(pdev);
 > +
-> +	ret = dma_cookie_status(dchan, cookie, txstate);
-> +	if (ret != DMA_COMPLETE) {
-> +		spin_lock_irqsave(&chan->lock, flags);
-> +		dma_set_residue(txstate, chan->residue);
-> +		spin_unlock_irqrestore(&chan->lock, flags);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +/**
-> + * xilinx_dma_is_running - Check if DMA channel is running
-> + * @chan: Driver specific DMA channel
-> + *
-> + * Return: '1' if running, '0' if not.
 
-true, false.
+Converting to use clk_prepare|unprepare from the runtime PM callbacks,
+means you can simplify the code here by using
+pm_runtime_force_suspend().
 
-> + */
-> +static bool xilinx_dma_is_running(struct xilinx_dma_chan *chan)
-> +{
-> +	return !(dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-> +		 XILINX_DMA_SR_HALTED_MASK) &&
-> +		(dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL) &
-> +		 XILINX_DMA_CR_RUNSTOP_MASK);
-> +}
-> +
-> +/**
-> + * xilinx_dma_is_idle - Check if DMA channel is idle
-> + * @chan: Driver specific DMA channel
-> + *
-> + * Return: '1' if idle, '0' if not.
+If you don't like that, at least you need a pm_runtime_get_sync().
 
-Ditto.
-
-> + */
-> +static bool xilinx_dma_is_idle(struct xilinx_dma_chan *chan)
-> +{
-> +	return dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-> +		XILINX_DMA_SR_IDLE_MASK;
-> +}
-> +
-> +/**
-> + * xilinx_dma_halt - Halt DMA channel
-> + * @chan: Driver specific DMA channel
-> + */
-> +static void xilinx_dma_halt(struct xilinx_dma_chan *chan)
-> +{
-> +	int loop = XILINX_DMA_LOOP_COUNT;
-> +
-> +	dma_ctrl_clr(chan, XILINX_DMA_REG_CONTROL,
-> +			XILINX_DMA_CR_RUNSTOP_MASK);
-> +
-> +	/* Wait for the hardware to halt */
-> +	do {
-> +		if (dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-> +			XILINX_DMA_SR_HALTED_MASK)
-> +			break;
-> +	} while (loop--);
-> +
-> +	if (!loop) {
-> +		pr_debug("Cannot stop channel %p: %x\n",
-> +			 chan, dma_ctrl_read(chan, XILINX_DMA_REG_STATUS));
-> +		chan->err = true;
-> +	}
-> +}
-> +
-> +/**
-> + * xilinx_dma_start - Start DMA channel
-> + * @chan: Driver specific DMA channel
-> + */
-> +static void xilinx_dma_start(struct xilinx_dma_chan *chan)
-> +{
-> +	int loop = XILINX_DMA_LOOP_COUNT;
-> +
-> +	dma_ctrl_set(chan, XILINX_DMA_REG_CONTROL,
-> +			XILINX_DMA_CR_RUNSTOP_MASK);
-> +
-> +	/* Wait for the hardware to start */
-> +	do {
-> +		if (!dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-> +			XILINX_DMA_SR_HALTED_MASK)
-> +			break;
-> +	} while (loop--);
-> +
-> +	if (!loop) {
-> +		pr_debug("Cannot start channel %p: %x\n",
-> +			 chan, dma_ctrl_read(chan, XILINX_DMA_REG_STATUS));
-> +		chan->err = true;
-> +	}
-> +}
-> +
-> +/**
-> + * xilinx_dma_start_transfer - Starts DMA transfer
-> + * @chan: Driver specific channel struct pointer
-> + */
-> +static void xilinx_dma_start_transfer(struct xilinx_dma_chan *chan)
-> +{
-> +	struct xilinx_dma_tx_descriptor *desc;
-> +	struct xilinx_dma_tx_segment *head, *tail = NULL;
-> +	unsigned long flags;
-> +
-> +	if (chan->err)
-> +		return;
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +
-> +	/* There's already an active descriptor, bail out. */
-> +	if (chan->active_desc)
-> +		goto out_unlock;
-> +
-> +	if (list_empty(&chan->pending_list))
-> +		goto out_unlock;
-> +
-> +	desc = list_first_entry(&chan->pending_list,
-> +				struct xilinx_dma_tx_descriptor, node);
-> +
-> +	if (chan->has_sg && xilinx_dma_is_running(chan) &&
-> +	    !xilinx_dma_is_idle(chan)) {
-> +		tail = list_entry(desc->segments.prev,
-> +				  struct xilinx_dma_tx_segment, node);
-> +		dma_ctrl_write(chan, XILINX_DMA_REG_TAILDESC, tail->phys);
-> +		goto out_free_desc;
-> +	}
-> +
-> +	if (chan->has_sg) {
-> +		head = list_first_entry(&desc->segments,
-> +					struct xilinx_dma_tx_segment, node);
-> +		tail = list_entry(desc->segments.prev,
-> +					struct xilinx_dma_tx_segment, node);
-> +		dma_ctrl_write(chan, XILINX_DMA_REG_CURDESC, head->phys);
-> +	}
-> +
-> +	xilinx_dma_start(chan);
-> +	if (chan->err)
-> +		goto out_unlock;
-> +
-> +	/* Enable interrupts */
-> +	dma_ctrl_set(chan, XILINX_DMA_REG_CONTROL,
-> +			XILINX_DMA_XR_IRQ_ALL_MASK);
-> +
-> +	/* Start the transfer */
-> +	if (chan->has_sg) {
-> +		dma_ctrl_write(chan, XILINX_DMA_REG_TAILDESC, tail->phys);
-> +	} else {
-> +		struct xilinx_dma_tx_segment *segment;
-> +		struct xilinx_dma_desc_hw *hw;
-> +
-> +		segment = list_first_entry(&desc->segments,
-> +					struct xilinx_dma_tx_segment, node);
-> +		hw = &segment->hw;
-> +
-> +		if (chan->direction == DMA_MEM_TO_DEV)
-> +			dma_ctrl_write(chan, XILINX_DMA_REG_SRCADDR,
-> +					hw->buf_addr);
-> +		else
-> +			dma_ctrl_write(chan, XILINX_DMA_REG_DSTADDR,
-> +					hw->buf_addr);
-> +
-> +		/* Start the transfer */
-> +		dma_ctrl_write(chan, XILINX_DMA_REG_BTT,
-> +				hw->control & XILINX_DMA_MAX_TRANS_LEN);
-> +	}
-> +
-> +out_free_desc:
-> +	list_del(&desc->node);
-> +	chan->active_desc = desc;
-> +
-> +out_unlock:
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +}
-> +
-> +/**
-> + * xilinx_dma_issue_pending - Issue pending transactions
-> + * @dchan: DMA channel
-> + */
-> +static void xilinx_dma_issue_pending(struct dma_chan *dchan)
-> +{
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-> +
-> +	xilinx_dma_start_transfer(chan);
-> +}
-> +
-> +/**
-> + * xilinx_dma_complete_descriptor - Mark the active descriptor as complete
-> + * @chan : xilinx DMA channel
-> + */
-> +static void xilinx_dma_complete_descriptor(struct xilinx_dma_chan *chan)
-> +{
-> +	struct xilinx_dma_tx_descriptor *desc;
-> +	struct xilinx_dma_tx_segment *segment, *next;
-> +	struct xilinx_dma_desc_hw *hw;
-> +	unsigned long flags;
-> +	u32 residue = 0;
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +
-> +	desc = chan->active_desc;
-> +	if (!desc) {
-> +		dev_dbg(chan->dev, "no running descriptors\n");
-> +		goto out_unlock;
-> +	}
-> +
-> +	if (chan->has_sg) {
-> +		list_for_each_entry_safe(segment, next, &desc->segments, node) {
-> +			hw = &segment->hw;
-> +			residue += (hw->control - hw->status) &
-> +					XILINX_DMA_MAX_TRANS_LEN;
-> +		}
-> +	}
-> +
-> +	chan->residue = residue;
-> +	dma_cookie_complete(&desc->async_tx);
-> +	list_add_tail(&desc->node, &chan->done_list);
-> +
-> +	chan->active_desc = NULL;
-> +
-> +out_unlock:
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +}
-> +
-> +/**
-> + * xilinx_dma_reset - Reset DMA channel
-> + * @chan: Driver specific DMA channel
-> + *
-> + * Return: '0' on success and failure value on error
-> + */
-> +static int xilinx_dma_reset(struct xilinx_dma_chan *chan)
-> +{
-> +	int loop = XILINX_DMA_LOOP_COUNT;
-> +	u32 tmp;
-> +
-> +	dma_ctrl_set(chan, XILINX_DMA_REG_CONTROL,
-> +			XILINX_DMA_CR_RESET_MASK);
-> +
-> +	tmp = dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL) &
-> +		XILINX_DMA_CR_RESET_MASK;
-> +
-> +	/* Wait for the hardware to finish reset */
-> +	do {
-> +		tmp = dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL) &
-> +			XILINX_DMA_CR_RESET_MASK;
-> +	} while (loop-- && tmp);
-> +
-> +	if (!loop) {
-> +		dev_err(chan->dev, "reset timeout, cr %x, sr %x\n",
-> +			dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL),
-> +			dma_ctrl_read(chan, XILINX_DMA_REG_STATUS));
-> +		return -EBUSY;
-> +	}
-> +
-> +	chan->err = false;
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * xilinx_dma_irq_handler - DMA Interrupt handler
-> + * @irq: IRQ number
-> + * @data: Pointer to the Xilinx DMA channel structure
-> + *
-> + * Return: IRQ_HANDLED/IRQ_NONE
-> + */
-> +static irqreturn_t xilinx_dma_irq_handler(int irq, void *data)
-> +{
-> +	struct xilinx_dma_chan *chan = data;
-> +	u32 status;
-> +
-> +	/* Read the status and ack the interrupts. */
-> +	status = dma_ctrl_read(chan, XILINX_DMA_REG_STATUS);
-> +	if (!(status & XILINX_DMA_XR_IRQ_ALL_MASK))
-> +		return IRQ_NONE;
-> +
-> +	dma_ctrl_write(chan, XILINX_DMA_REG_STATUS,
-> +			status & XILINX_DMA_XR_IRQ_ALL_MASK);
-> +
-> +	if (status & XILINX_DMA_XR_IRQ_ERROR_MASK) {
-> +		dev_err(chan->dev,
-> +			"Channel %p has errors %x, cdr %x tdr %x\n",
-> +			chan, dma_ctrl_read(chan, XILINX_DMA_REG_STATUS),
-> +			dma_ctrl_read(chan, XILINX_DMA_REG_CURDESC),
-> +			dma_ctrl_read(chan, XILINX_DMA_REG_TAILDESC));
-> +		chan->err = true;
-> +	}
-> +
-> +	/*
-> +	 * Device takes too long to do the transfer when user requires
-> +	 * responsiveness
-> +	 */
-> +	if (status & XILINX_DMA_XR_IRQ_DELAY_MASK)
-> +		dev_dbg(chan->dev, "Inter-packet latency too long\n");
-> +
-> +	if (status & XILINX_DMA_XR_IRQ_IOC_MASK) {
-> +		xilinx_dma_complete_descriptor(chan);
-> +		xilinx_dma_start_transfer(chan);
-> +	}
-> +
-> +	tasklet_schedule(&chan->tasklet);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +/**
-> + * xilinx_dma_tx_submit - Submit DMA transaction
-> + * @tx: Async transaction descriptor
-> + *
-> + * Return: cookie value on success and failure value on error
-> + */
-> +static dma_cookie_t xilinx_dma_tx_submit(struct dma_async_tx_descriptor *tx)
-> +{
-> +	struct xilinx_dma_tx_descriptor *desc = to_dma_tx_descriptor(tx);
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(tx->chan);
-> +	dma_cookie_t cookie;
-> +	unsigned long flags;
-> +	int err;
-> +
-> +	if (chan->err) {
-> +		/*
-> +		 * If reset fails, need to hard reset the system.
-> +		 * Channel is no longer functional
-> +		 */
-> +		err = xilinx_dma_reset(chan);
-> +		if (err < 0)
-> +			return err;
-> +	}
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +
-> +	cookie = dma_cookie_assign(tx);
-> +
-> +	/* Append the transaction to the pending transactions queue. */
-> +	list_add_tail(&desc->node, &chan->pending_list);
-> +
-> +	/* Free the allocated desc */
-> +	chan->allocated_desc = NULL;
-> +
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +	return cookie;
-> +}
-> +
-> +/**
-> + * xilinx_dma_prep_slave_sg - prepare descriptors for a DMA_SLAVE transaction
-> + * @dchan: DMA channel
-> + * @sgl: scatterlist to transfer to/from
-> + * @sg_len: number of entries in @scatterlist
-> + * @direction: DMA direction
-> + * @flags: transfer ack flags
-> + * @context: APP words of the descriptor
-> + *
-> + * Return: Async transaction descriptor on success and NULL on failure
-> + */
-> +static struct dma_async_tx_descriptor *xilinx_dma_prep_slave_sg(
-> +	struct dma_chan *dchan, struct scatterlist *sgl, unsigned int sg_len,
-> +	enum dma_transfer_direction direction, unsigned long flags,
-> +	void *context)
-> +{
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-> +	struct xilinx_dma_tx_descriptor *desc;
-> +	struct xilinx_dma_tx_segment *segment;
-> +	struct xilinx_dma_desc_hw *hw;
-> +	u32 *app_w = (u32 *)context;
-> +	struct scatterlist *sg;
-> +	size_t copy, sg_used;
-> +	int i;
-> +
-> +	if (!is_slave_direction(direction))
-> +		return NULL;
-> +
-> +	if (chan->direction != direction)
-> +		return NULL;
-> +
-> +	/* Allocate a transaction descriptor. */
-> +	desc = xilinx_dma_alloc_tx_descriptor(chan);
-> +	if (!desc)
-> +		return NULL;
-> +
-> +	dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
-> +	desc->async_tx.tx_submit = xilinx_dma_tx_submit;
-> +	desc->async_tx.cookie = 0;
-> +	async_tx_ack(&desc->async_tx);
-> +
-> +	/* Build transactions using information in the scatter gather list */
-> +	for_each_sg(sgl, sg, sg_len, i) {
-> +		sg_used = 0;
-> +
-> +		/* Loop until the entire scatterlist entry is used */
-> +		while (sg_used < sg_dma_len(sg)) {
-> +
-> +			/* Get a free segment */
-> +			segment = xilinx_dma_alloc_tx_segment(chan);
-> +			if (!segment)
-> +				goto error;
-> +
-> +			/*
-> +			 * Calculate the maximum number of bytes to transfer,
-> +			 * making sure it is less than the hw limit
-> +			 */
-> +			copy = min((size_t)(sg_dma_len(sg) - sg_used),
-> +					(size_t)XILINX_DMA_MAX_TRANS_LEN);
-
-min_t(size_t, ...)
+Kind regards
+Ulf Hansson
 
 
-> +			hw = &(segment->hw);
-
-Seems useless parentheses.
-
-> +
-> +			/* Fill in the descriptor */
-> +			hw->buf_addr = sg_dma_address(sg) + sg_used;
-> +
-> +			hw->control = copy;
-> +
-> +			if ((direction == DMA_MEM_TO_DEV) && app_w)
-> +				memcpy(hw->app, app_w,
-> +					sizeof(u32) * XILINX_DMA_NUM_APP_WORDS);
-> +
-> +			/* For the first DMA_MEM_TO_DEV transfer, set SOP */
-> +			if (!i)
-> +				if (direction == DMA_MEM_TO_DEV)
-> +					hw->control |= XILINX_DMA_BD_SOP;
-
-You may group previous conditions like
-if (direction = ...) {
- if (app_w)
- ...
- if (!i)
- ...
-}
-
-But it's up to you.
-
-> +
-> +			sg_used += copy;
-> +
-> +			/*
-> +			 * Insert the segment into the descriptor segments
-> +			 * list.
-> +			 */
-> +			list_add_tail(&segment->node, &desc->segments);
-> +		}
-> +	}
-> +
-> +	/* For the last DMA_MEM_TO_DEV transfer, set EOP */
-> +	if (direction == DMA_MEM_TO_DEV) {
-> +		segment = list_last_entry(&desc->segments,
-> +						struct xilinx_dma_tx_segment,
-> +						node);
-> +		segment->hw.control |= XILINX_DMA_BD_EOP;
-> +	}
-> +
-> +	return &desc->async_tx;
-> +
-> +error:
-> +	xilinx_dma_free_tx_descriptor(chan, desc);
-> +	return NULL;
+> +       clk_disable_unprepare(gpio->clk);
+> +       device_set_wakeup_capable(&pdev->dev, 0);
+> +       return 0;
 > +}
 > +
-> +/**
-> + * xilinx_dma_device_control - Configure DMA channel of the device
-> + * @dchan: DMA Channel pointer
-> + * @cmd: DMA control command
-> + * @arg: Channel configuration
-> + *
-> + * Return: '0' on success and failure value on error
-> + */
-> +static int xilinx_dma_device_control(struct dma_chan *dchan,
-> +				     enum dma_ctrl_cmd cmd, unsigned long arg)
-> +{
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-> +	unsigned long flags;
-> +
-> +	if (cmd != DMA_TERMINATE_ALL)
-> +		return -ENXIO;
-> +
-> +	/* Halt the DMA engine */
-> +	xilinx_dma_halt(chan);
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +
-> +	/* Remove and free all of the descriptors in the lists */
-> +	xilinx_dma_free_desc_list(chan, &chan->pending_list);
-> +	xilinx_dma_free_desc_list(chan, &chan->done_list);
-> +
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * xilinx_dma_channel_set_config - Configure DMA channel
-> + * @dchan: DMA channel
-> + * @cfg: DMA device configuration pointer
-> + *
-> + * Return: '0' on success and failure value on error
-> + */
-> +int xilinx_dma_channel_set_config(struct dma_chan *dchan,
-> +					struct xilinx_dma_config *cfg)
-> +{
-> +	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-> +	u32 reg = dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL);
-> +
-> +	if (cfg->reset)
-> +		return xilinx_dma_reset(chan);
-> +
-> +	if (cfg->coalesc <= XILINX_DMA_CR_COALESCE_MAX)
-> +		reg |= cfg->coalesc << XILINX_DMA_CR_COALESCE_SHIFT;
-> +
-> +	if (cfg->delay <= XILINX_DMA_CR_DELAY_MAX)
-> +		reg |= cfg->delay << XILINX_DMA_CR_DELAY_SHIFT;
-> +
-> +	dma_ctrl_write(chan, XILINX_DMA_REG_CONTROL, reg);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(xilinx_dma_channel_set_config);
-> +
-> +/**
-> + * xilinx_dma_chan_remove - Per Channel remove function
-> + * @chan: Driver specific DMA channel
-> + */
-> +static void xilinx_dma_chan_remove(struct xilinx_dma_chan *chan)
-> +{
-> +	/* Disable interrupts */
-> +	dma_ctrl_clr(chan, XILINX_DMA_REG_CONTROL,
-> +			XILINX_DMA_XR_IRQ_ALL_MASK);
-> +
-> +	if (chan->irq > 0)
-> +		free_irq(chan->irq, chan);
-> +
-> +	tasklet_kill(&chan->tasklet);
-> +
-> +	list_del(&chan->common.device_node);
-> +}
-> +
-> +/**
-> + * xilinx_dma_chan_probe - Per Channel Probing
-> + * It get channel features from the device tree entry and
-> + * initialize special channel handling routines
-> + *
-> + * @xdev: Driver specific device structure
-> + * @node: Device node
-> + *
-> + * Return: '0' on success and failure value on error
-> + */
-> +static int xilinx_dma_chan_probe(struct xilinx_dma_device *xdev,
-> +				 struct device_node *node)
-> +{
-> +	struct xilinx_dma_chan *chan;
-> +	int err;
-> +	bool has_dre;
-> +	u32 value, width = 0;
-> +
-> +	/* alloc channel */
-> +	chan = devm_kzalloc(xdev->dev, sizeof(*chan), GFP_KERNEL);
-> +	if (!chan)
-> +		return -ENOMEM;
-> +
-> +	chan->dev = xdev->dev;
-> +	chan->xdev = xdev;
-> +	chan->has_sg = xdev->has_sg;
-> +
-> +	spin_lock_init(&chan->lock);
-> +	INIT_LIST_HEAD(&chan->pending_list);
-> +	INIT_LIST_HEAD(&chan->done_list);
-> +	INIT_LIST_HEAD(&chan->free_seg_list);
-> +
-> +	/* Get the DT properties */
-> +	has_dre = of_property_read_bool(node, "xlnx,include-dre");
-> +
-> +	err = of_property_read_u32(node, "xlnx,datawidth", &value);
-> +	if (err) {
-> +		dev_err(xdev->dev, "unable to read datawidth property");
-> +		return err;
-> +	}
-> +
-> +	width = value >> 3; /* convert bits to bytes */
-> +
-> +	/* If data width is greater than 8 bytes, DRE is not in hw */
-> +	if (width > 8)
-> +		has_dre = false;
-> +
-> +	if (!has_dre)
-> +		xdev->common.copy_align = fls(width - 1);
-> +
-> +	if (of_device_is_compatible(node, "xlnx,axi-dma-mm2s-channel")) {
-> +		chan->direction = DMA_MEM_TO_DEV;
-> +		chan->id = 0;
-> +
-> +		chan->ctrl_offset = XILINX_DMA_MM2S_CTRL_OFFSET;
-> +	} else if (of_device_is_compatible(node,
-> +						"xlnx,axi-dma-s2mm-channel")) {
-> +		chan->direction = DMA_DEV_TO_MEM;
-> +		chan->id = 1;
-> +
-> +		chan->ctrl_offset = XILINX_DMA_S2MM_CTRL_OFFSET;
-> +	} else {
-> +		dev_err(xdev->dev, "Invalid channel compatible node\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* find the IRQ line, if it exists in the device tree */
-
-Maybe first letter should be capital across all comments in the code?
-
-> +	chan->irq = irq_of_parse_and_map(node, 0);
-> +	err = request_irq(chan->irq, xilinx_dma_irq_handler,
-> +			       IRQF_SHARED,
-> +			       "xilinx-dma-controller", chan);
-> +	if (err) {
-> +		dev_err(xdev->dev, "unable to request IRQ %d\n", chan->irq);
-> +		return err;
-> +	}
-> +
-> +	/* Initialize the tasklet */
-> +	tasklet_init(&chan->tasklet, xilinx_dma_do_tasklet,
-> +			(unsigned long)chan);
-> +
-> +	/*
-> +	 * Initialize the DMA channel and add it to the DMA engine channels
-> +	 * list.
-> +	 */
-> +	chan->common.device = &xdev->common;
-> +
-> +	list_add_tail(&chan->common.device_node, &xdev->common.channels);
-> +	xdev->chan[chan->id] = chan;
-> +
-> +	/* Reset the channel */
-> +	err = xilinx_dma_reset(chan);
-> +	if (err) {
-> +		dev_err(xdev->dev, "Reset channel failed\n");
-> +		return err;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * of_dma_xilinx_xlate - Translation function
-> + * @dma_spec: Pointer to DMA specifier as found in the device tree
-> + * @ofdma: Pointer to DMA controller data
-> + *
-> + * Return: DMA channel pointer on success and NULL on error
-> + */
-> +static struct dma_chan *of_dma_xilinx_xlate(struct of_phandle_args *dma_spec,
-> +						struct of_dma *ofdma)
-> +{
-> +	struct xilinx_dma_device *xdev = ofdma->of_dma_data;
-> +	int chan_id = dma_spec->args[0];
-> +
-> +	if (chan_id >= XILINX_DMA_MAX_CHANS_PER_DEVICE)
-> +		return NULL;
-> +
-> +	return dma_get_slave_channel(&xdev->chan[chan_id]->common);
-> +}
-> +
-> +/**
-> + * xilinx_dma_probe - Driver probe function
-> + * @pdev: Pointer to the platform_device structure
-> + *
-> + * Return: '0' on success and failure value on error
-> + */
-> +static int xilinx_dma_probe(struct platform_device *pdev)
-> +{
-> +	struct xilinx_dma_device *xdev;
-> +	struct device_node *child, *node;
-> +	struct resource *res;
-> +	int i, ret;
-> +
-> +	xdev = devm_kzalloc(&pdev->dev, sizeof(*xdev), GFP_KERNEL);
-> +	if (!xdev)
-> +		return -ENOMEM;
-> +
-> +	xdev->dev = &(pdev->dev);
-> +	INIT_LIST_HEAD(&xdev->common.channels);
-> +
-> +	node = pdev->dev.of_node;
-> +
-> +	/* iomap registers */
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	xdev->regs = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(xdev->regs))
-> +		return PTR_ERR(xdev->regs);
-> +
-> +	/* Check if SG is enabled */
-> +	xdev->has_sg = of_property_read_bool(node, "xlnx,include-sg");
-> +
-> +	/* Axi DMA only do slave transfers */
-> +	dma_cap_set(DMA_SLAVE, xdev->common.cap_mask);
-> +	dma_cap_set(DMA_PRIVATE, xdev->common.cap_mask);
-> +	xdev->common.device_prep_slave_sg = xilinx_dma_prep_slave_sg;
-> +	xdev->common.device_control = xilinx_dma_device_control;
-> +	xdev->common.device_issue_pending = xilinx_dma_issue_pending;
-> +	xdev->common.device_alloc_chan_resources =
-> +		xilinx_dma_alloc_chan_resources;
-> +	xdev->common.device_free_chan_resources =
-> +		xilinx_dma_free_chan_resources;
-> +	xdev->common.device_tx_status = xilinx_dma_tx_status;
-> +	xdev->common.dev = &pdev->dev;
-> +
-> +	platform_set_drvdata(pdev, xdev);
-> +
-> +	for_each_child_of_node(node, child) {
-> +		ret = xilinx_dma_chan_probe(xdev, child);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "Probing channels failed\n");
-> +			goto free_chan_resources;
-> +		}
-> +	}
-> +
-> +	dma_async_device_register(&xdev->common);
-> +
-> +	ret = of_dma_controller_register(node, of_dma_xilinx_xlate, xdev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Unable to register DMA to DT\n");
-> +		dma_async_device_unregister(&xdev->common);
-> +		goto free_chan_resources;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "Xilinx AXI DMA Engine driver Probed!!\n");
-> +
-> +	return 0;
-> +
-> +free_chan_resources:
-> +	for (i = 0; i < XILINX_DMA_MAX_CHANS_PER_DEVICE; i++)
-> +		if (xdev->chan[i])
-> +			xilinx_dma_chan_remove(xdev->chan[i]);
-> +
-> +	return ret;
-> +}
-> +
-> +/**
-> + * xilinx_dma_remove - Driver remove function
-> + * @pdev: Pointer to the platform_device structure
-> + *
-> + * Return: Always '0'
-> + */
-> +static int xilinx_dma_remove(struct platform_device *pdev)
-> +{
-> +	struct xilinx_dma_device *xdev = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	of_dma_controller_free(pdev->dev.of_node);
-> +	dma_async_device_unregister(&xdev->common);
-> +
-> +	for (i = 0; i < XILINX_DMA_MAX_CHANS_PER_DEVICE; i++)
-> +		if (xdev->chan[i])
-> +			xilinx_dma_chan_remove(xdev->chan[i]);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id xilinx_dma_of_match[] = {
-> +	{ .compatible = "xlnx,axi-dma-1.00.a",},
-> +	{}
+> +static struct of_device_id zynq_gpio_of_match[] = {
+> +       { .compatible = "xlnx,zynq-gpio-1.0", },
+> +       { /* end of table */ }
 > +};
-> +MODULE_DEVICE_TABLE(of, xilinx_dma_of_match);
+> +MODULE_DEVICE_TABLE(of, zynq_gpio_of_match);
 > +
-> +static struct platform_driver xilinx_dma_driver = {
-> +	.driver = {
-> +		.name = "xilinx-dma",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = xilinx_dma_of_match,
-> +	},
-> +	.probe = xilinx_dma_probe,
-> +	.remove = xilinx_dma_remove,
+> +static struct platform_driver zynq_gpio_driver = {
+> +       .driver = {
+> +               .name   = DRIVER_NAME,
+> +               .owner  = THIS_MODULE,
+> +               .pm     = &zynq_gpio_dev_pm_ops,
+> +               .of_match_table = zynq_gpio_of_match,
+> +       },
+> +       .probe          = zynq_gpio_probe,
+> +       .remove         = zynq_gpio_remove,
 > +};
 > +
-> +module_platform_driver(xilinx_dma_driver);
+> +/**
+> + * zynq_gpio_init - Initial driver registration call
+> + *
+> + * Return: value from platform_driver_register
+> + */
+> +static int __init zynq_gpio_init(void)
+> +{
+> +       return platform_driver_register(&zynq_gpio_driver);
+> +}
+> +
+> +postcore_initcall(zynq_gpio_init);
 > +
 > +MODULE_AUTHOR("Xilinx, Inc.");
-> +MODULE_DESCRIPTION("Xilinx DMA driver");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/amba/xilinx_dma.h b/include/linux/amba/xilinx_dma.h
-> index 34b98f2..25272d1 100644
-> --- a/include/linux/amba/xilinx_dma.h
-> +++ b/include/linux/amba/xilinx_dma.h
-> @@ -15,6 +15,9 @@
->  #include <linux/dma-mapping.h>
->  #include <linux/dmaengine.h>
->  
-> +/* Number of AXI DMA APP Words */
-> +#define XILINX_DMA_NUM_APP_WORDS	5
-> +
->  /**
->   * struct xilinx_vdma_config - VDMA Configuration structure
->   * @frm_dly: Frame delay
-> @@ -41,7 +44,21 @@ struct xilinx_vdma_config {
->  	int ext_fsync;
->  };
->  
-> +/**
-> + * struct xilinx_dma_config - DMA Configuration structure
-> + * @coalesc: Interrupt coalescing threshold
-> + * @delay: Delay counter
-> + * @reset: Reset Channel
-> + */
-> +struct xilinx_dma_config {
-> +	int coalesc;
-> +	int delay;
-> +	int reset;
-> +};
-> +
->  int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
->  					struct xilinx_vdma_config *cfg);
-> +int xilinx_dma_channel_set_config(struct dma_chan *dchan,
-> +					struct xilinx_dma_config *cfg);
->  
->  #endif
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
-
+> +MODULE_DESCRIPTION("Zynq GPIO driver");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
