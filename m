@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbaCaNem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:34:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35773 "EHLO
+	id S1754978AbaCaNfE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:35:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35770 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259AbaCaNYh (ORCPT
+	with ESMTP id S1754254AbaCaNYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:37 -0400
+	Mon, 31 Mar 2014 09:24:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+Cc: Ross Lagerwall <rosslagerwall@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Shatil Rafiullah <srafiullah@twopensource.com>,
+        Vinson Lee <vlee@twitter.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 53/71] hpfs: deadlock and race in directory lseek()
-Date: Mon, 31 Mar 2014 14:22:59 +0100
-Message-Id: <1396272197-13394-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 52/71] acpi-cpufreq: set current frequency based on target P-State
+Date: Mon, 31 Mar 2014 14:22:58 +0100
+Message-Id: <1396272197-13394-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Ross Lagerwall <rosslagerwall@gmail.com>
 
-commit 31abdab9c11bb1694ecd1476a7edbe8e964d94ac upstream.
+commit 8673b83bf2f013379453b4779047bf3c6ae387e4 upstream.
 
-For one thing, there's an ABBA deadlock on hpfs fs-wide lock and i_mutex
-in hpfs_dir_lseek() - there's a lot of methods that grab the former with
-the caller already holding the latter, so it must take i_mutex first.
+Commit 4b31e774 (Always set P-state on initialization) fixed bug
+least once since the initial P-State may not be the desired one.
+Commit 5a1c0228 (cpufreq: Avoid calling cpufreq driver's target()
+routine if target_freq == policy->cur) caused a regression in
+this behavior.
 
-For another, locking the damn thing, carefully validating the offset,
-then dropping locks and assigning the offset is obviously racy.
+This fixes the regression by setting policy->cur based on the CPU's
+target frequency rather than the CPU's current reported frequency
+(which may be different).  This means that the P-State will be set
+initially if the CPU's target frequency is different from the
+governor's target frequency.
 
-Moreover, we _must_ do hpfs_add_pos(), or the machinery in dnode.c
-won't modify the sucker on B-tree surgeries.
+This fixes an issue where setting the default governor to
+performance wouldn't correctly enable turbo mode on all cores.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Signed-off-by: Ross Lagerwall <rosslagerwall@gmail.com>
+Reviewed-by: Len Brown <len.brown@intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ srafiullah: Backported to <= 3.6:
+  - SYSTEM_AMD_MSR_CAPABLE does not exist. ]
+Tested-by: Shatil Rafiullah <srafiullah@twopensource.com>
+Signed-off-by: Shatil Rafiullah <srafiullah@twopensource.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/hpfs/dir.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/cpufreq/acpi-cpufreq.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/hpfs/dir.c b/fs/hpfs/dir.c
-index b8472f8..ea2b23c5 100644
---- a/fs/hpfs/dir.c
-+++ b/fs/hpfs/dir.c
-@@ -33,25 +33,27 @@ static loff_t hpfs_dir_lseek(struct file *filp, loff_t off, int whence)
- 	if (whence == SEEK_DATA || whence == SEEK_HOLE)
- 		return -EINVAL;
- 
-+	mutex_lock(&i->i_mutex);
- 	hpfs_lock(s);
- 
- 	/*printk("dir lseek\n");*/
- 	if (new_off == 0 || new_off == 1 || new_off == 11 || new_off == 12 || new_off == 13) goto ok;
--	mutex_lock(&i->i_mutex);
- 	pos = ((loff_t) hpfs_de_as_down_as_possible(s, hpfs_inode->i_dno) << 4) + 1;
- 	while (pos != new_off) {
- 		if (map_pos_dirent(i, &pos, &qbh)) hpfs_brelse4(&qbh);
- 		else goto fail;
- 		if (pos == 12) goto fail;
- 	}
--	mutex_unlock(&i->i_mutex);
-+	hpfs_add_pos(i, &filp->f_pos);
- ok:
-+	filp->f_pos = new_off;
- 	hpfs_unlock(s);
--	return filp->f_pos = new_off;
--fail:
- 	mutex_unlock(&i->i_mutex);
-+	return new_off;
-+fail:
- 	/*printk("illegal lseek: %016llx\n", new_off);*/
- 	hpfs_unlock(s);
-+	mutex_unlock(&i->i_mutex);
- 	return -ESPIPE;
- }
- 
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index 56c6c6b..227a316 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -215,7 +215,7 @@ static u32 get_cur_val(const struct cpumask *mask)
+ 	switch (per_cpu(acfreq_data, cpumask_first(mask))->cpu_feature) {
+ 	case SYSTEM_INTEL_MSR_CAPABLE:
+ 		cmd.type = SYSTEM_INTEL_MSR_CAPABLE;
+-		cmd.addr.msr.reg = MSR_IA32_PERF_STATUS;
++		cmd.addr.msr.reg = MSR_IA32_PERF_CTL;
+ 		break;
+ 	case SYSTEM_IO_CAPABLE:
+ 		cmd.type = SYSTEM_IO_CAPABLE;
 -- 
 1.9.1
 
