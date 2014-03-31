@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaCaNXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35512 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627AbaCaNXZ (ORCPT
+	id S1754516AbaCaNyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:54:20 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:38050 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187AbaCaNyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:25 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 02/71] ALSA: oxygen: Xonar DG(X): modify DAC routing
-Date: Mon, 31 Mar 2014 14:22:08 +0100
-Message-Id: <1396272197-13394-3-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
-References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 31 Mar 2014 09:54:14 -0400
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org
+Cc: lars@metafoo.de, andriy.shevchenko@linux.intel.com,
+        jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH 1/2] dma: Add Xilinx Central DMA DT Binding Documentation
+Date: Mon, 31 Mar 2014 19:24:03 +0530
+Message-Id: <1396274044-6524-1-git-send-email-sthokal@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
+Device-tree binding documentation of Xilinx Central DMA Engine
 
-------------------
-
-From: Clemens Ladisch <clemens@ladisch.de>
-
-commit 1f91ecc14deea9461aca93273d78871ec4d98fcd upstream.
-
-When selecting the audio output destinations (headphones, FP headphones,
-multichannel output), unnecessary I2S channels are digitally muted to
-avoid invalid signal levels on the other outputs.
-
-Signed-off-by: Roman Volkov <v1ron@mail.ru>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
 ---
- sound/pci/oxygen/xonar_dg.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ .../devicetree/bindings/dma/xilinx/xilinx_cdma.txt |   54 ++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
 
-diff --git a/sound/pci/oxygen/xonar_dg.c b/sound/pci/oxygen/xonar_dg.c
-index 5519b8f..eb7ad77 100644
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -294,6 +294,16 @@ static int output_switch_put(struct snd_kcontrol *ctl,
- 		oxygen_write16_masked(chip, OXYGEN_GPIO_DATA,
- 				      data->output_sel == 1 ? GPIO_HP_REAR : 0,
- 				      GPIO_HP_REAR);
-+		oxygen_write8_masked(chip, OXYGEN_PLAY_ROUTING,
-+				     data->output_sel == 0 ?
-+				     OXYGEN_PLAY_MUTE01 :
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67,
-+				     OXYGEN_PLAY_MUTE01 |
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67);
- 	}
- 	mutex_unlock(&chip->mutex);
- 	return changed;
+diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
+new file mode 100644
+index 0000000..b04f76b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
+@@ -0,0 +1,54 @@
++Xilinx AXI CDMA engine, it does transfers between memory-mapped source
++address and a memory-mapped destination address.
++
++Required properties:
++- compatible: Should be "xlnx,axi-cdma-1.00.a"
++- #dma-cells: Should be <1>, see "dmas" property below
++- reg: Should contain cdma registers location and length.
++- dma-channel child node: Should have only one channel
++
++Optional properties:
++- xlnx,include-sg: Tells whether configured for Scatter-mode in
++	the hardware.
++
++Required child node properties:
++- compatible: It should be "xlnx,axi-cdma-channel".
++- interrupts: Should contain per channel CDMA interrupts.
++- xlnx,data-width: Should contain the stream data width, take values
++	{32,64...1024}.
++
++Option child node properties:
++- xlnx,include-dre: Tells whether hardware is configured for Data
++	Realignment Engine.
++
++Example:
++++++++++
++
++axi_cdma_0: axicdma@7e200000 {
++	compatible = "xlnx,axi-cdma-1.00.a";
++	#dma_cells = <1>;
++	reg = < 0x7e200000 0x10000 >;
++	dma-channel@7e200000 {
++		compatible = "xlnx,axi-cdma-channel";
++		interrupts = < 0 55 4 >;
++		xlnx,datawidth = <0x40>;
++	} ;
++} ;
++
++
++* DMA client
++
++Required properties:
++- dmas: a list of <[Central DMA device phandle] [Channel ID]> pairs,
++	where Channel ID is '0' for write/tx and '1' for read/rx
++	channel.
++- dma-names: a list of DMA channel names, one per "dmas" entry
++
++Example:
++++++++++
++
++cdmatest_0: cdmatest@0 {
++	compatible ="xlnx,axi-cdma-test-1.00.a";
++	dmas = <&axi_cdma_0 0>;
++	dma-names = "cdma0";
++} ;
 -- 
-1.9.1
+1.7.9.5
 
