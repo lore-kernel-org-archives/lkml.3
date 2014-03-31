@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaCaMBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:01:14 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:44271 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749AbaCaMBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:01:12 -0400
-Date: Mon, 31 Mar 2014 14:01:02 +0200
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Message-ID: <20140331120102.GY3339@pcnci.linuxbox.cz>
-References: <20140310145530.GA27230@pcnci.linuxbox.cz>
- <20140329121550.GA5878@nik-comp.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+	id S1752350AbaCaMDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:03:48 -0400
+Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:43194 "EHLO
+	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751310AbaCaMDr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 08:03:47 -0400
+Date: Mon, 31 Mar 2014 14:03:44 +0200
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
+        Greg KH <greg@kroah.com>, rtc-linux@googlegroups.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernfs/rtc: circular dependency between kernfs and ops_lock
+Message-ID: <20140331140344.6030c7da@linux.lan.towertech.it>
+In-Reply-To: <53394C5E.2030207@metafoo.de>
+References: <5308E3AE.3040405@oracle.com>
+	<20140222205217.GC16272@mtj.dyndns.org>
+	<20140224120427.6394d5dd@linux.lan.towertech.it>
+	<5331FA9E.20506@oracle.com>
+	<20140325233936.655a798e@linux.lan.towertech.it>
+	<53321D04.2040102@oracle.com>
+	<5337653D.6020002@oracle.com>
+	<53384080.9020502@oracle.com>
+	<20140331114627.5e1a4609@linux.lan.towertech.it>
+	<53393AE4.505@metafoo.de>
+	<20140331124351.43033c93@linux.lan.towertech.it>
+	<53394C5E.2030207@metafoo.de>
+Organization: Tower Technologies
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1iEpPD5yDbvq0asf"
-Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-03-31_02
-X-Milter-Copy-Status: I
-X-Milter-Copy-Status: I
-X-Spam-Score: N/A (imported whitelist)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 31 Mar 2014 13:07:10 +0200
+Lars-Peter Clausen <lars@metafoo.de> wrote:
 
---1iEpPD5yDbvq0asf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> It doesn't really matter where it is unregistered. device_unregister() will 
+> (somewhere down it's callchain) take the kernfs lock, hence it must be 
+> callled with the rtc mutex being held.
 
-Hi Tomas,
+ Maybe device_remove_attrs could be called in the rtc base class,
+ before the device removal?
 
-> If this is a server platform can you please try this patch https://lkml.o=
-rg/lkml/2014/3/25/396
+-- 
 
-tried 3.10.35 with Your patch and now I can see following in dmesg:
+ Best regards,
 
-[  +0.000290] mei_me 0000:00:16.0: Device doesn't have valid ME Interface
-[  +0.007656] mei_me 0000:00:16.0: initialization failed.
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
 
-now reboot works as expected. Once this hits ustream (if it hasn't already),
-this could go to -stable, do You agree?
+  http://www.towertech.it
 
-thanks!
-
-nik
-
-
-
->=20
-> Thanks
-> Tomas
->=20
->=20
-
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28.rijna 168, 709 00 Ostrava
-
-tel.:   +420 591 166 214
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
-
---1iEpPD5yDbvq0asf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iEYEARECAAYFAlM5WP4ACgkQ3xdJJrLygV6hLQCglcRLySJ5IOgQ3ga7TH7HRrCQ
-fGwAn1eA4m2YhRM9i82SGV52i9rK3WE7
-=AwHp
------END PGP SIGNATURE-----
-
---1iEpPD5yDbvq0asf--
