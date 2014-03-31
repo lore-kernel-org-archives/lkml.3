@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaCaSbG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 14:31:06 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:49057 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803AbaCaSbD (ORCPT
+	id S1753270AbaCaSdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 14:33:36 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51257 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150AbaCaSdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 14:31:03 -0400
+	Mon, 31 Mar 2014 14:33:35 -0400
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Support for netconsole as default tty/console?
+Date: Mon, 31 Mar 2014 20:33:31 +0200
+User-Agent: KMail/1.13.7 (Linux/3.14.0-rc7-00066-g774868c; KDE/4.12.3; x86_64; ; )
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Struan Bartlett <struan.bartlett@gmail.com>
+References: <CAOte+=YgX=0dahqCS6-=yBLHnTjoJtii3Ycx4mhrj9SqNADZzg@mail.gmail.com> <87r45lqcm7.fsf@igel.home> <20140331111833.76af70e0@alan.etchedpixels.co.uk>
+In-Reply-To: <20140331111833.76af70e0@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140331175957.606100208@openvz.org>
-References: <20140331175407.400476950@openvz.org>
-	<20140331175957.606100208@openvz.org>
-Date: Mon, 31 Mar 2014 22:31:02 +0400
-Message-ID: <CANaxB-wY_=1QRAfvJxZjKPY6ZkgHuZOQvRm0FVktbj6-tL1CbA@mail.gmail.com>
-Subject: Re: [rfc 2/2] docs: procfs -- Document timerfd output
-From: Andrey Wagin <avagin@gmail.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Shawn Landden <shawn@churchofgit.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?KOI8-R?B?8MHXxcwg5c3FzNjRzs/X?= <xemul@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201403312033.31492.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-31 21:54 GMT+04:00 Cyrill Gorcunov <gorcunov@openvz.org>:
-> CC: Shawn Landden <shawn@churchofgit.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Andrey Vagin <avagin@openvz.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
->  Documentation/filesystems/proc.txt |    9 +++++++++
->  1 file changed, 9 insertions(+)
->
-> Index: linux-2.6.git/Documentation/filesystems/proc.txt
-> ===================================================================
-> --- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-> +++ linux-2.6.git/Documentation/filesystems/proc.txt
-> @@ -1741,6 +1741,15 @@ pair provide additional information part
->         While the first three lines are mandatory and always printed, the rest is
->         optional and may be omitted if no marks created yet.
->
-> +       Timerfd files
-> +       ~~~~~~~~~~~~~
-> +       pos:    0
-> +       flags:  02
-> +       mnt_id: 9
-> +       clockid: 0 ticks: 0
+On Monday 31 of March 2014, One Thousand Gnomes wrote:
+> On Sat, 29 Mar 2014 15:54:24 +0100
+> 
+> Andreas Schwab <schwab@linux-m68k.org> wrote:
+> > Struan Bartlett <struan.bartlett@gmail.com> writes:
+> > > Adding console=netconsole to the command line does not appear to have
+> > > the desired effect. I am not sure if this is because netconsole,
+> > > unlike the serial console, does not provide a tty. Can anyone advise
+> > > if this understanding is correct? If so, is there an independent
+> > > solution to this problem?
+> > 
+> > It should not be hard to add a tty driver to netconsole, there are many
+> > examples to borrow from.
+> 
+> Samo Pogacnik added a generic solution a few years ago. The ttyprintk
+> driver provides you with a tty/console whose 'hardware' is printk and
+> thus whatever system log device you are using.
 
-I would prefer to print "tick" on a separate line.
+Is there a way to get two devices working as console? For example I would like 
+to have console on tty0 and on netconsole at the same time. Right now only 
+one, last console gets all userspace messages.
 
-And we can print the current setting of the timer here. It can be
-useful not only for CRIU but for other users too.
+> Alan
 
-it_value: (5, 149234)
-it_interval: (10, 0)
-
-> +
-> +       where 'clockid' is the clock type and 'ticks' is the number of the timer expirations
-> +       that have occurred [see timerfd_create(2) for details].
->
->  ------------------------------------------------------------------------------
->  Configuring procfs
->
+-- 
+Arkadiusz Miśkiewicz, arekm / maven.pl
