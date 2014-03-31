@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaCaV6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 17:58:17 -0400
-Received: from smtprelay0222.hostedemail.com ([216.40.44.222]:55439 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751680AbaCaV6M (ORCPT
+	id S1751450AbaCaV7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 17:59:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49894 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284AbaCaV7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 17:58:12 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:152:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3872:5007:6261:10004:10026:10400:10471:10848:11026:11232:11658:11914:12043:12296:12346:12517:12519:12555:13069:13255:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: skirt69_d19c6fad343f
-X-Filterd-Recvd-Size: 2803
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 1/2] checkpatch: Expand parenthesis alignment test to declarations, functions and assignments
-Date: Mon, 31 Mar 2014 14:58:07 -0700
-Message-Id: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 31 Mar 2014 17:59:31 -0400
+Date: Mon, 31 Mar 2014 14:59:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Mathias Krause <minipli@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        PaX Team <pageexec@freemail.hu>, Nadia Derbey <Nadia.Derbey@bull.net>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH] ipc: constify ipc_ops
+Message-Id: <20140331145929.7fc32c21c884739892c46831@linux-foundation.org>
+In-Reply-To: <1396275156.2507.4.camel@buesod1.americas.hpqcorp.net>
+References: <1396186538-3378-1-git-send-email-minipli@googlemail.com>
+	<1396216043.2579.11.camel@buesod1.americas.hpqcorp.net>
+	<CA+rthh93hc5w_yKMLyJmEZFrW0NbHU3TEf_YL4cpE5OT3hvpLQ@mail.gmail.com>
+	<1396275156.2507.4.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the parenthesis alignment test works only on
-misalignments of if statements like
+On Mon, 31 Mar 2014 07:12:36 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-	if (foo(bar,
-			baz)
+> > >> --- a/ipc/msg.c
+> > >> +++ b/ipc/msg.c
+> > >> @@ -306,15 +306,14 @@ static inline int msg_security(struct kern_ipc_perm *ipcp, int msgflg)
+> > >>  SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
+> > >>  {
+> > >>       struct ipc_namespace *ns;
+> > >> -     struct ipc_ops msg_ops;
+> > >> +     static const struct ipc_ops msg_ops = {
+> > >> +             .getnew = newque,
+> > >> +             .associate = msg_security,
+> > >
+> > > For completeness, please add .more_checks = NULL as well.
+> > 
+> > The C standard already ensures that .more_checks is initialized with
+> > NULL. So I don't see any benefit from doing it explicitly.
+> > We're not initializing global/static variables holding NULL pointers
+> > in the majority of the code base either, so this is just "best
+> > practice".
+> 
+> Hence the word _completeness_.
 
-Expand the test to find misalignments like:
+It's unusual to fill in the zeroed fields.  We could put it in
+explicitly as commentary to tell the reader "this exists - we thought
+about it and decided to leave it zero".  Which presumably is along the
+lines of what you're thinking.  Or not ;)
 
-static inline int foo(int bar,
-			int baz)
-
-and
-
-	foo(bar,
-			baz);
-
-and
-
-	foo = bar(baz,
-			qux);
-
-Expand the $Inline keyword for __inline and __inline__ too.
-Add $Inline to $Declare so it also matches "static inline <foo>".
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-V2: Fix return style of pos_last_openparen
-
- scripts/checkpatch.pl | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 889929d..ac0169c 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -281,7 +281,7 @@ our $Attribute	= qr{
- 			__weak
- 		  }x;
- our $Modifier;
--our $Inline	= qr{inline|__always_inline|noinline};
-+our $Inline	= qr{inline|__always_inline|noinline|__inline|__inline__};
- our $Member	= qr{->$Ident|\.$Ident|\[[^]]*\]};
- our $Lval	= qr{$Ident(?:$Member)*};
- 
-@@ -435,7 +435,7 @@ sub build_types {
- 			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
- 			(?:\s+$Inline|\s+$Modifier)*
- 		  }x;
--	$Declare	= qr{(?:$Storage\s+)?$Type};
-+	$Declare	= qr{(?:$Storage\s+(?:$Inline\s+)?)?$Type};
- }
- build_types();
- 
-@@ -1613,7 +1613,7 @@ sub pos_last_openparen {
- 		}
- 	}
- 
--	return $last_openparen + 1;
-+	return length(expand_tabs(substr($line, 0, $last_openparen))) + 1;
- }
- 
- sub process {
-@@ -2200,7 +2200,7 @@ sub process {
- 
- # check multi-line statement indentation matches previous line
- 		if ($^V && $^V ge 5.10.0 &&
--		    $prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/) {
-+		    $prevline =~ /^\+([ \t]*)((?:$c90_Keywords(?:\s+if)\s*)|(?:$Declare\s*)?(?:$Ident|\(\s*\*\s*$Ident\s*\))\s*|$Ident\s*=\s*$Ident\s*)\(.*(\&\&|\|\||,)\s*$/) {
- 			$prevline =~ /^\+(\t*)(.*)$/;
- 			my $oldindent = $1;
- 			my $rest = $2;
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+I'm easy either way.  I'll shove the patch into my nice pile of
+things-to-look-at-after-rc1.
