@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaCaNov (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:44:51 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:43499 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150AbaCaNos (ORCPT
+	id S1754868AbaCaNpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:45:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35646 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867AbaCaNYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:44:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140331133637.GA24528@mwanda>
-References: <1394189764-21754-1-git-send-email-vegard.nossum@oracle.com>
-	<CAOMGZ=FmOPcL=d3POVM=VEA1Wu-ojUFqJuQ5KxgKB-iPfk1aiA@mail.gmail.com>
-	<20140331133637.GA24528@mwanda>
-Date: Mon, 31 Mar 2014 15:44:47 +0200
-Message-ID: <CAOMGZ=E+zn-XZpfquP6jcCXxFY3CwN9j5X_iC6B_93o5222VHg@mail.gmail.com>
-Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
-From: Vegard Nossum <vegard.nossum@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 31 Mar 2014 09:24:03 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Don Zickus <dzickus@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 28/71] x86: fix compile error due to X86_TRAP_NMI use in asm files
+Date: Mon, 31 Mar 2014 14:22:34 +0100
+Message-Id: <1396272197-13394-29-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 March 2014 15:36, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Mon, Mar 31, 2014 at 02:56:07PM +0200, Vegard Nossum wrote:
->> Ping, Dave? Just making sure this doesn't fall through the cracks. I
->> don't see the patch applied anywhere yet and without this patch we
->> still have a valid security concern IMO.
->
-> Gar.  No...  To recap:
->
->> On 7 March 2014 11:56, Vegard Nossum <vegard.nossum@oracle.com> wrote:
->> > Both the in-kernel and BSD strlcpy() require that the source string is
->> > NUL terminated.
->
-> The *whole point* of strlcpy() is that the source string doesn't have to
-> be NUL terminated.  The BSD man pages are trying to say that strlcpy()
-> only works on C-strings as opposed to Vstr or other safer string
-> implementions.
+3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
 
-I read the BSD man page differently. Also, if you look at the actual
-BSD implementation, it also scans the remaining buffer until it hits a
-0.
+------------------
 
-I quote again: "for strlcpy() src must be NUL-terminated". It doesn't
-get much clearer than that.
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-> There is a potential problem in the kernel implementation of strlcpy()
-> because it does:
->
-> lib/string.c
->    149  size_t strlcpy(char *dest, const char *src, size_t size)
->    150  {
->    151          size_t ret = strlen(src);
->    152
->    153          if (size) {
->    154                  size_t len = (ret >= size) ? size - 1 : ret;
->    155                  memcpy(dest, src, len);
->    156                  dest[len] = '\0';
->    157          }
->    158          return ret;
->    159  }
->
-> The strlen() on line 151 could read beyond the end of the source buffer
-> and if the memory wasn't mapped, it could Oops.
->
-> That concern doesn't apply here because the source string is on stack
-> memory and we will hit a NUL character before we hit unmapped memory.
+commit b01d4e68933ec23e43b1046fa35d593cefcf37d1 upstream.
 
-As before, I agree that it's _likely_ we'll hit a 0 before hitting
-unmapped memory, but I don't see at all that we have a guarantee of
-it.
+It's an enum, not a #define, you can't use it in asm files.
 
+Introduced in commit 5fa10196bdb5 ("x86: Ignore NMIs that come in during
+early boot"), and sadly I didn't compile-test things like I should have
+before pushing out.
 
-Vegard
+My weak excuse is that the x86 tree generally doesn't introduce stupid
+things like this (and the ARM pull afterwards doesn't cause me to do a
+compile-test either, since I don't cross-compile).
+
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/kernel/head_32.S | 2 +-
+ arch/x86/kernel/head_64.S | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 78a3c55..84146d6 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -553,7 +553,7 @@ ENDPROC(early_idt_handlers)
+ ENTRY(early_idt_handler)
+ 	cld
+ 
+-	cmpl $X86_TRAP_NMI,(%esp)
++	cmpl $2,(%esp)		# X86_TRAP_NMI
+ 	je is_nmi		# Ignore NMI
+ 
+ 	cmpl $2,%ss:early_recursion_flag
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 718f64b..5680603 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -290,7 +290,7 @@ early_idt_handlers:
+ ENTRY(early_idt_handler)
+ 	cld
+ 
+-	cmpl $X86_TRAP_NMI,(%rsp)
++	cmpl $2,(%rsp)		# X86_TRAP_NMI
+ 	je is_nmi		# Ignore NMI
+ 
+ 	cmpl $2,early_recursion_flag(%rip)
+-- 
+1.9.1
+
