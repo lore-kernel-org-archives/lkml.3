@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114AbaCaNtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:49:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35568 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779AbaCaNXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753591AbaCaNXl (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 31 Mar 2014 09:23:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35541 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779AbaCaNXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 09:23:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 14/71] can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
-Date: Mon, 31 Mar 2014 14:22:20 +0100
-Message-Id: <1396272197-13394-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 08/71] sched: Fix double normalization of vruntime
+Date: Mon, 31 Mar 2014 14:22:14 +0100
+Message-Id: <1396272197-13394-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,41 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: George McCollister <george.mccollister@gmail.com>
 
-commit 7e9e148af01ef388efb6e2490805970be4622792 upstream.
+commit 791c9e0292671a3bfa95286bb5c08129d8605618 upstream.
 
-If flexcan_chip_start() in flexcan_open() fails, the interrupt is not freed,
-this patch adds the missing cleanup.
+dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
+which appears to guarentee that the !se->on_rq condition is met.
+If the task has done set_current_state(TASK_INTERRUPTIBLE) without
+schedule() the second condition will be met and vruntime will be
+incorrectly adjusted twice.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[ luis: backported to 3.5: adjusted context ]
+In certain cases this can result in the task's vruntime never increasing
+past the vruntime of other tasks on the CFS' run queue, starving them of
+CPU time.
+
+This patch changes switched_from_fair() to use !p->on_rq instead of
+!se->on_rq.
+
+I'm able to cause a task with a priority of 120 to starve all other
+tasks with the same priority on an ARM platform running 3.2.51-rt72
+PREEMPT RT by writing one character at time to a serial tty (16550 UART)
+in a tight loop. I'm also able to verify making this change corrects the
+problem on that platform and kernel version.
+
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1392767811-28916-1-git-send-email-george.mccollister@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/can/flexcan.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index 95109eb..8a5911f 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -813,12 +813,15 @@ static int flexcan_open(struct net_device *dev)
- 	/* start chip and queuing */
- 	err = flexcan_chip_start(dev);
- 	if (err)
--		goto out_close;
-+		goto out_free_irq;
-+
- 	napi_enable(&priv->napi);
- 	netif_start_queue(dev);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7963693..847287c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5009,15 +5009,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+ 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
  
- 	return 0;
- 
-+ out_free_irq:
-+	free_irq(dev->irq, dev);
-  out_close:
- 	close_candev(dev);
-  out:
+ 	/*
+-	 * Ensure the task's vruntime is normalized, so that when its
++	 * Ensure the task's vruntime is normalized, so that when it's
+ 	 * switched back to the fair class the enqueue_entity(.flags=0) will
+ 	 * do the right thing.
+ 	 *
+-	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
+-	 * have normalized the vruntime, if it was !on_rq, then only when
++	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
++	 * have normalized the vruntime, if it's !on_rq, then only when
+ 	 * the task is sleeping will it still have non-normalized vruntime.
+ 	 */
+-	if (!se->on_rq && p->state != TASK_RUNNING) {
++	if (!p->on_rq && p->state != TASK_RUNNING) {
+ 		/*
+ 		 * Fix up our vruntime so that the current sleep doesn't
+ 		 * cause 'unlimited' sleep bonus.
 -- 
 1.9.1
 
