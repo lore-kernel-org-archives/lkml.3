@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774AbaCaJQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 05:16:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41650 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273AbaCaJQi (ORCPT
+	id S1753844AbaCaJSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 05:18:34 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:38332 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421AbaCaJSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 05:16:38 -0400
-Date: Mon, 31 Mar 2014 02:16:07 -0700
-From: tip-bot for Hans de Goede <tipbot@zytor.com>
-Message-ID: <tip-536a44d4277709303755e6365a059f54f4aa5403@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        hdegoede@redhat.com, carlo@caione.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        hdegoede@redhat.com, tglx@linutronix.de, carlo@caione.org
-In-Reply-To: <1395939759-11135-2-git-send-email-carlo@caione.org>
-References: <1395939759-11135-2-git-send-email-carlo@caione.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] ARM: sun7i/sun6i: dts:
-  Fix IRQ number for sun6i NMI controller
-Git-Commit-ID: 536a44d4277709303755e6365a059f54f4aa5403
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 31 Mar 2014 05:18:33 -0400
+Message-ID: <533932E2.5060302@hitachi.com>
+Date: Mon, 31 Mar 2014 18:18:26 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.org>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool
+ for Linux
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+In-Reply-To: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  536a44d4277709303755e6365a059f54f4aa5403
-Gitweb:     http://git.kernel.org/tip/536a44d4277709303755e6365a059f54f4aa5403
-Author:     Hans de Goede <hdegoede@redhat.com>
-AuthorDate: Thu, 27 Mar 2014 18:02:38 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 31 Mar 2014 11:12:57 +0200
+Hi Jovi,
 
-ARM: sun7i/sun6i: dts: Fix IRQ number for sun6i NMI controller
+(2014/03/28 22:47), Jovi Zhangwei wrote:
+> Hi All,
+> 
+> The following set of patches add ktap tracing tool. 
+> 
+> ktap is a new script-based dynamic tracing tool for Linux.
+> It uses a scripting language and lets the user trace system dynamically.
+> 
+> Highlights features:
+> * a simple but powerful scripting language
+> * register-based interpreter (heavily optimized) in Linux kernel
+> * small and lightweight
+> * not depend on the GCC toolchain for each script run
+> * easy to use in embedded environments without debugging info
+> * support for tracepoint, kprobe, uprobe, function trace, timer, and more
+> * supported in x86, ARM, PowerPC, MIPS
+> * safety in sandbox
 
-The IRQ line used in sun6i-a31.dtsi for the NMI controller is wrong.
-This causes a IRQ storm since the NMI controller is repeatedly fired.
-This patch fixes this problem assigning the correct IRQ number to the
-NMI controller.
+Is this the minimal code base of ktap for upstream? It seems that
+this series includes many extras. Would you slim this down to the
+minimum function set (minimum runtime and lua compiler code)?
+If we succeed to merge the basic functionality, we can add other
+extra features one by one.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Carlo Caione <carlo@caione.org>
-Cc: maxime.ripard@free-electrons.com
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-sunxi@googlegroups.com
-Link: http://lkml.kernel.org/r/1395939759-11135-2-git-send-email-carlo@caione.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/arm/boot/dts/sun6i-a31.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thank you,
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index eea6033..fbdf88f 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -195,7 +195,7 @@
- 			interrupt-controller;
- 			#interrupt-cells = <2>;
- 			reg = <0x01f00c0c 0x38>;
--			interrupts = <0 0 4>;
-+			interrupts = <0 32 4>;
- 		};
- 
- 		pio: pinctrl@01c20800 {
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
