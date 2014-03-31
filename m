@@ -1,124 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbaCaPgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 11:36:20 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:51559 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811AbaCaPgS convert rfc822-to-8bit (ORCPT
+	id S1753809AbaCaPiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 11:38:20 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33935 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbaCaPiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 11:36:18 -0400
+	Mon, 31 Mar 2014 11:38:18 -0400
+Date: Mon, 31 Mar 2014 08:38:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
+Message-ID: <20140331153813.GL4284@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140330230856.GA21498@linux.vnet.ibm.com>
+ <1983376434.2684.1396236565608.JavaMail.zimbra@efficios.com>
+ <20140331035458.GJ4284@linux.vnet.ibm.com>
+ <1448966218.2982.1396274543268.JavaMail.zimbra@efficios.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: Re: [PATCH] fs: ext4: Sign-extend tv_sec after ORing in epoch bits
-References: <1396191514-19081-1-git-send-email-cse.cem@gmail.com>
-From: Andreas Dilger <adilger@dilger.ca>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <1396191514-19081-1-git-send-email-cse.cem@gmail.com>
-Message-Id: <38140D27-E451-4BF1-9445-D319652E1BCF@dilger.ca>
-Date: Mon, 31 Mar 2014 09:34:52 -0600
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Conrad Meyer <cse.cem@gmail.com>
-To: Conrad Meyer <cemeyer@uw.edu>
-X-Mailer: iPhone Mail (11B651)
+Content-Disposition: inline
+In-Reply-To: <1448966218.2982.1396274543268.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14033115-3532-0000-0000-000000AF35C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm,
-I thought there was a separate patch to fix this a few months ago, that was "more correct" than this one?  Did that not land?
+On Mon, Mar 31, 2014 at 02:02:23PM +0000, Mathieu Desnoyers wrote:
+> ----- Original Message -----
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
+> > Sent: Sunday, March 30, 2014 11:54:58 PM
+> > Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
+> > 
+> > On Mon, Mar 31, 2014 at 03:29:25AM +0000, Mathieu Desnoyers wrote:
+> > > ----- Original Message -----
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > To: fweisbec@gmail.com, "mathieu desnoyers"
+> > > > <mathieu.desnoyers@efficios.com>, peterz@infradead.org
+> > > > Cc: linux-kernel@vger.kernel.org
+> > > > Sent: Sunday, March 30, 2014 7:08:56 PM
+> > > > Subject: Promela/spin model for NO_HZ_FULL_SYSIDLE code
+> > > > 
+> > > > For whatever it is worth, the following model claims safety and progress
+> > > > for the sysidle state machine.
+> > > > 
+> > > > Thoughts?
+> > > 
+> > > Hi Paul,
+> > > 
+> > > Please keep in mind that it's been a while since I've looked at Promela
+> > > proofs, but a couple of questions come to mind. First, how is the execution
+> > > script below checking for progress in any way ? I remember that we used
+> > > the negation of a "_np" LTL claim to check for progress in the past.
+> > > Moreover, I'd be much more comfortable seeing ifdefs in the code that
+> > > inject
+> > > known failures, and let them be triggered by error-triggering runs in the
+> > > scripts (with e.g. -DINJECT_ERROR_XYZ), to confirm that this model actually
+> > > catches known issues.
+> > 
+> > Well, if I comment out the four "progress_" labels, it complains about
+> > a non-progress cycle.  So at least spin does pay attention to these.  ;-)
+> > 
+> > If I put the "progress_" labels back in, but change the check so as to
+> > prevent the state machine from ever entering RCU_SYSIDLE_FULL_NOTED,
+> > it cranks through 14M states before complaining about a non-progress cycle,
+> > as expected.
+> > 
+> > If I revert back to pristine state, and then comment out the statements
+> > that reverts state back to RCU_SYSIDLE_NOT when exiting idle, an assert()
+> > triggers, as expected.
+> > 
+> > > If we can show that the model can detect a few failure modes, both for
+> > > safety
+> > > and progress, then my confidence level in the model will start to improve.
+> > > ;-)
+> > 
+> > Well, there probably is a bug in there somewhere, Murphy being who he is.
+> > ;-)
+> 
+> One failure mode your model seems to miss is when I comment the wakeup:
+> 
+>                 /* If needed, wake up the timekeeper. */
+>                 if
+> #ifndef INJECT_NO_WAKEUP
+>                 :: oldstate == RCU_SYSIDLE_FULL_NOTED ->
+>                         wakeup_timekeeper = 1;
+> #endif /* #ifndef INJECT_NO_WAKEUP */
+>                 :: else -> skip;
+>                 fi;
+> 
+> Somehow, I feel I am doing something very nasty to the algorithm,
+> but the model checker fails to find any kind of progress or safety
+> issue. Any idea why ?
 
-Cheers, Andreas
+Hmmm...  One reason is because I am not modeling the timekeeper thread
+as waiting for the wakeup.  Let me see what I can do about that...
 
-> On Mar 30, 2014, at 8:58, Conrad Meyer <cemeyer@uw.edu> wrote:
+							Thanx, Paul
+
+> Thanks,
 > 
-> Fixes kernel.org bug #23732.
+> Mathieu
 > 
-> Background: ext4 stores time as a 34-bit quantity; 2 bits in some extra
-> bits unneeded for nanoseconds in the inode, and 32 bits in the seconds
-> field.
 > 
-> On systems with 64-bit time_t, the EXT4_*INODE_GET_XTIME() code
-> incorrectly sign-extended the low 32-bits of the seconds quantity before
-> ORing in the 2 "epoch" bits from nanoseconds.
+> > 
+> > 							Thanx, Paul
+> > 
+> > > Thanks,
+> > > 
+> > > Mathieu
+> > > 
+> > > > 
+> > > > 							Thanx, Paul
+> > > > 
+> > > > ------------------------------------------------------------------------
+> > > > sysidle.sh
+> > > > ------------------------------------------------------------------------
+> > > > spin -a sysidle.spin
+> > > > cc -DNP -o pan pan.c
+> > > > # Fair scheduling to focus progress checks in timekeeper.
+> > > > ./pan -f -l -m1280000 -w22
+> > > > 
+> > > > ------------------------------------------------------------------------
+> > > > sysidle.spin
+> > > > ------------------------------------------------------------------------
+> > > > /*
+> > > >  * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
+> > > >  * This model assumes that the dyntick-idle bit manipulation works based
+> > > >  * on long usage, and substitutes a per-thread boolean "am_busy[]" array
+> > > >  * for the Linux kernel's dyntick-idle masks.  The focus of this model
+> > > >  * is therefore on the state machine itself.  Checks for both safety and
+> > > >  * forward progress.
+> > > >  *
+> > > >  * This program is free software; you can redistribute it and/or modify
+> > > >  * it under the terms of the GNU General Public License as published by
+> > > >  * the Free Software Foundation; either version 2 of the License, or
+> > > >  * (at your option) any later version.
+> > > >  *
+> > > >  * This program is distributed in the hope that it will be useful,
+> > > >  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > > >  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > > >  * GNU General Public License for more details.
+> > > >  *
+> > > >  * You should have received a copy of the GNU General Public License
+> > > >  * along with this program; if not, you can access it online at
+> > > >  * http://www.gnu.org/licenses/gpl-2.0.html.
+> > > >  *
+> > > >  * Copyright IBM Corporation, 2014
+> > > >  *
+> > > >  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > >  */
+> > > > 
+> > > > #define NUM_WORKERS 3
+> > > > 
+> > > > byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
+> > > > 
+> > > > #define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
+> > > > #define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
+> > > > #define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
+> > > > #define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
+> > > > #define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
+> > > > 
+> > > > byte full_sysidle_state = RCU_SYSIDLE_NOT;
+> > > > 
+> > > > byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
+> > > > byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not
+> > > > idle. */
+> > > > 
+> > > > /*
+> > > >  * Non-timekeeping CPU going into and out of dyntick-idle state.
+> > > >  */
+> > > > proctype worker(byte me)
+> > > > {
+> > > > 	byte oldstate;
+> > > > 
+> > > > 	do
+> > > > 	:: 1 ->
+> > > > 		/* Go idle. */
+> > > > 		am_setup[me] = 0;
+> > > > 		am_busy[me] = 0;
+> > > > 
+> > > > 		/* Dyntick-idle in the following loop. */
+> > > > 		do
+> > > > 		:: 1 -> skip;
+> > > > 		:: 1 -> break;
+> > > > 		od;
+> > > > 
+> > > > 		/* Exit idle loop, model getting out of dyntick idle state. */
+> > > > 		am_busy[me] = 1;
+> > > > 
+> > > > 		/* Get state out of full-system idle states. */
+> > > > 		atomic {
+> > > > 			oldstate = full_sysidle_state;
+> > > > 			if
+> > > > 			:: oldstate > RCU_SYSIDLE_SHORT ->
+> > > > 				full_sysidle_state = RCU_SYSIDLE_NOT;
+> > > > 			:: else -> skip;
+> > > > 			fi;
+> > > > 		}
+> > > > 
+> > > > 		/* If needed, wake up the timekeeper. */
+> > > > 		if
+> > > > 		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
+> > > > 			wakeup_timekeeper = 1;
+> > > > 		:: else -> skip;
+> > > > 		fi;
+> > > > 
+> > > > 		/* Mark ourselves fully awake and operational. */
+> > > > 		am_setup[me] = 1;
+> > > > 
+> > > > 		/* We are fully awake, so timekeeper must not be asleep. */
+> > > > 		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
+> > > > 
+> > > > 		/* Running in kernel in the following loop. */
+> > > > 		do
+> > > > 		:: 1 -> skip;
+> > > > 		:: 1 -> break;
+> > > > 		od;
+> > > > 	od
+> > > > }
+> > > > 
+> > > > /*
+> > > >  * Are all the workers in dyntick-idle state?
+> > > >  */
+> > > > #define check_idle() \
+> > > > 	i = 0; \
+> > > > 	idle = 1; \
+> > > > 	do \
+> > > > 	:: i < NUM_WORKERS -> \
+> > > > 		if \
+> > > > 		:: am_busy[i] == 1 -> idle = 0; \
+> > > > 		:: else -> skip; \
+> > > > 		fi; \
+> > > > 		i++; \
+> > > > 	:: i >= NUM_WORKERS -> break; \
+> > > > 	od
+> > > > 
+> > > > /*
+> > > >  * Timekeeping CPU.
+> > > >  */
+> > > > proctype timekeeper()
+> > > > {
+> > > > 	byte i;
+> > > > 	byte idle;
+> > > > 	byte curstate;
+> > > > 	byte newstate;
+> > > > 
+> > > > 	do
+> > > > 	:: 1 ->
+> > > > 		/* Capture current state. */
+> > > > 		check_idle();
+> > > > 		curstate = full_sysidle_state;
+> > > > 		newstate = curstate;
+> > > > 
+> > > > 		/* Check for acceptance state. */
+> > > > 		if
+> > > > 		:: idle == 0 ->
+> > > > progress_idle:
+> > > > 			skip;
+> > > > 		:: curstate == RCU_SYSIDLE_NOT ->
+> > > > progress_idle_reset:
+> > > > 			skip;
+> > > > 		:: else -> skip;
+> > > > 		fi;
+> > > > 
+> > > > 		/* Manage state... */
+> > > > 		if
+> > > > 		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
+> > > > 			/* Idle, advance to next state. */
+> > > > 			atomic {
+> > > > 				if
+> > > > 				:: full_sysidle_state == curstate ->
+> > > > 					newstate = curstate + 1;
+> > > > 					full_sysidle_state = newstate;
+> > > > 				:: else -> skip;
+> > > > 				fi;
+> > > > 			}
+> > > > 		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
+> > > > 			/* Non-idle and state advanced, revert to base state. */
+> > > > 			full_sysidle_state = RCU_SYSIDLE_NOT;
+> > > > 		:: else -> skip;
+> > > > 		fi;
+> > > > 
+> > > > 		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
+> > > > 		do
+> > > > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
+> > > > 		   wakeup_timekeeper == 1 ->
+> > > > 			assert(0); /* Should never get here. */
+> > > > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
+> > > > 		   wakeup_timekeeper == 0 ->
+> > > > 			break;
+> > > > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
+> > > > 		   wakeup_timekeeper == 1 ->
+> > > > progress_full_system_idle_1:
+> > > > 			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
+> > > > 		   	wakeup_timekeeper = 0;
+> > > > 			break;
+> > > > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
+> > > > 		   wakeup_timekeeper == 0 ->
+> > > > progress_full_system_idle_2:
+> > > > 
+> > > > 			/* We are asleep, so all workers better be idle. */
+> > > > 			atomic {
+> > > > 				i = 0;
+> > > > 				idle = 1;
+> > > > 				do
+> > > > 				:: i < NUM_WORKERS ->
+> > > > 					if
+> > > > 					:: am_setup[i] -> idle = 0;
+> > > > 					:: else -> skip;
+> > > > 					fi;
+> > > > 					i++;
+> > > > 				:: i >= NUM_WORKERS -> break;
+> > > > 				od;
+> > > > 				assert(idle == 1 ||
+> > > > 				       full_sysidle_state < RCU_SYSIDLE_FULL);
+> > > > 			}
+> > > > 		od;
+> > > > 		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
+> > > > 	od;
+> > > > }
+> > > > 
+> > > > init {
+> > > > 	byte i = 0;
+> > > > 
+> > > > 	do
+> > > > 	:: i < NUM_WORKERS ->
+> > > > 		am_busy[i] = 1;
+> > > > 		am_setup[i] = 1;
+> > > > 		run worker(i);
+> > > > 		i++;
+> > > > 	:: i >= NUM_WORKERS -> break;
+> > > > 	od;
+> > > > 	run timekeeper();
+> > > > }
+> > > > 
+> > > > 
+> > > 
+> > > --
+> > > Mathieu Desnoyers
+> > > EfficiOS Inc.
+> > > http://www.efficios.com
+> > > 
+> > 
+> > 
 > 
-> This patch ORs in the 2 higher bits, then sign extends the 34-bit signed
-> number to 64 bits.
-> 
-> Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
-> ---
-> Patch against next-20140328.
-> 
-> Note, the on-disk format has always been written correctly. It was just
-> interpreted incorrectly.
-> 
-> Repro:
-> Before:
-> $ touch -d 2038-01-31 test-123
-> $ sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
-> $ ls -ld test-123
-> drwxrwxr-x 2 cmeyer cmeyer 4096 Dec 25  1901 test-123
-> 
-> After:
-> $ ls -ld test-123
-> drwxrwxr-x 2 cmeyer cmeyer 4096 Jan 31  2038 test-123
-> 
-> Thanks!
-> ---
-> fs/ext4/ext4.h | 14 ++++++++++++--
-> 1 file changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-> index f4f889e..07ee03d 100644
-> --- a/fs/ext4/ext4.h
-> +++ b/fs/ext4/ext4.h
-> @@ -710,6 +710,8 @@ struct move_extent {
-> #define EXT4_EPOCH_BITS 2
-> #define EXT4_EPOCH_MASK ((1 << EXT4_EPOCH_BITS) - 1)
-> #define EXT4_NSEC_MASK  (~0UL << EXT4_EPOCH_BITS)
-> +#define EXT4_EPOCH_SIGN (((1UL << (EXT4_EPOCH_BITS - 1)) << 16) << 16)
-> +#define EXT4_SIGN_EXT   (~((((1UL << EXT4_EPOCH_BITS) << 16) << 16) - 1))
-> 
-> /*
->  * Extended fields will fit into an inode if the filesystem was formatted
-> @@ -761,19 +763,23 @@ do {                                           \
-> 
-> #define EXT4_INODE_GET_XTIME(xtime, inode, raw_inode)                   \
-> do {                                           \
-> -    (inode)->xtime.tv_sec = (signed)le32_to_cpu((raw_inode)->xtime);       \
-> +    (inode)->xtime.tv_sec = (__u64)le32_to_cpu((raw_inode)->xtime);           \
->    if (EXT4_FITS_IN_INODE(raw_inode, EXT4_I(inode), xtime ## _extra))     \
->        ext4_decode_extra_time(&(inode)->xtime,                   \
->                       raw_inode->xtime ## _extra);           \
->    else                                       \
->        (inode)->xtime.tv_nsec = 0;                       \
-> +    if (sizeof((inode)->xtime.tv_sec) > 4) {                   \
-> +        if ((inode)->xtime.tv_sec & EXT4_EPOCH_SIGN)               \
-> +            (inode)->xtime.tv_sec |= EXT4_SIGN_EXT;               \
-> +    }                                       \
-> } while (0)
-> 
-> #define EXT4_EINODE_GET_XTIME(xtime, einode, raw_inode)                   \
-> do {                                           \
->    if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))               \
->        (einode)->xtime.tv_sec =                       \
-> -            (signed)le32_to_cpu((raw_inode)->xtime);           \
-> +            (__u64)le32_to_cpu((raw_inode)->xtime);               \
->    else                                       \
->        (einode)->xtime.tv_sec = 0;                       \
->    if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))           \
-> @@ -781,6 +787,10 @@ do {                                           \
->                       raw_inode->xtime ## _extra);           \
->    else                                       \
->        (einode)->xtime.tv_nsec = 0;                       \
-> +    if (sizeof((einode)->xtime.tv_sec) > 4) {                   \
-> +        if ((einode)->xtime.tv_sec & EXT4_EPOCH_SIGN)               \
-> +            (einode)->xtime.tv_sec |= EXT4_SIGN_EXT;           \
-> +    }                                       \
-> } while (0)
-> 
-> #define i_disk_version osd1.linux1.l_i_version
 > -- 
-> 1.9.0
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
 > 
+
