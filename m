@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaCaU7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:59:09 -0400
-Received: from fieldses.org ([174.143.236.118]:39250 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153AbaCaU7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:59:07 -0400
-Date: Mon, 31 Mar 2014 16:58:59 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: wengmeiling.weng@huawei.com, greg@kroah.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd
- superblock's one
-Message-ID: <20140331205859.GB20024@fieldses.org>
-References: <20140226135000.11521.30339.stgit@localhost.localdomain>
+	id S1751731AbaCaU7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:59:46 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49673 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbaCaU7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 16:59:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226135000.11521.30339.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+BWVUSS7VdiswgjXEMYHCed1xzz4ubCi89t7SF-1qG5=GzDUA@mail.gmail.com>
+References: <1396286830-2795-1-git-send-email-benjamin.tissoires@redhat.com>
+ <1396286830-2795-3-git-send-email-benjamin.tissoires@redhat.com> <CA+BWVUSS7VdiswgjXEMYHCed1xzz4ubCi89t7SF-1qG5=GzDUA@mail.gmail.com>
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+Date: Mon, 31 Mar 2014 15:59:23 -0500
+Message-ID: <CA+BWVUSk1NEgghHqvbVPpEXZ4BwajPGw-uM84ceyZqdnQhJ15Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] HID: core: do not scan constant input report
+To: linux-kernel@vger.kernel.org, linux-input <linux-input@vger.kernel.org>,
+        derya.kiran@yahoo.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applying, sorry for the delay.--b.
+Tested on Surface Pro 2 Type Cover 2 on kernel 3.15/multitouch rebased
+on 3.14. The device is now handled by hid-generic and hid-sensor-hub
+as expected.
+There is a newer UEFI and touch cover firmware that I have not tried,
+as you need windows update to get drivers for this device. I will try
+and update my device to make sure we don't need any
+quirks.
 
-On Wed, Feb 26, 2014 at 04:50:01PM +0300, Stanislav Kinsbursky wrote:
-> There could be a case, when NFSd file system is mounted in network, different
-> to socket's one, like below:
-> 
-> "ip netns exec" creates new network and mount namespace, which duplicates NFSd
-> mount point, created in init_net context. And thus NFS server stop in nested
-> network context leads to RPCBIND client destruction in init_net.
-> Then, on NFSd start in nested network context, rpc.nfsd process creates socket
-> in nested net and passes it into "write_ports", which leads to RPCBIND sockets
-> creation in init_net context because of the same reason (NFSd monut point was
-> created in init_net context). An attempt to register passed socket in nested
-> net leads to panic, because no RPCBIND client present in nexted network
-> namespace.
-> 
-> This patch add check that passed socket's net matches NFSd superblock's one.
-> And returns -EINVAL error to user psace otherwise.
-> 
-> v2: Put socket on exit.
-> 
-> Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> Cc: stable@vger.kernel.org
-> ---
->  fs/nfsd/nfsctl.c               |    5 +++++
->  include/linux/sunrpc/svcsock.h |    1 +
->  net/sunrpc/svcsock.c           |   16 ++++++++++++++++
->  3 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> index 7f55517..f34d9de 100644
-> --- a/fs/nfsd/nfsctl.c
-> +++ b/fs/nfsd/nfsctl.c
-> @@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
->  	if (err != 0 || fd < 0)
->  		return -EINVAL;
->  
-> +	if (svc_alien_sock(net, fd)) {
-> +		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
-> +		return -EINVAL;
-> +	}
-> +
->  	err = nfsd_create_serv(net);
->  	if (err != 0)
->  		return err;
-> diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-> index 62fd1b7..947009e 100644
-> --- a/include/linux/sunrpc/svcsock.h
-> +++ b/include/linux/sunrpc/svcsock.h
-> @@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
->  int		svc_send(struct svc_rqst *);
->  void		svc_drop(struct svc_rqst *);
->  void		svc_sock_update_bufs(struct svc_serv *serv);
-> +bool		svc_alien_sock(struct net *net, int fd);
->  int		svc_addsock(struct svc_serv *serv, const int fd,
->  					char *name_return, const size_t len);
->  void		svc_init_xprt_sock(void);
-> diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-> index b6e59f0..d06cb87 100644
-> --- a/net/sunrpc/svcsock.c
-> +++ b/net/sunrpc/svcsock.c
-> @@ -1397,6 +1397,22 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
->  	return svsk;
->  }
->  
-> +bool svc_alien_sock(struct net *net, int fd)
-> +{
-> +	int err;
-> +	struct socket *sock = sockfd_lookup(fd, &err);
-> +	bool ret = false;
-> +
-> +	if (!sock)
-> +		goto out;
-> +	if (sock_net(sock->sk) != net)
-> +		ret = true;
-> +	sockfd_put(sock);
-> +out:
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(svc_alien_sock);
-> +
->  /**
->   * svc_addsock - add a listener socket to an RPC service
->   * @serv: pointer to RPC service to which to add a new listener
-> 
+> On Mon, Mar 31, 2014 at 12:27 PM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> The Microsoft Surface Type/Touch Cover 2 is a fancy device which advertised
+>> itself as a multitouch device but with constant input reports.
+>> This way, hid_scan_report() gives the group MULTITOUCH to it, but
+>> hid-multitouch can not handle it due to the constant collection ignored
+>> by hid-input.
+>>
+>> To prevent such crap in the future, and while we do not fix this particular
+>> device, make the scan_report coherent with hid-input.c, and ignore constant
+>> input reports.
+>>
+>> CC: stable@vger.kernel.org # 3.12+
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  drivers/hid/hid-core.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>> index bb5c494..8a5384c 100644
+>> --- a/drivers/hid/hid-core.c
+>> +++ b/drivers/hid/hid-core.c
+>> @@ -718,6 +718,9 @@ static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+>>         case HID_MAIN_ITEM_TAG_END_COLLECTION:
+>>                 break;
+>>         case HID_MAIN_ITEM_TAG_INPUT:
+>> +               /* ignore constant inputs, they will be ignored by hid-input */
+>> +               if (data & HID_MAIN_ITEM_CONSTANT)
+>> +                       break;
+>>                 for (i = 0; i < parser->local.usage_index; i++)
+>>                         hid_scan_input_usage(parser, parser->local.usage[i]);
+>>                 break;
+>> --
+>> 1.9.0
+>>
