@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaCaTd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 15:33:29 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:55968 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaCaTd1 (ORCPT
+	id S1751449AbaCaTea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 15:34:30 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:51161 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaCaTe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 15:33:27 -0400
+	Mon, 31 Mar 2014 15:34:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 1 Apr 2014 04:33:06 +0900
-Message-ID: <CAAVeFuKpFjWCNcZq4RUQmUbBACGgUj=G5BrpdRq2UQ2i-s-aHw@mail.gmail.com>
-Subject: Re: [PATCH] gpio / ACPI: Don't crash on NULL chip->dev
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140331144934.GA12335@gmail.com>
+References: <20140331144934.GA12335@gmail.com>
+Date: Mon, 31 Mar 2014 12:34:28 -0700
+X-Google-Sender-Auth: NAURQS6DE8Fbr8fTrbDXTQjBA9k
+Message-ID: <CA+55aFyAi0Vh6L5C8G6Jm3-FP81TNZekM_MiN-0wA3vvg3tSCQ@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/iommu change for v3.15
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>, Neil Horman <nhorman@tuxdriver.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 9:16 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> Commit aa92b6f689ac (gpio / ACPI: Allocate ACPI specific data directly in
-> acpi_gpiochip_add()) moved ACPI handle checking to acpi_gpiochip_add() but
-> forgot to check whether chip->dev is NULL before dereferencing it.
->
-> Since chip->dev pointer is optional we can end up with crash like following:
->
->  BUG: unable to handle kernel NULL pointer dereference at 00000138
->  IP: [<c126c2b3>] acpi_gpiochip_add+0x13/0x190
->  *pde = 00000000
->  Oops: 0000 [#1] PREEMPT SMP
->  Modules linked in: ssb(+) ...
->  CPU: 0 PID: 512 Comm: modprobe Tainted: G        W     3.14.0-rc7-next-20140324-t1 #24
->  Hardware name: Dell Inc. Latitude D830                   /0UY141, BIOS A02 06/07/2007
->  task: f5799900 ti: f543e000 task.ti: f543e000
->  EIP: 0060:[<c126c2b3>] EFLAGS: 00010282 CPU: 0
->  EIP is at acpi_gpiochip_add+0x13/0x190
->  EAX: 00000000 EBX: f57824c4 ECX: 00000000 EDX: 00000000
->  ESI: f57824c4 EDI: 00000010 EBP: f543fc54 ESP: f543fc40
->   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
->  CR0: 8005003b CR2: 00000138 CR3: 355f8000 CR4: 000007d0
->  Stack:
->   f543fc5c fd1f7790 f57824c4 000000be 00000010 f543fc84 c1269f4e f543fc74
->   fd1f78bd 00008002 f57822b0 f5782090 fd1f8400 00000286 fd1f9994 00000000
->   f5782000 f543fc8c fd1f7e39 f543fcc8 fd1f0bd8 000000c0 00000000 00000000
->  Call Trace:
->   [<fd1f7790>] ? ssb_pcie_mdio_write+0xa0/0xd0 [ssb]
->   [<c1269f4e>] gpiochip_add+0xee/0x300
->   [<fd1f78bd>] ? ssb_pcicore_serdes_workaround+0xfd/0x140 [ssb]
->   [<fd1f7e39>] ssb_gpio_init+0x89/0xa0 [ssb]
->   [<fd1f0bd8>] ssb_attach_queued_buses+0xc8/0x2d0 [ssb]
->   [<fd1f0f65>] ssb_bus_register+0x185/0x1f0 [ssb]
->   [<fd1f3120>] ? ssb_pci_xtal+0x220/0x220 [ssb]
->   [<fd1f106c>] ssb_bus_pcibus_register+0x2c/0x80 [ssb]
->   [<fd1f40dc>] ssb_pcihost_probe+0x9c/0x110 [ssb]
->   [<c1276c8f>] pci_device_probe+0x6f/0xc0
->   [<c11bdb55>] ? sysfs_create_link+0x25/0x40
->   [<c131d8b9>] driver_probe_device+0x79/0x360
->   [<c1276512>] ? pci_match_device+0xb2/0xc0
->   [<c131dc51>] __driver_attach+0x71/0x80
->   [<c131dbe0>] ? __device_attach+0x40/0x40
->   [<c131bd87>] bus_for_each_dev+0x47/0x80
->   [<c131d3ae>] driver_attach+0x1e/0x20
->   [<c131dbe0>] ? __device_attach+0x40/0x40
->   [<c131d007>] bus_add_driver+0x157/0x230
->   [<c131e219>] driver_register+0x59/0xe0
->   ...
->
-> Fix this by checking chip->dev pointer against NULL first. Also we can now
-> remove redundant check in acpi_gpiochip_request/free_interrupts().
+On Mon, Mar 31, 2014 at 7:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> Neil Horman (1):
+>       x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
 
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+Before I pull this, I want somebody to double-check it:
+
+> -       if (revision == 0x13)
+> +       if (revision < 0x13)
+>                 set_irq_remapping_broken();
+
+This change does *not* match the comment just above it. The comment
+talks very much about revision 13.
+
+So the comment should be fixed, and/or that "< 0x13" should perhaps be
+"<= 0x13".
+
+Because making it "less than" simply makes no sense in light of the
+comment. Does revision 13 suddenly work? Was that where it was fixed?
+If so, please fix the comment.
+
+                Linus
