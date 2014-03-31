@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbaCaS6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 14:58:23 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:37674 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaCaS6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 14:58:22 -0400
-Date: Mon, 31 Mar 2014 14:58:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [GIT PULL] percpu changes for v3.15-rc1
-Message-ID: <20140331185817.GA28901@mtj.dyndns.org>
+	id S1754106AbaCaTFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 15:05:38 -0400
+Received: from fn.samba.org ([216.83.154.106]:53758 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753747AbaCaTFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 15:05:35 -0400
+Date: Mon, 31 Mar 2014 12:05:34 -0700
+From: Jeremy Allison <jra@samba.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Andy Lutomirski <luto@amacapital.net>, Jim Lieb <jlieb@panasas.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bfields@redhat.com, Jeff Layton <jlayton@redhat.com>
+Subject: Re: Thoughts on credential switching
+Message-ID: <20140331190534.GA24608@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
+ <20140331114459.4b3638f8@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140331114459.4b3638f8@alan.etchedpixels.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Mon, Mar 31, 2014 at 11:44:59AM +0100, One Thousand Gnomes wrote:
+> On Wed, 26 Mar 2014 17:23:24 -0700
+> Andy Lutomirski <luto@amacapital.net> wrote:
+> 
+> > Hi various people who care about user-space NFS servers and/or
+> > security-relevant APIs.
+> > 
+> > I propose the following set of new syscalls:
+> > 
+> > int credfd_create(unsigned int flags): returns a new credfd that
+> > corresponds to current's creds.
+> > 
+> > int credfd_activate(int fd, unsigned int flags): Change current's
+> > creds to match the creds stored in fd.  To be clear, this changes both
+> > the "subjective" and "objective" (aka real_cred and cred) because
+> > there aren't any real semantics for what happens when userspace code
+> > runs with real_cred != cred.
+> 
+> What is the sematic of a simultaneous ptrace racing a credfd_activate on
+> another processor core ?
+> 
+> What are the rules for simultaneous threads doing I/O and and credential
+> changes ?
+> 
+> What is the rule for a faulting of an mmapped page in a multithreaded app
+> one thread of which has changed credentials ?
+> 
+> Who owns a file created while you are changing credentials ?
+> 
+> >  - credfd_activate fails (-EINVAL) if dumpable.  This is because we
+> > don't want a privileged daemon to be ptraced while impersonating
+> > someone else.
+> 
+> That's one of the obvious problems but if you have that problem then
+> you've got races against signals and ptrace etc to deal with.
 
-percpu allocation is now popular enough for the extremely naive range
-allocator to cause scalability issues.  The existing allocator
-linearly scanned the allocation map on both alloc and free without
-making use of hint or anything.  Al reimplemented the range allocator
-so that it can use binary search instead of linear scan during free
-and alloc path uses simple hinting to avoid scanning in common cases.
-Combined, the new allocator resolves the scalability issue percpu
-allocator was showing during container benchmark workload.
+FYI, Any process using pthreads and glibc already
+has to cope with these races as setresuid on glibc
+on Linux is not atomic.
 
-The following changes since commit 0f0ca14386e0431fbedaae5efc550d46cf93b9cf:
+That's why Samba eventually changed to using the
+raw system calls on Linux due to an interesting
+bug with glibc aio interacting with setresuid
+races (receiving signal thread was uid 0, sending
+aio thread was non-zero - signal couldn't be
+delivered, glibc aio wakeup lost).
 
-  Merge tag 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging (2014-02-22 08:29:25 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.15
-
-for you to fetch changes up to 21ddfd38ee9aac804d22beaceed4c7b903cca234:
-
-  percpu: renew the max_contig if we merge the head and previous block (2014-03-29 09:29:42 -0400)
-
-Thanks.
-
-----------------------------------------------------------------
-Al Viro (4):
-      perpcu: fold pcpu_split_block() into the only caller
-      percpu: store offsets instead of lengths in ->map[]
-      percpu: speed alloc_pcpu_area() up
-      percpu: allocation size should be even
-
-Jianyu Zhan (1):
-      percpu: renew the max_contig if we merge the head and previous block
-
- mm/percpu.c | 208 ++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 112 insertions(+), 96 deletions(-)
-
--- 
-tejun
+Jeremy.
