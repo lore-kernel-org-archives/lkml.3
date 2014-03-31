@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255AbaCaWPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 18:15:22 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50772 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaCaWPT (ORCPT
+	id S1751458AbaCaWQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 18:16:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64862 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284AbaCaWQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 18:15:19 -0400
-From: Stewart Smith <stewart@linux.vnet.ibm.com>
-To: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org, paulus@samba.org,
-        anton@samba.org, nfont@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] powerpc/le: enable RTAS events support
-In-Reply-To: <20140331104716.1385b516@bahia.local>
-References: <20140328073344.26823.32931.stgit@bahia.local> <87vbuv9vaz.fsf@river.i-did-not-set--mail-host-address--so-tickle-me> <20140331104716.1385b516@bahia.local>
-User-Agent: Notmuch/0.16 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-redhat-linux-gnu)
-Date: Tue, 01 Apr 2014 09:15:11 +1100
-Message-ID: <87ob0m8174.fsf@river.i-did-not-set--mail-host-address--so-tickle-me>
+	Mon, 31 Mar 2014 18:16:41 -0400
+Message-ID: <5339E946.90903@converseincode.com>
+Date: Mon, 31 Mar 2014 15:16:38 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14033122-2000-0000-0000-0000106E287B
+To: "H. Peter Anvin" <hpa@zytor.com>, arnd@arndb.de
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, pageexec@freemail.hu,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] LLVMLinux: Remove warning about returning an uninitialized
+ variable
+References: <1395470329-15065-1-git-send-email-behanw@converseincode.com> <5339D57A.4050504@zytor.com> <5339E7CB.2080001@converseincode.com> <5339E81C.4010901@zytor.com>
+In-Reply-To: <5339E81C.4010901@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kurz <gkurz@linux.vnet.ibm.com> writes:
-> On Mon, 31 Mar 2014 09:27:16 +1100
-> Stewart Smith <stewart@linux.vnet.ibm.com> wrote:
->> Greg Kurz <gkurz@linux.vnet.ibm.com> writes:
->> >  struct rtas_error_log {
->> > +#ifdef __BIG_ENDIAN__
->> > +	/* Byte 0 */
->> >  	unsigned long version:8;		/* Architectural version */
->> > +	/* Byte 1 */
->> 
->> I think it would be great if we got rid of the usage of bitfields. As
->> soon as the mood of the compiler changes, this code is going to break.
->
-> True... even though I am not so sure the compiler is likely to break
-> things in this specific case where no bitfield crosses the byte boundary.
-> Anyway, Nathan has done some work in the direction you suggest.
+On 03/31/14 15:11, H. Peter Anvin wrote:
+> On 03/31/2014 03:10 PM, Behan Webster wrote:
+>>>> diff --git a/include/asm-generic/cmpxchg-local.h
+>>>> b/include/asm-generic/cmpxchg-local.h
+>>>> index d8d4c89..4c41bb8 100644
+>>>> --- a/include/asm-generic/cmpxchg-local.h
+>>>> +++ b/include/asm-generic/cmpxchg-local.h
+>>>> @@ -41,6 +41,7 @@ static inline unsigned long
+>>>> __cmpxchg_local_generic(volatile void *ptr,
+>>>>            break;
+>>>>        default:
+>>>>            wrong_size_cmpxchg(ptr);
+>>>> +        prev = 0;
+>>>>        }
+>>>>        raw_local_irq_restore(flags);
+>>>>        return prev;
+>>>>
+>>> Shouldn't this be a build time assert (__compiletime_error())?
+>> I changed it to a __noreturn on wrong_size_cmpxchg thanks to James
+>> Bottomley.
+>>
+>> Which would be better?
+>>
+> __compiletime_error traps at compile time rather than link time, which
+> is what you want.
+The idea is to remove the compile time warning that the return code 
+"prev" isn't initialized in the default case. Indicating that 
+wrong_size_cmpxchg doesn't return fixes that false positive.
 
-It's allowed to, and it's allowed to based on compiler flags or phase of
-the moon (and I've seen odd things because of this in the past) and my
-bet is that there's no automated regression test that actually checks
-that a newly built kernel from all distros actually works for parsing RTAS.
+Behan
 
-Besides, for things like unsigned long version:8 can easily be replaced
-by uint8_t and teh problem goes away (at least for that bit).
-
-I just hope the code we're getting this from doesn't also use bitfields :)
+-- 
+Behan Webster
+behanw@converseincode.com
 
