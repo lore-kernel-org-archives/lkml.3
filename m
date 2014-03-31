@@ -1,63 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaCaIr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 04:47:26 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:44590 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010AbaCaIrW (ORCPT
+	id S1753686AbaCaItd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 04:49:33 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:34604 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145AbaCaIta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 04:47:22 -0400
-Date: Mon, 31 Mar 2014 10:47:16 +0200
-From: Greg Kurz <gkurz@linux.vnet.ibm.com>
-To: Stewart Smith <stewart@linux.vnet.ibm.com>
-Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org, paulus@samba.org,
-        anton@samba.org, nfont@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] powerpc/le: enable RTAS events support
-Message-ID: <20140331104716.1385b516@bahia.local>
-In-Reply-To: <87vbuv9vaz.fsf@river.i-did-not-set--mail-host-address--so-tickle-me>
-References: <20140328073344.26823.32931.stgit@bahia.local>
-	<87vbuv9vaz.fsf@river.i-did-not-set--mail-host-address--so-tickle-me>
-Organization: IBM
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Mon, 31 Mar 2014 04:49:30 -0400
+Date: Mon, 31 Mar 2014 10:48:58 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Michele Baldessari <michele@acksyn.org>
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes serial cards
+Message-ID: <20140331084858.GI22587@localhost>
+References: <1396126512-25372-1-git-send-email-michele@acksyn.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14033108-2966-0000-0000-00000AC1C976
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396126512-25372-1-git-send-email-michele@acksyn.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Mar 2014 09:27:16 +1100
-Stewart Smith <stewart@linux.vnet.ibm.com> wrote:
-> Greg Kurz <gkurz@linux.vnet.ibm.com> writes:
-> >  struct rtas_error_log {
-> > +#ifdef __BIG_ENDIAN__
-> > +	/* Byte 0 */
-> >  	unsigned long version:8;		/* Architectural version */
-> > +	/* Byte 1 */
+On Sat, Mar 29, 2014 at 08:55:11PM +0000, Michele Baldessari wrote:
+> Custom VID/PIDs for Brainboxes cards as reported in
+> https://bugzilla.redhat.com/show_bug.cgi?id=1071914
+
+Thanks for including the remaining PIDs from the report.
+
+There was a duplicate entry in the device-id table below, but I'll fix
+that here (and also sort the defines numerically) before sending it to
+Greg.
+
+Thanks again,
+Johan
+
+> Signed-off-by: Michele Baldessari <michele@acksyn.org>
+> ---
+>  drivers/usb/serial/ftdi_sio.c     | 34 ++++++++++++++++++++++++++++++++++
+>  drivers/usb/serial/ftdi_sio_ids.h | 38 ++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 72 insertions(+)
 > 
-> I think it would be great if we got rid of the usage of bitfields. As
-> soon as the mood of the compiler changes, this code is going to break.
-
-True... even though I am not so sure the compiler is likely to break
-things in this specific case where no bitfield crosses the byte boundary.
-Anyway, Nathan has done some work in the direction you suggest.
-
-Nathan,
-
-Could you send your patch to the list ?
-
-Thanks.
-
--- 
-Gregory Kurz                                     kurzgreg@fr.ibm.com
-                                                 gkurz@linux.vnet.ibm.com
-Software Engineer @ IBM/Meiosys                  http://www.ibm.com
-Tel +33 (0)562 165 496
-
-"Anarchy is about taking complete responsibility for yourself."
-        Alan Moore.
-
+> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+> index 44ab12986805..ccfa3c55212c 100644
+> --- a/drivers/usb/serial/ftdi_sio.c
+> +++ b/drivers/usb/serial/ftdi_sio.c
+> @@ -909,6 +909,40 @@ static const struct usb_device_id id_table_combined[] = {
+>  	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
+>  	/* Cressi Devices */
+>  	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
+> +	/* Brainbox Devices */
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
+> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
+>  	{ }					/* Terminating entry */
+>  };
+>  
+> diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+> index e599fbfcde5f..84d351e70f9c 100644
+> --- a/drivers/usb/serial/ftdi_sio_ids.h
+> +++ b/drivers/usb/serial/ftdi_sio_ids.h
+> @@ -1326,3 +1326,41 @@
+>   * Manufacturer: Cressi
+>   */
+>  #define FTDI_CRESSI_PID		0x87d0
+> +
+> +/*
+> + * Product: Brainboxes devices
+> + * Manufacturer: Brainboxes
+> + */
+> +#define BRAINBOXES_VID			0x05d1
+> +#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
+> +#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
+> +#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
+> +#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
+> +#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
+> +#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
+> +#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
+> +#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
+> +#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
+> +#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
+> +#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
+> +#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
+> +#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
+> +#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
+> +#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
+> +#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
+> +#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
+> +#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
+> +#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
+> +#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
+> +#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
+> +#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
+> +#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
+> +#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
+> +#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
+> +#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
+> +#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
+> +#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
+> +#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
+> +#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
+> +#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
+> +#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
