@@ -1,134 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaCaOhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 10:37:25 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:23903 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753289AbaCaOhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 10:37:21 -0400
-X-IronPort-AV: E=Sophos;i="4.97,765,1389715200"; 
-   d="scan'208";a="9800798"
-Message-ID: <53397E6F.6050600@cn.fujitsu.com>
-Date: Mon, 31 Mar 2014 22:40:47 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753626AbaCaOju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 10:39:50 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41238 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122AbaCaOjs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 10:39:48 -0400
+Date: Mon, 31 Mar 2014 16:39:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/hash changes for v3.15
+Message-ID: <20140331143944.GA11793@gmail.com>
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] workqueue: fix possible race condition when rescuer
- VS pwq-release
-References: <1395937212-4103-1-git-send-email-laijs@cn.fujitsu.com> <5335661E.7030408@cn.fujitsu.com>
-In-Reply-To: <5335661E.7030408@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/31 22:34:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/31 22:34:02,
-	Serialize complete at 2014/03/31 22:34:02
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping
+Linus,
 
-On 03/28/2014 08:07 PM, Lai Jiangshan wrote:
->>From 11af0cd0306309f0deaf3326cc26d3e7e517e3d1 Mon Sep 17 00:00:00 2001
-> From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Date: Fri, 28 Mar 2014 00:20:12 +0800
-> Subject: [PATCH] workqueue: fix possible race condition when rescuer VS
->  pwq-release
-> 
-> There is a race condition between rescuer_thread() and
-> pwq_unbound_release_workfn().
-> 
-> The works of the @pwq may be processed by some other workers,
-> and @pwq is scheduled to release(due to its wq's attr is changed)
-> before the rescuer starts to process. In this case
-> pwq_unbound_release_workfn() will corrupt wq->maydays list,
-> and rescuer_thead() will access to corrupted data.
-> 
-> Using get_unbound_pwq() when send_mayday() will keep @pwq's lifetime
-> and avoid the race condition.
-> 
-> Changed from V1:
-> 	1) Introduce get_unbound_pwq() for beter readibility. Since
-> 	   get_pwq() is considerred no-op for percpu workqueue,
-> 	   so the patch are the same behavior in functionality.
-> 	2) More precise comments.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  kernel/workqueue.c |   30 ++++++++++++++++++++++++++++++
->  1 files changed, 30 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 0c74979..d845bdd 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1050,6 +1050,12 @@ static void get_pwq(struct pool_workqueue *pwq)
->  	pwq->refcnt++;
->  }
->  
-> +static inline void get_unbound_pwq(struct pool_workqueue *pwq)
-> +{
-> +	if (pwq->wq->flags & WQ_UNBOUND)
-> +		get_pwq(pwq);
-> +}
-> +
->  /**
->   * put_pwq - put a pool_workqueue reference
->   * @pwq: pool_workqueue to put
-> @@ -1075,6 +1081,12 @@ static void put_pwq(struct pool_workqueue *pwq)
->  	schedule_work(&pwq->unbound_release_work);
->  }
->  
-> +static inline void put_unbound_pwq(struct pool_workqueue *pwq)
-> +{
-> +	if (pwq->wq->flags & WQ_UNBOUND)
-> +		put_pwq(pwq);
-> +}
-> +
->  /**
->   * put_pwq_unlocked - put_pwq() with surrounding pool lock/unlock
->   * @pwq: pool_workqueue to put (can be %NULL)
-> @@ -1908,6 +1920,19 @@ static void send_mayday(struct work_struct *work)
->  
->  	/* mayday mayday mayday */
->  	if (list_empty(&pwq->mayday_node)) {
-> +		/*
-> +		 * A pwq of an unbound wq may be released before wq's
-> +		 * destruction when the wq's attr is changed. In this case,
-> +		 * pwq_unbound_release_workfn() may execute earlier before
-> +		 * rescuer_thread() and corrupt wq->maydays list.
-> +		 *
-> +		 * get_unbound_pwq() keeps the unbound pwq until the rescuer
-> +		 * processes it and protects the pwq from being scheduled to
-> +		 * release when someone else processes all the works before
-> +		 * the rescuer starts to process.
-> +		 */
-> +		get_unbound_pwq(pwq);
-> +
->  		list_add_tail(&pwq->mayday_node, &wq->maydays);
->  		wake_up_process(wq->rescuer->task);
->  	}
-> @@ -2424,6 +2449,7 @@ repeat:
->  		/* migrate to the target cpu if possible */
->  		worker_maybe_bind_and_lock(pool);
->  		rescuer->pool = pool;
-> +		put_unbound_pwq(pwq);
->  
->  		/*
->  		 * Slurp in all works issued via this workqueue and
-> @@ -4318,6 +4344,10 @@ void destroy_workqueue(struct workqueue_struct *wq)
->  		/*
->  		 * The base ref is never dropped on per-cpu pwqs.  Directly
->  		 * free the pwqs and wq.
-> +		 *
-> +		 * The wq->maydays list maybe still have some pwqs linked,
-> +		 * but it is safe to free them all together since the rescuer
-> +		 * is stopped.
->  		 */
->  		free_percpu(wq->cpu_pwqs);
->  		kfree(wq);
+Please pull the latest x86-hash-for-linus git tree from:
 
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-hash-for-linus
+
+   # HEAD: 7a5917e9787dd73284f04e35c3cfdb39a67bf0d5 x86, hash: Simplify switch, add __init annotation
+
+Small fixes and cleanups to the librarized arch_fast_hash() methods, 
+used by the net/openvswitch code.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Jan Beulich (3):
+      x86, hash: Fix build failure with older binutils
+      x86, hash: Swap arguments passed to crc32_u32()
+      x86, hash: Simplify switch, add __init annotation
+
+
+ arch/x86/Makefile   |  1 +
+ arch/x86/lib/hash.c | 22 +++++++++++++---------
+ 2 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index eeda43a..f8842c4 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -152,6 +152,7 @@ cfi-sections := $(call as-instr,.cfi_sections .debug_frame,-DCONFIG_AS_CFI_SECTI
+ 
+ # does binutils support specific instructions?
+ asinstr := $(call as-instr,fxsaveq (%rax),-DCONFIG_AS_FXSAVEQ=1)
++asinstr += $(call as-instr,crc32l %eax$(comma)%eax,-DCONFIG_AS_CRC32=1)
+ avx_instr := $(call as-instr,vxorps %ymm0$(comma)%ymm1$(comma)%ymm2,-DCONFIG_AS_AVX=1)
+ avx2_instr :=$(call as-instr,vpbroadcastb %xmm0$(comma)%ymm1,-DCONFIG_AS_AVX2=1)
+ 
+diff --git a/arch/x86/lib/hash.c b/arch/x86/lib/hash.c
+index 3056702..ff4fa51 100644
+--- a/arch/x86/lib/hash.c
++++ b/arch/x86/lib/hash.c
+@@ -32,6 +32,7 @@
+  */
+ 
+ #include <linux/hash.h>
++#include <linux/init.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/cpufeature.h>
+@@ -39,7 +40,11 @@
+ 
+ static inline u32 crc32_u32(u32 crc, u32 val)
+ {
++#ifdef CONFIG_AS_CRC32
+ 	asm ("crc32l %1,%0\n" : "+r" (crc) : "rm" (val));
++#else
++	asm (".byte 0xf2, 0x0f, 0x38, 0xf1, 0xc1" : "+a" (crc) : "c" (val));
++#endif
+ 	return crc;
+ }
+ 
+@@ -49,19 +54,18 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
+ 	u32 i, tmp = 0;
+ 
+ 	for (i = 0; i < len / 4; i++)
+-		seed = crc32_u32(*p32++, seed);
++		seed = crc32_u32(seed, *p32++);
+ 
+-	switch (3 - (len & 0x03)) {
+-	case 0:
++	switch (len & 3) {
++	case 3:
+ 		tmp |= *((const u8 *) p32 + 2) << 16;
+ 		/* fallthrough */
+-	case 1:
++	case 2:
+ 		tmp |= *((const u8 *) p32 + 1) << 8;
+ 		/* fallthrough */
+-	case 2:
++	case 1:
+ 		tmp |= *((const u8 *) p32);
+-		seed = crc32_u32(tmp, seed);
+-	default:
++		seed = crc32_u32(seed, tmp);
+ 		break;
+ 	}
+ 
+@@ -74,12 +78,12 @@ static u32 intel_crc4_2_hash2(const u32 *data, u32 len, u32 seed)
+ 	u32 i;
+ 
+ 	for (i = 0; i < len; i++)
+-		seed = crc32_u32(*p32++, seed);
++		seed = crc32_u32(seed, *p32++);
+ 
+ 	return seed;
+ }
+ 
+-void setup_arch_fast_hash(struct fast_hash_ops *ops)
++void __init setup_arch_fast_hash(struct fast_hash_ops *ops)
+ {
+ 	if (cpu_has_xmm4_2) {
+ 		ops->hash  = intel_crc4_2_hash;
