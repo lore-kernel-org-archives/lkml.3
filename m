@@ -1,257 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaCaHSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 03:18:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64364 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039AbaCaHSM (ORCPT
+	id S1753316AbaCaHYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 03:24:09 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:36476 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770AbaCaHYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 03:18:12 -0400
-MIME-Version: 1.0
-Date: Mon, 31 Mar 2014 09:18:11 +0200
-Message-ID: <CACRpkdbLwRwUVZ+c4A8Y-annM-Q7W6QTJOK0RKLa9F7nLJ7o4Q@mail.gmail.com>
-Subject: [GIT PULL] pin control bulk changes for v3.15
-From: Linus Walleij <linus.walleij@linaro.org>
+	Mon, 31 Mar 2014 03:24:06 -0400
+Date: Mon, 31 Mar 2014 09:24:00 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for the 3.15 merge window
+Message-ID: <20140331092400.17071766@mschwide>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14033107-4966-0000-0000-000008E66DA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-the pin control tree has been pretty stable for some time so here is the
-bulk of changes for v3.15. Mainly linear improvements and non-critical
-fixes. Some details in the signed tag.
+please pull from the 'for-linus' branch of
 
-Please pull it in!
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
-Yours,
-Linus Walleij
+to receive the following updates:
+There are two memory management related changes, the CMMA support for
+KVM to avoid swap-in of freed pages and the split page table lock for
+the PMD level. These two come with common code changes in mm/.
 
+A fix for the long standing theoretical TLB flush problem, this one
+comes with a common code change in kernel/sched/.
 
-The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+Another set of changes is Heikos uaccess work, included is the initial
+set of patches with more to come.
 
-  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+And fixes and cleanups as usual.
 
-are available in the git repository at:
+Dominik Dingel (3):
+      s390/mm: fixing comment so that parameter name match
+      s390/mm: remove unnecessary parameter from gmap_do_ipte_notify
+      s390/mm: remove unecessary parameter from pgste_ipte_notify
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-v3.15-1
+Gerald Schaefer (1):
+      s390/appldata_os: fix cpu array size calculation
 
-for you to fetch changes up to 43f23a0660fa0fdc74c7b1bfc5a209883dbf8153:
+Heiko Carstens (13):
+      s390/uaccess: normalize order of parameters of indirect uaccess function calls
+      s390/uaccess: get rid of indirect function calls
+      s390/uaccess: consistent types
+      s390/setup: get rid of MACHINE_HAS_MVCOS machine flag
+      s390/uaccess: remove dead kernel parameter 'user_mode='
+      s390/uaccess: introduce 'uaccesspt' kernel parameter
+      s390/bitops: fix comment
+      s390/uaccess: remove copy_from_user_real()
+      s390/checksum: remove memset() within csum_partial_copy_from_user()
+      s390/compat: remove compat exec domain
+      s390/perf: make print_debug_cf() static
+      s390: update defconfigs
+      s390/smp: limit number of cpus in possible cpu mask
 
-  pinctrl: tegra: add some missing Tegra114 entries (2014-03-14 16:32:36 +0100)
+Josh Triplett (1):
+      s390: select CONFIG_TTY for use of tty in unconditional keyboard driver
 
-----------------------------------------------------------------
-Pin control bulk changes for the v3.15 series, no new core
-functionality this time, just incremental driver updates:
+Konstantin Weitz (2):
+      mm: add support for discard of unused ptes
+      s390/kvm: support collaborative memory management
 
-- A large refactoring of the MVEBU (Marvell) driver.
+Martin Schwidefsky (8):
+      sched/mm: call finish_arch_post_lock_switch in idle_task_exit and use_mm
+      s390/mm,tlb: race of lazy TLB flush vs. recreation of TLB entries
+      s390/kvm: set guest page states to stable on re-ipl
+      mm: mask bits from pmd in pmd_lockptr/pmd_huge_pte
+      s390/mm: enable split page table lock for PMD level
+      s390/airq: add support for irq ranges
+      s390/ptrace: add support for PTRACE_SINGLEBLOCK
+      s390/con3270: optionally disable auto update
 
-- A large refactoring of the Tegra (nVidia) driver.
+Michael Holzheu (2):
+      s390/sclp_early: Return correct HSA block count also for zero
+      hypfs: Add clarification for "weight_min" attribute
 
-- GPIO interrupt including soft edges support in the
-  STi driver.
+Philipp Hachtmann (1):
+      s390/topology: Remove call to update_cpu_masks()
 
-- Misc updates to PFC (Renesas), AT91, ADI2 (Blackfin),
-  pinctrl-single, sirf (CSR), msm (Qualcomm), Exynos (Samsung),
-  sunxi (AllWinner), i.MX (Freescale), Baytrail.
+Sebastian Ott (5):
+      s390/cio: fix driver callback initialization for ccw consoles
+      s390/cio: reorder initialization of ccw consoles
+      s390/cio: fix irq stats for early interrupts on ccw consoles
+      s390: improve debug feature usage
+      s390: add some drivers/subsystems to the MAINTAINERS file
 
-----------------------------------------------------------------
-Barry Song (1):
-      pinctrl: sirf: update copyright years to 2014
+ MAINTAINERS                             |   27 ++++-
+ arch/s390/Kconfig                       |    5 +
+ arch/s390/appldata/appldata_os.c        |    2 +-
+ arch/s390/configs/default_defconfig     |   46 +++++++--
+ arch/s390/configs/gcov_defconfig        |   33 ++++--
+ arch/s390/configs/performance_defconfig |   33 ++++--
+ arch/s390/configs/zfcpdump_defconfig    |    1 -
+ arch/s390/defconfig                     |   10 ++
+ arch/s390/hypfs/hypfs_vm.c              |    9 +-
+ arch/s390/include/asm/airq.h            |   14 ++-
+ arch/s390/include/asm/bitops.h          |    8 +-
+ arch/s390/include/asm/ccwdev.h          |    4 +-
+ arch/s390/include/asm/checksum.h        |   11 +-
+ arch/s390/include/asm/futex.h           |   13 +--
+ arch/s390/include/asm/kvm_host.h        |    5 +-
+ arch/s390/include/asm/mmu_context.h     |   39 ++++++-
+ arch/s390/include/asm/pgalloc.h         |   18 +++-
+ arch/s390/include/asm/pgtable.h         |  105 +++++++++++++------
+ arch/s390/include/asm/ptrace.h          |    1 +
+ arch/s390/include/asm/sclp.h            |    1 +
+ arch/s390/include/asm/setup.h           |    3 -
+ arch/s390/include/asm/thread_info.h     |    3 +
+ arch/s390/include/asm/uaccess.h         |  171 +++++++++++++------------------
+ arch/s390/include/uapi/asm/ptrace.h     |    6 ++
+ arch/s390/kernel/Makefile               |    5 +-
+ arch/s390/kernel/compat_exec_domain.c   |   29 ------
+ arch/s390/kernel/early.c                |    2 -
+ arch/s390/kernel/entry.S                |    9 +-
+ arch/s390/kernel/entry64.S              |    9 +-
+ arch/s390/kernel/perf_event.c           |    2 +-
+ arch/s390/kernel/ptrace.c               |   13 ++-
+ arch/s390/kernel/setup.c                |   17 ---
+ arch/s390/kernel/smp.c                  |    8 +-
+ arch/s390/kernel/topology.c             |    1 -
+ arch/s390/kvm/diag.c                    |    3 +
+ arch/s390/kvm/kvm-s390.c                |   25 +++++
+ arch/s390/kvm/kvm-s390.h                |    2 +
+ arch/s390/kvm/priv.c                    |   41 ++++++++
+ arch/s390/lib/Makefile                  |    3 +-
+ arch/s390/lib/find.c                    |    2 +-
+ arch/s390/lib/uaccess.h                 |    8 +-
+ arch/s390/lib/uaccess_mvcos.c           |  116 ++++++++++++++++-----
+ arch/s390/lib/uaccess_pt.c              |   69 +++++--------
+ arch/s390/mm/maccess.c                  |   28 +----
+ arch/s390/mm/pgtable.c                  |  158 +++++++++++++++++++++++++++-
+ arch/s390/pci/pci_debug.c               |    2 +-
+ drivers/s390/char/con3215.c             |    8 +-
+ drivers/s390/char/con3270.c             |   13 ++-
+ drivers/s390/char/raw3270.c             |   26 ++++-
+ drivers/s390/char/raw3270.h             |    3 +-
+ drivers/s390/char/sclp_early.c          |   31 +++++-
+ drivers/s390/cio/airq.c                 |   66 +++++++-----
+ drivers/s390/cio/chsc_sch.c             |    3 +-
+ drivers/s390/cio/cio.c                  |    4 +-
+ drivers/s390/cio/device.c               |   52 ++++++----
+ drivers/s390/net/qeth_core_main.c       |    4 +-
+ include/asm-generic/pgtable.h           |   13 +++
+ include/linux/mm.h                      |   10 +-
+ kernel/sched/core.c                     |    4 +-
+ mm/mmu_context.c                        |    3 +
+ mm/rmap.c                               |   10 ++
+ 61 files changed, 943 insertions(+), 427 deletions(-)
+ delete mode 100644 arch/s390/kernel/compat_exec_domain.c
 
-Bjorn Andersson (1):
-      pinctrl-msm: Support output-{high,low} configuration
-
-Chao Xie (1):
-      pinctrl: single: add low power mode support
-
-Chew, Kean Ho (1):
-      pinctrl-baytrail: add function mux checking in gpio pin request
-
-Geert Uytterhoeven (5):
-      pinctrl: sh-pfc: r8a7791: Add QSPI pin groups
-      pinctrl: sh-pfc: r8a7790: Add QSPI pin groups
-      ARM: shmobile: r8a7791 dtsi: Fix typo in msiof2 clock output name
-      pinctrl: sh-pfc: r8a7790: Add alternative MSIOF pin groups
-      pinctrl: sh-pfc: r8a7791: Add alternative MSIOF pin groups
-
-Giuseppe Cavallaro (2):
-      pinctrl: st: Enhance the controller to manage unavailable registers
-      pinctrl: st: add pinctrl support for the STiH407 SoC
-
-Hans de Goede (1):
-      pinctrl-sunxi: Fix sun5i-a13 port F multiplexing
-
-Ivan T. Ivanov (1):
-      pinctrl-msm: Add SPI8 pin definitions
-
-Jason Cooper (3):
-      Merge tag 'tags/for-mvebu-pinctrl-cleanup' into mvebu/pinctrl
-      Merge remote-tracking branch 'shesselba/for-mvebu/pinctrl-dove'
-into mvebu/pinctrl
-      Merge tag 'tags/for-mvebu-pinctrl-3xx' into mvebu/pinctrl
-
-Jean-Jacques Hiblot (1):
-      pinctrl: at91: use gpiolib API to mark a GPIO used as an IRQ
-
-Josh Cartwright (1):
-      pinctrl: msm: drop wake_irqs bitmap
-
-Linus Walleij (3):
-      Merge tag 'mvebu-pinctrl-3.15' of
-git://git.infradead.org/linux-mvebu into pinctrl-mvebu
-      Merge branch 'pinctrl-mvebu' into devel
-      pinctrl: msm: fix up out-of-order merge conflict
-
-Magnus Damm (1):
-      pinctrl: sh-pfc: r8a7790: Break out USB0 OVC/VBUS
-
-Mark Brown (1):
-      pinctrl: Quiet logging about missing DT nodes when not using DT
-
-Martin Fuzzey (1):
-      pinctrl: imx: Fix pin name in debug message.
-
-Maxime COQUELIN (1):
-      pinctrl: st: Use ARRAY_SIZE instead of raw value for number of delays
-
-Richard Genoud (1):
-      pinctrl: at91: implement get_direction
-
-Rongjun Ying (1):
-      pinctrl: sirf: add pin group for USP0 for atlas6
-
-Sebastian Hesselbarth (22):
-      pinctrl: mvebu: count unnamed controls and allocate name buffer
-      pinctrl: mvebu: remove obsolete per-control name buffer allocation
-      pinctrl: mvebu: identify generic controls by name
-      pinctrl: mvebu: remove passing mvebu_mpp_ctrl to callbacks
-      pinctrl: mvebu: add common mpp reg helper to mvebu pinctrl include
-      pinctrl: mvebu: dove: provide generic mpp callbacks
-      pinctrl: mvebu: kirkwood: provide generic mpp callbacks
-      pinctrl: mvebu: armada-370: provide generic mpp callbacks
-      pinctrl: mvebu: armada-xp: provide generic mpp callbacks
-      pinctrl: mvebu: move resource allocation to SoC specific drivers
-      pinctrl: mvebu: remove common get/set functions
-      pinctrl: mvebu: dove: consolidate auto-numbered pmu mpp ranges
-      pinctrl: mvebu: dove: reuse mpp_{set,get} in pmu callbacks
-      devicetree: bindings: add missing Marvell Dove SoC documentation
-      devicetree: bindings: update MVEBU pinctrl binding documentation
-      pinctrl: mvebu: dove: request additional resources
-      pinctrl: mvebu: dove: request syscon regmap for global registers
-      pinctrl: mvebu: dove: use remapped mpp base registers
-      pinctrl: mvebu: dove: use remapped mpp4 register
-      pinctrl: mvebu: dove: use remapped pmu_mpp registers
-      pinctrl: mvebu: dove: use global register regmap
-      pinctrl: mvebu: silence WARN to dev_warn
-
-Sonic Zhang (4):
-      pinctrl: Move pint PM storage structure out of blackfin architecture.
-      pinctrl-adi2: change irq_base from usigned int to int
-      pinctrl-adi2: fix coding style issue
-      pinctrl: pinctrl-adi: combine multiple groups of one function together
-
-Srinivas Kandagatla (3):
-      pinctrl: st: Add Interrupt support
-      pinctrl: st: Add software edge trigger interrupt support
-      pinctrl: st: Fix error check for of_irq_to_resource usage
-
-Stephen Boyd (8):
-      devicetree: bindings: Make msm8974-pinctrl documentation match code
-      pinctrl: msm: Silence recursive lockdep warning
-      pinctrl: msm: Check for ngpios > MAX_NR_GPIO
-      pinctrl: msm: Drop unused includes
-      pinctrl: msm: Drop OF_IRQ dependency
-      pinctrl: msm: Replace lookup tables with math
-      pinctrl: msm: Remove impossible WARN_ON()s
-      pinctrl: msm: Simplify msm_config_reg() and callers
-
-Stephen Warren (6):
-      pinctrl: tegra: fix some typos and inconsistencies
-      pinctrl: tegra: init Tegra20/30 at module_init time
-      pinctrl: tegra: dynamically calculate function list of groups
-      pinctrl: tegra: consistency cleanup
-      pinctrl: tegra: fix some mistakes in Tegra124
-      pinctrl: tegra: add some missing Tegra114 entries
-
-Thomas Petazzoni (3):
-      pinctrl: mvebu: remove MPP_REG_CTRL macro
-      pinctrl: mvebu: add pin-muxing driver for the Marvell Armada 375
-      pinctrl: mvebu: add pin-muxing driver for the Marvell Armada 380/385
-
-Ulf Hansson (2):
-      pinctrl: nomadik: Silence compiler warn for !CONFIG_PM
-      pinctrl: nomadik: Convert to modern pm_ops
-
-Wolfram Sang (1):
-      pinctrl: pfc: r8a7791: add mux data for IIC(B) cores
-
-Young-Gun Jang (1):
-      pinctrl: exynos: add exynos5260 SoC specific data
-
- .../devicetree/bindings/arm/marvell,dove.txt       |   22 +
- .../pinctrl/marvell,armada-370-pinctrl.txt         |    1 +
- .../pinctrl/marvell,armada-375-pinctrl.txt         |   82 ++
- .../pinctrl/marvell,armada-38x-pinctrl.txt         |   80 ++
- .../bindings/pinctrl/marvell,armada-xp-pinctrl.txt |    1 +
- .../bindings/pinctrl/marvell,dove-pinctrl.txt      |    1 +
- .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |    1 +
- .../bindings/pinctrl/marvell,mvebu-pinctrl.txt     |    2 +-
- .../devicetree/bindings/pinctrl/pinctrl-single.txt |    7 +
- .../devicetree/bindings/pinctrl/pinctrl-st.txt     |   73 +-
- .../bindings/pinctrl/qcom,msm8974-pinctrl.txt      |   14 +-
- .../bindings/pinctrl/samsung-pinctrl.txt           |    1 +
- arch/arm/boot/dts/r8a7791.dtsi                     |    2 +-
- arch/blackfin/include/asm/irq.h                    |    9 -
- drivers/pinctrl/Kconfig                            |    2 +-
- drivers/pinctrl/devicetree.c                       |    4 +-
- drivers/pinctrl/mvebu/Kconfig                      |    9 +
- drivers/pinctrl/mvebu/Makefile                     |    2 +
- drivers/pinctrl/mvebu/pinctrl-armada-370.c         |   20 +-
- drivers/pinctrl/mvebu/pinctrl-armada-375.c         |  459 +++++++
- drivers/pinctrl/mvebu/pinctrl-armada-38x.c         |  462 +++++++
- drivers/pinctrl/mvebu/pinctrl-armada-xp.c          |   24 +-
- drivers/pinctrl/mvebu/pinctrl-dove.c               |  404 +++---
- drivers/pinctrl/mvebu/pinctrl-kirkwood.c           |   25 +-
- drivers/pinctrl/mvebu/pinctrl-mvebu.c              |  122 +-
- drivers/pinctrl/mvebu/pinctrl-mvebu.h              |   55 +-
- drivers/pinctrl/pinctrl-adi2-bf54x.c               |  138 +--
- drivers/pinctrl/pinctrl-adi2-bf60x.c               |  128 +-
- drivers/pinctrl/pinctrl-adi2.c                     |   31 +-
- drivers/pinctrl/pinctrl-adi2.h                     |    8 +-
- drivers/pinctrl/pinctrl-at91.c                     |   39 +
- drivers/pinctrl/pinctrl-baytrail.c                 |   42 +-
- drivers/pinctrl/pinctrl-exynos.c                   |   82 ++
- drivers/pinctrl/pinctrl-imx.c                      |    2 +-
- drivers/pinctrl/pinctrl-msm.c                      |  113 +-
- drivers/pinctrl/pinctrl-msm.h                      |    5 +-
- drivers/pinctrl/pinctrl-msm8x74.c                  |   14 +-
- drivers/pinctrl/pinctrl-nomadik.c                  |   19 +-
- drivers/pinctrl/pinctrl-samsung.c                  |    2 +
- drivers/pinctrl/pinctrl-samsung.h                  |    1 +
- drivers/pinctrl/pinctrl-single.c                   |    3 +
- drivers/pinctrl/pinctrl-st.c                       |  462 ++++++-
- drivers/pinctrl/pinctrl-sunxi-pins.h               |   12 +-
- drivers/pinctrl/pinctrl-tegra.c                    |   38 +
- drivers/pinctrl/pinctrl-tegra.h                    |    4 +-
- drivers/pinctrl/pinctrl-tegra114.c                 | 1100 ++---------------
- drivers/pinctrl/pinctrl-tegra124.c                 | 1243 ++-----------------
- drivers/pinctrl/pinctrl-tegra20.c                  |  640 +---------
- drivers/pinctrl/pinctrl-tegra30.c                  | 1287 +-------------------
- drivers/pinctrl/sh-pfc/pfc-r8a7790.c               |  171 +++
- drivers/pinctrl/sh-pfc/pfc-r8a7791.c               |  596 +++++++++
- drivers/pinctrl/sirf/pinctrl-atlas6.c              |   46 +-
- drivers/pinctrl/sirf/pinctrl-prima2.c              |    3 +-
- drivers/pinctrl/sirf/pinctrl-sirf.c                |    3 +-
- 54 files changed, 3439 insertions(+), 4677 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/marvell,dove.txt
- create mode 100644
-Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt
- create mode 100644
-Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt
- create mode 100644 drivers/pinctrl/mvebu/pinctrl-armada-375.c
- create mode 100644 drivers/pinctrl/mvebu/pinctrl-armada-38x.c
