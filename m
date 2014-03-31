@@ -1,348 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbaCaOCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 10:02:31 -0400
-Received: from mail.efficios.com ([78.47.125.74]:42677 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982AbaCaOC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 10:02:29 -0400
-Date: Mon, 31 Mar 2014 14:02:23 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <1448966218.2982.1396274543268.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140331035458.GJ4284@linux.vnet.ibm.com>
-References: <20140330230856.GA21498@linux.vnet.ibm.com> <1983376434.2684.1396236565608.JavaMail.zimbra@efficios.com> <20140331035458.GJ4284@linux.vnet.ibm.com>
-Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
+	id S1752811AbaCaOHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 10:07:40 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:34499 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaCaOHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 10:07:38 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Conrad Meyer <cemeyer@uw.edu>
+Cc: linux-kernel@vger.kernel.org, Mark <markk@clara.co.uk>,
+        Conrad Meyer <cse.cem@gmail.com>
+Subject: Re: [PATCH v2] fs: FAT: Add support for DOS 1.x formatted volumes
+References: <1396120235-27844-1-git-send-email-cse.cem@gmail.com>
+Date: Mon, 31 Mar 2014 23:07:32 +0900
+In-Reply-To: <1396120235-27844-1-git-send-email-cse.cem@gmail.com> (Conrad
+	Meyer's message of "Sat, 29 Mar 2014 12:10:35 -0700")
+Message-ID: <87ioqufom3.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-Thread-Index: LAba+jOSVrOWpe2Y35EfsavD/SyLjg==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Conrad Meyer <cemeyer@uw.edu> writes:
 
+> +static void fat_update_archaic_boot_sector(struct super_block *sb,
+> +	struct fat_boot_sector *b)
+> +{
+> +	struct fat_floppy_defaults *di;
+> +	sector_t bd_sects;
+> +
+> +	/* 16-bit DOS 1.x reliably wrote bootstrap short-jmp code */
+> +	if (b->ignored[0] != 0xeb || b->ignored[2] != 0x90)
+> +		return;
+> +
+> +	/*
+> +	 * If any value in this region is non-zero, don't assume it is archaic
+> +	 * DOS.
+> +	 */
+> +	if (get_unaligned_le16(&b->sector_size) != 0 || b->sec_per_clus != 0 ||
+> +		b->reserved != 0 || b->fats != 0 ||
+> +		get_unaligned_le16(&b->dir_entries) != 0 ||
+> +		get_unaligned_le16(&b->sectors) != 0 || b->media != 0 ||
+> +		b->fat_length != 0 || b->secs_track != 0 || b->heads != 0 ||
+> +		b->secs_track != 0 || b->heads != 0)
+> +		return;
 
------ Original Message -----
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-> Sent: Sunday, March 30, 2014 11:54:58 PM
-> Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-> 
-> On Mon, Mar 31, 2014 at 03:29:25AM +0000, Mathieu Desnoyers wrote:
-> > ----- Original Message -----
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > To: fweisbec@gmail.com, "mathieu desnoyers"
-> > > <mathieu.desnoyers@efficios.com>, peterz@infradead.org
-> > > Cc: linux-kernel@vger.kernel.org
-> > > Sent: Sunday, March 30, 2014 7:08:56 PM
-> > > Subject: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-> > > 
-> > > For whatever it is worth, the following model claims safety and progress
-> > > for the sysidle state machine.
-> > > 
-> > > Thoughts?
-> > 
-> > Hi Paul,
-> > 
-> > Please keep in mind that it's been a while since I've looked at Promela
-> > proofs, but a couple of questions come to mind. First, how is the execution
-> > script below checking for progress in any way ? I remember that we used
-> > the negation of a "_np" LTL claim to check for progress in the past.
-> > Moreover, I'd be much more comfortable seeing ifdefs in the code that
-> > inject
-> > known failures, and let them be triggered by error-triggering runs in the
-> > scripts (with e.g. -DINJECT_ERROR_XYZ), to confirm that this model actually
-> > catches known issues.
-> 
-> Well, if I comment out the four "progress_" labels, it complains about
-> a non-progress cycle.  So at least spin does pay attention to these.  ;-)
-> 
-> If I put the "progress_" labels back in, but change the check so as to
-> prevent the state machine from ever entering RCU_SYSIDLE_FULL_NOTED,
-> it cranks through 14M states before complaining about a non-progress cycle,
-> as expected.
-> 
-> If I revert back to pristine state, and then comment out the statements
-> that reverts state back to RCU_SYSIDLE_NOT when exiting idle, an assert()
-> triggers, as expected.
-> 
-> > If we can show that the model can detect a few failure modes, both for
-> > safety
-> > and progress, then my confidence level in the model will start to improve.
-> > ;-)
-> 
-> Well, there probably is a bug in there somewhere, Murphy being who he is.
-> ;-)
+Probably, too weak detection to use by default. So, how about to use
+mount option to enable this?
 
-One failure mode your model seems to miss is when I comment the wakeup:
+And only if user asked to enable explicitly by mount option, allow this
+format.
 
-                /* If needed, wake up the timekeeper. */
-                if
-#ifndef INJECT_NO_WAKEUP
-                :: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-                        wakeup_timekeeper = 1;
-#endif /* #ifndef INJECT_NO_WAKEUP */
-                :: else -> skip;
-                fi;
+> +	bd_sects = part_nr_sects_read(sb->s_bdev->bd_part);
+> +	for (di = floppy_defaults; di->nr_sectors; di++) {
+> +		if (di->nr_sectors == bd_sects)
+> +			break;
+> +	}
+> +	if (di->nr_sectors == 0) {
+> +		fat_msg(sb, KERN_WARNING,
+> +			"DOS volume lacks BPB and isn't a recognized floppy size (%ld sectors)",
+> +			(long)bd_sects);
+> +		return;
+> +	}
+> +
+> +	fat_msg(sb, KERN_INFO,
+> +		"Volume lacks BPB but looks like archaic DOS; assuming default BPB values");
+> +
+> +	b->sec_per_clus = di->sec_per_clus;
+> +	put_unaligned_le16(di->dir_entries, &b->dir_entries);
+> +	b->media = di->media;
+> +	b->fat_length = cpu_to_le16(di->fat_length);
+> +	put_unaligned_le16(SECTOR_SIZE, &b->sector_size);
+> +	b->reserved = cpu_to_le16(1);
+> +	b->fats = 2;
+> +	put_unaligned_le16(bd_sects, &b->sectors);
+> +}
+> +
+> +/*
+>   * Read the super block of an MS-DOS FS.
+>   */
+>  int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+> @@ -1297,6 +1387,8 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+>  	}
+>  
+>  	b = (struct fat_boot_sector *) bh->b_data;
+> +	fat_update_archaic_boot_sector(sb, b);
 
-Somehow, I feel I am doing something very nasty to the algorithm,
-but the model checker fails to find any kind of progress or safety
-issue. Any idea why ?
+This would be better to set sbi->* directly, not via modified BPB.
 
-Thanks,
+>  	if (!b->reserved) {
+>  		if (!silent)
+>  			fat_msg(sb, KERN_ERR, "bogus number of reserved sectors");
+> @@ -1364,6 +1456,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+>  			goto out_fail;
+>  		}
+>  		b = (struct fat_boot_sector *) bh->b_data;
+> +		fat_update_archaic_boot_sector(sb, b);
 
-Mathieu
-
-
-> 
-> 							Thanx, Paul
-> 
-> > Thanks,
-> > 
-> > Mathieu
-> > 
-> > > 
-> > > 							Thanx, Paul
-> > > 
-> > > ------------------------------------------------------------------------
-> > > sysidle.sh
-> > > ------------------------------------------------------------------------
-> > > spin -a sysidle.spin
-> > > cc -DNP -o pan pan.c
-> > > # Fair scheduling to focus progress checks in timekeeper.
-> > > ./pan -f -l -m1280000 -w22
-> > > 
-> > > ------------------------------------------------------------------------
-> > > sysidle.spin
-> > > ------------------------------------------------------------------------
-> > > /*
-> > >  * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
-> > >  * This model assumes that the dyntick-idle bit manipulation works based
-> > >  * on long usage, and substitutes a per-thread boolean "am_busy[]" array
-> > >  * for the Linux kernel's dyntick-idle masks.  The focus of this model
-> > >  * is therefore on the state machine itself.  Checks for both safety and
-> > >  * forward progress.
-> > >  *
-> > >  * This program is free software; you can redistribute it and/or modify
-> > >  * it under the terms of the GNU General Public License as published by
-> > >  * the Free Software Foundation; either version 2 of the License, or
-> > >  * (at your option) any later version.
-> > >  *
-> > >  * This program is distributed in the hope that it will be useful,
-> > >  * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > >  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > >  * GNU General Public License for more details.
-> > >  *
-> > >  * You should have received a copy of the GNU General Public License
-> > >  * along with this program; if not, you can access it online at
-> > >  * http://www.gnu.org/licenses/gpl-2.0.html.
-> > >  *
-> > >  * Copyright IBM Corporation, 2014
-> > >  *
-> > >  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > >  */
-> > > 
-> > > #define NUM_WORKERS 3
-> > > 
-> > > byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
-> > > 
-> > > #define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-> > > #define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-> > > #define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-> > > #define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-> > > #define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
-> > > 
-> > > byte full_sysidle_state = RCU_SYSIDLE_NOT;
-> > > 
-> > > byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
-> > > byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not
-> > > idle. */
-> > > 
-> > > /*
-> > >  * Non-timekeeping CPU going into and out of dyntick-idle state.
-> > >  */
-> > > proctype worker(byte me)
-> > > {
-> > > 	byte oldstate;
-> > > 
-> > > 	do
-> > > 	:: 1 ->
-> > > 		/* Go idle. */
-> > > 		am_setup[me] = 0;
-> > > 		am_busy[me] = 0;
-> > > 
-> > > 		/* Dyntick-idle in the following loop. */
-> > > 		do
-> > > 		:: 1 -> skip;
-> > > 		:: 1 -> break;
-> > > 		od;
-> > > 
-> > > 		/* Exit idle loop, model getting out of dyntick idle state. */
-> > > 		am_busy[me] = 1;
-> > > 
-> > > 		/* Get state out of full-system idle states. */
-> > > 		atomic {
-> > > 			oldstate = full_sysidle_state;
-> > > 			if
-> > > 			:: oldstate > RCU_SYSIDLE_SHORT ->
-> > > 				full_sysidle_state = RCU_SYSIDLE_NOT;
-> > > 			:: else -> skip;
-> > > 			fi;
-> > > 		}
-> > > 
-> > > 		/* If needed, wake up the timekeeper. */
-> > > 		if
-> > > 		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-> > > 			wakeup_timekeeper = 1;
-> > > 		:: else -> skip;
-> > > 		fi;
-> > > 
-> > > 		/* Mark ourselves fully awake and operational. */
-> > > 		am_setup[me] = 1;
-> > > 
-> > > 		/* We are fully awake, so timekeeper must not be asleep. */
-> > > 		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
-> > > 
-> > > 		/* Running in kernel in the following loop. */
-> > > 		do
-> > > 		:: 1 -> skip;
-> > > 		:: 1 -> break;
-> > > 		od;
-> > > 	od
-> > > }
-> > > 
-> > > /*
-> > >  * Are all the workers in dyntick-idle state?
-> > >  */
-> > > #define check_idle() \
-> > > 	i = 0; \
-> > > 	idle = 1; \
-> > > 	do \
-> > > 	:: i < NUM_WORKERS -> \
-> > > 		if \
-> > > 		:: am_busy[i] == 1 -> idle = 0; \
-> > > 		:: else -> skip; \
-> > > 		fi; \
-> > > 		i++; \
-> > > 	:: i >= NUM_WORKERS -> break; \
-> > > 	od
-> > > 
-> > > /*
-> > >  * Timekeeping CPU.
-> > >  */
-> > > proctype timekeeper()
-> > > {
-> > > 	byte i;
-> > > 	byte idle;
-> > > 	byte curstate;
-> > > 	byte newstate;
-> > > 
-> > > 	do
-> > > 	:: 1 ->
-> > > 		/* Capture current state. */
-> > > 		check_idle();
-> > > 		curstate = full_sysidle_state;
-> > > 		newstate = curstate;
-> > > 
-> > > 		/* Check for acceptance state. */
-> > > 		if
-> > > 		:: idle == 0 ->
-> > > progress_idle:
-> > > 			skip;
-> > > 		:: curstate == RCU_SYSIDLE_NOT ->
-> > > progress_idle_reset:
-> > > 			skip;
-> > > 		:: else -> skip;
-> > > 		fi;
-> > > 
-> > > 		/* Manage state... */
-> > > 		if
-> > > 		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
-> > > 			/* Idle, advance to next state. */
-> > > 			atomic {
-> > > 				if
-> > > 				:: full_sysidle_state == curstate ->
-> > > 					newstate = curstate + 1;
-> > > 					full_sysidle_state = newstate;
-> > > 				:: else -> skip;
-> > > 				fi;
-> > > 			}
-> > > 		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
-> > > 			/* Non-idle and state advanced, revert to base state. */
-> > > 			full_sysidle_state = RCU_SYSIDLE_NOT;
-> > > 		:: else -> skip;
-> > > 		fi;
-> > > 
-> > > 		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
-> > > 		do
-> > > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-> > > 		   wakeup_timekeeper == 1 ->
-> > > 			assert(0); /* Should never get here. */
-> > > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-> > > 		   wakeup_timekeeper == 0 ->
-> > > 			break;
-> > > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-> > > 		   wakeup_timekeeper == 1 ->
-> > > progress_full_system_idle_1:
-> > > 			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
-> > > 		   	wakeup_timekeeper = 0;
-> > > 			break;
-> > > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-> > > 		   wakeup_timekeeper == 0 ->
-> > > progress_full_system_idle_2:
-> > > 
-> > > 			/* We are asleep, so all workers better be idle. */
-> > > 			atomic {
-> > > 				i = 0;
-> > > 				idle = 1;
-> > > 				do
-> > > 				:: i < NUM_WORKERS ->
-> > > 					if
-> > > 					:: am_setup[i] -> idle = 0;
-> > > 					:: else -> skip;
-> > > 					fi;
-> > > 					i++;
-> > > 				:: i >= NUM_WORKERS -> break;
-> > > 				od;
-> > > 				assert(idle == 1 ||
-> > > 				       full_sysidle_state < RCU_SYSIDLE_FULL);
-> > > 			}
-> > > 		od;
-> > > 		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
-> > > 	od;
-> > > }
-> > > 
-> > > init {
-> > > 	byte i = 0;
-> > > 
-> > > 	do
-> > > 	:: i < NUM_WORKERS ->
-> > > 		am_busy[i] = 1;
-> > > 		am_setup[i] = 1;
-> > > 		run worker(i);
-> > > 		i++;
-> > > 	:: i >= NUM_WORKERS -> break;
-> > > 	od;
-> > > 	run timekeeper();
-> > > }
-> > > 
-> > > 
-> > 
-> > --
-> > Mathieu Desnoyers
-> > EfficiOS Inc.
-> > http://www.efficios.com
-> > 
-> 
-> 
-
+This doesn't need. If logical_sector_size is 512, this format doesn't work.
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
