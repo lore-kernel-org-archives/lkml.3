@@ -1,53 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289AbaCaMNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:13:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45600 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753018AbaCaMIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:08:01 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-pwm@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 4/4] ARM: sunxi: dt: Add PWM support for the cubietruck
-Date: Mon, 31 Mar 2014 14:07:29 +0200
-Message-Id: <1396267649-18009-5-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396267649-18009-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1396267649-18009-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1752824AbaCaMQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:16:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46420 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749AbaCaMQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 08:16:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,764,1389772800"; 
+   d="scan'208";a="510938110"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Sabrina Dubroca <sd@queasysnail.net>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] gpio / ACPI: Don't crash on NULL chip->dev
+Date: Mon, 31 Mar 2014 15:16:49 +0300
+Message-Id: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables the PWM for both PWM channels on the cubietruck. They can be found on
-connector CN8.
+Commit aa92b6f689ac (gpio / ACPI: Allocate ACPI specific data directly in
+acpi_gpiochip_add()) moved ACPI handle checking to acpi_gpiochip_add() but
+forgot to check whether chip->dev is NULL before dereferencing it.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Since chip->dev pointer is optional we can end up with crash like following:
+
+ BUG: unable to handle kernel NULL pointer dereference at 00000138
+ IP: [<c126c2b3>] acpi_gpiochip_add+0x13/0x190
+ *pde = 00000000
+ Oops: 0000 [#1] PREEMPT SMP
+ Modules linked in: ssb(+) ...
+ CPU: 0 PID: 512 Comm: modprobe Tainted: G        W     3.14.0-rc7-next-20140324-t1 #24
+ Hardware name: Dell Inc. Latitude D830                   /0UY141, BIOS A02 06/07/2007
+ task: f5799900 ti: f543e000 task.ti: f543e000
+ EIP: 0060:[<c126c2b3>] EFLAGS: 00010282 CPU: 0
+ EIP is at acpi_gpiochip_add+0x13/0x190
+ EAX: 00000000 EBX: f57824c4 ECX: 00000000 EDX: 00000000
+ ESI: f57824c4 EDI: 00000010 EBP: f543fc54 ESP: f543fc40
+  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+ CR0: 8005003b CR2: 00000138 CR3: 355f8000 CR4: 000007d0
+ Stack:
+  f543fc5c fd1f7790 f57824c4 000000be 00000010 f543fc84 c1269f4e f543fc74
+  fd1f78bd 00008002 f57822b0 f5782090 fd1f8400 00000286 fd1f9994 00000000
+  f5782000 f543fc8c fd1f7e39 f543fcc8 fd1f0bd8 000000c0 00000000 00000000
+ Call Trace:
+  [<fd1f7790>] ? ssb_pcie_mdio_write+0xa0/0xd0 [ssb]
+  [<c1269f4e>] gpiochip_add+0xee/0x300
+  [<fd1f78bd>] ? ssb_pcicore_serdes_workaround+0xfd/0x140 [ssb]
+  [<fd1f7e39>] ssb_gpio_init+0x89/0xa0 [ssb]
+  [<fd1f0bd8>] ssb_attach_queued_buses+0xc8/0x2d0 [ssb]
+  [<fd1f0f65>] ssb_bus_register+0x185/0x1f0 [ssb]
+  [<fd1f3120>] ? ssb_pci_xtal+0x220/0x220 [ssb]
+  [<fd1f106c>] ssb_bus_pcibus_register+0x2c/0x80 [ssb]
+  [<fd1f40dc>] ssb_pcihost_probe+0x9c/0x110 [ssb]
+  [<c1276c8f>] pci_device_probe+0x6f/0xc0
+  [<c11bdb55>] ? sysfs_create_link+0x25/0x40
+  [<c131d8b9>] driver_probe_device+0x79/0x360
+  [<c1276512>] ? pci_match_device+0xb2/0xc0
+  [<c131dc51>] __driver_attach+0x71/0x80
+  [<c131dbe0>] ? __device_attach+0x40/0x40
+  [<c131bd87>] bus_for_each_dev+0x47/0x80
+  [<c131d3ae>] driver_attach+0x1e/0x20
+  [<c131dbe0>] ? __device_attach+0x40/0x40
+  [<c131d007>] bus_add_driver+0x157/0x230
+  [<c131e219>] driver_register+0x59/0xe0
+  ...
+
+Fix this by checking chip->dev pointer against NULL first. Also we can now
+remove redundant check in acpi_gpiochip_request/free_interrupts().
+
+Reported-by: Sabrina Dubroca <sd@queasysnail.net>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 6 ++++++
- 1 file changed, 6 insertions(+)
+Sabrina,
 
-diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-index f9dcb61a5305..b6843839b380 100644
---- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-+++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-@@ -28,6 +28,12 @@
- 			};
- 		};
+Can you please re-test this and provide your tested-by? I changed the patch
+a bit to remove redundant checks. Just to be sure that I don't accidentally
+break something.
+
+Thanks.
+
+ drivers/gpio/gpiolib-acpi.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+index bf0f8b476696..d5be56fe689e 100644
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -233,7 +233,7 @@ static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *acpi_gpio)
+ {
+ 	struct gpio_chip *chip = acpi_gpio->chip;
  
-+		pwm: pwm@01c20e00 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pwm0_pins_a>, <&pwm1_pins_a>;
-+			status = "okay";
-+		};
+-	if (!chip->dev || !chip->to_irq)
++	if (!chip->to_irq)
+ 		return;
+ 
+ 	INIT_LIST_HEAD(&acpi_gpio->events);
+@@ -253,7 +253,7 @@ static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *acpi_gpio)
+ 	struct acpi_gpio_event *event, *ep;
+ 	struct gpio_chip *chip = acpi_gpio->chip;
+ 
+-	if (!chip->dev || !chip->to_irq)
++	if (!chip->to_irq)
+ 		return;
+ 
+ 	list_for_each_entry_safe_reverse(event, ep, &acpi_gpio->events, node) {
+@@ -501,6 +501,9 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
+ 	acpi_handle handle;
+ 	acpi_status status;
+ 
++	if (!chip || !chip->dev)
++		return;
 +
- 		uart0: serial@01c28000 {
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&uart0_pins_a>;
+ 	handle = ACPI_HANDLE(chip->dev);
+ 	if (!handle)
+ 		return;
+@@ -531,6 +534,9 @@ void acpi_gpiochip_remove(struct gpio_chip *chip)
+ 	acpi_handle handle;
+ 	acpi_status status;
+ 
++	if (!chip || !chip->dev)
++		return;
++
+ 	handle = ACPI_HANDLE(chip->dev);
+ 	if (!handle)
+ 		return;
 -- 
-1.8.3.2
+1.9.1
 
