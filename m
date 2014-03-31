@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094AbaCaQ0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 12:26:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49170 "EHLO mail.skyhub.de"
+	id S1754126AbaCaQ3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 12:29:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14218 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014AbaCaQ0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 12:26:44 -0400
-Date: Mon, 31 Mar 2014 18:26:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        Jacob Shin <jacob.shin@amd.com>, Jeff Layton <jlayton@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] x86: microcode: report if no microcode file was found
-Message-ID: <20140331162633.GC16144@pd.tnic>
-References: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
- <1396188574-2067-2-git-send-email-dvlasenk@redhat.com>
+	id S1753345AbaCaQ3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 12:29:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,766,1389772800"; 
+   d="scan'208";a="484105172"
+Message-ID: <5339977F.4070905@intel.com>
+Date: Mon, 31 Mar 2014 09:27:43 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1396188574-2067-2-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 00/14] mm, hugetlb: remove a hugetlb_instantiation_mutex
+References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 30, 2014 at 04:09:33PM +0200, Denys Vlasenko wrote:
-> diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
-> index ef8b17c..9ce22b0 100644
-> --- a/arch/x86/kernel/cpu/microcode/intel.c
-> +++ b/arch/x86/kernel/cpu/microcode/intel.c
-> @@ -279,7 +279,7 @@ static enum ucode_state request_microcode_fw(int cpu, struct device *device,
->  		c->x86, c->x86_model, c->x86_mask);
->  
->  	if (request_firmware_direct(&firmware, name, device)) {
+On 12/17/2013 10:53 PM, Joonsoo Kim wrote:
+> * NOTE for v3
+> - Updating patchset is so late because of other works, not issue from
+> this patchset.
 
-request_firmware_direct() already has dev_dbg() error messages down its
-path.
+Hey Joonsoo,
 
-> -		pr_debug("data file %s load failed\n", name);
-> +		pr_info("data file %s load failed\n", name);
+Any plans to repost these?
 
-Also might spook users unnecessarily.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+I've got some folks with a couple TB of RAM seeing long startup times
+with $LARGE_DATABASE_PRODUCT.  It looks to be contention on
+hugetlb_instantiation_mutex because everyone is trying to zero hugepages
+under that lock in parallel.  Just removing the lock sped things up
+quite a bit.
