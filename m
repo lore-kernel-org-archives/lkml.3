@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaCaMLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:11:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45813 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753273AbaCaMIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:08:42 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lee.jones@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
-        lgirdwood@gmail.com, ckeepax@opensource.wolfsonmicro.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] regulator: arizona-micsupp: Add processing of init_data from device tree
-Date: Mon, 31 Mar 2014 12:59:46 +0100
-Message-Id: <1396267187-30580-6-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1396267187-30580-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1396267187-30580-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1753578AbaCaMLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:11:52 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:46931 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752879AbaCaMLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 08:11:50 -0400
+Date: Mon, 31 Mar 2014 14:11:39 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Message-ID: <20140331121139.GZ3339@pcnci.linuxbox.cz>
+References: <20140310145530.GA27230@pcnci.linuxbox.cz>
+ <20140329121550.GA5878@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+ <20140331120102.GY3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CnCWQepWw43huI++"
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-03-31_02
+X-Milter-Copy-Status: I
+X-Milter-Copy-Status: I
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/regulator/arizona-micsupp.c |   53 +++++++++++++++++++++++++++++++++++
- 1 files changed, 53 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
-index 6fdd9bf..5225470 100644
---- a/drivers/regulator/arizona-micsupp.c
-+++ b/drivers/regulator/arizona-micsupp.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/gpio.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
-@@ -195,6 +196,49 @@ static const struct regulator_init_data arizona_micsupp_ext_default = {
- 	.num_consumer_supplies = 1,
- };
- 
-+#ifdef CONFIG_OF
-+static int arizona_micsupp_of_get_pdata(struct arizona *arizona,
-+					struct regulator_config *config)
-+{
-+	struct arizona_pdata *pdata = &arizona->pdata;
-+	struct arizona_micsupp *micsupp = config->driver_data;
-+	struct device_node *np;
-+	struct regulator_init_data *init_data;
-+
-+	np = of_get_child_by_name(arizona->dev->of_node, "micvdd");
-+
-+	if (np) {
-+		config->of_node = np;
-+
-+		init_data = of_get_regulator_init_data(arizona->dev, np);
-+
-+		if (init_data) {
-+			init_data->consumer_supplies = &micsupp->supply;
-+			init_data->num_consumer_supplies = 1;
-+
-+			pdata->micvdd = init_data;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static void arizona_micsupp_of_put_pdata(struct regulator_config *config)
-+{
-+	of_node_put(config->of_node);
-+}
-+#else
-+static inline int arizona_micsupp_of_get_pdata(struct arizona *arizona,
-+					       struct regulator_config *config)
-+{
-+	return 0;
-+}
-+
-+static inline void arizona_micsupp_of_put_pdata(struct regulator_config *config)
-+{
-+}
-+#endif
-+
- static int arizona_micsupp_probe(struct platform_device *pdev)
- {
- 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
-@@ -234,6 +278,12 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 	config.driver_data = micsupp;
- 	config.regmap = arizona->regmap;
- 
-+	if (!dev_get_platdata(arizona->dev)) {
-+		ret = arizona_micsupp_of_get_pdata(arizona, &config);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
- 	if (arizona->pdata.micvdd)
- 		config.init_data = arizona->pdata.micvdd;
- 	else
-@@ -253,6 +303,9 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	if (!dev_get_platdata(arizona->dev))
-+		arizona_micsupp_of_put_pdata(&config);
-+
- 	platform_set_drvdata(pdev, micsupp);
- 
- 	return 0;
--- 
-1.7.2.5
+--CnCWQepWw43huI++
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
+
+sure! count me in.
+
+n.
+
+
+On Mon, Mar 31, 2014 at 12:05:20PM +0000, Winkler, Tomas wrote:
+>=20
+> >=20
+> > Hi Tomas,
+> >=20
+> > > If this is a server platform can you please try this patch
+> > https://lkml.org/lkml/2014/3/25/396
+> >=20
+> > tried 3.10.35 with Your patch and now I can see following in dmesg:
+> >=20
+> > [  +0.000290] mei_me 0000:00:16.0: Device doesn't have valid ME Interfa=
+ce
+> > [  +0.007656] mei_me 0000:00:16.0: initialization failed.
+> >=20
+> > now reboot works as expected. Once this hits ustream (if it hasn't alre=
+ady),
+> > this could go to -stable, do You agree?
+> >=20
+> > thanks!
+> >=20
+> I definitely asked for adding it to stable. Would you wish to add you tes=
+ted-by to the patch?.=20
+> Tomas
+>=20
+>=20
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--CnCWQepWw43huI++
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlM5W3sACgkQ3xdJJrLygV7zGACgyRc9mwur7hfUHB8mLPT44k9M
+hwsAoLdxU1osXpEOfp3Ooasmoela4Pse
+=/HgP
+-----END PGP SIGNATURE-----
+
+--CnCWQepWw43huI++--
