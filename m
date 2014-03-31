@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaCaUo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:44:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26572 "EHLO mx1.redhat.com"
+	id S1751563AbaCaUpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:45:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8648 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976AbaCaUoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:44:55 -0400
-Date: Mon, 31 Mar 2014 21:43:59 +0200
+	id S1750976AbaCaUpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 16:45:01 -0400
+Date: Mon, 31 Mar 2014 21:44:02 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,9 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] uprobes/x86: Fold prepare_fixups() into
-	arch_uprobe_analyze_insn()
-Message-ID: <20140331194359.GA9278@redhat.com>
+Subject: [PATCH 3/7] uprobes/x86: Conditionalize the usage of
+	handle_riprel_insn()
+Message-ID: <20140331194402.GA9287@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,192 +28,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, preparation.
+arch_uprobe_analyze_insn() calls handle_riprel_insn() at the start,
+but only "0xff" and "default" cases need the UPROBE_FIX_RIP_ logic.
+Move the callsite into "default" case and change the "0xff" case to
+fall-through.
 
-Shift the code from prepare_fixups() to arch_uprobe_analyze_insn()
-with the following modifications:
-
-	- Do not call insn_get_opcode() again, it was already called
-	  by validate_insn_bits().
-
-	- Move "case 0xea" up. This way "case 0xff" can fall through
-	  to default case.
-
-	- change "case 0xff" to use the nested "switch (MODRM_REG)",
-	  this way the code looks a bit simpler.
-
-	- Make the comments look consistent.
-
-While at it, kill the initialization of rip_rela_target_address and
-->fixups, we can rely on kzalloc(). We will add the new members into
-arch_uprobe, it would be better to assume that everything is zero by
-default.
-
-TODO: cleanup/fix the mess in validate_insn_bits() paths:
-
-	- validate_insn_64bits() and validate_insn_32bits() should be
-	  unified.
-
-	- "ifdef" is not used consistently; if good_insns_64 depends
-	  on CONFIG_X86_64, then probably good_insns_32 should depend
-	  on CONFIG_X86_32/EMULATION
-
-	- the usage of mm->context.ia32_compat looks wrong if the task
-	  is TIF_X32.
+We are going to add the various hooks to handle the rip-relative
+jmp/call instructions (and more), we need this change to enforce the
+fact that the new code can't conflict with is_riprel_insn() code.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/uprobes.c |  110 +++++++++++++++++++--------------------------
- 1 files changed, 47 insertions(+), 63 deletions(-)
+ arch/x86/kernel/uprobes.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 2ed8459..098e56e 100644
+index 098e56e..d72dfbf 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -53,7 +53,7 @@
- #define OPCODE1(insn)		((insn)->opcode.bytes[0])
- #define OPCODE2(insn)		((insn)->opcode.bytes[1])
- #define OPCODE3(insn)		((insn)->opcode.bytes[2])
--#define MODRM_REG(insn)		X86_MODRM_REG(insn->modrm.value)
-+#define MODRM_REG(insn)		X86_MODRM_REG((insn)->modrm.value)
- 
- #define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
- 	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
-@@ -229,63 +229,6 @@ static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
- 	return -ENOTSUPP;
- }
- 
--/*
-- * Figure out which fixups arch_uprobe_post_xol() will need to perform, and
-- * annotate arch_uprobe->fixups accordingly.  To start with,
-- * arch_uprobe->fixups is either zero or it reflects rip-related fixups.
-- */
--static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
--{
--	bool fix_ip = true, fix_call = false;	/* defaults */
--	int reg;
+@@ -376,8 +376,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
+ 	 * is either zero or it reflects rip-related fixups.
+ 	 */
+-	handle_riprel_insn(auprobe, mm, &insn);
 -
--	insn_get_opcode(insn);	/* should be a nop */
--
--	switch (OPCODE1(insn)) {
--	case 0x9d:
--		/* popf */
--		auprobe->fixups |= UPROBE_FIX_SETF;
+ 	switch (OPCODE1(&insn)) {
+ 	case 0x9d:		/* popf */
+ 		auprobe->fixups |= UPROBE_FIX_SETF;
+@@ -406,9 +404,9 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 		case 4: case 5:			/* jmp or ljmp, indirect */
+ 			fix_ip = false;
+ 		}
 -		break;
--	case 0xc3:		/* ret/lret */
--	case 0xcb:
--	case 0xc2:
--	case 0xca:
--		/* ip is correct */
--		fix_ip = false;
++		/* fall through */
+ 	default:
 -		break;
--	case 0xe8:		/* call relative - Fix return addr */
--		fix_call = true;
--		break;
--	case 0x9a:		/* call absolute - Fix return addr, not ip */
--		fix_call = true;
--		fix_ip = false;
--		break;
--	case 0xff:
--		insn_get_modrm(insn);
--		reg = MODRM_REG(insn);
--		if (reg == 2 || reg == 3) {
--			/* call or lcall, indirect */
--			/* Fix return addr; ip is correct. */
--			fix_call = true;
--			fix_ip = false;
--		} else if (reg == 4 || reg == 5) {
--			/* jmp or ljmp, indirect */
--			/* ip is correct. */
--			fix_ip = false;
--		}
--		break;
--	case 0xea:		/* jmp absolute -- ip is correct */
--		fix_ip = false;
--		break;
--	default:
--		break;
--	}
--	if (fix_ip)
--		auprobe->fixups |= UPROBE_FIX_IP;
--	if (fix_call)
--		auprobe->fixups |= UPROBE_FIX_CALL;
--}
--
- #ifdef CONFIG_X86_64
- /*
-  * If arch_uprobe->insn doesn't use rip-relative addressing, return
-@@ -318,7 +261,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct ins
- 	if (mm->context.ia32_compat)
- 		return;
++		handle_riprel_insn(auprobe, mm, &insn);
+ 	}
  
--	auprobe->rip_rela_target_address = 0x0;
- 	if (!insn_rip_relative(insn))
- 		return;
- 
-@@ -421,16 +363,58 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
-  */
- int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
- {
--	int ret;
- 	struct insn insn;
-+	bool fix_ip = true, fix_call = false;
-+	int ret;
- 
--	auprobe->fixups = 0;
- 	ret = validate_insn_bits(auprobe, mm, &insn);
--	if (ret != 0)
-+	if (ret)
- 		return ret;
- 
-+	/*
-+	 * Figure out which fixups arch_uprobe_post_xol() will need to perform,
-+	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
-+	 * is either zero or it reflects rip-related fixups.
-+	 */
- 	handle_riprel_insn(auprobe, mm, &insn);
--	prepare_fixups(auprobe, &insn);
-+
-+	switch (OPCODE1(&insn)) {
-+	case 0x9d:		/* popf */
-+		auprobe->fixups |= UPROBE_FIX_SETF;
-+		break;
-+	case 0xc3:		/* ret or lret -- ip is correct */
-+	case 0xcb:
-+	case 0xc2:
-+	case 0xca:
-+		fix_ip = false;
-+		break;
-+	case 0xe8:		/* call relative - Fix return addr */
-+		fix_call = true;
-+		break;
-+	case 0x9a:		/* call absolute - Fix return addr, not ip */
-+		fix_call = true;
-+		fix_ip = false;
-+		break;
-+	case 0xea:		/* jmp absolute -- ip is correct */
-+		fix_ip = false;
-+		break;
-+	case 0xff:
-+		insn_get_modrm(&insn);
-+		switch (MODRM_REG(&insn)) {
-+		case 2: case 3:			/* call or lcall, indirect */
-+			fix_call = true;
-+		case 4: case 5:			/* jmp or ljmp, indirect */
-+			fix_ip = false;
-+		}
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	if (fix_ip)
-+		auprobe->fixups |= UPROBE_FIX_IP;
-+	if (fix_call)
-+		auprobe->fixups |= UPROBE_FIX_CALL;
- 
- 	return 0;
- }
+ 	if (fix_ip)
 -- 
 1.5.5.1
 
