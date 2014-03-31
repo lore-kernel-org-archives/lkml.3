@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777AbaCaNaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:30:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35842 "EHLO
+	id S1754754AbaCaNaD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:30:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35848 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375AbaCaNYz (ORCPT
+	with ESMTP id S1754377AbaCaNYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Mar 2014 09:24:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Kevin Easton <kevin@guarana.org>,
-        Ruchi Kandoi <kandoiruchi@google.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 50/71] jiffies: Avoid undefined behavior from signed overflow
-Date: Mon, 31 Mar 2014 14:22:56 +0100
-Message-Id: <1396272197-13394-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 64/71] ALSA: hda/realtek - Avoid invalid COEFs for ALC271X
+Date: Mon, 31 Mar 2014 14:23:10 +0100
+Message-Id: <1396272197-13394-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -34,81 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5a581b367b5df0531265311fc681c2abd377e5e6 upstream.
+commit d3c56568f43807135f2c2a09582a69f809f0d8b7 upstream.
 
-According to the C standard 3.4.3p3, overflow of a signed integer results
-in undefined behavior.  This commit therefore changes the definitions
-of time_after(), time_after_eq(), time_after64(), and time_after_eq64()
-to avoid this undefined behavior.  The trick is that the subtraction
-is done using unsigned arithmetic, which according to 6.2.5p9 cannot
-overflow because it is defined as modulo arithmetic.  This has the added
-(though admittedly quite small) benefit of shortening four lines of code
-by four characters each.
+We've seen often problems after suspend/resume on Acer Aspire One
+AO725 with ALC271X codec as reported in kernel bugzilla, and it turned
+out that some COEFs doesn't work and triggers the codec communication
+stall.
 
-Note that the C standard considers the cast from unsigned to
-signed to be implementation-defined, see 6.3.1.3p3.  However, on a
-two's-complement system, an implementation that defines anything other
-than a reinterpretation of the bits is free to come to me, and I will be
-happy to act as a witness for its being committed to an insane asylum.
-(Although I have nothing against saturating arithmetic or signals in some
-cases, these things really should not be the default when compiling an
-operating-system kernel.)
+Since these magic COEF setups are specific to ALC269VB for some PLL
+configurations, the machine works even without these manual
+adjustment.  So, let's simply avoid applying them for ALC271X.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Kevin Easton <kevin@guarana.org>
-[ paulmck: Included time_after64() and time_after_eq64(), as suggested
-  by Eric Dumazet, also fixed commit message.]
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Cc: Ruchi Kandoi <kandoiruchi@google.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52181
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/jiffies.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_realtek.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 265e2c3..f5df3dc 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -106,13 +106,13 @@ static inline u64 get_jiffies_64(void)
- #define time_after(a,b)		\
- 	(typecheck(unsigned long, a) && \
- 	 typecheck(unsigned long, b) && \
--	 ((long)(b) - (long)(a) < 0))
-+	 ((long)((b) - (a)) < 0))
- #define time_before(a,b)	time_after(b,a)
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 9df1421..21bc6d6 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6164,6 +6164,9 @@ static void alc269_fill_coef(struct hda_codec *codec)
  
- #define time_after_eq(a,b)	\
- 	(typecheck(unsigned long, a) && \
- 	 typecheck(unsigned long, b) && \
--	 ((long)(a) - (long)(b) >= 0))
-+	 ((long)((a) - (b)) >= 0))
- #define time_before_eq(a,b)	time_after_eq(b,a)
+ 	if (spec->codec_variant != ALC269_TYPE_ALC269VB)
+ 		return;
++	/* ALC271X doesn't seem to support these COEFs (bko#52181) */
++	if (!strcmp(codec->chip_name, "ALC271X"))
++		return;
  
- /*
-@@ -135,13 +135,13 @@ static inline u64 get_jiffies_64(void)
- #define time_after64(a,b)	\
- 	(typecheck(__u64, a) &&	\
- 	 typecheck(__u64, b) && \
--	 ((__s64)(b) - (__s64)(a) < 0))
-+	 ((__s64)((b) - (a)) < 0))
- #define time_before64(a,b)	time_after64(b,a)
- 
- #define time_after_eq64(a,b)	\
- 	(typecheck(__u64, a) && \
- 	 typecheck(__u64, b) && \
--	 ((__s64)(a) - (__s64)(b) >= 0))
-+	 ((__s64)((a) - (b)) >= 0))
- #define time_before_eq64(a,b)	time_after_eq64(b,a)
- 
- /*
+ 	if ((alc_get_coef0(codec) & 0x00ff) < 0x015) {
+ 		alc_write_coef_idx(codec, 0xf, 0x960b);
 -- 
 1.9.1
 
