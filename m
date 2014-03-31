@@ -1,182 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaCaJqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 05:46:31 -0400
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:42290 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752770AbaCaJqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 05:46:30 -0400
-Date: Mon, 31 Mar 2014 11:46:27 +0200
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
-        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kernfs/rtc: circular dependency between kernfs and ops_lock
-Message-ID: <20140331114627.5e1a4609@linux.lan.towertech.it>
-In-Reply-To: <53384080.9020502@oracle.com>
-References: <5308E3AE.3040405@oracle.com>
-	<20140222205217.GC16272@mtj.dyndns.org>
-	<20140224120427.6394d5dd@linux.lan.towertech.it>
-	<5331FA9E.20506@oracle.com>
-	<20140325233936.655a798e@linux.lan.towertech.it>
-	<53321D04.2040102@oracle.com>
-	<5337653D.6020002@oracle.com>
-	<53384080.9020502@oracle.com>
-Organization: Tower Technologies
+	id S1754013AbaCaJr0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 05:47:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59061 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753972AbaCaJrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 05:47:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,764,1389772800"; 
+   d="scan'208";a="483873532"
+From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Rashika Kheria <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        intel-linux-scu <intel-linux-scu@intel.com>,
+        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Paszkiewicz, Artur" <artur.paszkiewicz@intel.com>
+Subject: RE: [PATCH 19/55] scsi: Mark function as static in isci/phy.c
+Thread-Topic: [PATCH 19/55] scsi: Mark function as static in isci/phy.c
+Thread-Index: AQHPS3lALYZ3HJR2Yk+SznwxKlEN6Jr65lUw///7VgCAABL7QA==
+Date: Mon, 31 Mar 2014 09:47:18 +0000
+Message-ID: <D9FFE20C522965449E182ACE73889AEB208427B7@IRSMSX105.ger.corp.intel.com>
+References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
+ <aeac50e3686d8daafd573ebd08805b8a97d85ebd.1396114898.git.rashika.kheria@gmail.com>
+ <D9FFE20C522965449E182ACE73889AEB20842693@IRSMSX105.ger.corp.intel.com>
+ <af1d52ad252849d6a8c5d5b09fa93d17@fmsmsx103.amr.corp.intel.com>
+In-Reply-To: <af1d52ad252849d6a8c5d5b09fa93d17@fmsmsx103.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2V9lYAQ025345
 
-On Sun, 30 Mar 2014 12:04:16 -0400
-Sasha Levin <sasha.levin@oracle.com> wrote:
-
-> > Look good, thanks!  
+On Monday, March 31, 2014 11:36 AM Josh Triplett <josh@joshtriplett.org> wrote:
+> On Mon, Mar 31, 2014 at 08:54:49AM +0000, Dorau, Lukasz wrote:
+> > On Saturday, March 29, 2014 7:04 PM Rashika Kheria
+> <rashika.kheria@gmail.com> wrote:
+> > >
+> > > Mark function as static in isci/phy.c because it is not used outside
+> > > this file.
+> > >
+> > > This eliminates the following warning in isci/phy.c:
+> > > drivers/scsi/isci/phy.c:672:6: warning: no previous prototype for
+> > > â€˜scu_link_layer_set_txcomsas_timeoutâ€™ [-Wmissing-prototypes]
+> > >
+> > > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> >
+> > Acked-by: Lukasz Dorau <lukasz.dorau@intel.com>
 > 
-> Or not...
+> Since you're a maintainer of the driver in question, can you accept the
+> three patches you acked, or would you suggest that they go through
+> another tree?
 > 
-> Hit it again during overnight fuzzing:
-> 
+> - Josh Triplett
 
- I think this is a different bug, please try this.
+Hi Josh,
 
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index cae212f..2c77d8e 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -712,6 +712,20 @@ cmos_do_probe(struct device *dev, struct resource *ports, int rtc_irq)
- 		}
- 	}
- 
-+	spin_lock_irq(&rtc_lock);
-+	rtc_control = CMOS_READ(RTC_CONTROL);
-+	spin_unlock_irq(&rtc_lock);
-+
-+	/* FIXME:
-+	 * <asm-generic/rtc.h> doesn't know 12-hour mode either.
-+	 */
-+	if (is_valid_irq(rtc_irq) && !(rtc_control & RTC_24H)) {
-+		dev_warn(dev, "only 24-hr supported\n");
-+		retval = -ENXIO;
-+		goto cleanup0;
-+	}
-+
-+
- 	cmos_rtc.dev = dev;
- 	dev_set_drvdata(dev, &cmos_rtc);
- 
-@@ -739,49 +753,49 @@ cmos_do_probe(struct device *dev, struct resource *ports, int rtc_irq)
- 	/* disable irqs */
- 	cmos_irq_disable(&cmos_rtc, RTC_PIE | RTC_AIE | RTC_UIE);
- 
--	rtc_control = CMOS_READ(RTC_CONTROL);
--
- 	spin_unlock_irq(&rtc_lock);
- 
--	/* FIXME:
--	 * <asm-generic/rtc.h> doesn't know 12-hour mode either.
--	 */
--	if (is_valid_irq(rtc_irq) && !(rtc_control & RTC_24H)) {
--		dev_warn(dev, "only 24-hr supported\n");
--		retval = -ENXIO;
--		goto cleanup1;
--	}
--
- 	if (is_valid_irq(rtc_irq)) {
--		irq_handler_t rtc_cmos_int_handler;
-+
-+		irq_handler_t rtc_cmos_int_handler = NULL;
- 
- 		if (is_hpet_enabled()) {
--			rtc_cmos_int_handler = hpet_rtc_interrupt;
-+
- 			retval = hpet_register_irq_handler(cmos_interrupt);
- 			if (retval) {
- 				dev_warn(dev, "hpet_register_irq_handler "
- 						" failed in rtc_init().");
--				goto cleanup1;
-+			} else {
-+				rtc_cmos_int_handler = hpet_rtc_interrupt;
- 			}
--		} else
-+		} else {
- 			rtc_cmos_int_handler = cmos_interrupt;
-+		}
- 
--		retval = request_irq(rtc_irq, rtc_cmos_int_handler,
--				0, dev_name(&cmos_rtc.rtc->dev),
--				cmos_rtc.rtc);
--		if (retval < 0) {
--			dev_dbg(dev, "IRQ %d is already in use\n", rtc_irq);
--			goto cleanup1;
-+		if (rtc_cmos_int_handler) {
-+			retval = request_irq(rtc_irq, rtc_cmos_int_handler,
-+					0, dev_name(&cmos_rtc.rtc->dev),
-+					cmos_rtc.rtc);
-+			if (retval < 0) {
-+
-+				dev_err(dev, "IRQ %d is already in use\n", rtc_irq);
-+
-+				cmos_rtc.irq = -1;
-+
-+				if (is_hpet_enabled()) {
-+					hpet_unregister_irq_handler(cmos_interrupt);
-+				}
-+			}
- 		}
- 	}
-+
- 	hpet_rtc_timer_init();
- 
- 	/* export at least the first block of NVRAM */
- 	nvram.size = address_space - NVRAM_OFFSET;
- 	retval = sysfs_create_bin_file(&dev->kobj, &nvram);
- 	if (retval < 0) {
--		dev_dbg(dev, "can't create nvram file? %d\n", retval);
--		goto cleanup2;
-+		dev_err(dev, "can't create nvram file? %d\n", retval);
- 	}
- 
- 	dev_info(dev, "%s%s, %zd bytes nvram%s\n",
-@@ -795,12 +809,6 @@ cmos_do_probe(struct device *dev, struct resource *ports, int rtc_irq)
- 
- 	return 0;
- 
--cleanup2:
--	if (is_valid_irq(rtc_irq))
--		free_irq(rtc_irq, cmos_rtc.rtc);
--cleanup1:
--	cmos_rtc.dev = NULL;
--	rtc_device_unregister(cmos_rtc.rtc);
- cleanup0:
- 	release_region(ports->start, resource_size(ports));
- 	return retval;
-@@ -823,8 +831,12 @@ static void __exit cmos_do_remove(struct device *dev)
- 	sysfs_remove_bin_file(&dev->kobj, &nvram);
- 
- 	if (is_valid_irq(cmos->irq)) {
-+
- 		free_irq(cmos->irq, cmos->rtc);
--		hpet_unregister_irq_handler(cmos_interrupt);
-+
-+		if (is_hpet_enabled()) {
-+			hpet_unregister_irq_handler(cmos_interrupt);
-+		}
- 	}
- 
- 	rtc_device_unregister(cmos->rtc);
+The isci patches should be accepted by James Bottomley.
 
+Lukasz
 
-
--- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
