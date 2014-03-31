@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206AbaCaTnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 15:43:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36287 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaCaTnF (ORCPT
+	id S1751247AbaCaToc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 15:44:32 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22554 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaCaToa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 15:43:05 -0400
-Date: Mon, 31 Mar 2014 21:43:13 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-cc: linux-kernel@vger.kernel.org, shawn@churchofgit.com,
-        akpm@linux-foundation.org, avagin@openvz.org, xemul@parallels.com
-Subject: Re: [rfc 1/2] timerfd: Implement show_fdinfo method
-In-Reply-To: <20140331175957.509391054@openvz.org>
-Message-ID: <alpine.DEB.2.02.1403312134570.14882@ionos.tec.linutronix.de>
-References: <20140331175407.400476950@openvz.org> <20140331175957.509391054@openvz.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 31 Mar 2014 15:44:30 -0400
+Date: Mon, 31 Mar 2014 22:44:16 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, Rocco Folino <lordzen87@gmail.com>,
+        aaro.koskinen@iki.fi, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] quiet checkpatch style recommendation about no spaces
+ around bitfield :
+Message-ID: <20140331194416.GR6991@mwanda>
+References: <1396269280-32665-1-git-send-email-lordzen87@gmail.com>
+ <20140331150638.GQ6991@mwanda>
+ <1396279898.21529.39.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396279898.21529.39.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Mar 2014, Cyrill Gorcunov wrote:
-> For checkpoint/restore of timerfd files we need to know the clock
-> type being used on timerfd creation. Thus implement show_fdinfo
-> method where we print out the type.
+On Mon, Mar 31, 2014 at 08:31:38AM -0700, Joe Perches wrote:
+> On Mon, 2014-03-31 at 18:06 +0300, Dan Carpenter wrote:
+> > On Mon, Mar 31, 2014 at 02:34:40PM +0200, Rocco Folino wrote:
+> > > Fixed bit fields code style issues
+> []
+> > > diff --git a/drivers/staging/octeon-usb/octeon-hcd.h b/drivers/staging/octeon-usb/octeon-hcd.h
+> []
+> > > @@ -143,13 +143,13 @@ union cvmx_usbcx_gahbcfg {
+> > >  	 *	* 1'b1: Unmask the interrupt assertion to the application.
+> > >  	 */
+> > >  	struct cvmx_usbcx_gahbcfg_s {
+> > > -		uint32_t reserved_9_31	: 23;
+> > > -		uint32_t ptxfemplvl	: 1;
+> > > -		uint32_t nptxfemplvl	: 1;
+> > > -		uint32_t reserved_6_6	: 1;
+> > > -		uint32_t dmaen		: 1;
+> > > -		uint32_t hbstlen	: 4;
+> > > -		uint32_t glblintrmsk	: 1;
+> > > +		uint32_t reserved_9_31:23;
+> > > +		uint32_t ptxfemplvl:1;
+> > > +		uint32_t nptxfemplvl:1;
+> > > +		uint32_t reserved_6_6:1;
+> > > +		uint32_t dmaen:1;
+> > > +		uint32_t hbstlen:4;
+> > > +		uint32_t glblintrmsk:1;
+> > >  	} s;
+> > The warning here is:
+> > ERROR: spaces prohibited around that ':' (ctx:WxW)
+> > I have done a kernel wide search for these warnings
 > 
-> Also to minimize the number of calls print out the ticks as well
-> (thus one read of fdinfo entry would eliminate the need of doing
->  read() over timerfd itself).
-> 
-> CC: Shawn Landden <shawn@churchofgit.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Andrey Vagin <avagin@openvz.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
->  fs/timerfd.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> Index: linux-2.6.git/fs/timerfd.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/timerfd.c
-> +++ linux-2.6.git/fs/timerfd.c
-> @@ -284,11 +284,20 @@ static ssize_t timerfd_read(struct file
->  	return res;
->  }
->  
-> +static int timerfd_show(struct seq_file *m, struct file *file)
-> +{
-> +	struct timerfd_ctx *ctx = file->private_data;
-> +
-> +	return seq_printf(m, "clockid: %d ticks: %llu\n",
-> +			  ctx->clockid, (unsigned long long)ctx->ticks);
-> +}
+> Really?  How?
 
-And what gives you the flags which were used in timerfd_settime()
-along with the remaining time to expiry and the interval?
+Just a:
 
-Thanks,
+find -name \*.[ch] -exec ./scripts/checkpatch.pl -f \{\} \;
 
-	tglx
+Or whatever...  It takes 2 1/2 hours.
 
+regards,
+dan carpenter
 
