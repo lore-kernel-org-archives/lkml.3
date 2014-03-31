@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaCaNps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:45:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35635 "EHLO
+	id S1753383AbaCaNpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:45:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35637 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828AbaCaNYA (ORCPT
+	with ESMTP id S1753844AbaCaNYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Mar 2014 09:24:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Tejun Heo <tj@kernel.org>, linux1394-devel@lists.sourceforge.net,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 27/71] x86: Ignore NMIs that come in during early boot
-Date: Mon, 31 Mar 2014 14:22:33 +0100
-Message-Id: <1396272197-13394-28-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 26/71] firewire: don't use PREPARE_DELAYED_WORK
+Date: Mon, 31 Mar 2014 14:22:32 +0100
+Message-Id: <1396272197-13394-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,87 +27,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 5fa10196bdb5f190f595ebd048490ee52dddea0f upstream.
+commit 70044d71d31d6973665ced5be04ef39ac1c09a48 upstream.
 
-Don Zickus reports:
+PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+and a nasty surprise in terms of reentrancy guarantee as workqueue
+considers work items to be different if they don't have the same work
+function.
 
-A customer generated an external NMI using their iLO to test kdump
-worked.  Unfortunately, the machine hung.  Disabling the nmi_watchdog
-made things work.
+firewire core-device and sbp2 have been been multiplexing work items
+with multiple work functions.  Introduce fw_device_workfn() and
+sbp2_lu_workfn() which invoke fw_device->workfn and
+sbp2_logical_unit->workfn respectively and always use the two
+functions as the work functions and update the users to set the
+->workfn fields instead of overriding work functions using
+PREPARE_DELAYED_WORK().
 
-I speculated the external NMI fired, caused the machine to panic (as
-expected) and the perf NMI from the watchdog came in and was latched.
-My guess was this somehow caused the hang.
+This fixes a variety of possible regressions since a2c1c57be8d9
+"workqueue: consider work function when searching for busy work items"
+due to which fw_workqueue lost its required non-reentrancy property.
 
-   ----
-
-It appears that the latched NMI stays latched until the early page
-table generation on 64 bits, which causes exceptions to happen which
-end in IRET, which re-enable NMI.  Therefore, ignore NMIs that come in
-during early execution, until we have proper exception handling.
-
-Reported-and-tested-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1394221143-29713-1-git-send-email-dzickus@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/head_32.S | 7 ++++++-
- arch/x86/kernel/head_64.S | 6 +++++-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/firewire/core-device.c | 22 +++++++++++++++-------
+ drivers/firewire/sbp2.c        | 17 +++++++++++++----
+ include/linux/firewire.h       |  1 +
+ 3 files changed, 29 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index d42ab17..78a3c55 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -552,6 +552,10 @@ ENDPROC(early_idt_handlers)
- 	/* This is global to keep gas from relaxing the jumps */
- ENTRY(early_idt_handler)
- 	cld
-+
-+	cmpl $X86_TRAP_NMI,(%esp)
-+	je is_nmi		# Ignore NMI
-+
- 	cmpl $2,%ss:early_recursion_flag
- 	je hlt_loop
- 	incl %ss:early_recursion_flag
-@@ -602,8 +606,9 @@ ex_entry:
- 	pop %edx
- 	pop %ecx
- 	pop %eax
--	addl $8,%esp		/* drop vector number and error code */
- 	decl %ss:early_recursion_flag
-+is_nmi:
-+	addl $8,%esp		/* drop vector number and error code */
- 	iret
- ENDPROC(early_idt_handler)
+diff --git a/drivers/firewire/core-device.c b/drivers/firewire/core-device.c
+index ee901e2..05cf73b 100644
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -887,7 +887,7 @@ static int lookup_existing_device(struct device *dev, void *data)
+ 		old->config_rom_retries = 0;
+ 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
  
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 94bf9cc..718f64b 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -290,6 +290,9 @@ early_idt_handlers:
- ENTRY(early_idt_handler)
- 	cld
+-		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
++		old->workfn = fw_device_update;
+ 		fw_schedule_device_work(old, 0);
  
-+	cmpl $X86_TRAP_NMI,(%rsp)
-+	je is_nmi		# Ignore NMI
+ 		if (current_node == card->root_node)
+@@ -1051,7 +1051,7 @@ static void fw_device_init(struct work_struct *work)
+ 	if (atomic_cmpxchg(&device->state,
+ 			   FW_DEVICE_INITIALIZING,
+ 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
+-		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++		device->workfn = fw_device_shutdown;
+ 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
+ 	} else {
+ 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
+@@ -1170,13 +1170,20 @@ static void fw_device_refresh(struct work_struct *work)
+ 		  dev_name(&device->device), fw_rcode_string(ret));
+  gone:
+ 	atomic_set(&device->state, FW_DEVICE_GONE);
+-	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++	device->workfn = fw_device_shutdown;
+ 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
+  out:
+ 	if (node_id == card->root_node->node_id)
+ 		fw_schedule_bm_work(card, 0);
+ }
+ 
++static void fw_device_workfn(struct work_struct *work)
++{
++	struct fw_device *device = container_of(to_delayed_work(work),
++						struct fw_device, work);
++	device->workfn(work);
++}
 +
- 	cmpl $2,early_recursion_flag(%rip)
- 	jz  1f
- 	incl early_recursion_flag(%rip)
-@@ -344,8 +347,9 @@ ENTRY(early_idt_handler)
- 	popq %rdx
- 	popq %rcx
- 	popq %rax
--	addq $16,%rsp		# drop vector number and error code
- 	decl early_recursion_flag(%rip)
-+is_nmi:
-+	addq $16,%rsp		# drop vector number and error code
- 	INTERRUPT_RETURN
+ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ {
+ 	struct fw_device *device;
+@@ -1226,7 +1233,8 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		 * power-up after getting plugged in.  We schedule the
+ 		 * first config rom scan half a second after bus reset.
+ 		 */
+-		INIT_DELAYED_WORK(&device->work, fw_device_init);
++		device->workfn = fw_device_init;
++		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
+ 		fw_schedule_device_work(device, INITIAL_DELAY);
+ 		break;
  
- 	.balign 4
+@@ -1242,7 +1250,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		if (atomic_cmpxchg(&device->state,
+ 			    FW_DEVICE_RUNNING,
+ 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
++			device->workfn = fw_device_refresh;
+ 			fw_schedule_device_work(device,
+ 				device->is_local ? 0 : INITIAL_DELAY);
+ 		}
+@@ -1257,7 +1265,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		smp_wmb();  /* update node_id before generation */
+ 		device->generation = card->generation;
+ 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
++			device->workfn = fw_device_update;
+ 			fw_schedule_device_work(device, 0);
+ 		}
+ 		break;
+@@ -1282,7 +1290,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ 		device = node->data;
+ 		if (atomic_xchg(&device->state,
+ 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++			device->workfn = fw_device_shutdown;
+ 			fw_schedule_device_work(device,
+ 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
+ 		}
+diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+index 1162d6b..7d4eba0 100644
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
+ 	 */
+ 	int generation;
+ 	int retries;
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	bool has_sdev;
+ 	bool blocked;
+@@ -864,7 +865,7 @@ static void sbp2_login(struct work_struct *work)
+ 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
+ 	sbp2_set_busy_timeout(lu);
+ 
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
++	lu->workfn = sbp2_reconnect;
+ 	sbp2_agent_reset(lu);
+ 
+ 	/* This was a re-login. */
+@@ -918,7 +919,7 @@ static void sbp2_login(struct work_struct *work)
+ 	 * If a bus reset happened, sbp2_update will have requeued
+ 	 * lu->work already.  Reset the work from reconnect to login.
+ 	 */
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
+ }
+ 
+ static void sbp2_reconnect(struct work_struct *work)
+@@ -952,7 +953,7 @@ static void sbp2_reconnect(struct work_struct *work)
+ 		    lu->retries++ >= 5) {
+ 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
+ 			lu->retries = 0;
+-			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++			lu->workfn = sbp2_login;
+ 		}
+ 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
+ 
+@@ -972,6 +973,13 @@ static void sbp2_reconnect(struct work_struct *work)
+ 	sbp2_conditionally_unblock(lu);
+ }
+ 
++static void sbp2_lu_workfn(struct work_struct *work)
++{
++	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
++						struct sbp2_logical_unit, work);
++	lu->workfn(work);
++}
++
+ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ {
+ 	struct sbp2_logical_unit *lu;
+@@ -998,7 +1006,8 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ 	lu->blocked  = false;
+ 	++tgt->dont_block;
+ 	INIT_LIST_HEAD(&lu->orb_list);
+-	INIT_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
++	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
+ 
+ 	list_add_tail(&lu->link, &tgt->lu_list);
+ 	return 0;
+diff --git a/include/linux/firewire.h b/include/linux/firewire.h
+index babdb98..4eaa633 100644
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -200,6 +200,7 @@ struct fw_device {
+ 	unsigned irmc:1;
+ 	unsigned bc_implemented:2;
+ 
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	struct fw_attribute_group attribute_group;
+ };
 -- 
 1.9.1
 
