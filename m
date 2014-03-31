@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaCaQ3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 12:29:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14218 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345AbaCaQ3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 12:29:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,766,1389772800"; 
-   d="scan'208";a="484105172"
-Message-ID: <5339977F.4070905@intel.com>
-Date: Mon, 31 Mar 2014 09:27:43 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753440AbaCaQcc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 12:32:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34531 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaCaQcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 12:32:31 -0400
+Date: Mon, 31 Mar 2014 18:32:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf_fuzzer: BUG in kfree() in ftrace_graph_exit_task
+In-Reply-To: <alpine.DEB.2.10.1403311207490.8953@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1403311826280.14882@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.10.1403311207490.8953@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 00/14] mm, hugetlb: remove a hugetlb_instantiation_mutex
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 10:53 PM, Joonsoo Kim wrote:
-> * NOTE for v3
-> - Updating patchset is so late because of other works, not issue from
-> this patchset.
+On Mon, 31 Mar 2014, Vince Weaver wrote:
+> 
+> This turned up with the perf_fuzzer, haswell, 3.14.
+> 
+> I'm not sure if this is related to the other object corruption bug I am 
+> seeing.  The sympstoms are similar (BUG when dereferencing low invalid
+> kernel address) but this time the hrtimer code is not involved at all.
+> 
+> This isn't reproducible, that is if I re-run the fuzzer with the same 
+> random seed after reboot the bug doesn't trigger.
+> 
+> 
+> [ 5498.573458] BUG: unable to handle kernel NULL pointer dereference at 000000000000006c
+> [ 5498.585181] IP: [<ffffffff81189111>] kfree+0x91/0x220
+> [ 5498.593887] PGD 0 
+> [ 5498.599365] Oops: 0000 [#1] SMP 
+> [ 5498.606127] Dumping ftrace buffer:
+> [ 5498.612973]    (ftrace buffer empty)
+> [ 5498.619868] Modules linked in: nfsd auth_rpcgss  .....
+> [ 5498.720303] CPU: 1 PID: 13 Comm: ksoftirqd/1 Tainted: G        W    3.14.0+ #14
 
-Hey Joonsoo,
+It's already tainted with W, so there was a warning before that
+crash. It would be interesting to see that as well.
 
-Any plans to repost these?
+Thanks,
 
-I've got some folks with a couple TB of RAM seeing long startup times
-with $LARGE_DATABASE_PRODUCT.  It looks to be contention on
-hugetlb_instantiation_mutex because everyone is trying to zero hugepages
-under that lock in parallel.  Just removing the lock sped things up
-quite a bit.
+	tglx
+
+
