@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaCaT3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 15:29:18 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63015 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaCaT3M (ORCPT
+	id S1751298AbaCaTcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 15:32:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40508 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750777AbaCaTcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 15:29:12 -0400
-Date: Mon, 31 Mar 2014 15:29:08 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] workqueue changes for v3.15-rc1
-Message-ID: <20140331192908.GB28901@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 31 Mar 2014 15:32:39 -0400
+Message-ID: <1396294350.1241.45.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.2 118/200] PCI: Enable INTx if BIOS left them disabled
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Chris Cheng <chris.cheng@atrustcorp.com>
+Date: Mon, 31 Mar 2014 20:32:30 +0100
+In-Reply-To: <CAErSpo6KQNhh-4csydz7iZ+1WnX8LP+Hde8EN_oTwX=8bRAh2w@mail.gmail.com>
+References: <lsq.1396221814.369444335@decadent.org.uk>
+	 <lsq.1396221815.13737205@decadent.org.uk>
+	 <CAErSpo6KQNhh-4csydz7iZ+1WnX8LP+Hde8EN_oTwX=8bRAh2w@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-VczO3k+dD0Cf5Q0FOK9I"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
 
-PREPARE_[DELAYED_]WORK() were used to change the work function of work
-items without fully reinitializing it; however, this makes workqueue
-consider the work item as a different one from before and allows the
-work item to start executing before the previous instance is finished
-which can lead to extremely subtle issues which are painful to debug.
-The interface has never been popular.  This pull request contains
-patches to remove existing usages and kill the interface.  As one of
-the changes was routed during the last devel cycle and another
-depended on a pending change in nvme, for-3.15 contains a couple merge
-commits.
+--=-VczO3k+dD0Cf5Q0FOK9I
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-In addition, interfaces which were deprecated quite a while ago -
-__cancel_delayed_work() and WQ_NON_REENTRANT - are removed too.
+On Mon, 2014-03-31 at 11:15 -0600, Bjorn Helgaas wrote:
+> On Sun, Mar 30, 2014 at 5:23 PM, Ben Hutchings <ben@decadent.org.uk> wrot=
+e:
+> > 3.2.56-rc1 review patch.  If anyone has any objections, please let me k=
+now.
+>=20
+> No objection, but you need the followup patch as well:
+>=20
+> 3cdeb713dc66057b50682048c151eae07b186c42 PCI: Enable INTx in
+> pci_reenable_device() only when MSI/MSI-X not enabled
+[...]
 
-The following changes since commit 70044d71d31d6973665ced5be04ef39ac1c09a48:
+I saw that follow-up go past earlier but didn't notice it was missing
+from this set (which only includes cc'd patches up to -rc7).  I've added
+it now, thanks.
 
-  firewire: don't use PREPARE_DELAYED_WORK (2014-03-07 10:19:57 -0500)
+Ben.
 
-are available in the git repository at:
+--=20
+Ben Hutchings
+friends: People who know you well, but like you anyway.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.15
+--=-VczO3k+dD0Cf5Q0FOK9I
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-for you to fetch changes up to 59ff3eb6d6f75c6c1c3ea8b46ac2cc64eb216547:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-  workqueue: remove deprecated WQ_NON_REENTRANT (2014-03-29 09:33:03 -0400)
+iQIVAwUAUznCzue/yOyVhhEJAQr+9hAAv0LsCLGXujT2Wi6C5jEEVUxsQGflhf2C
+4lgmnEm4POfKL7SX4Vdi4hpQjgEwaxItBrnxlaStj5gB6/ngER9LH2Q2Opj4Iwco
+2YP9WpSVPof0ylcIom8aj3CPeKFgTDfkQUIQ2CwHjVP4/5B5Rew+79lIEqmVBJBB
+H/Oe0V3lK6dcaRcl20yUomXQaOmkkHbigbAt4tDgXa+dDo28UQM5QYdmcj/rdX7P
+ASUNZlmxbFvLj0i84aagt0RUV9nuX18u7rXjgOIvHfxF7oID5uJN0RwZ4KG0qx7s
+H8B5GSJ+vlEGUw1cqpT4XaZOriV1l7XMRUQRkd4KxNzr+2IcTKa+d/7KFzgL2HKS
+8yft2Mp5R733JTN9IQ2dDy1TOKaIMrH35pCH+ygytv52+yeC0P8MNllidS6uymOH
+BUIGipBBuXL77MYW233R+B+am5CglSrAdrQbGZDwnvR+2y8TEVw0Zmvhuef6iHwg
+jXf/RJgxGjzQ3TjhaQANTnHPZzNTtqqnTQJuqxr9vbuV0HeM1Xd5+sdvv0v3zNG2
+vPAqMqAu6cLZ32Uki8OvhSQ8RdL1o8mVpgaS4KGt2RTYPfCacAQ2UGcCx5FTimuL
+2pvJ+v+sh/Zg+bQmiQ/L/1phOng3MY1TG/gjOGra2uIco4/RemRYGGnrdYlwNeOP
+wmwX0KyWD0I=
+=EzQG
+-----END PGP SIGNATURE-----
 
-Thanks.
-
-----------------------------------------------------------------
-Geert Uytterhoeven (1):
-      workqueue: Spelling s/instensive/intensive/
-
-Tan Xiaojun (1):
-      workqueue: Remove deprecated __cancel_delayed_work()
-
-Tejun Heo (10):
-      Merge branch 'wq/for-3.14-fixes' into wq/for-3.15
-      Merge branch 'master' into wq/for-3.15
-      wireless/rt2x00: don't use PREPARE_WORK in rt2800usb.c
-      ps3-vuart: don't use PREPARE_WORK
-      floppy: don't use PREPARE_[DELAYED_]WORK
-      usb: don't use PREPARE_DELAYED_WORK
-      nvme: don't use PREPARE_WORK
-      afs: don't use PREPARE_WORK
-      staging/fwserial: don't use PREPARE_WORK
-      workqueue: remove PREPARE_[DELAYED_]WORK()
-
-ZhangZhen (1):
-      workqueue: remove deprecated WQ_NON_REENTRANT
-
- drivers/block/floppy.c                  |   42 +++++++++++++++++++++-----------
- drivers/block/nvme-core.c               |   18 +++++++++----
- drivers/mmc/host/dw_mmc.c               |    2 -
- drivers/net/wireless/rt2x00/rt2800usb.c |    2 -
- drivers/ps3/ps3-vuart.c                 |    4 ---
- drivers/staging/fwserial/fwserial.c     |   13 +++++++--
- drivers/staging/fwserial/fwserial.h     |    1 
- drivers/usb/core/hub.c                  |    4 +--
- fs/afs/internal.h                       |    1 
- fs/afs/rxrpc.c                          |   12 +++++++--
- include/linux/nvme.h                    |    1 
- include/linux/workqueue.h               |   38 ++--------------------------
- net/l2tp/l2tp_core.c                    |    2 -
- 13 files changed, 72 insertions(+), 68 deletions(-)
-
--- 
-tejun
+--=-VczO3k+dD0Cf5Q0FOK9I--
