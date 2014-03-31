@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaCaNft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:35:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35755 "EHLO
+	id S1755016AbaCaNgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:36:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35748 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217AbaCaNYc (ORCPT
+	with ESMTP id S1754149AbaCaNYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:32 -0400
+	Mon, 31 Mar 2014 09:24:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel J Blueman <daniel@numascale.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Arnd Bergmann <arnd@arndb.de>, Neil Horman <nhorman@tuxdriver.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 48/71] x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
-Date: Mon, 31 Mar 2014 14:22:54 +0100
-Message-Id: <1396272197-13394-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 47/71] vmxnet3: fix building without CONFIG_PCI_MSI
+Date: Mon, 31 Mar 2014 14:22:53 +0100
+Message-Id: <1396272197-13394-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel J Blueman <daniel@numascale.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 847d7970defb45540735b3fb4e88471c27cacd85 upstream.
+commit 0a8d8c446b5429d15ff2d48f46e00d8a08552303 upstream.
 
-For systems with multiple servers and routed fabric, all
-northbridges get assigned to the first server. Fix this by also
-using the node reported from the PCI bus. For single-fabric
-systems, the northbriges are on PCI bus 0 by definition, which
-are on NUMA node 0 by definition, so this is invarient on most
-systems.
+Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
+the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
+because it unconditionally references the vmxnet3_msix_rx()
+function.
 
-Tested on fam10h and fam15h single and multi-fabric systems and
-candidate for stable.
+To fix this, use the same #ifdef in the caller that exists around
+the function definition.
 
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
-Acked-by: Steffen Persvold <sp@numascale.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1394710981-3596-1-git-send-email-daniel@numascale.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: "VMware, Inc." <pv-drivers@vmware.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/quirks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/vmxnet3/vmxnet3_drv.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 03920a1..28a3e62 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -525,7 +525,7 @@ static void __init quirk_amd_nb_node(struct pci_dev *dev)
- 		return;
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 2f07e26..d43df93 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1728,13 +1728,16 @@ static void
+ vmxnet3_netpoll(struct net_device *netdev)
+ {
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+-	int i;
  
- 	pci_read_config_dword(nb_ht, 0x60, &val);
--	node = val & 7;
-+	node = pcibus_to_node(dev->bus) | (val & 7);
- 	/*
- 	 * Some hardware may return an invalid node ID,
- 	 * so check it first:
+ 	switch (adapter->intr.type) {
+-	case VMXNET3_IT_MSIX:
++#ifdef CONFIG_PCI_MSI
++	case VMXNET3_IT_MSIX: {
++		int i;
+ 		for (i = 0; i < adapter->num_rx_queues; i++)
+ 			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
+ 		break;
++	}
++#endif
+ 	case VMXNET3_IT_MSI:
+ 	default:
+ 		vmxnet3_intr(0, adapter->netdev);
 -- 
 1.9.1
 
