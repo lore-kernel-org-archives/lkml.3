@@ -1,171 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190AbaCaNw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:52:29 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:47674 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375AbaCaNwZ (ORCPT
+	id S1755209AbaCaNwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:52:46 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:48498 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943AbaCaNwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:52:25 -0400
+	Mon, 31 Mar 2014 09:52:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6vbEMgZf6LvpHqsW353rcGVZ9iGFVuir4eP5qreC_eXpQ@mail.gmail.com>
-References: <1393594976-16728-1-git-send-email-m.szyprowski@samsung.com> <CACxGe6vbEMgZf6LvpHqsW353rcGVZ9iGFVuir4eP5qreC_eXpQ@mail.gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Mon, 31 Mar 2014 06:52:04 -0700
-X-Google-Sender-Auth: Hmd8A8AX_kycJkA2jm0U15CGppE
-Message-ID: <CACxGe6snm_D=X0cm3OYkX6gLhpKcu120mikuLX8_vVkNxdrhmA@mail.gmail.com>
-Subject: Re: [PATCH v6 00/11] reserved-memory regions/CMA in devicetree, again
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>
+In-Reply-To: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 31 Mar 2014 15:52:21 +0200
+Message-ID: <CAKfTPtC4E=7DxnXZy8bSpeAqyLwsr-oXodXBod2aMc_x4VyqGg@mail.gmail.com>
+Subject: Re: [RFC PATCHC 0/3] sched/idle : find the idlest cpu with cpuidle info
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alex Shi <alex.shi@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 10:37 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> Hi Ben, Russell and Catalin,
+On 28 March 2014 13:29, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+> The following patchset provides an interaction between cpuidle and the scheduler.
 >
-> I've got this series queued up, and I'd like to be ready to merge it
-> in the next merge window. I'm going to queue it up in linux-next. If
-> you have any concerns, please shout and it can be removed. I won't ask
-> Linus to pull it without you giving the okay.
+> The first patch encapsulate the needed information for the scheduler in a
+> separate cpuidle structure. The second one stores the pointer to this structure
+> when entering idle. The third one, use this information to take the decision to
+> find the idlest cpu.
+>
+> After some basic testing with hackbench, it appears there is an improvement for
+> the performances (small) and for the duration of the idle states (which provides
+> a better power saving).
+>
+> The measurement has been done with the 'idlestat' tool previously posted in this
+> mailing list.
+>
+> So the benefit is good for both sides performance and power saving.
 
-Hi Ben and Russell.
+Hi Daniel,
 
-Any feedback on this? The arch/powerpc and arch/arm patches are a
-single line change each and are easy to revert if they cause problems.
-I'm going to send Linus a pull request tomorrow morning if I don't
-hear anything before then.
+I have looked at your results and i'm a bit surprised that you have so
+much time in C-state with a test that involved 400 tasks on a dual
+cores HT system. You shouldn't have any CPUs in idle state when
+running hackbench; the total time of core0state in C7-IVB is
+87932131.00(us), which is quite huge for a bench that runs 44sec. Or
+i'm doing something wrong in the interpretation of the results ?
 
-g.
+Regards,
+Vincent
 
-> On Fri, Feb 28, 2014 at 1:42 PM, Marek Szyprowski
-> <m.szyprowski@samsung.com> wrote:
->> Hello again!
->>
->> Here is another update of the support for reserved memory regions in
->> device tree. I've fixes a few more minor issues pointed by Grant. See
->> changelog for more details.
->>
->> The initial code for this feature were posted here [1], merged as commit
->> 9d8eab7af79cb4ce2de5de39f82c455b1f796963 ("drivers: of: add
->> initialization code for dma reserved memory") and later reverted by
->> commit 1931ee143b0ab72924944bc06e363d837ba05063. For more information,
->> see [2]. Finally a new bindings has been proposed [3] and Josh
->> Cartwright a few days ago prepared some code which implements those
->> bindings [4]. This finally pushed me again to find some time to finish
->> this task and review the code. Josh agreed to give me the ownership of
->> this series to continue preparing them for mainline inclusion.
->>
->> For more information please refer to the changlelog and links below.
->>
->> [1]: http://lkml.kernel.org/g/1377527959-5080-1-git-send-email-m.szyprowski@samsung.com
->> [2]: http://lkml.kernel.org/g/1381476448-14548-1-git-send-email-m.szyprowski@samsung.com
->> [3]: http://lkml.kernel.org/g/20131030134702.19B57C402A0@trevor.secretlab.ca
->> [4]: http://thread.gmane.org/gmane.linux.documentation/19579
->>
->> Changelog:
->>
->> v6:
->> - removed the need for "#memory-region-cells" property
->> - fixed compilation issues on some systems
->> - some other minor code cleanups
->>
->> v5: https://lkml.org/lkml/2014/2/21/147
->> - sliced main patch into several smaller patches on Grant's request
->> - fixed coding style issues pointed by Grant
->> - use node->phandle value directly instead of parsing properties manually
->>
->> v4: https://lkml.org/lkml/2014/2/20/150
->> - dynamic allocations are processed after all static reservations has been
->>   done
->> - moved code for handling static reservations to drivers/of/fdt.c
->> - removed node matching by string comparison, now phandle values are used
->>   directly
->> - moved code for DMA and CMA handling directly to
->>   drivers/base/dma-{coherent,contiguous}.c
->> - added checks for proper #size-cells, #address-cells, ranges properties
->>   in /reserved-memory node
->> - even more code cleanup
->> - added init code for ARM64 and PowerPC
->>
->> v3: http://article.gmane.org/gmane.linux.documentation/20169/
->> - refactored memory reservation code, created common code to parse reg, size,
->>   align, alloc-ranges properties
->> - added support for multiple tuples in 'reg' property
->> - memory is reserved regardless of presence of the driver for its compatible
->> - prepared arch specific hooks for memory reservation (defaults use memblock
->>   calls)
->> - removed node matching by string during device initialization
->> - CMA init code: added checks for required region alignment
->> - more code cleanup here and there
->>
->> v2: http://thread.gmane.org/gmane.linux.documentation/19870/
->> - removed copying of the node name
->> - split shared-dma-pool handling into separate files (one for CMA and one
->>   for dma_declare_coherent based implementations) for making the code easier
->>   to understand
->> - added support for AMBA devices, changed prototypes to use struct decice
->>   instead of struct platform_device
->> - renamed some functions to better match other names used in drivers/of/
->> - restructured the rest of the code a bit for better readability
->> - added 'reusable' property to exmaple linux,cma node in documentation
->> - exclusive dma (dma_coherent) is used for only handling 'shared-dma-pool'
->>   regions without 'reusable' property and CMA is used only for handling
->>   'shared-dma-pool' regions with 'reusable' property.
->>
->> v1: http://thread.gmane.org/gmane.linux.documentation/19579
->> - initial version prepared by Josh Cartwright
->>
->> Summary:
->>
->> Grant Likely (1):
->>   of: document bindings for reserved-memory nodes
->>
->> Marek Szyprowski (10):
->>   drivers: of: add initialization code for static reserved memory
->>   drivers: of: add initialization code for dynamic reserved memory
->>   drivers: of: add support for custom reserved memory drivers
->>   drivers: of: add automated assignment of reserved regions to client
->>     devices
->>   drivers: of: initialize and assign reserved memory to newly created
->>     devices
->>   drivers: dma-coherent: add initialization from device tree
->>   drivers: dma-contiguous: add initialization from device tree
->>   arm: add support for reserved memory defined by device tree
->>   arm64: add support for reserved memory defined by device tree
->>   powerpc: add support for reserved memory defined by device tree
->>
->>  .../bindings/reserved-memory/reserved-memory.txt   |  136 ++++++++++
->>  arch/arm/Kconfig                                   |    1 +
->>  arch/arm/mm/init.c                                 |    2 +
->>  arch/arm64/Kconfig                                 |    1 +
->>  arch/arm64/mm/init.c                               |    1 +
->>  arch/powerpc/Kconfig                               |    1 +
->>  arch/powerpc/kernel/prom.c                         |    3 +
->>  drivers/base/dma-coherent.c                        |   40 +++
->>  drivers/base/dma-contiguous.c                      |  129 +++++++--
->>  drivers/of/Kconfig                                 |    6 +
->>  drivers/of/Makefile                                |    1 +
->>  drivers/of/fdt.c                                   |  140 ++++++++++
->>  drivers/of/of_reserved_mem.c                       |  287 ++++++++++++++++++++
->>  drivers/of/platform.c                              |    7 +
->>  include/asm-generic/vmlinux.lds.h                  |   11 +
->>  include/linux/of_fdt.h                             |    3 +
->>  include/linux/of_reserved_mem.h                    |   60 ++++
->>  17 files changed, 807 insertions(+), 22 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
->>  create mode 100644 drivers/of/of_reserved_mem.c
->>  create mode 100644 include/linux/of_reserved_mem.h
->>
->> --
->> 1.7.9.5
->>
+>
+> The select_idle_sibling could be also improved in the same way.
+>
+> ====================== test with hackbench 3.14-rc8 =========================
+>
+> /usr/bin/hackbench -l 10000 -s 4096
+>
+> Running in process mode with 10 groups using 40 file descriptors each (== 400 tasks)
+> Each sender will pass 10000 messages of 4096 bytes
+>
+> Time: 44.433
+>
+> Total trace buffer: 1846688 kB
+> clusterA@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 0                  0.00            0.00 0.00    0.00
+>          C1E-VB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 0                  0.00            0.00 0.00    0.00
+>   core0@state   hits          total(us)         avg(us) min(us) max(us)
+>         POLL    0                  0.00            0.00 0.00    0.00
+>         C1-IVB  0                  0.00            0.00 0.00    0.00
+>         C1E-IVB 0                  0.00            0.00 0.00    0.00
+>         C3-IVB  0                  0.00            0.00 0.00    0.00
+>         C6-IVB  0                  0.00            0.00 0.00    0.00
+>         C7-IVB  1396        87932131.00        62988.63 0.00    320146.00
+>     cpu0@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 1                 14.00           14.00 14.00   14.00
+>          C1E-VB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 1                262.00          262.00 262.00  262.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 1180        87938177.00        74523.88 1.00    320147.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   0                  0.00            0.00 0.00    0.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    0                  0.00            0.00 0.00    0.00
+>     cpu0 wakeups        name            count
+>          irq009 acpi            1
+>     cpu1@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 0                  0.00            0.00 0.00    0.00
+>          C1E-VB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 475         87941356.00       185139.70 322.00  1500690.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   0                  0.00            0.00 0.00    0.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    0                  0.00            0.00 0.00    0.00
+>     cpu1 wakeups        name            count
+>          irq009 acpi            3
+>   core1@state   hits          total(us)         avg(us) min(us) max(us)
+>         POLL    0                  0.00            0.00 0.00    0.00
+>         C1-IVB  0                  0.00            0.00 0.00    0.00
+>         C1E-IVB 0                  0.00            0.00 0.00    0.00
+>         C3-IVB  0                  0.00            0.00 0.00    0.00
+>         C6-IVB  0                  0.00            0.00 0.00    0.00
+>         C7-IVB  0                  0.00            0.00 0.00    0.00
+>     cpu2@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 11            288157.00        26196.09 16.00   200060.00
+>          C1E-VB 6             221601.00        36933.50 79.00   200066.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 950         87417466.00        92018.39 19.00   200074.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   2                 34.00           17.00 11.00   23.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    745            18800.00           25.23 2.00    156.00
+>     cpu2 wakeups        name            count
+>          irq019 ahci            50
+>          irq009 acpi            17
+>     cpu3@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 0                  0.00            0.00 0.00    0.00
+>          C1E-VB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 0                  0.00            0.00 0.00    0.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   0                  0.00            0.00 0.00    0.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    0                  0.00            0.00 0.00    0.00
+>     cpu3 wakeups        name            count
+>
+> ================ test with hackbench 3.14-rc8 + patchset ====================
+>
+> /usr/bin/hackbench -l 10000 -s 4096
+>
+> Running in process mode with 10 groups using 40 file descriptors each (== 400 tasks)
+> Each sender will pass 10000 messages of 4096 bytes
+>
+> Time: 42.179
+>
+> Total trace buffer: 1846688 kB
+> clusterA@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 0                  0.00            0.00 0.00    0.00
+>          C1E-VB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 0                  0.00            0.00 0.00    0.00
+>   core0@state   hits          total(us)         avg(us) min(us) max(us)
+>         POLL    0                  0.00            0.00 0.00    0.00
+>         C1-IVB  0                  0.00            0.00 0.00    0.00
+>         C1E-IVB 0                  0.00            0.00 0.00    0.00
+>         C3-IVB  0                  0.00            0.00 0.00    0.00
+>         C6-IVB  0                  0.00            0.00 0.00    0.00
+>         C7-IVB  880         89157590.00       101315.44 0.00    400184.00
+>     cpu0@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 0                  0.00            0.00 0.00    0.00
+>          C1E-VB 1                233.00          233.00 233.00  233.00
+>          C3-IVB 1                260.00          260.00 260.00  260.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 700         89162006.00       127374.29 182.00  400187.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   0                  0.00            0.00 0.00    0.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    0                  0.00            0.00 0.00    0.00
+>     cpu0 wakeups        name            count
+>          irq009 acpi            2
+>     cpu1@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 0                  0.00            0.00 0.00    0.00
+>          C1E-VB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 334         89164805.00       266960.49 1.00    1500677.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   0                  0.00            0.00 0.00    0.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    0                  0.00            0.00 0.00    0.00
+>     cpu1 wakeups        name            count
+>          irq009 acpi            6
+>   core1@state   hits          total(us)         avg(us) min(us) max(us)
+>         POLL    0                  0.00            0.00 0.00    0.00
+>         C1-IVB  0                  0.00            0.00 0.00    0.00
+>         C1E-IVB 0                  0.00            0.00 0.00    0.00
+>         C3-IVB  0                  0.00            0.00 0.00    0.00
+>         C6-IVB  0                  0.00            0.00 0.00    0.00
+>         C7-IVB  0                  0.00            0.00 0.00    0.00
+>     cpu2@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 19           2169047.00       114160.37 18.00   999129.00
+>          C1E-IB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 376         86993307.00       231365.18 20.00   1500682.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   0                  0.00            0.00 0.00    0.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    0                  0.00            0.00 0.00    0.00
+>     cpu2 wakeups        name            count
+>          irq009 acpi            32
+>          irq019 ahci            45
+>     cpu3@state  hits          total(us)         avg(us) min(us) max(us)
+>          POLL   0                  0.00            0.00 0.00    0.00
+>          C1-IVB 0                  0.00            0.00 0.00    0.00
+>          C1E-VB 0                  0.00            0.00 0.00    0.00
+>          C3-IVB 0                  0.00            0.00 0.00    0.00
+>          C6-IVB 0                  0.00            0.00 0.00    0.00
+>          C7-IVB 0                  0.00            0.00 0.00    0.00
+>          1701   0                  0.00            0.00 0.00    0.00
+>          1700   0                  0.00            0.00 0.00    0.00
+>          1600   0                  0.00            0.00 0.00    0.00
+>          1500   0                  0.00            0.00 0.00    0.00
+>          1400   0                  0.00            0.00 0.00    0.00
+>          1300   0                  0.00            0.00 0.00    0.00
+>          1200   0                  0.00            0.00 0.00    0.00
+>          1100   0                  0.00            0.00 0.00    0.00
+>          1000   0                  0.00            0.00 0.00    0.00
+>          900    0                  0.00            0.00 0.00    0.00
+>          800    0                  0.00            0.00 0.00    0.00
+>          782    0                  0.00            0.00 0.00    0.00
+>     cpu3 wakeups        name            count
+>
+>
+> Daniel Lezcano (3):
+>   cpuidle: encapsulate power info in a separate structure
+>   idle: store the idle state the cpu is
+>   sched/fair: use the idle state info to choose the idlest cpu
+>
+>  arch/arm/include/asm/cpuidle.h       |    6 +-
+>  arch/arm/mach-exynos/cpuidle.c       |    4 +-
+>  drivers/acpi/processor_idle.c        |    4 +-
+>  drivers/base/power/domain.c          |    6 +-
+>  drivers/cpuidle/cpuidle-at91.c       |    4 +-
+>  drivers/cpuidle/cpuidle-big_little.c |    9 +--
+>  drivers/cpuidle/cpuidle-calxeda.c    |    6 +-
+>  drivers/cpuidle/cpuidle-kirkwood.c   |    4 +-
+>  drivers/cpuidle/cpuidle-powernv.c    |    8 +--
+>  drivers/cpuidle/cpuidle-pseries.c    |   12 ++--
+>  drivers/cpuidle/cpuidle-ux500.c      |   14 ++---
+>  drivers/cpuidle/cpuidle-zynq.c       |    4 +-
+>  drivers/cpuidle/driver.c             |    6 +-
+>  drivers/cpuidle/governors/ladder.c   |   14 +++--
+>  drivers/cpuidle/governors/menu.c     |    8 +--
+>  drivers/cpuidle/sysfs.c              |    2 +-
+>  drivers/idle/intel_idle.c            |  112 +++++++++++++++++-----------------
+>  include/linux/cpuidle.h              |   10 ++-
+>  kernel/sched/fair.c                  |   46 ++++++++++++--
+>  kernel/sched/idle.c                  |   17 +++++-
+>  kernel/sched/sched.h                 |    5 ++
+>  21 files changed, 180 insertions(+), 121 deletions(-)
+>
+> --
+> 1.7.9.5
+>
