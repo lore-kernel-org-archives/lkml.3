@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419AbaCaUTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:19:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48647 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaCaUTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:19:30 -0400
-Date: Mon, 31 Mar 2014 13:19:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: 3.14-rc6: BUG: Bad page map in process objdump pte:483d2025
- pmd:daa04067
-Message-Id: <20140331131928.6f00ecbc13b54b53bfe62515@linux-foundation.org>
-In-Reply-To: <CACVxJT-d=Sm1-N9wvojgXj0voBABwxrgV728fAyZuPX2BK-3vg@mail.gmail.com>
-References: <CACVxJT-d=Sm1-N9wvojgXj0voBABwxrgV728fAyZuPX2BK-3vg@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751345AbaCaUYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:24:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11491 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966AbaCaUYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 16:24:47 -0400
+Date: Mon, 31 Mar 2014 22:26:33 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Mike Miller <mike.miller@hp.com>, iss_storagedev@hp.com,
+        linux-pci@vger.kernel.org, Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [PATCH v2 0/2] block: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
+Message-ID: <20140331202632.GA20443@dhcp-26-207.brq.redhat.com>
+References: <cover.1393404496.git.agordeev@redhat.com>
+ <20140313041231.GC26657@google.com>
+ <5321CE94.5070506@kernel.dk>
+ <20140313173656.GA4939@dhcp-26-207.brq.redhat.com>
+ <20140331195139.GA19867@dhcp-26-207.brq.redhat.com>
+ <5339CC40.9050506@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5339CC40.9050506@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc linux-mm)
-
-On Thu, 27 Mar 2014 17:47:06 +0300 Alexey Dobriyan <adobriyan@gmail.com> wrote:
-
-> Hell knows what happened, I did nothing unusual...
-> This is the first time I see this message on this box.
+On Mon, Mar 31, 2014 at 02:12:48PM -0600, Jens Axboe wrote:
+> On 03/31/2014 01:52 PM, Alexander Gordeev wrote:
+> >On Thu, Mar 13, 2014 at 06:36:56PM +0100, Alexander Gordeev wrote:
+> >>Oh-oh, cciss patch #2 requires commit 3ce4e86 ("PCI/MSI: Add
+> >>pci_enable_msi_exact() and pci_enable_msix_exact()") which was
+> >>pulled to 3.14-rc4 only. Sorry for failing to clarify that :(
+> >>
+> >>And I also notice 3111cc3 ("skd: Use pci_enable_msix_exact() instead
+> >>of pci_enable_msix_range()") in your tree also should not compile :(
+> >
+> >Hi Jens,
+> >
+> >3.14 contains prerequisite commits for the patches above.
+> >Would you pull them or do you want me to resend the two?
 > 
-> [15173.408570] BUG: Bad page map in process objdump  pte:483d2025 pmd:daa04067
-> [15173.408578] page:ffffea000120f480 count:1 mapcount:-1
-> mapping:ffff88005316bb10 index:0x9a22
-> [15173.408580] page flags:
-> 0x400000000002002c(referenced|uptodate|lru|mappedtodisk)
-> [15173.408585] page dumped because: bad pte
-> [15173.408588] addr:00007fe290749000 vm_flags:00000075 anon_vma:
->    (null) mapping:ffff88007fe518c0 index:24
-> [15173.408593] vma->vm_ops->fault: filemap_fault+0x0/0x420
-> [15173.408597] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x60
-> [15173.408601] CPU: 1 PID: 10326 Comm: objdump Not tainted 3.14.0-rc6 #13
-> [15173.408603] Hardware name: Hewlett-Packard HP Compaq dc7800
-> Convertible Minitower/0AACh, BIOS 786F1 v01.28 02/26/2009
-> [15173.408605]  ffff8800bb77faa8 ffff880047899c78 ffffffff814649d0
-> 0000000000000007
-> [15173.408608]  00007fe290749000 ffff880047899cc8 ffffffff810f7ece
-> ffffea0002edf840
-> [15173.408611]  ffff88007fe518c0 ffff880047899ca8 00007fe29075e000
-> ffff8800daa04a48
-> [15173.408614] Call Trace:
-> [15173.408620]  [<ffffffff814649d0>] dump_stack+0x4e/0x71
-> [15173.408624]  [<ffffffff810f7ece>] print_bad_pte+0x18e/0x240
-> [15173.408627]  [<ffffffff810f94eb>] unmap_single_vma+0x5cb/0x5f0
-> [15173.408630]  [<ffffffff810f9c09>] unmap_vmas+0x49/0x90
-> [15173.408633]  [<ffffffff8110144d>] exit_mmap+0xbd/0x170
-> [15173.408637]  [<ffffffff81072cbc>] mmput+0x3c/0xb0
-> [15173.408640]  [<ffffffff81076db6>] do_exit+0x1f6/0x900
-> [15173.408644]  [<ffffffff8109e1cb>] ? local_clock+0x1b/0x30
-> [15173.408647]  [<ffffffff8109eb28>] ? vtime_account_user+0x58/0x70
-> [15173.408650]  [<ffffffff810775da>] do_group_exit+0x3a/0xa0
-> [15173.408652]  [<ffffffff81077652>] SyS_exit_group+0x12/0x20
-> [15173.408656]  [<ffffffff8146a459>] tracesys+0xd0/0xd5
+> I'm assuming you are referring to the cciss patches? I can add those
+> back, for a post-merge pull request.
 
-page_mapcount() = -1 in zap_pte_range().
+Nope. You kicked off the second of two 'cciss' patch ("PCI/MSI: Add
+pci_enable_msi_exact() and pci_enable_msix_exact()") and the last one
+from a series I posted in another thread ("skd: Use pci_enable_msix_exact()
+instead of pci_enable_msix_range()").
 
-I can't imagine what caused that and objdump is, I assume, a very
-simple program - single threaded, does nothing much apart from
-open/lseek/read/printf.
+> 
+> -- 
+> Jens Axboe
+> 
 
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
