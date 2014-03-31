@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaCaN3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:29:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49304 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754683AbaCaN2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:28:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-cc: dhowells@redhat.com, d.kasatkin@samsung.com, casey@schaufler-ca.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+	id S1754406AbaCaNY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:24:58 -0400
+Received: from ns3094689.ip-91-121-202.eu ([91.121.202.112]:50778 "EHLO
+	ns3094689.ip-91-121-202.eu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754348AbaCaNYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 09:24:53 -0400
+X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Mar 2014 09:24:53 EDT
+From: Denis Pithon <denis.pithon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: khoroshilov@ispras.ru, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT PULL] KEYS: Make perm request flags available to security modules
-Date: Mon, 31 Mar 2014 14:28:25 +0100
-Message-ID: <8321.1396272505@warthog.procyon.org.uk>
+Subject: [PATCH] staging/wlan-ng fix small coding style issue
+Date: Mon, 31 Mar 2014 15:13:23 +0200
+Message-Id: <1396271603-12142-1-git-send-email-denis.pithon@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Linus,
-
-Can you pull this pair of patches please?  They move the flags that are used
-to request specific permissions to a more public header file so that they can
-then be used by Smack (and other security modules).
-
-The flags for requesting permissions on keys are not the same as the flags in
-the permissions mask on a key (the latter has four sets that interact).
-
-Note that the flags have to be renamed so that they don't conflict with
-input symbols (eg. keyboard key names).
-
-David
+Signed-off-by: Denis Pithon <denis.pithon@gmail.com>
 ---
-The following changes since commit c60f7d5a8e7c639de5d9dfe07e1e91d302d506e4:
+ drivers/staging/wlan-ng/prism2usb.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2014-03-13 21:32:16 -0700)
+diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
+index 4739c14..ccb2c2e 100644
+--- a/drivers/staging/wlan-ng/prism2usb.c
++++ b/drivers/staging/wlan-ng/prism2usb.c
+@@ -293,6 +293,7 @@ static int prism2sta_suspend(struct usb_interface *interface,
+ 	hfa384x_t *hw = NULL;
+ 	wlandevice_t *wlandev;
+ 	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
++
+ 	if (!wlandev)
+ 		return -ENODEV;
+ 
+@@ -315,6 +316,7 @@ static int prism2sta_resume(struct usb_interface *interface)
+ 	hfa384x_t *hw = NULL;
+ 	wlandevice_t *wlandev;
+ 	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
++
+ 	if (!wlandev)
+ 		return -ENODEV;
+ 
+-- 
+1.9.0
 
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-20140314
-
-for you to fetch changes up to fffea214abf66a8672cfd6697fae65e743e22f11:
-
-  smack: fix key permission verification (2014-03-14 17:44:49 +0000)
-
-----------------------------------------------------------------
-(from the branch description for keys-dmitry local branch)
-
-Keyrings stuff for/from Dmitry Kasatkin
-Keyrings changes
-
-----------------------------------------------------------------
-David Howells (1):
-      KEYS: Move the flags representing required permission to linux/key.h
-
-Dmitry Kasatkin (1):
-      smack: fix key permission verification
-
- include/linux/key.h        | 11 +++++++++++
- include/linux/security.h   |  6 +++---
- security/capability.c      |  2 +-
- security/keys/internal.h   | 11 +----------
- security/keys/key.c        |  6 +++---
- security/keys/keyctl.c     | 44 ++++++++++++++++++++++----------------------
- security/keys/keyring.c    |  8 ++++----
- security/keys/permission.c |  4 ++--
- security/keys/persistent.c |  4 ++--
- security/keys/proc.c       |  2 +-
- security/security.c        |  2 +-
- security/selinux/hooks.c   |  2 +-
- security/smack/smack_lsm.c |  9 +++++++--
- 13 files changed, 59 insertions(+), 52 deletions(-)
