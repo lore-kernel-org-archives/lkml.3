@@ -1,68 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbaCaRyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 13:54:20 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:25408 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270AbaCaRyS (ORCPT
+	id S1754124AbaCaRzC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 13:55:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46618 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328AbaCaRy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 13:54:18 -0400
-Date: Mon, 31 Mar 2014 19:53:56 +0200
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH] pata_octeon_cf: fix ata_host_activate() failure handling
-To: Tejun Heo <tj@kernel.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-ide@vger.kernel.org,
-        linux-mips@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <5439252.0G82yiBcdS@amdc1032>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7Bit
-X-AuditID: cbfee61a-b7fb26d00000724f-a6-5339abc8a298
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jQd0Tqy2DDT691bc4tuMRk8XlXXPY
-	LDo3bWW0uLRHxeLX8qOMDqwem1Z1snkcXbmWyePzJrkA5igum5TUnMyy1CJ9uwSujG8PlzEW
-	7OCouDNzCmsDYxN7FyMnh4SAicSGhTPZIGwxiQv31gPZXBxCAtMZJc486GOBcFqYJL6v/soK
-	UsUmYCUxsX0VI4gtIiArcWXaQzCbWaBW4t/CjUBTOTiEBTwlHv8NAwmzCKhK3D7wBizMK6AJ
-	NCYVJCwKVLFj+0qwvbwCghI/Jt9jgZgiL7Fv/1RWCFtLYv3O40wTGPlmISmbhaRsFpKyBYzM
-	qxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCA/GZ1A7GlQ0WhxgFOBiVeHgtyi2DhVgTy4or
-	cw8xSnAwK4nwbl0AFOJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1CCbL
-	xMEp1cC4/1aCN6MHz4buRqVVk1QTLm5Uvrjm/Z55gbPE79lZNq3faZYd4lV7dW2yhtwurq1u
-	h7vfPrW/sHbW1oeSj/6mzBWJz3P2X76de/p6NtYP0V/Zz0hrVNktkRaaefSS8on0t7P1I2c3
-	/7DRudxlK2I24dS1VNNmsWURgfPslUTvPZPmt07V+KapxFKckWioxVxUnAgA7vM8BkACAAA=
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+	Mon, 31 Mar 2014 13:54:59 -0400
+Date: Mon, 31 Mar 2014 10:57:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.4.85
+Message-ID: <20140331175718.GB1998@kroah.com>
+References: <20140331175420.GA1998@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140331175420.GA1998@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing kfree() call to ata_host_activate() failure path.
-
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
- drivers/ata/pata_octeon_cf.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-Index: b/drivers/ata/pata_octeon_cf.c
-===================================================================
---- a/drivers/ata/pata_octeon_cf.c	2014-03-14 16:45:04.320724377 +0100
-+++ b/drivers/ata/pata_octeon_cf.c	2014-03-31 18:58:44.367604046 +0200
-@@ -1020,13 +1020,16 @@ static int octeon_cf_probe(struct platfo
+diff --git a/Makefile b/Makefile
+index f75a853f8524..66ae2984a38c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 4
+-SUBLEVEL = 84
++SUBLEVEL = 85
+ EXTRAVERSION =
+ NAME = Saber-toothed Squirrel
  
- 	ata_port_desc(ap, "cmd %p ctl %p", base, ap->ioaddr.ctl_addr);
+diff --git a/arch/arm/include/asm/outercache.h b/arch/arm/include/asm/outercache.h
+index 53426c66352a..2dd513bdca23 100644
+--- a/arch/arm/include/asm/outercache.h
++++ b/arch/arm/include/asm/outercache.h
+@@ -37,10 +37,10 @@ struct outer_cache_fns {
+ 	void (*resume)(void);
+ };
  
+-#ifdef CONFIG_OUTER_CACHE
 -
- 	dev_info(&pdev->dev, "version " DRV_VERSION" %d bit%s.\n",
- 		 is_16bit ? 16 : 8,
- 		 cf_port->is_true_ide ? ", True IDE" : "");
+ extern struct outer_cache_fns outer_cache;
  
--	return ata_host_activate(host, irq, irq_handler,
--				 IRQF_SHARED, &octeon_cf_sht);
-+	rv = ata_host_activate(host, irq, irq_handler,
-+			       IRQF_SHARED, &octeon_cf_sht);
-+	if (rv)
-+		goto free_cf_port;
++#ifdef CONFIG_OUTER_CACHE
 +
-+	return 0;
+ static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
+ {
+ 	if (outer_cache.inv_range)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 4cb164268846..fd6dec6ffa47 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2451,6 +2451,9 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 	int emulate = 0;
+ 	gfn_t pseudo_gfn;
  
- free_cf_port:
- 	kfree(cf_port);
-
++	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
++		return 0;
++
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+ 		if (iterator.level == level) {
+ 			unsigned pte_access = ACC_ALL;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 90f5c0ed9d2f..617b00b4857b 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6281,8 +6281,8 @@ static void vmx_free_vcpu(struct kvm_vcpu *vcpu)
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+ 
+ 	free_vpid(vmx);
+-	free_nested(vmx);
+ 	free_loaded_vmcs(vmx->loaded_vmcs);
++	free_nested(vmx);
+ 	kfree(vmx->guest_msrs);
+ 	kvm_vcpu_uninit(vcpu);
+ 	kmem_cache_free(kvm_vcpu_cache, vmx);
+diff --git a/arch/x86/net/bpf_jit.S b/arch/x86/net/bpf_jit.S
+index 877b9a1b2152..01495755701b 100644
+--- a/arch/x86/net/bpf_jit.S
++++ b/arch/x86/net/bpf_jit.S
+@@ -140,7 +140,7 @@ bpf_slow_path_byte_msh:
+ 	push	%r9;						\
+ 	push	SKBDATA;					\
+ /* rsi already has offset */					\
+-	mov	$SIZE,%ecx;	/* size */			\
++	mov	$SIZE,%edx;	/* size */			\
+ 	call	bpf_internal_load_pointer_neg_helper;		\
+ 	test	%rax,%rax;					\
+ 	pop	SKBDATA;					\
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index f4059e9da301..8ba22ebff637 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -962,33 +962,35 @@ static int __devinit i7300_get_devices(struct mem_ctl_info *mci)
+ 
+ 	/* Attempt to 'get' the MCH register we want */
+ 	pdev = NULL;
+-	while (!pvt->pci_dev_16_1_fsb_addr_map ||
+-	       !pvt->pci_dev_16_2_fsb_err_regs) {
+-		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
+-		if (!pdev) {
+-			/* End of list, leave */
+-			i7300_printk(KERN_ERR,
+-				"'system address,Process Bus' "
+-				"device not found:"
+-				"vendor 0x%x device 0x%x ERR funcs "
+-				"(broken BIOS?)\n",
+-				PCI_VENDOR_ID_INTEL,
+-				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
+-			goto error;
+-		}
+-
++	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
++				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
++				      pdev))) {
+ 		/* Store device 16 funcs 1 and 2 */
+ 		switch (PCI_FUNC(pdev->devfn)) {
+ 		case 1:
+-			pvt->pci_dev_16_1_fsb_addr_map = pdev;
++			if (!pvt->pci_dev_16_1_fsb_addr_map)
++				pvt->pci_dev_16_1_fsb_addr_map =
++							pci_dev_get(pdev);
+ 			break;
+ 		case 2:
+-			pvt->pci_dev_16_2_fsb_err_regs = pdev;
++			if (!pvt->pci_dev_16_2_fsb_err_regs)
++				pvt->pci_dev_16_2_fsb_err_regs =
++							pci_dev_get(pdev);
+ 			break;
+ 		}
+ 	}
+ 
++	if (!pvt->pci_dev_16_1_fsb_addr_map ||
++	    !pvt->pci_dev_16_2_fsb_err_regs) {
++		/* At least one device was not found */
++		i7300_printk(KERN_ERR,
++			"'system address,Process Bus' device not found:"
++			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
++			PCI_VENDOR_ID_INTEL,
++			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
++		goto error;
++	}
++
+ 	debugf1("System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
+ 		pci_name(pvt->pci_dev_16_0_fsb_ctlr),
+ 		pvt->pci_dev_16_0_fsb_ctlr->vendor,
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 479011004a11..9bdc3b8597a4 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -486,6 +486,7 @@ static void elantech_input_sync_v4(struct psmouse *psmouse)
+ 	unsigned char *packet = psmouse->packet;
+ 
+ 	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
++	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
+ 	input_mt_report_pointer_emulation(dev, true);
+ 	input_sync(dev);
+ }
+@@ -954,6 +955,44 @@ static int elantech_get_resolution_v4(struct psmouse *psmouse,
+ }
+ 
+ /*
++ * Advertise INPUT_PROP_BUTTONPAD for clickpads. The testing of bit 12 in
++ * fw_version for this is based on the following fw_version & caps table:
++ *
++ * Laptop-model:           fw_version:     caps:           buttons:
++ * Acer S3                 0x461f00        10, 13, 0e      clickpad
++ * Acer S7-392             0x581f01        50, 17, 0d      clickpad
++ * Acer V5-131             0x461f02        01, 16, 0c      clickpad
++ * Acer V5-551             0x461f00        ?               clickpad
++ * Asus K53SV              0x450f01        78, 15, 0c      2 hw buttons
++ * Asus G46VW              0x460f02        00, 18, 0c      2 hw buttons
++ * Asus G750JX             0x360f00        00, 16, 0c      2 hw buttons
++ * Asus UX31               0x361f00        20, 15, 0e      clickpad
++ * Asus UX32VD             0x361f02        00, 15, 0e      clickpad
++ * Avatar AVIU-145A2       0x361f00        ?               clickpad
++ * Gigabyte U2442          0x450f01        58, 17, 0c      2 hw buttons
++ * Lenovo L430             0x350f02        b9, 15, 0c      2 hw buttons (*)
++ * Samsung NF210           0x150b00        78, 14, 0a      2 hw buttons
++ * Samsung NP770Z5E        0x575f01        10, 15, 0f      clickpad
++ * Samsung NP700Z5B        0x361f06        21, 15, 0f      clickpad
++ * Samsung NP900X3E-A02    0x575f03        ?               clickpad
++ * Samsung NP-QX410        0x851b00        19, 14, 0c      clickpad
++ * Samsung RC512           0x450f00        08, 15, 0c      2 hw buttons
++ * Samsung RF710           0x450f00        ?               2 hw buttons
++ * System76 Pangolin       0x250f01        ?               2 hw buttons
++ * (*) + 3 trackpoint buttons
++ */
++static void elantech_set_buttonpad_prop(struct psmouse *psmouse)
++{
++	struct input_dev *dev = psmouse->dev;
++	struct elantech_data *etd = psmouse->private;
++
++	if (etd->fw_version & 0x001000) {
++		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
++		__clear_bit(BTN_RIGHT, dev->keybit);
++	}
++}
++
++/*
+  * Set the appropriate event bits for the input subsystem
+  */
+ static int elantech_set_input_params(struct psmouse *psmouse)
+@@ -996,6 +1035,8 @@ static int elantech_set_input_params(struct psmouse *psmouse)
+ 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+ 		/* fall through */
+ 	case 3:
++		if (etd->hw_version == 3)
++			elantech_set_buttonpad_prop(psmouse);
+ 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+ 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+ 		if (etd->reports_pressure) {
+@@ -1017,9 +1058,7 @@ static int elantech_set_input_params(struct psmouse *psmouse)
+ 			 */
+ 			psmouse_warn(psmouse, "couldn't query resolution data.\n");
+ 		}
+-		/* v4 is clickpad, with only one button. */
+-		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
+-		__clear_bit(BTN_RIGHT, dev->keybit);
++		elantech_set_buttonpad_prop(psmouse);
+ 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
+ 		/* For X to recognize me as touchpad. */
+ 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+diff --git a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
+index 91bad2f23842..ba38ace80a49 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
+@@ -825,14 +825,15 @@ static int iwl_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd)
+ 	trace_idx = 1;
+ #endif
+ 
++	/* map the remaining (adjusted) nocopy/dup fragments */
+ 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
+-		if (!cmd->len[i])
++		if (!cmdlen[i])
+ 			continue;
+ 		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
+ 			continue;
+ 		phys_addr = dma_map_single(trans->dev,
+-					   (void *)cmd->data[i],
+-					   cmd->len[i], DMA_BIDIRECTIONAL);
++					   (void *)cmddata[i],
++					   cmdlen[i], DMA_BIDIRECTIONAL);
+ 		if (dma_mapping_error(trans->dev, phys_addr)) {
+ 			iwlagn_unmap_tfd(trans, out_meta,
+ 					 &txq->tfds[q->write_ptr],
+diff --git a/drivers/net/wireless/p54/txrx.c b/drivers/net/wireless/p54/txrx.c
+index a08a6f0e4dd1..29338190ee27 100644
+--- a/drivers/net/wireless/p54/txrx.c
++++ b/drivers/net/wireless/p54/txrx.c
+@@ -583,7 +583,7 @@ static void p54_rx_stats(struct p54_common *priv, struct sk_buff *skb)
+ 	chan = priv->curchan;
+ 	if (chan) {
+ 		struct survey_info *survey = &priv->survey[chan->hw_value];
+-		survey->noise = clamp_t(s8, priv->noise, -128, 127);
++		survey->noise = clamp(priv->noise, -128, 127);
+ 		survey->channel_time = priv->survey_raw.active;
+ 		survey->channel_time_tx = priv->survey_raw.tx;
+ 		survey->channel_time_busy = priv->survey_raw.tx +
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 8b1c27f93025..496764b60a3b 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -109,6 +109,11 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
+ 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+ 	}
++	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
++			pdev->device == 0x0015 &&
++			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
++			pdev->subsystem_device == 0xc0cd)
++		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ }
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 7385de25788a..25f1a6139584 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -296,7 +296,9 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+ 	}
+ 	atomic_sub(msq->q_cbytes, &ns->msg_bytes);
+ 	security_msg_queue_free(msq);
++	ipc_lock_by_ptr(&msq->q_perm);
+ 	ipc_rcu_putref(msq);
++	ipc_unlock(&msq->q_perm);
+ }
+ 
+ /*
+diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+index d8f031a762ae..835d81b0934e 100644
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1269,14 +1269,17 @@ static void reset_changed_osds(struct ceph_osd_client *osdc)
+  *
+  * Caller should hold map_sem for read.
+  */
+-static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
++static void kick_requests(struct ceph_osd_client *osdc, bool force_resend,
++			  bool force_resend_writes)
+ {
+ 	struct ceph_osd_request *req, *nreq;
+ 	struct rb_node *p;
+ 	int needmap = 0;
+ 	int err;
++	bool force_resend_req;
+ 
+-	dout("kick_requests %s\n", force_resend ? " (force resend)" : "");
++	dout("kick_requests %s %s\n", force_resend ? " (force resend)" : "",
++		force_resend_writes ? " (force resend writes)" : "");
+ 	mutex_lock(&osdc->request_mutex);
+ 	for (p = rb_first(&osdc->requests); p; ) {
+ 		req = rb_entry(p, struct ceph_osd_request, r_node);
+@@ -1299,7 +1302,10 @@ static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
+ 			continue;
+ 		}
+ 
+-		err = __map_request(osdc, req, force_resend);
++		force_resend_req = force_resend ||
++			(force_resend_writes &&
++				req->r_flags & CEPH_OSD_FLAG_WRITE);
++		err = __map_request(osdc, req, force_resend_req);
+ 		if (err < 0)
+ 			continue;  /* error */
+ 		if (req->r_osd == NULL) {
+@@ -1319,7 +1325,8 @@ static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
+ 				 r_linger_item) {
+ 		dout("linger req=%p req->r_osd=%p\n", req, req->r_osd);
+ 
+-		err = __map_request(osdc, req, force_resend);
++		err = __map_request(osdc, req,
++				    force_resend || force_resend_writes);
+ 		dout("__map_request returned %d\n", err);
+ 		if (err == 0)
+ 			continue;  /* no change and no osd was specified */
+@@ -1361,6 +1368,7 @@ void ceph_osdc_handle_map(struct ceph_osd_client *osdc, struct ceph_msg *msg)
+ 	struct ceph_osdmap *newmap = NULL, *oldmap;
+ 	int err;
+ 	struct ceph_fsid fsid;
++	bool was_full;
+ 
+ 	dout("handle_map have %u\n", osdc->osdmap ? osdc->osdmap->epoch : 0);
+ 	p = msg->front.iov_base;
+@@ -1374,6 +1382,8 @@ void ceph_osdc_handle_map(struct ceph_osd_client *osdc, struct ceph_msg *msg)
+ 
+ 	down_write(&osdc->map_sem);
+ 
++	was_full = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL);
++
+ 	/* incremental maps */
+ 	ceph_decode_32_safe(&p, end, nr_maps, bad);
+ 	dout(" %d inc maps\n", nr_maps);
+@@ -1398,7 +1408,10 @@ void ceph_osdc_handle_map(struct ceph_osd_client *osdc, struct ceph_msg *msg)
+ 				ceph_osdmap_destroy(osdc->osdmap);
+ 				osdc->osdmap = newmap;
+ 			}
+-			kick_requests(osdc, 0);
++			was_full = was_full ||
++				ceph_osdmap_flag(osdc->osdmap,
++						 CEPH_OSDMAP_FULL);
++			kick_requests(osdc, 0, was_full);
+ 		} else {
+ 			dout("ignoring incremental map %u len %d\n",
+ 			     epoch, maplen);
+@@ -1441,7 +1454,10 @@ void ceph_osdc_handle_map(struct ceph_osd_client *osdc, struct ceph_msg *msg)
+ 					skipped_map = 1;
+ 				ceph_osdmap_destroy(oldmap);
+ 			}
+-			kick_requests(osdc, skipped_map);
++			was_full = was_full ||
++				ceph_osdmap_flag(osdc->osdmap,
++						 CEPH_OSDMAP_FULL);
++			kick_requests(osdc, skipped_map, was_full);
+ 		}
+ 		p += maplen;
+ 		nr_maps--;
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index eee5f8ed2493..ed7ccdcd3e6e 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -62,7 +62,7 @@ create_package() {
+ 	fi
+ 
+ 	# Create the package
+-	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
++	dpkg-gencontrol -isp $forcearch -Vkernel:debarch="${debarch:-$(dpkg --print-architecture)}" -p$pname -P"$pdir"
+ 	dpkg --build "$pdir" ..
+ }
+ 
+@@ -252,15 +252,14 @@ mkdir -p "$destdir"
+ (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
+ ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
+ rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+-arch=$(dpkg --print-architecture)
+ 
+ cat <<EOF >> debian/control
+ 
+ Package: $kernel_headers_packagename
+ Provides: linux-headers, linux-headers-2.6
+-Architecture: $arch
+-Description: Linux kernel headers for $KERNELRELEASE on $arch
+- This package provides kernel header files for $KERNELRELEASE on $arch
++Architecture: any
++Description: Linux kernel headers for $KERNELRELEASE on \${kernel:debarch}
++ This package provides kernel header files for $KERNELRELEASE on \${kernel:debarch}
+  .
+  This is useful for people who need to build external modules
+ EOF
+diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+index 7895983862b2..1edb2e822074 100644
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -133,7 +133,7 @@ static int snd_compr_open(struct inode *inode, struct file *f)
+ 		kfree(data);
+ 	}
+ 	snd_card_unref(compr->card);
+-	return 0;
++	return ret;
+ }
+ 
+ static int snd_compr_free(struct inode *inode, struct file *f)
