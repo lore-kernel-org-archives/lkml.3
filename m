@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaCaP66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 11:58:58 -0400
-Received: from hermes.univ-tours.fr ([193.52.209.50]:47005 "EHLO
-	hermes.univ-tours.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaCaP64 (ORCPT
+	id S1754299AbaCaQAK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 12:00:10 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19298 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751982AbaCaQAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 11:58:56 -0400
-X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Mar 2014 11:58:56 EDT
-DomainKey-Signature: s=main; d=univ-tours.fr; c=nofws; q=dns;
-  h=X-IronPort-Anti-Spam-Filtered:
-   X-IronPort-Anti-Spam-Result:X-IPAS-Result:Received:
-   Received:X-Virus-Scanned:Received:Received:
-   X-Virus-Scanned:Received:Received:Date:From:Reply-To:
-   Message-ID:Subject:MIME-Version:Content-Type:
-   Content-Transfer-Encoding:X-Originating-IP:X-Mailer:
-   Thread-Topic:Thread-Index;
-  b=GSt4chkLMoxU8HkjPOtwBQptBVAp5KSjo1EMyH1tWh/OrnsoQcre93kR
-   JKY/n0vIQZg8oLRbhroXuhgyxfe65fF2zdR09Cm7xwXSLW0Va7EcR6OeU
-   x6II2ffCuU7TkD2AiqdXCQTFKqiSMqn4sd2K6qj8HX9yII30LtECeFUzh
-   8=;
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: An5XAD2NOVMKwQUD/2dsb2JhbABZD4JjAYElgwqpYYFUkAeESQglgRF0ghgBBAQBCgsOCghgARAFDQINGQIxAQ4BCREHhVkBASuBYgEMAQGuVVqEf5UEAgKHNxeBKY0igyoPgToBA5QhiyJkiXaDWwI7gik
-X-IPAS-Result: An5XAD2NOVMKwQUD/2dsb2JhbABZD4JjAYElgwqpYYFUkAeESQglgRF0ghgBBAQBCgsOCghgARAFDQINGQIxAQ4BCREHhVkBASuBYgEMAQGuVVqEf5UEAgKHNxeBKY0igyoPgToBA5QhiyJkiXaDWwI7gik
-Date: Mon, 31 Mar 2014 17:48:37 +0200 (CEST)
-From: Cham Tao <jenny.leperoux@etu.univ-tours.fr>
-Reply-To: Cham Tao <c.t_soon@yahoo.com.sg>
-Message-ID: <1179285208.4164570.1396280917938.JavaMail.zimbra@etu.univ-tours.fr>
-Subject: RE
+	Mon, 31 Mar 2014 12:00:07 -0400
+Date: Mon, 31 Mar 2014 12:00:03 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
+Message-ID: <20140331160003.GD19658@home.goodmis.org>
+References: <1396164244.28950.15.camel@marge.simpson.net>
+ <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
+ <1396239636.5361.57.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.193.5.3]
-X-Mailer: Zimbra 8.0.4_GA_5739 (ZimbraWebClient - FF28 (Win)/8.0.4_GA_5737)
-Thread-Topic: RE
-Thread-Index: 13Sw1EILxQ6cW0Rms5N3iP/n2LGoqA==
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396239636.5361.57.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 31, 2014 at 06:20:36AM +0200, Mike Galbraith wrote:
+> 
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: 	Mike Galbraith <umgwanakikbuti@gmail.com>
+> ---
+>  kernel/sched/core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -118,7 +118,7 @@ void update_rq_clock(struct rq *rq)
+>  {
+>  	s64 delta;
+>  
 
+Mike,
 
-I have a proposal for you
+If I understand this code correctly, skip_clock_update gets set to one,
+where it should skip the next call to update_rq_clock(), but only the
+next skip_clock_update(), and after that, it should resume calling it again.
+Is that correct?
+
+If so, can we add a comment here stating such. For example:
+
+/*
+ * rq->skip_clock_update gets set to "1" to skip the next clock update.
+ * The following calls should continue to do the update unless
+ * rq->skip_clock_update gets set to "1" again.
+ */
+
+?
+
+-- Steve
+
+> -	if (rq->skip_clock_update > 0)
+> +	if (rq->skip_clock_update-- > 0)
+>  		return;
+>  
+>  	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
