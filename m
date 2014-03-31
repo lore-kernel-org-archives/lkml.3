@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaCaX1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 19:27:00 -0400
-Received: from tundra.namei.org ([65.99.196.166]:41156 "EHLO tundra.namei.org"
+	id S1751424AbaCaXev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 19:34:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12240 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270AbaCaX06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 19:26:58 -0400
-Date: Tue, 1 Apr 2014 10:30:05 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: torvalds@linux-foundation.org, d.kasatkin@samsung.com,
-        casey@schaufler-ca.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] KEYS: Make perm request flags available to security
- modules
-In-Reply-To: <11268.1396281254@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.02.1404011029370.16115@tundra.namei.org>
-References: <alpine.LRH.2.02.1404010231260.16115@tundra.namei.org> <8321.1396272505@warthog.procyon.org.uk> <11268.1396281254@warthog.procyon.org.uk>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751032AbaCaXeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 19:34:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,768,1389772800"; 
+   d="scan'208";a="503936357"
+Date: Mon, 31 Mar 2014 16:34:50 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, tpowa@archlinux.org
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+Message-ID: <20140331233450.GI32556@tassilo.jf.intel.com>
+References: <52E4CF03.8030208@archlinux.org>
+ <5339F739.2060207@archlinux.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5339F739.2060207@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Mar 2014, David Howells wrote:
-
-> James Morris <jmorris@namei.org> wrote:
-> 
-> > > Can you pull this pair of patches please?  They move the flags that are
-> > > used to request specific permissions to a more public header file so that
-> > > they can then be used by Smack (and other security modules).
+On Tue, Apr 01, 2014 at 01:16:09AM +0200, Thomas Bächler wrote:
+> Am 26.01.2014 10:01, schrieb Thomas Bächler:
+> > Good morning,
 > > 
-> > These should be going via my tree.
+> > I am trying to build Linux 3.13 on i686 with CONFIG_MODVERSIONS enabled
+> > (for configuration, see [2]). Upon booting it in a VM, I discovered that
+> > I was unable to load several kernel modules, like ext4:
+> > 
+> > ext4: disagrees about version of symbol d_tmpfile
+> > ext4: Unknown symbol d_tmpfile (err -22)
+> > ext4: disagrees about version of symbol iov_shorten
+> > ext4: Unknown symbol iov_shorten (err -22)
+> > ext4: disagrees about version of symbol in_group_p
+> > ext4: Unknown symbol in_group_p (err -22)
+> > ext4: disagrees about version of symbol do_sync_read
+> > ext4: Unknown symbol do_sync_read (err -22)
+> > ext4: disagrees about version of symbol current_fs_time
+> > ext4: Unknown symbol current_fs_time (err -22)
+> > ext4: disagrees about version of symbol generic_write_sync
+> > ext4: Unknown symbol generic_write_sync (err -22)
+> > ext4: disagrees about version of symbol generic_getxattr
+> > ext4: Unknown symbol generic_getxattr (err -22)
 > 
-> Okay, if you could pull them then.  I thought Linus wanted keyrings stuff to
-> go separately.
+> This problem persists in v3.14, i.e. I still have to revert
+> 83460ec8dcac14142e7860a01fa59c267ac4657c in order to get a working
+> kernel on i686. I would really appreciate if someone would actually read
+> my original mail from about 3 months ago and write an answer.
 
-I don't recall that.
+Can you resend it please?
 
-I'll pull them after the merge window.
+-Andi
 
 
 -- 
-James Morris
-<jmorris@namei.org>
+ak@linux.intel.com -- Speaking for myself only
