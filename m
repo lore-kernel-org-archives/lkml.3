@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbaCaNXx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35579 "EHLO
+	id S1753717AbaCaNXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:23:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641AbaCaNXq (ORCPT
+	with ESMTP id S1753635AbaCaNXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Mar 2014 09:23:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Goldwyn Rodrigues <rgoldwyn@suse.de>,
-        Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 16/71] ocfs2: fix quota file corruption
-Date: Mon, 31 Mar 2014 14:22:22 +0100
-Message-Id: <1396272197-13394-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 15/71] tracing: Do not add event files for modules that fail tracepoints
+Date: Mon, 31 Mar 2014 14:22:21 +0100
+Message-Id: <1396272197-13394-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -30,92 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 15c34a760630ca2c803848fba90ca0646a9907dd upstream.
+commit 45ab2813d40d88fc575e753c38478de242d03f88 upstream.
 
-Global quota files are accessed from different nodes.  Thus we cannot
-cache offset of quota structure in the quota file after we drop our node
-reference count to it because after that moment quota structure may be
-freed and reallocated elsewhere by a different node resulting in
-corruption of quota file.
+If a module fails to add its tracepoints due to module tainting, do not
+create the module event infrastructure in the debugfs directory. As the events
+will not work and worse yet, they will silently fail, making the user wonder
+why the events they enable do not display anything.
 
-Fix the problem by clearing dq_off when we are releasing dquot structure.
-We also remove the DB_READ_B handling because it is useless -
-DQ_ACTIVE_B is set iff DQ_READ_B is set.
+Having a warning on module load and the events not visible to the users
+will make the cause of the problem much clearer.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Goldwyn Rodrigues <rgoldwyn@suse.de>
-Cc: Joel Becker <jlbec@evilplan.org>
-Reviewed-by: Mark Fasheh <mfasheh@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140227154923.265882695@goodmis.org
+
+Fixes: 6d723736e472 "tracing/events: add support for modules to TRACE_EVENT"
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ocfs2/quota_global.c | 27 +++++++++++++++++----------
- fs/ocfs2/quota_local.c  |  4 ----
- 2 files changed, 17 insertions(+), 14 deletions(-)
+ include/linux/tracepoint.h  |  6 ++++++
+ kernel/trace/trace_events.c | 10 ++++++++++
+ kernel/tracepoint.c         |  7 ++++++-
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ocfs2/quota_global.c b/fs/ocfs2/quota_global.c
-index 0a86e30..c8f6801 100644
---- a/fs/ocfs2/quota_global.c
-+++ b/fs/ocfs2/quota_global.c
-@@ -710,6 +710,12 @@ static int ocfs2_release_dquot(struct dquot *dquot)
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index bd96ecd..c49c363 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -60,6 +60,12 @@ struct tp_module {
+ 	unsigned int num_tracepoints;
+ 	struct tracepoint * const *tracepoints_ptrs;
+ };
++bool trace_module_has_bad_taint(struct module *mod);
++#else
++static inline bool trace_module_has_bad_taint(struct module *mod)
++{
++	return false;
++}
+ #endif /* CONFIG_MODULES */
+ 
+ struct tracepoint_iter {
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da..2f737f5 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1354,6 +1354,16 @@ static void trace_module_add_events(struct module *mod)
+ 	struct ftrace_module_file_ops *file_ops = NULL;
+ 	struct ftrace_event_call **call, **start, **end;
+ 
++	if (!mod->num_trace_events)
++		return;
++
++	/* Don't add infrastructure for mods without tracepoints */
++	if (trace_module_has_bad_taint(mod)) {
++		pr_err("%s: module has bad taint, not creating trace events\n",
++		       mod->name);
++		return;
++	}
++
+ 	start = mod->trace_events;
+ 	end = mod->trace_events + mod->num_trace_events;
+ 
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index d96ba22..23d8560 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -628,6 +628,11 @@ void tracepoint_iter_reset(struct tracepoint_iter *iter)
+ EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
+ 
+ #ifdef CONFIG_MODULES
++bool trace_module_has_bad_taint(struct module *mod)
++{
++	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
++}
++
+ static int tracepoint_module_coming(struct module *mod)
+ {
+ 	struct tp_module *tp_mod, *iter;
+@@ -638,7 +643,7 @@ static int tracepoint_module_coming(struct module *mod)
+ 	 * module headers (for forced load), to make sure we don't cause a crash.
+ 	 * Staging and out-of-tree GPL modules are fine.
  	 */
- 	if (status < 0)
- 		mlog_errno(status);
-+	/*
-+	 * Clear dq_off so that we search for the structure in quota file next
-+	 * time we acquire it. The structure might be deleted and reallocated
-+	 * elsewhere by another node while our dquot structure is on freelist.
-+	 */
-+	dquot->dq_off = 0;
- 	clear_bit(DQ_ACTIVE_B, &dquot->dq_flags);
- out_trans:
- 	ocfs2_commit_trans(osb, handle);
-@@ -748,16 +754,17 @@ static int ocfs2_acquire_dquot(struct dquot *dquot)
- 	status = ocfs2_lock_global_qf(info, 1);
- 	if (status < 0)
- 		goto out;
--	if (!test_bit(DQ_READ_B, &dquot->dq_flags)) {
--		status = ocfs2_qinfo_lock(info, 0);
--		if (status < 0)
--			goto out_dq;
--		status = qtree_read_dquot(&info->dqi_gi, dquot);
--		ocfs2_qinfo_unlock(info, 0);
--		if (status < 0)
--			goto out_dq;
--	}
--	set_bit(DQ_READ_B, &dquot->dq_flags);
-+	status = ocfs2_qinfo_lock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
-+	/*
-+	 * We always want to read dquot structure from disk because we don't
-+	 * know what happened with it while it was on freelist.
-+	 */
-+	status = qtree_read_dquot(&info->dqi_gi, dquot);
-+	ocfs2_qinfo_unlock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
- 
- 	OCFS2_DQUOT(dquot)->dq_use_count++;
- 	OCFS2_DQUOT(dquot)->dq_origspace = dquot->dq_dqb.dqb_curspace;
-diff --git a/fs/ocfs2/quota_local.c b/fs/ocfs2/quota_local.c
-index f100bf7..b6cfcf2 100644
---- a/fs/ocfs2/quota_local.c
-+++ b/fs/ocfs2/quota_local.c
-@@ -1300,10 +1300,6 @@ int ocfs2_local_release_dquot(handle_t *handle, struct dquot *dquot)
- 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
- 
- out:
--	/* Clear the read bit so that next time someone uses this
--	 * dquot he reads fresh info from disk and allocates local
--	 * dquot structure */
--	clear_bit(DQ_READ_B, &dquot->dq_flags);
- 	return status;
- }
- 
+-	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
++	if (trace_module_has_bad_taint(mod))
+ 		return 0;
+ 	mutex_lock(&tracepoints_mutex);
+ 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
 -- 
 1.9.1
 
