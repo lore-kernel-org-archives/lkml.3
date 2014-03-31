@@ -1,898 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440AbaCaEgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 00:36:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:38274 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289AbaCaEfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 00:35:23 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        William Hubbs <w.d.hubbs@gmail.com>
-Subject: Re: linux-next: build failure after merge of the modules tree
-In-Reply-To: <20140325140226.bb363b52de048346cf01a179@canb.auug.org.au>
-References: <20140325140226.bb363b52de048346cf01a179@canb.auug.org.au>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 31 Mar 2014 14:15:06 +1030
-Message-ID: <87k3bbowu5.fsf@rustcorp.com.au>
+	id S1752729AbaCaEzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 00:55:45 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58037 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaCaEzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 00:55:43 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 31 Mar 2014 13:56:26 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Seth Jennings <sjennings@variantweb.net>, Bob Liu <bob.liu@oracle.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Adding compression before/above swapcache
+Message-ID: <20140331045626.GA6281@bbox>
+References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> writes:
-> Hi Rusty,
->
-> After merging the modules tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+Hello Dan,
 
-Hmm, I sent Greg KH a separate patch for staging, which rips these out
-altogether.  He said he'd apply it "in a bit".
+On Wed, Mar 26, 2014 at 04:28:27PM -0400, Dan Streetman wrote:
+> I'd like some feedback on how possible/useful, or not, it might be to
+> add compression into the page handling code before pages are added to
+> the swapcache.  My thought is that adding a compressed cache at that
+> point may have (at least) two advantages over the existing page
+> compression, zswap and zram, which are both in the swap path.
+> 
+> 1) Both zswap and zram are limited in the amount of memory that they
+> can compress/store:
+> -zswap is limited both in the amount of pre-compressed pages, by the
+> total amount of swap configured in the system, and post-compressed
+> pages, by its max_pool_percentage parameter.  These limitations aren't
+> necessarily a bad thing, just requirements for the user (or distro
+> setup tool, etc) to correctly configure them.  And for optimal
+> operation, they need to coordinate; for example, with the default
+> post-compressed 20% of memory zswap's configured to use, the amount of
+> swap in the system must be at least 40% of system memory (if/when
+> zswap is changed to use zsmalloc that number would need to increase).
+> The point being, there is a clear possibility of misconfiguration, or
+> even a simple lack of enough disk space for actual swap, that could
+> artificially reduce the amount of total memory zswap is able to
 
-I see it hasn't hit mainline yet, so here it is.
+Potentailly, there is risk in tuning knob so admin should be careful.
+Surely, kernel should do best effort to prevent such confusion and
+I think well-written documentation would be enough.
 
-From: Rusty Russell <rusty@rustcorp.com.au>
-Subject: staging: fix up speakup kobject mode
+> compress.  Additionally, most of that real disk swap is wasted space -
+> all the pages stored compressed in zswap aren't actually written on
+> the disk.
 
-It uses the unnecessary S_IFREG bit which will break when my
-stricter-checking-for-mode patch goes in.
+It's same with normal swap. If there isn't memory pressure, it's wasted
+space, too.
 
-Since we're fixing it anyway, the extra level of indirection is
-confusing for readers (ROOT_W == rw-r--r-- for example).
+> -zram is limited only by its pre-compressed size, and of course the
+> amount of actual system memory it can use for compressed storage.  If
+> using without dm-cache, this could allow essentially unlimited
 
-Also, many of these are other-writable.  Is that really intended?
+It's because no requirement until now. If someone ask it or report
+the problem, we could support it easily.
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- drivers/staging/speakup/kobjects.c       | 62 ++++++++++++++++----------------
- drivers/staging/speakup/speakup.h        |  2 --
- drivers/staging/speakup/speakup_acntpc.c | 22 ++++++------
- drivers/staging/speakup/speakup_acntsa.c | 22 ++++++------
- drivers/staging/speakup/speakup_apollo.c | 24 ++++++-------
- drivers/staging/speakup/speakup_audptr.c | 24 ++++++-------
- drivers/staging/speakup/speakup_bns.c    | 22 ++++++------
- drivers/staging/speakup/speakup_decext.c | 24 ++++++-------
- drivers/staging/speakup/speakup_decpc.c  | 24 ++++++-------
- drivers/staging/speakup/speakup_dectlk.c | 24 ++++++-------
- drivers/staging/speakup/speakup_dtlk.c   | 28 +++++++--------
- drivers/staging/speakup/speakup_dummy.c  | 22 ++++++------
- drivers/staging/speakup/speakup_keypc.c  | 18 +++++-----
- drivers/staging/speakup/speakup_ltlk.c   | 28 +++++++--------
- drivers/staging/speakup/speakup_soft.c   | 30 ++++++++--------
- drivers/staging/speakup/speakup_spkout.c | 24 ++++++-------
- drivers/staging/speakup/speakup_txprt.c  | 22 ++++++------
- 17 files changed, 210 insertions(+), 212 deletions(-)
+> compression until no more compressed pages can be stored; however that
+> requires the zram device to be configured as larger than the actual
+> system memory.  If using with dm-cache, it may not be obvious what the
 
-diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
-index e2f597ee6261..1ca91f7092b1 100644
---- a/drivers/staging/speakup/kobjects.c
-+++ b/drivers/staging/speakup/kobjects.c
-@@ -851,75 +851,75 @@ static ssize_t message_store(struct kobject *kobj, struct kobj_attribute *attr,
-  * Declare the attributes.
-  */
- static struct kobj_attribute keymap_attribute =
--	__ATTR(keymap, ROOT_W, keymap_show, keymap_store);
-+	__ATTR(keymap, S_IWUSR|S_IRUGO, keymap_show, keymap_store);
- static struct kobj_attribute silent_attribute =
--	__ATTR(silent, USER_W, NULL, silent_store);
-+	__ATTR(silent, S_IWUGO, NULL, silent_store);
- static struct kobj_attribute synth_attribute =
--	__ATTR(synth, USER_RW, synth_show, synth_store);
-+	__ATTR(synth, S_IWUGO|S_IRUGO, synth_show, synth_store);
- static struct kobj_attribute synth_direct_attribute =
--	__ATTR(synth_direct, USER_W, NULL, synth_direct_store);
-+	__ATTR(synth_direct, S_IWUGO, NULL, synth_direct_store);
- static struct kobj_attribute version_attribute =
- 	__ATTR_RO(version);
- 
- static struct kobj_attribute delimiters_attribute =
--	__ATTR(delimiters, USER_RW, punc_show, punc_store);
-+	__ATTR(delimiters, S_IWUGO|S_IRUGO, punc_show, punc_store);
- static struct kobj_attribute ex_num_attribute =
--	__ATTR(ex_num, USER_RW, punc_show, punc_store);
-+	__ATTR(ex_num, S_IWUGO|S_IRUGO, punc_show, punc_store);
- static struct kobj_attribute punc_all_attribute =
--	__ATTR(punc_all, USER_RW, punc_show, punc_store);
-+	__ATTR(punc_all, S_IWUGO|S_IRUGO, punc_show, punc_store);
- static struct kobj_attribute punc_most_attribute =
--	__ATTR(punc_most, USER_RW, punc_show, punc_store);
-+	__ATTR(punc_most, S_IWUGO|S_IRUGO, punc_show, punc_store);
- static struct kobj_attribute punc_some_attribute =
--	__ATTR(punc_some, USER_RW, punc_show, punc_store);
-+	__ATTR(punc_some, S_IWUGO|S_IRUGO, punc_show, punc_store);
- static struct kobj_attribute repeats_attribute =
--	__ATTR(repeats, USER_RW, punc_show, punc_store);
-+	__ATTR(repeats, S_IWUGO|S_IRUGO, punc_show, punc_store);
- 
- static struct kobj_attribute attrib_bleep_attribute =
--	__ATTR(attrib_bleep, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(attrib_bleep, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute bell_pos_attribute =
--	__ATTR(bell_pos, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(bell_pos, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute bleep_time_attribute =
--	__ATTR(bleep_time, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(bleep_time, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute bleeps_attribute =
--	__ATTR(bleeps, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(bleeps, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute cursor_time_attribute =
--	__ATTR(cursor_time, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(cursor_time, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute key_echo_attribute =
--	__ATTR(key_echo, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(key_echo, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute no_interrupt_attribute =
--	__ATTR(no_interrupt, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(no_interrupt, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punc_level_attribute =
--	__ATTR(punc_level, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punc_level, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute reading_punc_attribute =
--	__ATTR(reading_punc, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(reading_punc, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute say_control_attribute =
--	__ATTR(say_control, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(say_control, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute say_word_ctl_attribute =
--	__ATTR(say_word_ctl, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(say_word_ctl, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute spell_delay_attribute =
--	__ATTR(spell_delay, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(spell_delay, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * These attributes are i18n related.
-  */
- static struct kobj_attribute announcements_attribute =
--	__ATTR(announcements, USER_RW, message_show, message_store);
-+	__ATTR(announcements, S_IWUGO|S_IRUGO, message_show, message_store);
- static struct kobj_attribute characters_attribute =
--	__ATTR(characters, USER_RW, chars_chartab_show, chars_chartab_store);
-+	__ATTR(characters, S_IWUGO|S_IRUGO, chars_chartab_show, chars_chartab_store);
- static struct kobj_attribute chartab_attribute =
--	__ATTR(chartab, USER_RW, chars_chartab_show, chars_chartab_store);
-+	__ATTR(chartab, S_IWUGO|S_IRUGO, chars_chartab_show, chars_chartab_store);
- static struct kobj_attribute ctl_keys_attribute =
--	__ATTR(ctl_keys, USER_RW, message_show, message_store);
-+	__ATTR(ctl_keys, S_IWUGO|S_IRUGO, message_show, message_store);
- static struct kobj_attribute colors_attribute =
--	__ATTR(colors, USER_RW, message_show, message_store);
-+	__ATTR(colors, S_IWUGO|S_IRUGO, message_show, message_store);
- static struct kobj_attribute formatted_attribute =
--	__ATTR(formatted, USER_RW, message_show, message_store);
-+	__ATTR(formatted, S_IWUGO|S_IRUGO, message_show, message_store);
- static struct kobj_attribute function_names_attribute =
--	__ATTR(function_names, USER_RW, message_show, message_store);
-+	__ATTR(function_names, S_IWUGO|S_IRUGO, message_show, message_store);
- static struct kobj_attribute key_names_attribute =
--	__ATTR(key_names, USER_RW, message_show, message_store);
-+	__ATTR(key_names, S_IWUGO|S_IRUGO, message_show, message_store);
- static struct kobj_attribute states_attribute =
--	__ATTR(states, USER_RW, message_show, message_store);
-+	__ATTR(states, S_IWUGO|S_IRUGO, message_show, message_store);
- 
- /*
-  * Create groups of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup.h b/drivers/staging/speakup/speakup.h
-index 0126f714821a..a7bcceec436a 100644
---- a/drivers/staging/speakup/speakup.h
-+++ b/drivers/staging/speakup/speakup.h
-@@ -12,8 +12,6 @@
- /* proc permissions */
- #define USER_R (S_IFREG|S_IRUGO)
- #define USER_W (S_IFREG|S_IWUGO)
--#define USER_RW (S_IFREG|S_IRUGO|S_IWUGO)
--#define ROOT_W (S_IFREG|S_IRUGO|S_IWUSR)
- 
- #define TOGGLE_0 .u.n = {NULL, 0, 0, 1, 0, 0, NULL }
- #define TOGGLE_1 .u.n = {NULL, 1, 0, 1, 0, 0, NULL }
-diff --git a/drivers/staging/speakup/speakup_acntpc.c b/drivers/staging/speakup/speakup_acntpc.c
-index 1c8a7f4a0ef5..e7dfa434bd96 100644
---- a/drivers/staging/speakup/speakup_acntpc.c
-+++ b/drivers/staging/speakup/speakup_acntpc.c
-@@ -62,28 +62,28 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/acntpc.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_acntsa.c b/drivers/staging/speakup/speakup_acntsa.c
-index 22a8b7291098..c7f014ed9628 100644
---- a/drivers/staging/speakup/speakup_acntsa.c
-+++ b/drivers/staging/speakup/speakup_acntsa.c
-@@ -47,28 +47,28 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/acntsa.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IRUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IRUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IRUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IRUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_apollo.c b/drivers/staging/speakup/speakup_apollo.c
-index 70cf1591676a..38c8c2221e4e 100644
---- a/drivers/staging/speakup/speakup_apollo.c
-+++ b/drivers/staging/speakup/speakup_apollo.c
-@@ -53,30 +53,30 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/apollo.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute lang_attribute =
--	__ATTR(lang, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(lang, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute voice_attribute =
--	__ATTR(voice, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(voice, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_audptr.c b/drivers/staging/speakup/speakup_audptr.c
-index 61a3ceeb0d3a..de5b4a5f43b6 100644
---- a/drivers/staging/speakup/speakup_audptr.c
-+++ b/drivers/staging/speakup/speakup_audptr.c
-@@ -49,30 +49,30 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/audptr.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_bns.c b/drivers/staging/speakup/speakup_bns.c
-index 4bfe3d458dc0..4939e8c7272e 100644
---- a/drivers/staging/speakup/speakup_bns.c
-+++ b/drivers/staging/speakup/speakup_bns.c
-@@ -44,28 +44,28 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/bns.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_decext.c b/drivers/staging/speakup/speakup_decext.c
-index d306e010d3ea..b17af9803929 100644
---- a/drivers/staging/speakup/speakup_decext.c
-+++ b/drivers/staging/speakup/speakup_decext.c
-@@ -70,30 +70,30 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/decext.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute voice_attribute =
--	__ATTR(voice, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(voice, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_decpc.c b/drivers/staging/speakup/speakup_decpc.c
-index ea6b72d40b31..cfa4bc032358 100644
---- a/drivers/staging/speakup/speakup_decpc.c
-+++ b/drivers/staging/speakup/speakup_decpc.c
-@@ -164,30 +164,30 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/decpc.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute voice_attribute =
--	__ATTR(voice, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(voice, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_dectlk.c b/drivers/staging/speakup/speakup_dectlk.c
-index 15fdec323a70..0a27c8f32bb9 100644
---- a/drivers/staging/speakup/speakup_dectlk.c
-+++ b/drivers/staging/speakup/speakup_dectlk.c
-@@ -70,30 +70,30 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/dectlk.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute voice_attribute =
--	__ATTR(voice, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(voice, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_dtlk.c b/drivers/staging/speakup/speakup_dtlk.c
-index 1feb0fba1b43..5c6c34191e8d 100644
---- a/drivers/staging/speakup/speakup_dtlk.c
-+++ b/drivers/staging/speakup/speakup_dtlk.c
-@@ -67,34 +67,34 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/dtlk.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute freq_attribute =
--	__ATTR(freq, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(freq, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute voice_attribute =
--	__ATTR(voice, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(voice, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_dummy.c b/drivers/staging/speakup/speakup_dummy.c
-index 4a24b9c1e8e3..e19e9994bbb5 100644
---- a/drivers/staging/speakup/speakup_dummy.c
-+++ b/drivers/staging/speakup/speakup_dummy.c
-@@ -46,28 +46,28 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/dummy.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_keypc.c b/drivers/staging/speakup/speakup_keypc.c
-index 2f2fe5eeff63..9c246d701a95 100644
---- a/drivers/staging/speakup/speakup_keypc.c
-+++ b/drivers/staging/speakup/speakup_keypc.c
-@@ -59,24 +59,24 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/keypc.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_ltlk.c b/drivers/staging/speakup/speakup_ltlk.c
-index 326f94d6b079..c9be6f52c254 100644
---- a/drivers/staging/speakup/speakup_ltlk.c
-+++ b/drivers/staging/speakup/speakup_ltlk.c
-@@ -50,34 +50,34 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/ltlk.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute freq_attribute =
--	__ATTR(freq, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(freq, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute voice_attribute =
--	__ATTR(voice, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(voice, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_soft.c b/drivers/staging/speakup/speakup_soft.c
-index 243c3d52fe5e..ee6089502a96 100644
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -61,41 +61,41 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/soft.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute freq_attribute =
--	__ATTR(freq, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(freq, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute voice_attribute =
--	__ATTR(voice, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(voice, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * We should uncomment the following definition, when we agree on a
-  * method of passing a language designation to the software synthesizer.
-  * static struct kobj_attribute lang_attribute =
-- *	__ATTR(lang, USER_RW, spk_var_show, spk_var_store);
-+ *	__ATTR(lang, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
-  */
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_spkout.c b/drivers/staging/speakup/speakup_spkout.c
-index e74f85620c68..711cf114df83 100644
---- a/drivers/staging/speakup/speakup_spkout.c
-+++ b/drivers/staging/speakup/speakup_spkout.c
-@@ -48,30 +48,30 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/spkout.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute punct_attribute =
--	__ATTR(punct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(punct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
-diff --git a/drivers/staging/speakup/speakup_txprt.c b/drivers/staging/speakup/speakup_txprt.c
-index 5a29b9fcc930..3f0be04df071 100644
---- a/drivers/staging/speakup/speakup_txprt.c
-+++ b/drivers/staging/speakup/speakup_txprt.c
-@@ -44,28 +44,28 @@ static struct var_t vars[] = {
-  * These attributes will appear in /sys/accessibility/speakup/txprt.
-  */
- static struct kobj_attribute caps_start_attribute =
--	__ATTR(caps_start, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_start, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute caps_stop_attribute =
--	__ATTR(caps_stop, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(caps_stop, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute pitch_attribute =
--	__ATTR(pitch, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(pitch, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute rate_attribute =
--	__ATTR(rate, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(rate, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute tone_attribute =
--	__ATTR(tone, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(tone, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute vol_attribute =
--	__ATTR(vol, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(vol, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- 
- static struct kobj_attribute delay_time_attribute =
--	__ATTR(delay_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(delay_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute direct_attribute =
--	__ATTR(direct, USER_RW, spk_var_show, spk_var_store);
-+	__ATTR(direct, S_IWUGO|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute full_time_attribute =
--	__ATTR(full_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(full_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute jiffy_delta_attribute =
--	__ATTR(jiffy_delta, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(jiffy_delta, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- static struct kobj_attribute trigger_time_attribute =
--	__ATTR(trigger_time, ROOT_W, spk_var_show, spk_var_store);
-+	__ATTR(trigger_time, S_IWUSR|S_IRUGO, spk_var_show, spk_var_store);
- 
- /*
-  * Create a group of attributes so that we can create and destroy them all
+Normally, the method we have used is to measure avg compr ratio
+and 
+
+> optimal zram size is.
+
+It's not a problem of zram. It seems dm-cache folks pass the decision
+to userspace because there would be various choices depends on policy
+dm-cache have supported.
+
+> 
+> Pre-swapcache compression would theoretically require no user
+> configuration, and the amount of compressed pages would be unlimited
+> (until there is no more room to store compressed pages).
+
+Could you elaborate it more?
+You mean pre-swapcache doesn't need real storage(mkswap + swapn)?
+
+> 
+> 2) Both zswap and zram (with dm-cache) write uncompressed pages to disk:
+> -zswap rejects any pages being sent to swap that don't compress well
+> enough, and they're passed on to the swap disk in uncompressed form.
+> Also, once zswap is full it starts uncompressing its old compressed
+> pages and writing them back to the swap disk.
+> -zram, with dm-cache, can pass pages on to the swap disk, but IIUC
+> those pages must be uncompressed first, and then written in compressed
+> form on disk.  (Please correct me here if that is wrong).
+
+I didn't look that code but I guess if dm-cache decides moving the page
+from zram device to real storage, it would decompress a page from zram
+and write it to storage without compressing. So it's not a compressed
+form.
+
+> 
+> A compressed cache that comes before the swap cache would be able to
+> push pages from its compressed storage to the swap disk, that contain
+> multiple compressed pages (and/or parts of compressed pages, if
+> overlapping page boundries).  I think that would be able to,
+> theoretically at least, improve overall read/write times from a
+> pre-compressed perspective, simply because less actual data would be
+> transferred.  Also, less actual swap disk space would be
+> used/required, which on systems with a very large amount of system
+> memory may be beneficial.
+
+I agree part of your claim but couldn't.
+If we write a page which includes several compressed pages, it surely
+enhance write bandwidth but we should give extra pages for *reading*
+a page. You might argue swap already have done it via page-cluster.
+But the difference is that we could control it by knob so we could
+reduce window size if swap readahead hit ratio isn't good.
+
+With your proposal, we couldn't control it so it would be likely to
+fail swap-read than old if memory pressure is severe because we 
+might need many pages to decompress just a page. For prevent,
+we need large buffer to decompress pages and we should limit the
+number of pages which put together a page, which can make system
+more predictable but it needs serialization of buffer so might hurt
+performance, too.
+
+> 
+> 
+> Additionally, a couple other random possible benefits:
+> -like zswap but unlike zram, a pre-swapcache compressed cache would be
+> able to select which pages to store compressed, either based on poor
+> compression results or some other criteria - possibly userspace could
+> madvise that certain pages were or weren't likely compressible.
+
+In your proposal, If it turns out poor compression after doing comp work,
+it would go to swap. It's same with zswap.
+
+Another suggestion on madvise is more general and I believe it could
+help zram/zswap as well as your proposal.
+
+It's already known problem and I suggested using mlock.
+If mlock is really big overhead for that, we might introduce another
+hint which just mark vma->vm_flags to *VMA_NOT_GOOD_COMPRESS*.
+In that case, mm layer could skip zswap and it might work with zram
+if there is support like BDI_CAP_SWAP_BACKED_INCOMPRAM.
+
+> -while zram and zswap are only able to compress and store pages that
+> are passed to them by zswapd or direct reclaim, a pre-swap compressed
+> cache wouldn't necessarily have to wait until the low watermark is
+> reached.
+
+I couldn't understand the benefit.
+Why should we compress memory before system is no memory pressure?
+
+> 
+> Any feedback would be greatly appreciated!
+
+Having said that, I'd like to have such feature(ie, copmressed-form writeout)
+for zram because zram supports zram-blk as well as zram-swap so zram-blk
+case could be no problem for memory-pressure so it would be happy to
+allocate multiple pages to store data when *read* happens and decompress
+a page into multiple pages.
+
+Thanks.
+
+-- 
+Kind regards,
+Minchan Kim
