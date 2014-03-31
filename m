@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbaCaIWQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 04:22:16 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:37244 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273AbaCaIWK (ORCPT
+	id S1753570AbaCaIYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 04:24:06 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:41793 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaCaIYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 04:22:10 -0400
+	Mon, 31 Mar 2014 04:24:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFcVECJsEp_s2V5=oK_UJahGRUpWYWMCxTMxqdpX+O0qebP41A@mail.gmail.com>
-References: <1395933906-2268-1-git-send-email-harinik@xilinx.com>
-	<CACRpkdbU35xG1QtagB+9e9vxvehf1UQFaF4PikJhsPNAMw=D1Q@mail.gmail.com>
-	<CAFcVECJsEp_s2V5=oK_UJahGRUpWYWMCxTMxqdpX+O0qebP41A@mail.gmail.com>
-Date: Mon, 31 Mar 2014 10:22:09 +0200
-Message-ID: <CACRpkdZEFsJubRVwCp6nTie7s7+DZOym6SWsA2ZynN_devi-2Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] GPIO: Add driver for Zynq GPIO controller
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Harini Katakam <harinikatakamlinux@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+In-Reply-To: <20140213162249.GT28112@sirena.org.uk>
+References: <1392059868-8782-1-git-send-email-arend@broadcom.com>
+	<52FC8CB3.4090305@gmail.com>
+	<52FCB571.4020904@broadcom.com>
+	<52FCBC1D.7050501@samsung.com>
+	<20140213162249.GT28112@sirena.org.uk>
+Date: Mon, 31 Mar 2014 10:24:00 +0200
+Message-ID: <CAPDyKFpU=nQAgfjMm6KNRAEKwChAx_SxFMC-pLbq8yis2mgB=Q@mail.gmail.com>
+Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mark Brown <broonie@kernel.org>, Tomasz Figa <t.figa@samsung.com>
+Cc: Arend van Spriel <arend@broadcom.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        michals@xilinx.com, Ulf Hansson <ulf.hansson@linaro.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chen-Yu Tsai <wens@csie.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 5:44 AM, Harini Katakam
-<harinikatakamlinux@gmail.com> wrote:
-> On Sat, Mar 29, 2014 at 3:20 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Thu, Mar 27, 2014 at 4:25 PM, Harini Katakam <harinik@xilinx.com> wrote:
-
->>> +/* Read/Write access to the GPIO PS registers */
->>> +static inline u32 zynq_gpio_readreg(void __iomem *offset)
->>> +{
->>> +       return readl_relaxed(offset);
->>> +}
->>> +
->>> +static inline void zynq_gpio_writereg(void __iomem *offset, u32 val)
->>> +{
->>> +       writel_relaxed(val, offset);
->>> +}
->>
->> I think this is unnecessary and confusing indirection.
->> Just use the readl_relaxed/writel_relaxed functions directly in
->> the code.
->>
+On 13 February 2014 17:22, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Feb 13, 2014 at 01:35:41PM +0100, Tomasz Figa wrote:
+>> On 13.02.2014 13:07, Arend van Spriel wrote:
+>> >On 02/13/2014 10:13 AM, Tomasz Figa wrote:
 >
-> This is just to be flexible.
-
-Define exactly what you mean with "flexible" in this context. I
-only see unnecessary overhead and hard-to-read code.
-
->> This is also pretty convoluted. Are you sure you don't want to
->> implement one gpiochip per bank instead? I guess the final "+1"
->> means there is actually one IRQ per bank even?
+>> >>The BCM43xx WLAN chips I used to work always have been controlled by a
+>> >>simple power enable GPIO of the chip itself. Has this changed in newer
+>> >>chips?
 >
-> There is only one IRQ for all four banks.
-
-OK I get it. Then it makes sense to have all banks registered as
-one device and the IRQ tied to this one device.
-
->>> +static const struct dev_pm_ops zynq_gpio_dev_pm_ops = {
->>> +       SET_SYSTEM_SLEEP_PM_OPS(zynq_gpio_suspend, zynq_gpio_resume)
->>> +       SET_RUNTIME_PM_OPS(zynq_gpio_runtime_suspend, zynq_gpio_runtime_resume,
->>> +                          zynq_gpio_idle)
->>> +};
->>
->> Is this runtime PM implementation aligned with Ulf Hansson's recent
->> new helpers to simplify suspend+runtime PM coexistance?
->>
+>> >>If you need to simply toggle a GPIO to control the power, you don't need
+>> >>to use the regulator API at all, controlling the GPIO directly.
 >
-> I'm sorry i just looked at them -
-> pm_runtime_force_suspend/resume are not used here.
+>> >Not sure I understand. Do you really mean 'chip' or 'wifi module' here.
+>> >The chip needs to be powered and for that it is hooked up to a
+>> >host/module provided GPIO (at least that is my understanding).
+>
+>> Your binding asks for a regulator, not a simple GPIO, which is all I
+>> believe you need for BCM43xx power handling.
+>
+>> Mark (added to Cc), could we get your opinion on this?
+>
+> If it's a GPIO connected directly to the device it should be using
+> gpiolib, the fact that it happens to have an effect on power rather than
+> (say) just being a reset isn't terribly relevant to anything outside the
+> driver.  If it's an external regulator that happens to be controlled
+> using a GPIO on the current system then a regulator is better since
+> another system might use a regulator with a different control interface.
 
-Sorry, I was more thinking of change
-717e5d458e3bfca495a38dca61c64f274c049e46
-"PM / Runtime: Implement the pm_generic_runtime functions for CONFIG_PM"
+>From an SDIO point of view, we need to find the corresponding OCR mask
+the mmc host driver supports. The OCR mask gives the voltage levels
+the host supports and it's being used during SDIO initialization while
+negotiating the voltage level with the SDIO card.
 
-Yours,
-Linus Walleij
+Using a gpio regulator would simplify here, since the driver don't
+need specific "SDIO hacks" but can use the mmc_regulator_get_supply()
+API, which calculates the OCR mask, based upon the regulator's
+supported voltages.
+
+Kind regards
+Ulf Hansson
