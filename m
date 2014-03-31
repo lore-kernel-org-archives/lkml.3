@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680AbaCaSXK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 14:23:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48497 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320AbaCaSXJ (ORCPT
+	id S1753837AbaCaSXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 14:23:24 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:41157 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713AbaCaSXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 14:23:09 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3] x86, mm: Probe memory block size for generic x86 64bit
-Date: Mon, 31 Mar 2014 11:24:33 -0700
-Message-Id: <1396290273-28677-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 31 Mar 2014 14:23:19 -0400
+Date: Mon, 31 Mar 2014 11:23:15 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] Input: pmic8xxx-pwrkey - Set sane default for debounce
+ time
+Message-ID: <20140331182315.GA9198@core.coreip.homeip.net>
+References: <1396289664-31893-1-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396289664-31893-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On system with 2TiB ram, current x86_64 have 128M as section size, and one
-memory_block only include one section. So will have 16400 entries under
-/sys/devices/system/memory/.
+On Mon, Mar 31, 2014 at 11:14:24AM -0700, Stephen Boyd wrote:
+> If the debounce time is 0 our usage of ilog2() later on in this
+> driver will cause undefined behavior. If CONFIG_OF=n this fact is
+> evident to the compiler, and it emits a call to ____ilog2_NaN()
+> which doesn't exist. Fix this by setting a sane default for
+> debounce.
+> 
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/input/misc/pmic8xxx-pwrkey.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+> index 1cb8fda7a166..27add04676e1 100644
+> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
+> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+> @@ -92,7 +92,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>  	bool pull_up;
+>  
+>  	if (of_property_read_u32(pdev->dev.of_node, "debounce", &kpd_delay))
+> -		kpd_delay = 0;
+> +		kpd_delay = 15625;
 
-Current code try to use block id to find block pointer in /sys
-for any section, and reuse that block pointer. that finding will take some time
-even after
-| commit 7c243c7168dcc1bc2081fc0494923cd7cc808fb6
-| Author: Russ Anderson <rja@sgi.com>
-| Date:   Mon Apr 29 15:07:59 2013 -0700
-|    mm: speedup in __early_pfn_to_nid
-that will skip the search in that case during booting up.
+What if somebody supplied 0 via DT? Can we check and return -EINVAL?
 
-So solution could be increase block size just like SGI UV system did.
-(harded code to 2g).
+>  
+>  	pull_up = of_property_read_bool(pdev->dev.of_node, "pull-up");
+>  
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
 
-This patch is trying to probe the block size to make it match mmio remap size.
-for example, Intel Nehalem later system will have memory range
-[0, TOML), [4g, TOMH]. If the memory hole is 2g and total is 128g, TOM
-will be 2g, and TOM2 will be 130g.
-We could use 2g as block size instead of default 128M.
-That will reduce number of entries in /sys/devices/system/memory/
-
-On system 6TiB system will reduce boot time 35 seconds.
-
--v2: don't probe it every time when /sys/../block_size_byte is showed...
--v3: update changelog.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/mm/init_64.c |   34 ++++++++++++++++++++++++++++++----
- 1 file changed, 30 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/init_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init_64.c
-+++ linux-2.6/arch/x86/mm/init_64.c
-@@ -1263,17 +1263,43 @@ const char *arch_vma_name(struct vm_area
- 	return NULL;
- }
- 
--#ifdef CONFIG_X86_UV
--unsigned long memory_block_size_bytes(void)
-+static unsigned long probe_memory_block_size(void)
- {
-+	/* start from 2g */
-+	unsigned long bz = 1UL<<31;
-+
-+#ifdef CONFIG_X86_UV
- 	if (is_uv_system()) {
- 		printk(KERN_INFO "UV: memory block size 2GB\n");
- 		return 2UL * 1024 * 1024 * 1024;
- 	}
--	return MIN_MEMORY_BLOCK_SIZE;
--}
- #endif
- 
-+	/* less than 64g installed */
-+	if ((max_pfn << PAGE_SHIFT) < (16UL << 32))
-+		return MIN_MEMORY_BLOCK_SIZE;
-+
-+	/* get the tail size */
-+	while (bz > MIN_MEMORY_BLOCK_SIZE) {
-+		if (!((max_pfn << PAGE_SHIFT) & (bz - 1)))
-+			break;
-+		bz >>= 1;
-+	}
-+
-+	printk(KERN_DEBUG "memory block size : %ldMB\n", bz >> 20);
-+
-+	return bz;
-+}
-+
-+static unsigned long memory_block_size_probed;
-+unsigned long memory_block_size_bytes(void)
-+{
-+	if (!memory_block_size_probed)
-+		memory_block_size_probed = probe_memory_block_size();
-+
-+	return memory_block_size_probed;
-+}
-+
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- /*
-  * Initialise the sparsemem vmemmap using huge-pages at the PMD level.
+-- 
+Dmitry
