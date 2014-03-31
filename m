@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaCaHaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 03:30:17 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:33614 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208AbaCaHaP (ORCPT
+	id S1753481AbaCaHbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 03:31:31 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:49559 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208AbaCaHb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 03:30:15 -0400
-Date: Mon, 31 Mar 2014 09:30:11 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86/UV: Set n_lshift based on GAM_GR_CONFIG MMR for UV3
-Message-ID: <20140331073011.GB2004@gmail.com>
-References: <20140320191354.GA30582@sgi.com>
- <20140321075416.GA23556@gmail.com>
- <20140321141649.GA14917@sgi.com>
+	Mon, 31 Mar 2014 03:31:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140321141649.GA14917@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.11.1403282217070.1571@knanqh.ubzr>
+References: <1396012949-6227-1-git-send-email-vincent.guittot@linaro.org> <alpine.LFD.2.11.1403282217070.1571@knanqh.ubzr>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 31 Mar 2014 09:31:09 +0200
+Message-ID: <CAKfTPtBpjxMeZawC-K6vgvQhpu4Pc2A-jL59XsnPDikEcVUdvQ@mail.gmail.com>
+Subject: Re: [RFC 0/4] sched: consolidation of cpu_power
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Dimitri Sivanich <sivanich@sgi.com> wrote:
-
-> On Fri, Mar 21, 2014 at 08:54:16AM +0100, Ingo Molnar wrote:
-> > Please use the customary changelog style we use in the kernel:
-> > 
-> >   " Current code does (A), this has a problem when (B).
-> >     We can improve this doing (C), because (D)."
-> > 
-> > (Of if it's a cleanup only with no functional effects then please 
-> > state it so in the title and changelog.)
-> >
->  
-> The value of n_lshift for UV is currently set based on the socket m_val.
-> 
-> For UV3, set the n_lshift value based on the GAM_GR_CONFIG MMR.  This will
-> allow bios to control the n_lshift value independent of the socket m_val.
-> Then n_lshift can be assigned a fixed value across a multi-partition system,
-> allowing for a fixed common global physical address format that is independent
-> of socket m_val.
-> 
-> Cleanup unneeded macros.
+On 29 March 2014 03:27, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Fri, 28 Mar 2014, Vincent Guittot wrote:
 >
-> Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-> ---
->  arch/x86/include/asm/uv/uv_hub.h   |   12 ---------
->  arch/x86/include/asm/uv/uv_mmrs.h  |   42 ++++++++++++++++++++++++++++++++-
->  arch/x86/kernel/apic/x2apic_uv_x.c |   15 +++++++++--
->  3 files changed, 54 insertions(+), 15 deletions(-)
-> 
-> Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
-> ===================================================================
-> --- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-> +++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
-> @@ -5,7 +5,7 @@
->   *
->   * SGI UV APIC functions (note: not an Intel compatible APIC)
->   *
-> - * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-> + * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
->   */
->  #include <linux/cpumask.h>
->  #include <linux/hardirq.h>
-> @@ -843,12 +843,14 @@ void uv_cpu_init(void)
->  void __init uv_system_init(void)
->  {
->  	union uvh_rh_gam_config_mmr_u  m_n_config;
-> +	union uv3h_gr0_gam_gr_config_u m_gr_config;
->  	union uvh_node_id_u node_id;
->  	unsigned long gnode_upper, lowmem_redir_base, lowmem_redir_size;
->  	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val;
->  	int gnode_extra, min_pnode = 999999, max_pnode = -1;
->  	unsigned long mmr_base, present, paddr;
->  	unsigned short pnode_mask;
-> +	unsigned char n_lshift;
->  	char *hub = (is_uv1_hub() ? "UV1" :
->  		    (is_uv2_hub() ? "UV2" :
->  				    "UV3"));
-> @@ -859,6 +861,14 @@ void __init uv_system_init(void)
->  	m_n_config.v = uv_read_local_mmr(UVH_RH_GAM_CONFIG_MMR );
->  	m_val = m_n_config.s.m_skt;
->  	n_val = m_n_config.s.n_skt;
-> +	if (is_uv1_hub())
-> +		n_lshift = m_val;
-> +	else if (is_uv2_hub())
-> +		n_lshift = m_val == 40 ? 40 : 39;
-> +	else {
-> +		m_gr_config.v = uv_read_local_mmr(UV3H_GR0_GAM_GR_CONFIG);
-> +		n_lshift = m_gr_config.s3.m_skt;
-> +	}
+>> Part of this patchset was previously part of the larger tasks packing patchset
+>> [1]. I have splitted the latter in 3 different patchsets (at least) to make the
+>> thing easier.
+>> -configuration of sched_domain topology [2]
+>> -update and consolidation of cpu_power (this patchset)
+>> -tasks packing algorithm
+>>
+>> SMT system is no more the only system that can have a CPUs with capacity that
+>> is different from the default value. We need to extend the use of
+>> cpu_power_orig to all kind of platform so the scheduler will have both the
+>> maximum capacity (cpu_power_orig/power_orig) and the current capacity
+>> (cpu_power/power) of CPUs and groups of the sched_domains.
+> [...]
+>
+> Wouldn't it make sense to have a patch in this series that performs some
+> s/power/capacity/ throughout the scheduler code before the other patches
+> are applied?  That would help getting consistent terminology and avoid
+> confusion before real power related metrics are eventually brought into
+> the scheduler.
 
-This too should be in a helper inline, uv_system_init() is too large 
-already.
+Fair point. I will add the changes in the next version.
 
-The asymmetric curly braces are also non-standard.
+Thanks
+Vincent
 
-Thanks,
-
-	Ingo
+>
+>
+> Nicolas
