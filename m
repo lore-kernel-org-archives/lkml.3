@@ -1,112 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaCaLkL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 07:40:11 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:21868 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaCaLkI (ORCPT
+	id S1752911AbaCaLkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 07:40:39 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:14475 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154AbaCaLkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 07:40:08 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-41-5339540ede1e
-Message-id: <53395408.9020709@samsung.com>
-Date: Mon, 31 Mar 2014 13:39:52 +0200
+	Mon, 31 Mar 2014 07:40:36 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-65-5339543118e8
+Message-id: <5339542A.50502@samsung.com>
+Date: Mon, 31 Mar 2014 13:40:26 +0200
 From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
  Thunderbird/24.3.0
 MIME-version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
-        grant.likely@linaro.org, mark.rutland@arm.com, galak@codeaurora.org,
-        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
-        m.szyprowski@samsung.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 2/2] clk: Add handling of clk parent and rate
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, t.figa@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, m.szyprowski@samsung.com, t-kristo@ti.com
+Subject: Re: [PATCH RFC v3 2/2] clk: Add handling of clk parent and rate
  assigned from DT
-References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
- <1393870975-21020-1-git-send-email-s.nawrocki@samsung.com>
- <5331664E.2050008@samsung.com> <20140325225446.5762.15937@quantum>
-In-reply-to: <20140325225446.5762.15937@quantum>
-Content-type: text/plain; charset=UTF-8
+References: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com>
+ <46532903.ghnH4Us8Zz@avalon> <53343D9C.6040605@samsung.com>
+ <5456863.skuFAcRA98@avalon>
+In-reply-to: <5456863.skuFAcRA98@avalon>
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t/xy7p8IZbBBj3bxCzmHznHatH/ZiGr
-	xYE/OxgtmhevZ7M42/SG3WLT42usFpd3zWGzuH2Z12LtkbvsFkuvX2SyeDrhIptF694j7BYz
-	Jr9ks1g/4zWLA5/HmnlrGD1amnvYPC739TJ5bFrVyeZx59oeNo/9c9ewe2xeUu/Rt2UVo8fn
-	TXIBnFFcNimpOZllqUX6dglcGQe3nmcqWChZsexNUgPjb+EuRk4OCQETiTMH2lghbDGJC/fW
-	s4HYQgJLGSV6Ttd1MXIB2Z8YJS59/cQOkuAV0JLofH+dEcRmEVCVaH3xkAnEZhMwlOg92gcW
-	FxWIkJg7cTMbRL2gxI/J91hAbBGBPIn2Wz3MIEOZBaYwSXx5OhGsSFggWuJb5zIWiG0nGCVW
-	bmoEm8opYCDRfGEfM4jNLKAuMWneIihbXmLzmrfMExgFZiFZMgtJ2SwkZQsYmVcxiqaWJhcU
-	J6XnGukVJ+YWl+al6yXn525ihETU1x2MS49ZHWIU4GBU4uHtmGgRLMSaWFZcmXuIUYKDWUmE
-	95u/ZbAQb0piZVVqUX58UWlOavEhRiYOTqkGRhHriMW35bjdDgq9XbQ8g70ldOVSvYnxW65M
-	aT9xX037cd62e9F8s2avfbBW7uq3P5wdUel6edynGtKO+oWrpKS9mVWkeWZ2N8uPzba3lQU6
-	7Q7Pu12o/+3ocxc2nflx/Prz0nTkr019IyUbKvWEL6Y64qdTxVzjNJaUP+x787yiU1Y/f/xM
-	R4mlOCPRUIu5qDgRAPmmmZeGAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e/4FV3DEMtgg4dHhCzmHznHatH/ZiGr
+	xYE/OxgtmhevZ7M42/SG3aJz4hJ2i02Pr7FaXN41h83i9mVei7VH7rJbLL1+kcni6YSLbBat
+	e4+wW8yY/JLNYsnTDjaL9TNeszgIeKyZt4bRo6W5h83jcl8vk8fsjpmsHptWdbJ53Lm2h81j
+	/9w17B6bl9R79G1Zxehx/MZ2Jo/Pm+QCuKO4bFJSczLLUov07RK4Mnb8TCxYqlGx4vBD9gbG
+	/3JdjJwcEgImEkvfP2CFsMUkLtxbz9bFyMUhJLCUUaL95nJGCOcTo8T763fZQap4BTQkVnVe
+	YgaxWQRUJTpe7mMCsdkEDCV6j/YxgtiiAhEScyduZoOoF5T4MfkeC4gtImAh0btoOthQZoEm
+	ZolXd7vBVgsLREusPPiFHWLbIkaJqS/ngyU4gbbdWdEJNolZQEdif+s0KFteYvOat8wTGAVm
+	IVkyC0nZLCRlCxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKExN6XHYyLj1kdYhTgYFTi
+	4X0w2SJYiDWxrLgy9xCjBAezkgjvN3/LYCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mi9rPbcs6
+	mHXc+a38Ftc1+3K69uvMfjUv60quwd+I+GI3g1RjCT7Oea3/kvui+6wsU1iXrpT3NNC1Ndn3
+	WvXjjw/RaXJhk+b2G3r49X/66FyXOW/JXXn5cxsbtzlrH030/8+neKprWdFJk4fOz6tDXqaV
+	Mc/a+bLi/I99ITsbt2WLW8YdujRBiaU4I9FQi7moOBEA9aUygJsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Hi Laurent,
 
-On 25/03/14 23:54, Mike Turquette wrote:
-> Quoting Sylwester Nawrocki (2014-03-25 04:19:42)
->> > On 03/03/14 19:22, Sylwester Nawrocki wrote:
-[...]
->>> > > diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt 
->>> > > b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->>> > > index 7c52c29..eb8d547 100644
->>> > > --- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
->>> > > +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->>> > > @@ -115,3 +115,26 @@ clock signal, and a UART.
->>> > >    ("pll" and "pll-switched").
->>> > >  * The UART has its baud clock connected the external oscillator and its
->>> > >    register clock connected to the PLL clock (the "pll-switched" signal)
->>> > > +
->>> > > +==Assigned clock parents and rates==
->>> > > +
->>> > > +Some platforms require static configuration of (parts of) the clock controller
->>> > > +often determined by the board design. Such a configuration can be specified in
->>> > > +a clock consumer node through clock-parents and clock-rates DT properties.
->>> > > +The former should contain list of parent clocks in form of phandle and clock
->>> > > +specifier pairs, the latter the list of assigned clock frequency values
->>> > > +(one cell each).
->>> > > +
->>> > > +    uart@a000 {
->>> > > +        compatible = "fsl,imx-uart";
->>> > > +        reg = <0xa000 0x1000>;
->>> > > +        ...
->>> > > +        clocks = <&clkcon 0>, <&clkcon 3>;
->>> > > +        clock-names = "baud", "mux";
->>> > > +
->>> > > +        clock-parents = <0>, <&pll 1>;
+On 28/03/14 17:49, Laurent Pinchart wrote:
+> On Thursday 27 March 2014 16:02:52 Sylwester Nawrocki wrote:
+>> > On 27/03/14 15:08, Laurent Pinchart wrote:
+>>> > > On Thursday 27 March 2014 14:57:56 Sylwester Nawrocki wrote:
+>>>> > >> On 27/03/14 14:24, Laurent Pinchart wrote:
+>>>>> > >>> On Thursday 27 March 2014 13:16:19 Sylwester Nawrocki wrote:
+>>>>>> > >>>> This function adds a helper function to configure clock parents and
+>>>>>> > >>>> rates as specified in clock-parents, clock-rates DT properties for a
+>>>>>> > >>>> consumer device and a call to it before driver is bound to a device.
+>>>>>> > >>>> 
+>>>>>> > >>>> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>>>>>> > >>>> ---
+>>>> > >> 
+>>>> > >> [...]
+>>>> > >> 
+>>>>>> > >>>>  .../devicetree/bindings/clock/clock-bindings.txt   |   26 ++++++
+>>>>>> > >>>>  drivers/base/dd.c                                  |    7 ++
+>>>>>> > >>>>  drivers/clk/Makefile                               |    1 +
+>>>>>> > >>>>  drivers/clk/clk-conf.c                             |   87 ++++++++++++
+>>>>>> > >>>>  drivers/clk/clk.c                                  |   10 ++-
+>>>>>> > >>>>  include/linux/clk/clk-conf.h                       |   19 +++++
+>>>>>> > >>>>  6 files changed, 149 insertions(+), 1 deletion(-)
+>>>>>> > >>>>  create mode 100644 drivers/clk/clk-conf.c
+>>>>>> > >>>>  create mode 100644 include/linux/clk/clk-conf.h
+>>>>>> > >>>> 
+>>>>>> > >>>> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>>>>>> > >>>> b/Documentation/devicetree/bindings/clock/clock-bindings.txt index
+>>>>>> > >>>> 7c52c29..b452f80 100644
+>>>>>> > >>>> --- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>>>>>> > >>>> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>>>>>> > >>>> @@ -115,3 +115,29 @@ clock signal, and a UART.
+>>>>>> > >>>>    ("pll" and "pll-switched").
+>>>>>> > >>>>  
+>>>>>> > >>>>  * The UART has its baud clock connected the external oscillator and
+>>>>>> > >>>>    its register clock connected to the PLL clock (the "pll-switched"
+>>>>>> > >>>>    signal)
+>>>>>> > >>>> 
+>>>>>> > >>>> +
+>>>>>> > >>>> +==Assigned clock parents and rates==
+>>>>>> > >>>> +
+>>>>>> > >>>> +Some platforms require static initial configuration of parts of the
+>>>>>> > >>>> clocks
+>>>>>> > >>>> +controller. Such a configuration can be specified in a clock consumer
+>>>>>> > >>>> node
+>>>>>> > >>>> +through clock-parents and clock-rates DT properties. The former should
+>>>>>> > >>>> contain
+>>>>>> > >>>> +a list of parent clocks in form of phandle and clock specifier pairs,
+>>>>>> > >>>> the
+>>>>>> > >>>> +latter the list of assigned clock frequency values (one cell each).
+>>>>>> > >>>> +
+>>>>>> > >>>> +    uart@a000 {
+>>>>>> > >>>> +        compatible = "fsl,imx-uart";
+>>>>>> > >>>> +        reg = <0xa000 0x1000>;
+>>>>>> > >>>> +        ...
+>>>>>> > >>>> +        clocks = <&clkcon 0>, <&clkcon 3>;
+>>>>>> > >>>> +        clock-names = "baud", "mux";
+>>>>>> > >>>> +
+>>>>>> > >>>> +        clock-parents = <0>, <&pll 1>;
+>>>>>> > >>>> +        clock-rates = <460800>;
+>>>>>> > >>>> +    };
+>>>>>> > >>>> +
+>>>>>> > >>>> +In this example the pll is set as parent of "mux" clock and frequency
+>>>>>> > >>>> of "baud"
+>>>>>> > >>>> +clock is specified as 460800 Hz.
+>>>>> > >>> 
+>>>>> > >>> I'm curious, what should happen when two devices have conflicting
+>>>>> > >>> requirements ? If a different device required the <&clkcon 3> parent to
+>>>>> > >>> be set to <&pll 2> for instance, who should win ? Shouldn't a warning be
+>>>>> > >>> printed ?
+>>>> > >> 
+>>>> > >> In general, the assumption is that the <&clkcon 3> clock would be used
+>>>> > >> only by the uart@a000 device.
+>>> > > 
+>>> > > OK. Removing the problem is a simple way to fix it :-) What about stating
+>>> > > this explicitly in the documentation then ? Maybe by prefixing your
+>>> > > proposed explanation below with something like
+>>> > > 
+>>> > > "Configuring a clock parent and rate through the device node that uses the
+>>> > > clock is only supported for clocks that have a single user."
 >> > 
->> > I have some doubts here, i.e. the order in which clocks are being 
->> > configured may be important in some cases. Should the binding then be
->> > specifying that the clocks will be configured in a sequence exactly 
->> > as listed in the clock-parents property ?
+>> > Looks good, we could add it. Or perhaps something like:
+>> > 
+>> > "Configuring a clock parent and rate through the device node that uses the
+>> >  clock should be only done for clocks that have a single user. If a clock
+>> >  is shared and conflicting parent or rate configuration is specified in
+>> >  multiple consumer nodes a resulting configuration is undefined." ?
+>> > 
+>> > Not sure if it is acceptable to inject such an unpredictability to the
+>> > kernel from DT though. Might be more reasonable to go with a clarification
+>> > as you proposed.
 >
-> That's a good point, and I think we should re-examine the role of a DT
-> binding for this purpose. From my limited experience with DT, it seems
-> to be really bad at anything involving sequencing. It doesn't give us
-> function pointers/callbacks in the way that the old board files used to.
->
-> So I think the binding you proposed is still a good idea, but only for
-> the very simple case. If your platform has some detailed integration
-> requirements that have corner cases like you describe below, then this
-> DT binding might not be a good place to put the info.
+> I would go further and forbid it.
 > 
-> A platform that provides its own pm runtime backend could neatly manage
-> this by having a call to pm_runtime_get deal with these integration
-> details such that the driver does not have to be aware of them. (caveat:
-> that assumes in the example below that the only thing you want to do is
-> set up your clocks once and then never touch them again)
+> "Configuring a clock parent and rate through the device node that uses the
+> clock can be done only for clocks that have a single user. Specifying 
+> conflicting parent or rate configuration in multiple consumer nodes for a 
+> shared clock is forbidden."
 
-This sounds reasonable, my impression was also that devicetree might be 
-not the best place to put such a sequencing information.
-
-We would just provide a one-time configuration data, without an indication 
-of how the configuration should be performed when there are multiple 
-clocks listed. As an usual DT practice the order of configuration wouldn't
-be defined by the binding.
+Sounds good to me, I'll add it in next version of the patch. Thanks.
 
 --
 Regards,
