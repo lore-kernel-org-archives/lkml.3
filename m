@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026AbaCaNmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:42:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46249 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617AbaCaNme (ORCPT
+	id S1753988AbaCaNYK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:24:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35669 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813AbaCaNYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:42:34 -0400
-Date: Mon, 31 Mar 2014 16:42:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Denis Pithon <denis.pithon@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, khoroshilov@ispras.ru
-Subject: Re: [PATCH] staging/wlan-ng fix small coding style issue
-Message-ID: <20140331134227.GP6991@mwanda>
-References: <1396271603-12142-1-git-send-email-denis.pithon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396271603-12142-1-git-send-email-denis.pithon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 31 Mar 2014 09:24:08 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 33/71] mac80211: clear sequence/fragment number in QoS-null frames
+Date: Mon, 31 Mar 2014 14:22:39 +0100
+Message-Id: <1396272197-13394-34-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 03:13:23PM +0200, Denis Pithon wrote:
-> Signed-off-by: Denis Pithon <denis.pithon@gmail.com>
+3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
 
-Changeglog sucks.  It doesn't even exist, actually.  What coding style
-issue did you fix?
+------------------
 
-> ---
->  drivers/staging/wlan-ng/prism2usb.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
-> index 4739c14..ccb2c2e 100644
-> --- a/drivers/staging/wlan-ng/prism2usb.c
-> +++ b/drivers/staging/wlan-ng/prism2usb.c
-> @@ -293,6 +293,7 @@ static int prism2sta_suspend(struct usb_interface *interface,
->  	hfa384x_t *hw = NULL;
->  	wlandevice_t *wlandev;
->  	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
-> +
->  	if (!wlandev)
->  		return -ENODEV;
+From: Johannes Berg <johannes.berg@intel.com>
 
-The blank line should go be one line earlier.
+commit 864a6040f395464003af8dd0d8ca86fed19866d4 upstream.
 
-	wlandevice_t *wlandev;
-	[blank]
-	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
+Avoid leaking data by sending uninitialized memory and setting an
+invalid (non-zero) fragment number (the sequence number is ignored
+anyway) by setting the seq_ctrl field to zero.
 
->  
-> @@ -315,6 +316,7 @@ static int prism2sta_resume(struct usb_interface *interface)
->  	hfa384x_t *hw = NULL;
->  	wlandevice_t *wlandev;
->  	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
-> +
+Fixes: 3f52b7e328c5 ("mac80211: mesh power save basics")
+Fixes: ce662b44ce22 ("mac80211: send (QoS) Null if no buffered frames")
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ luis: backported to 3.5:
+  - Dropped changes to mps_qos_null_get() as 3f52b7e328c5 ("mac80211: mesh
+    power save basics") is not present in 3.5 kernel ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/mac80211/sta_info.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Same.
-
->  	if (!wlandev)
->  		return -ENODEV;
-
-regards,
-dan carpenter
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index 55975bd..15162a0 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -1049,6 +1049,7 @@ static void ieee80211_send_null_response(struct ieee80211_sub_if_data *sdata,
+ 	memcpy(nullfunc->addr1, sta->sta.addr, ETH_ALEN);
+ 	memcpy(nullfunc->addr2, sdata->vif.addr, ETH_ALEN);
+ 	memcpy(nullfunc->addr3, sdata->vif.addr, ETH_ALEN);
++	nullfunc->seq_ctrl = 0;
+ 
+ 	skb->priority = tid;
+ 	skb_set_queue_mapping(skb, ieee802_1d_to_ac[tid]);
+-- 
+1.9.1
 
