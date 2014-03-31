@@ -1,46 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaCaXgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 19:36:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23148 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032AbaCaXgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 19:36:02 -0400
-Date: Mon, 31 Mar 2014 19:35:52 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140331233552.GB30019@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
+	id S1751855AbaCaXhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 19:37:54 -0400
+Received: from oms-dd01.mx.aol.com ([205.188.169.14]:64157 "EHLO
+	oms-dd01.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824AbaCaXht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 19:37:49 -0400
+Message-ID: <5339FC31.3040601@netscape.net>
+Date: Tue, 01 Apr 2014 01:37:21 +0200
+From: Manuel Krause <manuelkrause@netscape.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140331232220.GP4284@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, rui.zhang@intel.com
+CC: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        lm-sensors@lm-sensors.org
+Subject: Re: 3.13.?: Strange / dangerous fan policy...
+References: <531A1EEE.9090101@netscape.net> <531B3E4C.2040105@roeck-us.net> <531BB171.1060208@netscape.net> <2833205.f1U4jaAo8e@vostro.rjw.lan> <531D1A3A.4040500@netscape.net> <531F8735.1010203@netscape.net> <532B4DC5.4010705@netscape.net>
+In-Reply-To: <532B4DC5.4010705@netscape.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-REROUTE: YES
+x-aol-sid: 3039ac1afd4d5339fc4b7d54
+X-AOL-IP: 93.218.245.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 04:22:21PM -0700, Paul E. McKenney wrote:
- > On Mon, Mar 31, 2014 at 07:02:41PM -0400, Dave Jones wrote:
- > > You can tell the merge window is open, because I'm back to breaking RCU.
- > > 
- > > ... 
- > > [ 3558.120739] INFO: Stall ended before state dump start
- > > 
- > > at that point, userspace stopped responding. cursor on console was blinking,
- > > but I couldn't even switch tty's, or sysrq dump.
- > > 
- > > rc8 was fine, so this is todays rcu changes.
- > 
- > New one on me!  Any chance of a .config file?
+On 2014-03-20 21:21, Manuel Krause wrote:
+> On 2014-03-11 22:59, Manuel Krause wrote:
+>> On 2014-03-10 02:49, Manuel Krause wrote:
+>>> On 2014-03-09 18:58, Rafael J. Wysocki wrote:
+>>>> On Sunday, March 09, 2014 01:10:25 AM Manuel Krause wrote:
+>>>>> On 2014-03-08 16:59, Guenter Roeck wrote:
+>>>>>> On 03/08/2014 03:08 AM, Jean Delvare wrote:
+>>>>>>> On Fri, 7 Mar 2014 14:52:30 -0800, Guenter Roeck wrote:
+>>>>>>>> On Fri, Mar 07, 2014 at 11:04:29PM +0100, Manuel Krause
+>>>>>>>> wrote:
+> [SNIP]
+>
+> Long time no reply from you... Have I overseen a unwritten
+> convention? Or were my charts that unusable for your analysis/work?
+>
+> Two days ago, I tried the 3.14.0-rc7-vanilla. And the problem
+> persists. "Strange / dangerous fan policy..."
+>
+> Since kernel 3.13.6 I've managed to 'fix' the potential
+> overheating problem by manually issuing a:
+> "echo 1 > /sys/class/thermal/cooling_device3/cur_state" *)
+> _before_ obviously critical temperatures occur. Remind: This
+> particular setting may only work for my system! ...and keeps
+> working for 3.14-rc.
+>
+> In the following I'd like to present you a modified output of my
+> /sys/class/thermal, that I've written a script for (for my
+> system), that shows the results in the way of
+> linux/Documentation/thermal/sysfs-api.txt, point 3:
+> {I've uploded the files to pastebin, to not swamp you and the
+> lists with so many lines of logs.}
+>
+> For the last good kernel -- 3.12.14 -- in-use:
+>   http://pastebin.com/HL1PNcda
+> For my first bad kernel revision 3.13 -- at critical temp:
+>   http://pastebin.com/98hgf1a9
+> For the last bad kernel -- 3.14.0-rc7 -- at critical temp:
+>   http://pastebin.com/MuTwTnjD
+> For the last bad kernel -- 3.14.0-rc7 -- after issuing the
+>   *) command:
+>   http://pastebin.com/2peda54z
+>
+> Please, have a look at them! And maybe, give me hints on how I
+> can help you to further debug this issue, as my manual method
+> works but it's annoying.
+>
+> And, PLEASE CC: ME, as I'm not on the lists. Or lead this
+> Email-thread to someone in charge.
+>
+> Thank you for your work && best regards,
+> Manuel Krause
+>
 
-http://paste.fedoraproject.org/90449/30888213/raw/
+This is still BUG 71711
+https://bugzilla.kernel.org/show_bug.cgi?id=71711
 
-	Dave
+3.12.15 works very well
+3.13.7 fails
+3.14.0-rc8 fails
+
+I've tried the tmon tool, now, too. Nice eyecandy and for monitoring!
+
+I've tried to revert all "thermal" related patches from 
+3.12.14->3.13.7 from 3.13.7. But they don't seem to matter. (Even 
+if I apply the vice-versa patch to 3.12.15.)
+
+So "thermal" is out?
+
+For the failing kernels: Not any reached trip point (active) 
+triggers ONE fan action!
+
+Next would be ACPI, to be investigated,
+
+THX for this audience,
+Manuel Krause
 
