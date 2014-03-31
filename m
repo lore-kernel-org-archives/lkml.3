@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaCaHix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 03:38:53 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:64476 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394AbaCaHiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 03:38:51 -0400
-X-IronPort-AV: E=Sophos;i="4.97,763,1389772800"; 
-   d="scan'208";a="22426385"
-Message-ID: <53391B89.7010304@broadcom.com>
-Date: Mon, 31 Mar 2014 09:38:49 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Denys Vlasenko <dvlasenk@redhat.com>, Franky Lin <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 1/4] brcm80211: deinline brcmf_chip_cr4_enterdl, save
- 440 bytes
-References: <1396215079-7541-1-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1396215079-7541-1-git-send-email-dvlasenk@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753371AbaCaHlw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 03:41:52 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:55588 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562AbaCaHlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 03:41:49 -0400
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-kbuild@vger.kernel.org, Masahiro Yamada <yamada.m@jp.panasonic.com>
+Subject: [PATCH] kbuild: create a build directory automatically for out-of-tree build
+Date: Mon, 31 Mar 2014 16:41:36 +0900
+Message-Id: <1396251696-14815-1-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/03/14 23:31, Denys Vlasenko wrote:
-> Automated script discovered that without forced inlining,
-> gcc-4.7 generates smaller code for this function.
->
-> There is no need to declare static functions inline anyway:
-> nowadays gcc detects single-callsite static functions
-> which benefit from inlining.
+Kbuild supports saving output files in a separate directory.
+But the build directory must be created beforehand. For example,
 
-These patches look awfully familiar. I tend to object, but I don't know 
-the details of this automated script. Does it only look for code size. 
-How about execution time or is this only compile tested? The other thing 
-is that you seem to rely on a specific gcc version. What about pre-4.7? 
-How about different architectures. Was this determined on x86, arm, 
-sparc, mips. All these questions make me say 'nay'.
+  $ mkdir -p dir/to/store/output/files
+  $ make O=dir/to/store/output/files defconfig
 
-Regards,
-Arend
+Creating a build directory automatically would be useful.
 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> ---
->   drivers/net/wireless/brcm80211/brcmfmac/chip.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/chip.c b/drivers/net/wireless/brcm80211/brcmfmac/chip.c
-> index df130ef..d020b0b 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/chip.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/chip.c
-> @@ -933,7 +933,7 @@ static bool brcmf_chip_cm3_exitdl(struct brcmf_chip_priv *chip)
->   	return true;
->   }
->
-> -static inline void
-> +static void
->   brcmf_chip_cr4_enterdl(struct brcmf_chip_priv *chip)
->   {
->   	struct brcmf_core *core;
->
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+---
+ Makefile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 575e1f8..35b5b7e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -120,9 +120,10 @@ ifneq ($(KBUILD_OUTPUT),)
+ # Invoke a second make in the output directory, passing relevant variables
+ # check that the output directory actually exists
+ saved-output := $(KBUILD_OUTPUT)
+-KBUILD_OUTPUT := $(shell cd $(KBUILD_OUTPUT) && /bin/pwd)
++KBUILD_OUTPUT := $(shell mkdir -p $(KBUILD_OUTPUT) && cd $(KBUILD_OUTPUT) \
++								&& /bin/pwd)
+ $(if $(KBUILD_OUTPUT),, \
+-     $(error output directory "$(saved-output)" does not exist))
++     $(error failed to create output directory "$(saved-output)"))
+ 
+ PHONY += $(MAKECMDGOALS) sub-make
+ 
+-- 
+1.8.3.2
 
