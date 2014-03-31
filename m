@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaCaNnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:43:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35657 "EHLO
+	id S1755090AbaCaNnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:43:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35659 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911AbaCaNYG (ORCPT
+	with ESMTP id S1753920AbaCaNYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Mar 2014 09:24:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Chan <mchan@broadcom.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 30/71] tg3: Don't check undefined error bits in RXBD
-Date: Mon, 31 Mar 2014 14:22:36 +0100
-Message-Id: <1396272197-13394-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 29/71] virtio-net: alloc big buffers also when guest can receive UFO
+Date: Mon, 31 Mar 2014 14:22:35 +0100
+Message-Id: <1396272197-13394-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit d7b95315cc7f441418845a165ee56df723941487 upstream.
+commit 0e7ede80d929ff0f830c44a543daa1acd590c749 upstream.
 
-Redefine the RXD_ERR_MASK to include only relevant error bits. This fixes
-a customer reported issue of randomly dropping packets on the 5719.
+We should alloc big buffers also when guest can receive UFO
+packets to let the big packets fit into guest rx buffer.
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
+(virtio-net: Allow UFO feature to be set and advertised.)
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 3 +--
- drivers/net/ethernet/broadcom/tg3.h | 6 +++++-
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/net/virtio_net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 6dcd72a..8cdd91b 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -5923,8 +5923,7 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 858a8da..af3411f 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1124,7 +1124,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+ 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
+ 		vi->big_packets = true;
  
- 		work_mask |= opaque_key;
- 
--		if ((desc->err_vlan & RXD_ERR_MASK) != 0 &&
--		    (desc->err_vlan != RXD_ERR_ODD_NIBBLE_RCVD_MII)) {
-+		if (desc->err_vlan & RXD_ERR_MASK) {
- 		drop_it:
- 			tg3_recycle_rx(tnapi, tpr, opaque_key,
- 				       desc_idx, *post_ptr);
-diff --git a/drivers/net/ethernet/broadcom/tg3.h b/drivers/net/ethernet/broadcom/tg3.h
-index 622bbaf..6639a63 100644
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -2489,7 +2489,11 @@ struct tg3_rx_buffer_desc {
- #define RXD_ERR_TOO_SMALL		0x00400000
- #define RXD_ERR_NO_RESOURCES		0x00800000
- #define RXD_ERR_HUGE_FRAME		0x01000000
--#define RXD_ERR_MASK			0xffff0000
-+
-+#define RXD_ERR_MASK	(RXD_ERR_BAD_CRC | RXD_ERR_COLLISION |		\
-+			 RXD_ERR_LINK_LOST | RXD_ERR_PHY_DECODE |	\
-+			 RXD_ERR_MAC_ABRT | RXD_ERR_TOO_SMALL |		\
-+			 RXD_ERR_NO_RESOURCES | RXD_ERR_HUGE_FRAME)
- 
- 	u32				reserved;
- 	u32				opaque;
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
 -- 
 1.9.1
 
