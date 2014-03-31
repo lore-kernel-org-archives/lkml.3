@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaCaU7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:59:46 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49673 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbaCaU7o (ORCPT
+	id S1751755AbaCaVBx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 17:01:53 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:24460 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaCaVBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:59:44 -0400
+	Mon, 31 Mar 2014 17:01:49 -0400
+X-IronPort-AV: E=Sophos;i="4.97,767,1389772800"; 
+   d="scan'208";a="22525923"
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>
+CC: Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: Delay the card_event callback into the mmc_rescan worker
+Date: Mon, 31 Mar 2014 14:01:45 -0700
+Message-ID: <1396299705-29268-1-git-send-email-markus.mayer@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CA+BWVUSS7VdiswgjXEMYHCed1xzz4ubCi89t7SF-1qG5=GzDUA@mail.gmail.com>
-References: <1396286830-2795-1-git-send-email-benjamin.tissoires@redhat.com>
- <1396286830-2795-3-git-send-email-benjamin.tissoires@redhat.com> <CA+BWVUSS7VdiswgjXEMYHCed1xzz4ubCi89t7SF-1qG5=GzDUA@mail.gmail.com>
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
-Date: Mon, 31 Mar 2014 15:59:23 -0500
-Message-ID: <CA+BWVUSk1NEgghHqvbVPpEXZ4BwajPGw-uM84ceyZqdnQhJ15Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] HID: core: do not scan constant input report
-To: linux-kernel@vger.kernel.org, linux-input <linux-input@vger.kernel.org>,
-        derya.kiran@yahoo.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested on Surface Pro 2 Type Cover 2 on kernel 3.15/multitouch rebased
-on 3.14. The device is now handled by hid-generic and hid-sensor-hub
-as expected.
-There is a newer UEFI and touch cover firmware that I have not tried,
-as you need windows update to get drivers for this device. I will try
-and update my device to make sure we don't need any
-quirks.
+This change removes the callback from atomic context which it doesn't
+need to be in, and puts it in line with the debounced rescan.
 
-> On Mon, Mar 31, 2014 at 12:27 PM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> The Microsoft Surface Type/Touch Cover 2 is a fancy device which advertised
->> itself as a multitouch device but with constant input reports.
->> This way, hid_scan_report() gives the group MULTITOUCH to it, but
->> hid-multitouch can not handle it due to the constant collection ignored
->> by hid-input.
->>
->> To prevent such crap in the future, and while we do not fix this particular
->> device, make the scan_report coherent with hid-input.c, and ignore constant
->> input reports.
->>
->> CC: stable@vger.kernel.org # 3.12+
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>  drivers/hid/hid-core.c | 3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->> index bb5c494..8a5384c 100644
->> --- a/drivers/hid/hid-core.c
->> +++ b/drivers/hid/hid-core.c
->> @@ -718,6 +718,9 @@ static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
->>         case HID_MAIN_ITEM_TAG_END_COLLECTION:
->>                 break;
->>         case HID_MAIN_ITEM_TAG_INPUT:
->> +               /* ignore constant inputs, they will be ignored by hid-input */
->> +               if (data & HID_MAIN_ITEM_CONSTANT)
->> +                       break;
->>                 for (i = 0; i < parser->local.usage_index; i++)
->>                         hid_scan_input_usage(parser, parser->local.usage[i]);
->>                 break;
->> --
->> 1.9.0
->>
+This code is based on these e-mail threads with Christian Daudt:
+
+  https://lkml.org/lkml/2013/8/19/539
+  https://lkml.org/lkml/2014/3/19/79
+
+Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+---
+ drivers/mmc/core/core.c      |    5 +++++
+ drivers/mmc/core/slot-gpio.c |    4 +---
+ include/linux/mmc/host.h     |    2 ++
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 098374b..ff7fd2e 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -2421,6 +2421,11 @@ void mmc_rescan(struct work_struct *work)
+ 		container_of(work, struct mmc_host, detect.work);
+ 	int i;
+ 
++	if (host->trigger_card_event && host->ops->card_event) {
++		host->ops->card_event(host);
++		host->trigger_card_event = false;
++	}
++
+ 	if (host->rescan_disable)
+ 		return;
+ 
+diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+index 46596b71..4029c85 100644
+--- a/drivers/mmc/core/slot-gpio.c
++++ b/drivers/mmc/core/slot-gpio.c
+@@ -29,9 +29,7 @@ static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
+ 	/* Schedule a card detection after a debounce timeout */
+ 	struct mmc_host *host = dev_id;
+ 
+-	if (host->ops->card_event)
+-		host->ops->card_event(host);
+-
++	host->trigger_card_event = true;
+ 	mmc_detect_change(host, msecs_to_jiffies(200));
+ 
+ 	return IRQ_HANDLED;
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 99f5709..63b983b 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -322,6 +322,8 @@ struct mmc_host {
+ 	int			rescan_disable;	/* disable card detection */
+ 	int			rescan_entered;	/* used with nonremovable devices */
+ 
++	bool			trigger_card_event; /* card_event necessary */
++
+ 	struct mmc_card		*card;		/* device attached to this host */
+ 
+ 	wait_queue_head_t	wq;
+-- 
+1.7.9.5
+
