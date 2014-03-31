@@ -1,186 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaCaOQF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 10:16:05 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:7978 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710AbaCaOQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 10:16:03 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org, vvs@parallels.com,
-        Andrey Vagin <avagin@openvz.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] [RFC] netfilter: ct: flush net_gre->keymap_list only in nf_conntrack_proto_gre
-Date: Mon, 31 Mar 2014 18:14:18 +0400
-Message-Id: <1396275258-19015-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.5.3
+	id S1752904AbaCaOV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 10:21:58 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:44821 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaCaOV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 10:21:57 -0400
+Date: Mon, 31 Mar 2014 10:21:53 -0400
+From: Conrad Meyer <cemeyer@uw.edu>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Conrad Meyer <cemeyer@uw.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] fs: FAT: Add support for DOS 1.x formatted volumes
+Message-ID: <20140331102153.476da7b1@m>
+In-Reply-To: <87ioqufom3.fsf@devron.myhome.or.jp>
+References: <1396120235-27844-1-git-send-email-cse.cem@gmail.com>
+	<87ioqufom3.fsf@devron.myhome.or.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nf_ct_gre_keymap_flush() removes a nf_ct_gre_keymap object from
-net_gre->keymap_list and frees the object. But it doesn't clean
-a reference on this object from ct_pptp_info->keymap[dir].
-Then nf_ct_gre_keymap_destroy() may release the same object again.
+On Mon, 31 Mar 2014 23:07:32 +0900
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> wrote:
 
-So nf_ct_gre_keymap_flush() can be called only when we are sure that
-when nf_ct_gre_keymap_destroy will not be called.
+> Conrad Meyer <cemeyer@uw.edu> writes:
+> 
+> > +static void fat_update_archaic_boot_sector(struct
+> > super_block *sb,
+> > +	struct fat_boot_sector *b)
+> > +{
+> > +	struct fat_floppy_defaults *di;
+> > +	sector_t bd_sects;
+> > +
+> > +	/* 16-bit DOS 1.x reliably wrote bootstrap
+> > short-jmp code */
+> > +	if (b->ignored[0] != 0xeb || b->ignored[2] !=
+> > 0x90)
+> > +		return;
+> > +
+> > +	/*
+> > +	 * If any value in this region is non-zero,
+> > don't assume it is archaic
+> > +	 * DOS.
+> > +	 */
+> > +	if (get_unaligned_le16(&b->sector_size) != 0 ||
+> > b->sec_per_clus != 0 ||
+> > +		b->reserved != 0 || b->fats != 0 ||
+> > +		get_unaligned_le16(&b->dir_entries) != 0
+> > ||
+> > +		get_unaligned_le16(&b->sectors) != 0 ||
+> > b->media != 0 ||
+> > +		b->fat_length != 0 || b->secs_track != 0
+> > || b->heads != 0 ||
+> > +		b->secs_track != 0 || b->heads != 0)
+> > +		return;
+> 
+> Probably, too weak detection to use by default. So, how
+> about to use mount option to enable this?
+> 
+> And only if user asked to enable explicitly by mount
+> option, allow this format.
 
-nf_ct_gre_keymap is created by nf_ct_gre_keymap_add() and the right way
-to destroy it is to call nf_ct_gre_keymap_destroy().
+Okay. Do you have a preference for option name? "archaicdos",
+"dos1x", "guessbpb", other?
 
-This patch marks nf_ct_gre_keymap_flush() as static, so this patch can
-break compilation of third party modules, which use
-nf_ct_gre_keymap_flush. I'm not sure this is the right way to deprecate
-this function.
+> > +	bd_sects =
+> > part_nr_sects_read(sb->s_bdev->bd_part);
+> > +	for (di = floppy_defaults; di->nr_sectors; di++)
+> > {
+> > +		if (di->nr_sectors == bd_sects)
+> > +			break;
+> > +	}
+> > +	if (di->nr_sectors == 0) {
+> > +		fat_msg(sb, KERN_WARNING,
+> > +			"DOS volume lacks BPB and isn't
+> > a recognized floppy size (%ld sectors)",
+> > +			(long)bd_sects);
+> > +		return;
+> > +	}
+> > +
+> > +	fat_msg(sb, KERN_INFO,
+> > +		"Volume lacks BPB but looks like archaic
+> > DOS; assuming default BPB values"); +
+> > +	b->sec_per_clus = di->sec_per_clus;
+> > +	put_unaligned_le16(di->dir_entries,
+> > &b->dir_entries);
+> > +	b->media = di->media;
+> > +	b->fat_length = cpu_to_le16(di->fat_length);
+> > +	put_unaligned_le16(SECTOR_SIZE, &b->sector_size);
+> > +	b->reserved = cpu_to_le16(1);
+> > +	b->fats = 2;
+> > +	put_unaligned_le16(bd_sects, &b->sectors);
+> > +}
+> > +
+> > +/*
+> >   * Read the super block of an MS-DOS FS.
+> >   */
+> >  int fat_fill_super(struct super_block *sb, void *data,
+> > int silent, int isvfat, @@ -1297,6 +1387,8 @@ int
+> > fat_fill_super(struct super_block *sb, void *data, int
+> > silent, int isvfat, } 
+> >  	b = (struct fat_boot_sector *) bh->b_data;
+> > +	fat_update_archaic_boot_sector(sb, b);
+> 
+> This would be better to set sbi->* directly, not via
+> modified BPB.
 
-[  226.540793] general protection fault: 0000 [#1] SMP
-[  226.541750] Modules linked in: nf_nat_pptp nf_nat_proto_gre
-nf_conntrack_pptp nf_conntrack_proto_gre ip_gre ip_tunnel gre
-ppp_deflate bsd_comp ppp_async crc_ccitt ppp_generic slhc xt_nat
-iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat
-nf_conntrack veth tun bridge stp llc ppdev microcode joydev pcspkr
-serio_raw virtio_console virtio_balloon floppy parport_pc parport
-pvpanic i2c_piix4 virtio_net drm_kms_helper ttm ata_generic virtio_pci
-virtio_ring virtio drm i2c_core pata_acpi [last unloaded: ip_tunnel]
-[  226.541776] CPU: 0 PID: 49 Comm: kworker/u4:2 Not tainted 3.14.0-rc8+ #101
-[  226.541776] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  226.541776] Workqueue: netns cleanup_net
-[  226.541776] task: ffff8800371e0000 ti: ffff88003730c000 task.ti: ffff88003730c000
-[  226.541776] RIP: 0010:[<ffffffff81389ba9>]  [<ffffffff81389ba9>] __list_del_entry+0x29/0xd0
-[  226.541776] RSP: 0018:ffff88003730dbd0  EFLAGS: 00010a83
-[  226.541776] RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800374e6c40 RCX: dead000000200200
-[  226.541776] RDX: 6b6b6b6b6b6b6b6b RSI: ffff8800371e07d0 RDI: ffff8800374e6c40
-[  226.541776] RBP: ffff88003730dbd0 R08: 0000000000000000 R09: 0000000000000000
-[  226.541776] R10: 0000000000000001 R11: ffff88003730d92e R12: 0000000000000002
-[  226.541776] R13: ffff88007a4c42d0 R14: ffff88007aef0000 R15: ffff880036cf0018
-[  226.541776] FS:  0000000000000000(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
-[  226.541776] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  226.541776] CR2: 00007f07f643f7d0 CR3: 0000000036fd2000 CR4: 00000000000006f0
-[  226.541776] Stack:
-[  226.541776]  ffff88003730dbe8 ffffffff81389c5d ffff8800374ffbe4 ffff88003730dc28
-[  226.541776]  ffffffffa0162a43 ffffffffa01627c5 ffff88007a4c42d0 ffff88007aef0000
-[  226.541776]  ffffffffa01651c0 ffff88007a4c45e0 ffff88007aef0000 ffff88003730dc40
-[  226.541776] Call Trace:
-[  226.541776]  [<ffffffff81389c5d>] list_del+0xd/0x30
-[  226.541776]  [<ffffffffa0162a43>] nf_ct_gre_keymap_destroy+0x283/0x2d0 [nf_conntrack_proto_gre]
-[  226.541776]  [<ffffffffa01627c5>] ? nf_ct_gre_keymap_destroy+0x5/0x2d0 [nf_conntrack_proto_gre]
-[  226.541776]  [<ffffffffa0162ab7>] gre_destroy+0x27/0x70 [nf_conntrack_proto_gre]
-[  226.541776]  [<ffffffffa0117de3>] destroy_conntrack+0x83/0x200 [nf_conntrack]
-[  226.541776]  [<ffffffffa0117d87>] ? destroy_conntrack+0x27/0x200 [nf_conntrack]
-[  226.541776]  [<ffffffffa0117d60>] ? nf_conntrack_hash_check_insert+0x2e0/0x2e0 [nf_conntrack]
-[  226.541776]  [<ffffffff81630142>] nf_conntrack_destroy+0x72/0x180
-[  226.541776]  [<ffffffff816300d5>] ? nf_conntrack_destroy+0x5/0x180
-[  226.541776]  [<ffffffffa011ef80>] ? kill_l3proto+0x20/0x20 [nf_conntrack]
-[  226.541776]  [<ffffffffa011847e>] nf_ct_iterate_cleanup+0x14e/0x170 [nf_conntrack]
-[  226.541776]  [<ffffffffa011f74b>] nf_ct_l4proto_pernet_unregister+0x5b/0x90 [nf_conntrack]
-[  226.541776]  [<ffffffffa0162409>] proto_gre_net_exit+0x19/0x30 [nf_conntrack_proto_gre]
-[  226.541776]  [<ffffffff815edf89>] ops_exit_list.isra.1+0x39/0x60
-[  226.541776]  [<ffffffff815eecc0>] cleanup_net+0x100/0x1d0
-[  226.541776]  [<ffffffff810a608a>] process_one_work+0x1ea/0x4f0
-[  226.541776]  [<ffffffff810a6028>] ? process_one_work+0x188/0x4f0
-[  226.541776]  [<ffffffff810a64ab>] worker_thread+0x11b/0x3a0
-[  226.541776]  [<ffffffff810a6390>] ? process_one_work+0x4f0/0x4f0
-[  226.541776]  [<ffffffff810af42d>] kthread+0xed/0x110
-[  226.541776]  [<ffffffff8173d4dc>] ? _raw_spin_unlock_irq+0x2c/0x40
-[  226.541776]  [<ffffffff810af340>] ? kthread_create_on_node+0x200/0x200
-[  226.541776]  [<ffffffff8174747c>] ret_from_fork+0x7c/0xb0
-[  226.541776]  [<ffffffff810af340>] ? kthread_create_on_node+0x200/0x200
-[  226.541776] Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de
-48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00 ad de 48
-39 c8 74 7a <4c> 8b 00 4c 39 c7 75 53 4c 8b 42 08 4c 39 c7 75 2b 48 89
-42 08
-[  226.541776] RIP  [<ffffffff81389ba9>] __list_del_entry+0x29/0xd0
-[  226.541776]  RSP <ffff88003730dbd0>
-[  226.612193] ---[ end trace 985ae23ddfcc357c ]---
+Hm, I thought so too, but there are lots of sbi-> fields and
+I didn't want to duplicate any shared filling logic in a
+different place. But I will make the change...
 
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- include/linux/netfilter/nf_conntrack_proto_gre.h |  1 -
- net/netfilter/nf_conntrack_pptp.c                | 20 +-------------------
- net/netfilter/nf_conntrack_proto_gre.c           |  3 +--
- 3 files changed, 2 insertions(+), 22 deletions(-)
+> 
+> >  	if (!b->reserved) {
+> >  		if (!silent)
+> >  			fat_msg(sb, KERN_ERR, "bogus
+> > number of reserved sectors"); @@ -1364,6 +1456,7 @@ int
+> > fat_fill_super(struct super_block *sb, void *data, int
+> > silent, int isvfat, goto out_fail; }
+> >  		b = (struct fat_boot_sector *)
+> > bh->b_data;
+> > +		fat_update_archaic_boot_sector(sb, b);
+> 
+> This doesn't need. If logical_sector_size is 512, this
+> format doesn't work.
 
-diff --git a/include/linux/netfilter/nf_conntrack_proto_gre.h b/include/linux/netfilter/nf_conntrack_proto_gre.h
-index ec2ffaf..df78dc2 100644
---- a/include/linux/netfilter/nf_conntrack_proto_gre.h
-+++ b/include/linux/netfilter/nf_conntrack_proto_gre.h
-@@ -87,7 +87,6 @@ int nf_ct_gre_keymap_add(struct nf_conn *ct, enum ip_conntrack_dir dir,
- /* delete keymap entries */
- void nf_ct_gre_keymap_destroy(struct nf_conn *ct);
- 
--void nf_ct_gre_keymap_flush(struct net *net);
- void nf_nat_need_gre(void);
- 
- #endif /* __KERNEL__ */
-diff --git a/net/netfilter/nf_conntrack_pptp.c b/net/netfilter/nf_conntrack_pptp.c
-index 7bd03de..825c3e3 100644
---- a/net/netfilter/nf_conntrack_pptp.c
-+++ b/net/netfilter/nf_conntrack_pptp.c
-@@ -605,32 +605,14 @@ static struct nf_conntrack_helper pptp __read_mostly = {
- 	.expect_policy		= &pptp_exp_policy,
- };
- 
--static void nf_conntrack_pptp_net_exit(struct net *net)
--{
--	nf_ct_gre_keymap_flush(net);
--}
--
--static struct pernet_operations nf_conntrack_pptp_net_ops = {
--	.exit = nf_conntrack_pptp_net_exit,
--};
--
- static int __init nf_conntrack_pptp_init(void)
- {
--	int rv;
--
--	rv = nf_conntrack_helper_register(&pptp);
--	if (rv < 0)
--		return rv;
--	rv = register_pernet_subsys(&nf_conntrack_pptp_net_ops);
--	if (rv < 0)
--		nf_conntrack_helper_unregister(&pptp);
--	return rv;
-+	return nf_conntrack_helper_register(&pptp);
- }
- 
- static void __exit nf_conntrack_pptp_fini(void)
- {
- 	nf_conntrack_helper_unregister(&pptp);
--	unregister_pernet_subsys(&nf_conntrack_pptp_net_ops);
- }
- 
- module_init(nf_conntrack_pptp_init);
-diff --git a/net/netfilter/nf_conntrack_proto_gre.c b/net/netfilter/nf_conntrack_proto_gre.c
-index 9d9c0da..d566573 100644
---- a/net/netfilter/nf_conntrack_proto_gre.c
-+++ b/net/netfilter/nf_conntrack_proto_gre.c
-@@ -66,7 +66,7 @@ static inline struct netns_proto_gre *gre_pernet(struct net *net)
- 	return net_generic(net, proto_gre_net_id);
- }
- 
--void nf_ct_gre_keymap_flush(struct net *net)
-+static void nf_ct_gre_keymap_flush(struct net *net)
- {
- 	struct netns_proto_gre *net_gre = gre_pernet(net);
- 	struct nf_ct_gre_keymap *km, *tmp;
-@@ -78,7 +78,6 @@ void nf_ct_gre_keymap_flush(struct net *net)
- 	}
- 	write_unlock_bh(&net_gre->keymap_lock);
- }
--EXPORT_SYMBOL(nf_ct_gre_keymap_flush);
- 
- static inline int gre_key_cmpfn(const struct nf_ct_gre_keymap *km,
- 				const struct nf_conntrack_tuple *t)
--- 
-1.8.5.3
+Right. Okay, give me some time to revise a v3 patch.
 
+Thanks,
+Conrad
