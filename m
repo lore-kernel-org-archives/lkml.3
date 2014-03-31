@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaCaLSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 07:18:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49888 "EHLO mga02.intel.com"
+	id S1752780AbaCaLTZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 07:19:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33441 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508AbaCaLSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 07:18:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,764,1389772800"; 
-   d="scan'208";a="503450720"
-Date: Mon, 31 Mar 2014 19:18:49 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [do_xor_speed] WARNING: CPU: 0 PID: 1 at init/main.c:708
- do_one_initcall()
-Message-ID: <20140331111849.GA12489@localhost>
-References: <20140331003825.GA11782@localhost>
- <53391483.9010800@panasas.com>
- <20140331081346.GA5349@localhost>
- <53394A11.6060204@panasas.com>
+	id S1752667AbaCaLTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 07:19:24 -0400
+Message-ID: <53394F23.6080805@redhat.com>
+Date: Mon, 31 Mar 2014 13:18:59 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53394A11.6060204@panasas.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arend van Spriel <arend@broadcom.com>, Franky Lin <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH 1/4] brcm80211: deinline brcmf_chip_cr4_enterdl, save
+ 440 bytes
+References: <1396215079-7541-1-git-send-email-dvlasenk@redhat.com> <53391B89.7010304@broadcom.com>
+In-Reply-To: <53391B89.7010304@broadcom.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 01:57:21PM +0300, Boaz Harrosh wrote:
-> On 03/31/2014 11:13 AM, Fengguang Wu wrote:
-> > On Mon, Mar 31, 2014 at 10:08:51AM +0300, Boaz Harrosh wrote:
-> >> Sorry about that I forgot about the experimental rule, fixed now.
-> >>
-> >> Is there a way for a white list. With -experimental I need to say
-> >> every branch I do not want included is there a way to say only
-> >> the branches I do want included?
-> > 
-> > Yes, sure. You can tell me a list of branch patterns that is suitable
-> > for testing and I can blacklist everything else in your tree.
-> > 
-> > Thanks,
-> > Fengguang
-> > 
+On 03/31/2014 09:38 AM, Arend van Spriel wrote:
+> On 30/03/14 23:31, Denys Vlasenko wrote:
+>> Automated script discovered that without forced inlining,
+>> gcc-4.7 generates smaller code for this function.
+>>
+>> There is no need to declare static functions inline anyway:
+>> nowadays gcc detects single-callsite static functions
+>> which benefit from inlining.
 > 
-> Thanks Wu, I hate to be trouble. Am I the only one who has this
-> problem ? Its that I use this git tree also as a public development
-> tree, when need of collaboration.
+> These patches look awfully familiar. I tend to object, but I don't know the details of this automated script.
 
-You are not the only one that needs the manual blacklist/whitelist -
-that's why we already have this mechanism. :)
+The script removes "static" keyword, recompiles the .c file,
+compares the sizes, and if code size went down,
+creates a patch
 
-> For now it is good, I'll try to remember when I push new branches
+> How about execution time or is this only compile tested?
 
-Or better, we are not feeling bothered at all when hit bugs in your
-and others' WIP trees - it's an achievement to be able to catch more
-bugs, and our test system is designed to do the job efficiently. :)
+The change adds one pair of call/return instructions -
+probably around 5-10 CPU cycles.
 
-Thanks,
-Fengguang
+The function in question is a part of firmware download logic,
+which is nowhere near being hot path/.
+
+> The other thing is that you seem to rely on a specific gcc version.
+> What about pre-4.7? How about different architectures.
+> Was this determined on x86, arm, sparc, mips.
+> All these questions make me say 'nay'.
+
+Not making functions inline unless there is a good reason
+is a general good coding practice. It is not a compiler-
+or architecture-specific optimization.
