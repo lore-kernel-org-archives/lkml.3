@@ -1,256 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaCaCJb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 22:09:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38331 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272AbaCaCJa (ORCPT
+	id S1753326AbaCaCJx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 22:09:53 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:34465 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752367AbaCaCJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 22:09:30 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5338CE43.2000402@jp.fujitsu.com>
-Date: Mon, 31 Mar 2014 11:09:07 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 30 Mar 2014 22:09:51 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: John Stultz <john.stultz@linaro.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 30 Mar 2014 19:09:37 -0700
+Subject: RE: [PATCH] printk: add sleep time into timestamp
+Thread-Topic: [PATCH] printk: add sleep time into timestamp
+Thread-Index: Ac9KrFG6jDV4aY4fRNaD9r0o0N25fgB1SuxA
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE550559A51E@SC-VEXCH4.marvell.com>
+References: <1395908241-6392-1-git-send-email-zhangwm@marvell.com>
+ <CANcMJZCG7CT_rOShK7jGo3xVZ0MiRD-jUJE=FCTW68tv88g-Bw@mail.gmail.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE550559A27C@SC-VEXCH4.marvell.com>
+ <5335B336.9020602@linaro.org>
+In-Reply-To: <5335B336.9020602@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] nohz, procfs: introduce get_cpu_idle/iowait_time_coarse
-References: <5338CC86.9080602@jp.fujitsu.com>
-In-Reply-To: <5338CC86.9080602@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-30_03:2014-03-28,2014-03-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1403300179
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-This patch is 2/2 of patch set to fix an issue that idle/iowait
-of /proc/stat can go backward. Originally reported by Tetsuo and
-Fernando at last year, Mar 2013.
-
-Now it is clear that get_cpu_{idle,iowait}_time_us() is not monotonic.
-Using this for /proc/stats will cause troubles in innocent userland
-who believe these counters are definitely monotonic.
-
-Given that:
-
-  - If observer (=reader of /proc/stats) want to avoid backwarding,
-    it must update time stats for next observer. It means observer
-    determine delta to idle/iowait and account it for sleeping cpu.
-
-  - Usually the number of observers will not so many (i.e. running
-    top on few console or hiring few monitor program will be enough
-    for average system admin), but we must predict the worst case.
-    In short, make effort to reduce lock contention.
-
-  - The resolution required in /proc/stats is tick-level, not us.
-
-This patch introduces new function get_cpu_idle/iowait_time_coarse()
-that guarantees monotonic return value but resolution is low.
-
-Tricks are here:
-
-  - At first this function obtain latest time stats and calculate
-    "delta" which indicates duration from time when the time stats
-    is updated last time to current time.
-
-  - If delta is less than tick length, use obtained time stats
-    as if it was sampled in tick interrupt recently happened.
-
-  - If delta is greater than tick, perform update of time stats
-    as if it emulates tick for sleeping observed cpu.
-
-  - As the result the rate of updating time stats by observer is
-    limited to once per tick. In other words, in case if there is
-    observer who are monitoring sleeping cpu, we leave tick
-    emulation job during idle to the observer.
-
-I confirmed this patch fix the monotonicity of /proc/stats, by
-running reproducer and stressor for a day. The rate of reproduce
-is different for different system, but in my case, running
-"git gc" on kernel source repository aside of checker works fine.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Reported-by: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- fs/proc/stat.c           |   16 +++------
- include/linux/tick.h     |    4 ++
- kernel/time/tick-sched.c |   79 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 89 insertions(+), 10 deletions(-)
-
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 6f599c6..3dbe282 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -45,32 +45,28 @@ static cputime64_t get_iowait_time(int cpu)
- 
- static u64 get_idle_time(int cpu)
- {
--	u64 idle, idle_time = -1ULL;
-+	u64 idle = -1ULL;
- 
- 	if (cpu_online(cpu))
--		idle_time = get_cpu_idle_time_us(cpu, NULL);
-+		idle = get_cpu_idle_time_coarse(cpu);
- 
--	if (idle_time == -1ULL)
-+	if (idle == -1ULL)
- 		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
- 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
--	else
--		idle = usecs_to_cputime64(idle_time);
- 
- 	return idle;
- }
- 
- static u64 get_iowait_time(int cpu)
- {
--	u64 iowait, iowait_time = -1ULL;
-+	u64 iowait = -1ULL;
- 
- 	if (cpu_online(cpu))
--		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-+		iowait = get_cpu_iowait_time_coarse(cpu);
- 
--	if (iowait_time == -1ULL)
-+	if (iowait == -1ULL)
- 		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
- 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
--	else
--		iowait = usecs_to_cputime64(iowait_time);
- 
- 	return iowait;
- }
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index f6f4ac1..3b4674d 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -140,6 +140,8 @@ extern void tick_nohz_irq_exit(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
-+extern u64 get_cpu_idle_time_coarse(int cpu);
-+extern u64 get_cpu_iowait_time_coarse(int cpu);
- 
- # else /* !CONFIG_NO_HZ_COMMON */
- static inline int tick_nohz_tick_stopped(void)
-@@ -158,6 +160,8 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
- }
- static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
- static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
-+static inline u64 get_cpu_idle_time_coarse(int cpu) { return -1; }
-+static inline u64 get_cpu_iowait_time_coarse(int cpu) { return -1; }
- # endif /* !CONFIG_NO_HZ_COMMON */
- 
- #ifdef CONFIG_NO_HZ_FULL
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6641c56..4bf22d2 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -592,6 +592,85 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- }
- EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
- 
-+/**
-+ * get_cpu_idle_time_coarse - get coarse idle time of a cpu
-+ * @cpu: CPU number to query
-+ *
-+ * Return the cumulative idle time (since boot) for a given
-+ * CPU, in tick resolution (for traditional UI like /proc/stat).
-+ *
-+ * This function returns -1 if NOHZ is not enabled.
-+ */
-+u64 get_cpu_idle_time_coarse(int cpu)
-+{
-+	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-+	ktime_t now, idle, delta;
-+	unsigned int seq;
-+
-+	if (!tick_nohz_active)
-+		return -1;
-+
-+	if (!ts->idle_active)
-+		return usecs_to_cputime64(ktime_to_us(ts->idle_sleeptime));
-+
-+	now = ktime_get();
-+
-+	do {
-+		seq = read_seqbegin(&ts->idle_sleeptime_seq);
-+		idle = ts->idle_sleeptime;
-+		delta = ktime_sub(now, ts->idle_entrytime);
-+	} while (read_seqretry(&ts->idle_sleeptime_seq, seq));
-+
-+	/*
-+	 * If delta is less than tick, use current value and just
-+	 * ignore the delta. Otherwise perform update.
-+	 */
-+	if (ktime_compare(delta, ns_to_ktime(TICK_NSEC)) > 0)
-+		update_ts_time_stats(cpu, ts, now, &idle, NULL, 0);
-+
-+	return usecs_to_cputime64(ktime_to_us(idle));
-+
-+}
-+
-+/**
-+ * get_cpu_iowait_time_coarse - get coarse iowait time of a cpu
-+ * @cpu: CPU number to query
-+ *
-+ * Return the cumulative iowait time (since boot) for a given
-+ * CPU, in tick resolution (for traditional UI like /proc/stat).
-+ *
-+ * This function returns -1 if NOHZ is not enabled.
-+ */
-+u64 get_cpu_iowait_time_coarse(int cpu)
-+{
-+	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-+	ktime_t now, iowait, delta;
-+	unsigned int seq;
-+
-+	if (!tick_nohz_active)
-+		return -1;
-+
-+	if (!ts->idle_active)
-+		return usecs_to_cputime64(ktime_to_us(ts->iowait_sleeptime));
-+
-+	now = ktime_get();
-+
-+	do {
-+		seq = read_seqbegin(&ts->idle_sleeptime_seq);
-+		iowait = ts->iowait_sleeptime;
-+		delta = ktime_sub(now, ts->idle_entrytime);
-+	} while (read_seqretry(&ts->idle_sleeptime_seq, seq));
-+
-+	/*
-+	 * If delta is less than tick, use current value and just
-+	 * ignore the delta. Otherwise perform update.
-+	 */
-+	if (ktime_compare(delta, ns_to_ktime(TICK_NSEC)) > 0)
-+		update_ts_time_stats(cpu, ts, now, NULL, &iowait, 0);
-+
-+	return usecs_to_cputime64(ktime_to_us(iowait));
-+}
-+
- static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
- 					 ktime_t now, int cpu)
- {
--- 
-1.7.1
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2V2A1Ma024004
 
 
+
+> -----Original Message-----
+> From: John Stultz [mailto:john.stultz@linaro.org]
+> Sent: 2014Äê3ÔÂ29ÈÕ 1:37
+> To: Neil Zhang
+> Cc: Andrew Morton; Linux Kernel Mailing List
+> Subject: Re: [PATCH] printk: add sleep time into timestamp
+> 
+> On 03/27/2014 11:45 PM, Neil Zhang wrote:
+> > John,
+> >
+> >> -----Original Message-----
+> >> From: johnstul.lkml@gmail.com [mailto:johnstul.lkml@gmail.com] On
+> >> Behalf Of John Stultz
+> >> Sent: 2014Äê3ÔÂ28ÈÕ 11:18
+> >> To: Neil Zhang
+> >> Cc: Andrew Morton; Linux Kernel Mailing List
+> >> Subject: Re: [PATCH] printk: add sleep time into timestamp
+> >>
+> >> On Thu, Mar 27, 2014 at 1:17 AM, Neil Zhang <zhangwm@marvell.com>
+> >> wrote:
+> >>> Add sleep time into timestamp to reflect the actual time since
+> >>> sched_clock will be stopped during suspend.
+> >> So why is this change necessary?
+> >>
+> >> Further, since the sleep time may be updated a bit late in the resume
+> >> cycle (in many cases we cannot access the RTC until irqs are enabled
+> >> back on), you may see messages that show pre-suspend times when
+> >> really they occur after we resume (but before the sleep time is
+> incremented).
+> >>
+> > Thanks for the comments.
+> > Yes, the sleep time will be update in RTC and the print in the resume
+> procedure still w/o the sleep time.
+> > But I think the messages are not too much at this stage.
+> 
+> Not sure I understand what you mean by "the messages are not too much",
+> could you expand that a bit?
+
+Sorry that I didn't make it clear.
+I mean since most of the platform don't have the persistent clock support, 
+so there is no good way to reflect the sleep time for the messages in the resume procedure before rtc_resume so far.
+Fortunately this period only related to the resume procedure.
+Anyway, other part of the kernel can benefit from this patch's change.
+
+> 
+> >> More comments below....
+> >>
+> >>> This patch depends on the following patch.
+> >>> timekeeping: check params before use them
+> >>>
+> >>> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> >>> ---
+> >>>  kernel/printk/printk.c |   15 +++++++++++++--
+> >>>  1 file changed, 13 insertions(+), 2 deletions(-)
+> >>>
+> >>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c index
+> >>> 4dae9cb..2dc6145 100644
+> >>> --- a/kernel/printk/printk.c
+> >>> +++ b/kernel/printk/printk.c
+> >>> @@ -250,6 +250,17 @@ static char __log_buf[__LOG_BUF_LEN]
+> >>> __aligned(LOG_ALIGN);  static char *log_buf = __log_buf;  static u32
+> >>> log_buf_len = __LOG_BUF_LEN;
+> >>>
+> >>> +static u64 print_clock(void)
+> >>> +{
+> >>> +       struct timespec ts;
+> >>> +       u64 ts_nsec = local_clock();
+> >>> +
+> >>> +       get_xtime_and_monotonic_and_sleep_offset(NULL, NULL, &ts);
+> >> So this will cause deadlocks anytime we print from the timekeeping
+> >> core, since we may hold a write on the timekeeper lock, and this
+> >> patch makes every printk try to take a read-lock on the timekeeper lock.
+> >>
+> > Sorry, I don't quite understand why it will cause deadlock.
+> > Yes, it will take a read-lock, but it should not be expensive.
+> 
+> If we call or trigger a printk while holding a write on the timekeeping lock, the
+> printk code will then try to aquire a read-lock on the timekeeping lock and this
+> will deadlock the machine.
+> 
+> The printk code already has trouble with the timekeeping code, but this would
+> make it worse.
+> 	
+Got it, thanks for the clarification.
+
+> 
+> >> I'd suggest you use monotonic_to_bootbased() here instead of hacking
+> >> up this hrtimer specific interface, but even so, right now that call
+> >> doesn't take the timekeeper lock, but probably should, so its not a good
+> long term plan.
+> > It maybe doable, or whether we can add another function to only return
+> sleep time.
+> > Then no read-lock is needed.
+> 
+> Well, you're returning a timespec, which cannot be read atomically, so it
+> would need to take the lock (that's why I was saying
+> monotonic_to_bootbased() should probably take the lock, and seems broken).
+> 
+> But using monotonic_to_bootbased would give you the same functionality
+> without having to modify get_xtime_and_monotonic_and_sleep_offset().
+
+Ok, I will use the following functions for printk, thanks for the suggestion.
+
+ns_to_timespec()
+monotonic_to_bootbased()
+timespec_to_ns()
+
+> 
+> >> I'm still not convinced this change needs to be done, but a  better
+> >> solution here would be to add infrastructure that when the sleep time
+> >> is updated we update an offset that the is adding to the
+> >> local_clock() however, you probably want to be careful since you
+> >> don't want sleep time in normal local_clock/sched_clock calls since it would
+> mess up scheduling.
+> >>
+> > Sometimes we need to compare the kernel log with user space log, so it
+> > would be convenient to add the sleep time into kernel timestamp.
+> 
+> Which userspace log? You can have the syslog capture the kernel messages
+> and timestamp them properly. Also, if you are using your own logging, you can
+> use CLOCK_MONOTONIC which will provide the closest approximation to the
+> sched_clock based printk clock.
+
+There are many exist message in android or telephony code use the wall time.
+It will include the sleep time.
+
+> 
+> thanks
+> -john
+> 
+> 
+Best Regards,
+Neil Zhang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
