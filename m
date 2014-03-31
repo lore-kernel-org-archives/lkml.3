@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978AbaCaNfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:35:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35770 "EHLO
+	id S1754247AbaCaNYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:24:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35726 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254AbaCaNYg (ORCPT
+	with ESMTP id S1754022AbaCaNYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:36 -0400
+	Mon, 31 Mar 2014 09:24:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ross Lagerwall <rosslagerwall@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Shatil Rafiullah <srafiullah@twopensource.com>,
-        Vinson Lee <vlee@twitter.com>,
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 52/71] acpi-cpufreq: set current frequency based on target P-State
-Date: Mon, 31 Mar 2014 14:22:58 +0100
-Message-Id: <1396272197-13394-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 42/71] vmxnet3: fix netpoll race condition
+Date: Mon, 31 Mar 2014 14:22:48 +0100
+Message-Id: <1396272197-13394-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -30,52 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ross Lagerwall <rosslagerwall@gmail.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 8673b83bf2f013379453b4779047bf3c6ae387e4 upstream.
+commit d25f06ea466ea521b563b76661180b4e44714ae6 upstream.
 
-Commit 4b31e774 (Always set P-state on initialization) fixed bug
-least once since the initial P-State may not be the desired one.
-Commit 5a1c0228 (cpufreq: Avoid calling cpufreq driver's target()
-routine if target_freq == policy->cur) caused a regression in
-this behavior.
+vmxnet3's netpoll driver is incorrectly coded.  It directly calls
+vmxnet3_do_poll, which is the driver internal napi poll routine.  As the netpoll
+controller method doesn't block real napi polls in any way, there is a potential
+for race conditions in which the netpoll controller method and the napi poll
+method run concurrently.  The result is data corruption causing panics such as this
+one recently observed:
+PID: 1371   TASK: ffff88023762caa0  CPU: 1   COMMAND: "rs:main Q:Reg"
+ #0 [ffff88023abd5780] machine_kexec at ffffffff81038f3b
+ #1 [ffff88023abd57e0] crash_kexec at ffffffff810c5d92
+ #2 [ffff88023abd58b0] oops_end at ffffffff8152b570
+ #3 [ffff88023abd58e0] die at ffffffff81010e0b
+ #4 [ffff88023abd5910] do_trap at ffffffff8152add4
+ #5 [ffff88023abd5970] do_invalid_op at ffffffff8100cf95
+ #6 [ffff88023abd5a10] invalid_op at ffffffff8100bf9b
+    [exception RIP: vmxnet3_rq_rx_complete+1968]
+    RIP: ffffffffa00f1e80  RSP: ffff88023abd5ac8  RFLAGS: 00010086
+    RAX: 0000000000000000  RBX: ffff88023b5dcee0  RCX: 00000000000000c0
+    RDX: 0000000000000000  RSI: 00000000000005f2  RDI: ffff88023b5dcee0
+    RBP: ffff88023abd5b48   R8: 0000000000000000   R9: ffff88023a3b6048
+    R10: 0000000000000000  R11: 0000000000000002  R12: ffff8802398d4cd8
+    R13: ffff88023af35140  R14: ffff88023b60c890  R15: 0000000000000000
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #7 [ffff88023abd5b50] vmxnet3_do_poll at ffffffffa00f204a [vmxnet3]
+ #8 [ffff88023abd5b80] vmxnet3_netpoll at ffffffffa00f209c [vmxnet3]
+ #9 [ffff88023abd5ba0] netpoll_poll_dev at ffffffff81472bb7
 
-This fixes the regression by setting policy->cur based on the CPU's
-target frequency rather than the CPU's current reported frequency
-(which may be different).  This means that the P-State will be set
-initially if the CPU's target frequency is different from the
-governor's target frequency.
+The fix is to do as other drivers do, and have the poll controller call the top
+half interrupt handler, which schedules a napi poll properly to recieve frames
 
-This fixes an issue where setting the default governor to
-performance wouldn't correctly enable turbo mode on all cores.
+Tested by myself, successfully.
 
-Signed-off-by: Ross Lagerwall <rosslagerwall@gmail.com>
-Reviewed-by: Len Brown <len.brown@intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ srafiullah: Backported to <= 3.6:
-  - SYSTEM_AMD_MSR_CAPABLE does not exist. ]
-Tested-by: Shatil Rafiullah <srafiullah@twopensource.com>
-Signed-off-by: Shatil Rafiullah <srafiullah@twopensource.com>
-Signed-off-by: Vinson Lee <vlee@twitter.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Shreyas Bhatewara <sbhatewara@vmware.com>
+CC: "VMware, Inc." <pv-drivers@vmware.com>
+CC: "David S. Miller" <davem@davemloft.net>
+Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/acpi-cpufreq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/vmxnet3/vmxnet3_drv.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index 56c6c6b..227a316 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -215,7 +215,7 @@ static u32 get_cur_val(const struct cpumask *mask)
- 	switch (per_cpu(acfreq_data, cpumask_first(mask))->cpu_feature) {
- 	case SYSTEM_INTEL_MSR_CAPABLE:
- 		cmd.type = SYSTEM_INTEL_MSR_CAPABLE;
--		cmd.addr.msr.reg = MSR_IA32_PERF_STATUS;
-+		cmd.addr.msr.reg = MSR_IA32_PERF_CTL;
- 		break;
- 	case SYSTEM_IO_CAPABLE:
- 		cmd.type = SYSTEM_IO_CAPABLE;
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 3f04ba0..2f07e26 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1728,12 +1728,18 @@ static void
+ vmxnet3_netpoll(struct net_device *netdev)
+ {
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
++	int i;
+ 
+-	if (adapter->intr.mask_mode == VMXNET3_IMM_ACTIVE)
+-		vmxnet3_disable_all_intrs(adapter);
+-
+-	vmxnet3_do_poll(adapter, adapter->rx_queue[0].rx_ring[0].size);
+-	vmxnet3_enable_all_intrs(adapter);
++	switch (adapter->intr.type) {
++	case VMXNET3_IT_MSIX:
++		for (i = 0; i < adapter->num_rx_queues; i++)
++			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
++		break;
++	case VMXNET3_IT_MSI:
++	default:
++		vmxnet3_intr(0, adapter->netdev);
++		break;
++	}
+ 
+ }
+ #endif	/* CONFIG_NET_POLL_CONTROLLER */
 -- 
 1.9.1
 
