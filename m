@@ -1,109 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaCaTJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 15:09:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39072 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824AbaCaTJX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 15:09:23 -0400
-Date: Mon, 31 Mar 2014 15:09:12 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH 3/4] xen/manage: Guard against user-space initiated
- poweroff and XenBus.
-Message-ID: <20140331190912.GA9026@phenom.dumpdata.com>
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
- <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
- <528DEA00.7070505@citrix.com>
- <20131126164552.GF2959@phenom.dumpdata.com>
- <529C6EAC.4030408@citrix.com>
+	id S1754296AbaCaTLJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 15:11:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753915AbaCaTLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 15:11:06 -0400
+Date: Mon, 31 Mar 2014 21:50:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paolo Bonzini <pbonzini@redhat.com>, gleb@kernel.org, kvm@vger.kernel.org
+Subject: [PATCH 2/2] vmx: speed up wildcard MMIO EVENTFD
+Message-ID: <1396291468-12120-2-git-send-email-mst@redhat.com>
+References: <1396291468-12120-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <529C6EAC.4030408@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1396291468-12120-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 11:27:40AM +0000, David Vrabel wrote:
-> On 26/11/13 16:45, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Nov 21, 2013 at 11:09:52AM +0000, David Vrabel wrote:
-> >> On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> >>> There is a race case where the user does 'poweroff'
-> >>> and at the same time the system admin does 'xl shutdown'.
-> >>
-> >> This isn't a Xen-specific problem is it?  Wouldn't it be better to fix
-> >> this in generic code?
-> > 
-> > Possibly. I believe the reason for the reboot_notifier to exist is
-> > to provide a means to fix the race.
-> > 
-> >>
-> >> Especially since I don't think this patch actually fixes the race
-> >> completely.
-> >>
-> >>> --- a/drivers/xen/manage.c
-> >>> +++ b/drivers/xen/manage.c
-> >> [...]
-> >>> @@ -222,7 +230,7 @@ static void shutdown_handler(struct xenbus_watch *watch,
-> >>>  	};
-> >>>  	static struct shutdown_handler *handler;
-> >>>  
-> >>> -	if (shutting_down != SHUTDOWN_INVALID)
-> >>> +	if (atomic_read(&shutting_down) != SHUTDOWN_INVALID)
-> >>>  		return;
-> >>
-> >> In guest initiated poweroff at this time will still race with this
-> >> toolstack initiated poweroff.
-> > 
-> > No, b/c the reboot notifier would have set 'shutting_down' already.
-> 
-> If the guest initiated power off is started here, the reboot notifier
-> won't have run yet.
+With KVM, MMIO is much slower than PIO, due to the need to
+do page walk and emulation. But with EPT, it does not have to be: we
+know the address from the VMCS so if the address is unique, we can look
+up the eventfd directly, bypassing emulation.
 
-This is what I think you are saying:
+Unfortunately, this only works if userspace does not need to match on
+access length and data.  The implementation adds a separate FAST_MMIO
+bus internally. This serves two purposes:
+    - minimize overhead for old userspace that does not use eventfd with lengtth = 0
+    - minimize disruption in other code (since we don't know the length,
+      devices on the MMIO bus only get a valid address in write, this
+      way we don't need to touch all devices to teach them to handle
+      an invalid length)
 
-CPU0                                                 CPU1
+At the moment, this optimization only has effect for EPT on x86.
 
-'poweroff'						'shutdown_handler'
-->SYSCALL_DEFINE4(reboot)				 -> atomic_read(&shutting_down) == SHUTDOWN_INVALID
-  mutex_lock(&reboot_mutex)			 	 -> do_poweroff
-  kernel_power_off()
-    -> kernel_shutdown_prepare
+It will be possible to speed up MMIO for NPT and MMU using the same
+idea in the future.
 
-         -> blocking_notifier_call_chain()
-		\- xen_system_reboot
-			\- atomic_set(&shutting_down, SHUTDOWN_POWEROFF);
+With this patch applied, on VMX MMIO EVENTFD is essentially as fast as PIO.
+I was unable to detect any measureable slowdown to non-eventfd MMIO.
 
-                                                         -> atomic_set(&shutting_down, SHUTDOWN_POWEROFF);
-                                                         -> orderly_poweroff(false)
-								-> 'poweroff' called
-									->SYSCALL_DEFINE4(reboot)
-									     -> mutex_lock(&reboot_mutex)
-          -> system_state = SYSTEM_HALT
-     -> machine_halt().
+Making MMIO faster is important for the upcoming virtio 1.0 which
+includes an MMIO signalling capability.
 
-What you are describing was outlined in the commit description:
+The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
+pre-review and suggestions.
 
-"
-   'poweroff' and 'xl shutdown'..
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/kvm_host.h |  1 +
+ include/uapi/linux/kvm.h |  1 +
+ arch/x86/kvm/vmx.c       |  4 ++++
+ virt/kvm/eventfd.c       | 16 ++++++++++++++++
+ virt/kvm/kvm_main.c      |  1 +
+ 5 files changed, 23 insertions(+)
 
-    Depending on the race, the system_state will be SYSTEM_RUNNING or
-    SYSTEM_POWER_OFF. If SYSTEM_RUNNING we just end up making
-    a duplicate call to 'poweroff' (while it is running).
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index b8e9a43..c2eaa9f 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -163,6 +163,7 @@ enum kvm_bus {
+ 	KVM_MMIO_BUS,
+ 	KVM_PIO_BUS,
+ 	KVM_VIRTIO_CCW_NOTIFY_BUS,
++	KVM_FAST_MMIO_BUS,
+ 	KVM_NR_BUSES
+ };
+ 
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index d73007e..fc75810 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -450,6 +450,7 @@ enum {
+ 	kvm_ioeventfd_flag_nr_pio,
+ 	kvm_ioeventfd_flag_nr_deassign,
+ 	kvm_ioeventfd_flag_nr_virtio_ccw_notify,
++	kvm_ioeventfd_flag_nr_fast_mmio,
+ 	kvm_ioeventfd_flag_nr_max,
+ };
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 3927528..78a1932 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5493,6 +5493,10 @@ static int handle_ept_misconfig(struct kvm_vcpu *vcpu)
+ 	gpa_t gpa;
+ 
+ 	gpa = vmcs_read64(GUEST_PHYSICAL_ADDRESS);
++	if (!kvm_io_bus_write(vcpu->kvm, KVM_FAST_MMIO_BUS, gpa, 0, NULL)) {
++		skip_emulated_instruction(vcpu);
++		return 1;
++	}
+ 
+ 	ret = handle_mmio_page_fault_common(vcpu, gpa, true);
+ 	if (likely(ret == RET_MMIO_PF_EMULATE))
+diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+index 9eadb59..c61f2eb 100644
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -770,6 +770,16 @@ kvm_assign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ 	if (ret < 0)
+ 		goto unlock_fail;
+ 
++	/* When length is ignored, MMIO is also put on a separate bus, for
++	 * faster lookups.
++	 */
++	if (!args->len && !(args->flags & KVM_IOEVENTFD_FLAG_PIO)) {
++		ret = kvm_io_bus_register_dev(kvm, KVM_FAST_MMIO_BUS,
++					      p->addr, 0, &p->dev);
++		if (ret < 0)
++			goto register_fail;
++	}
++
+ 	kvm->buses[bus_idx]->ioeventfd_count++;
+ 	list_add_tail(&p->list, &kvm->ioeventfds);
+ 
+@@ -777,6 +787,8 @@ kvm_assign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ 
+ 	return 0;
+ 
++register_fail:
++	kvm_io_bus_unregister_dev(kvm, bus_idx, &p->dev);
+ unlock_fail:
+ 	mutex_unlock(&kvm->slots_lock);
+ 
+@@ -816,6 +828,10 @@ kvm_deassign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ 			continue;
+ 
+ 		kvm_io_bus_unregister_dev(kvm, bus_idx, &p->dev);
++		if (!p->length) {
++			kvm_io_bus_unregister_dev(kvm, KVM_FAST_MMIO_BUS,
++						  &p->dev);
++		}
+ 		kvm->buses[bus_idx]->ioeventfd_count--;
+ 		ioeventfd_release(p);
+ 		ret = 0;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 03a0381..22a4e1b 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -2920,6 +2920,7 @@ static int __kvm_io_bus_read(struct kvm_io_bus *bus, struct kvm_io_range *range,
+ 
+ 	return -EOPNOTSUPP;
+ }
++EXPORT_SYMBOL_GPL(kvm_io_bus_write);
+ 
+ /* kvm_io_bus_read - called under kvm->slots_lock */
+ int kvm_io_bus_read(struct kvm *kvm, enum kvm_bus bus_idx, gpa_t addr,
+-- 
+MST
 
-    That will fail or execute (And if executed then it will be
-    stuck in the reboot_mutex mutex). But nobody will care b/c the
-    machine is in poweroff sequence.
-"
-
-which means that this code does guard.. but not that well :-(
-
-> 
-> David
