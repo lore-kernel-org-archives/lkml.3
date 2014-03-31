@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaCaVuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 17:50:12 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:19436 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751004AbaCaVuI (ORCPT
+	id S1751476AbaCaVyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 17:54:21 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:35724 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaCaVyU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 17:50:08 -0400
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 2/4] pinctrl: msm: Make number of functions variable
-Date: Mon, 31 Mar 2014 14:49:55 -0700
-Message-ID: <1396302597-31801-2-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.8.2.2
+	Mon, 31 Mar 2014 17:54:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <201403312105.s2VL5AqX010173@terminus.zytor.com>
+References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
+Date: Mon, 31 Mar 2014 14:54:19 -0700
+X-Google-Sender-Auth: E8mvJXzDkt-D3GJJZbXUguz4sZQ
+Message-ID: <CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>
+Subject: Re: [GIT PULL] x86 LTO changes for v3.15
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
+        Peter Anvin <hpa@zytor.com>, hubicka@ucw.cz,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jaroslav Kysela <perex@perex.cz>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The various pins may have different number of functions defined, so make this
-number definable per pin instead of just increasing it to the largest one for
-all of the platforms.
+On Mon, Mar 31, 2014 at 2:05 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+> index a6a42dd..34a513a 100644
+> --- a/include/linux/linkage.h
+> +++ b/include/linux/linkage.h
+> @@ -12,9 +12,9 @@
+>  #endif
+>
+>  #ifdef __cplusplus
+> -#define CPP_ASMLINKAGE extern "C"
+> +#define CPP_ASMLINKAGE extern "C" __visible
+>  #else
+> -#define CPP_ASMLINKAGE
+> +#define CPP_ASMLINKAGE __visible
+>  #endif
 
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
----
- drivers/pinctrl/pinctrl-msm.c     | 4 ++--
- drivers/pinctrl/pinctrl-msm.h     | 3 ++-
- drivers/pinctrl/pinctrl-msm8x74.c | 3 ++-
- 3 files changed, 6 insertions(+), 4 deletions(-)
+This seems to result in new warnings, and they appear to be valid.
 
-diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/pinctrl-msm.c
-index 706809e..7d67d34 100644
---- a/drivers/pinctrl/pinctrl-msm.c
-+++ b/drivers/pinctrl/pinctrl-msm.c
-@@ -145,12 +145,12 @@ static int msm_pinmux_enable(struct pinctrl_dev *pctldev,
- 	if (WARN_ON(g->mux_bit < 0))
- 		return -EINVAL;
- 
--	for (i = 0; i < ARRAY_SIZE(g->funcs); i++) {
-+	for (i = 0; i < g->nfuncs; i++) {
- 		if (g->funcs[i] == function)
- 			break;
- 	}
- 
--	if (WARN_ON(i == ARRAY_SIZE(g->funcs)))
-+	if (WARN_ON(i == g->nfuncs))
- 		return -EINVAL;
- 
- 	spin_lock_irqsave(&pctrl->lock, flags);
-diff --git a/drivers/pinctrl/pinctrl-msm.h b/drivers/pinctrl/pinctrl-msm.h
-index 6e26f1b..7b2a227 100644
---- a/drivers/pinctrl/pinctrl-msm.h
-+++ b/drivers/pinctrl/pinctrl-msm.h
-@@ -65,7 +65,8 @@ struct msm_pingroup {
- 	const unsigned *pins;
- 	unsigned npins;
- 
--	unsigned funcs[8];
-+	unsigned *funcs;
-+	unsigned nfuncs;
- 
- 	s16 ctl_reg;
- 	s16 io_reg;
-diff --git a/drivers/pinctrl/pinctrl-msm8x74.c b/drivers/pinctrl/pinctrl-msm8x74.c
-index dde5529..57766d5 100644
---- a/drivers/pinctrl/pinctrl-msm8x74.c
-+++ b/drivers/pinctrl/pinctrl-msm8x74.c
-@@ -341,7 +341,7 @@ static const unsigned int sdc2_data_pins[] = { 151 };
- 		.name = "gpio" #id,			\
- 		.pins = gpio##id##_pins,		\
- 		.npins = ARRAY_SIZE(gpio##id##_pins),	\
--		.funcs = {				\
-+		.funcs = (int[]){			\
- 			MSM_MUX_NA, /* gpio mode */	\
- 			MSM_MUX_##f1,			\
- 			MSM_MUX_##f2,			\
-@@ -351,6 +351,7 @@ static const unsigned int sdc2_data_pins[] = { 151 };
- 			MSM_MUX_##f6,			\
- 			MSM_MUX_##f7			\
- 		},					\
-+		.nfuncs = 8,				\
- 		.ctl_reg = 0x1000 + 0x10 * id,		\
- 		.io_reg = 0x1004 + 0x10 * id,		\
- 		.intr_cfg_reg = 0x1008 + 0x10 * id,	\
--- 
-1.8.2.2
+We have things like
 
+  arch/x86/crypto/sha1_ssse3_glue.c:43:1: warning:
+‘externally_visible’ attribute have effect only on public objects
+[-Wattributes]
+   static asmlinkage void (*sha1_transform_asm)(u32 *, const char *,
+unsigned int);
+   ^
+
+and it seems to be because "asmlinkage" now means "visible", which is
+utter BS. "asmlinkage" is about the calling convention, and visibility
+is about something completely different.
+
+So the compiler is actually correct in warning about insane code.
+You're basically saying "static" + "visible", which makes no sense.
+But "static" + "asmlinkage void (*)" makes sense, because it's about
+the "void (*)" being a function with asmlinkage calling convention.
+
+So I think that adding "visible" to asmlinkage is actively wrong and
+misguided. And the compiler even told you so, but somebody then chose
+to ignore the compiler telling them that they did stupid things.
+
+Don't do crap like this.
+
+                   Linus
