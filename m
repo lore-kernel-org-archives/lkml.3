@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbaCaA5W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:57:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60275 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031AbaCaA5V (ORCPT
+	id S1752907AbaCaBFE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 21:05:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37693 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751645AbaCaBFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 20:57:21 -0400
-Date: Sun, 30 Mar 2014 19:57:13 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, rgb@redhat.com,
-        containers@lists.linux-foundation.org, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for v3.14] AUDIT: Allow login in non-init namespaces
-Message-ID: <20140331005713.GA6407@sergelap>
-References: <1396220874.6974.5.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396220874.6974.5.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 30 Mar 2014 21:05:01 -0400
+Message-ID: <1396227882.1241.36.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.2 000/200] 3.2.56-rc1 review
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>, akpm@linux-foundation.org
+Date: Mon, 31 Mar 2014 02:04:42 +0100
+In-Reply-To: <20140331004857.GA10898@roeck-us.net>
+References: <lsq.1396221814.369444335@decadent.org.uk>
+	 <20140331004857.GA10898@roeck-us.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-X5PQkgLpzW2x4KxrVumB"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric Paris (eparis@redhat.com):
-> It its possible to configure your PAM stack to refuse login if
-> audit messages (about the login) were unable to be sent.  This is common
-> in many distros and thus normal configuration of many containers. The
-> PAM modules determine if audit is enabled/disabled in the kernel based
-> on the return value from sending an audit message on the netlink socket.
-> If userspace gets back ECONNREFUSED it believes audit is disabled in the
-> kernel.  If it gets any other error else it refuses to let the login
-> proceed.
-> 
-> Just about ever since the introduction of namespaces the kernel audit
-> subsystem has returned EPERM if the task sending a message was not in
-> the init user or pid namespace.  So many forms of containers have never
-> worked if audit was enabled in the kernel.
-> 
-> BUT if the container was not in net_init then the kernel network code
-> would send ECONNREFUSED (instead of the audit code sending EPERM).  Thus
-> by pure accident/dumb luck/bug if an admin configured the PAM stack to
-> reject all logins that didn't talk to audit, but then ran the login
-> untility in the non-init_net namespace, it would work!!  Clearly this
-> was a bug, but it is a bug some people expected.
-> 
-> With the introduction of network namespace support in 3.14-rc1 the two
-> bugs stopped cancelling each other out.  Now, containers in the
-> non-init_net namespace refused to let users log in (just like PAM was
-> configfured!)  Obviously some people were not happy that what used to
-> let users log in, now didn't!
-> 
-> This fix is kinda hacky.  We return ECONNREFUSED for all non-init
-> relevant namespaces.  That means that not only will the old broken
-> non-init_net setups continue to work, now the broken non-init_pid or
-> non-init_user setups will 'work'.  They don't really work, since audit
-> isn't logging things.  But it's what most users want.
-> 
-> In 3.15 we should have patches to support not only the non-init_net
-> (3.14) namespace but also the non-init_pid and non-init_user namespace.
-> So all will be right in the world.  This just opens the doors wide open
-> on 3.14 and hopefully makes users happy, if not the audit system...
-> 
-> Reported-by: Andre Tomt <andre@tomt.net>
-> Reported-by: Adam Richter <adam_richter2004@yahoo.com>
-> Signed-off-by: Eric Paris <eparis@redhat.com>
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+--=-X5PQkgLpzW2x4KxrVumB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  kernel/audit.c | 12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 3392d3e..95a20f3 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -608,9 +608,19 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
->  	int err = 0;
->  
->  	/* Only support the initial namespaces for now. */
-> +	/*
-> +	 * We return ECONNREFUSED because it tricks userspace into thinking
-> +	 * that audit was not configured into the kernel.  Lots of users
-> +	 * configure their PAM stack (because that's what the distro does)
-> +	 * to reject login if unable to send messages to audit.  If we return
-> +	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
-> +	 * configured in and will let login proceed.  If we return EPERM
-> +	 * userspace will reject all logins.  This should be removed when we
-> +	 * support non init namespaces!!
-> +	 */
->  	if ((current_user_ns() != &init_user_ns) ||
->  	    (task_active_pid_ns(current) != &init_pid_ns))
-> -		return -EPERM;
-> +		return -ECONNREFUSED;
->  
->  	switch (msg_type) {
->  	case AUDIT_LIST:
-> -- 
-> 1.8.5.3
-> 
-> 
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+On Sun, 2014-03-30 at 17:49 -0700, Guenter Roeck wrote:
+> On Mon, Mar 31, 2014 at 12:23:34AM +0100, Ben Hutchings wrote:
+> > This is the start of the stable review cycle for the 3.2.56 release.
+> > There are 200 patches in this series, which will be posted as responses
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >=20
+> > Responses should be made by Wed Apr 02 00:00:00 UTC 2014.
+> > Anything received after that time might be too late.
+> >=20
+> Build results:
+> 	total: 116 pass: 87 skipped: 22 fail: 7
+>=20
+> Qemu tests all passed. Results are as expected.
+>=20
+> Details are available at http://server.roeck-us.net:8010/builders.
+
+Thanks Guenter.
+
+Ben.
+
+--=20
+Ben Hutchings
+friends: People who know you well, but like you anyway.
+
+--=-X5PQkgLpzW2x4KxrVumB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUzi/Kue/yOyVhhEJAQppqg/9E/qePJ7iAVEZwISlI3ZnEx2X5hwSvlCV
+vMtAjGqh4TBcV1WWJmfgX2Nb45v5axTsOyiGox8+ekaTQOWEWWQbQsNzr44Rx1Rw
+FDPt/BB0rFTlnNtUDZjJZc88pM6+DfLk7iERhlRN0r5LG9DEqh04DDixy4L06pMx
+TZqhNzEtW8nJZw9YBg0yphxCngQz/q+QHYlMZ+YffvYmPV5Jn+O2eLWXfPNLDJoz
+jE4CRqekuQZinqLAfAqx7RkUBk0RUcOPrdqw3NU0SpIun7in1AeFfznl7WTrrrMy
+I5+zK3m8dU2LUi99AUSlF9HjKY9SkeB86IJueCWqCkjBMdJ/mURImKUgSkazUYkW
+rMawnEw2TTvuomV9kmqBgSYGDEQZgUtZN4bSkWJnrCiTdgzCqMEBd/X9fhhWMQWM
+z9Vog2INo4POev+vuIU/bgBdL4PCDGq+hCo+7EJgy2Gu6i6ahYcE2thpj2nNKpEB
+DLUV57cKlqJTKd3QE46fi/a8vFbq14GSr+22lVP75Uq7UcgkeTGTDywxV/pyNkT/
+9KvxAprLqNjzrAHnN00AUoRE5aLV2CosLFN+qvu9Lgm02JogvOHTYaGR+FSlAoRG
+jwwNju+PSHyV1IM2aB9CsvOzP8M2ktNPepgCwIF4nkss0ftMmlTLITWoyYZnqzz0
+0iC/yRXCjtU=
+=/sJG
+-----END PGP SIGNATURE-----
+
+--=-X5PQkgLpzW2x4KxrVumB--
