@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaCaLS2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 07:18:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59268 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaCaLS0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 07:18:26 -0400
-Date: Mon, 31 Mar 2014 13:18:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
-In-Reply-To: <alpine.DEB.2.10.1403270940250.27563@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.02.1403311201520.14882@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403201045560.21603@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403201609540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403201724430.23339@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403210956000.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403211610430.30801@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403221118060.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403221419000.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1403231613230.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403240017430.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403251702110.19541@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403252220110.4094@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403261731390.26530@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403262248170.31401@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403270940250.27563@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752633AbaCaLSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 07:18:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49888 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752508AbaCaLSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 07:18:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,764,1389772800"; 
+   d="scan'208";a="503450720"
+Date: Mon, 31 Mar 2014 19:18:49 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [do_xor_speed] WARNING: CPU: 0 PID: 1 at init/main.c:708
+ do_one_initcall()
+Message-ID: <20140331111849.GA12489@localhost>
+References: <20140331003825.GA11782@localhost>
+ <53391483.9010800@panasas.com>
+ <20140331081346.GA5349@localhost>
+ <53394A11.6060204@panasas.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1788903429-1396264715=:14882"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53394A11.6060204@panasas.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-1788903429-1396264715=:14882
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 27 Mar 2014, Vince Weaver wrote:
-> On Wed, 26 Mar 2014, Thomas Gleixner wrote:
-> > Ok. So we know now what we are looking for.
+On Mon, Mar 31, 2014 at 01:57:21PM +0300, Boaz Harrosh wrote:
+> On 03/31/2014 11:13 AM, Fengguang Wu wrote:
+> > On Mon, Mar 31, 2014 at 10:08:51AM +0300, Boaz Harrosh wrote:
+> >> Sorry about that I forgot about the experimental rule, fixed now.
+> >>
+> >> Is there a way for a white list. With -experimental I need to say
+> >> every branch I do not want included is there a way to say only
+> >> the branches I do want included?
 > > 
-> > [    1.579996] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-> > ÿ[    1.607279] 00:09: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
-> > [    1.615032] kobject: 'ttyS1' (ffff88011772ac10): kobject_release, parent           (null) (delayed 250)
-> > [    1.624534] kobject: '(null)' (ffff8801177400f0): kobject_release, parent           (null) (delayed 500)
-> > [    1.654213] 0000:00:16.3: ttyS1 at I/O 0xf0e0 (irq = 19, base_baud = 115200) is a 16550A
+> > Yes, sure. You can tell me a list of branch patterns that is suitable
+> > for testing and I can blacklist everything else in your tree.
 > > 
-> > [    3.294047] Invalid timer base: tmr ffff880117740150 tmr->base           (null) base ffff880118898000
+> > Thanks,
+> > Fengguang
 > > 
-> > 1634110us : obj: ffff880117740130 initialized kobject_delayed_cleanup+0x0/0x90
-> > 
-> > So that happens in the context of the 8250 serial driver.
-> > 
-> > ...
-> > 
-> > Below is a patch which gives us the call path of the unnamed object
-> > which causes the crash.
 > 
-> I've attached the boot log with that patch applied.
+> Thanks Wu, I hate to be trouble. Am I the only one who has this
+> problem ? Its that I use this git tree also as a public development
+> tree, when need of collaboration.
 
-Vince, can you please disable CONFIG_DEBUG_KOBJECT_RELEASE and remove
-all the debug patches to see whether the issue goes away?
+You are not the only one that needs the manual blacklist/whitelist -
+that's why we already have this mechanism. :)
 
-I had a deeper look down that code path and the issue is, that the
-serial core is not compatible with the deferred kobject release.
+> For now it is good, I'll try to remember when I push new branches
 
-The tty_io layer uses a kobject embedded in its internal tty device
-representation and reuses that.
-
-So it seems that for whatever reason the tty layer releases ttyS1 and
-then initializes it again. So the deferred release will queue the
-object for release while the tty layer happily reinitializes it.
-
-See tty_register_device() and tty_unregister.
-
-Greg?
+Or better, we are not feeling bothered at all when hit bugs in your
+and others' WIP trees - it's an achievement to be able to catch more
+bugs, and our test system is designed to do the job efficiently. :)
 
 Thanks,
-
-	tglx
---8323329-1788903429-1396264715=:14882--
+Fengguang
