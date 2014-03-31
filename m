@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaCaS0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 14:26:44 -0400
-Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:51420 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654AbaCaS0n (ORCPT
+	id S1754094AbaCaS1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 14:27:11 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40460 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717AbaCaS1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 14:26:43 -0400
-Message-ID: <fc172535ee81e02ac60a290f9d5f5fd4@mwinf5d64.me-wanadoo.net>
-From: Thomas Vegas <thomas_75@safe-mail.net>
-To: gregkh@linuxfoundation.org
-Cc: joe@perches.com
-Cc: linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org
-Date: Mon, 31 Mar 2014 19:50:22 +0200
-Subject: [PATCH v3 2/2] staging: serqt_usb2: Clean up initializations of variables.
+	Mon, 31 Mar 2014 14:27:07 -0400
+Date: Mon, 31 Mar 2014 13:23:42 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] Input: pmic8xxx-pwrkey - Set sane default for debounce
+ time
+Message-ID: <20140331182342.GD28265@joshc.qualcomm.com>
+References: <1396289664-31893-1-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396289664-31893-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a more common kernel coding style.
+On Mon, Mar 31, 2014 at 11:14:24AM -0700, Stephen Boyd wrote:
+> If the debounce time is 0 our usage of ilog2() later on in this
+> driver will cause undefined behavior. If CONFIG_OF=n this fact is
+> evident to the compiler, and it emits a call to ____ilog2_NaN()
+> which doesn't exist. Fix this by setting a sane default for
+> debounce.
+> 
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/input/misc/pmic8xxx-pwrkey.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+> index 1cb8fda7a166..27add04676e1 100644
+> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
+> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+> @@ -92,7 +92,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>  	bool pull_up;
+>  
+>  	if (of_property_read_u32(pdev->dev.of_node, "debounce", &kpd_delay))
+> -		kpd_delay = 0;
+> +		kpd_delay = 15625;
 
-Signed-off-by: Thomas Vegas <thomas_75@safe-mail.net>
----
- drivers/staging/serqt_usb2/serqt_usb2.c | 15 ++++-----------
- 1 file changed, 4 insertions(+), 11 deletions(-)
+Should "debounce" even be optional?  I'm wondering if we should just
+make it required...
 
-diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-index a04cfc3..35d84fd 100644
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@ -990,18 +990,11 @@ static void qt_block_until_empty(struct tty_struct *tty,
- static void qt_close(struct usb_serial_port *port)
- {
- 	struct usb_serial *serial = port->serial;
--	struct quatech_port *qt_port;
--	struct quatech_port *port0;
--	struct tty_struct *tty;
-+	struct tty_struct *tty = tty_port_tty_get(&port->port);
-+	unsigned int index = port->port_number;
-+	struct quatech_port *qt_port = qt_get_port_private(port);
-+	struct quatech_port *port0 = qt_get_port_private(serial->port[0]);
- 	int status;
--	unsigned int index;
--	status = 0;
--
--	tty = tty_port_tty_get(&port->port);
--	index = port->port_number;
--
--	qt_port = qt_get_port_private(port);
--	port0 = qt_get_port_private(serial->port[0]);
- 
- 	/* shutdown any bulk reads that might be going on */
- 	if (serial->num_bulk_out)
+At the very least this default value should be documented in the DT
+binding.
+
 -- 
-1.8.3.2
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
