@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797AbaCaNXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35587 "EHLO
+	id S1754111AbaCaNYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:24:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35682 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654AbaCaNXr (ORCPT
+	with ESMTP id S1754022AbaCaNYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:47 -0400
+	Mon, 31 Mar 2014 09:24:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Anton Blanchard <anton@samba.org>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 18/71] ALSA: usb-audio: Add quirk for Logitech Webcam C500
-Date: Mon, 31 Mar 2014 14:22:24 +0100
-Message-Id: <1396272197-13394-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 35/71] net: unix socket code abuses csum_partial
+Date: Mon, 31 Mar 2014 14:22:41 +0100
+Message-Id: <1396272197-13394-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,31 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Anton Blanchard <anton@samba.org>
 
-commit e805ca8b0a9b6c91099c0eaa4b160a1196a4ae25 upstream.
+commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
 
-Logitech C500 (046d:0807) needs the same workaround like other
-Logitech Webcams.
+The unix socket code is using the result of csum_partial to
+hash into a lookup table:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+	unix_hash_fold(csum_partial(sunaddr, len, 0));
+
+csum_partial is only guaranteed to produce something that can be
+folded into a checksum, as its prototype explains:
+
+ * returns a 32-bit number suitable for feeding into itself
+ * or csum_tcpudp_magic
+
+The 32bit value should not be used directly.
+
+Depending on the alignment, the ppc64 csum_partial will return
+different 32bit partial checksums that will fold into the same
+16bit checksum.
+
+This difference causes the following testcase (courtesy of
+Gustavo) to sometimes fail:
+
+#include <sys/socket.h>
+#include <stdio.h>
+
+int main()
+{
+	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	int i = 1;
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
+
+	struct sockaddr addr;
+	addr.sa_family = AF_LOCAL;
+	bind(fd, &addr, 2);
+
+	listen(fd, 128);
+
+	struct sockaddr_storage ss;
+	socklen_t sslen = (socklen_t)sizeof(ss);
+	getsockname(fd, (struct sockaddr*)&ss, &sslen);
+
+	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
+		perror(NULL);
+		return 1;
+	}
+	printf("OK\n");
+	return 0;
+}
+
+As suggested by davem, fix this by using csum_fold to fold the
+partial 32bit checksum into a 16bit checksum before using it.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/mixer.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/unix/af_unix.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
-index 9c6a7fe..497cfb4 100644
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -842,6 +842,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
- 		}
- 		break;
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 5959b80..079005a 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -151,9 +151,8 @@ static inline void unix_set_secdata(struct scm_cookie *scm, struct sk_buff *skb)
  
-+	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
- 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+ static inline unsigned int unix_hash_fold(__wsum n)
+ {
+-	unsigned int hash = (__force unsigned int)n;
++	unsigned int hash = (__force unsigned int)csum_fold(n);
+ 
+-	hash ^= hash>>16;
+ 	hash ^= hash>>8;
+ 	return hash&(UNIX_HASH_SIZE-1);
+ }
 -- 
 1.9.1
 
