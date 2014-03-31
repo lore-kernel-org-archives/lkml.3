@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981AbaCaMqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:46:39 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56108 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaCaMqh (ORCPT
+	id S1753252AbaCaMqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:46:53 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:46227 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087AbaCaMqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:46:37 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC] Is wait_event_interruptible_timeout() broken ?
-Date: Mon, 31 Mar 2014 14:48:38 +0200
-Message-ID: <1651195.SHdSPrSxor@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
+	Mon, 31 Mar 2014 08:46:50 -0400
+Message-ID: <533963AE.30405@monstr.eu>
+Date: Mon, 31 Mar 2014 14:46:38 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        michal.simek@xilinx.com, grant.likely@linaro.org,
+        gregkh@linuxfoundation.org, jason@lakedaemon.net,
+        ezequiel.garcia@free-electrons.com, arnd@arndb.de, dwmw2@infradead.org,
+        computersforpeace@gmail.com, artem.bityutskiy@linux.intel.com,
+        pekon@ti.com, jussi.kivilinna@iki.fi, acourbot@nvidia.com,
+        ivan.khoronzhuk@ti.com, joern@logfs.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, kpc528@gmail.com,
+        kalluripunnaiahchoudary@gmail.com,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: Re: [PATCH RFC 3/3] nand: pl353: Add driver for arm pl353 smc nand
+ interface
+References: <1395944467-26291-1-git-send-email-punnaia@xilinx.com> <04cb5d02-db4c-4a4c-ba3c-3a5958e42324@VA3EHSMHS036.ehs.local>
+In-Reply-To: <04cb5d02-db4c-4a4c-ba3c-3a5958e42324@VA3EHSMHS036.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="Aw4lsEHKOjuKwtjRTTjf7ualwFbVhnr49"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Aw4lsEHKOjuKwtjRTTjf7ualwFbVhnr49
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-While working on a driver for an I2C device I noticed that a call to 
-wait_event_interruptible_timeout() would wait much longer than expected 
-(2s-10s instead of 200ms). I've started by the obvious and checked the jiffies 
-counter, which runs fine at the expected rate.
+On 03/27/2014 07:21 PM, Punnaiah Choudary Kalluri wrote:
+> Add driver for arm pl353 static memory controller nand interface.
+> This controller is used in xilinx zynq soc for interfacing the nand
+> flash memory.
+>=20
+> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+> ---
+>  drivers/mtd/nand/Kconfig      |    8 +
+>  drivers/mtd/nand/Makefile     |    1 +
+>  drivers/mtd/nand/pl353_nand.c | 1122 +++++++++++++++++++++++++++++++++=
+++++++++
+>  3 files changed, 1131 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mtd/nand/pl353_nand.c
+>=20
+> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+> index 90ff447..31c1d0c 100644
+> --- a/drivers/mtd/nand/Kconfig
+> +++ b/drivers/mtd/nand/Kconfig
+> @@ -510,4 +510,12 @@ config MTD_NAND_XWAY
+>  	  Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is a=
+ttached
+>  	  to the External Bus Unit (EBU).
+> =20
+> +config MTD_NAND_PL353
+> +	tristate "ARM Pl353 NAND flash driver"
+> +	depends on MTD_NAND && ARM
+> +	select PL353_SMC
 
-Further investigation showed that the schedule_timeout() call inside 
-wait_event_interruptible_timeout() returns immediately. As the wait condition 
-involves I2C access and thus takes significantly more time to run than 
-schedule_timeout(), the probability of schedule_timeout() crossing a jiffies 
-boundary is relatively small. The function thus returns the timeout value it 
-received unchanged, and the jiffies boundary crossed by the condition check 
-remains unnoticed. The actual timeout is thus much longer than requested.
+Here should be probably depends on PL353_SMC.
+I just found it.
 
-I still need to investigate why schedule_timeout() returns immediately (help 
-would be appreciated, I'm not familiar with the scheduler), but regardless of 
-that I believe that wait_event_interruptible_timeout() should behave properly. 
-Shouldn't it store the target jiffies before the loop and compare the current 
-jiffies as part of the exit condition instead of relying on schedule_timeout() 
-to update the timeout ?
+Thanks,
+Michal
 
-I don't want to break the recent effort to consolidate all wait macros around 
-___wait_event, so I'd appreciate both opinions on whether this should be 
-considered as a wait_event_interruptible_timeout() bug, and hints regarding 
-the preferred way to fix it.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
--- 
-Regards,
 
-Laurent Pinchart
 
+--Aw4lsEHKOjuKwtjRTTjf7ualwFbVhnr49
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlM5Y64ACgkQykllyylKDCH+1ACcCvakTIoVaiVC/ixHNJ1sYzfq
+lbUAnjx45bVGYZDfn40TFNOOQR3Cq1nd
+=lZl0
+-----END PGP SIGNATURE-----
+
+--Aw4lsEHKOjuKwtjRTTjf7ualwFbVhnr49--
