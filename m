@@ -1,82 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaCaPbt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 11:31:49 -0400
-Received: from smtprelay0210.hostedemail.com ([216.40.44.210]:56389 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753514AbaCaPbr (ORCPT
+	id S1753708AbaCaPeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 11:34:09 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33371 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbaCaPeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 11:31:47 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2904:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: verse43_831e14dc5fa1c
-X-Filterd-Recvd-Size: 2436
-Message-ID: <1396279898.21529.39.camel@joe-AO722>
-Subject: [RFC] quiet checkpatch style recommendation about no spaces around
- bitfield :
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Rocco Folino <lordzen87@gmail.com>, aaro.koskinen@iki.fi,
-        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Date: Mon, 31 Mar 2014 08:31:38 -0700
-In-Reply-To: <20140331150638.GQ6991@mwanda>
-References: <1396269280-32665-1-git-send-email-lordzen87@gmail.com>
-	 <20140331150638.GQ6991@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Mar 2014 11:34:06 -0400
+Date: Mon, 31 Mar 2014 17:34:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/kaslr changes for v3.15
+Message-ID: <20140331153402.GA12849@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 18:06 +0300, Dan Carpenter wrote:
-> On Mon, Mar 31, 2014 at 02:34:40PM +0200, Rocco Folino wrote:
-> > Fixed bit fields code style issues
-[]
-> > diff --git a/drivers/staging/octeon-usb/octeon-hcd.h b/drivers/staging/octeon-usb/octeon-hcd.h
-[]
-> > @@ -143,13 +143,13 @@ union cvmx_usbcx_gahbcfg {
-> >  	 *	* 1'b1: Unmask the interrupt assertion to the application.
-> >  	 */
-> >  	struct cvmx_usbcx_gahbcfg_s {
-> > -		uint32_t reserved_9_31	: 23;
-> > -		uint32_t ptxfemplvl	: 1;
-> > -		uint32_t nptxfemplvl	: 1;
-> > -		uint32_t reserved_6_6	: 1;
-> > -		uint32_t dmaen		: 1;
-> > -		uint32_t hbstlen	: 4;
-> > -		uint32_t glblintrmsk	: 1;
-> > +		uint32_t reserved_9_31:23;
-> > +		uint32_t ptxfemplvl:1;
-> > +		uint32_t nptxfemplvl:1;
-> > +		uint32_t reserved_6_6:1;
-> > +		uint32_t dmaen:1;
-> > +		uint32_t hbstlen:4;
-> > +		uint32_t glblintrmsk:1;
-> >  	} s;
-> The warning here is:
-> ERROR: spaces prohibited around that ':' (ctx:WxW)
-> I have done a kernel wide search for these warnings
+Linus,
 
-Really?  How?
+Please pull the latest x86-kaslr-for-linus git tree from:
 
->  and I think we
-> should disable this warning.  It has too many false positives like this.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-kaslr-for-linus
 
-It does seem a bit noisy to me too.
+   # HEAD: 9dd721c6dbfc310f94306902611f86dda87a45fa x86, kaslr: fix module lock ordering problem
 
-Andy?  Andrew?
+This adds kernel module load address randomization.
 
->From a treewide checkpatch scan next-20140307:
+ Thanks,
 
-$ grep "spaces prohibited around that ':' (ctx:WxW)" checkpatch.all | wc -l
-11194
+	Ingo
 
-I don't see any other uses of that message for
-anything other than bitfields.
+------------------>
+Kees Cook (2):
+      x86, kaslr: randomize module base load address
+      x86, kaslr: fix module lock ordering problem
 
 
+ Documentation/kernel-parameters.txt |  4 ++--
+ arch/x86/kernel/module.c            | 46 ++++++++++++++++++++++++++++++++++---
+ 2 files changed, 45 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 7116fda..580a60c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2053,8 +2053,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			IOAPICs that may be present in the system.
+ 
+ 	nokaslr		[X86]
+-			Disable kernel base offset ASLR (Address Space
+-			Layout Randomization) if built into the kernel.
++			Disable kernel and module base offset ASLR (Address
++			Space Layout Randomization) if built into the kernel.
+ 
+ 	noautogroup	Disable scheduler automatic task group creation.
+ 
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index 18be189..e69f988 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -28,6 +28,7 @@
+ #include <linux/mm.h>
+ #include <linux/gfp.h>
+ #include <linux/jump_label.h>
++#include <linux/random.h>
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+@@ -43,13 +44,52 @@ do {							\
+ } while (0)
+ #endif
+ 
++#ifdef CONFIG_RANDOMIZE_BASE
++static unsigned long module_load_offset;
++static int randomize_modules = 1;
++
++/* Mutex protects the module_load_offset. */
++static DEFINE_MUTEX(module_kaslr_mutex);
++
++static int __init parse_nokaslr(char *p)
++{
++	randomize_modules = 0;
++	return 0;
++}
++early_param("nokaslr", parse_nokaslr);
++
++static unsigned long int get_module_load_offset(void)
++{
++	if (randomize_modules) {
++		mutex_lock(&module_kaslr_mutex);
++		/*
++		 * Calculate the module_load_offset the first time this
++		 * code is called. Once calculated it stays the same until
++		 * reboot.
++		 */
++		if (module_load_offset == 0)
++			module_load_offset =
++				(get_random_int() % 1024 + 1) * PAGE_SIZE;
++		mutex_unlock(&module_kaslr_mutex);
++	}
++	return module_load_offset;
++}
++#else
++static unsigned long int get_module_load_offset(void)
++{
++	return 0;
++}
++#endif
++
+ void *module_alloc(unsigned long size)
+ {
+ 	if (PAGE_ALIGN(size) > MODULES_LEN)
+ 		return NULL;
+-	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
+-				GFP_KERNEL | __GFP_HIGHMEM, PAGE_KERNEL_EXEC,
+-				NUMA_NO_NODE, __builtin_return_address(0));
++	return __vmalloc_node_range(size, 1,
++				    MODULES_VADDR + get_module_load_offset(),
++				    MODULES_END, GFP_KERNEL | __GFP_HIGHMEM,
++				    PAGE_KERNEL_EXEC, NUMA_NO_NODE,
++				    __builtin_return_address(0));
+ }
+ 
+ #ifdef CONFIG_X86_32
