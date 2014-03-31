@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303AbaCaU3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:29:34 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:37946 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaCaU3d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:29:33 -0400
-Date: Mon, 31 Mar 2014 16:29:16 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/iommu change for v3.15
-Message-ID: <20140331202916.GC8050@hmsreliant.think-freely.org>
-References: <20140331144934.GA12335@gmail.com>
- <CA+55aFyAi0Vh6L5C8G6Jm3-FP81TNZekM_MiN-0wA3vvg3tSCQ@mail.gmail.com>
- <alpine.DEB.2.02.1403312144280.14882@ionos.tec.linutronix.de>
+	id S1751351AbaCaUbZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:31:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57878 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750955AbaCaUbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 16:31:22 -0400
+Message-ID: <5339D096.4040302@suse.cz>
+Date: Mon, 31 Mar 2014 22:31:18 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1403312144280.14882@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Levente Kurusa <levex@linux.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 2/2 v3] initramfs: print error and shell out for unsupported
+ content
+References: <532CC625.7020509@ahsoftware.de> <1395491361-28069-1-git-send-email-holler@ahsoftware.de> <1395491361-28069-2-git-send-email-holler@ahsoftware.de> <532DD4E7.3070706@ahsoftware.de>
+In-Reply-To: <532DD4E7.3070706@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 09:45:43PM +0200, Thomas Gleixner wrote:
-> On Mon, 31 Mar 2014, Linus Torvalds wrote:
+Dne 22.3.2014 19:22, Alexander Holler napsal(a):
+> Am 22.03.2014 13:29, schrieb Alexander Holler:
+>> The initramfs generation is broken for file and directory names which
+>> contain
+>> colons, spaces and other unusual characters. Print an error and don't
+>> try to
+>> continue.
 > 
-> > On Mon, Mar 31, 2014 at 7:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > > Neil Horman (1):
-> > >       x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
-> > 
-> > Before I pull this, I want somebody to double-check it:
-> > 
-> > > -       if (revision == 0x13)
-> > > +       if (revision < 0x13)
-> > >                 set_irq_remapping_broken();
-> > 
-> > This change does *not* match the comment just above it. The comment
-> > talks very much about revision 13.
-> > 
-> > So the comment should be fixed, and/or that "< 0x13" should perhaps be
-> > "<= 0x13".
-> > 
-> > Because making it "less than" simply makes no sense in light of the
-> > comment. Does revision 13 suddenly work? Was that where it was fixed?
-> > If so, please fix the comment.
+> (...)
+>> +    # Files and directories with spaces and colons are unsupported.
+>> +    local unsupported=$(find "${srcdir}" -regex '.*\(:\|
+>> \|\n\|\r\|\t\).*')
 > 
-> That is my bad. I applied V1 of the patch instead of V2 which had the
-> <= 0x13 instead of < 0x13.
-> 
-> Please drop the pull request for now. I'll fix it up and we resubmit.
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> 
-What Thomas said.  That was caught and fixed already.  sorry for the noise.
-Neil
+> I've just noted that -regex isn't POSIX. I don't know the kernel rules
+> regarding this, and I don't care. But it might be a blocker for this patch.
 
+The bigger problem is that there is no C-style quoting in regexps or
+character classes matches any file with 'n', 'r' or 't' in its name. How
+about
+
+  -name '*[:[:space:]]*'
+
+?
+
+Michal
