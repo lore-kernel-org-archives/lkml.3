@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaCaHKD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 03:10:03 -0400
-Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:30546 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561AbaCaHKA (ORCPT
+	id S1753375AbaCaHKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 03:10:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55502 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283AbaCaHKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 03:10:00 -0400
-Message-ID: <f10faefdec9dffd231e8e020c2b6af38@mwinf5d69.me-wanadoo.net>
-From: Thomas Vegas <thomas_75@safe-mail.net>
-To: gregkh@linuxfoundation.org
-Cc: joe@perches.com
-Cc: linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org
-Date: Mon, 31 Mar 2014 08:51:04 +0200
-Subject: [PATCH v2] staging: serqt_usb2: Fix coding style issues.
+	Mon, 31 Mar 2014 03:10:18 -0400
+Date: Mon, 31 Mar 2014 09:10:15 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, christoffer.dall@linaro.org,
+        linux-kernel@vger.kernel.org, olof@lixom.net, benh@kernel.crashing.org,
+        rob.herring@linaro.org
+Subject: Re: [RFC 0/5] of: Automatic console registration cleanups
+Message-ID: <20140331071014.GN17250@pengutronix.de>
+References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:05:09 up 218 days, 16:35, 47 users,  load average: 0.11, 0.25,
+ 0.22
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add blank lines after declarations and cleanup initializations.
+On Fri, Mar 28, 2014 at 09:08:00AM -0700, Grant Likely wrote:
+> Hi all,
+> 
+> This is a series that I've been playing with over the last few days to
+> clean up the selection of default console devices when using the device
+> tree. The device tree defines a way of specifying the console by using a
+> "stdout-path" property in the /chosen node, but very few drivers
+> actually attempt to use that data, and so for most platforms there needs
+> to be a "console=" line in the command line if a serial port is intended
+> to be used as the console.
+> 
+> With this series, if there is a /chosen/stdout-path property, and if
+> that property points to a serial port node, then when the serial driver
+> registers the port, the core uart_add_one_port() function will notice
+> and if no console= argument was provided then add it as a preferred
+> console.
+> 
+> I've not tested this very extensively yet, but I want to get some
+> feedback before I go further.
 
-Signed-off-by: Thomas Vegas <thomas_75@safe-mail.net>
----
- drivers/staging/serqt_usb2/serqt_usb2.c | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+I gave it a test on i.MX. It works as expected with both
+linux,stdout-path and stdout-path. Specifying a console on the
+commandline still works and overrides the devicetree setting.
 
-diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-index 0267dd8..10a7240 100644
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@ -990,18 +990,11 @@ static void qt_block_until_empty(struct tty_struct *tty,
- static void qt_close(struct usb_serial_port *port)
- {
- 	struct usb_serial *serial = port->serial;
--	struct quatech_port *qt_port;
--	struct quatech_port *port0;
--	struct tty_struct *tty;
-+	struct quatech_port *qt_port = qt_get_port_private(port);
-+	struct quatech_port *port0 = qt_get_port_private(serial->port[0]);
-+	struct tty_struct *tty = tty_port_tty_get(&port->port);
- 	int status;
--	unsigned int index;
--	status = 0;
--
--	tty = tty_port_tty_get(&port->port);
--	index = port->port_number;
--
--	qt_port = qt_get_port_private(port);
--	port0 = qt_get_port_private(serial->port[0]);
-+	unsigned int index = port->port_number;
- 
- 	/* shutdown any bulk reads that might be going on */
- 	if (serial->num_bulk_out)
-@@ -1030,7 +1023,6 @@ static void qt_close(struct usb_serial_port *port)
- 			dev_dbg(&port->dev, "Shutdown interrupt_in_urb\n");
- 			usb_kill_urb(serial->port[0]->interrupt_in_urb);
- 		}
--
- 	}
- 
- 	if (qt_port->write_urb) {
-@@ -1268,9 +1260,9 @@ static void qt_set_termios(struct tty_struct *tty,
- 	if (I_IXOFF(tty) || I_IXON(tty)) {
- 		unsigned char stop_char = STOP_CHAR(tty);
- 		unsigned char start_char = START_CHAR(tty);
--		status =
--		    box_set_sw_flow_ctrl(port->serial, index, stop_char,
--				      start_char);
-+
-+		status = box_set_sw_flow_ctrl(port->serial, index, stop_char,
-+					      start_char);
- 		if (status < 0)
- 			dev_dbg(&port->dev,
- 				"box_set_sw_flow_ctrl (enabled) failed\n");
+Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
 -- 
-1.8.3.2
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
