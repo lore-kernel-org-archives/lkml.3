@@ -1,188 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaCaMrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 08:47:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16535 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752565AbaCaMrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 08:47:35 -0400
-X-IronPort-AV: E=Sophos;i="4.97,765,1389715200"; 
-   d="scan'208";a="9800460"
-Message-ID: <533964AE.9070503@cn.fujitsu.com>
-Date: Mon, 31 Mar 2014 20:50:54 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752557AbaCaMuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:50:40 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:47984
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751310AbaCaMuj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 08:50:39 -0400
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zz98dI9371Ic89bh936eI542I328cMzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h1de097hz2dh109h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+X-WSS-ID: 0N3AX06-08-7ZY-02
+X-M-MSG: 
+From: "Skidanov, Alexey" <Alexey.Skidanov@amd.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: CONFIG_PREEMPT_COUNT
+Thread-Topic: CONFIG_PREEMPT_COUNT
+Thread-Index: Ac9MzRkbuCbbxoUOSeu2AxrjYz5GfQAMKgqAAAfdxOA=
+Date: Mon, 31 Mar 2014 12:50:30 +0000
+Message-ID: <AD975D71AAD7784D8D1265DF6444C2FD0132AD98@storexdag03.amd.com>
+References: <AD975D71AAD7784D8D1265DF6444C2FD0132AD51@storexdag03.amd.com>
+ <1396268697.2110.15.camel@x220>
+In-Reply-To: <1396268697.2110.15.camel@x220>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.0.144]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 4/4] workqueue: Include ordered workqueues in anon workqueue
- sysfs interface
-References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com> <1395940862-31428-5-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1395940862-31428-5-git-send-email-fweisbec@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/31 20:44:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/31 20:44:11,
-	Serialize complete at 2014/03/31 20:44:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2VCojsi026418
 
-On 03/28/2014 01:21 AM, Frederic Weisbecker wrote:
-> Changing the cpu affinity of workqueues through the sysfs interface
-> is done with apply_workqueue_attrs() by replacing the old pwqs
-> of a workqueue with new ones tied to worker pools that are affine to the
-> new cpumask.
-> 
-> We can't do that with ordered workqueues however because the serialization
-> of their works is enforced by keeping a single worker running. Replacing
-> it with a new pool of single worker may open a small race window where
-> two workers could run concurrently during the pwq replacement. Eventually
-> this can break the ordering guarantee.
-> 
-> So ordered workqueues get a special treatment here. Since they run a
-> single pwq with a single pool containing a single worker that all
-> ordered workqueue should share, we simply change this worker affinity
-> to the new cpumask.
-> 
-> Also just in case this behaviour change a bit in the future and some
-> ordered workqueues have their private worker, lets iterate the affinity
-> change over all ordered workqueue pools. This way it works in both cases:
-> whether a single worker is shared among all ordered workqueue pools or
-> some of them run their private one.
-> 
-> Suggested-by: Tejun Heo <tj@kernel.org>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Mike Galbraith <bitbucket@online.de>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  kernel/workqueue.c | 68 ++++++++++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 56 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 2863c39..18807c7 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -3330,10 +3330,60 @@ static ssize_t wq_anon_cpumask_show(struct device *dev,
->  	return written;
->  }
->  
-> -/* Must be called with wq_unbound_mutex held */
-> -static int wq_anon_cpumask_set(cpumask_var_t cpumask)
-> +static int wq_ordered_cpumask_set(struct workqueue_struct *wq, cpumask_var_t cpumask)
-> +{
-> +	struct pool_workqueue *pwq;
-> +	struct worker_pool *pool;
-> +	struct worker *worker;
-> +	int ret;
-> +	int wi;
-> +
-> +	mutex_lock(&wq_pool_mutex);
-> +	pwq = list_first_entry(&wq->pwqs, typeof(*pwq), pwqs_node);
-> +	pool = pwq->pool;
-> +
-> +	mutex_lock(&pool->manager_mutex);
-> +	for_each_pool_worker(worker, wi, pool) {
-> +		/* CHECKME: Should we hold pool->lock here? */
+Paul,
+Thank you for your answer. We have PREEMT_VOLUNTARY  defined, so that is the reason why the CONFIG_PREEMPT_COUNT is undefined. 
+The second question (that was badly formatted in original message) was:
 
-Don't need to hold pool->lock which is a spinlock.
-pool->manager_mutex is enough to apply cpumask setting
-(but we only do it in cpuhotplug callbacks now).
+In the previous kernel versions, spin_lock() and spin_unlock() call preempt_enable() and preempt_disable() respectively,
+ensuring that the current task will not be preempted by any other task while lock is held. Is this still ensured with these macros defined as â€œdo nothingâ€ ?
 
-> +		ret = set_cpus_allowed_ptr(worker->task, cpumask);
+-----Original Message-----
+From: Paul Bolle [mailto:pebolle@tiscali.nl] 
+Sent: Monday, March 31, 2014 3:25 PM
+To: Skidanov, Alexey
+Cc: linux-kernel@vger.kernel.org; Gabbay, Oded
+Subject: Re: CONFIG_PREEMPT_COUNT
 
-no.
+Alexey,
 
-even the pwq(of ordered wq) shares the pool with other unbound pwq.
-we shouldn't change the worker's attr.
+On Mon, 2014-03-31 at 10:38 +0000, Skidanov, Alexey wrote:
+> What is the purpose of CONFIG_PREEMPT_COUNT define and how I can 
+> define it?
 
-Although we can change the ordered wq to use dedicated pool.
-But if we do so, I would recommend to remove the ordered wq from workqueue.c totally
-and ask the callers use queue_kthread_work() instead.
+CONFIG_PREEMPT_COUNT is a Kconfig macro, ie it's (in short) to be defined as a result one of the "*config" make targets. And doing
+    git grep -nw PREEMPT_COUNT
 
-(dedicated or any)pool requires two workers at least, and requires much
-more other resource.
+gives
+    kernel/Kconfig.preempt:38:      select PREEMPT_COUNT
+    kernel/Kconfig.preempt:57:config PREEMPT_COUNT
+    lib/Kconfig.debug:964:  select PREEMPT_COUNT
 
-> +		if (ret)
-> +			break;
-> +	}
-> +	if (!ret) {
-> +		cpumask_copy(pool->attrs->cpumask, cpumask);
+And looking at those hits it seems PREEMPT_COUNT will be set, and therefore CONFIG_PREEMPT_COUNT defined, if either PREEMPT or DEBUG_ATOMIC_SLEEP are set in a .config.
 
-pool->attr should be constant (except initialization/destruction).
+(I'm not familiar with PREEMPT_COUNT. I think I never used it.)
 
-> +	}
-> +	mutex_unlock(&pool->manager_mutex);
-> +
-> +	if (!ret) {
-> +		mutex_lock(&wq->mutex);
-> +		cpumask_copy(wq->unbound_attrs->cpumask, cpumask);
-> +		mutex_unlock(&wq->mutex);
-> +	}
-> +
-> +	mutex_unlock(&wq_pool_mutex);
-> +
-> +	return ret;
-> +}
-> +
-> +static int wq_anon_cpumask_set(struct workqueue_struct *wq, cpumask_var_t cpumask)
->  {
->  	struct workqueue_attrs *attrs;
-> +	int ret;
-> +
-> +	attrs = wq_sysfs_prep_attrs(wq);
-> +	if (!attrs)
-> +		return -ENOMEM;
-> +
-> +	cpumask_copy(attrs->cpumask, cpumask);
-> +	ret = apply_workqueue_attrs(wq, attrs);
-> +	free_workqueue_attrs(attrs);
-> +
-> +	return ret;
-> +}
-> +
-> +/* Must be called with wq_unbound_mutex held */
-> +static int wq_anon_cpumask_set_all(cpumask_var_t cpumask)
-> +{
->  	struct workqueue_struct *wq;
->  	int ret;
->  
-> @@ -3343,15 +3393,9 @@ static int wq_anon_cpumask_set(cpumask_var_t cpumask)
->  			continue;
->  		/* Ordered workqueues need specific treatment */
->  		if (wq->flags & __WQ_ORDERED)
-> -			continue;
-> -
-> -		attrs = wq_sysfs_prep_attrs(wq);
-> -		if (!attrs)
-> -			return -ENOMEM;
-> -
-> -		cpumask_copy(attrs->cpumask, cpumask);
-> -		ret = apply_workqueue_attrs(wq, attrs);
-> -		free_workqueue_attrs(attrs);
-> +			ret = wq_ordered_cpumask_set(wq, cpumask);
-> +		else
-> +			ret = wq_anon_cpumask_set(wq, cpumask);
->  		if (ret)
->  			break;
->  	}
-> @@ -3376,7 +3420,7 @@ static ssize_t wq_anon_cpumask_store(struct device *dev,
->  	get_online_cpus();
->  	if (cpumask_intersects(cpumask, cpu_online_mask)) {
->  		mutex_lock(&wq_unbound_mutex);
-> -		ret = wq_anon_cpumask_set(cpumask);
-> +		ret = wq_anon_cpumask_set_all(cpumask);
->  		if (!ret)
->  			cpumask_copy(&wq_anon_cpumask, cpumask);
->  		mutex_unlock(&wq_unbound_mutex);
+Hope this helps,
 
+
+Paul Bolle
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
