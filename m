@@ -1,98 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301AbaCaHBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 03:01:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:54299 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956AbaCaHBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 03:01:39 -0400
-Date: Mon, 31 Mar 2014 18:01:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next Documentation merge request
-Message-Id: <20140331180132.f89b7d7665f1223f2255f46b@canb.auug.org.au>
-In-Reply-To: <5338DDC5.70506@infradead.org>
-References: <5338DDC5.70506@infradead.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__31_Mar_2014_18_01_32_+1100_/F.bvpviRjlIKE/J"
+	id S1752988AbaCaHJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 03:09:00 -0400
+Received: from natasha.panasas.com ([209.166.131.148]:44526 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaCaHI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 03:08:58 -0400
+Message-ID: <53391483.9010800@panasas.com>
+Date: Mon, 31 Mar 2014 10:08:51 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [do_xor_speed] WARNING: CPU: 0 PID: 1 at init/main.c:708 do_one_initcall()
+References: <20140331003825.GA11782@localhost>
+In-Reply-To: <20140331003825.GA11782@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__31_Mar_2014_18_01_32_+1100_/F.bvpviRjlIKE/J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry about that I forgot about the experimental rule, fixed now.
 
-Hi Randy,
+Is there a way for a white list. With -experimental I need to say
+every branch I do not want included is there a way to say only
+the branches I do want included?
 
-On Sun, 30 Mar 2014 20:15:17 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
->
-> Please include http://www.infradead.org/~rdunlap/Doc/patches/ in linux-ne=
-xt.
-> This is a quilt patch series (initially empty).
+Thanks
+Boaz
 
-Added from today.  Called rd-docs.
+On 03/31/2014 03:38 AM, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
+> 
+> git://git.open-osd.org/linux-open-osd.git bidi-mq
+> 
+> commit 992e60a78e1c2c6996fd55c5fb11344ad1a4c189
+> Author:     Boaz Harrosh <bharrosh@panasas.com>
+> AuthorDate: Thu Jul 19 15:22:37 2012 +0300
+> Commit:     Boaz Harrosh <boaz@plexistor.com>
+> CommitDate: Sun Mar 30 16:03:29 2014 +0300
+> 
+>     RFC: do_xor_speed Broken on UML do to jiffies
+>     
+> [    0.413369]    generic_sse:    70.500 MB/sec
+> [    0.415084] xor: using function: generic_sse (70.500 MB/sec)
+> [    0.416734] ------------[ cut here ]------------
+> [    0.418634] WARNING: CPU: 0 PID: 1 at init/main.c:708 do_one_initcall+0x174/0x18b()
+> [    0.420050] initcall calibrate_xor_blocks+0x0/0x1cc returned with preemption imbalance 
+> [    0.423371] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc8-00108-g992e60a #38
+> [    0.426451] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    0.426700]  0000000000000000 ffff880000155d80 ffffffff823bd1f9 ffff880000155dc8
+> [    0.432082]  ffff880000155db8 ffffffff81084d37 ffffffff84684565 ffffffff846b9bc6
+> [    0.435342]  0000000000000000 0000000000000000 0000000000000000 ffff880000155e18
+> [    0.438786] Call Trace:
+> [    0.439766]  [<ffffffff823bd1f9>] dump_stack+0xa1/0x102
+> [    0.440059]  [<ffffffff81084d37>] warn_slowpath_common+0x93/0xc1
+> [    0.443380]  [<ffffffff84684565>] ? do_one_initcall+0x174/0x18b
+> [    0.446707]  [<ffffffff846b9bc6>] ? do_xor_speed+0x12d/0x12d
+> [    0.448950]  [<ffffffff81084df0>] warn_slowpath_fmt+0x55/0x5e
+> [    0.450041]  [<ffffffff846b9bc6>] ? do_xor_speed+0x12d/0x12d
+> [    0.453372]  [<ffffffff84684565>] do_one_initcall+0x174/0x18b
+> [    0.455645]  [<ffffffff846848d7>] kernel_init_freeable+0x35b/0x46d
+> [    0.456706]  [<ffffffff84683992>] ? do_early_param+0xd7/0xd7
+> [    0.460044]  [<ffffffff8239ea58>] ? rest_init+0x15c/0x15c
+> [    0.463372]  [<ffffffff8239ea68>] kernel_init+0x10/0x181
+> [    0.465550]  [<ffffffff823d890c>] ret_from_fork+0x7c/0xb0
+> [    0.466712]  [<ffffffff8239ea58>] ? rest_init+0x15c/0x15c
+> [    0.470089] ---[ end trace 5d56b560c4cace50 ]---
+> [    0.471938] prandom: seed boundary self test passed
+> 
+> git bisect start 80b612bf90a8ebdd09dff5695d0357aeb78f963e 66e810ec9fff9cf5622a8326805ef310fd5b98e7 --
+> git bisect good ad95c966acc03bc906dff6b875a545379680f264  # 03:08     20+      0  Merge remote-tracking branch 'linus/master' into bidi-mq
+> git bisect  bad 992e60a78e1c2c6996fd55c5fb11344ad1a4c189  # 03:09      0-      1  RFC: do_xor_speed Broken on UML do to jiffies
+> # first bad commit: [992e60a78e1c2c6996fd55c5fb11344ad1a4c189] RFC: do_xor_speed Broken on UML do to jiffies
+> git bisect good ad95c966acc03bc906dff6b875a545379680f264  # 03:20     60+      0  Merge remote-tracking branch 'linus/master' into bidi-mq
+> git bisect  bad 80b612bf90a8ebdd09dff5695d0357aeb78f963e  # 03:20      0-     19  {TODO} bsg: remove bogus (and fatal) check in bsg_register_queue
+> git bisect good 981e893ed537cbaa08f8089d480db4165e6d71c0  # 03:31     60+      0  Merge branch 'timers-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect good 201544be8c37dffbf069bb5fc9edb5674f8c1754  # 03:36     60+      0  Add linux-next specific files for 20140328
+> 
+> 
+> This script may reproduce the error.
+> 
+> -----------------------------------------------------------------------------
+> #!/bin/bash
+> 
+> kernel=$1
+> 
+> kvm=(
+> 	qemu-system-x86_64 -cpu kvm64 -enable-kvm
+> 	-kernel $kernel
+> 	-smp 2
+> 	-m 256M
+> 	-net nic,vlan=0,macaddr=00:00:00:00:00:00,model=virtio
+> 	-net user,vlan=0
+> 	-net nic,vlan=1,model=e1000
+> 	-net user,vlan=1
+> 	-boot order=nc
+> 	-no-reboot
+> 	-watchdog i6300esb
+> 	-serial stdio
+> 	-display none
+> 	-monitor null
+> )
+> 
+> append=(
+> 	debug
+> 	sched_debug
+> 	apic=debug
+> 	ignore_loglevel
+> 	sysrq_always_enabled
+> 	panic=10
+> 	prompt_ramdisk=0
+> 	earlyprintk=ttyS0,115200
+> 	console=ttyS0,115200
+> 	console=tty0
+> 	vga=normal
+> 	root=/dev/ram0
+> 	rw
+> )
+> 
+> "${kvm[@]}" --append "${append[*]}"
+> -----------------------------------------------------------------------------
+> 
+> Thanks,
+> Fengguang
+> 
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Mon__31_Mar_2014_18_01_32_+1100_/F.bvpviRjlIKE/J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTORLQAAoJEMDTa8Ir7ZwV+d0P/3hLhchjRrgRo6d09wvv0NgX
-aU9kuqwtPqYEm+gfUBMPsnp725iL9rs8LO2PA5gADyvDhfA3dO3MlysqilKDBNHb
-JLCetTKr0CMXgRGx2lWcO7GJEHKke0iJrJIZZQ/HmU5skHUk896zQyM+WL2KXdH0
-lwZMpM0J2dutx8yfzl3MJMt6bTYrWtrxkxsyhasiH0lYNDJErg6Ufz/K8UhHn3vY
-TLs/lCS9x69BiEyq7bOQ64Mx8y3xkkE2We6nLx9HTbiEtStsLgtCZqLxhxHJFosQ
-6OaMv5jjS96i+T2++J0yBi2l4vjtv/isOokPNTspV/RkVuexq4wgXjZ5PmBsQOFz
-OFItfbIuFo7EBKhBO1FDbEQ8FKVBTfjyfjlDZJyNN/7SzfSIBin/e9/3z4PDi/Y4
-a52HsCdYRUh76AgOX+EaN4BOBYlB/pHLJ8nVxlH1adzGdHM+NO9Nmm8zIetsKpPs
-CPvJdyBsOgzjiaJ2b9ssFpEYESAvANNQO6GwP/dh5QwzkvGyt7bDi75oWOCraNUG
-lZmoFOSQqXPDEJWKukqfQWJOurLinohWKtA0RcyLSwpX5VY0JVUt2dRwYsPxcdBF
-c9zL+deaejS9ezsXEQ2MZzxAomECl9ZZaF/v3KlilytqGZgCxWrAgQ/RJV+uXVqB
-0N39xv2dPEycJYruOmfy
-=EgUC
------END PGP SIGNATURE-----
-
---Signature=_Mon__31_Mar_2014_18_01_32_+1100_/F.bvpviRjlIKE/J--
