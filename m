@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626AbaCaNXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35555 "EHLO
+	id S1753797AbaCaNXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:23:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35587 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520AbaCaNXj (ORCPT
+	with ESMTP id S1753654AbaCaNXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:39 -0400
+	Mon, 31 Mar 2014 09:23:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 11/71] mwifiex: do not advertise usb autosuspend support
-Date: Mon, 31 Mar 2014 14:22:17 +0100
-Message-Id: <1396272197-13394-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 18/71] ALSA: usb-audio: Add quirk for Logitech Webcam C500
+Date: Mon, 31 Mar 2014 14:22:24 +0100
+Message-Id: <1396272197-13394-19-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit adb07df1e039e9fe43e66aeea8b4771f83659dbb upstream.
+commit e805ca8b0a9b6c91099c0eaa4b160a1196a4ae25 upstream.
 
-As many Surface Pro I & II users have found out, the mwifiex_usb
-doesn't support usb autosuspend, and it has caused some system
-stability issues.
+Logitech C500 (046d:0807) needs the same workaround like other
+Logitech Webcams.
 
-Bug 69661 - mwifiex_usb on MS Surface Pro 1 is unstable
-Bug 60815 - Interface hangs in mwifiex_usb
-Bug 64111 - mwifiex_usb USB8797 crash failed to get signal
- 	    information
-
-USB autosuspend get triggered when Surface Pro's AC power is
-removed or powertop enables power saving on USB8797 device.
-Driver's suspend handler is called here, but resume handler
-won't be called until the AC power is put back on or powertop
-disables power saving for USB8797.
-
-We need to refactor the suspend/resume handlers to support
-usb autosuspend properly. For now let's just remove it.
-
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/usb.c | 8 --------
- 1 file changed, 8 deletions(-)
+ sound/usb/mixer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
-index 7fda0ab..11c3db1 100644
---- a/drivers/net/wireless/mwifiex/usb.c
-+++ b/drivers/net/wireless/mwifiex/usb.c
-@@ -511,13 +511,6 @@ static int mwifiex_usb_resume(struct usb_interface *intf)
- 						   MWIFIEX_BSS_ROLE_ANY),
- 				  MWIFIEX_ASYNC_CMD);
+diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
+index 9c6a7fe..497cfb4 100644
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -842,6 +842,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
+ 		}
+ 		break;
  
--#ifdef CONFIG_PM
--	/* Resume handler may be called due to remote wakeup,
--	 * force to exit suspend anyway
--	 */
--	usb_disable_autosuspend(card->udev);
--#endif /* CONFIG_PM */
--
- 	return 0;
- }
- 
-@@ -576,7 +569,6 @@ static struct usb_driver mwifiex_usb_driver = {
- 	.id_table = mwifiex_usb_table,
- 	.suspend = mwifiex_usb_suspend,
- 	.resume = mwifiex_usb_resume,
--	.supports_autosuspend = 1,
- };
- 
- static int mwifiex_usb_tx_init(struct mwifiex_adapter *adapter)
++	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
+ 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
 -- 
 1.9.1
 
