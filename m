@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaCaL4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 07:56:33 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38650 "EHLO gate.crashing.org"
+	id S1752666AbaCaMBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 08:01:14 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:44271 "EHLO gwu.lbox.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749AbaCaL4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 07:56:32 -0400
-Message-ID: <1396266973.11529.77.camel@pasglop>
-Subject: Re: [PATCH] powerpc/le: enable RTAS events support
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stewart Smith <stewart@linux.vnet.ibm.com>
-Cc: Greg Kurz <gkurz@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, anton@samba.org, nfont@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 31 Mar 2014 22:56:13 +1100
-In-Reply-To: <87vbuv9vaz.fsf@river.i-did-not-set--mail-host-address--so-tickle-me>
-References: <20140328073344.26823.32931.stgit@bahia.local>
-	 <87vbuv9vaz.fsf@river.i-did-not-set--mail-host-address--so-tickle-me>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751749AbaCaMBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 08:01:12 -0400
+Date: Mon, 31 Mar 2014 14:01:02 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Message-ID: <20140331120102.GY3339@pcnci.linuxbox.cz>
+References: <20140310145530.GA27230@pcnci.linuxbox.cz>
+ <20140329121550.GA5878@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1iEpPD5yDbvq0asf"
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-03-31_02
+X-Milter-Copy-Status: I
+X-Milter-Copy-Status: I
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 09:27 +1100, Stewart Smith wrote:
-> Greg Kurz <gkurz@linux.vnet.ibm.com> writes:
-> >  struct rtas_error_log {
-> > +#ifdef __BIG_ENDIAN__
-> > +	/* Byte 0 */
-> >  	unsigned long version:8;		/* Architectural version */
-> > +	/* Byte 1 */
-> 
-> I think it would be great if we got rid of the usage of bitfields. As
-> soon as the mood of the compiler changes, this code is going to break.
 
- ... as would a whole pile of kernel code including filesystems :)
+--1iEpPD5yDbvq0asf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Now, don't get me wrong, I hate bitfields as much as you do for the same
-reasons. However (unfortunately ?) we've somewhat painted ourselves into
-a corner here in kernel-land and I suspect gcc would have a very hard
-time changing the format considering how many people did just the same
-we did.
+Hi Tomas,
 
-Now if we were a userspace program, I would still insist on fixing it on
-the ground on not depending on gcc but this is the kernel ... we have
-more gcc'isms than spots on the face of a 14 yrs old..
+> If this is a server platform can you please try this patch https://lkml.o=
+rg/lkml/2014/3/25/396
 
-Cheers,
-Ben.
+tried 3.10.35 with Your patch and now I can see following in dmesg:
+
+[  +0.000290] mei_me 0000:00:16.0: Device doesn't have valid ME Interface
+[  +0.007656] mei_me 0000:00:16.0: initialization failed.
+
+now reboot works as expected. Once this hits ustream (if it hasn't already),
+this could go to -stable, do You agree?
+
+thanks!
+
+nik
 
 
+
+>=20
+> Thanks
+> Tomas
+>=20
+>=20
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--1iEpPD5yDbvq0asf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlM5WP4ACgkQ3xdJJrLygV6hLQCglcRLySJ5IOgQ3ga7TH7HRrCQ
+fGwAn1eA4m2YhRM9i82SGV52i9rK3WE7
+=AwHp
+-----END PGP SIGNATURE-----
+
+--1iEpPD5yDbvq0asf--
