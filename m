@@ -1,107 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbaCaPgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 11:36:21 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:65371 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071AbaCaPgT (ORCPT
+	id S1753377AbaCaPgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 11:36:20 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:51559 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811AbaCaPgS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 11:36:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAA_GA1er3d+_LJp67aD8tE0SLMod--FpRFvGBdKmpzU_aQNdUg@mail.gmail.com>
-References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
- <20140327222605.GB16495@medulla.variantweb.net> <CALZtONDBNzL_S+UUxKgvNjEYu49eM5Fc2yJ37dJ8E+PEK+C7qg@mail.gmail.com>
- <533587FD.7000006@redhat.com> <CALZtONA=v+3_+6qEvyY0SruT=aGxAfV_N5fsHvLMJKFp4Stnww@mail.gmail.com>
- <CAA_GA1er3d+_LJp67aD8tE0SLMod--FpRFvGBdKmpzU_aQNdUg@mail.gmail.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Mon, 31 Mar 2014 11:35:57 -0400
-X-Google-Sender-Auth: e8umJ24UPkmNmibODk4ouZRoY90
-Message-ID: <CALZtONBQZYeRTx_=Z70H7v4g=39C=caJgoZV3mVFwoPHTHVTuQ@mail.gmail.com>
-Subject: Re: Adding compression before/above swapcache
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, Seth Jennings <sjennings@variantweb.net>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Bob Liu <bob.liu@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 31 Mar 2014 11:36:18 -0400
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] fs: ext4: Sign-extend tv_sec after ORing in epoch bits
+References: <1396191514-19081-1-git-send-email-cse.cem@gmail.com>
+From: Andreas Dilger <adilger@dilger.ca>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <1396191514-19081-1-git-send-email-cse.cem@gmail.com>
+Message-Id: <38140D27-E451-4BF1-9445-D319652E1BCF@dilger.ca>
+Date: Mon, 31 Mar 2014 09:34:52 -0600
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Conrad Meyer <cse.cem@gmail.com>
+To: Conrad Meyer <cemeyer@uw.edu>
+X-Mailer: iPhone Mail (11B651)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 8:43 AM, Bob Liu <lliubbo@gmail.com> wrote:
-> On Fri, Mar 28, 2014 at 10:47 PM, Dan Streetman <ddstreet@ieee.org> wrote:
->> On Fri, Mar 28, 2014 at 10:32 AM, Rik van Riel <riel@redhat.com> wrote:
->>> On 03/28/2014 08:36 AM, Dan Streetman wrote:
->>>
->>>> Well my general idea was to modify shrink_page_list() so that instead
->>>> of calling add_to_swap() and then pageout(), anonymous pages would be
->>>> added to a compressed cache.  I haven't worked out all the specific
->>>> details, but I am initially thinking that the compressed cache could
->>>> simply repurpose incoming pages to use as the compressed cache storage
->>>> (using its own page mapping, similar to swap page mapping), and then
->>>> add_to_swap() the storage pages when the compressed cache gets to a
->>>> certain size.  Pages that don't compress well could just bypass the
->>>> compressed cache, and get sent the current route directly to
->>>> add_to_swap().
->>>
->>>
->>> That sounds a lot like what zswap does. How is your
->>> proposal different?
->>
->> Two main ways:
->> 1) it's above swap, so it would still work without any real swap.
->
-> Zswap can also be extended without any real swap device.
+Hmm,
+I thought there was a separate patch to fix this a few months ago, that was "more correct" than this one?  Did that not land?
 
-Ok I'm interested - how is that possible? :-)
+Cheers, Andreas
 
->> 2) compressed pages could be written to swap disk.
->>
->
-> Yes, how to handle the write back of zswap is a problem. And I think
-> your patch making zswap write through is a good start.
-
-but it's still writethrough of uncompressed pages.
-
->> Essentially, the two existing memory compression approaches are both
->> tied to swap.  But, AFAIK there's no reason that memory compression
->> has to be tied to swap.  So my approach uncouples it.
->>
->
-> Yes, it's not necessary but swap page is a good candidate and easy to
-> handle. There are also clean file pages which may suitable for
-> compression. See http://lwn.net/Articles/545244/.
-
-Yep, and what is the current state of cleancache?  Was there a
-definitive reason it hasn't made it in yet?
-
->>> And, is there an easier way to implement that difference? :)
->>
->> I'm hoping that it wouldn't actually be too complex.  But that's part
->> of why I emailed for feedback before digging into a prototype... :-)
->>
->
-> I'm afraid your idea may not that easy to be implemented and need to
-> add many tricky code to current mm subsystem, but the benefit is still
-> uncertain. As Mel pointed out we really need better demonstration
-> workloads for memory compression before changes.
-> https://lwn.net/Articles/591961
-
-Well I think it's hard to argue that memory compression provides *no*
-obvious benefit - I'm pretty sure it's quite useful for minor
-overcommit on systems without any disk swap, and even for systems with
-swap it at least softens the steep performance cliff that we currently
-have when starting to overcommit memory into swap space.
-
-As far as its benefits for larger systems, or how realistic it is to
-start routinely overcommitting systems with the expectation that
-memory compression magically gives you more effective RAM, I certainly
-don't know the answer, and I agree, more widespread testing and
-demonstration surely will be needed.
-
-But to ask a more pointed question - what do you think would be the
-tricky part(s)?
+> On Mar 30, 2014, at 8:58, Conrad Meyer <cemeyer@uw.edu> wrote:
+> 
+> Fixes kernel.org bug #23732.
+> 
+> Background: ext4 stores time as a 34-bit quantity; 2 bits in some extra
+> bits unneeded for nanoseconds in the inode, and 32 bits in the seconds
+> field.
+> 
+> On systems with 64-bit time_t, the EXT4_*INODE_GET_XTIME() code
+> incorrectly sign-extended the low 32-bits of the seconds quantity before
+> ORing in the 2 "epoch" bits from nanoseconds.
+> 
+> This patch ORs in the 2 higher bits, then sign extends the 34-bit signed
+> number to 64 bits.
+> 
+> Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
+> ---
+> Patch against next-20140328.
+> 
+> Note, the on-disk format has always been written correctly. It was just
+> interpreted incorrectly.
+> 
+> Repro:
+> Before:
+> $ touch -d 2038-01-31 test-123
+> $ sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
+> $ ls -ld test-123
+> drwxrwxr-x 2 cmeyer cmeyer 4096 Dec 25  1901 test-123
+> 
+> After:
+> $ ls -ld test-123
+> drwxrwxr-x 2 cmeyer cmeyer 4096 Jan 31  2038 test-123
+> 
+> Thanks!
+> ---
+> fs/ext4/ext4.h | 14 ++++++++++++--
+> 1 file changed, 12 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index f4f889e..07ee03d 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -710,6 +710,8 @@ struct move_extent {
+> #define EXT4_EPOCH_BITS 2
+> #define EXT4_EPOCH_MASK ((1 << EXT4_EPOCH_BITS) - 1)
+> #define EXT4_NSEC_MASK  (~0UL << EXT4_EPOCH_BITS)
+> +#define EXT4_EPOCH_SIGN (((1UL << (EXT4_EPOCH_BITS - 1)) << 16) << 16)
+> +#define EXT4_SIGN_EXT   (~((((1UL << EXT4_EPOCH_BITS) << 16) << 16) - 1))
+> 
+> /*
+>  * Extended fields will fit into an inode if the filesystem was formatted
+> @@ -761,19 +763,23 @@ do {                                           \
+> 
+> #define EXT4_INODE_GET_XTIME(xtime, inode, raw_inode)                   \
+> do {                                           \
+> -    (inode)->xtime.tv_sec = (signed)le32_to_cpu((raw_inode)->xtime);       \
+> +    (inode)->xtime.tv_sec = (__u64)le32_to_cpu((raw_inode)->xtime);           \
+>    if (EXT4_FITS_IN_INODE(raw_inode, EXT4_I(inode), xtime ## _extra))     \
+>        ext4_decode_extra_time(&(inode)->xtime,                   \
+>                       raw_inode->xtime ## _extra);           \
+>    else                                       \
+>        (inode)->xtime.tv_nsec = 0;                       \
+> +    if (sizeof((inode)->xtime.tv_sec) > 4) {                   \
+> +        if ((inode)->xtime.tv_sec & EXT4_EPOCH_SIGN)               \
+> +            (inode)->xtime.tv_sec |= EXT4_SIGN_EXT;               \
+> +    }                                       \
+> } while (0)
+> 
+> #define EXT4_EINODE_GET_XTIME(xtime, einode, raw_inode)                   \
+> do {                                           \
+>    if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))               \
+>        (einode)->xtime.tv_sec =                       \
+> -            (signed)le32_to_cpu((raw_inode)->xtime);           \
+> +            (__u64)le32_to_cpu((raw_inode)->xtime);               \
+>    else                                       \
+>        (einode)->xtime.tv_sec = 0;                       \
+>    if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))           \
+> @@ -781,6 +787,10 @@ do {                                           \
+>                       raw_inode->xtime ## _extra);           \
+>    else                                       \
+>        (einode)->xtime.tv_nsec = 0;                       \
+> +    if (sizeof((einode)->xtime.tv_sec) > 4) {                   \
+> +        if ((einode)->xtime.tv_sec & EXT4_EPOCH_SIGN)               \
+> +            (einode)->xtime.tv_sec |= EXT4_SIGN_EXT;           \
+> +    }                                       \
+> } while (0)
+> 
+> #define i_disk_version osd1.linux1.l_i_version
+> -- 
+> 1.9.0
+> 
