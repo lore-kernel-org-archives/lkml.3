@@ -1,174 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaCaAUI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:20:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36333 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752982AbaC3XZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:25:01 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1754631AbaCaAUp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:20:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36155 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753422AbaCaAUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 20:20:42 -0400
+Date: Sun, 30 Mar 2014 20:20:30 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs i_lock vs mmap_sem lockdep trace.
+Message-ID: <20140331002030.GA19391@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+References: <20140329223109.GA24098@redhat.com>
+ <20140330234335.GB16336@dastard>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>,
-        "Harald Freudenberger" <freude@linux.vnet.ibm.com>
-Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.384555627@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 065/200] crypto: s390 - fix concurrency issue in
- aes-ctr mode
-In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140330234335.GB16336@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.56-rc1 review patch.  If anyone has any objections, please let me know.
+On Mon, Mar 31, 2014 at 10:43:35AM +1100, Dave Chinner wrote:
+ > On Sat, Mar 29, 2014 at 06:31:09PM -0400, Dave Jones wrote:
+ > > Not sure if I've reported this already (it looks familiar, though I've not managed
+ > > to find it in my sent mail folder).  This is rc8 + a diff to fix the stack usage reports
+ > > I was seeing (diff at http://paste.fedoraproject.org/89854/13210913/raw)
+ > > 
+ > >  ======================================================
+ > >  [ INFO: possible circular locking dependency detected ]
+ > >  3.14.0-rc8+ #153 Not tainted
+ > >  -------------------------------------------------------
+ > >  git/32710 is trying to acquire lock:
+ > >   (&(&ip->i_lock)->mr_lock){++++.+}, at: [<ffffffffc03bd782>] xfs_ilock+0x122/0x250 [xfs]
+ > >  
+ > > but task is already holding lock:
+ > >   (&mm->mmap_sem){++++++}, at: [<ffffffffae7b816a>] __do_page_fault+0x14a/0x610
+ > > 
+ > > which lock already depends on the new lock.
+ > 
+ > filldir on a directory inode vs page fault on regular file. Known
+ > issue, definitely a false positive.
 
-------------------
+ah yeah, thought it looked familiar. I think I reported this last summer.
 
-From: Harald Freudenberger <freude@linux.vnet.ibm.com>
+ > We have to change locking
+ > algorithms to avoid such deficiencies of lockdep (a case of "lockdep
+ > considered harmful", perhaps?) so it's not something I'm about to
+ > rush...
 
-commit 0519e9ad89e5cd6e6b08398f57c6a71d9580564c upstream.
+Bummer, as it makes lockdep useless on my test box using xfs because it
+disables itself after hitting this very quickly.
+(I re-enabled it a couple days ago wondering why I'd left it turned off,
+ chances are it was because of this)
 
-The aes-ctr mode uses one preallocated page without any concurrency
-protection. When multiple threads run aes-ctr encryption or decryption
-this can lead to data corruption.
-
-The patch introduces locking for the page and a fallback solution with
-slower en/decryption performance in concurrency situations.
-
-Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/s390/crypto/aes_s390.c | 65 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 46 insertions(+), 19 deletions(-)
-
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/init.h>
-+#include <linux/spinlock.h>
- #include "crypt_s390.h"
- 
- #define AES_KEYLEN_128		1
-@@ -32,6 +33,7 @@
- #define AES_KEYLEN_256		4
- 
- static u8 *ctrblk;
-+static DEFINE_SPINLOCK(ctrblk_lock);
- static char keylen_flag;
- 
- struct s390_aes_ctx {
-@@ -760,43 +762,67 @@ static int ctr_aes_set_key(struct crypto
- 	return aes_set_key(tfm, in_key, key_len);
- }
- 
-+static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
-+{
-+	unsigned int i, n;
-+
-+	/* only use complete blocks, max. PAGE_SIZE */
-+	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(AES_BLOCK_SIZE - 1);
-+	for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
-+		memcpy(ctrptr + i, ctrptr + i - AES_BLOCK_SIZE,
-+		       AES_BLOCK_SIZE);
-+		crypto_inc(ctrptr + i, AES_BLOCK_SIZE);
-+	}
-+	return n;
-+}
-+
- static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
- 			 struct s390_aes_ctx *sctx, struct blkcipher_walk *walk)
- {
- 	int ret = blkcipher_walk_virt_block(desc, walk, AES_BLOCK_SIZE);
--	unsigned int i, n, nbytes;
--	u8 buf[AES_BLOCK_SIZE];
--	u8 *out, *in;
-+	unsigned int n, nbytes;
-+	u8 buf[AES_BLOCK_SIZE], ctrbuf[AES_BLOCK_SIZE];
-+	u8 *out, *in, *ctrptr = ctrbuf;
- 
- 	if (!walk->nbytes)
- 		return ret;
- 
--	memcpy(ctrblk, walk->iv, AES_BLOCK_SIZE);
-+	if (spin_trylock(&ctrblk_lock))
-+		ctrptr = ctrblk;
-+
-+	memcpy(ctrptr, walk->iv, AES_BLOCK_SIZE);
- 	while ((nbytes = walk->nbytes) >= AES_BLOCK_SIZE) {
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		while (nbytes >= AES_BLOCK_SIZE) {
--			/* only use complete blocks, max. PAGE_SIZE */
--			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
--						 nbytes & ~(AES_BLOCK_SIZE - 1);
--			for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
--				memcpy(ctrblk + i, ctrblk + i - AES_BLOCK_SIZE,
--				       AES_BLOCK_SIZE);
--				crypto_inc(ctrblk + i, AES_BLOCK_SIZE);
--			}
--			ret = crypt_s390_kmctr(func, sctx->key, out, in, n, ctrblk);
--			if (ret < 0 || ret != n)
-+			if (ctrptr == ctrblk)
-+				n = __ctrblk_init(ctrptr, nbytes);
-+			else
-+				n = AES_BLOCK_SIZE;
-+			ret = crypt_s390_kmctr(func, sctx->key, out, in,
-+					       n, ctrptr);
-+			if (ret < 0 || ret != n) {
-+				if (ctrptr == ctrblk)
-+					spin_unlock(&ctrblk_lock);
- 				return -EIO;
-+			}
- 			if (n > AES_BLOCK_SIZE)
--				memcpy(ctrblk, ctrblk + n - AES_BLOCK_SIZE,
-+				memcpy(ctrptr, ctrptr + n - AES_BLOCK_SIZE,
- 				       AES_BLOCK_SIZE);
--			crypto_inc(ctrblk, AES_BLOCK_SIZE);
-+			crypto_inc(ctrptr, AES_BLOCK_SIZE);
- 			out += n;
- 			in += n;
- 			nbytes -= n;
- 		}
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	}
-+	if (ctrptr == ctrblk) {
-+		if (nbytes)
-+			memcpy(ctrbuf, ctrptr, AES_BLOCK_SIZE);
-+		else
-+			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
-+		spin_unlock(&ctrblk_lock);
-+	}
- 	/*
- 	 * final block may be < AES_BLOCK_SIZE, copy only nbytes
- 	 */
-@@ -804,14 +830,15 @@ static int ctr_aes_crypt(struct blkciphe
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		ret = crypt_s390_kmctr(func, sctx->key, buf, in,
--				       AES_BLOCK_SIZE, ctrblk);
-+				       AES_BLOCK_SIZE, ctrbuf);
- 		if (ret < 0 || ret != AES_BLOCK_SIZE)
- 			return -EIO;
- 		memcpy(out, buf, nbytes);
--		crypto_inc(ctrblk, AES_BLOCK_SIZE);
-+		crypto_inc(ctrbuf, AES_BLOCK_SIZE);
- 		ret = blkcipher_walk_done(desc, walk, 0);
-+		memcpy(walk->iv, ctrbuf, AES_BLOCK_SIZE);
- 	}
--	memcpy(walk->iv, ctrblk, AES_BLOCK_SIZE);
-+
- 	return ret;
- }
- 
+	Dave
 
