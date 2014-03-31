@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaCaRIf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 13:08:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943AbaCaRId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 13:08:33 -0400
-Message-ID: <5339A0F8.70606@redhat.com>
-Date: Mon, 31 Mar 2014 19:08:08 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753687AbaCaRPZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 13:15:25 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:52552 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018AbaCaRPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 13:15:22 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        Jacob Shin <jacob.shin@amd.com>, Jeff Layton <jlayton@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: microcode: report if CPU has up-to-date microcode
-References: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com> <20140331162340.GB16144@pd.tnic>
-In-Reply-To: <20140331162340.GB16144@pd.tnic>
+In-Reply-To: <lsq.1396221815.13737205@decadent.org.uk>
+References: <lsq.1396221814.369444335@decadent.org.uk> <lsq.1396221815.13737205@decadent.org.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 31 Mar 2014 11:15:01 -0600
+Message-ID: <CAErSpo6KQNhh-4csydz7iZ+1WnX8LP+Hde8EN_oTwX=8bRAh2w@mail.gmail.com>
+Subject: Re: [PATCH 3.2 118/200] PCI: Enable INTx if BIOS left them disabled
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Chris Cheng <chris.cheng@atrustcorp.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 06:23 PM, Borislav Petkov wrote:
-> On Sun, Mar 30, 2014 at 04:09:32PM +0200, Denys Vlasenko wrote:
->> Before this change, successful microcode uploads clearly
->> indicate that it was done:
->>
->> microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x1a
->> microcode: CPU1 updated to revision 0x29, date = 2013-06-12
->>
->> whereas if microcode was not uploaded, it is not clear why:
->>
->> microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x29
->> (nothing more)
->>
->> So, what was it? No microcode file? No microcode for this sig/pf?
->> CPU already has microcode with this (or newer) revision?
->>
->> In practice, it means that I need to ask people to provide me
->> with more information ("do you have microcode package installed?
->> which version is it?" etc).
-> 
-> First of all, microcode version is in /proc/cpuinfo.
+On Sun, Mar 30, 2014 at 5:23 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> 3.2.56-rc1 review patch.  If anyone has any objections, please let me know.
 
-What prompted me to create this patch is a bunch of vmcores
-from people having mysterious crashes.
+No objection, but you need the followup patch as well:
 
-Basically, I am in a real-world scenario where I have only vmcore
-from somebody else. I have no /proc/cpuinfo.
+3cdeb713dc66057b50682048c151eae07b186c42 PCI: Enable INTx in
+pci_reenable_device() only when MSI/MSI-X not enabled
 
-Every bit of information I don't have at a minimum incurs email
-round-trip delay.
-
-Eventually I did manage to figure out what version of microcode
-my users had (they did have old one), but it took some time.
-
-> Issuing the reason
-> why microcode wasn't loaded in dmesg and then the dmesg ring buffer
-> wraps around doesn't make a lot of sense, in my not really too humble
-> opinion.
-
-You are correct, the lack of boot-time dmesg is a problem for
-post-mortem vmcore analysis in general.
-
-I contemplate creating a patch to optionally save it.
-
-> Besides, experience shows that dmesg messages like those tend to spook
-> users and we don't want that :-)
-
-That is not a bad thing: if my users would have been spooked that way,
-maybe they'd install a newer microcode. Or newer BIOS with new microcode
-- they did not do that either, despite it being available
-from the manufacturer for two years already.
-
--- 
-vda
-
+> ------------------
+>
+> From: Bjorn Helgaas <bhelgaas@google.com>
+>
+> commit 1f42db786b14a31bf807fc41ee5583a00c08fcb1 upstream.
+>
+> Some firmware leaves the Interrupt Disable bit set even if the device uses
+> INTx interrupts.  Clear Interrupt Disable so we get those interrupts.
+>
+> Based on the report mentioned below, if the user selects the "EHCI only"
+> option in the Intel Baytrail BIOS, the EHCI device is handed off to the OS
+> with the PCI_COMMAND_INTX_DISABLE bit set.
+>
+> Link: http://lkml.kernel.org/r/20140114181721.GC12126@xanatos
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=70601
+> Reported-by: Chris Cheng <chris.cheng@atrustcorp.com>
+> Reported-and-tested-by: Jamie Chen <jamie.chen@intel.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/pci/pci.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1078,6 +1078,8 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_save
+>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>  {
+>         int err;
+> +       u16 cmd;
+> +       u8 pin;
+>
+>         err = pci_set_power_state(dev, PCI_D0);
+>         if (err < 0 && err != -EIO)
+> @@ -1087,6 +1089,14 @@ static int do_pci_enable_device(struct p
+>                 return err;
+>         pci_fixup_device(pci_fixup_enable, dev);
+>
+> +       pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+> +       if (pin) {
+> +               pci_read_config_word(dev, PCI_COMMAND, &cmd);
+> +               if (cmd & PCI_COMMAND_INTX_DISABLE)
+> +                       pci_write_config_word(dev, PCI_COMMAND,
+> +                                             cmd & ~PCI_COMMAND_INTX_DISABLE);
+> +       }
+> +
+>         return 0;
+>  }
+>
+>
