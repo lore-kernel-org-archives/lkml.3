@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaCaHbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 03:31:31 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:49559 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208AbaCaHb3 (ORCPT
+	id S1753365AbaCaHix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 03:38:53 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:64476 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394AbaCaHiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 03:31:29 -0400
+	Mon, 31 Mar 2014 03:38:51 -0400
+X-IronPort-AV: E=Sophos;i="4.97,763,1389772800"; 
+   d="scan'208";a="22426385"
+Message-ID: <53391B89.7010304@broadcom.com>
+Date: Mon, 31 Mar 2014 09:38:49 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1403282217070.1571@knanqh.ubzr>
-References: <1396012949-6227-1-git-send-email-vincent.guittot@linaro.org> <alpine.LFD.2.11.1403282217070.1571@knanqh.ubzr>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 31 Mar 2014 09:31:09 +0200
-Message-ID: <CAKfTPtBpjxMeZawC-K6vgvQhpu4Pc2A-jL59XsnPDikEcVUdvQ@mail.gmail.com>
-Subject: Re: [RFC 0/4] sched: consolidation of cpu_power
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Denys Vlasenko <dvlasenk@redhat.com>, Franky Lin <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH 1/4] brcm80211: deinline brcmf_chip_cr4_enterdl, save
+ 440 bytes
+References: <1396215079-7541-1-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1396215079-7541-1-git-send-email-dvlasenk@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 March 2014 03:27, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Fri, 28 Mar 2014, Vincent Guittot wrote:
+On 30/03/14 23:31, Denys Vlasenko wrote:
+> Automated script discovered that without forced inlining,
+> gcc-4.7 generates smaller code for this function.
 >
->> Part of this patchset was previously part of the larger tasks packing patchset
->> [1]. I have splitted the latter in 3 different patchsets (at least) to make the
->> thing easier.
->> -configuration of sched_domain topology [2]
->> -update and consolidation of cpu_power (this patchset)
->> -tasks packing algorithm
->>
->> SMT system is no more the only system that can have a CPUs with capacity that
->> is different from the default value. We need to extend the use of
->> cpu_power_orig to all kind of platform so the scheduler will have both the
->> maximum capacity (cpu_power_orig/power_orig) and the current capacity
->> (cpu_power/power) of CPUs and groups of the sched_domains.
-> [...]
->
-> Wouldn't it make sense to have a patch in this series that performs some
-> s/power/capacity/ throughout the scheduler code before the other patches
-> are applied?  That would help getting consistent terminology and avoid
-> confusion before real power related metrics are eventually brought into
-> the scheduler.
+> There is no need to declare static functions inline anyway:
+> nowadays gcc detects single-callsite static functions
+> which benefit from inlining.
 
-Fair point. I will add the changes in the next version.
+These patches look awfully familiar. I tend to object, but I don't know 
+the details of this automated script. Does it only look for code size. 
+How about execution time or is this only compile tested? The other thing 
+is that you seem to rely on a specific gcc version. What about pre-4.7? 
+How about different architectures. Was this determined on x86, arm, 
+sparc, mips. All these questions make me say 'nay'.
 
-Thanks
-Vincent
+Regards,
+Arend
 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> ---
+>   drivers/net/wireless/brcm80211/brcmfmac/chip.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/chip.c b/drivers/net/wireless/brcm80211/brcmfmac/chip.c
+> index df130ef..d020b0b 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/chip.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/chip.c
+> @@ -933,7 +933,7 @@ static bool brcmf_chip_cm3_exitdl(struct brcmf_chip_priv *chip)
+>   	return true;
+>   }
 >
-> Nicolas
+> -static inline void
+> +static void
+>   brcmf_chip_cr4_enterdl(struct brcmf_chip_priv *chip)
+>   {
+>   	struct brcmf_core *core;
+>
+
