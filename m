@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaCaUOl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:14:41 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55085 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaCaUOi convert rfc822-to-8bit (ORCPT
+	id S1751419AbaCaUTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:19:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48647 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaCaUTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:14:38 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: Thoughts on credential switching
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <CALCETrX5ta875ij08_SNmzrN+KLRNuYiM2psNyFn8JdLOd=8DQ@mail.gmail.com>
-Date: Mon, 31 Mar 2014 16:14:33 -0400
-Cc: Layton Jeff <jlayton@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jim Lieb <jlieb@panasas.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dr Fields James Bruce <bfields@redhat.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3E5CB7F4-0CB6-4D50-85DC-D19FC47FCBD8@primarydata.com>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com> <20140326194847.0e994d0b@ipyr.poochiereds.net> <CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com> <20140326202535.7d9b6f78@ipyr.poochiereds.net> <20140327070802.124fb34c@ipyr.poochiereds.net> <20140330130328.GB7172@thunk.org> <20140331075145.4bd76872@tlielax.poochiereds.net> <58D59025-ADA1-44CB-88E4-36BCEE763B64@primarydata.com> <CALCETrX5ta875ij08_SNmzrN+KLRNuYiM2psNyFn8JdLOd=8DQ@mail.gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-X-Mailer: Apple Mail (2.1874)
+	Mon, 31 Mar 2014 16:19:30 -0400
+Date: Mon, 31 Mar 2014 13:19:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: 3.14-rc6: BUG: Bad page map in process objdump pte:483d2025
+ pmd:daa04067
+Message-Id: <20140331131928.6f00ecbc13b54b53bfe62515@linux-foundation.org>
+In-Reply-To: <CACVxJT-d=Sm1-N9wvojgXj0voBABwxrgV728fAyZuPX2BK-3vg@mail.gmail.com>
+References: <CACVxJT-d=Sm1-N9wvojgXj0voBABwxrgV728fAyZuPX2BK-3vg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(cc linux-mm)
 
-On Mar 31, 2014, at 15:26, Andy Lutomirski <luto@amacapital.net> wrote:
+On Thu, 27 Mar 2014 17:47:06 +0300 Alexey Dobriyan <adobriyan@gmail.com> wrote:
 
-> On Mon, Mar 31, 2014 at 11:06 AM, Trond Myklebust
-> <trond.myklebust@primarydata.com> wrote:
->> 
->> On Mar 31, 2014, at 7:51, Jeff Layton <jlayton@redhat.com> wrote:
->> 
->>> On Sun, 30 Mar 2014 09:03:29 -0400
->>> "Theodore Ts'o" <tytso@mit.edu> wrote:
->>> 
->>>> On Thu, Mar 27, 2014 at 07:08:02AM -0700, Jeff Layton wrote:
->>>>> I had some time to think about this last night...
->>>>> 
->>>>> While using a fd to pass around credentials is convenient, the danger
->>>>> is that it's pretty opaque. You have a fd that you know has creds
->>>>> attached to it, but it's hard to be certain what is going to change.
->>>> 
->>>> I don't think that's a particularly tough problem.  In general, the fd
->>>> isn't something that you would want to pass around, and so the process
->>>> which generated it will know exactly what it contained.
->>>> 
->>> 
->>> I think there's a bit more of a use-case for passing around such an fd
->>> via socket...
->>> 
->>> Part of the problem is that the traditional uid/gid switching glibc
->>> wrappers are per-process. If we're proposing doing something like:
->>> 
->>> seteuid()
->>> setegid()
->>> setgroups()
->>> fd = open()
->>> (...and then revert the creds using same syscalls)
->>> 
->>> ...during the time that you're doing all of that, you can't really
->>> allow any thread in the process to be doing something that requires
->>> _other_ creds until you've completed the above.
->> 
->> Umm... open() isn't the only operation that you want to be able to do with an assumed user identity. You want mknod(), mkdir(), link(), unlink(), ... Pretty much any interaction with the underlying filesystem needs to use the right identity.
->> 
->>> So, I could envision a program like ganesha firing up a separate
->>> process to handle the credential switching and fd creation and then
->>> handing those back to the main process via a unix domain socket.
->> 
->> How about using the keyrings interface to atomically cache and retrieve these user identities? We already have support for different types of keys that store/retrieve different types of structured information. How is this so different?
+> Hell knows what happened, I did nothing unusual...
+> This is the first time I see this message on this box.
 > 
-> This sounds considerably more complicated than just using fds.  What's
-> the advantage?
+> [15173.408570] BUG: Bad page map in process objdump  pte:483d2025 pmd:daa04067
+> [15173.408578] page:ffffea000120f480 count:1 mapcount:-1
+> mapping:ffff88005316bb10 index:0x9a22
+> [15173.408580] page flags:
+> 0x400000000002002c(referenced|uptodate|lru|mappedtodisk)
+> [15173.408585] page dumped because: bad pte
+> [15173.408588] addr:00007fe290749000 vm_flags:00000075 anon_vma:
+>    (null) mapping:ffff88007fe518c0 index:24
+> [15173.408593] vma->vm_ops->fault: filemap_fault+0x0/0x420
+> [15173.408597] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x60
+> [15173.408601] CPU: 1 PID: 10326 Comm: objdump Not tainted 3.14.0-rc6 #13
+> [15173.408603] Hardware name: Hewlett-Packard HP Compaq dc7800
+> Convertible Minitower/0AACh, BIOS 786F1 v01.28 02/26/2009
+> [15173.408605]  ffff8800bb77faa8 ffff880047899c78 ffffffff814649d0
+> 0000000000000007
+> [15173.408608]  00007fe290749000 ffff880047899cc8 ffffffff810f7ece
+> ffffea0002edf840
+> [15173.408611]  ffff88007fe518c0 ffff880047899ca8 00007fe29075e000
+> ffff8800daa04a48
+> [15173.408614] Call Trace:
+> [15173.408620]  [<ffffffff814649d0>] dump_stack+0x4e/0x71
+> [15173.408624]  [<ffffffff810f7ece>] print_bad_pte+0x18e/0x240
+> [15173.408627]  [<ffffffff810f94eb>] unmap_single_vma+0x5cb/0x5f0
+> [15173.408630]  [<ffffffff810f9c09>] unmap_vmas+0x49/0x90
+> [15173.408633]  [<ffffffff8110144d>] exit_mmap+0xbd/0x170
+> [15173.408637]  [<ffffffff81072cbc>] mmput+0x3c/0xb0
+> [15173.408640]  [<ffffffff81076db6>] do_exit+0x1f6/0x900
+> [15173.408644]  [<ffffffff8109e1cb>] ? local_clock+0x1b/0x30
+> [15173.408647]  [<ffffffff8109eb28>] ? vtime_account_user+0x58/0x70
+> [15173.408650]  [<ffffffff810775da>] do_group_exit+0x3a/0xa0
+> [15173.408652]  [<ffffffff81077652>] SyS_exit_group+0x12/0x20
+> [15173.408656]  [<ffffffff8146a459>] tracesys+0xd0/0xd5
 
-The advantage is that it’s considerably _less_ complicated because it uses interfaces that were designed to carry security related information, and to share them across threads.
+page_mapcount() = -1 in zap_pte_range().
 
-> I guess using keys for local fs credentials fits in with using keys to
-> access things like AFS, but I'm still not sure I see why this helps
-> here.
-
-All you want to do is atomically store and retrieve a user identity (in practice a credential) and share it between members of a thread. As I said, that kind of storage/retrieval of structured data is what keyrings do. As far as I know, there are already LSM interfaces in place (see security_key_alloc/permission/free), and the generic keyring/keyctl interface exists with appropriate process sharing/inheritance rules via the kernel keyring interface.
-
-So basically, the recipe is:
-
-- You set up a kernel key type that takes a reference to the current process credential on instantiation (no upcalls, etc needed). Ganesha can then use standard libkeyutils methods to create the key and store it in its user, process or thread keyring.
-- You add a new keyctl (KEYCTL_APPLY?) that enables any thread/process that has access to the key, via the keyring in which it is stored, to apply the stored process credential to itself (and perhaps cache it’s old credential in a new key?).
-
-
-_________________________________
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
+I can't imagine what caused that and objdump is, I assume, a very
+simple program - single threaded, does nothing much apart from
+open/lseek/read/printf.
 
