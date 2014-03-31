@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717AbaCaNXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35578 "EHLO
+	id S1755097AbaCaNrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:47:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35600 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaCaNXq (ORCPT
+	with ESMTP id S1753704AbaCaNXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:46 -0400
+	Mon, 31 Mar 2014 09:23:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Xiaotian Feng <xtfeng@gmail.com>, Mike Galbraith <bitbucket@online.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 15/71] tracing: Do not add event files for modules that fail tracepoints
-Date: Mon, 31 Mar 2014 14:22:21 +0100
-Message-Id: <1396272197-13394-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 17/71] rapidio/tsi721: fix tasklet termination in dma channel release
+Date: Mon, 31 Mar 2014 14:22:23 +0100
+Message-Id: <1396272197-13394-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -28,94 +31,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 45ab2813d40d88fc575e753c38478de242d03f88 upstream.
+commit 04379dffdd4da820d51a1566ad2e86f3b1ad97ed upstream.
 
-If a module fails to add its tracepoints due to module tainting, do not
-create the module event infrastructure in the debugfs directory. As the events
-will not work and worse yet, they will silently fail, making the user wonder
-why the events they enable do not display anything.
+This patch is a modification of the patch originally proposed by
+Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
+This new version disables DMA channel interrupts and ensures that the
+tasklet wil not be scheduled again before calling tasklet_kill().
 
-Having a warning on module load and the events not visible to the users
-will make the cause of the problem much clearer.
+Unfortunately the updated patch was not released at that time due to
+planned rework of Tsi721 mport driver to use threaded interrupts (which
+has yet to happen).  Recently the issue was reported again:
+https://lkml.org/lkml/2014/2/19/762.
 
-Link: http://lkml.kernel.org/r/20140227154923.265882695@goodmis.org
+Description from the original Xiaotian's patch:
 
-Fixes: 6d723736e472 "tracing/events: add support for modules to TRACE_EVENT"
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+ "Some drivers use tasklet_disable in device remove/release process,
+  tasklet_disable will inc tasklet->count and return.  If the tasklet is
+  not handled yet under some softirq pressure, the tasklet will be
+  placed on the tasklet_vec, never have a chance to be excuted.  This
+  might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq,
+  but tasklet is disabled.  tasklet_kill should be used in this case."
+
+This patch is applicable to kernel versions starting from v3.5.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/tracepoint.h  |  6 ++++++
- kernel/trace/trace_events.c | 10 ++++++++++
- kernel/tracepoint.c         |  7 ++++++-
- 3 files changed, 22 insertions(+), 1 deletion(-)
+ drivers/rapidio/devices/tsi721.h     |  1 +
+ drivers/rapidio/devices/tsi721_dma.c | 27 ++++++++++++++++++---------
+ 2 files changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index bd96ecd..c49c363 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -60,6 +60,12 @@ struct tp_module {
- 	unsigned int num_tracepoints;
- 	struct tracepoint * const *tracepoints_ptrs;
+diff --git a/drivers/rapidio/devices/tsi721.h b/drivers/rapidio/devices/tsi721.h
+index 59de9d7..36147ee 100644
+--- a/drivers/rapidio/devices/tsi721.h
++++ b/drivers/rapidio/devices/tsi721.h
+@@ -669,6 +669,7 @@ struct tsi721_bdma_chan {
+ 	struct list_head	free_list;
+ 	dma_cookie_t		completed_cookie;
+ 	struct tasklet_struct	tasklet;
++	bool			active;
  };
-+bool trace_module_has_bad_taint(struct module *mod);
-+#else
-+static inline bool trace_module_has_bad_taint(struct module *mod)
-+{
-+	return false;
-+}
- #endif /* CONFIG_MODULES */
  
- struct tracepoint_iter {
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 29111da..2f737f5 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1354,6 +1354,16 @@ static void trace_module_add_events(struct module *mod)
- 	struct ftrace_module_file_ops *file_ops = NULL;
- 	struct ftrace_event_call **call, **start, **end;
- 
-+	if (!mod->num_trace_events)
-+		return;
-+
-+	/* Don't add infrastructure for mods without tracepoints */
-+	if (trace_module_has_bad_taint(mod)) {
-+		pr_err("%s: module has bad taint, not creating trace events\n",
-+		       mod->name);
-+		return;
-+	}
-+
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
- 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index d96ba22..23d8560 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -628,6 +628,11 @@ void tracepoint_iter_reset(struct tracepoint_iter *iter)
- EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
- 
- #ifdef CONFIG_MODULES
-+bool trace_module_has_bad_taint(struct module *mod)
-+{
-+	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
-+}
-+
- static int tracepoint_module_coming(struct module *mod)
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
+index 92e06a5..96f77a6 100644
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_bdma_chan *bdma_chan)
  {
- 	struct tp_module *tp_mod, *iter;
-@@ -638,7 +643,7 @@ static int tracepoint_module_coming(struct module *mod)
- 	 * module headers (for forced load), to make sure we don't cause a crash.
- 	 * Staging and out-of-tree GPL modules are fine.
- 	 */
--	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-+	if (trace_module_has_bad_taint(mod))
- 		return 0;
- 	mutex_lock(&tracepoints_mutex);
- 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
+ 	/* Disable BDMA channel interrupts */
+ 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
+-
+-	tasklet_schedule(&bdma_chan->tasklet);
++	if (bdma_chan->active)
++		tasklet_schedule(&bdma_chan->tasklet);
+ }
+ 
+ #ifdef CONFIG_PCI_MSI
+@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(struct dma_chan *dchan)
+ 	}
+ #endif /* CONFIG_PCI_MSI */
+ 
+-	tasklet_enable(&bdma_chan->tasklet);
++	bdma_chan->active = true;
+ 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
+ 
+ 	return bdma_chan->bd_num - 1;
+@@ -576,9 +576,7 @@ err_out:
+ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ {
+ 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
+-#ifdef CONFIG_PCI_MSI
+ 	struct tsi721_device *priv = to_tsi721(dchan->device);
+-#endif
+ 	LIST_HEAD(list);
+ 
+ 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
+@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ 	BUG_ON(!list_empty(&bdma_chan->active_list));
+ 	BUG_ON(!list_empty(&bdma_chan->queue));
+ 
+-	tasklet_disable(&bdma_chan->tasklet);
++	tsi721_bdma_interrupt_enable(bdma_chan, 0);
++	bdma_chan->active = false;
++
++#ifdef CONFIG_PCI_MSI
++	if (priv->flags & TSI721_USING_MSIX) {
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
++					   bdma_chan->id].vector);
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
++					   bdma_chan->id].vector);
++	} else
++#endif
++	synchronize_irq(priv->pdev->irq);
++
++	tasklet_kill(&bdma_chan->tasklet);
+ 
+ 	spin_lock_bh(&bdma_chan->lock);
+ 	list_splice_init(&bdma_chan->free_list, &list);
+ 	spin_unlock_bh(&bdma_chan->lock);
+ 
+-	tsi721_bdma_interrupt_enable(bdma_chan, 0);
+-
+ #ifdef CONFIG_PCI_MSI
+ 	if (priv->flags & TSI721_USING_MSIX) {
+ 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
+@@ -790,6 +799,7 @@ int __devinit tsi721_register_dma(struct tsi721_device *priv)
+ 		bdma_chan->dchan.cookie = 1;
+ 		bdma_chan->dchan.chan_id = i;
+ 		bdma_chan->id = i;
++		bdma_chan->active = false;
+ 
+ 		spin_lock_init(&bdma_chan->lock);
+ 
+@@ -799,7 +809,6 @@ int __devinit tsi721_register_dma(struct tsi721_device *priv)
+ 
+ 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
+ 			     (unsigned long)bdma_chan);
+-		tasklet_disable(&bdma_chan->tasklet);
+ 		list_add_tail(&bdma_chan->dchan.device_node,
+ 			      &mport->dma.channels);
+ 	}
 -- 
 1.9.1
 
