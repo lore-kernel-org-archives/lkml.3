@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaCaPbC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 11:31:02 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39155 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751768AbaCaPbA (ORCPT
+	id S1753736AbaCaPbt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 11:31:49 -0400
+Received: from smtprelay0210.hostedemail.com ([216.40.44.210]:56389 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753514AbaCaPbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 11:31:00 -0400
-Date: Mon, 31 Mar 2014 16:30:41 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: "broonie@kernel.org" <broonie@kernel.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] mfd: arizona: Update DT binding to support LDO1
- init_data
-Message-ID: <20140331153041.GB15064@e106331-lin.cambridge.arm.com>
-References: <1396267187-30580-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1396267187-30580-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396267187-30580-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-Thread-Topic: [PATCH 4/6] mfd: arizona: Update DT binding to support LDO1
- init_data
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 31 Mar 2014 11:31:47 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2904:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: verse43_831e14dc5fa1c
+X-Filterd-Recvd-Size: 2436
+Message-ID: <1396279898.21529.39.camel@joe-AO722>
+Subject: [RFC] quiet checkpatch style recommendation about no spaces around
+ bitfield :
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Rocco Folino <lordzen87@gmail.com>, aaro.koskinen@iki.fi,
+        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Mon, 31 Mar 2014 08:31:38 -0700
+In-Reply-To: <20140331150638.GQ6991@mwanda>
+References: <1396269280-32665-1-git-send-email-lordzen87@gmail.com>
+	 <20140331150638.GQ6991@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 12:59:45PM +0100, Charles Keepax wrote:
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  Documentation/devicetree/bindings/mfd/arizona.txt |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-> index 0e295c9..c019e73 100644
-> --- a/Documentation/devicetree/bindings/mfd/arizona.txt
-> +++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-> @@ -40,6 +40,13 @@ Optional properties:
->      the chip default will be used.  If present exactly five values must
->      be specified.
->  
-> +  - ldo1 : Initial data for the LDO1 regulator, as covered in
-> +    Documentation/devicetree/bindings/regulator/regulator.txt
+On Mon, 2014-03-31 at 18:06 +0300, Dan Carpenter wrote:
+> On Mon, Mar 31, 2014 at 02:34:40PM +0200, Rocco Folino wrote:
+> > Fixed bit fields code style issues
+[]
+> > diff --git a/drivers/staging/octeon-usb/octeon-hcd.h b/drivers/staging/octeon-usb/octeon-hcd.h
+[]
+> > @@ -143,13 +143,13 @@ union cvmx_usbcx_gahbcfg {
+> >  	 *	* 1'b1: Unmask the interrupt assertion to the application.
+> >  	 */
+> >  	struct cvmx_usbcx_gahbcfg_s {
+> > -		uint32_t reserved_9_31	: 23;
+> > -		uint32_t ptxfemplvl	: 1;
+> > -		uint32_t nptxfemplvl	: 1;
+> > -		uint32_t reserved_6_6	: 1;
+> > -		uint32_t dmaen		: 1;
+> > -		uint32_t hbstlen	: 4;
+> > -		uint32_t glblintrmsk	: 1;
+> > +		uint32_t reserved_9_31:23;
+> > +		uint32_t ptxfemplvl:1;
+> > +		uint32_t nptxfemplvl:1;
+> > +		uint32_t reserved_6_6:1;
+> > +		uint32_t dmaen:1;
+> > +		uint32_t hbstlen:4;
+> > +		uint32_t glblintrmsk:1;
+> >  	} s;
+> The warning here is:
+> ERROR: spaces prohibited around that ':' (ctx:WxW)
+> I have done a kernel wide search for these warnings
 
-This seems to be a node rather than a property, judging from the code.
-Please describe properties separately from sub-nodes and their
-properties. That also covers the micvdd addition in patch 6.
+Really?  How?
 
-Thanks,
-Mark.
+>  and I think we
+> should disable this warning.  It has too many false positives like this.
 
-> +
-> +  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
-> +    externally supplied. As covered in
-> +    Documentation/devicetree/bindings/regulator/regulator.txt
-> +
->  Example:
->  
->  codec: wm5102@1a {
-> -- 
-> 1.7.2.5
-> 
-> 
+It does seem a bit noisy to me too.
+
+Andy?  Andrew?
+
+>From a treewide checkpatch scan next-20140307:
+
+$ grep "spaces prohibited around that ':' (ctx:WxW)" checkpatch.all | wc -l
+11194
+
+I don't see any other uses of that message for
+anything other than bitfields.
+
+
