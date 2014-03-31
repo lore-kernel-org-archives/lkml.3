@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaCaTcl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 15:32:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40508 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750777AbaCaTcj (ORCPT
+	id S1751398AbaCaTd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 15:33:29 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:55968 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaCaTd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 15:32:39 -0400
-Message-ID: <1396294350.1241.45.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.2 118/200] PCI: Enable INTx if BIOS left them disabled
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Chris Cheng <chris.cheng@atrustcorp.com>
-Date: Mon, 31 Mar 2014 20:32:30 +0100
-In-Reply-To: <CAErSpo6KQNhh-4csydz7iZ+1WnX8LP+Hde8EN_oTwX=8bRAh2w@mail.gmail.com>
-References: <lsq.1396221814.369444335@decadent.org.uk>
-	 <lsq.1396221815.13737205@decadent.org.uk>
-	 <CAErSpo6KQNhh-4csydz7iZ+1WnX8LP+Hde8EN_oTwX=8bRAh2w@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-VczO3k+dD0Cf5Q0FOK9I"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 31 Mar 2014 15:33:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 1 Apr 2014 04:33:06 +0900
+Message-ID: <CAAVeFuKpFjWCNcZq4RUQmUbBACGgUj=G5BrpdRq2UQ2i-s-aHw@mail.gmail.com>
+Subject: Re: [PATCH] gpio / ACPI: Don't crash on NULL chip->dev
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 31, 2014 at 9:16 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> Commit aa92b6f689ac (gpio / ACPI: Allocate ACPI specific data directly in
+> acpi_gpiochip_add()) moved ACPI handle checking to acpi_gpiochip_add() but
+> forgot to check whether chip->dev is NULL before dereferencing it.
+>
+> Since chip->dev pointer is optional we can end up with crash like following:
+>
+>  BUG: unable to handle kernel NULL pointer dereference at 00000138
+>  IP: [<c126c2b3>] acpi_gpiochip_add+0x13/0x190
+>  *pde = 00000000
+>  Oops: 0000 [#1] PREEMPT SMP
+>  Modules linked in: ssb(+) ...
+>  CPU: 0 PID: 512 Comm: modprobe Tainted: G        W     3.14.0-rc7-next-20140324-t1 #24
+>  Hardware name: Dell Inc. Latitude D830                   /0UY141, BIOS A02 06/07/2007
+>  task: f5799900 ti: f543e000 task.ti: f543e000
+>  EIP: 0060:[<c126c2b3>] EFLAGS: 00010282 CPU: 0
+>  EIP is at acpi_gpiochip_add+0x13/0x190
+>  EAX: 00000000 EBX: f57824c4 ECX: 00000000 EDX: 00000000
+>  ESI: f57824c4 EDI: 00000010 EBP: f543fc54 ESP: f543fc40
+>   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+>  CR0: 8005003b CR2: 00000138 CR3: 355f8000 CR4: 000007d0
+>  Stack:
+>   f543fc5c fd1f7790 f57824c4 000000be 00000010 f543fc84 c1269f4e f543fc74
+>   fd1f78bd 00008002 f57822b0 f5782090 fd1f8400 00000286 fd1f9994 00000000
+>   f5782000 f543fc8c fd1f7e39 f543fcc8 fd1f0bd8 000000c0 00000000 00000000
+>  Call Trace:
+>   [<fd1f7790>] ? ssb_pcie_mdio_write+0xa0/0xd0 [ssb]
+>   [<c1269f4e>] gpiochip_add+0xee/0x300
+>   [<fd1f78bd>] ? ssb_pcicore_serdes_workaround+0xfd/0x140 [ssb]
+>   [<fd1f7e39>] ssb_gpio_init+0x89/0xa0 [ssb]
+>   [<fd1f0bd8>] ssb_attach_queued_buses+0xc8/0x2d0 [ssb]
+>   [<fd1f0f65>] ssb_bus_register+0x185/0x1f0 [ssb]
+>   [<fd1f3120>] ? ssb_pci_xtal+0x220/0x220 [ssb]
+>   [<fd1f106c>] ssb_bus_pcibus_register+0x2c/0x80 [ssb]
+>   [<fd1f40dc>] ssb_pcihost_probe+0x9c/0x110 [ssb]
+>   [<c1276c8f>] pci_device_probe+0x6f/0xc0
+>   [<c11bdb55>] ? sysfs_create_link+0x25/0x40
+>   [<c131d8b9>] driver_probe_device+0x79/0x360
+>   [<c1276512>] ? pci_match_device+0xb2/0xc0
+>   [<c131dc51>] __driver_attach+0x71/0x80
+>   [<c131dbe0>] ? __device_attach+0x40/0x40
+>   [<c131bd87>] bus_for_each_dev+0x47/0x80
+>   [<c131d3ae>] driver_attach+0x1e/0x20
+>   [<c131dbe0>] ? __device_attach+0x40/0x40
+>   [<c131d007>] bus_add_driver+0x157/0x230
+>   [<c131e219>] driver_register+0x59/0xe0
+>   ...
+>
+> Fix this by checking chip->dev pointer against NULL first. Also we can now
+> remove redundant check in acpi_gpiochip_request/free_interrupts().
 
---=-VczO3k+dD0Cf5Q0FOK9I
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 2014-03-31 at 11:15 -0600, Bjorn Helgaas wrote:
-> On Sun, Mar 30, 2014 at 5:23 PM, Ben Hutchings <ben@decadent.org.uk> wrot=
-e:
-> > 3.2.56-rc1 review patch.  If anyone has any objections, please let me k=
-now.
->=20
-> No objection, but you need the followup patch as well:
->=20
-> 3cdeb713dc66057b50682048c151eae07b186c42 PCI: Enable INTx in
-> pci_reenable_device() only when MSI/MSI-X not enabled
-[...]
-
-I saw that follow-up go past earlier but didn't notice it was missing
-from this set (which only includes cc'd patches up to -rc7).  I've added
-it now, thanks.
-
-Ben.
-
---=20
-Ben Hutchings
-friends: People who know you well, but like you anyway.
-
---=-VczO3k+dD0Cf5Q0FOK9I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUznCzue/yOyVhhEJAQr+9hAAv0LsCLGXujT2Wi6C5jEEVUxsQGflhf2C
-4lgmnEm4POfKL7SX4Vdi4hpQjgEwaxItBrnxlaStj5gB6/ngER9LH2Q2Opj4Iwco
-2YP9WpSVPof0ylcIom8aj3CPeKFgTDfkQUIQ2CwHjVP4/5B5Rew+79lIEqmVBJBB
-H/Oe0V3lK6dcaRcl20yUomXQaOmkkHbigbAt4tDgXa+dDo28UQM5QYdmcj/rdX7P
-ASUNZlmxbFvLj0i84aagt0RUV9nuX18u7rXjgOIvHfxF7oID5uJN0RwZ4KG0qx7s
-H8B5GSJ+vlEGUw1cqpT4XaZOriV1l7XMRUQRkd4KxNzr+2IcTKa+d/7KFzgL2HKS
-8yft2Mp5R733JTN9IQ2dDy1TOKaIMrH35pCH+ygytv52+yeC0P8MNllidS6uymOH
-BUIGipBBuXL77MYW233R+B+am5CglSrAdrQbGZDwnvR+2y8TEVw0Zmvhuef6iHwg
-jXf/RJgxGjzQ3TjhaQANTnHPZzNTtqqnTQJuqxr9vbuV0HeM1Xd5+sdvv0v3zNG2
-vPAqMqAu6cLZ32Uki8OvhSQ8RdL1o8mVpgaS4KGt2RTYPfCacAQ2UGcCx5FTimuL
-2pvJ+v+sh/Zg+bQmiQ/L/1phOng3MY1TG/gjOGra2uIco4/RemRYGGnrdYlwNeOP
-wmwX0KyWD0I=
-=EzQG
------END PGP SIGNATURE-----
-
---=-VczO3k+dD0Cf5Q0FOK9I--
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
