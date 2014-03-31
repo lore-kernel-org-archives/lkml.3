@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525AbaCaNXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35545 "EHLO
+	id S1755138AbaCaNv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:51:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35553 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474AbaCaNXg (ORCPT
+	with ESMTP id S1753502AbaCaNXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:36 -0400
+	Mon, 31 Mar 2014 09:23:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 10/71] firewire: net: fix use after free
-Date: Mon, 31 Mar 2014 14:22:16 +0100
-Message-Id: <1396272197-13394-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 12/71] NFS: Fix a delegation callback race
+Date: Mon, 31 Mar 2014 14:22:18 +0100
+Message-Id: <1396272197-13394-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 8987583366ae9e03c306c2b7d73bdb952df1d08d upstream.
+commit 755a48a7a4eb05b9c8424e3017d947b2961a60e0 upstream.
 
-Commit 8408dc1c14c1 "firewire: net: use dev_printk API" introduced a
-use-after-free in a failure path.  fwnet_transmit_packet_failed(ptask)
-may free ptask, then the dev_err() call dereferenced it.  The fix is
-straightforward; simply reorder the two calls.
+The clean-up in commit 36281caa839f ended up removing a NULL pointer check
+that is needed in order to prevent an Oops in
+nfs_async_inode_return_delegation().
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Reported-by: "Yan, Zheng" <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/5313E9F6.2020405@intel.com
+Fixes: 36281caa839f (NFSv4: Further clean-ups of delegation stateid validation)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firewire/net.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nfs/delegation.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/firewire/net.c b/drivers/firewire/net.c
-index 638e1f7..7cff7f7 100644
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -1014,8 +1014,6 @@ static void fwnet_write_complete(struct fw_card *card, int rcode,
- 	if (rcode == RCODE_COMPLETE) {
- 		fwnet_transmit_packet_done(ptask);
- 	} else {
--		fwnet_transmit_packet_failed(ptask);
--
- 		if (printk_timed_ratelimit(&j,  1000) || rcode != last_rcode) {
- 			dev_err(&ptask->dev->netdev->dev,
- 				"fwnet_write_complete failed: %x (skipped %d)\n",
-@@ -1023,8 +1021,10 @@ static void fwnet_write_complete(struct fw_card *card, int rcode,
+diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+index bd3a960..04cae5c 100644
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -548,16 +548,19 @@ int nfs_async_inode_return_delegation(struct inode *inode,
  
- 			errors_skipped = 0;
- 			last_rcode = rcode;
--		} else
-+		} else {
- 			errors_skipped++;
-+		}
-+		fwnet_transmit_packet_failed(ptask);
- 	}
+ 	rcu_read_lock();
+ 	delegation = rcu_dereference(NFS_I(inode)->delegation);
++	if (delegation == NULL)
++		goto out_enoent;
+ 
+-	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid)) {
+-		rcu_read_unlock();
+-		return -ENOENT;
+-	}
++	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid))
++		goto out_enoent;
+ 	nfs_mark_return_delegation(server, delegation);
+ 	rcu_read_unlock();
+ 
+ 	nfs_delegation_run_state_manager(clp);
+ 	return 0;
++out_enoent:
++	rcu_read_unlock();
++	return -ENOENT;
  }
  
+ static struct inode *
 -- 
 1.9.1
 
