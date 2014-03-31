@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988AbaCaQ0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 12:26:05 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:59282 "EHLO smtp4-g21.free.fr"
+	id S1754094AbaCaQ0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 12:26:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49170 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640AbaCaQ0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 12:26:02 -0400
-Date: Mon, 31 Mar 2014 18:25:47 +0200
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio / ACPI: Don't crash on NULL chip->dev
-Message-ID: <20140331162547.GA25802@kria>
-References: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753014AbaCaQ0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 12:26:44 -0400
+Date: Mon, 31 Mar 2014 18:26:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        Jacob Shin <jacob.shin@amd.com>, Jeff Layton <jlayton@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] x86: microcode: report if no microcode file was found
+Message-ID: <20140331162633.GC16144@pd.tnic>
+References: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
+ <1396188574-2067-2-git-send-email-dvlasenk@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1396268209-19108-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1396188574-2067-2-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-31, 15:16:49 +0300, Mika Westerberg wrote:
-> Commit aa92b6f689ac (gpio / ACPI: Allocate ACPI specific data directly in
-> acpi_gpiochip_add()) moved ACPI handle checking to acpi_gpiochip_add() but
-> forgot to check whether chip->dev is NULL before dereferencing it.
-> 
-> Since chip->dev pointer is optional we can end up with crash like following:
-> 
->  BUG: unable to handle kernel NULL pointer dereference at 00000138
->  IP: [<c126c2b3>] acpi_gpiochip_add+0x13/0x190
->  *pde = 00000000
->  Oops: 0000 [#1] PREEMPT SMP
->  Modules linked in: ssb(+) ...
->  CPU: 0 PID: 512 Comm: modprobe Tainted: G        W     3.14.0-rc7-next-20140324-t1 #24
->  Hardware name: Dell Inc. Latitude D830                   /0UY141, BIOS A02 06/07/2007
->  task: f5799900 ti: f543e000 task.ti: f543e000
->  EIP: 0060:[<c126c2b3>] EFLAGS: 00010282 CPU: 0
->  EIP is at acpi_gpiochip_add+0x13/0x190
->  EAX: 00000000 EBX: f57824c4 ECX: 00000000 EDX: 00000000
->  ESI: f57824c4 EDI: 00000010 EBP: f543fc54 ESP: f543fc40
->   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
->  CR0: 8005003b CR2: 00000138 CR3: 355f8000 CR4: 000007d0
->  Stack:
->   f543fc5c fd1f7790 f57824c4 000000be 00000010 f543fc84 c1269f4e f543fc74
->   fd1f78bd 00008002 f57822b0 f5782090 fd1f8400 00000286 fd1f9994 00000000
->   f5782000 f543fc8c fd1f7e39 f543fcc8 fd1f0bd8 000000c0 00000000 00000000
->  Call Trace:
->   [<fd1f7790>] ? ssb_pcie_mdio_write+0xa0/0xd0 [ssb]
->   [<c1269f4e>] gpiochip_add+0xee/0x300
->   [<fd1f78bd>] ? ssb_pcicore_serdes_workaround+0xfd/0x140 [ssb]
->   [<fd1f7e39>] ssb_gpio_init+0x89/0xa0 [ssb]
->   [<fd1f0bd8>] ssb_attach_queued_buses+0xc8/0x2d0 [ssb]
->   [<fd1f0f65>] ssb_bus_register+0x185/0x1f0 [ssb]
->   [<fd1f3120>] ? ssb_pci_xtal+0x220/0x220 [ssb]
->   [<fd1f106c>] ssb_bus_pcibus_register+0x2c/0x80 [ssb]
->   [<fd1f40dc>] ssb_pcihost_probe+0x9c/0x110 [ssb]
->   [<c1276c8f>] pci_device_probe+0x6f/0xc0
->   [<c11bdb55>] ? sysfs_create_link+0x25/0x40
->   [<c131d8b9>] driver_probe_device+0x79/0x360
->   [<c1276512>] ? pci_match_device+0xb2/0xc0
->   [<c131dc51>] __driver_attach+0x71/0x80
->   [<c131dbe0>] ? __device_attach+0x40/0x40
->   [<c131bd87>] bus_for_each_dev+0x47/0x80
->   [<c131d3ae>] driver_attach+0x1e/0x20
->   [<c131dbe0>] ? __device_attach+0x40/0x40
->   [<c131d007>] bus_add_driver+0x157/0x230
->   [<c131e219>] driver_register+0x59/0xe0
->   ...
-> 
-> Fix this by checking chip->dev pointer against NULL first. Also we can now
-> remove redundant check in acpi_gpiochip_request/free_interrupts().
-> 
-> Reported-by: Sabrina Dubroca <sd@queasysnail.net>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
-> Sabrina,
-> 
-> Can you please re-test this and provide your tested-by? I changed the patch
-> a bit to remove redundant checks. Just to be sure that I don't accidentally
-> break something.
-> 
-> Thanks.
+On Sun, Mar 30, 2014 at 04:09:33PM +0200, Denys Vlasenko wrote:
+> diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
+> index ef8b17c..9ce22b0 100644
+> --- a/arch/x86/kernel/cpu/microcode/intel.c
+> +++ b/arch/x86/kernel/cpu/microcode/intel.c
+> @@ -279,7 +279,7 @@ static enum ucode_state request_microcode_fw(int cpu, struct device *device,
+>  		c->x86, c->x86_model, c->x86_mask);
+>  
+>  	if (request_firmware_direct(&firmware, name, device)) {
 
-Everything looks good.
+request_firmware_direct() already has dev_dbg() error messages down its
+path.
 
-Tested-by: Sabrina Dubroca <sd@queasysnail.net>
+> -		pr_debug("data file %s load failed\n", name);
+> +		pr_info("data file %s load failed\n", name);
 
+Also might spook users unnecessarily.
 
-Thanks,
 -- 
-Sabrina
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
