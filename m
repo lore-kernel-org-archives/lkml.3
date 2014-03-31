@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596AbaCaSOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 14:14:11 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:52341 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328AbaCaSOI (ORCPT
+	id S1753789AbaCaSOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 14:14:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39198 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680AbaCaSO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 14:14:08 -0400
-Message-ID: <5339B06D.5010905@gmail.com>
-Date: Mon, 31 Mar 2014 11:14:05 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Tejun Heo <tj@kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-ide@vger.kernel.org, linux-mips@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pata_octeon_cf: fix ata_host_activate() failure handling
-References: <5439252.0G82yiBcdS@amdc1032>
-In-Reply-To: <5439252.0G82yiBcdS@amdc1032>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Mar 2014 14:14:28 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] Input: pmic8xxx-pwrkey - Set sane default for debounce time
+Date: Mon, 31 Mar 2014 11:14:24 -0700
+Message-Id: <1396289664-31893-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 10:53 AM, Bartlomiej Zolnierkiewicz wrote:
-> Add missing kfree() call to ata_host_activate() failure path.
->
+If the debounce time is 0 our usage of ilog2() later on in this
+driver will cause undefined behavior. If CONFIG_OF=n this fact is
+evident to the compiler, and it emits a call to ____ilog2_NaN()
+which doesn't exist. Fix this by setting a sane default for
+debounce.
 
-Are you seeing failures in real systems, or is this just a change to fix 
-a theoretical memory leak?
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/input/misc/pmic8xxx-pwrkey.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-
-Did you test the patch on real hardware?  If so, you can add:
-
-Acked-By: David Daney <david.daney@cavium.com>
-
-Otherwise, somebody will have to go and test it.
-
-Thanks,
-David Daney
-
-
-> ---
->   drivers/ata/pata_octeon_cf.c |    9 ++++++---
->   1 file changed, 6 insertions(+), 3 deletions(-)
->
-> Index: b/drivers/ata/pata_octeon_cf.c
-> ===================================================================
-> --- a/drivers/ata/pata_octeon_cf.c	2014-03-14 16:45:04.320724377 +0100
-> +++ b/drivers/ata/pata_octeon_cf.c	2014-03-31 18:58:44.367604046 +0200
-> @@ -1020,13 +1020,16 @@ static int octeon_cf_probe(struct platfo
->
->   	ata_port_desc(ap, "cmd %p ctl %p", base, ap->ioaddr.ctl_addr);
->
-> -
->   	dev_info(&pdev->dev, "version " DRV_VERSION" %d bit%s.\n",
->   		 is_16bit ? 16 : 8,
->   		 cf_port->is_true_ide ? ", True IDE" : "");
->
-> -	return ata_host_activate(host, irq, irq_handler,
-> -				 IRQF_SHARED, &octeon_cf_sht);
-> +	rv = ata_host_activate(host, irq, irq_handler,
-> +			       IRQF_SHARED, &octeon_cf_sht);
-> +	if (rv)
-> +		goto free_cf_port;
-> +
-> +	return 0;
->
->   free_cf_port:
->   	kfree(cf_port);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+index 1cb8fda7a166..27add04676e1 100644
+--- a/drivers/input/misc/pmic8xxx-pwrkey.c
++++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+@@ -92,7 +92,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 	bool pull_up;
+ 
+ 	if (of_property_read_u32(pdev->dev.of_node, "debounce", &kpd_delay))
+-		kpd_delay = 0;
++		kpd_delay = 15625;
+ 
+ 	pull_up = of_property_read_bool(pdev->dev.of_node, "pull-up");
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
