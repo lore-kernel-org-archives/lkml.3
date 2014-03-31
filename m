@@ -1,345 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaCaNX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35502 "EHLO
+	id S1754698AbaCaNz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:55:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35519 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994AbaCaNXX (ORCPT
+	with ESMTP id S1752918AbaCaNX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:23 -0400
+	Mon, 31 Mar 2014 09:23:28 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Luis Henriques <luis.henriques@canonical.com>
-Subject: [3.5.y.z extended stable] Linux 3.5.7.33 stable review
-Date: Mon, 31 Mar 2014 14:22:06 +0100
-Message-Id: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 03/71] mac80211: fix AP powersave TX vs. wakeup race
+Date: Mon, 31 Mar 2014 14:22:09 +0100
+Message-Id: <1396272197-13394-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 X-Extended-Stable: 3.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the review cycle for the Linux 3.5.7.33 stable kernel.
+3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+
+commit 1d147bfa64293b2723c4fec50922168658e613ba upstream.
+
+There is a race between the TX path and the STA wakeup: while
+a station is sleeping, mac80211 buffers frames until it wakes
+up, then the frames are transmitted. However, the RX and TX
+path are concurrent, so the packet indicating wakeup can be
+processed while a packet is being transmitted.
+
+This can lead to a situation where the buffered frames list
+is emptied on the one side, while a frame is being added on
+the other side, as the station is still seen as sleeping in
+the TX path.
+
+As a result, the newly added frame will not be send anytime
+soon. It might be sent much later (and out of order) when the
+station goes to sleep and wakes up the next time.
+
+Additionally, it can lead to the crash below.
+
+Fix all this by synchronising both paths with a new lock.
+Both path are not fastpath since they handle PS situations.
+
+In a later patch we'll remove the extra skb queue locks to
+reduce locking overhead.
+
+BUG: unable to handle kernel
+NULL pointer dereference at 000000b0
+IP: [<ff6f1791>] ieee80211_report_used_skb+0x11/0x3e0 [mac80211]
+*pde = 00000000
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+EIP: 0060:[<ff6f1791>] EFLAGS: 00210282 CPU: 1
+EIP is at ieee80211_report_used_skb+0x11/0x3e0 [mac80211]
+EAX: e5900da0 EBX: 00000000 ECX: 00000001 EDX: 00000000
+ESI: e41d00c0 EDI: e5900da0 EBP: ebe458e4 ESP: ebe458b0
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 000000b0 CR3: 25a78000 CR4: 000407d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process iperf (pid: 3934, ti=ebe44000 task=e757c0b0 task.ti=ebe44000)
+iwlwifi 0000:02:00.0: I iwl_pcie_enqueue_hcmd Sending command LQ_CMD (#4e), seq: 0x0903, 92 bytes at 3[3]:9
+Stack:
+ e403b32c ebe458c4 00200002 00200286 e403b338 ebe458cc c10960bb e5900da0
+ ff76a6ec ebe458d8 00000000 e41d00c0 e5900da0 ebe458f0 ff6f1b75 e403b210
+ ebe4598c ff723dc1 00000000 ff76a6ec e597c978 e403b758 00000002 00000002
+Call Trace:
+ [<ff6f1b75>] ieee80211_free_txskb+0x15/0x20 [mac80211]
+ [<ff723dc1>] invoke_tx_handlers+0x1661/0x1780 [mac80211]
+ [<ff7248a5>] ieee80211_tx+0x75/0x100 [mac80211]
+ [<ff7249bf>] ieee80211_xmit+0x8f/0xc0 [mac80211]
+ [<ff72550e>] ieee80211_subif_start_xmit+0x4fe/0xe20 [mac80211]
+ [<c149ef70>] dev_hard_start_xmit+0x450/0x950
+ [<c14b9aa9>] sch_direct_xmit+0xa9/0x250
+ [<c14b9c9b>] __qdisc_run+0x4b/0x150
+ [<c149f732>] dev_queue_xmit+0x2c2/0xca0
+
+Reported-by: Yaara Rozenblum <yaara.rozenblum@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[reword commit log, use a separate lock]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/mac80211/sta_info.c |  4 ++++
+ net/mac80211/sta_info.h |  7 +++----
+ net/mac80211/tx.c       | 15 +++++++++++++++
+ 3 files changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index 91eb0c5..55975bd 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -242,6 +242,7 @@ struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
+ 		return NULL;
+ 
+ 	spin_lock_init(&sta->lock);
++	spin_lock_init(&sta->ps_lock);
+ 	INIT_WORK(&sta->drv_unblock_wk, sta_unblock);
+ 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
+ 	mutex_init(&sta->ampdu_mlme.mtx);
+@@ -979,6 +980,8 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
+ 
+ 	skb_queue_head_init(&pending);
+ 
++	/* sync with ieee80211_tx_h_unicast_ps_buf */
++	spin_lock(&sta->ps_lock);
+ 	/* Send all buffered frames to the station */
+ 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
+ 		int count = skb_queue_len(&pending), tmp;
+@@ -998,6 +1001,7 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
+ 	}
+ 
+ 	ieee80211_add_pending_skbs_fn(local, &pending, clear_sta_ps_flags, sta);
++	spin_unlock(&sta->ps_lock);
+ 
+ 	local->total_ps_buffered -= buffered;
+ 
+diff --git a/net/mac80211/sta_info.h b/net/mac80211/sta_info.h
+index a470e11..4223a28 100644
+--- a/net/mac80211/sta_info.h
++++ b/net/mac80211/sta_info.h
+@@ -233,6 +233,7 @@ struct sta_ampdu_mlme {
+  * @drv_unblock_wk: used for driver PS unblocking
+  * @listen_interval: listen interval of this station, when we're acting as AP
+  * @_flags: STA flags, see &enum ieee80211_sta_info_flags, do not use directly
++ * @ps_lock: used for powersave (when mac80211 is the AP) related locking
+  * @ps_tx_buf: buffers (per AC) of frames to transmit to this station
+  *	when it leaves power saving state or polls
+  * @tx_filtered: buffers (per AC) of frames we already tried to
+@@ -309,10 +310,8 @@ struct sta_info {
+ 	/* use the accessors defined below */
+ 	unsigned long _flags;
+ 
+-	/*
+-	 * STA powersave frame queues, no more than the internal
+-	 * locking required.
+-	 */
++	/* STA powersave lock and frame queues */
++	spinlock_t ps_lock;
+ 	struct sk_buff_head ps_tx_buf[IEEE80211_NUM_ACS];
+ 	struct sk_buff_head tx_filtered[IEEE80211_NUM_ACS];
+ 	unsigned long driver_buffered_tids;
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index df9e376..2be46b1 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -462,6 +462,20 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+ 			purge_old_ps_buffers(tx->local);
++
++		/* sync with ieee80211_sta_ps_deliver_wakeup */
++		spin_lock(&sta->ps_lock);
++		/*
++		 * STA woke up the meantime and all the frames on ps_tx_buf have
++		 * been queued to pending queue. No reordering can happen, go
++		 * ahead and Tx the packet.
++		 */
++		if (!test_sta_flag(sta, WLAN_STA_PS_STA) &&
++		    !test_sta_flag(sta, WLAN_STA_PS_DRIVER)) {
++			spin_unlock(&sta->ps_lock);
++			return TX_CONTINUE;
++		}
++
+ 		if (skb_queue_len(&sta->ps_tx_buf[ac]) >= STA_MAX_TX_BUFFER) {
+ 			struct sk_buff *old = skb_dequeue(&sta->ps_tx_buf[ac]);
+ #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
+@@ -476,6 +490,7 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ 		info->control.vif = &tx->sdata->vif;
+ 		info->flags |= IEEE80211_TX_INTFL_NEED_TXPROCESSING;
+ 		skb_queue_tail(&sta->ps_tx_buf[ac], tx->skb);
++		spin_unlock(&sta->ps_lock);
+ 
+ 		if (!timer_pending(&local->sta_cleanup))
+ 			mod_timer(&local->sta_cleanup,
+-- 
+1.9.1
 
-PLEASE NOTE: this will be the LAST 3.5.y.z extended stable kernel release.
-
-This version contains 71 new patches, summarized below.  The new patches are
-posted as replies to this message and also available in this git branch:
-
-http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.5.y-review;a=shortlog
-
-git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.5.y-review
-
-The review period for version 3.5.7.33 will be open for the next three days.
-To report a problem, please reply to the relevant follow-up patch message.
-
-For more information about the Linux 3.5.y.z extended stable kernel version,
-see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
-
- -Luis
-
---
- arch/arm/mach-sa1100/include/mach/collie.h         |   2 +
- arch/powerpc/kernel/reloc_64.S                     |   1 +
- arch/x86/include/asm/topology.h                    |   3 +-
- arch/x86/kernel/head_32.S                          |   7 +-
- arch/x86/kernel/head_64.S                          |   6 +-
- arch/x86/kernel/quirks.c                           |   2 +-
- arch/x86/kvm/svm.c                                 |   6 +-
- arch/x86/net/bpf_jit.S                             |   2 +-
- drivers/ata/libata-core.c                          |  28 ++
- drivers/ata/libata-scsi.c                          |  18 +-
- drivers/cpufreq/acpi-cpufreq.c                     |   2 +-
- drivers/dma/ioat/dma.c                             |  46 ++-
- drivers/dma/ioat/dma.h                             |   1 +
- drivers/dma/ioat/dma_v2.c                          |  11 +-
- drivers/dma/ioat/dma_v3.c                          |   3 +
- drivers/firewire/core-device.c                     |  22 +-
- drivers/firewire/net.c                             |   6 +-
- drivers/firewire/sbp2.c                            |  17 +-
- drivers/gpu/drm/radeon/atombios_encoders.c         |   2 +-
- drivers/gpu/drm/radeon/radeon_ttm.c                |   3 +
- drivers/gpu/drm/ttm/ttm_bo.c                       |   8 +-
- drivers/idle/intel_idle.c                          |   3 +-
- drivers/input/mouse/synaptics.c                    |  55 ++++
- drivers/mmc/host/sdhci.c                           |  17 +-
- drivers/net/can/flexcan.c                          |  13 +-
- drivers/net/ethernet/broadcom/tg3.c                |   3 +-
- drivers/net/ethernet/broadcom/tg3.h                |   6 +-
- drivers/net/ethernet/ibm/ibmveth.c                 |  25 +-
- drivers/net/ethernet/ibm/ibmveth.h                 |   1 -
- drivers/net/virtio_net.c                           |   3 +-
- drivers/net/vmxnet3/vmxnet3_drv.c                  |  19 +-
- .../net/wireless/ath/ath9k/ar9462_2p0_initvals.h   |   4 +-
- drivers/net/wireless/ath/ath9k/xmit.c              |   8 +-
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c         |   1 +
- drivers/net/wireless/mwifiex/11n.c                 |   3 +-
- drivers/net/wireless/mwifiex/usb.c                 |   8 -
- drivers/net/wireless/p54/txrx.c                    |   2 +-
- drivers/of/address.c                               |   9 +-
- drivers/pci/pci.c                                  |   3 +
- drivers/rapidio/devices/tsi721.h                   |   1 +
- drivers/rapidio/devices/tsi721_dma.c               |  27 +-
- drivers/scsi/isci/host.h                           |   5 +-
- drivers/scsi/isci/port_config.c                    |   7 -
- drivers/scsi/isci/task.c                           |   2 +-
- drivers/scsi/qla2xxx/qla_def.h                     |   3 +-
- drivers/scsi/storvsc_drv.c                         |   3 +
- drivers/staging/speakup/i18n.c                     |  12 +-
- drivers/staging/speakup/i18n.h                     |  12 +-
- drivers/staging/speakup/keyhelp.c                  |  36 +-
- drivers/staging/speakup/kobjects.c                 |  80 ++---
- drivers/staging/speakup/main.c                     | 366 ++++++++++-----------
- drivers/staging/speakup/selection.c                |  14 +-
- drivers/staging/speakup/serialio.c                 |   6 +-
- drivers/staging/speakup/speakup.h                  |  72 ++--
- drivers/staging/speakup/speakup_acntpc.c           |   6 +-
- drivers/staging/speakup/speakup_acntsa.c           |   2 +-
- drivers/staging/speakup/speakup_apollo.c           |   8 +-
- drivers/staging/speakup/speakup_audptr.c           |   2 +-
- drivers/staging/speakup/speakup_bns.c              |   2 +-
- drivers/staging/speakup/speakup_decext.c           |   6 +-
- drivers/staging/speakup/speakup_decpc.c            |   4 +-
- drivers/staging/speakup/speakup_dectlk.c           |   6 +-
- drivers/staging/speakup/speakup_dtlk.c             |   4 +-
- drivers/staging/speakup/speakup_dummy.c            |   2 +-
- drivers/staging/speakup/speakup_keypc.c            |   6 +-
- drivers/staging/speakup/speakup_ltlk.c             |   2 +-
- drivers/staging/speakup/speakup_spkout.c           |   2 +-
- drivers/staging/speakup/speakup_txprt.c            |   2 +-
- drivers/staging/speakup/spk_priv.h                 |   8 +-
- drivers/staging/speakup/synth.c                    |  38 +--
- drivers/staging/speakup/thread.c                   |   4 +-
- drivers/staging/speakup/varhandlers.c              |  66 ++--
- drivers/usb/core/config.c                          |   4 +
- drivers/usb/core/quirks.c                          |   4 +
- drivers/usb/dwc3/dwc3-pci.c                        |   2 +
- drivers/usb/host/ehci.h                            |  18 +-
- drivers/usb/serial/pl2303.c                        |  33 +-
- fs/btrfs/compression.c                             |   2 +
- fs/ext4/inode.c                                    |  15 +-
- fs/hpfs/dir.c                                      |  10 +-
- fs/nfs/delegation.c                                |  11 +-
- fs/ocfs2/file.c                                    |   8 +-
- fs/ocfs2/quota_global.c                            |  27 +-
- fs/ocfs2/quota_local.c                             |   4 -
- fs/proc/base.c                                     |   1 +
- include/linux/bitops.h                             |  15 +
- include/linux/firewire.h                           |   1 +
- include/linux/jiffies.h                            |   8 +-
- include/linux/libata.h                             |   2 +
- include/linux/tracepoint.h                         |   6 +
- ipc/msg.c                                          |   2 +
- kernel/cpuset.c                                    |   2 +-
- kernel/irq/manage.c                                |   3 +-
- kernel/sched/fair.c                                |   8 +-
- kernel/trace/trace_events.c                        |  10 +
- kernel/tracepoint.c                                |   7 +-
- net/mac80211/sta_info.c                            |   5 +
- net/mac80211/sta_info.h                            |   7 +-
- net/mac80211/tx.c                                  |  15 +
- net/sctp/sm_statefuns.c                            |   7 +
- net/unix/af_unix.c                                 |   3 +-
- scripts/package/builddeb                           |   9 +-
- sound/core/compress_offload.c                      |   2 +-
- sound/pci/hda/patch_realtek.c                      |   3 +
- sound/pci/oxygen/xonar_dg.c                        |  12 +-
- sound/usb/mixer.c                                  |   1 +
- 106 files changed, 894 insertions(+), 568 deletions(-)
-
-Aisheng Dong (1):
-      mmc: sdhci: fix lockdep error in tuning routine
-
-Al Viro (2):
-      ocfs2 syncs the wrong range...
-      hpfs: deadlock and race in directory lseek()
-
-Ales Novak (1):
-      [SCSI] storvsc: NULL pointer dereference fix
-
-Alex Deucher (1):
-      drm/radeon/atom: select the proper number of lanes in transmitter setup
-
-Alexandre Bounine (1):
-      rapidio/tsi721: fix tasklet termination in dma channel release
-
-Alexei Starovoitov (1):
-      x86: bpf_jit: support negative offsets
-
-Amitkumar Karwar (1):
-      mwifiex: copy AP's HT capability info correctly
-
-Anton Blanchard (3):
-      powerpc: Align p_dyn, p_rela and p_st symbols
-      net: unix socket code abuses csum_partial
-      ibmveth: Fix endian issues with MAC addresses
-
-Arnd Bergmann (1):
-      vmxnet3: fix building without CONFIG_PCI_MSI
-
-Artem Fetishev (2):
-      fs/proc/base.c: fix GPF in /proc/$PID/map_files
-      x86: fix boot on uniprocessor systems
-
-Ben Hutchings (2):
-      deb-pkg: Fix cross-building linux-headers package
-      ioat: fix tasklet tear down
-
-Benjamin Herrenschmidt (1):
-      of: Fix address decoding on Bimini and js2x machines
-
-Benjamin Tissoires (1):
-      Input: synaptics - add manual min/max quirk
-
-Bing Zhao (1):
-      mwifiex: do not advertise usb autosuspend support
-
-Bjorn Helgaas (1):
-      PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled
-
-Charles Keepax (1):
-      ALSA: compress: Pass through return value of open ops callback
-
-Chuansheng Liu (1):
-      genirq: Remove racy waitqueue_active check
-
-Clemens Ladisch (1):
-      ALSA: oxygen: Xonar DG(X): modify DAC routing
-
-Dan Carpenter (1):
-      p54: clamp properly instead of just truncating
-
-Dan Williams (1):
-      [SCSI] isci: fix reset timeout handling
-
-Daniel Borkmann (1):
-      net: sctp: fix sctp_sf_do_5_1D_ce to verify if we/peer is AUTH capable
-
-Daniel J Blueman (1):
-      x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
-
-David Cohen (1):
-      usb: dwc3: add support for Merrifield
-
-Emmanuel Grumbach (2):
-      mac80211: fix AP powersave TX vs. wakeup race
-      iwlwifi: dvm: clear IWL_STA_UCODE_INPROGRESS when assoc fails
-
-Filipe David Borba Manana (1):
-      Btrfs: fix data corruption when reading/updating compressed extents
-
-George McCollister (1):
-      sched: Fix double normalization of vruntime
-
-Giridhar Malavali (1):
-      [SCSI] qla2xxx: Poll during initialization for ISP25xx and ISP83xx
-
-H. Peter Anvin (1):
-      x86: Ignore NMIs that come in during early boot
-
-Hans de Goede (1):
-      Input: synaptics - add manual min/max quirk for ThinkPad X240
-
-Jan Kara (1):
-      ocfs2: fix quota file corruption
-
-Jason Wang (1):
-      virtio-net: alloc big buffers also when guest can receive UFO
-
-Johan Hovold (1):
-      USB: pl2303: fix data corruption on termios updates
-
-Johannes Berg (1):
-      mac80211: clear sequence/fragment number in QoS-null frames
-
-Julius Werner (2):
-      usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
-      usb: Make DELAY_INIT quirk wait 100ms between Get Configuration requests
-
-Kleber Sacilotto de Souza (1):
-      of: fix PCI bus match for PCIe slots
-
-Konrad Rzeszutek Wilk (1):
-      intel_idle: Check cpu_idle_get_driver() for NULL before dereferencing it.
-
-Konstantin Khlebnikov (1):
-      ipc/msg: fix race around refcount
-
-Lauri Kasanen (1):
-      drm/radeon: TTM must be init with cpu-visible VRAM, v2
-
-Li Zefan (1):
-      cpuset: fix a race condition in __cpuset_node_allowed_softwall()
-
-Linus Torvalds (1):
-      x86: fix compile error due to X86_TRAP_NMI use in asm files
-
-Linus Walleij (1):
-      ARM: 7991/1: sa1100: fix compile problem on Collie
-
-Lukasz Dorau (1):
-      [SCSI] isci: correct erroneous for_each_isci_host macro
-
-Marc Kleine-Budde (2):
-      can: flexcan: fix shutdown: first disable chip, then all interrupts
-      can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
-
-Michael Chan (1):
-      tg3: Don't check undefined error bits in RXBD
-
-Michele Baldessari (1):
-      libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
-
-Neil Horman (1):
-      vmxnet3: fix netpoll race condition
-
-Paul E. McKenney (1):
-      jiffies: Avoid undefined behavior from signed overflow
-
-Peter Chen (1):
-      usb: ehci: add freescale imx28 special write register method
-
-Radim Krčmář (1):
-      KVM: SVM: fix cr8 intercept window
-
-Rob Clark (1):
-      drm/ttm: don't oops if no invalidate_caches()
-
-Roman Volkov (1):
-      ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
-
-Ross Lagerwall (1):
-      acpi-cpufreq: set current frequency based on target P-State
-
-Samuel Thibault (1):
-      staging: speakup: Prefix externally-visible symbols
-
-Stanislaw Gruszka (1):
-      ath9k: protect tid->sched check
-
-Stefan Richter (1):
-      firewire: net: fix use after free
-
-Steven Rostedt (Red Hat) (1):
-      tracing: Do not add event files for modules that fail tracepoints
-
-Sujith Manoharan (1):
-      ath9k: Fix ETSI compliance for AR9462 2.0
-
-Takashi Iwai (2):
-      ALSA: usb-audio: Add quirk for Logitech Webcam C500
-      ALSA: hda/realtek - Avoid invalid COEFs for ALC271X
-
-Tejun Heo (2):
-      firewire: don't use PREPARE_DELAYED_WORK
-      libata: disable LPM for some WD SATA-I devices
-
-Theodore Ts'o (1):
-      ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-
-Trond Myklebust (1):
-      NFS: Fix a delegation callback race
