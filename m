@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaCaCZH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 22:25:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:41839 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749AbaCaCZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 22:25:04 -0400
-Date: Mon, 31 Mar 2014 13:24:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: linux-next: manual merge of the net-next tree with the arm-soc tree
-Message-Id: <20140331132457.2d8d71019a52033bbef5b2c2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__31_Mar_2014_13_24_57_+1100_koNqZvvbLcL0O6vW"
+	id S1752918AbaCaCbU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 22:31:20 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62418 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaCaCbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 22:31:19 -0400
+From: zhouzhouyi@gmail.com
+To: <len.brown@intel.com>, <pavel@ucw.cz>, <rjw@rjwysocki.net>,
+        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <x86@kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: [PATCH RFC] ACPI: (x86) remove useless initial assignment in gsi_to_irq
+Date: Mon, 31 Mar 2014 10:30:55 +0800
+Message-Id: <5338d375.45ac440a.2163.3105@mx.google.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__31_Mar_2014_13_24_57_+1100_koNqZvvbLcL0O6vW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
 
-Hi all,
+I think in function gsi_to_irq, initial assignment to irq is useless although compiler
+may eliminate it during the compilng. 
 
-Today's linux-next merge of the net-next tree got a conflict in
-Documentation/devicetree/bindings/net/stmmac.txt between commit
-50b4af414d41 ("dts: stmmac: Document the clocks property in the stmmac
-base document") from the arm-soc tree and commit e8f08ee0ad86 ("DT: net:
-document Ethernet bindings in one place") from the net-next tree.
+Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+---
+ arch/x86/kernel/acpi/boot.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 1dac942..b93d61e 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -103,7 +103,7 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
+ 
+ static unsigned int gsi_to_irq(unsigned int gsi)
+ {
+-	unsigned int irq = gsi + NR_IRQS_LEGACY;
++	unsigned int irq;
+ 	unsigned int i;
+ 
+ 	for (i = 0; i < NR_IRQS_LEGACY; i++) {
+-- 
+1.7.10.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc Documentation/devicetree/bindings/net/stmmac.txt
-index 9a0c1b7bee29,5748351fb9df..000000000000
---- a/Documentation/devicetree/bindings/net/stmmac.txt
-+++ b/Documentation/devicetree/bindings/net/stmmac.txt
-@@@ -31,13 -30,7 +30,11 @@@ Optional properties
-  - resets: Should contain a phandle to the STMMAC reset signal, if any
-  - reset-names: Should contain the reset signal name "stmmaceth", if a
-  	reset phandle is given
-- - max-frame-size:	Maximum Transfer Unit (IEEE defined MTU), rather
-- 			than the maximum frame size.
-+ - max-frame-size: See ethernet.txt file in the same directory
- +- clocks: If present, the first clock should be the GMAC main clock,
- +  further clocks may be specified in derived bindings.
- +- clocks-names: One name for each entry in the clocks property, the
- +  first one should be "stmmaceth".
- =20
-  Examples:
- =20
-
---Signature=_Mon__31_Mar_2014_13_24_57_+1100_koNqZvvbLcL0O6vW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTONH9AAoJEMDTa8Ir7ZwV9RsP+wVYaiWA18sy5ZqCQUKBXRzV
-thf/oU5dc68Cgbtx9hPuL5Kd8YmFVGFEx5bYhuV6f849vbchQoxWXcbGkL1HHUts
-g33WEapmAC46AkV5l4ir4VWxjsDtDAAFkfYXIgXqHfUX5T2SUMHo44H7WyJK7kjF
-TQLKfjwFYeuWGDlfTL6Kea3Gfgm1tw0ghTCgE7a1AmBThyJ1Bwx8V93ga1VvUwLX
-F1nExFTRgIYzo/tJ8xySz4JPPTt1YfR4Agg3Eprt+X1MTbvjG5o1D5BJ27Jq02Jb
-o8qet+9EZN6on+cFOwq8phK8v0SwBCILLUKwn+xu1xagR/Ptkzjz08GqUwOIhUQD
-jUVdlwRwViNLi3AH2rWE+mx0BH987BgNdj9GUleduq5dqL+K30jGyKlkS/OVsiaW
-JIk0NZQIPpvHjE3KvcSsFLsKR4kIaB8HUx/QV3BYcUUkzOWM1rbYhyom0ZtWvNR/
-5sZenr1F3509xVHOEIM7LJXIqcRpTPCD/jUz1cl83G8PH9UngOIr6yjFk5WyCg8h
-uu2kWKffL3g/9llDBUARhJV6uWp8/ASae5bFXtN3LLB1I2g6pZOvilgvMkFbzkMv
-OIvo5YyifmbzehAed9w3fFBDNEGq3afn5QDIA5rIdq0Q7IzY1yVqhw/u8qtSbqad
-TmVN7XnoNhCUqsP9IxIl
-=25pF
------END PGP SIGNATURE-----
-
---Signature=_Mon__31_Mar_2014_13_24_57_+1100_koNqZvvbLcL0O6vW--
