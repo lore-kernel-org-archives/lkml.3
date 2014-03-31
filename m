@@ -1,48 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289AbaCaEfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 00:35:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:47496 "EHLO ozlabs.org"
+	id S1753379AbaCaEf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 00:35:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:53398 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542AbaCaEfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752191AbaCaEfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Mar 2014 00:35:23 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Venkatesh Srinivas <venkateshs@google.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-blk: make the queue depth the max supportable by the hypervisor
-In-Reply-To: <CAHdzE--CvgsPOFQ5OFRoe7L+kkJ0J3eRWR0JQv34i4AmNDBJug@mail.gmail.com>
-References: <1394841445-16142-1-git-send-email-venkateshs@google.com> <1394854471-25700-1-git-send-email-tytso@mit.edu> <87siqhu048.fsf@rustcorp.com.au> <20140317054053.GF14162@thunk.org> <871txysnw2.fsf@rustcorp.com.au> <CAHdzE-_cAndCNhBM1N0RpjQDhoh3Snas-eza4rYN33Rf69PXyw@mail.gmail.com> <CAHdzE--CvgsPOFQ5OFRoe7L+kkJ0J3eRWR0JQv34i4AmNDBJug@mail.gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+In-Reply-To: <s5hbnwr66wf.wl%tiwai@suse.de>
+References: <1392355106-26104-1-git-send-email-mathieu.desnoyers@efficios.com> <20140226154012.7985f91c@gandalf.local.home> <87siqmvrnk.fsf@rustcorp.com.au> <s5hbnwr66wf.wl%tiwai@suse.de>
 User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 31 Mar 2014 14:22:50 +1030
-Message-ID: <87ha6fowh9.fsf@rustcorp.com.au>
+Date: Mon, 31 Mar 2014 14:43:21 +1030
+Message-ID: <87eh1jovj2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Venkatesh Srinivas <venkateshs@google.com> writes:
-> On Wed, Mar 19, 2014 at 10:48 AM, Venkatesh Srinivas
-> <venkateshs@google.com> wrote:
->>> And I rewrote it substantially, mainly to take
->>> VIRTIO_RING_F_INDIRECT_DESC into account.
->>>
->>> As QEMU sets the vq size for PCI to 128, Venkatash's patch wouldn't
->>> have made a change.  This version does (since QEMU also offers
->>> VIRTIO_RING_F_INDIRECT_DESC.
->>
->> That divide-by-2 produced the same queue depth as the prior
->> computation in QEMU was deliberate -- but raising it to 128 seems
->> pretty reasonable.
->>
->> Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
+Takashi Iwai <tiwai@suse.de> writes:
+> At Thu, 13 Mar 2014 11:30:47 +1030,
+> Rusty Russell wrote:
+>> 
+>> Steven Rostedt <rostedt@goodmis.org> writes:
+>> > Mathieu, you should have added a v2 to the subject ie: [PATCH V2]
+>> >
+>> > Rusty,
+>> >
+>> > If you want to take this, please add my
+>> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>> 
+>> Thanks, I updated my copy and have pushed this into modules-next.
 >
-> Soft ping about this patch.
+> The letter 'X' has been already used for SUSE kernels for very long
+> time, to indicate the external supported modules.  Can the new flag be
+> changed to another letter for avoiding conflict...?
+> (BTW, we also use 'N' for "no support", too.)
 
-It's head of my virtio-next tree.
+Sure...  As I've already applied it, I've had to add this new patch:
 
-Cheers,
-Rusty.
+Subject: Use 'E' instead of 'X' for unsigned module taint flag.
+
+66cc69e34e86a231fbe68d8918c6119e3b7549a3 added 'X' for unsigned module
+taints, but Takashi Iwai <tiwai@suse.de> says:
+
+   The letter 'X' has been already used for SUSE kernels for very long
+   time, to indicate the external supported modules.  Can the new flag be
+   changed to another letter for avoiding conflict...?
+   (BTW, we also use 'N' for "no support", too.)
+
+Note: this code should be cleaned up, so we don't have such maps in
+three places!
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/Documentation/ABI/testing/sysfs-module b/Documentation/ABI/testing/sysfs-module
+index b9a29cdbaccb..66a110b4c48a 100644
+--- a/Documentation/ABI/testing/sysfs-module
++++ b/Documentation/ABI/testing/sysfs-module
+@@ -49,4 +49,4 @@ Description:	Module taint flags:
+ 			O - out-of-tree module
+ 			F - force-loaded module
+ 			C - staging driver module
+-			X - unsigned module
++			E - unsigned module
+diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
+index b6af42e4d790..db1c49e17aa2 100644
+--- a/Documentation/module-signing.txt
++++ b/Documentation/module-signing.txt
+@@ -54,7 +54,7 @@ This has a number of options available:
+      If this is off (ie. "permissive"), then modules for which the key is not
+      available and modules that are unsigned are permitted, but the kernel will
+      be marked as being tainted, and the concerned modules will be marked as
+-     tainted, shown with the character 'X'.
++     tainted, shown with the character 'E'.
+ 
+      If this is on (ie. "restrictive"), only modules that have a valid
+      signature that can be verified by a public key in the kernel's possession
+diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+index 879abe289523..fa86b85d2821 100644
+--- a/Documentation/oops-tracing.txt
++++ b/Documentation/oops-tracing.txt
+@@ -265,7 +265,7 @@ characters, each representing a particular tainted value.
+ 
+  13: 'O' if an externally-built ("out-of-tree") module has been loaded.
+ 
+- 14: 'X' if an unsigned module has been loaded in a kernel supporting
++ 14: 'E' if an unsigned module has been loaded in a kernel supporting
+      module signature.
+ 
+ The primary reason for the 'Tainted: ' string is to tell kernel
+diff --git a/kernel/module.c b/kernel/module.c
+index c1acb0c5b637..6d620199b892 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1014,7 +1014,7 @@ static size_t module_flags_taint(struct module *mod, char *buf)
+ 	if (mod->taints & (1 << TAINT_CRAP))
+ 		buf[l++] = 'C';
+ 	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
+-		buf[l++] = 'X';
++		buf[l++] = 'E';
+ 	/*
+ 	 * TAINT_FORCED_RMMOD: could be added.
+ 	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 0e25fe10871e..dbee7fe2a0c0 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -210,7 +210,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_CRAP,			'C', ' ' },
+ 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
+ 	{ TAINT_OOT_MODULE,		'O', ' ' },
+-	{ TAINT_UNSIGNED_MODULE,	'X', ' ' },
++	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+ };
+ 
+ /**
+@@ -229,7 +229,7 @@ static const struct tnt tnts[] = {
+  *  'C' - modules from drivers/staging are loaded.
+  *  'I' - Working around severe firmware bug.
+  *  'O' - Out-of-tree module has been loaded.
+- *  'X' - Unsigned module has been loaded.
++ *  'E' - Unsigned module has been loaded.
+  *
+  *	The string is overwritten by the next call to print_tainted().
+  */
