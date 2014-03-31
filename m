@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaCaNqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:46:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35614 "EHLO
+	id S1754811AbaCaNrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:47:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35609 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762AbaCaNXy (ORCPT
+	with ESMTP id S1753737AbaCaNXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:54 -0400
+	Mon, 31 Mar 2014 09:23:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Michele Baldessari <michele@acksyn.org>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 21/71] powerpc: Align p_dyn, p_rela and p_st symbols
-Date: Mon, 31 Mar 2014 14:22:27 +0100
-Message-Id: <1396272197-13394-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 22/71] libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
+Date: Mon, 31 Mar 2014 14:22:28 +0100
+Message-Id: <1396272197-13394-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Michele Baldessari <michele@acksyn.org>
 
-commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
+commit b28a613e9138e4b3a64649bd60b13436f4b4b49b upstream.
 
-The 64bit relocation code places a few symbols in the text segment.
-These symbols are only 4 byte aligned where they need to be 8 byte
-aligned. Add an explicit alignment.
+Via commit 87809942d3fa "libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk
+for Seagate Momentus SpinPoint M8" we added a quirk for disks named
+"ST1000LM024 HN-M101MBB" with firmware revision "2AR10001".
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+As reported on https://bugzilla.redhat.com/show_bug.cgi?id=1073901,
+we need to also add firmware revision 2BA30001 as it is broken as well.
+
+Reported-by: Nicholas <arealityfarbetween@googlemail.com>
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/reloc_64.S | 1 +
+ drivers/ata/libata-core.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/powerpc/kernel/reloc_64.S b/arch/powerpc/kernel/reloc_64.S
-index b47a0e1..c712ece 100644
---- a/arch/powerpc/kernel/reloc_64.S
-+++ b/arch/powerpc/kernel/reloc_64.S
-@@ -81,6 +81,7 @@ _GLOBAL(relocate)
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index f1e3b76..f3d75fe 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4107,6 +4107,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
  
- 6:	blr
+ 	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
+ 	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
++	{ "ST1000LM024 HN-M101MBB", "2BA30001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
  
-+.balign 8
- p_dyn:	.llong	__dynamic_start - 0b
- p_rela:	.llong	__rela_dyn_start - 0b
- p_st:	.llong	_stext - 0b
+ 	/* Blacklist entries taken from Silicon Image 3124/3132
+ 	   Windows driver .inf file - also several Linux problem reports */
 -- 
 1.9.1
 
