@@ -1,156 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296AbaCaTLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 15:11:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753915AbaCaTLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 15:11:06 -0400
-Date: Mon, 31 Mar 2014 21:50:44 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paolo Bonzini <pbonzini@redhat.com>, gleb@kernel.org, kvm@vger.kernel.org
-Subject: [PATCH 2/2] vmx: speed up wildcard MMIO EVENTFD
-Message-ID: <1396291468-12120-2-git-send-email-mst@redhat.com>
-References: <1396291468-12120-1-git-send-email-mst@redhat.com>
+	id S1751494AbaCaT0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 15:26:30 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:48720 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaCaT01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 15:26:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396291468-12120-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <58D59025-ADA1-44CB-88E4-36BCEE763B64@primarydata.com>
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
+ <20140326194847.0e994d0b@ipyr.poochiereds.net> <CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com>
+ <20140326202535.7d9b6f78@ipyr.poochiereds.net> <20140327070802.124fb34c@ipyr.poochiereds.net>
+ <20140330130328.GB7172@thunk.org> <20140331075145.4bd76872@tlielax.poochiereds.net>
+ <58D59025-ADA1-44CB-88E4-36BCEE763B64@primarydata.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 31 Mar 2014 12:26:06 -0700
+Message-ID: <CALCETrX5ta875ij08_SNmzrN+KLRNuYiM2psNyFn8JdLOd=8DQ@mail.gmail.com>
+Subject: Re: Thoughts on credential switching
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Layton Jeff <jlayton@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jim Lieb <jlieb@panasas.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dr Fields James Bruce <bfields@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With KVM, MMIO is much slower than PIO, due to the need to
-do page walk and emulation. But with EPT, it does not have to be: we
-know the address from the VMCS so if the address is unique, we can look
-up the eventfd directly, bypassing emulation.
+On Mon, Mar 31, 2014 at 11:06 AM, Trond Myklebust
+<trond.myklebust@primarydata.com> wrote:
+>
+> On Mar 31, 2014, at 7:51, Jeff Layton <jlayton@redhat.com> wrote:
+>
+>> On Sun, 30 Mar 2014 09:03:29 -0400
+>> "Theodore Ts'o" <tytso@mit.edu> wrote:
+>>
+>>> On Thu, Mar 27, 2014 at 07:08:02AM -0700, Jeff Layton wrote:
+>>>> I had some time to think about this last night...
+>>>>
+>>>> While using a fd to pass around credentials is convenient, the danger
+>>>> is that it's pretty opaque. You have a fd that you know has creds
+>>>> attached to it, but it's hard to be certain what is going to change.
+>>>
+>>> I don't think that's a particularly tough problem.  In general, the fd
+>>> isn't something that you would want to pass around, and so the process
+>>> which generated it will know exactly what it contained.
+>>>
+>>
+>> I think there's a bit more of a use-case for passing around such an fd
+>> via socket...
+>>
+>> Part of the problem is that the traditional uid/gid switching glibc
+>> wrappers are per-process. If we're proposing doing something like:
+>>
+>> seteuid()
+>> setegid()
+>> setgroups()
+>> fd = open()
+>> (...and then revert the creds using same syscalls)
+>>
+>> ...during the time that you're doing all of that, you can't really
+>> allow any thread in the process to be doing something that requires
+>> _other_ creds until you've completed the above.
+>
+> Umm... open() isn't the only operation that you want to be able to do with an assumed user identity. You want mknod(), mkdir(), link(), unlink(), ... Pretty much any interaction with the underlying filesystem needs to use the right identity.
+>
+>> So, I could envision a program like ganesha firing up a separate
+>> process to handle the credential switching and fd creation and then
+>> handing those back to the main process via a unix domain socket.
+>
+> How about using the keyrings interface to atomically cache and retrieve these user identities? We already have support for different types of keys that store/retrieve different types of structured information. How is this so different?
 
-Unfortunately, this only works if userspace does not need to match on
-access length and data.  The implementation adds a separate FAST_MMIO
-bus internally. This serves two purposes:
-    - minimize overhead for old userspace that does not use eventfd with lengtth = 0
-    - minimize disruption in other code (since we don't know the length,
-      devices on the MMIO bus only get a valid address in write, this
-      way we don't need to touch all devices to teach them to handle
-      an invalid length)
+This sounds considerably more complicated than just using fds.  What's
+the advantage?
 
-At the moment, this optimization only has effect for EPT on x86.
+I guess using keys for local fs credentials fits in with using keys to
+access things like AFS, but I'm still not sure I see why this helps
+here.
 
-It will be possible to speed up MMIO for NPT and MMU using the same
-idea in the future.
-
-With this patch applied, on VMX MMIO EVENTFD is essentially as fast as PIO.
-I was unable to detect any measureable slowdown to non-eventfd MMIO.
-
-Making MMIO faster is important for the upcoming virtio 1.0 which
-includes an MMIO signalling capability.
-
-The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
-pre-review and suggestions.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/linux/kvm_host.h |  1 +
- include/uapi/linux/kvm.h |  1 +
- arch/x86/kvm/vmx.c       |  4 ++++
- virt/kvm/eventfd.c       | 16 ++++++++++++++++
- virt/kvm/kvm_main.c      |  1 +
- 5 files changed, 23 insertions(+)
-
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index b8e9a43..c2eaa9f 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -163,6 +163,7 @@ enum kvm_bus {
- 	KVM_MMIO_BUS,
- 	KVM_PIO_BUS,
- 	KVM_VIRTIO_CCW_NOTIFY_BUS,
-+	KVM_FAST_MMIO_BUS,
- 	KVM_NR_BUSES
- };
- 
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index d73007e..fc75810 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -450,6 +450,7 @@ enum {
- 	kvm_ioeventfd_flag_nr_pio,
- 	kvm_ioeventfd_flag_nr_deassign,
- 	kvm_ioeventfd_flag_nr_virtio_ccw_notify,
-+	kvm_ioeventfd_flag_nr_fast_mmio,
- 	kvm_ioeventfd_flag_nr_max,
- };
- 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 3927528..78a1932 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5493,6 +5493,10 @@ static int handle_ept_misconfig(struct kvm_vcpu *vcpu)
- 	gpa_t gpa;
- 
- 	gpa = vmcs_read64(GUEST_PHYSICAL_ADDRESS);
-+	if (!kvm_io_bus_write(vcpu->kvm, KVM_FAST_MMIO_BUS, gpa, 0, NULL)) {
-+		skip_emulated_instruction(vcpu);
-+		return 1;
-+	}
- 
- 	ret = handle_mmio_page_fault_common(vcpu, gpa, true);
- 	if (likely(ret == RET_MMIO_PF_EMULATE))
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 9eadb59..c61f2eb 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -770,6 +770,16 @@ kvm_assign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
- 	if (ret < 0)
- 		goto unlock_fail;
- 
-+	/* When length is ignored, MMIO is also put on a separate bus, for
-+	 * faster lookups.
-+	 */
-+	if (!args->len && !(args->flags & KVM_IOEVENTFD_FLAG_PIO)) {
-+		ret = kvm_io_bus_register_dev(kvm, KVM_FAST_MMIO_BUS,
-+					      p->addr, 0, &p->dev);
-+		if (ret < 0)
-+			goto register_fail;
-+	}
-+
- 	kvm->buses[bus_idx]->ioeventfd_count++;
- 	list_add_tail(&p->list, &kvm->ioeventfds);
- 
-@@ -777,6 +787,8 @@ kvm_assign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
- 
- 	return 0;
- 
-+register_fail:
-+	kvm_io_bus_unregister_dev(kvm, bus_idx, &p->dev);
- unlock_fail:
- 	mutex_unlock(&kvm->slots_lock);
- 
-@@ -816,6 +828,10 @@ kvm_deassign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
- 			continue;
- 
- 		kvm_io_bus_unregister_dev(kvm, bus_idx, &p->dev);
-+		if (!p->length) {
-+			kvm_io_bus_unregister_dev(kvm, KVM_FAST_MMIO_BUS,
-+						  &p->dev);
-+		}
- 		kvm->buses[bus_idx]->ioeventfd_count--;
- 		ioeventfd_release(p);
- 		ret = 0;
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 03a0381..22a4e1b 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -2920,6 +2920,7 @@ static int __kvm_io_bus_read(struct kvm_io_bus *bus, struct kvm_io_range *range,
- 
- 	return -EOPNOTSUPP;
- }
-+EXPORT_SYMBOL_GPL(kvm_io_bus_write);
- 
- /* kvm_io_bus_read - called under kvm->slots_lock */
- int kvm_io_bus_read(struct kvm *kvm, enum kvm_bus bus_idx, gpa_t addr,
--- 
-MST
-
+--Andy
