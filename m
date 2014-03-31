@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaCaV6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 17:58:18 -0400
-Received: from smtprelay0135.hostedemail.com ([216.40.44.135]:44762 "EHLO
+	id S1751760AbaCaV6R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 17:58:17 -0400
+Received: from smtprelay0222.hostedemail.com ([216.40.44.222]:55439 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751669AbaCaV6N (ORCPT
+	by vger.kernel.org with ESMTP id S1751680AbaCaV6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 17:58:13 -0400
+	Mon, 31 Mar 2014 17:58:12 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:982:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3871:3874:5007:6119:6261:10004:10026:10848:11658:11914:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: spade47_d68bd90dfe45
-X-Filterd-Recvd-Size: 1933
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:152:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3872:5007:6261:10004:10026:10400:10471:10848:11026:11232:11658:11914:12043:12296:12346:12517:12519:12555:13069:13255:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: skirt69_d19c6fad343f
+X-Filterd-Recvd-Size: 2803
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] checkpatch: Don't warn on bitfield spaces around :
-Date: Mon, 31 Mar 2014 14:58:08 -0700
-Message-Id: <ca5f8159ab8b0f66202b50be5fae07c185198ee4.1396302777.git.joe@perches.com>
+Subject: [PATCH V2 1/2] checkpatch: Expand parenthesis alignment test to declarations, functions and assignments
+Date: Mon, 31 Mar 2014 14:58:07 -0700
+Message-Id: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
-References: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This test prevents code from being aligned around the :
-for easy visual counting of bitfield lengths.
+Currently the parenthesis alignment test works only on
+misalignments of if statements like
 
-ie:
-	int foo		: 1,
-	int bar		: 2,
-	int foobar	:29;
+	if (foo(bar,
+			baz)
 
-should be acceptable so remove the test.
+Expand the test to find misalignments like:
 
-Suggested-by: Dan Carpenter <dan.carpenter@oracle.com>
+static inline int foo(int bar,
+			int baz)
+
+and
+
+	foo(bar,
+			baz);
+
+and
+
+	foo = bar(baz,
+			qux);
+
+Expand the $Inline keyword for __inline and __inline__ too.
+Add $Inline to $Declare so it also matches "static inline <foo>".
+
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- scripts/checkpatch.pl | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+V2: Fix return style of pos_last_openparen
+
+ scripts/checkpatch.pl | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index ac0169c..70c932b 100755
+index 889929d..ac0169c 100755
 --- a/scripts/checkpatch.pl
 +++ b/scripts/checkpatch.pl
-@@ -3153,10 +3153,13 @@ sub process {
- 				# // is a comment
- 				} elsif ($op eq '//') {
+@@ -281,7 +281,7 @@ our $Attribute	= qr{
+ 			__weak
+ 		  }x;
+ our $Modifier;
+-our $Inline	= qr{inline|__always_inline|noinline};
++our $Inline	= qr{inline|__always_inline|noinline|__inline|__inline__};
+ our $Member	= qr{->$Ident|\.$Ident|\[[^]]*\]};
+ our $Lval	= qr{$Ident(?:$Member)*};
  
-+				#   :   when part of a bitfield
-+				} elsif ($opv eq ':B') {
-+					# skip the bitfield test for now
-+
- 				# No spaces for:
- 				#   ->
--				#   :   when part of a bitfield
--				} elsif ($op eq '->' || $opv eq ':B') {
-+				} elsif ($op eq '->') {
- 					if ($ctx =~ /Wx.|.xW/) {
- 						if (ERROR("SPACING",
- 							  "spaces prohibited around that '$op' $at\n" . $hereptr)) {
+@@ -435,7 +435,7 @@ sub build_types {
+ 			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
+ 			(?:\s+$Inline|\s+$Modifier)*
+ 		  }x;
+-	$Declare	= qr{(?:$Storage\s+)?$Type};
++	$Declare	= qr{(?:$Storage\s+(?:$Inline\s+)?)?$Type};
+ }
+ build_types();
+ 
+@@ -1613,7 +1613,7 @@ sub pos_last_openparen {
+ 		}
+ 	}
+ 
+-	return $last_openparen + 1;
++	return length(expand_tabs(substr($line, 0, $last_openparen))) + 1;
+ }
+ 
+ sub process {
+@@ -2200,7 +2200,7 @@ sub process {
+ 
+ # check multi-line statement indentation matches previous line
+ 		if ($^V && $^V ge 5.10.0 &&
+-		    $prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/) {
++		    $prevline =~ /^\+([ \t]*)((?:$c90_Keywords(?:\s+if)\s*)|(?:$Declare\s*)?(?:$Ident|\(\s*\*\s*$Ident\s*\))\s*|$Ident\s*=\s*$Ident\s*)\(.*(\&\&|\|\||,)\s*$/) {
+ 			$prevline =~ /^\+(\t*)(.*)$/;
+ 			my $oldindent = $1;
+ 			my $rest = $2;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
