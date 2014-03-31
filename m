@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaCaU4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:56:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49166 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaCaU4a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:56:30 -0400
-Date: Mon, 31 Mar 2014 13:56:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Rocco Folino <lordzen87@gmail.com>, aaro.koskinen@iki.fi,
-        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [RFC] quiet checkpatch style recommendation about no spaces
- around bitfield :
-Message-Id: <20140331135628.d8eb8bea432d509835710202@linux-foundation.org>
-In-Reply-To: <1396279898.21529.39.camel@joe-AO722>
-References: <1396269280-32665-1-git-send-email-lordzen87@gmail.com>
-	<20140331150638.GQ6991@mwanda>
-	<1396279898.21529.39.camel@joe-AO722>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751689AbaCaU7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:59:09 -0400
+Received: from fieldses.org ([174.143.236.118]:39250 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751153AbaCaU7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 16:59:07 -0400
+Date: Mon, 31 Mar 2014 16:58:59 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: wengmeiling.weng@huawei.com, greg@kroah.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd
+ superblock's one
+Message-ID: <20140331205859.GB20024@fieldses.org>
+References: <20140226135000.11521.30339.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226135000.11521.30339.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Mar 2014 08:31:38 -0700 Joe Perches <joe@perches.com> wrote:
+Applying, sorry for the delay.--b.
 
-> > > @@ -143,13 +143,13 @@ union cvmx_usbcx_gahbcfg {
-> > >  	 *	* 1'b1: Unmask the interrupt assertion to the application.
-> > >  	 */
-> > >  	struct cvmx_usbcx_gahbcfg_s {
-> > > -		uint32_t reserved_9_31	: 23;
-> > > -		uint32_t ptxfemplvl	: 1;
-> > > -		uint32_t nptxfemplvl	: 1;
-> > > -		uint32_t reserved_6_6	: 1;
-> > > -		uint32_t dmaen		: 1;
-> > > -		uint32_t hbstlen	: 4;
-> > > -		uint32_t glblintrmsk	: 1;
-> > > +		uint32_t reserved_9_31:23;
-> > > +		uint32_t ptxfemplvl:1;
-> > > +		uint32_t nptxfemplvl:1;
-> > > +		uint32_t reserved_6_6:1;
-> > > +		uint32_t dmaen:1;
-> > > +		uint32_t hbstlen:4;
-> > > +		uint32_t glblintrmsk:1;
-> > >  	} s;
-> > The warning here is:
-> > ERROR: spaces prohibited around that ':' (ctx:WxW)
-> > I have done a kernel wide search for these warnings
+On Wed, Feb 26, 2014 at 04:50:01PM +0300, Stanislav Kinsbursky wrote:
+> There could be a case, when NFSd file system is mounted in network, different
+> to socket's one, like below:
 > 
-> Really?  How?
+> "ip netns exec" creates new network and mount namespace, which duplicates NFSd
+> mount point, created in init_net context. And thus NFS server stop in nested
+> network context leads to RPCBIND client destruction in init_net.
+> Then, on NFSd start in nested network context, rpc.nfsd process creates socket
+> in nested net and passes it into "write_ports", which leads to RPCBIND sockets
+> creation in init_net context because of the same reason (NFSd monut point was
+> created in init_net context). An attempt to register passed socket in nested
+> net leads to panic, because no RPCBIND client present in nexted network
+> namespace.
 > 
-> >  and I think we
-> > should disable this warning.  It has too many false positives like this.
+> This patch add check that passed socket's net matches NFSd superblock's one.
+> And returns -EINVAL error to user psace otherwise.
 > 
-> It does seem a bit noisy to me too.
+> v2: Put socket on exit.
 > 
-> Andy?  Andrew?
-
-I suspect we don't use bitfields enough for a particular style to have
-emerged.  Personally I think the above patch made the code harder to
-read, so...
+> Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  fs/nfsd/nfsctl.c               |    5 +++++
+>  include/linux/sunrpc/svcsock.h |    1 +
+>  net/sunrpc/svcsock.c           |   16 ++++++++++++++++
+>  3 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> index 7f55517..f34d9de 100644
+> --- a/fs/nfsd/nfsctl.c
+> +++ b/fs/nfsd/nfsctl.c
+> @@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
+>  	if (err != 0 || fd < 0)
+>  		return -EINVAL;
+>  
+> +	if (svc_alien_sock(net, fd)) {
+> +		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
+> +		return -EINVAL;
+> +	}
+> +
+>  	err = nfsd_create_serv(net);
+>  	if (err != 0)
+>  		return err;
+> diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
+> index 62fd1b7..947009e 100644
+> --- a/include/linux/sunrpc/svcsock.h
+> +++ b/include/linux/sunrpc/svcsock.h
+> @@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
+>  int		svc_send(struct svc_rqst *);
+>  void		svc_drop(struct svc_rqst *);
+>  void		svc_sock_update_bufs(struct svc_serv *serv);
+> +bool		svc_alien_sock(struct net *net, int fd);
+>  int		svc_addsock(struct svc_serv *serv, const int fd,
+>  					char *name_return, const size_t len);
+>  void		svc_init_xprt_sock(void);
+> diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+> index b6e59f0..d06cb87 100644
+> --- a/net/sunrpc/svcsock.c
+> +++ b/net/sunrpc/svcsock.c
+> @@ -1397,6 +1397,22 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+>  	return svsk;
+>  }
+>  
+> +bool svc_alien_sock(struct net *net, int fd)
+> +{
+> +	int err;
+> +	struct socket *sock = sockfd_lookup(fd, &err);
+> +	bool ret = false;
+> +
+> +	if (!sock)
+> +		goto out;
+> +	if (sock_net(sock->sk) != net)
+> +		ret = true;
+> +	sockfd_put(sock);
+> +out:
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(svc_alien_sock);
+> +
+>  /**
+>   * svc_addsock - add a listener socket to an RPC service
+>   * @serv: pointer to RPC service to which to add a new listener
+> 
