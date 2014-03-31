@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaCaW7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 18:59:36 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:25433 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaCaW7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 18:59:34 -0400
-Message-ID: <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Mon, 31 Mar 2014 15:59:33 -0700
-In-Reply-To: <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751521AbaCaXCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 19:02:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59790 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750977AbaCaXCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 19:02:51 -0400
+Date: Mon, 31 Mar 2014 19:02:41 -0400
+From: Dave Jones <davej@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: rcu_prempt stalls / lockup
+Message-ID: <20140331230241.GA30019@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 14:32 -0700, Andrew Morton wrote:
-> On Sun, 30 Mar 2014 20:06:39 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> 
-> > From: Davidlohr Bueso <davidlohr@hp.com>
-> > 
-> > The default size is, and always has been, 32Mb. Today, in the
-> > XXI century, it seems that this value is rather small, making
-> > users have to increase it via sysctl, which can cause unnecessary
-> > work and userspace application workarounds[1]. I have arbitrarily
-> > chosen a 4x increase, leaving it at 128Mb, and naturally, the
-> > same goes for shmall. While it may make more sense to set the value
-> > based on the system memory, this limit must be the same across all
-> > systems, and left to users to change if needed.
-> > 
-> > ...
-> >
-> > --- a/include/uapi/linux/shm.h
-> > +++ b/include/uapi/linux/shm.h
-> > @@ -12,7 +12,7 @@
-> >   * be increased by sysctl
-> >   */
-> >  
-> > -#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
-> > +#define SHMMAX 0x8000000		 /* max shared seg size (bytes) */
-> >  #define SHMMIN 1			 /* min shared seg size (bytes) */
-> >  #define SHMMNI 4096			 /* max num of segs system wide */
-> >  #ifndef __KERNEL__
-> 
-> urgh.  Perhaps we should have made the default "zero bytes" to force
-> everyone to think about what they really need and to configure their
-> systems.  Of course that just means that distros will poke some random
-> number in there at init time.
-> 
-> - With this change, the limit is no longer "the same across all
->   systems" because the patch increases it for more recent kernels.
-> 
->   Why do you say it "must be the same" and why is this not a problem
->   in the develop-on-new-kernel, run-on-old-kernel scenario?
+You can tell the merge window is open, because I'm back to breaking RCU.
 
-I was referring to the fact that the user shouldn't have to be
-calculating the size himself, at least not the default size (if he wants
-to use sysctl instead then that's his business). So, "shmmax is X% of Y
-RAM" isn't really what we want, as opposed to something much simpler
-such as "up to Linux 3.14 it is 32mb, for newer versions is 128mb". In
-fact, that percentage method is more of a posix way of working
-via /dev/shm. Furthermore, maintaining "tradition" in sysv is important
-for users.
+[ 1023.934532] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 1023.935501]  (detected by 0, t=6502 jiffies, g=28666, c=28665, q=0)
+[ 1023.936299] INFO: Stall ended before state dump start
+[ 1218.871404] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 1218.872399]  (detected by 0, t=26007 jiffies, g=28666, c=28665, q=0)
+[ 1218.873256] INFO: Stall ended before state dump start
+[ 1413.808406] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 1413.809387]  (detected by 0, t=45512 jiffies, g=28666, c=28665, q=0)
+[ 1413.810113] INFO: Stall ended before state dump start
+[ 1608.745637] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 1608.746614]  (detected by 0, t=65017 jiffies, g=28666, c=28665, q=0)
+[ 1608.747327] INFO: Stall ended before state dump start
+[ 1803.682892] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 1803.683876]  (detected by 1, t=84522 jiffies, g=28666, c=28665, q=0)
+[ 1803.684741] INFO: Stall ended before state dump start
+[ 1998.620169] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 1998.621123]  (detected by 0, t=104027 jiffies, g=28666, c=28665, q=0)
+[ 1998.621916] INFO: Stall ended before state dump start
+[ 2193.557459] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 2193.558425]  (detected by 0, t=123532 jiffies, g=28666, c=28665, q=0)
+[ 2193.559248] INFO: Stall ended before state dump start
+[ 2388.494719] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 2388.495688]  (detected by 0, t=143037 jiffies, g=28666, c=28665, q=0)
+[ 2388.496417] INFO: Stall ended before state dump start
+[ 2583.431983] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 2583.432967]  (detected by 0, t=162542 jiffies, g=28666, c=28665, q=0)
+[ 2583.433852] INFO: Stall ended before state dump start
+[ 2778.369242] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 2778.370235]  (detected by 0, t=182047 jiffies, g=28666, c=28665, q=0)
+[ 2778.371037] INFO: Stall ended before state dump start
+[ 2973.306537] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 2973.307540]  (detected by 0, t=201552 jiffies, g=28666, c=28665, q=0)
+[ 2973.308347] INFO: Stall ended before state dump start
+[ 3168.244036] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 3168.245056]  (detected by 0, t=221057 jiffies, g=28666, c=28665, q=0)
+[ 3168.245805] INFO: Stall ended before state dump start
+[ 3363.181458] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 3363.182496]  (detected by 0, t=240562 jiffies, g=28666, c=28665, q=0)
+[ 3363.183289] INFO: Stall ended before state dump start
+[ 3558.118835] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 3558.119879]  (detected by 0, t=260067 jiffies, g=28666, c=28665, q=0)
+[ 3558.120739] INFO: Stall ended before state dump start
 
-> - The sysctl became somewhat pointless when we added ipc namespaces. 
->   shm_init_ns() ignores the sysctl and goes straight to SHMMAX, and
->   altering the sysctl will have no effect upon existing namespaces
->   anyway.
+at that point, userspace stopped responding. cursor on console was blinking,
+but I couldn't even switch tty's, or sysrq dump.
 
-Well, true, at least for kernel ipc initialization bits. If the value is
-going to be changed, the MO is usually to simply change it at later
-startup through sysctl.conf and then start the workload, hence ignoring
-SHMMAX altogether. This is with or without namespaces, and fwiw, I don't
-think they are really used at all nowadays :)
+rc8 was fine, so this is todays rcu changes.
 
-> 
-> - Shouldn't there be a way to alter this namespace's shm_ctlmax?
-
-Unfortunately this would also add the complexity I previously mentioned.
-
-> - What happens if we just nuke the limit altogether and fall back to
->   the next check, which presumably is the rlimit bounds?
-
-afaik we only have rlimit for msgqueues. But in any case, while I like
-that simplicity, it's too late. Too many workloads (specially DBs) rely
-heavily on shmmax. Removing it and relying on something else would thus
-cause a lot of things to break.
-
-Thanks,
-Davidlohr
+	Dave
 
