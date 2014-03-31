@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaCaNaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:30:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35848 "EHLO
+	id S1754605AbaCaNbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:31:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35839 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377AbaCaNYz (ORCPT
+	with ESMTP id S1754361AbaCaNYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:55 -0400
+	Mon, 31 Mar 2014 09:24:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
+        Jan Seiffert <kaffeemonster@googlemail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 64/71] ALSA: hda/realtek - Avoid invalid COEFs for ALC271X
-Date: Mon, 31 Mar 2014 14:23:10 +0100
-Message-Id: <1396272197-13394-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 62/71] x86: bpf_jit: support negative offsets
+Date: Mon, 31 Mar 2014 14:23:08 +0100
+Message-Id: <1396272197-13394-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-commit d3c56568f43807135f2c2a09582a69f809f0d8b7 upstream.
+commit fdfaf64e75397567257e1051931f9a3377360665 upstream.
 
-We've seen often problems after suspend/resume on Acer Aspire One
-AO725 with ALC271X codec as reported in kernel bugzilla, and it turned
-out that some COEFs doesn't work and triggers the codec communication
-stall.
+Commit a998d4342337 claimed to introduce negative offset support to x86 jit,
+but it couldn't be working, since at the time of the execution
+of LD+ABS or LD+IND instructions via call into
+bpf_internal_load_pointer_neg_helper() the %edx (3rd argument of this func)
+had junk value instead of access size in bytes (1 or 2 or 4).
 
-Since these magic COEF setups are specific to ALC269VB for some PLL
-configurations, the machine works even without these manual
-adjustment.  So, let's simply avoid applying them for ALC271X.
+Store size into %edx instead of %ecx (what original commit intended to do)
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52181
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: a998d4342337 ("bpf jit: Let the x86 jit handle negative offsets")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Jan Seiffert <kaffeemonster@googlemail.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/net/bpf_jit.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 9df1421..21bc6d6 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6164,6 +6164,9 @@ static void alc269_fill_coef(struct hda_codec *codec)
- 
- 	if (spec->codec_variant != ALC269_TYPE_ALC269VB)
- 		return;
-+	/* ALC271X doesn't seem to support these COEFs (bko#52181) */
-+	if (!strcmp(codec->chip_name, "ALC271X"))
-+		return;
- 
- 	if ((alc_get_coef0(codec) & 0x00ff) < 0x015) {
- 		alc_write_coef_idx(codec, 0xf, 0x960b);
+diff --git a/arch/x86/net/bpf_jit.S b/arch/x86/net/bpf_jit.S
+index 877b9a1..0149575 100644
+--- a/arch/x86/net/bpf_jit.S
++++ b/arch/x86/net/bpf_jit.S
+@@ -140,7 +140,7 @@ bpf_slow_path_byte_msh:
+ 	push	%r9;						\
+ 	push	SKBDATA;					\
+ /* rsi already has offset */					\
+-	mov	$SIZE,%ecx;	/* size */			\
++	mov	$SIZE,%edx;	/* size */			\
+ 	call	bpf_internal_load_pointer_neg_helper;		\
+ 	test	%rax,%rax;					\
+ 	pop	SKBDATA;					\
 -- 
 1.9.1
 
