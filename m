@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaCaNXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:23:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35531 "EHLO
+	id S1753626AbaCaNXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:23:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35555 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779AbaCaNXd (ORCPT
+	with ESMTP id S1753520AbaCaNXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:23:33 -0400
+	Mon, 31 Mar 2014 09:23:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>,
-        Xiaoming Wang <xiaoming.wang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 07/71] genirq: Remove racy waitqueue_active check
-Date: Mon, 31 Mar 2014 14:22:13 +0100
-Message-Id: <1396272197-13394-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 11/71] mwifiex: do not advertise usb autosuspend support
+Date: Mon, 31 Mar 2014 14:22:17 +0100
+Message-Id: <1396272197-13394-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -29,63 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
+commit adb07df1e039e9fe43e66aeea8b4771f83659dbb upstream.
 
-We hit one rare case below:
+As many Surface Pro I & II users have found out, the mwifiex_usb
+doesn't support usb autosuspend, and it has caused some system
+stability issues.
 
-T1 calling disable_irq(), but hanging at synchronize_irq()
-always;
-The corresponding irq thread is in sleeping state;
-And all CPUs are in idle state;
+Bug 69661 - mwifiex_usb on MS Surface Pro 1 is unstable
+Bug 60815 - Interface hangs in mwifiex_usb
+Bug 64111 - mwifiex_usb USB8797 crash failed to get signal
+ 	    information
 
-After analysis, we found there is one possible scenerio which
-causes T1 is waiting there forever:
-CPU0                                       CPU1
- synchronize_irq()
-  wait_event()
-    spin_lock()
-                                           atomic_dec_and_test(&threads_active)
-      insert the __wait into queue
-    spin_unlock()
-                                           if(waitqueue_active)
-    atomic_read(&threads_active)
-                                             wake_up()
+USB autosuspend get triggered when Surface Pro's AC power is
+removed or powertop enables power saving on USB8797 device.
+Driver's suspend handler is called here, but resume handler
+won't be called until the AC power is put back on or powertop
+disables power saving for USB8797.
 
-Here after inserted the __wait into queue on CPU0, and before
-test if queue is empty on CPU1, there is no barrier, it maybe
-cause it is not visible for CPU1 immediately, although CPU0 has
-updated the queue list.
-It is similar for CPU0 atomic_read() threads_active also.
+We need to refactor the suspend/resume handlers to support
+usb autosuspend properly. For now let's just remove it.
 
-So we'd need one smp_mb() before waitqueue_active.that, but removing
-the waitqueue_active() check solves it as wel l and it makes
-things simple and clear.
-
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: Xiaoming Wang <xiaoming.wang@intel.com>
-Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/irq/manage.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/usb.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index a561ed3..91baa12 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -785,8 +785,7 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
+diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
+index 7fda0ab..11c3db1 100644
+--- a/drivers/net/wireless/mwifiex/usb.c
++++ b/drivers/net/wireless/mwifiex/usb.c
+@@ -511,13 +511,6 @@ static int mwifiex_usb_resume(struct usb_interface *intf)
+ 						   MWIFIEX_BSS_ROLE_ANY),
+ 				  MWIFIEX_ASYNC_CMD);
  
- static void wake_threads_waitq(struct irq_desc *desc)
- {
--	if (atomic_dec_and_test(&desc->threads_active) &&
--	    waitqueue_active(&desc->wait_for_threads))
-+	if (atomic_dec_and_test(&desc->threads_active))
- 		wake_up(&desc->wait_for_threads);
+-#ifdef CONFIG_PM
+-	/* Resume handler may be called due to remote wakeup,
+-	 * force to exit suspend anyway
+-	 */
+-	usb_disable_autosuspend(card->udev);
+-#endif /* CONFIG_PM */
+-
+ 	return 0;
  }
  
+@@ -576,7 +569,6 @@ static struct usb_driver mwifiex_usb_driver = {
+ 	.id_table = mwifiex_usb_table,
+ 	.suspend = mwifiex_usb_suspend,
+ 	.resume = mwifiex_usb_resume,
+-	.supports_autosuspend = 1,
+ };
+ 
+ static int mwifiex_usb_tx_init(struct mwifiex_adapter *adapter)
 -- 
 1.9.1
 
