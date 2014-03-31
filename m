@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbaCaI6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 04:58:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53813 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753231AbaCaI57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 04:57:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,763,1389772800"; 
-   d="scan'208";a="483845576"
-From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: intel-linux-scu <intel-linux-scu@intel.com>,
-        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
-        "Jiang, Dave" <dave.jiang@intel.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "Paszkiewicz, Artur" <artur.paszkiewicz@intel.com>
-Subject: RE: [PATCH 20/55] scsi: Mark function as static in
- isci/remote_device.c
-Thread-Topic: [PATCH 20/55] scsi: Mark function as static in
- isci/remote_device.c
-Thread-Index: AQHPS3lt/VwtsWvWbU+bI8BL53Il9pr65tPw
-Date: Mon, 31 Mar 2014 08:55:41 +0000
-Message-ID: <D9FFE20C522965449E182ACE73889AEB208426AE@IRSMSX105.ger.corp.intel.com>
-References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
- <ba8bc6c22f1d7949f8a727dfef4262c1336b8a71.1396114898.git.rashika.kheria@gmail.com>
-In-Reply-To: <ba8bc6c22f1d7949f8a727dfef4262c1336b8a71.1396114898.git.rashika.kheria@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="utf-8"
+	id S1753562AbaCaJDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 05:03:32 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25882 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221AbaCaJDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 05:03:31 -0400
+Date: Mon, 31 Mar 2014 12:03:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: paulmcquad <paulmcquad@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
+        abbotti@mev.co.uk
+Subject: Re: [PATCH] Staging: comedi: Line indentation
+Message-ID: <20140331090322.GM6991@mwanda>
+References: <533706DF.90406@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533706DF.90406@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2V8w9Hb025133
 
-On Saturday, March 29, 2014 7:05 PM Rashika Kheria <rashika.kheria@gmail.com> wrote:
-> Mark function as static in isci/remote_device.c because it is not used
-> outside this file.
-> 
-> This eliminates the following warning in isci/remote_device.c:
-> drivers/scsi/isci/remote_device.c:1387:6: warning: no previous prototype for
-> â€˜isci_remote_device_wait_for_resume_from_abortâ€™ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On Sat, Mar 29, 2014 at 05:46:07PM +0000, paulmcquad wrote:
+> >From df22d80899d343314d212e1750dc6ae2a54fa364 Mon Sep 17 00:00:00 2001
+> From: Paul McQuade <paulmcquad@gmail.com>
+> Date: Sat, 29 Mar 2014 17:37:38 +0000
+> Subject: [PATCH] Staging: comedi: Line indentation
 
-Acked-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Remove this block.
 
-> ---
->  drivers/scsi/isci/remote_device.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/scsi/isci/remote_device.c b/drivers/scsi/isci/remote_device.c
-> index 96a26f4..33033fb 100644
-> --- a/drivers/scsi/isci/remote_device.c
-> +++ b/drivers/scsi/isci/remote_device.c
-> @@ -1384,7 +1384,7 @@ static bool isci_remote_device_test_resume_done(
->  	return done;
->  }
-> 
-> -void isci_remote_device_wait_for_resume_from_abort(
-> +static void isci_remote_device_wait_for_resume_from_abort(
->  	struct isci_host *ihost,
->  	struct isci_remote_device *idev)
->  {
-> --
-> 1.7.9.5
+> Fix line format in comedidev.h
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Change log is crap.  Subject is crap.  Patch doesn't apply to
+linux-next.
+
+What did you fix about the line?
+
+regards,
+dan carpenter
+
