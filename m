@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaCaNYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:24:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35730 "EHLO
+	id S1754180AbaCaNY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:24:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35729 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149AbaCaNYY (ORCPT
+	with ESMTP id S1754148AbaCaNYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Mar 2014 09:24:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ales Novak <alnovak@suse.cz>, Thomas Abraham <tabraham@suse.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 43/71] [SCSI] storvsc: NULL pointer dereference fix
-Date: Mon, 31 Mar 2014 14:22:49 +0100
-Message-Id: <1396272197-13394-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 44/71] PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled
+Date: Mon, 31 Mar 2014 14:22:50 +0100
+Message-Id: <1396272197-13394-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ales Novak <alnovak@suse.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit b12bb60d6c350b348a4e1460cd68f97ccae9822e upstream.
+commit 3cdeb713dc66057b50682048c151eae07b186c42 upstream.
 
-If the initialization of storvsc fails, the storvsc_device_destroy()
-causes NULL pointer dereference.
+Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
+them disabled"), pciehp surprise removal stopped working.
 
-storvsc_bus_scan()
-  scsi_scan_target()
-    __scsi_scan_target()
-      scsi_probe_and_add_lun(hostdata=NULL)
-        scsi_alloc_sdev(hostdata=NULL)
+This happens because pci_reenable_device() on the hotplug bridge (used in
+the pciehp_configure_device() path) clears the Interrupt Disable bit, which
+apparently breaks the bridge's MSI hotplug event reporting.
 
-	  sdev->hostdata = hostdata
+Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
+which is used by both pci_enable_device() and pci_reenable_device().  But
+we use pci_reenable_device() after the driver may have enabled MSI or
+MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
 
-	  now the host allocation fails
+This patch clears Interrupt Disable only when MSI/MSI-X has not been
+enabled.
 
-          __scsi_remove_device(sdev)
-
-	  calls sdev->host->hostt->slave_destroy() ==
-	  storvsc_device_destroy(sdev)
-	    access of sdev->hostdata->request_mempool
-
-Signed-off-by: Ales Novak <alnovak@suse.cz>
-Signed-off-by: Thomas Abraham <tabraham@suse.com>
-Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
+Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/storvsc_drv.c | 3 +++
+ drivers/pci/pci.c | 3 +++
  1 file changed, 3 insertions(+)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 9f4e560..65f566b 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1141,6 +1141,9 @@ static void storvsc_device_destroy(struct scsi_device *sdevice)
- {
- 	struct stor_mem_pools *memp = sdevice->hostdata;
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 42b9983..bf0df20 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1145,6 +1145,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+ 		return err;
+ 	pci_fixup_device(pci_fixup_enable, dev);
  
-+	if (!memp)
-+		return;
++	if (dev->msi_enabled || dev->msix_enabled)
++		return 0;
 +
- 	mempool_destroy(memp->request_mempool);
- 	kmem_cache_destroy(memp->request_pool);
- 	kfree(memp);
+ 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+ 	if (pin) {
+ 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
 -- 
 1.9.1
 
