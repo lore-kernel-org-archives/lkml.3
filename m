@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaCaUps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:45:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2064 "EHLO mx1.redhat.com"
+	id S1751530AbaCaUpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:45:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40394 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537AbaCaUpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:45:10 -0400
-Date: Mon, 31 Mar 2014 21:44:12 +0200
+	id S1750987AbaCaUpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 16:45:02 -0400
+Date: Mon, 31 Mar 2014 21:44:05 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,9 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] uprobes/x86: move the UPROBE_FIX_{RIP,IP,CALL} code at
-	the end of pre/post hooks
-Message-ID: <20140331194412.GA9304@redhat.com>
+Subject: [PATCH 4/7] uprobes/x86: Kill the "ia32_compat" check in
+	handle_riprel_insn(), remove "mm" arg
+Message-ID: <20140331194405.GA9290@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,86 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes. Preparation to simplify the review of the next
-change. Just reorder the code in arch_uprobe_pre/post_xol() functions
-so that UPROBE_FIX_{RIP_*,IP,CALL} logic goes to the end.
+Kill the "mm->context.ia32_compat" check in handle_riprel_insn(), if
+it is true insn_rip_relative() must return false. validate_insn_bits()
+passed "ia32_compat" as !x86_64 to insn_init(), and insn_rip_relative()
+checks insn->x86_64.
 
-Also change arch_uprobe_pre_xol() to use utask instead of autask, to
-make the code more symmetrical with arch_uprobe_post_xol().
+Also, remove the no longer needed "struct mm_struct *mm" argument and
+the unnecessary "return" at the end.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/uprobes.c |   30 ++++++++++++++----------------
- 1 files changed, 14 insertions(+), 16 deletions(-)
+ arch/x86/kernel/uprobes.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index e8d7b38..7dd65dc 100644
+index d72dfbf..382a69d 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -472,19 +472,18 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+@@ -253,14 +253,11 @@ static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
+  *  - The displacement is always 4 bytes.
   */
- int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ static void
+-handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
++handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
  {
--	struct arch_uprobe_task *autask;
-+	struct uprobe_task *utask = current->utask;
+ 	u8 *cursor;
+ 	u8 reg;
  
--	autask = &current->utask->autask;
--	autask->saved_trap_nr = current->thread.trap_nr;
-+	regs->ip = utask->xol_vaddr;
-+	utask->autask.saved_trap_nr = current->thread.trap_nr;
- 	current->thread.trap_nr = UPROBE_TRAP_NR;
--	regs->ip = current->utask->xol_vaddr;
--	pre_xol_rip_insn(auprobe, regs, autask);
+-	if (mm->context.ia32_compat)
+-		return;
+-
+ 	if (!insn_rip_relative(insn))
+ 		return;
  
--	autask->saved_tf = !!(regs->flags & X86_EFLAGS_TF);
-+	utask->autask.saved_tf = !!(regs->flags & X86_EFLAGS_TF);
- 	regs->flags |= X86_EFLAGS_TF;
- 	if (test_tsk_thread_flag(current, TIF_BLOCKSTEP))
- 		set_task_blockstep(current, false);
- 
-+	pre_xol_rip_insn(auprobe, regs, &utask->autask);
- 	return 0;
+@@ -314,7 +311,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct ins
+ 		cursor++;
+ 		memmove(cursor, cursor + insn->displacement.nbytes, insn->immediate.nbytes);
+ 	}
+-	return;
  }
  
-@@ -558,22 +557,13 @@ bool arch_uprobe_xol_was_trapped(struct task_struct *t)
-  */
- int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- {
--	struct uprobe_task *utask;
-+	struct uprobe_task *utask = current->utask;
- 	long correction;
- 	int result = 0;
- 
- 	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
- 
--	utask = current->utask;
- 	current->thread.trap_nr = utask->autask.saved_trap_nr;
--	correction = (long)(utask->vaddr - utask->xol_vaddr);
--	handle_riprel_post_xol(auprobe, regs, &correction);
--	if (auprobe->fixups & UPROBE_FIX_IP)
--		regs->ip += correction;
--
--	if (auprobe->fixups & UPROBE_FIX_CALL)
--		result = adjust_ret_addr(regs->sp, correction);
--
- 	/*
- 	 * arch_uprobe_pre_xol() doesn't save the state of TIF_BLOCKSTEP
- 	 * so we can get an extra SIGTRAP if we do not clear TF. We need
-@@ -584,6 +574,14 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 	else if (!(auprobe->fixups & UPROBE_FIX_SETF))
- 		regs->flags &= ~X86_EFLAGS_TF;
- 
-+	correction = (long)(utask->vaddr - utask->xol_vaddr);
-+	handle_riprel_post_xol(auprobe, regs, &correction);
-+	if (auprobe->fixups & UPROBE_FIX_IP)
-+		regs->ip += correction;
-+
-+	if (auprobe->fixups & UPROBE_FIX_CALL)
-+		result = adjust_ret_addr(regs->sp, correction);
-+
- 	return result;
+ static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
+@@ -343,7 +339,7 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	return validate_insn_64bits(auprobe, insn);
  }
+ #else /* 32-bit: */
+-static void handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
++static void handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
+ {
+ 	/* No RIP-relative addressing on 32-bit */
+ }
+@@ -406,7 +402,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 		}
+ 		/* fall through */
+ 	default:
+-		handle_riprel_insn(auprobe, mm, &insn);
++		handle_riprel_insn(auprobe, &insn);
+ 	}
  
+ 	if (fix_ip)
 -- 
 1.5.5.1
 
