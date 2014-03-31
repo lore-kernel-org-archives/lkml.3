@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435AbaCaUoy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 16:44:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51628 "EHLO mx1.redhat.com"
+	id S1751482AbaCaUo5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 16:44:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976AbaCaUov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 16:44:51 -0400
-Date: Mon, 31 Mar 2014 21:43:55 +0200
+	id S1750976AbaCaUoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 16:44:55 -0400
+Date: Mon, 31 Mar 2014 21:43:59 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,8 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] uprobes: Kill UPROBE_SKIP_SSTEP and can_skip_sstep()
-Message-ID: <20140331194355.GA9275@redhat.com>
+Subject: [PATCH 2/7] uprobes/x86: Fold prepare_fixups() into
+	arch_uprobe_analyze_insn()
+Message-ID: <20140331194359.GA9278@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,111 +28,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UPROBE_COPY_INSN, UPROBE_SKIP_SSTEP, and uprobe->flags must die. This
-patch kills UPROBE_SKIP_SSTEP. I never understood why it was added;
-not only it doesn't help, it harms.
+No functional changes, preparation.
 
-It can only help to avoid arch_uprobe_skip_sstep() if it was already
-called before and failed. But this is ugly, if we want to know whether
-we can emulate this instruction or not we should do this analysis in
-arch_uprobe_analyze_insn(), not when we hit this probe for the first
-time.
+Shift the code from prepare_fixups() to arch_uprobe_analyze_insn()
+with the following modifications:
 
-And in fact this logic is simply wrong. arch_uprobe_skip_sstep() can
-fail or not depending on the task/register state, if this insn can be
-emulated but, say, put_user() fails we need to xol it this time, but
-this doesn't mean we shouldn't try to emulate it when this or another
-thread hist this bp next time.
+	- Do not call insn_get_opcode() again, it was already called
+	  by validate_insn_bits().
 
-And this is the actual reason for this change. We need to emulate the
-"call" insn, but push(return-address) can obviously fail.
+	- Move "case 0xea" up. This way "case 0xff" can fall through
+	  to default case.
 
-Per-arch notes:
+	- change "case 0xff" to use the nested "switch (MODRM_REG)",
+	  this way the code looks a bit simpler.
 
-	x86: __skip_sstep() can only emulate "rep;nop". With this
-	     change it will be called every time and most probably
-	     for no reason.
+	- Make the comments look consistent.
 
-	     This will be fixed by the next changes. We need to
-	     change this suboptimal code anyway.
+While at it, kill the initialization of rip_rela_target_address and
+->fixups, we can rely on kzalloc(). We will add the new members into
+arch_uprobe, it would be better to assume that everything is zero by
+default.
 
-	arm: Should not be affected. It has its own "bool simulate"
-	     flag checked in arch_uprobe_skip_sstep().
+TODO: cleanup/fix the mess in validate_insn_bits() paths:
 
-	ppc: Looks like, it can emulate almost everything. Does it
-	     actually needs to record the fact that emulate_step()
-	     failed? Hopefully not. But if yes, it can add the ppc-
-	     specific flag into arch_uprobe.
+	- validate_insn_64bits() and validate_insn_32bits() should be
+	  unified.
 
-TODO: rename arch_uprobe_skip_sstep() to arch_uprobe_emulate_insn(),
+	- "ifdef" is not used consistently; if good_insns_64 depends
+	  on CONFIG_X86_64, then probably good_insns_32 should depend
+	  on CONFIG_X86_32/EMULATION
+
+	- the usage of mm->context.ia32_compat looks wrong if the task
+	  is TIF_X32.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   23 ++---------------------
- 1 files changed, 2 insertions(+), 21 deletions(-)
+ arch/x86/kernel/uprobes.c |  110 +++++++++++++++++++--------------------------
+ 1 files changed, 47 insertions(+), 63 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 307d87c..7a3e14e 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -60,8 +60,6 @@ static struct percpu_rw_semaphore dup_mmap_sem;
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 2ed8459..098e56e 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -53,7 +53,7 @@
+ #define OPCODE1(insn)		((insn)->opcode.bytes[0])
+ #define OPCODE2(insn)		((insn)->opcode.bytes[1])
+ #define OPCODE3(insn)		((insn)->opcode.bytes[2])
+-#define MODRM_REG(insn)		X86_MODRM_REG(insn->modrm.value)
++#define MODRM_REG(insn)		X86_MODRM_REG((insn)->modrm.value)
  
- /* Have a copy of original instruction */
- #define UPROBE_COPY_INSN	0
--/* Can skip singlestep */
--#define UPROBE_SKIP_SSTEP	1
- 
- struct uprobe {
- 	struct rb_node		rb_node;	/* node in the rb tree */
-@@ -491,12 +489,9 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
- 	uprobe->offset = offset;
- 	init_rwsem(&uprobe->register_rwsem);
- 	init_rwsem(&uprobe->consumer_rwsem);
--	/* For now assume that the instruction need not be single-stepped */
--	__set_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
- 
- 	/* add to uprobes_tree, sorted on inode:offset */
- 	cur_uprobe = insert_uprobe(uprobe);
--
- 	/* a uprobe exists for this inode:offset combination */
- 	if (cur_uprobe) {
- 		kfree(uprobe);
-@@ -1628,20 +1623,6 @@ bool uprobe_deny_signal(void)
- 	return true;
+ #define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
+ 	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
+@@ -229,63 +229,6 @@ static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
+ 	return -ENOTSUPP;
  }
  
 -/*
-- * Avoid singlestepping the original instruction if the original instruction
-- * is a NOP or can be emulated.
+- * Figure out which fixups arch_uprobe_post_xol() will need to perform, and
+- * annotate arch_uprobe->fixups accordingly.  To start with,
+- * arch_uprobe->fixups is either zero or it reflects rip-related fixups.
 - */
--static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
+-static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
 -{
--	if (test_bit(UPROBE_SKIP_SSTEP, &uprobe->flags)) {
--		if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
--			return true;
--		clear_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
+-	bool fix_ip = true, fix_call = false;	/* defaults */
+-	int reg;
+-
+-	insn_get_opcode(insn);	/* should be a nop */
+-
+-	switch (OPCODE1(insn)) {
+-	case 0x9d:
+-		/* popf */
+-		auprobe->fixups |= UPROBE_FIX_SETF;
+-		break;
+-	case 0xc3:		/* ret/lret */
+-	case 0xcb:
+-	case 0xc2:
+-	case 0xca:
+-		/* ip is correct */
+-		fix_ip = false;
+-		break;
+-	case 0xe8:		/* call relative - Fix return addr */
+-		fix_call = true;
+-		break;
+-	case 0x9a:		/* call absolute - Fix return addr, not ip */
+-		fix_call = true;
+-		fix_ip = false;
+-		break;
+-	case 0xff:
+-		insn_get_modrm(insn);
+-		reg = MODRM_REG(insn);
+-		if (reg == 2 || reg == 3) {
+-			/* call or lcall, indirect */
+-			/* Fix return addr; ip is correct. */
+-			fix_call = true;
+-			fix_ip = false;
+-		} else if (reg == 4 || reg == 5) {
+-			/* jmp or ljmp, indirect */
+-			/* ip is correct. */
+-			fix_ip = false;
+-		}
+-		break;
+-	case 0xea:		/* jmp absolute -- ip is correct */
+-		fix_ip = false;
+-		break;
+-	default:
+-		break;
 -	}
--	return false;
+-	if (fix_ip)
+-		auprobe->fixups |= UPROBE_FIX_IP;
+-	if (fix_call)
+-		auprobe->fixups |= UPROBE_FIX_CALL;
 -}
 -
- static void mmf_recalc_uprobes(struct mm_struct *mm)
- {
- 	struct vm_area_struct *vma;
-@@ -1859,13 +1840,13 @@ static void handle_swbp(struct pt_regs *regs)
- 		goto out;
- 
- 	handler_chain(uprobe, regs);
--	if (can_skip_sstep(uprobe, regs))
-+	if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
- 		goto out;
- 
- 	if (!pre_ssout(uprobe, regs, bp_vaddr))
+ #ifdef CONFIG_X86_64
+ /*
+  * If arch_uprobe->insn doesn't use rip-relative addressing, return
+@@ -318,7 +261,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct ins
+ 	if (mm->context.ia32_compat)
  		return;
  
--	/* can_skip_sstep() succeeded, or restart if can't singlestep */
-+	/* arch_uprobe_skip_sstep() succeeded, or restart if can't singlestep */
- out:
- 	put_uprobe(uprobe);
+-	auprobe->rip_rela_target_address = 0x0;
+ 	if (!insn_rip_relative(insn))
+ 		return;
+ 
+@@ -421,16 +363,58 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+  */
+ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
+ {
+-	int ret;
+ 	struct insn insn;
++	bool fix_ip = true, fix_call = false;
++	int ret;
+ 
+-	auprobe->fixups = 0;
+ 	ret = validate_insn_bits(auprobe, mm, &insn);
+-	if (ret != 0)
++	if (ret)
+ 		return ret;
+ 
++	/*
++	 * Figure out which fixups arch_uprobe_post_xol() will need to perform,
++	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
++	 * is either zero or it reflects rip-related fixups.
++	 */
+ 	handle_riprel_insn(auprobe, mm, &insn);
+-	prepare_fixups(auprobe, &insn);
++
++	switch (OPCODE1(&insn)) {
++	case 0x9d:		/* popf */
++		auprobe->fixups |= UPROBE_FIX_SETF;
++		break;
++	case 0xc3:		/* ret or lret -- ip is correct */
++	case 0xcb:
++	case 0xc2:
++	case 0xca:
++		fix_ip = false;
++		break;
++	case 0xe8:		/* call relative - Fix return addr */
++		fix_call = true;
++		break;
++	case 0x9a:		/* call absolute - Fix return addr, not ip */
++		fix_call = true;
++		fix_ip = false;
++		break;
++	case 0xea:		/* jmp absolute -- ip is correct */
++		fix_ip = false;
++		break;
++	case 0xff:
++		insn_get_modrm(&insn);
++		switch (MODRM_REG(&insn)) {
++		case 2: case 3:			/* call or lcall, indirect */
++			fix_call = true;
++		case 4: case 5:			/* jmp or ljmp, indirect */
++			fix_ip = false;
++		}
++		break;
++	default:
++		break;
++	}
++
++	if (fix_ip)
++		auprobe->fixups |= UPROBE_FIX_IP;
++	if (fix_call)
++		auprobe->fixups |= UPROBE_FIX_CALL;
+ 
+ 	return 0;
  }
 -- 
 1.5.5.1
