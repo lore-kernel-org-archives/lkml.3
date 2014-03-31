@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaCaS1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 14:27:39 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59148 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726AbaCaS1J (ORCPT
+	id S1754014AbaCaS3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 14:29:32 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40959 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176AbaCaS33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 14:27:09 -0400
-Message-ID: <1396290426.5261.80.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 31 Mar 2014 20:27:06 +0200
-In-Reply-To: <CA+55aFywHpvUfghS4GFc3UC1WGZx3Of+zeKHxmRNcMQMoKoiJQ@mail.gmail.com>
-References: <1396164244.28950.15.camel@marge.simpson.net>
-	 <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
-	 <1396239636.5361.57.camel@marge.simpson.net>
-	 <CA+55aFywHpvUfghS4GFc3UC1WGZx3Of+zeKHxmRNcMQMoKoiJQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Mon, 31 Mar 2014 14:29:29 -0400
+Message-ID: <5339B407.1050308@codeaurora.org>
+Date: Mon, 31 Mar 2014 11:29:27 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] Input: pmic8xxx-pwrkey - Set sane default for debounce
+ time
+References: <1396289664-31893-1-git-send-email-sboyd@codeaurora.org> <20140331182315.GA9198@core.coreip.homeip.net>
+In-Reply-To: <20140331182315.GA9198@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 09:13 -0700, Linus Torvalds wrote: 
-> On Sun, Mar 30, 2014 at 9:20 PM, Mike Galbraith
-> <umgwanakikbuti@gmail.com> wrote:
-> >
-> > Point of being verbose was to make sure it was clear exactly how this
-> > harmless little bug selectively kills large IO boxen..
-> 
-> My point is that if you want it to be applied hours before I make a
-> release, I need to be made aware of how critical it is.
+On 03/31/14 11:23, Dmitry Torokhov wrote:
+> On Mon, Mar 31, 2014 at 11:14:24AM -0700, Stephen Boyd wrote:
+>> If the debounce time is 0 our usage of ilog2() later on in this
+>> driver will cause undefined behavior. If CONFIG_OF=n this fact is
+>> evident to the compiler, and it emits a call to ____ilog2_NaN()
+>> which doesn't exist. Fix this by setting a sane default for
+>> debounce.
+>>
+>> Reported-by: Arnd Bergmann <arnd@arndb.de>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+>>  drivers/input/misc/pmic8xxx-pwrkey.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+>> index 1cb8fda7a166..27add04676e1 100644
+>> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
+>> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+>> @@ -92,7 +92,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>>  	bool pull_up;
+>>  
+>>  	if (of_property_read_u32(pdev->dev.of_node, "debounce", &kpd_delay))
+>> -		kpd_delay = 0;
+>> +		kpd_delay = 15625;
+> What if somebody supplied 0 via DT? Can we check and return -EINVAL?
 
-Oh, I didn't cc you because I wanted it applied instantly as ultra
-critical, only because the chain of events might be of interest.
+Sure. Here's a v2.
 
-It takes a lot of cycles to add up to NMI.  Those cycles exist with or
-without the throttle being fooled into picking on watchdog.  How bad can
-wakeup latency get with modprobe mptsas?  So bad that you don't even
-need this little bug to _further_ incapacitate the watchdog?  Can the
-wakeup latency do the job all by itself?  It's wakeup latency that is
-being improperly attributed to watchdog in the trace data.
+-----8<------
+From: Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH v2] Input: pmic8xxx-pwrkey - Set sane default for debounce
+ time
 
-(then there's "is watchdog being subject to throttle a good idea")
+If the debounce time is 0 our usage of ilog2() later on in this
+driver will cause undefined behavior. If CONFIG_OF=n this fact is
+evident to the compiler, and it emits a call to ____ilog2_NaN()
+which doesn't exist. Fix this by setting a sane default for
+debounce and failing to probe if debounce is 0 in the DT.
 
-> The data/commentary in the commit message made *zero* sense to me in
-> that regards. It was just noise.
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/input/misc/pmic8xxx-pwrkey.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-One of my sisters says I speak Martian, she may be right.  Looks clear
-to me, but then I did the tracing, condensed the output and hastily
-wrote the apparently useless words.. perhaps a tad too hastily.
+diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+index 1cb8fda7a166..3fb161902cc6 100644
+--- a/drivers/input/misc/pmic8xxx-pwrkey.c
++++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+@@ -92,11 +92,11 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 	bool pull_up;
+ 
+ 	if (of_property_read_u32(pdev->dev.of_node, "debounce", &kpd_delay))
+-		kpd_delay = 0;
++		kpd_delay = 15625;
+ 
+ 	pull_up = of_property_read_bool(pdev->dev.of_node, "pull-up");
+ 
+-	if (kpd_delay > 62500) {
++	if (kpd_delay > 62500 || kpd_delay == 0) {
+ 		dev_err(&pdev->dev, "invalid power key trigger delay\n");
+ 		return -EINVAL;
+ 	}
 
-I haven't yet received confirmation that this is the fix, so there may
-be more to it, this only a part.  A huge interrupt hit at the right time
-and no irq accounting enabled could properly trigger the throttle.. but
-it'd be difficult to reliably hit such thin targets on multiple CPUs.
-
--Mike
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
