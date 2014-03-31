@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354AbaCaWFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 18:05:10 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:62555 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbaCaWFH (ORCPT
+	id S1751397AbaCaWG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 18:06:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50223 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaCaWG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 18:05:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABb+yY3N0e3yTf=+2aqM0gWM8xcnybBWNSJxGezUC5uckAQBGg@mail.gmail.com>
-References: <1395168335-29119-1-git-send-email-jaswinder.singh@linaro.org>
-	<1396044491-22854-1-git-send-email-markus.mayer@linaro.org>
-	<CABb+yY3N0e3yTf=+2aqM0gWM8xcnybBWNSJxGezUC5uckAQBGg@mail.gmail.com>
-Date: Mon, 31 Mar 2014 15:05:05 -0700
-Message-ID: <CAPdLdqkDCYS7WsgkofJt78ztGTixQ9P+gVhkJZxteQL-YvwbKQ@mail.gmail.com>
-Subject: Re: [PATCHv4,2/5] mailbox: Introduce framework for mailbox
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Linux Kernel Mailing list <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Suman Anna <s-anna@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>, Girish K S <ks.giri@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 31 Mar 2014 18:06:27 -0400
+Date: Mon, 31 Mar 2014 15:06:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] checkpatch: Expand parenthesis alignment test to
+ declarations, functions and assignments
+Message-Id: <20140331150625.ca937ea946da5ce619efe2cf@linux-foundation.org>
+In-Reply-To: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
+References: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 March 2014 20:54, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> On Sat, Mar 29, 2014 at 3:38 AM, Markus Mayer <markus.mayer@linaro.org> wrote:
->
-> .....
->
->>> +int mbox_send_message(struct mbox_chan *chan, void *mssg)
->>> +{
->>> +     int t;
->>> +
->>> +     if (!chan || !chan->cl)
->>> +             return -EINVAL;
->>> +
->>> +     t = _add_to_rbuf(chan, mssg);
->>> +     if (t < 0) {
->>> +             pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
->>> +             return t;
->>> +     }
->>> +
->>> +     _msg_submit(chan);
->>> +
->>> +     if (chan->txdone_method == TXDONE_BY_POLL)
->>> +             poll_txdone((unsigned long)chan->con);
->>
->> Wouldn't it be cleaner to use
->>                 poll_txdone((unsigned long)&chan->con);
->> ?
->>
-> Here's how we use it ...
->
-> static void poll_txdone(unsigned long data)
-> {
->      struct mbox_con *con = (struct mbox_con *)data;
->      .....
-> }
->
-> To me, unnecessarily passing a pointer to a pointer seems unclean.
+On Mon, 31 Mar 2014 14:58:07 -0700 Joe Perches <joe@perches.com> wrote:
 
-You are right. I didn't look closely enough.
+> Currently the parenthesis alignment test works only on
+> misalignments of if statements like
+> 
+> 	if (foo(bar,
+> 			baz)
+> 
+> Expand the test to find misalignments like:
+> 
+> static inline int foo(int bar,
+> 			int baz)
+> 
+> and
+> 
+> 	foo(bar,
+> 			baz);
+> 
+> and
+> 
+> 	foo = bar(baz,
+> 			qux);
+> 
+> Expand the $Inline keyword for __inline and __inline__ too.
+> Add $Inline to $Declare so it also matches "static inline <foo>".
 
-Regards,
--Markus
+I'm having trouble understanding what this patch actually does.  Some
+little examples would be nice.
+
+I typed in this to play with:
+
+void foo(int a,
+		int b)
+{
+}
+
+but I experienced playus interruptus
+
+akpm3:/usr/src/25> perl scripts/checkpatch.pl -f t.c
+Global symbol "$c90_Keywords" requires explicit package name at scripts/checkpatch.pl line 2162.
+Execution of scripts/checkpatch.pl aborted due to compilation errors.
+
+System is Ubuntu 12.04.4 (ish).
