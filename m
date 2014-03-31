@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaCaHlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 03:41:52 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:55588 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562AbaCaHlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 03:41:49 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org, Masahiro Yamada <yamada.m@jp.panasonic.com>
-Subject: [PATCH] kbuild: create a build directory automatically for out-of-tree build
-Date: Mon, 31 Mar 2014 16:41:36 +0900
-Message-Id: <1396251696-14815-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753355AbaCaHqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 03:46:13 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:37166 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572AbaCaHqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 03:46:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396137686-32678-4-git-send-email-schmitz@debian.org>
+References: <1396137686-32678-1-git-send-email-schmitz@debian.org>
+	<1396137686-32678-4-git-send-email-schmitz@debian.org>
+Date: Mon, 31 Mar 2014 09:46:11 +0200
+X-Google-Sender-Auth: AqTpp0zpEVoWDPXb5jjAMffrB0Q
+Message-ID: <CAMuHMdWFuh5SpiAwp-0-KCnG=NFJT+DamDZUr2tAwdK=FrVW=w@mail.gmail.com>
+Subject: Re: [PATCH 3/4] m68k/atari - ataflop: use correct virt/phys
+ translation for DMA buffer
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jens Axboe <axboe@fb.com>
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Debian m68k <debian-68k@lists.debian.org>,
+        Michael Schmitz <schmitz@debian.org>,
+        Michael Schmitz <schmitzmic@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kbuild supports saving output files in a separate directory.
-But the build directory must be created beforehand. For example,
+Hi Jens,
 
-  $ mkdir -p dir/to/store/output/files
-  $ make O=dir/to/store/output/files defconfig
+If you don't object, I'd like to take this one through the m68k tree, as it
+depends on a new m68k platform function.
 
-Creating a build directory automatically would be useful.
+On Sun, Mar 30, 2014 at 1:01 AM, Michael Schmitz <schmitzmic@gmail.com> wrote:
+> With new ST-RAM allocation to work also when the kernel is running
+> from FastRAM, use dedicated virt/phys translation for this case.
+>
+> Signed-off-by: Michael Schmitz <schmitz@debian.org>
+> ---
+>  drivers/block/ataflop.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/block/ataflop.c b/drivers/block/ataflop.c
+> index 0e30c6e..f54655a 100644
+> --- a/drivers/block/ataflop.c
+> +++ b/drivers/block/ataflop.c
+> @@ -1952,7 +1952,7 @@ static int __init atari_floppy_init (void)
+>                 goto Enomem;
+>         }
+>         TrackBuffer = DMABuffer + 512;
+> -       PhysDMABuffer = virt_to_phys(DMABuffer);
+> +       PhysDMABuffer = atari_stram_to_phys(DMABuffer);
+>         PhysTrackBuffer = virt_to_phys(TrackBuffer);
+>         BufferDrive = BufferSide = BufferTrack = -1;
+>
+> --
+> 1.7.0.4
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
----
- Makefile | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Gr{oetje,eeting}s,
 
-diff --git a/Makefile b/Makefile
-index 575e1f8..35b5b7e 100644
---- a/Makefile
-+++ b/Makefile
-@@ -120,9 +120,10 @@ ifneq ($(KBUILD_OUTPUT),)
- # Invoke a second make in the output directory, passing relevant variables
- # check that the output directory actually exists
- saved-output := $(KBUILD_OUTPUT)
--KBUILD_OUTPUT := $(shell cd $(KBUILD_OUTPUT) && /bin/pwd)
-+KBUILD_OUTPUT := $(shell mkdir -p $(KBUILD_OUTPUT) && cd $(KBUILD_OUTPUT) \
-+								&& /bin/pwd)
- $(if $(KBUILD_OUTPUT),, \
--     $(error output directory "$(saved-output)" does not exist))
-+     $(error failed to create output directory "$(saved-output)"))
- 
- PHONY += $(MAKECMDGOALS) sub-make
- 
--- 
-1.8.3.2
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
