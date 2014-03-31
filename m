@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaCaCeo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 22:34:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:39841 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577AbaCaCem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 22:34:42 -0400
-Date: Mon, 31 Mar 2014 13:34:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140331133435.67c5f41ea2e1f918730ebbe8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__31_Mar_2014_13_34_35_+1100_=MHuiIRQxQDztSCW"
+	id S1753377AbaCaCfV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 22:35:21 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:63511 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577AbaCaCfT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 22:35:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140330171957.GF22728@two.firstfloor.org>
+References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
+	<1396017924-7754-11-git-send-email-jovi.zhangwei@gmail.com>
+	<20140330035009.GB22728@two.firstfloor.org>
+	<CAGdX0WHK-EhGYHELxr-H_A+w1ZDWWhDpxsvB+=grMgFNpFsZ4g@mail.gmail.com>
+	<20140330171957.GF22728@two.firstfloor.org>
+Date: Mon, 31 Mar 2014 10:35:18 +0800
+Message-ID: <CAGdX0WE2g4ksnuNeWZTzSssVvGaQzYXs6xa+UQUFG73WLAdzxw@mail.gmail.com>
+Subject: Re: [PATCH v2 10/29] ktap: add string handling code(kernel/trace/ktap/kp_[str|mempool].[c|h])
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__31_Mar_2014_13_34_35_+1100_=MHuiIRQxQDztSCW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 31, 2014 at 1:19 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> See test/benchmark/cmp_table.sh, that script compare
+>
+> Is that a realistic tracing scenario?
+>
+Yes, it's quite common to use string key in dynamic tracing tool,
+for example, See samples/userspace/glibc_func_hist.kp
 
-Hi all,
+    var s = {}
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/xen-netback/netback.c between commit 1425c7a4e8d3
-("xen-netback: BUG_ON in xenvif_rx_action() not catching overflow") from
-the net tree and commit 8f13dd961228 ("xen-netback: Use skb->cb for
-pending_idx") from the net-next tree.
+    trace probe:/lib64/libc.so.6:* {
+        s[probename] += 1
+    }
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
+    trace_end {
+        print_hist(s)
+    }
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/net/xen-netback/netback.c
-index cd0bd95ccc14,cb784fe5220c..000000000000
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@@ -531,13 -539,8 +560,11 @@@ static void xenvif_rx_action(struct xen
-  		} else
-  			vif->rx_last_skb_slots =3D 0;
- =20
-- 		sco =3D (struct skb_cb_overlay *)skb->cb;
--=20
- +		old_req_cons =3D vif->rx.req_cons;
-- 		sco->meta_slots_used =3D xenvif_gop_skb(skb, &npo);
-+ 		XENVIF_RX_CB(skb)->meta_slots_used =3D xenvif_gop_skb(skb, &npo);
- -		BUG_ON(XENVIF_RX_CB(skb)->meta_slots_used > max_slots_needed);
- +		ring_slots_used =3D vif->rx.req_cons - old_req_cons;
- +
- +		BUG_ON(ring_slots_used > max_slots_needed);
- =20
-  		__skb_queue_tail(&rxq, skb);
-  	}
+Result:
 
---Signature=_Mon__31_Mar_2014_13_34_35_+1100_=MHuiIRQxQDztSCW
-Content-Type: application/pgp-signature
+Tracing... Hit Ctrl-C to end.
+^C
+                         value ------------- Distribution ------------- count
+                  _IO_sputbackc |@@                                    108344
+             __GI__IO_sputbackc |@@                                    107768
+             _IO_default_xsputn |                                      46639
+        __GI__IO_default_xsputn |                                      46624
+                           free |                                      36871
+                    __libc_free |                                      36841
+                          cfree |                                      36841
+                         __free |                                      36811
+                        __cfree |                                      36811
+               __GI___libc_free |                                      36804
+        ____strtoull_l_internal |                                      28670
+    __GI_____strtoul_l_internal |                                      28670
+   __GI_____strtoull_l_internal |                                      28518
+         ____strtoul_l_internal |                                      28518
+                      strchrnul |                                      27763
+                    __strchrnul |                                      27741
+                       _IO_putc |                                      27589
+                  __GI__IO_putc |                                      27589
+                           putc |                                      27589
+                            ... |
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Above script output histogram of glibc function call, you will know
+which function will be called frequently, a very useful script.
 
-iQIcBAEBCAAGBQJTONRAAAoJEMDTa8Ir7ZwVe+0P/2ZSRiHsOT/p2NvodlgkI8aM
-AYIf9zp/j5yVkbEfmG3eaiEtjasb1RSr9zSb3yuZNDp8BDzHcONZFhAIlLVDVv07
-cU/GCBnzr2H+OTeHvw3ej5oDYS5n00kexrxNKeLYW0iepyhZzjHe5otIwYb7ZWEw
-MqRW/1d4xysLZnKYFgZVyIvuOBihy0ZyN7p7i6fLLrD0ybpeEatLF39gprzFN1gi
-JrjATXzgif/0locUODKf+O8qxJESv+S7EzPGw3TpgaHgZkshRQygOgDWSls+/BW0
-ScGO3gFNBfg7DjtNSzDTc4y2H99QxVeiU2HQ/IpCZpYgJqcLkVY+ZeXHfrxCx5bv
-dZ3yfHPBQUQJ/wBKplPHZL1piLLOhSxHA/eEmSsKno20AnDboi0E//Tdo4Z01iag
-MCrUhKlU9jcnn8s015puN+Z9GwhSf4nrtnY6OnPhZqzs2fL1p99HfqyR+SNNL7+1
-DuMRTHmUb3498f85VFlhQPbk2BmuhRQ8VR1/vDoj8GwFHTSIAtB1FEA5yZA9aEmc
-1MGdJLUYXZu7WtNDCGcV/eP5lIg/bTmZ3rqZlVe/0eFb24PGQ2s1bNcC4qtwDqlg
-u04LuYbinAbgr7484xOJo7v/81gjQ90o+LjXYMvbhHuAFd0KGkVo0HI//HI6wWhP
-wwnpEL/cKZt0ZZb3xZdR
-=wFVR
------END PGP SIGNATURE-----
+'probename' return probe name string, then insert table as key.
+The magic of above script is there have no string copy and string hash
+in probe context, because probename string is interned.
 
---Signature=_Mon__31_Mar_2014_13_34_35_+1100_=MHuiIRQxQDztSCW--
+
+>> table operation between ktap with stap, the result is very
+>> inspiring, ktap table operation overhead is quite lower than
+>> stap, especially when use constant string key.
+>
+> Ok fair enough.
+>
+>>
+>> But I agree with you partly, because in some cases we don't
+>> want/need to interning all string, for example:
+>>     trace xxx:yyy {
+>>         var str = cast("char *", arg1)
+>>         print(str)
+>>     }
+>>
+>> In above case, arg1 is a long kernel string, and no table insert,
+>> so definitely no need to interned, so we need to add
+>> KTAP_TRAWSTR to represent these values.
+>
+> Please don't make it more complicated. If there's a good rationale
+> for interning it' ok to use always.
+>
+> It would be better to find ways to simplify things.
+>
+Definitely, the reason I implement ktap based on lua is the simplicity
+and efficiency of lua.
+
+The whole bytecode design and value type is very simple, it could
+build a complete safe sandbox for kernel scripting, and easy to
+extend to fulfill our need(like multi-key table, aggregation)
+
+Thanks.
+
+Jovi
