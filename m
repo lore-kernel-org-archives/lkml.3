@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485AbaCaNZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:25:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35815 "EHLO
+	id S1754624AbaCaN1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:27:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35883 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341AbaCaNYu (ORCPT
+	with ESMTP id S1754469AbaCaNZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:50 -0400
+	Mon, 31 Mar 2014 09:25:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 60/71] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-Date: Mon, 31 Mar 2014 14:23:06 +0100
-Message-Id: <1396272197-13394-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 70/71] USB: pl2303: fix data corruption on termios updates
+Date: Mon, 31 Mar 2014 14:23:16 +0100
+Message-Id: <1396272197-13394-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,91 +32,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
+commit 623c8263376c0b8a4b0c220232e7313d762cd0cc upstream.
 
-Use cmpxchg() to atomically set i_flags instead of clearing out the
-S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
-EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
-where an immutable file has the immutable flag cleared for a brief
-window of time.
+Some PL2303 devices are known to lose bytes if you change serial
+settings even to the same values as before. Avoid this by comparing the
+encoded settings with the previsouly used ones before configuring the
+device.
 
-Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The common case was fixed by commit bf5e5834bffc6 ("pl2303: Fix mode
+switching regression"), but this problem was still possible to trigger,
+for instance, by using the TCSETS2-interface to repeatedly request
+115201 baud, which gets mapped to 115200 and thus always triggers a
+settings update.
+
+Cc: Frank Schäfer <fschaefer.oss@googlemail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/inode.c        | 15 +++++++++------
- include/linux/bitops.h | 15 +++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
+ drivers/usb/serial/pl2303.c | 33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index efecfb7..070bdbb 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -37,6 +37,7 @@
- #include <linux/printk.h>
- #include <linux/slab.h>
- #include <linux/ratelimit.h>
-+#include <linux/bitops.h>
- 
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -3640,18 +3641,20 @@ int ext4_get_inode_loc(struct inode *inode, struct ext4_iloc *iloc)
- void ext4_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT4_I(inode)->i_flags;
-+	unsigned int new_fl = 0;
- 
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
- 	if (flags & EXT4_SYNC_FL)
--		inode->i_flags |= S_SYNC;
-+		new_fl |= S_SYNC;
- 	if (flags & EXT4_APPEND_FL)
--		inode->i_flags |= S_APPEND;
-+		new_fl |= S_APPEND;
- 	if (flags & EXT4_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
-+		new_fl |= S_IMMUTABLE;
- 	if (flags & EXT4_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
-+		new_fl |= S_NOATIME;
- 	if (flags & EXT4_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+		new_fl |= S_DIRSYNC;
-+	set_mask_bits(&inode->i_flags,
-+		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
- }
- 
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index a3b6b82..c1dde8e 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64 word)
- 
- #ifdef __KERNEL__
- 
-+#ifndef set_mask_bits
-+#define set_mask_bits(ptr, _mask, _bits)	\
-+({								\
-+	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
-+	typeof(*ptr) old, new;					\
-+								\
-+	do {							\
-+		old = ACCESS_ONCE(*ptr);			\
-+		new = (old & ~mask) | bits;			\
-+	} while (cmpxchg(ptr, old, new) != old);		\
-+								\
-+	new;							\
-+})
-+#endif
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index dd2c8c3..640905e 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -140,6 +140,8 @@ struct pl2303_private {
+ 	u8 line_control;
+ 	u8 line_status;
+ 	enum pl2303_type type;
 +
- #ifndef find_last_bit
- /**
-  * find_last_bit - find the last set bit in a memory region
++	u8 line_settings[7];
+ };
+ 
+ static int pl2303_vendor_read(__u16 value, __u16 index,
+@@ -254,10 +256,6 @@ static void pl2303_set_termios(struct tty_struct *tty,
+ 	int baud_floor, baud_ceil;
+ 	int k;
+ 
+-	/* The PL2303 is reported to lose bytes if you change
+-	   serial settings even to the same values as before. Thus
+-	   we actually need to filter in this specific case */
+-
+ 	if (old_termios && !tty_termios_hw_change(tty->termios, old_termios))
+ 		return;
+ 
+@@ -395,10 +393,29 @@ static void pl2303_set_termios(struct tty_struct *tty,
+ 		dev_dbg(&port->dev, "parity = none\n");
+ 	}
+ 
+-	i = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+-			    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
+-			    0, 0, buf, 7, 100);
+-	dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
++	/*
++	 * Some PL2303 are known to lose bytes if you change serial settings
++	 * even to the same values as before. Thus we actually need to filter
++	 * in this specific case.
++	 *
++	 * Note that the tty_termios_hw_change check above is not sufficient
++	 * as a previously requested baud rate may differ from the one
++	 * actually used (and stored in old_termios).
++	 *
++	 * NOTE: No additional locking needed for line_settings as it is
++	 *       only used in set_termios, which is serialised against itself.
++	 */
++	if (!old_termios || memcmp(buf, priv->line_settings, 7)) {
++		i = usb_control_msg(serial->dev,
++				    usb_sndctrlpipe(serial->dev, 0),
++				    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
++				    0, 0, buf, 7, 100);
++
++		dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
++
++		if (i == 7)
++			memcpy(priv->line_settings, buf, 7);
++	}
+ 
+ 	/* change control lines if we are switching to or from B0 */
+ 	spin_lock_irqsave(&priv->lock, flags);
 -- 
 1.9.1
 
