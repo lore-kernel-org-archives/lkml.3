@@ -1,338 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613AbaCaRX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 13:23:26 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:57784 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102AbaCaRXY (ORCPT
+	id S1753869AbaCaRYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 13:24:47 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:37803 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462AbaCaRYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 13:23:24 -0400
-Date: Mon, 31 Mar 2014 10:23:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-Message-ID: <20140331172318.GA4961@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140330230856.GA21498@linux.vnet.ibm.com>
- <1983376434.2684.1396236565608.JavaMail.zimbra@efficios.com>
- <20140331035458.GJ4284@linux.vnet.ibm.com>
- <1448966218.2982.1396274543268.JavaMail.zimbra@efficios.com>
- <20140331153813.GL4284@linux.vnet.ibm.com>
+	Mon, 31 Mar 2014 13:24:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140331153813.GL4284@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14033117-1344-0000-0000-0000009D3D43
+In-Reply-To: <5339840D.9000702@xs4all.nl>
+References: <1396277573-9513-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1396277573-9513-2-git-send-email-prabhakar.csengg@gmail.com> <5339840D.9000702@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 31 Mar 2014 22:54:14 +0530
+Message-ID: <CA+V-a8s_mZNEuN0JHH_rpJU=zab57Q_LfLT_onwj0=ykgoUm0g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] media: davinci: vpif capture: upgrade the driver with
+ v4l offerings
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 08:38:13AM -0700, Paul E. McKenney wrote:
-> On Mon, Mar 31, 2014 at 02:02:23PM +0000, Mathieu Desnoyers wrote:
-> > ----- Original Message -----
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > > Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-> > > Sent: Sunday, March 30, 2014 11:54:58 PM
-> > > Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-> > > 
-> > > On Mon, Mar 31, 2014 at 03:29:25AM +0000, Mathieu Desnoyers wrote:
-> > > > ----- Original Message -----
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > To: fweisbec@gmail.com, "mathieu desnoyers"
-> > > > > <mathieu.desnoyers@efficios.com>, peterz@infradead.org
-> > > > > Cc: linux-kernel@vger.kernel.org
-> > > > > Sent: Sunday, March 30, 2014 7:08:56 PM
-> > > > > Subject: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-> > > > > 
-> > > > > For whatever it is worth, the following model claims safety and progress
-> > > > > for the sysidle state machine.
-> > > > > 
-> > > > > Thoughts?
-> > > > 
-> > > > Hi Paul,
-> > > > 
-> > > > Please keep in mind that it's been a while since I've looked at Promela
-> > > > proofs, but a couple of questions come to mind. First, how is the execution
-> > > > script below checking for progress in any way ? I remember that we used
-> > > > the negation of a "_np" LTL claim to check for progress in the past.
-> > > > Moreover, I'd be much more comfortable seeing ifdefs in the code that
-> > > > inject
-> > > > known failures, and let them be triggered by error-triggering runs in the
-> > > > scripts (with e.g. -DINJECT_ERROR_XYZ), to confirm that this model actually
-> > > > catches known issues.
-> > > 
-> > > Well, if I comment out the four "progress_" labels, it complains about
-> > > a non-progress cycle.  So at least spin does pay attention to these.  ;-)
-> > > 
-> > > If I put the "progress_" labels back in, but change the check so as to
-> > > prevent the state machine from ever entering RCU_SYSIDLE_FULL_NOTED,
-> > > it cranks through 14M states before complaining about a non-progress cycle,
-> > > as expected.
-> > > 
-> > > If I revert back to pristine state, and then comment out the statements
-> > > that reverts state back to RCU_SYSIDLE_NOT when exiting idle, an assert()
-> > > triggers, as expected.
-> > > 
-> > > > If we can show that the model can detect a few failure modes, both for
-> > > > safety
-> > > > and progress, then my confidence level in the model will start to improve.
-> > > > ;-)
-> > > 
-> > > Well, there probably is a bug in there somewhere, Murphy being who he is.
-> > > ;-)
-> > 
-> > One failure mode your model seems to miss is when I comment the wakeup:
-> > 
-> >                 /* If needed, wake up the timekeeper. */
-> >                 if
-> > #ifndef INJECT_NO_WAKEUP
-> >                 :: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-> >                         wakeup_timekeeper = 1;
-> > #endif /* #ifndef INJECT_NO_WAKEUP */
-> >                 :: else -> skip;
-> >                 fi;
-> > 
-> > Somehow, I feel I am doing something very nasty to the algorithm,
-> > but the model checker fails to find any kind of progress or safety
-> > issue. Any idea why ?
-> 
-> Hmmm...  One reason is because I am not modeling the timekeeper thread
-> as waiting for the wakeup.  Let me see what I can do about that...
+Hi Hans,
 
-And here is an updated model.  I now make it loop waiting for the
-wakeup_timekeeper variable to transition to 1.  And I learned that
-Promela ignores "progress" labels within atomic statements...
+On Mon, Mar 31, 2014 at 8:34 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> Hi Prabhakar,
+>
+> This looks really nice!
+>
+Writing a video driver has become really easy with almost 90% of work
+done by v4l core itself :)
 
-The previous error injections still trigger asserts.
+> I'll do a full review on Friday, but in the meantime can you post the output
+OK.
 
-							Thanx, Paul
+> of 'v4l2-compliance -s' using the latest v4l2-compliance version? I've made
+> some commits today, so you need to do a git pull of v4l-utils.git.
+>
+I had compilation failures for v4l2-compliance following is the patch
+fixing that, (I am
+facing some issues in cross compilation once done I'll post the o/p of it)
 
-------------------------------------------------------------------------
+--------------X------------X-------------------
 
-/*
- * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
- * This model assumes that the dyntick-idle bit manipulation works based
- * on long usage, and substitutes a per-thread boolean "am_busy[]" array
- * for the Linux kernel's dyntick-idle masks.  The focus of this model
- * is therefore on the state machine itself.  Checks for both safety and
- * forward progress.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, you can access it online at
- * http://www.gnu.org/licenses/gpl-2.0.html.
- *
- * Copyright IBM Corporation, 2014
- *
- * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
- */
+>From 14029f4ca57be5f2b0ec053d375655ca5a60f698 Mon Sep 17 00:00:00 2001
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Date: Mon, 31 Mar 2014 22:24:33 +0530
+Subject: [PATCH] v4l-utils: v4l-compliance: fix compilation
 
-#define NUM_WORKERS 2
+this patch fixes following build error,
 
-byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
+In file included from v4l2-compliance.h:31,
+                 from v4l2-compliance.cpp:37:
+./cv4l-helpers.h:9: error: a class-key must be used when declaring a friend
+./cv4l-helpers.h:9: error: friend declaration does not name a class or function
+./cv4l-helpers.h: In member function 'int cv4l_buffer::querybuf(const
+cv4l_queue&, unsigned int)':
+./cv4l-helpers.h:103: error: 'v4l_fd* cv4l_queue::fd' is protected
+./cv4l-helpers.h:213: error: within this context
+./cv4l-helpers.h: In member function 'int cv4l_buffer::dqbuf(const
+cv4l_queue&)':
+./cv4l-helpers.h:103: error: 'v4l_fd* cv4l_queue::fd' is protected
+./cv4l-helpers.h:221: error: within this context
+./cv4l-helpers.h: In member function 'int cv4l_buffer::qbuf(const cv4l_queue&)':
+./cv4l-helpers.h:103: error: 'v4l_fd* cv4l_queue::fd' is protected
+./cv4l-helpers.h:229: error: within this context
+./cv4l-helpers.h: In member function 'int
+cv4l_buffer::prepare_buf(const cv4l_queue&)':
+./cv4l-helpers.h:103: error: 'v4l_fd* cv4l_queue::fd' is protected
+./cv4l-helpers.h:237: error: within this context
+v4l2-compliance.cpp: In function 'void v4l_fd_test_init(v4l_fd*, int)':
+v4l2-compliance.cpp:132: error: invalid conversion from 'void*
+(*)(void*, size_t, int, int, int, int64_t)' to 'void* (*)(void*,
+size_t, int, int, int, off_t)'
 
-#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ utils/v4l2-compliance/cv4l-helpers.h    |    2 +-
+ utils/v4l2-compliance/v4l2-compliance.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-byte full_sysidle_state = RCU_SYSIDLE_NOT;
+diff --git a/utils/v4l2-compliance/cv4l-helpers.h
+b/utils/v4l2-compliance/cv4l-helpers.h
+index 2423ef9..e2729a6 100644
+--- a/utils/v4l2-compliance/cv4l-helpers.h
++++ b/utils/v4l2-compliance/cv4l-helpers.h
+@@ -6,7 +6,7 @@
+ class cv4l_buffer;
 
-byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
-byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not idle. */
+ class cv4l_queue : v4l_queue {
+-    friend cv4l_buffer;
++    friend class cv4l_buffer;
+ public:
+     cv4l_queue(v4l_fd *_fd, unsigned type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+                 unsigned memory = V4L2_MEMORY_MMAP)
+diff --git a/utils/v4l2-compliance/v4l2-compliance.h
+b/utils/v4l2-compliance/v4l2-compliance.h
+index f2f7072..b6d4dae 100644
+--- a/utils/v4l2-compliance/v4l2-compliance.h
++++ b/utils/v4l2-compliance/v4l2-compliance.h
+@@ -137,7 +137,7 @@ static inline int test_ioctl(int fd, unsigned long cmd, ...)
+ }
 
-/*
- * Non-timekeeping CPU going into and out of dyntick-idle state.
- */
-proctype worker(byte me)
-{
-	byte oldstate;
+ static inline void *test_mmap(void *start, size_t length, int prot, int flags,
+-        int fd, int64_t offset)
++        int fd, off_t offset)
+ {
+      return wrapper ? v4l2_mmap(start, length, prot, flags, fd, offset) :
+         mmap(start, length, prot, flags, fd, offset);
+-- 
+1.7.9.5
 
-	do
-	:: 1 ->
-		/* Go idle. */
-		am_setup[me] = 0;
-		am_busy[me] = 0;
 
-		/* Dyntick-idle in the following loop. */
-		do
-		:: 1 -> skip;
-		:: 1 -> break;
-		od;
+> I also have a small comment below:
+>
+> On 03/31/2014 04:52 PM, Lad, Prabhakar wrote:
+>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>
+>> This patch upgrades the vpif display driver with
+>> v4l helpers, this patch does the following,
+>>
+>> 1: initialize the vb2 queue and context at the time of probe
+>> and removes context at remove() callback.
+>> 2: uses vb2_ioctl_*() helpers.
+>> 3: uses vb2_fop_*() helpers.
+>> 4: uses SIMPLE_DEV_PM_OPS.
+>> 5: uses vb2_ioctl_*() helpers.
+>> 6: vidioc_g/s_priority is now handled by v4l core.
+>> 7: removed driver specific fh and now using one provided by v4l.
+>> 8: fixes checkpatch warnings.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> ---
+>>  drivers/media/platform/davinci/vpif_capture.c |  916 ++++++-------------------
+>>  drivers/media/platform/davinci/vpif_capture.h |   32 +-
+>>  2 files changed, 229 insertions(+), 719 deletions(-)
+>>
+>> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+>> index 8dea0b8..76c15b3 100644
+>> --- a/drivers/media/platform/davinci/vpif_capture.c
+>> +++ b/drivers/media/platform/davinci/vpif_capture.c
+>
+> ...
+>
+>>  static int vpif_buffer_init(struct vb2_buffer *vb)
+>>  {
+>> -     struct vpif_cap_buffer *buf = container_of(vb,
+>> -                                     struct vpif_cap_buffer, vb);
+>> +     struct vpif_cap_buffer *buf = to_vpif_buffer(vb);
+>>
+>>       INIT_LIST_HEAD(&buf->list);
+>>
+>>       return 0;
+>>  }
+>
+> Is this really necessary? I think vpif_buffer_init can just be removed.
+> Ditto for vpif_display.c.
+>
+Yes can be dropped, will remove in next version.
 
-		/* Exit idle loop, model getting out of dyntick idle state. */
-		am_busy[me] = 1;
-
-		/* Get state out of full-system idle states. */
-		atomic {
-			oldstate = full_sysidle_state;
-			if
-			:: oldstate > RCU_SYSIDLE_SHORT ->
-				full_sysidle_state = RCU_SYSIDLE_NOT;
-			:: else -> skip;
-			fi;
-		}
-
-		/* If needed, wake up the timekeeper. */
-		if
-		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-			wakeup_timekeeper = 1;
-		:: else -> skip;
-		fi;
-
-		/* Mark ourselves fully awake and operational. */
-		am_setup[me] = 1;
-
-		/* We are fully awake, so timekeeper must not be asleep. */
-		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
-
-		/* Running in kernel in the following loop. */
-		do
-		:: 1 -> skip;
-		:: 1 -> break;
-		od;
-	od
-}
-
-/*
- * Are all the workers in dyntick-idle state?
- */
-#define check_idle() \
-	i = 0; \
-	idle = 1; \
-	do \
-	:: i < NUM_WORKERS -> \
-		if \
-		:: am_busy[i] == 1 -> idle = 0; \
-		:: else -> skip; \
-		fi; \
-		i++; \
-	:: i >= NUM_WORKERS -> break; \
-	od
-
-/*
- * Timekeeping CPU.
- */
-proctype timekeeper()
-{
-	byte i;
-	byte idle;
-	byte curstate;
-	byte newstate;
-
-	do
-	:: 1 ->
-		/* Capture current state. */
-		check_idle();
-		curstate = full_sysidle_state;
-		newstate = curstate;
-
-		/* Check for acceptance state. */
-		if
-		:: idle == 0 ->
-progress_idle:
-			skip;
-		:: curstate == RCU_SYSIDLE_NOT ->
-progress_idle_reset:
-			skip;
-		:: else -> skip;
-		fi;
-
-		/* Manage state... */
-		if
-		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
-			/* Idle, advance to next state. */
-			atomic {
-				if
-				:: full_sysidle_state == curstate ->
-					newstate = curstate + 1;
-					full_sysidle_state = newstate;
-				:: else -> skip;
-				fi;
-			}
-		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
-			/* Non-idle and state advanced, revert to base state. */
-			full_sysidle_state = RCU_SYSIDLE_NOT;
-		:: else -> skip;
-		fi;
-
-		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
-		do
-		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 1 ->
-			assert(0); /* Should never get here. */
-		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 0 ->
-			break;
-		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 1 ->
-progress_full_system_idle_1:
-			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
-			wakeup_timekeeper = 0;
-			break;
-		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 0 ->
-			do
-			:: full_sysidle_state == RCU_SYSIDLE_FULL_NOTED &&
-			   wakeup_timekeeper == 0 ->
-				/*
-				 * We are asleep, so all workers better
-				 * be idle.
-				 */
-progress_full_system_idle_2:
-				atomic {
-					i = 0;
-					idle = 1;
-					do
-					:: i < NUM_WORKERS ->
-						if
-						:: am_setup[i] -> idle = 0;
-						:: else -> skip;
-						fi;
-						i++;
-					:: i >= NUM_WORKERS -> break;
-					od;
-					assert(idle == 1 ||
-					       full_sysidle_state <
-					       RCU_SYSIDLE_FULL);
-				}
-			:: full_sysidle_state != RCU_SYSIDLE_FULL_NOTED &&
-			   wakeup_timekeeper == 0 ->
-				skip; /* No progress, should be awakened. */
-			:: wakeup_timekeeper != 0 ->
-				break;
-			od;
-		od;
-		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
-	od;
-}
-
-init {
-	byte i = 0;
-
-	do
-	:: i < NUM_WORKERS ->
-		am_busy[i] = 1;
-		am_setup[i] = 1;
-		run worker(i);
-		i++;
-	:: i >= NUM_WORKERS -> break;
-	od;
-	run timekeeper();
-}
-
+Thanks,
+--Prabhakar Lad
