@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaCaVcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 17:32:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49670 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaCaVcS (ORCPT
+	id S1751267AbaCaVpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 17:45:35 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:52402 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaCaVpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 17:32:18 -0400
-Date: Mon, 31 Mar 2014 14:32:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-Message-Id: <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
-In-Reply-To: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Mar 2014 17:45:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140331092400.17071766@mschwide>
+References: <20140331092400.17071766@mschwide>
+Date: Mon, 31 Mar 2014 14:45:32 -0700
+X-Google-Sender-Auth: D3mo4hZpHavTHodnqRfyEDy78vo
+Message-ID: <CA+55aFzPP6kBzWrcvps6NVu=f-FUtrfs1U6DyRpdwX6hH6PM-Q@mail.gmail.com>
+Subject: Re: [GIT PULL] s390 patches for the 3.15 merge window
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Mar 2014 20:06:39 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> 
-> The default size is, and always has been, 32Mb. Today, in the
-> XXI century, it seems that this value is rather small, making
-> users have to increase it via sysctl, which can cause unnecessary
-> work and userspace application workarounds[1]. I have arbitrarily
-> chosen a 4x increase, leaving it at 128Mb, and naturally, the
-> same goes for shmall. While it may make more sense to set the value
-> based on the system memory, this limit must be the same across all
-> systems, and left to users to change if needed.
-> 
-> ...
+On Mon, Mar 31, 2014 at 12:24 AM, Martin Schwidefsky
+<schwidefsky@de.ibm.com> wrote:
 >
-> --- a/include/uapi/linux/shm.h
-> +++ b/include/uapi/linux/shm.h
-> @@ -12,7 +12,7 @@
->   * be increased by sysctl
->   */
->  
-> -#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
-> +#define SHMMAX 0x8000000		 /* max shared seg size (bytes) */
->  #define SHMMIN 1			 /* min shared seg size (bytes) */
->  #define SHMMNI 4096			 /* max num of segs system wide */
->  #ifndef __KERNEL__
+> There are two memory management related changes, the CMMA support for
+> KVM to avoid swap-in of freed pages and the split page table lock for
+> the PMD level. These two come with common code changes in mm/.
 
-urgh.  Perhaps we should have made the default "zero bytes" to force
-everyone to think about what they really need and to configure their
-systems.  Of course that just means that distros will poke some random
-number in there at init time.
+Ugh. I pulled it, but things like this makes me want to dig my eyes
+out with a spoon:
 
-- With this change, the limit is no longer "the same across all
-  systems" because the patch increases it for more recent kernels.
+  +#ifdef finish_arch_post_lock_switch
+  +        finish_arch_post_lock_switch();
+  +#endif
 
-  Why do you say it "must be the same" and why is this not a problem
-  in the develop-on-new-kernel, run-on-old-kernel scenario?
+when I think the proper thing to do would have been to move the
+#ifndef that creates an empty finish_arch_post_lock_switch() from
+kernel/sched/sched.h to some common file, or possibly even just
+duplicate it.
 
-- The sysctl became somewhat pointless when we added ipc namespaces. 
-  shm_init_ns() ignores the sysctl and goes straight to SHMMAX, and
-  altering the sysctl will have no effect upon existing namespaces
-  anyway.
+I detest #ifdef's in the middle of code. Yes, we do have them, but we
+should try to avoid adding more of them.
 
-- Shouldn't there be a way to alter this namespace's shm_ctlmax?
+Maybe we could have a <linux/mmu_context.h> that includes the
+<asm/mmu_context.h> and then does that "let's add the dummy function
+for architectures that don't need it"?
 
-- What happens if we just nuke the limit altogether and fall back to
-  the next check, which presumably is the rlimit bounds?
+Added Ingo to the cc, since this ends up intersecting with the
+scheduler code that now does the wrapper on its own.
 
+              Linus
