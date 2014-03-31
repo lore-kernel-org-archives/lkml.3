@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857AbaCaNcx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:32:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35792 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300AbaCaNYm (ORCPT
+	id S1754872AbaCaNc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:32:59 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:60435 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803AbaCaNc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:42 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 57/71] Input: synaptics - add manual min/max quirk for ThinkPad X240
-Date: Mon, 31 Mar 2014 14:23:03 +0100
-Message-Id: <1396272197-13394-58-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
-References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 31 Mar 2014 09:32:56 -0400
+Message-ID: <1396272757.7843.2.camel@phoenix>
+Subject: [PATCH 2/2] mfd: bcm590xx: Add missing remove function
+From: Axel Lin <axel.lin@ingics.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Matt Porter <mporter@linaro.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 31 Mar 2014 21:32:37 +0800
+In-Reply-To: <1396272676.7843.1.camel@phoenix>
+References: <1396272676.7843.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
+Add missing mfd_remove_devices() call in remove function.
 
-------------------
-
-From: Hans de Goede <hdegoede@redhat.com>
-
-commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
-
-This extends Benjamin Tissoires manual min/max quirk table with support for
-the ThinkPad X240.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/input/mouse/synaptics.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/mfd/bcm590xx.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 3597477..b0f2e9c 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1433,6 +1433,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 		.driver_data = (int []){1024, 5052, 2258, 4832},
+diff --git a/drivers/mfd/bcm590xx.c b/drivers/mfd/bcm590xx.c
+index 40c0dd3..c986149 100644
+--- a/drivers/mfd/bcm590xx.c
++++ b/drivers/mfd/bcm590xx.c
+@@ -64,6 +64,12 @@ static int bcm590xx_i2c_probe(struct i2c_client *i2c,
+ 	return ret;
+ }
+ 
++static int bcm590xx_i2c_remove(struct i2c_client *i2c)
++{
++	mfd_remove_devices(&i2c->dev);
++	return 0;
++}
++
+ static const struct of_device_id bcm590xx_of_match[] = {
+ 	{ .compatible = "brcm,bcm59056" },
+ 	{ }
+@@ -83,6 +89,7 @@ static struct i2c_driver bcm590xx_i2c_driver = {
+ 		   .of_match_table = of_match_ptr(bcm590xx_of_match),
  	},
- 	{
-+		/* Lenovo ThinkPad X240 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
-+		},
-+		.driver_data = (int []){1232, 5710, 1156, 4696},
-+	},
-+	{
- 		/* Lenovo ThinkPad T440s */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+ 	.probe = bcm590xx_i2c_probe,
++	.remove = bcm590xx_i2c_remove,
+ 	.id_table = bcm590xx_i2c_id,
+ };
+ module_i2c_driver(bcm590xx_i2c_driver);
 -- 
-1.9.1
+1.8.3.2
+
+
 
