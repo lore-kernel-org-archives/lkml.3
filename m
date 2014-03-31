@@ -1,1111 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225AbaCaNyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:54:25 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:43926 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187AbaCaNyU (ORCPT
+	id S1753176AbaCaNX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:23:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35502 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994AbaCaNXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:54:20 -0400
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Cc: lars@metafoo.de, andriy.shevchenko@linux.intel.com,
-        jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH 2/2] dma: Add Xilinx AXI Central Direct Memory Access Engine driver support
-Date: Mon, 31 Mar 2014 19:24:04 +0530
-Message-Id: <1396274044-6524-2-git-send-email-sthokal@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396274044-6524-1-git-send-email-sthokal@xilinx.com>
-References: <1396274044-6524-1-git-send-email-sthokal@xilinx.com>
+	Mon, 31 Mar 2014 09:23:23 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Luis Henriques <luis.henriques@canonical.com>
+Subject: [3.5.y.z extended stable] Linux 3.5.7.33 stable review
+Date: Mon, 31 Mar 2014 14:22:06 +0100
+Message-Id: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the driver for the AXI Central Direct Memory Access (AXI
-CDMA) core, which is a soft Xilinx IP core that provides high-bandwidth
-Direct Memory Access (DMA) between a memory-mapped source address and a
-memory-mapped destination address.
+This is the start of the review cycle for the Linux 3.5.7.33 stable kernel.
 
-This module works on Zynq (ARM Based SoC) and Microblaze platforms.
+PLEASE NOTE: this will be the LAST 3.5.y.z extended stable kernel release.
 
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
----
-NOTE:
-- This driver patch is created on top of earlier series,
-  1/2 - "dma: Add Xilinx Video DMA DT Binding Documentation"
-  2/2 - "dma: Add Xilinx AXI Video Direct Memory Access Engine driver support"
-- Rebased on v3.14.0-rc8
----
- drivers/dma/Kconfig              |   12 +
- drivers/dma/xilinx/Makefile      |    1 +
- drivers/dma/xilinx/xilinx_cdma.c |  998 ++++++++++++++++++++++++++++++++++++++
- include/linux/amba/xilinx_dma.h  |   15 +-
- 4 files changed, 1025 insertions(+), 1 deletion(-)
- create mode 100644 drivers/dma/xilinx/xilinx_cdma.c
+This version contains 71 new patches, summarized below.  The new patches are
+posted as replies to this message and also available in this git branch:
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 44b312e..e2c5cf2 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -365,6 +365,18 @@ config XILINX_VDMA
- 	  channels, Memory Mapped to Stream (MM2S) and Stream to
- 	  Memory Mapped (S2MM) for the data transfers.
- 
-+config XILINX_CDMA
-+	tristate "Xilinx AXI CDMA Engine"
-+	depends on (ARCH_ZYNQ || MICROBLAZE)
-+	select DMA_ENGINE
-+	help
-+	  Enable support for Xilinx AXI CDMA Soft IP.
-+
-+	  The AXI CDMA is a soft IP which provides high-bandwidth
-+	  Direct Memory Access (DMA) between a memory-mapped source
-+	  address and a memory-mapped destination address using the
-+	  AXI4 protocol.
-+
- config DMA_ENGINE
- 	bool
- 
-diff --git a/drivers/dma/xilinx/Makefile b/drivers/dma/xilinx/Makefile
-index 3c4e9f2..e1dee77 100644
---- a/drivers/dma/xilinx/Makefile
-+++ b/drivers/dma/xilinx/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_XILINX_VDMA) += xilinx_vdma.o
-+obj-$(CONFIG_XILINX_CDMA) += xilinx_cdma.o
-diff --git a/drivers/dma/xilinx/xilinx_cdma.c b/drivers/dma/xilinx/xilinx_cdma.c
-new file mode 100644
-index 0000000..2ae7c77
---- /dev/null
-+++ b/drivers/dma/xilinx/xilinx_cdma.c
-@@ -0,0 +1,998 @@
-+/*
-+ * DMA driver for Xilinx Central DMA Engine
-+ *
-+ * Copyright (C) 2010 - 2014 Xilinx, Inc. All rights reserved.
-+ *
-+ * Based on the Freescale DMA driver.
-+ *
-+ * Description:
-+ *  The AXI CDMA, is a soft IP, which provides high-bandwidth Direct Memory
-+ *  Access (DMA) between a memory-mapped source address and a memory-mapped
-+ *  destination address.
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/amba/xilinx_dma.h>
-+#include <linux/bitops.h>
-+#include <linux/dmapool.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_dma.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_platform.h>
-+#include <linux/slab.h>
-+
-+#include "../dmaengine.h"
-+
-+/* Register Offsets */
-+#define XILINX_CDMA_CONTROL_OFFSET	0x00
-+#define XILINX_CDMA_STATUS_OFFSET	0x04
-+#define XILINX_CDMA_CDESC_OFFSET	0x08
-+#define XILINX_CDMA_TDESC_OFFSET	0x10
-+#define XILINX_CDMA_SRCADDR_OFFSET	0x18
-+#define XILINX_CDMA_DSTADDR_OFFSET	0x20
-+#define XILINX_CDMA_BTT_OFFSET		0x28
-+
-+/* General register bits definitions */
-+#define XILINX_CDMA_CR_RESET		BIT(2)
-+#define XILINX_CDMA_CR_SGMODE		BIT(3)
-+
-+#define XILINX_CDMA_SR_IDLE		BIT(1)
-+
-+#define XILINX_CDMA_XR_IRQ_IOC_MASK	BIT(12)
-+#define XILINX_CDMA_XR_IRQ_DELAY_MASK	BIT(13)
-+#define XILINX_CDMA_XR_IRQ_ERROR_MASK	BIT(14)
-+#define XILINX_CDMA_XR_IRQ_ALL_MASK	GENMASK(14, 12)
-+
-+#define XILINX_CDMA_XR_DELAY_MASK	GENMASK(31, 24)
-+#define XILINX_CDMA_XR_COALESCE_MASK	GENMASK(23, 16)
-+
-+#define XILINX_CDMA_DELAY_MAX		GENMASK(7, 0)
-+#define XILINX_CDMA_DELAY_SHIFT		24
-+
-+#define XILINX_CDMA_COALESCE_MAX	GENMASK(7, 0)
-+#define XILINX_CDMA_COALESCE_SHIFT	16
-+
-+/* Delay loop counter to prevent hardware failure */
-+#define XILINX_CDMA_RESET_LOOP		1000000
-+
-+/* Maximum transfer length */
-+#define XILINX_CDMA_MAX_TRANS_LEN	GENMASK(22, 0)
-+
-+/**
-+ * struct xilinx_cdma_desc_hw - Hardware Descriptor
-+ * @next_desc: Next Descriptor Pointer @0x00
-+ * @pad1: Reserved @0x04
-+ * @src_addr: Source address @0x08
-+ * @pad2: Reserved @0x0C
-+ * @dest_addr: Destination address @0x10
-+ * @pad3: Reserved @0x14
-+ * @control: Control field @0x18
-+ * @status: Status field @0x1C
-+ */
-+struct xilinx_cdma_desc_hw {
-+	u32 next_desc;
-+	u32 pad1;
-+	u32 src_addr;
-+	u32 pad2;
-+	u32 dest_addr;
-+	u32 pad3;
-+	u32 control;
-+	u32 status;
-+} __aligned(64);
-+
-+/**
-+ * struct xilinx_cdma_tx_segment - Descriptor segment
-+ * @hw: Hardware descriptor
-+ * @node: Node in the descriptor segments list
-+ * @phys: Physical address of segment
-+ */
-+struct xilinx_cdma_tx_segment {
-+	struct xilinx_cdma_desc_hw hw;
-+	struct list_head node;
-+	dma_addr_t phys;
-+} __aligned(64);
-+
-+/**
-+ * struct xilinx_cdma_tx_descriptor - Per Transaction structure
-+ * @async_tx: Async transaction descriptor
-+ * @segments: TX segments list
-+ * @node: Node in the channel descriptors list
-+ */
-+struct xilinx_cdma_tx_descriptor {
-+	struct dma_async_tx_descriptor async_tx;
-+	struct list_head segments;
-+	struct list_head node;
-+};
-+
-+/**
-+ * struct xilinx_cdma_chan - Driver specific cdma channel structure
-+ * @xdev: Driver specific device structure
-+ * @lock: Descriptor operation lock
-+ * @done_list: Complete descriptors
-+ * @pending_list: Descriptors waiting
-+ * @active_desc: Active descriptor
-+ * @allocated_desc: Allocated descriptor
-+ * @common: DMA common channel
-+ * @desc_pool: Descriptors pool
-+ * @dev: The dma device
-+ * @irq: Channel IRQ
-+ * @has_sg: Support scatter transfers
-+ * @err: Channel has errors
-+ * @tasklet: Cleanup work after irq
-+ */
-+struct xilinx_cdma_chan {
-+	struct xilinx_cdma_device *xdev;
-+	spinlock_t lock;
-+	struct list_head done_list;
-+	struct list_head pending_list;
-+	struct xilinx_cdma_tx_descriptor *active_desc;
-+	struct xilinx_cdma_tx_descriptor *allocated_desc;
-+	struct dma_chan common;
-+	struct dma_pool *desc_pool;
-+	struct device *dev;
-+	int irq;
-+	bool has_sg;
-+	int err;
-+	struct tasklet_struct tasklet;
-+};
-+
-+/**
-+ * struct xilinx_cdma_device - CDMA device structure
-+ * @regs: I/O mapped base address
-+ * @dev: Device Structure
-+ * @common: DMA device structure
-+ * @chan: Driver specific cdma channel
-+ * @has_sg: Specifies whether Scatter-Gather is present or not
-+ */
-+struct xilinx_cdma_device {
-+	void __iomem *regs;
-+	struct device *dev;
-+	struct dma_device common;
-+	struct xilinx_cdma_chan *chan;
-+	bool has_sg;
-+};
-+
-+/* Macros */
-+#define to_xilinx_chan(chan) \
-+	container_of(chan, struct xilinx_cdma_chan, common)
-+#define to_cdma_tx_descriptor(tx) \
-+	container_of(tx, struct xilinx_cdma_tx_descriptor, async_tx)
-+
-+/* IO accessors */
-+static inline void cdma_write(struct xilinx_cdma_chan *chan, u32 reg, u32 val)
-+{
-+	writel(val, chan->xdev->regs + reg);
-+}
-+
-+static inline u32 cdma_read(struct xilinx_cdma_chan *chan, u32 reg)
-+{
-+	return readl(chan->xdev->regs + reg);
-+}
-+
-+static inline void cdma_ctrl_clr(struct xilinx_cdma_chan *chan, u32 reg,
-+				 u32 clr)
-+{
-+	cdma_write(chan, reg, cdma_read(chan, reg) & ~clr);
-+}
-+
-+static inline void cdma_ctrl_set(struct xilinx_cdma_chan *chan, u32 reg,
-+				 u32 set)
-+{
-+	cdma_write(chan, reg, cdma_read(chan, reg) | set);
-+}
-+
-+/* -----------------------------------------------------------------------------
-+ * Descriptors and segments alloc and free
-+ */
-+
-+/**
-+ * xilinx_cdma_alloc_tx_segment - Allocate transaction segment
-+ * @chan: Driver specific cdma channel
-+ *
-+ * Return: The allocated segment on success and NULL on failure.
-+ */
-+static struct xilinx_cdma_tx_segment *
-+xilinx_cdma_alloc_tx_segment(struct xilinx_cdma_chan *chan)
-+{
-+	struct xilinx_cdma_tx_segment *segment;
-+	dma_addr_t phys;
-+
-+	segment = dma_pool_alloc(chan->desc_pool, GFP_ATOMIC, &phys);
-+	if (!segment)
-+		return NULL;
-+
-+	memset(segment, 0, sizeof(*segment));
-+	segment->phys = phys;
-+
-+	return segment;
-+}
-+
-+/**
-+ * xilinx_cdma_free_tx_segment - Free transaction segment
-+ * @chan: Driver specific cdma channel
-+ * @segment: cdma transaction segment
-+ */
-+static void xilinx_cdma_free_tx_segment(struct xilinx_cdma_chan *chan,
-+					struct xilinx_cdma_tx_segment *segment)
-+{
-+	dma_pool_free(chan->desc_pool, segment, segment->phys);
-+}
-+
-+/**
-+ * xilinx_cdma_tx_descriptor - Allocate transaction descriptor
-+ * @chan: Driver specific cdma channel
-+ *
-+ * Return: The allocated descriptor on success and NULL on failure.
-+ */
-+static struct xilinx_cdma_tx_descriptor *
-+xilinx_cdma_alloc_tx_descriptor(struct xilinx_cdma_chan *chan)
-+{
-+	struct xilinx_cdma_tx_descriptor *desc;
-+	unsigned long flags;
-+
-+	if (chan->allocated_desc)
-+		return chan->allocated_desc;
-+
-+	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-+	if (!desc)
-+		return NULL;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+	chan->allocated_desc = desc;
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	INIT_LIST_HEAD(&desc->segments);
-+
-+	return desc;
-+}
-+
-+/**
-+ * xilinx_cdma_free_tx_descriptor - Free transaction descriptor
-+ * @chan: Driver specific cdma channel
-+ * @desc: cdma transaction descriptor
-+ */
-+static void
-+xilinx_cdma_free_tx_descriptor(struct xilinx_cdma_chan *chan,
-+			       struct xilinx_cdma_tx_descriptor *desc)
-+{
-+	struct xilinx_cdma_tx_segment *segment, *next;
-+
-+	if (!desc)
-+		return;
-+
-+	list_for_each_entry_safe(segment, next, &desc->segments, node) {
-+		list_del(&segment->node);
-+		xilinx_cdma_free_tx_segment(chan, segment);
-+	}
-+
-+	kfree(desc);
-+}
-+
-+/**
-+ * xilinx_cdma_alloc_chan_resources - Allocate channel resources
-+ * @dchan: DMA channel
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_cdma_alloc_chan_resources(struct dma_chan *dchan)
-+{
-+	struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
-+
-+	/* Has this channel already been allocated? */
-+	if (chan->desc_pool)
-+		return 0;
-+
-+	/*
-+	 * We need the descriptor to be aligned to 64bytes
-+	 * for meeting Xilinx DMA specification requirement.
-+	 */
-+	chan->desc_pool = dma_pool_create("xilinx_cdma_desc_pool",
-+				chan->dev,
-+				sizeof(struct xilinx_cdma_tx_segment),
-+				__alignof__(struct xilinx_cdma_tx_segment), 0);
-+	if (!chan->desc_pool) {
-+		dev_err(chan->dev,
-+			"unable to allocate channel descriptor pool\n");
-+		return -ENOMEM;
-+	}
-+
-+	dma_cookie_init(dchan);
-+	return 0;
-+}
-+
-+/**
-+ * xilinx_cdma_free_desc_list - Free descriptors list
-+ * @chan: Driver specific cdma channel
-+ * @list: List to parse and delete the descriptor
-+ */
-+static void xilinx_cdma_free_desc_list(struct xilinx_cdma_chan *chan,
-+				       struct list_head *list)
-+{
-+	struct xilinx_cdma_tx_descriptor *desc, *next;
-+
-+	list_for_each_entry_safe(desc, next, list, node) {
-+		list_del(&desc->node);
-+		xilinx_cdma_free_tx_descriptor(chan, desc);
-+	}
-+}
-+
-+/**
-+ * xilinx_cdma_free_chan_resources - Free channel resources
-+ * @dchan: DMA channel
-+ */
-+static void xilinx_cdma_free_chan_resources(struct dma_chan *dchan)
-+{
-+	struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+	xilinx_cdma_free_desc_list(chan, &chan->done_list);
-+	xilinx_cdma_free_desc_list(chan, &chan->pending_list);
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	dma_pool_destroy(chan->desc_pool);
-+	chan->desc_pool = NULL;
-+}
-+
-+/**
-+ * xilinx_cdma_chan_desc_cleanup - Clean channel descriptors
-+ * @chan: Driver specific cdma channel
-+ */
-+static void xilinx_cdma_chan_desc_cleanup(struct xilinx_cdma_chan *chan)
-+{
-+	struct xilinx_cdma_tx_descriptor *desc, *next;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	list_for_each_entry_safe(desc, next, &chan->done_list, node) {
-+		dma_async_tx_callback callback;
-+		void *callback_param;
-+
-+		/* Remove from the list of running transactions */
-+		list_del(&desc->node);
-+
-+		/* Run the link descriptor callback function */
-+		callback = desc->async_tx.callback;
-+		callback_param = desc->async_tx.callback_param;
-+		if (callback) {
-+			spin_unlock_irqrestore(&chan->lock, flags);
-+			callback(callback_param);
-+			spin_lock_irqsave(&chan->lock, flags);
-+		}
-+
-+		/* Run any dependencies, then free the descriptor */
-+		dma_run_dependencies(&desc->async_tx);
-+		xilinx_cdma_free_tx_descriptor(chan, desc);
-+	}
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+/**
-+ * xilinx_cdma_tx_status - Get CDMA transaction status
-+ * @dchan: DMA channel
-+ * @cookie: Transaction identifier
-+ * @txstate: Transaction state
-+ *
-+ * Return: DMA transaction status
-+ */
-+static enum dma_status xilinx_tx_status(struct dma_chan *dchan,
-+					dma_cookie_t cookie,
-+					struct dma_tx_state *txstate)
-+{
-+	return dma_cookie_status(dchan, cookie, txstate);
-+}
-+
-+/**
-+ * xilinx_cdma_is_idle - Check if cdma channel is idle
-+ * @chan: Driver specific cdma channel
-+ *
-+ * Return: 'true' if idle, 'false' if not.
-+ */
-+static bool cdma_is_idle(struct xilinx_cdma_chan *chan)
-+{
-+	return cdma_read(chan, XILINX_CDMA_STATUS_OFFSET) & XILINX_CDMA_SR_IDLE;
-+}
-+
-+/**
-+ * xilinx_cdma_start_transfer - Starts cdma transfer
-+ * @chan: Driver specific channel struct pointer
-+ */
-+static void xilinx_cdma_start_transfer(struct xilinx_cdma_chan *chan)
-+{
-+	unsigned long flags;
-+	struct xilinx_cdma_tx_descriptor *desc;
-+	struct xilinx_cdma_tx_segment *head, *tail;
-+
-+	if (chan->err)
-+		return;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	if (list_empty(&chan->pending_list))
-+		goto out_unlock;
-+
-+	/* If hardware is busy, cannot submit */
-+	if (!cdma_is_idle(chan)) {
-+		dev_dbg(chan->dev, "DMA controller still busy %x\n",
-+			cdma_read(chan, XILINX_CDMA_STATUS_OFFSET));
-+		goto out_unlock;
-+	}
-+
-+	desc = list_first_entry(&chan->pending_list,
-+				struct xilinx_cdma_tx_descriptor, node);
-+
-+	if (chan->has_sg) {
-+		head = list_first_entry(&desc->segments,
-+					struct xilinx_cdma_tx_segment, node);
-+		tail = list_entry(desc->segments.prev,
-+				  struct xilinx_cdma_tx_segment, node);
-+
-+		cdma_write(chan, XILINX_CDMA_CDESC_OFFSET, head->phys);
-+
-+		/* Update tail ptr register which will start the transfer */
-+		cdma_write(chan, XILINX_CDMA_TDESC_OFFSET, tail->phys);
-+	} else {
-+		/* In simple mode */
-+		struct xilinx_cdma_tx_segment *segment;
-+		struct xilinx_cdma_desc_hw *hw;
-+
-+		segment = list_first_entry(&desc->segments,
-+					   struct xilinx_cdma_tx_segment,
-+					   node);
-+
-+		hw = &segment->hw;
-+
-+		cdma_write(chan, XILINX_CDMA_SRCADDR_OFFSET, hw->src_addr);
-+		cdma_write(chan, XILINX_CDMA_DSTADDR_OFFSET, hw->dest_addr);
-+
-+		/* Start the transfer */
-+		cdma_write(chan, XILINX_CDMA_BTT_OFFSET,
-+			   hw->control & XILINX_CDMA_MAX_TRANS_LEN);
-+	}
-+
-+	list_del(&desc->node);
-+	chan->active_desc = desc;
-+
-+out_unlock:
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+/**
-+ * xilinx_cdma_issue_pending - Issue pending transactions
-+ * @dchan: DMA channel
-+ */
-+static void xilinx_cdma_issue_pending(struct dma_chan *dchan)
-+{
-+	struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
-+
-+	xilinx_cdma_start_transfer(chan);
-+}
-+
-+/**
-+ * xilinx_cdma_complete_descriptor - Mark the active descriptor as complete
-+ * @chan : xilinx DMA channel
-+ */
-+static void xilinx_cdma_complete_descriptor(struct xilinx_cdma_chan *chan)
-+{
-+	struct xilinx_cdma_tx_descriptor *desc;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	desc = chan->active_desc;
-+	if (!desc) {
-+		dev_dbg(chan->dev, "no running descriptors\n");
-+		goto out_unlock;
-+	}
-+
-+	dma_cookie_complete(&desc->async_tx);
-+	list_add_tail(&desc->node, &chan->done_list);
-+
-+	chan->active_desc = NULL;
-+
-+out_unlock:
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+/**
-+ * xilinx_cdma_chan_reset - Reset CDMA channel
-+ * @chan: Driver specific CDMA channel
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_cdma_chan_reset(struct xilinx_cdma_chan *chan)
-+{
-+	int loop = XILINX_CDMA_RESET_LOOP;
-+	u32 tmp;
-+
-+	cdma_ctrl_set(chan, XILINX_CDMA_CONTROL_OFFSET,
-+		      XILINX_CDMA_CR_RESET);
-+
-+	tmp = cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET) &
-+	      XILINX_CDMA_CR_RESET;
-+
-+	/* Wait for the hardware to finish reset */
-+	do {
-+		tmp = cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET) &
-+		      XILINX_CDMA_CR_RESET;
-+	} while (loop-- && tmp);
-+
-+	if (!loop) {
-+		dev_err(chan->dev, "reset timeout, cr %x, sr %x\n",
-+			cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET),
-+			cdma_read(chan, XILINX_CDMA_STATUS_OFFSET));
-+		return -EBUSY;
-+	}
-+
-+	/* Enable interrupts */
-+	cdma_ctrl_set(chan, XILINX_CDMA_CONTROL_OFFSET,
-+		      XILINX_CDMA_XR_IRQ_ALL_MASK);
-+
-+	/* Enable SG Mode */
-+	if (chan->has_sg)
-+		cdma_ctrl_set(chan, XILINX_CDMA_CONTROL_OFFSET,
-+			      XILINX_CDMA_CR_SGMODE);
-+
-+	return 0;
-+}
-+
-+/**
-+ * xilinx_cdma_irq_handler - CDMA Interrupt handler
-+ * @irq: IRQ number
-+ * @data: Pointer to the Xilinx CDMA channel structure
-+ *
-+ * Return: IRQ_HANDLED/IRQ_NONE
-+*/
-+static irqreturn_t xilinx_cdma_irq_handler(int irq, void *data)
-+{
-+	struct xilinx_cdma_chan *chan = data;
-+	u32 status;
-+
-+	status = cdma_read(chan, XILINX_CDMA_STATUS_OFFSET);
-+	if (!(status & XILINX_CDMA_XR_IRQ_ALL_MASK))
-+		return IRQ_NONE;
-+
-+	/* Ack the interrupts */
-+	cdma_write(chan, XILINX_CDMA_STATUS_OFFSET,
-+		   XILINX_CDMA_XR_IRQ_ALL_MASK);
-+
-+	if (status & XILINX_CDMA_XR_IRQ_ERROR_MASK) {
-+		dev_err(chan->dev,
-+			"Channel %x has errors %x, cdr %x tdr %x\n",
-+			(u32)chan,
-+			(u32)cdma_read(chan, XILINX_CDMA_STATUS_OFFSET),
-+			(u32)cdma_read(chan, XILINX_CDMA_CDESC_OFFSET),
-+			(u32)cdma_read(chan, XILINX_CDMA_TDESC_OFFSET));
-+		chan->err = true;
-+	}
-+
-+	/*
-+	 * Device takes too long to do the transfer when user requires
-+	 * responsiveness
-+	 */
-+	if (status & XILINX_CDMA_XR_IRQ_DELAY_MASK)
-+		dev_dbg(chan->dev, "Inter-packet latency too long\n");
-+
-+	if (status & XILINX_CDMA_XR_IRQ_IOC_MASK) {
-+		xilinx_cdma_complete_descriptor(chan);
-+		xilinx_cdma_start_transfer(chan);
-+	}
-+
-+	tasklet_schedule(&chan->tasklet);
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * xilinx_cdma_do_tasklet - Schedule completion tasklet
-+ * @data: Pointer to the Xilinx cdma channel structure
-+ */
-+static void xilinx_cdma_do_tasklet(unsigned long data)
-+{
-+	struct xilinx_cdma_chan *chan = (struct xilinx_cdma_chan *)data;
-+
-+	xilinx_cdma_chan_desc_cleanup(chan);
-+}
-+
-+/**
-+ * xilinx_cdma_tx_submit - Submit DMA transaction
-+ * @tx: Async transaction descriptor
-+ *
-+ * Return: cookie value on success and failure value on error
-+ */
-+static dma_cookie_t xilinx_cdma_tx_submit(struct dma_async_tx_descriptor *tx)
-+{
-+	struct xilinx_cdma_chan *chan = to_xilinx_chan(tx->chan);
-+	struct xilinx_cdma_tx_descriptor *desc = to_cdma_tx_descriptor(tx);
-+	dma_cookie_t cookie;
-+	unsigned long flags;
-+	int err;
-+
-+	if (chan->err) {
-+		/*
-+		 * If reset fails, need to hard reset the system.
-+		 * Channel is no longer functional
-+		 */
-+		err = xilinx_cdma_chan_reset(chan);
-+		if (err < 0)
-+			return err;
-+	}
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	cookie = dma_cookie_assign(tx);
-+
-+	/* Append the transaction to the pending transactions queue. */
-+	list_add_tail(&desc->node, &chan->pending_list);
-+
-+	/* Free the allocated desc */
-+	chan->allocated_desc = NULL;
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	return cookie;
-+}
-+
-+/**
-+ * xilinx_cdma_prep_memcpy - prepare descriptors for a memcpy transaction
-+ * @dchan: DMA channel
-+ * @dma_dst: destination address
-+ * @dma_src: source address
-+ * @len: transfer length
-+ * @flags: transfer ack flags
-+ *
-+ * Return: Async transaction descriptor on success and NULL on failure
-+ */
-+static struct dma_async_tx_descriptor *
-+xilinx_cdma_prep_memcpy(struct dma_chan *dchan, dma_addr_t dma_dst,
-+			dma_addr_t dma_src, size_t len, unsigned long flags)
-+{
-+	struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
-+	struct xilinx_cdma_desc_hw *hw;
-+	struct xilinx_cdma_tx_descriptor *desc;
-+	struct xilinx_cdma_tx_segment *segment, *prev;
-+
-+	if (!len || len > XILINX_CDMA_MAX_TRANS_LEN)
-+		return NULL;
-+
-+	desc = xilinx_cdma_alloc_tx_descriptor(chan);
-+	if (!desc)
-+		return NULL;
-+
-+	dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
-+	desc->async_tx.tx_submit = xilinx_cdma_tx_submit;
-+	async_tx_ack(&desc->async_tx);
-+
-+	/* Allocate the link descriptor from DMA pool */
-+	segment = xilinx_cdma_alloc_tx_segment(chan);
-+	if (!segment)
-+		goto error;
-+
-+	hw = &segment->hw;
-+	hw->control = len;
-+	hw->src_addr = dma_src;
-+	hw->dest_addr = dma_dst;
-+
-+	/* Fill the previous next descriptor with current */
-+	prev = list_last_entry(&desc->segments,
-+			       struct xilinx_cdma_tx_segment, node);
-+	prev->hw.next_desc = segment->phys;
-+
-+	/* Insert the segment into the descriptor segments list. */
-+	list_add_tail(&segment->node, &desc->segments);
-+
-+	prev = segment;
-+
-+	/* Link the last hardware descriptor with the first. */
-+	segment = list_first_entry(&desc->segments,
-+				   struct xilinx_cdma_tx_segment, node);
-+	prev->hw.next_desc = segment->phys;
-+
-+	return &desc->async_tx;
-+
-+error:
-+	xilinx_cdma_free_tx_descriptor(chan, desc);
-+	return NULL;
-+}
-+
-+/**
-+ * xilinx_cdma_device_control - Configure DMA channel of the device
-+ * @dchan: DMA Channel pointer
-+ * @cmd: DMA control command
-+ * @arg: Channel configuration
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_cdma_device_control(struct dma_chan *dchan,
-+				      enum dma_ctrl_cmd cmd, unsigned long arg)
-+{
-+	struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
-+	unsigned long flags;
-+
-+	if (cmd != DMA_TERMINATE_ALL)
-+		return -ENXIO;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	/* Remove and free all of the descriptors in the lists */
-+	xilinx_cdma_free_desc_list(chan, &chan->pending_list);
-+	xilinx_cdma_free_desc_list(chan, &chan->done_list);
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	return 0;
-+}
-+
-+/**
-+ * xilinx_cdma_channel_set_config - Configure cdma channel
-+ * @dchan: DMA channel
-+ * @cfg: cdma device configuration pointer
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+int xilinx_cdma_channel_set_config(struct dma_chan *dchan,
-+					struct xilinx_cdma_config *cfg)
-+{
-+	struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
-+	u32 reg = cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET);
-+
-+	if (cfg->reset)
-+		return xilinx_cdma_chan_reset(chan);
-+
-+	if (cfg->coalesc <= XILINX_CDMA_COALESCE_MAX) {
-+		reg &= ~XILINX_CDMA_XR_COALESCE_MASK;
-+		reg |= cfg->coalesc << XILINX_CDMA_COALESCE_SHIFT;
-+	}
-+
-+	if (cfg->delay <= XILINX_CDMA_DELAY_MAX) {
-+		reg &= ~XILINX_CDMA_XR_DELAY_MASK;
-+		reg |= cfg->delay << XILINX_CDMA_DELAY_SHIFT;
-+	}
-+
-+	cdma_write(chan, XILINX_CDMA_CONTROL_OFFSET, reg);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(xilinx_cdma_channel_set_config);
-+
-+/* -----------------------------------------------------------------------------
-+ * Probe and remove
-+ */
-+
-+/**
-+ * xilinx_cdma_free_channel - Channel remove function
-+ * @chan: Driver specific cdma channel
-+ */
-+static void xilinx_cdma_free_channel(struct xilinx_cdma_chan *chan)
-+{
-+	/* Disable Interrupts */
-+	cdma_ctrl_clr(chan, XILINX_CDMA_CONTROL_OFFSET,
-+		      XILINX_CDMA_XR_IRQ_ALL_MASK);
-+
-+	if (chan->irq > 0)
-+		free_irq(chan->irq, chan);
-+
-+	tasklet_kill(&chan->tasklet);
-+
-+	list_del(&chan->common.device_node);
-+}
-+
-+/**
-+ * xilinx_cdma_chan_probe - Per Channel Probing
-+ * It get channel features from the device tree entry and
-+ * initialize special channel handling routines
-+ *
-+ * @xdev: Driver specific device structure
-+ * @node: Device node
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_cdma_chan_probe(struct xilinx_cdma_device *xdev,
-+				  struct device_node *node)
-+{
-+	struct xilinx_cdma_chan *chan;
-+	bool has_dre;
-+	u32 value, width;
-+	int err;
-+
-+	/* Alloc channel */
-+	chan = devm_kzalloc(xdev->dev, sizeof(*chan), GFP_KERNEL);
-+	if (!chan)
-+		return -ENOMEM;
-+
-+	chan->dev = xdev->dev;
-+	chan->has_sg = xdev->has_sg;
-+	chan->xdev = xdev;
-+
-+	spin_lock_init(&chan->lock);
-+	INIT_LIST_HEAD(&chan->pending_list);
-+	INIT_LIST_HEAD(&chan->done_list);
-+
-+	/* Retrieve the channel properties from the device tree */
-+	has_dre = of_property_read_bool(node, "xlnx,include-dre");
-+
-+	err = of_property_read_u32(node, "xlnx,datawidth", &value);
-+	if (err) {
-+		dev_err(xdev->dev, "unable to read datawidth property");
-+		return err;
-+	}
-+	width = value >> 3; /* convert bits to bytes */
-+
-+	/* If data width is greater than 8 bytes, DRE is not in hw */
-+	if (width > 8)
-+		has_dre = false;
-+
-+	if (!has_dre)
-+		xdev->common.copy_align = fls(width - 1);
-+
-+	/* Request the interrupt */
-+	chan->irq = irq_of_parse_and_map(node, 0);
-+	err = request_irq(chan->irq, xilinx_cdma_irq_handler, IRQF_SHARED,
-+			  "xilinx-cdma-controller", chan);
-+	if (err) {
-+		dev_err(xdev->dev, "unable to request IRQ %d\n", chan->irq);
-+		return err;
-+	}
-+
-+	/* Initialize the tasklet */
-+	tasklet_init(&chan->tasklet, xilinx_cdma_do_tasklet,
-+		     (unsigned long)chan);
-+
-+	/*
-+	 * Initialize the DMA channel and add it to the DMA engine channels
-+	 * list.
-+	 */
-+	chan->common.device = &xdev->common;
-+
-+	list_add_tail(&chan->common.device_node, &xdev->common.channels);
-+	xdev->chan = chan;
-+
-+	/* Initialize the channel */
-+	err = xilinx_cdma_chan_reset(chan);
-+	if (err) {
-+		dev_err(xdev->dev, "Reset channel failed\n");
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * of_dma_xilinx_xlate - Translation function
-+ * @dma_spec: Pointer to DMA specifier as found in the device tree
-+ * @ofdma: Pointer to DMA controller data
-+ *
-+ * Return: DMA channel pointer on success and NULL on error
-+ */
-+static struct dma_chan *of_dma_xilinx_xlate(struct of_phandle_args *dma_spec,
-+						struct of_dma *ofdma)
-+{
-+	struct xilinx_cdma_device *xdev = ofdma->of_dma_data;
-+
-+	return dma_get_slave_channel(&xdev->chan->common);
-+}
-+
-+/**
-+ * xilinx_cdma_probe - Driver probe function
-+ * @pdev: Pointer to the platform_device structure
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_cdma_probe(struct platform_device *pdev)
-+{
-+	struct xilinx_cdma_device *xdev;
-+	struct device_node *child, *node;
-+	struct resource *res;
-+	int ret;
-+
-+	xdev = devm_kzalloc(&pdev->dev, sizeof(*xdev), GFP_KERNEL);
-+	if (!xdev)
-+		return -ENOMEM;
-+
-+	xdev->dev = &(pdev->dev);
-+	INIT_LIST_HEAD(&xdev->common.channels);
-+
-+	node = pdev->dev.of_node;
-+
-+	/* Map the registers */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	xdev->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(xdev->regs))
-+		return PTR_ERR(xdev->regs);
-+
-+	/* Check if SG is enabled */
-+	xdev->has_sg = of_property_read_bool(node, "xlnx,include-sg");
-+
-+	dma_cap_set(DMA_MEMCPY, xdev->common.cap_mask);
-+	xdev->common.device_prep_dma_memcpy = xilinx_cdma_prep_memcpy;
-+
-+	xdev->common.device_control = xilinx_cdma_device_control;
-+	xdev->common.device_issue_pending = xilinx_cdma_issue_pending;
-+	xdev->common.device_alloc_chan_resources =
-+			xilinx_cdma_alloc_chan_resources;
-+	xdev->common.device_free_chan_resources =
-+			xilinx_cdma_free_chan_resources;
-+	xdev->common.device_tx_status = xilinx_tx_status;
-+	xdev->common.dev = &pdev->dev;
-+
-+	platform_set_drvdata(pdev, xdev);
-+
-+	child = of_get_next_child(node, NULL);
-+	if (!child) {
-+		dev_err(&pdev->dev, "No channel found\n");
-+		return PTR_ERR(child);
-+	}
-+
-+	ret = xilinx_cdma_chan_probe(xdev, child);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Probing channel failed\n");
-+		goto free_chan_resources;
-+	}
-+
-+	dma_async_device_register(&xdev->common);
-+
-+	ret = of_dma_controller_register(node, of_dma_xilinx_xlate, xdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Unable to register DMA to DT\n");
-+		dma_async_device_unregister(&xdev->common);
-+		goto free_chan_resources;
-+	}
-+
-+	dev_info(&pdev->dev, "Xilinx AXI CDMA Engine driver Probed!!\n");
-+
-+	return 0;
-+
-+free_chan_resources:
-+	xilinx_cdma_free_channel(xdev->chan);
-+
-+	return ret;
-+}
-+
-+/**
-+ * xilinx_cdma_remove - Driver remove function
-+ * @pdev: Pointer to the platform_device structure
-+ *
-+ * Return: Always '0'
-+ */
-+static int xilinx_cdma_remove(struct platform_device *pdev)
-+{
-+	struct xilinx_cdma_device *xdev = platform_get_drvdata(pdev);
-+
-+	of_dma_controller_free(pdev->dev.of_node);
-+	dma_async_device_unregister(&xdev->common);
-+
-+	xilinx_cdma_free_channel(xdev->chan);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id xilinx_cdma_of_match[] = {
-+	{ .compatible = "xlnx,axi-cdma-1.00.a", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, xilinx_cdma_of_match);
-+
-+static struct platform_driver xilinx_cdma_driver = {
-+	.driver = {
-+		.name = "xilinx-cdma",
-+		.owner = THIS_MODULE,
-+		.of_match_table = xilinx_cdma_of_match,
-+	},
-+	.probe = xilinx_cdma_probe,
-+	.remove = xilinx_cdma_remove,
-+};
-+
-+module_platform_driver(xilinx_cdma_driver);
-+
-+MODULE_AUTHOR("Xilinx, Inc.");
-+MODULE_DESCRIPTION("Xilinx CDMA driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/amba/xilinx_dma.h b/include/linux/amba/xilinx_dma.h
-index 34b98f2..fb74ff7 100644
---- a/include/linux/amba/xilinx_dma.h
-+++ b/include/linux/amba/xilinx_dma.h
-@@ -41,7 +41,20 @@ struct xilinx_vdma_config {
- 	int ext_fsync;
- };
- 
-+/**
-+ * struct xilinx_cdma_config - CDMA Configuration structure
-+ * @coalesc: Interrupt coalescing threshold
-+ * @delay: Delay counter
-+ * @reset: Reset Channel
-+ */
-+struct xilinx_cdma_config {
-+	int coalesc;
-+	int delay;
-+	int reset;
-+};
-+
- int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
- 					struct xilinx_vdma_config *cfg);
--
-+int xilinx_cdma_channel_set_config(struct dma_chan *dchan,
-+					struct xilinx_cdma_config *cfg);
- #endif
--- 
-1.7.9.5
+http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.5.y-review;a=shortlog
 
+git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.5.y-review
+
+The review period for version 3.5.7.33 will be open for the next three days.
+To report a problem, please reply to the relevant follow-up patch message.
+
+For more information about the Linux 3.5.y.z extended stable kernel version,
+see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
+
+ -Luis
+
+--
+ arch/arm/mach-sa1100/include/mach/collie.h         |   2 +
+ arch/powerpc/kernel/reloc_64.S                     |   1 +
+ arch/x86/include/asm/topology.h                    |   3 +-
+ arch/x86/kernel/head_32.S                          |   7 +-
+ arch/x86/kernel/head_64.S                          |   6 +-
+ arch/x86/kernel/quirks.c                           |   2 +-
+ arch/x86/kvm/svm.c                                 |   6 +-
+ arch/x86/net/bpf_jit.S                             |   2 +-
+ drivers/ata/libata-core.c                          |  28 ++
+ drivers/ata/libata-scsi.c                          |  18 +-
+ drivers/cpufreq/acpi-cpufreq.c                     |   2 +-
+ drivers/dma/ioat/dma.c                             |  46 ++-
+ drivers/dma/ioat/dma.h                             |   1 +
+ drivers/dma/ioat/dma_v2.c                          |  11 +-
+ drivers/dma/ioat/dma_v3.c                          |   3 +
+ drivers/firewire/core-device.c                     |  22 +-
+ drivers/firewire/net.c                             |   6 +-
+ drivers/firewire/sbp2.c                            |  17 +-
+ drivers/gpu/drm/radeon/atombios_encoders.c         |   2 +-
+ drivers/gpu/drm/radeon/radeon_ttm.c                |   3 +
+ drivers/gpu/drm/ttm/ttm_bo.c                       |   8 +-
+ drivers/idle/intel_idle.c                          |   3 +-
+ drivers/input/mouse/synaptics.c                    |  55 ++++
+ drivers/mmc/host/sdhci.c                           |  17 +-
+ drivers/net/can/flexcan.c                          |  13 +-
+ drivers/net/ethernet/broadcom/tg3.c                |   3 +-
+ drivers/net/ethernet/broadcom/tg3.h                |   6 +-
+ drivers/net/ethernet/ibm/ibmveth.c                 |  25 +-
+ drivers/net/ethernet/ibm/ibmveth.h                 |   1 -
+ drivers/net/virtio_net.c                           |   3 +-
+ drivers/net/vmxnet3/vmxnet3_drv.c                  |  19 +-
+ .../net/wireless/ath/ath9k/ar9462_2p0_initvals.h   |   4 +-
+ drivers/net/wireless/ath/ath9k/xmit.c              |   8 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c         |   1 +
+ drivers/net/wireless/mwifiex/11n.c                 |   3 +-
+ drivers/net/wireless/mwifiex/usb.c                 |   8 -
+ drivers/net/wireless/p54/txrx.c                    |   2 +-
+ drivers/of/address.c                               |   9 +-
+ drivers/pci/pci.c                                  |   3 +
+ drivers/rapidio/devices/tsi721.h                   |   1 +
+ drivers/rapidio/devices/tsi721_dma.c               |  27 +-
+ drivers/scsi/isci/host.h                           |   5 +-
+ drivers/scsi/isci/port_config.c                    |   7 -
+ drivers/scsi/isci/task.c                           |   2 +-
+ drivers/scsi/qla2xxx/qla_def.h                     |   3 +-
+ drivers/scsi/storvsc_drv.c                         |   3 +
+ drivers/staging/speakup/i18n.c                     |  12 +-
+ drivers/staging/speakup/i18n.h                     |  12 +-
+ drivers/staging/speakup/keyhelp.c                  |  36 +-
+ drivers/staging/speakup/kobjects.c                 |  80 ++---
+ drivers/staging/speakup/main.c                     | 366 ++++++++++-----------
+ drivers/staging/speakup/selection.c                |  14 +-
+ drivers/staging/speakup/serialio.c                 |   6 +-
+ drivers/staging/speakup/speakup.h                  |  72 ++--
+ drivers/staging/speakup/speakup_acntpc.c           |   6 +-
+ drivers/staging/speakup/speakup_acntsa.c           |   2 +-
+ drivers/staging/speakup/speakup_apollo.c           |   8 +-
+ drivers/staging/speakup/speakup_audptr.c           |   2 +-
+ drivers/staging/speakup/speakup_bns.c              |   2 +-
+ drivers/staging/speakup/speakup_decext.c           |   6 +-
+ drivers/staging/speakup/speakup_decpc.c            |   4 +-
+ drivers/staging/speakup/speakup_dectlk.c           |   6 +-
+ drivers/staging/speakup/speakup_dtlk.c             |   4 +-
+ drivers/staging/speakup/speakup_dummy.c            |   2 +-
+ drivers/staging/speakup/speakup_keypc.c            |   6 +-
+ drivers/staging/speakup/speakup_ltlk.c             |   2 +-
+ drivers/staging/speakup/speakup_spkout.c           |   2 +-
+ drivers/staging/speakup/speakup_txprt.c            |   2 +-
+ drivers/staging/speakup/spk_priv.h                 |   8 +-
+ drivers/staging/speakup/synth.c                    |  38 +--
+ drivers/staging/speakup/thread.c                   |   4 +-
+ drivers/staging/speakup/varhandlers.c              |  66 ++--
+ drivers/usb/core/config.c                          |   4 +
+ drivers/usb/core/quirks.c                          |   4 +
+ drivers/usb/dwc3/dwc3-pci.c                        |   2 +
+ drivers/usb/host/ehci.h                            |  18 +-
+ drivers/usb/serial/pl2303.c                        |  33 +-
+ fs/btrfs/compression.c                             |   2 +
+ fs/ext4/inode.c                                    |  15 +-
+ fs/hpfs/dir.c                                      |  10 +-
+ fs/nfs/delegation.c                                |  11 +-
+ fs/ocfs2/file.c                                    |   8 +-
+ fs/ocfs2/quota_global.c                            |  27 +-
+ fs/ocfs2/quota_local.c                             |   4 -
+ fs/proc/base.c                                     |   1 +
+ include/linux/bitops.h                             |  15 +
+ include/linux/firewire.h                           |   1 +
+ include/linux/jiffies.h                            |   8 +-
+ include/linux/libata.h                             |   2 +
+ include/linux/tracepoint.h                         |   6 +
+ ipc/msg.c                                          |   2 +
+ kernel/cpuset.c                                    |   2 +-
+ kernel/irq/manage.c                                |   3 +-
+ kernel/sched/fair.c                                |   8 +-
+ kernel/trace/trace_events.c                        |  10 +
+ kernel/tracepoint.c                                |   7 +-
+ net/mac80211/sta_info.c                            |   5 +
+ net/mac80211/sta_info.h                            |   7 +-
+ net/mac80211/tx.c                                  |  15 +
+ net/sctp/sm_statefuns.c                            |   7 +
+ net/unix/af_unix.c                                 |   3 +-
+ scripts/package/builddeb                           |   9 +-
+ sound/core/compress_offload.c                      |   2 +-
+ sound/pci/hda/patch_realtek.c                      |   3 +
+ sound/pci/oxygen/xonar_dg.c                        |  12 +-
+ sound/usb/mixer.c                                  |   1 +
+ 106 files changed, 894 insertions(+), 568 deletions(-)
+
+Aisheng Dong (1):
+      mmc: sdhci: fix lockdep error in tuning routine
+
+Al Viro (2):
+      ocfs2 syncs the wrong range...
+      hpfs: deadlock and race in directory lseek()
+
+Ales Novak (1):
+      [SCSI] storvsc: NULL pointer dereference fix
+
+Alex Deucher (1):
+      drm/radeon/atom: select the proper number of lanes in transmitter setup
+
+Alexandre Bounine (1):
+      rapidio/tsi721: fix tasklet termination in dma channel release
+
+Alexei Starovoitov (1):
+      x86: bpf_jit: support negative offsets
+
+Amitkumar Karwar (1):
+      mwifiex: copy AP's HT capability info correctly
+
+Anton Blanchard (3):
+      powerpc: Align p_dyn, p_rela and p_st symbols
+      net: unix socket code abuses csum_partial
+      ibmveth: Fix endian issues with MAC addresses
+
+Arnd Bergmann (1):
+      vmxnet3: fix building without CONFIG_PCI_MSI
+
+Artem Fetishev (2):
+      fs/proc/base.c: fix GPF in /proc/$PID/map_files
+      x86: fix boot on uniprocessor systems
+
+Ben Hutchings (2):
+      deb-pkg: Fix cross-building linux-headers package
+      ioat: fix tasklet tear down
+
+Benjamin Herrenschmidt (1):
+      of: Fix address decoding on Bimini and js2x machines
+
+Benjamin Tissoires (1):
+      Input: synaptics - add manual min/max quirk
+
+Bing Zhao (1):
+      mwifiex: do not advertise usb autosuspend support
+
+Bjorn Helgaas (1):
+      PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled
+
+Charles Keepax (1):
+      ALSA: compress: Pass through return value of open ops callback
+
+Chuansheng Liu (1):
+      genirq: Remove racy waitqueue_active check
+
+Clemens Ladisch (1):
+      ALSA: oxygen: Xonar DG(X): modify DAC routing
+
+Dan Carpenter (1):
+      p54: clamp properly instead of just truncating
+
+Dan Williams (1):
+      [SCSI] isci: fix reset timeout handling
+
+Daniel Borkmann (1):
+      net: sctp: fix sctp_sf_do_5_1D_ce to verify if we/peer is AUTH capable
+
+Daniel J Blueman (1):
+      x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
+
+David Cohen (1):
+      usb: dwc3: add support for Merrifield
+
+Emmanuel Grumbach (2):
+      mac80211: fix AP powersave TX vs. wakeup race
+      iwlwifi: dvm: clear IWL_STA_UCODE_INPROGRESS when assoc fails
+
+Filipe David Borba Manana (1):
+      Btrfs: fix data corruption when reading/updating compressed extents
+
+George McCollister (1):
+      sched: Fix double normalization of vruntime
+
+Giridhar Malavali (1):
+      [SCSI] qla2xxx: Poll during initialization for ISP25xx and ISP83xx
+
+H. Peter Anvin (1):
+      x86: Ignore NMIs that come in during early boot
+
+Hans de Goede (1):
+      Input: synaptics - add manual min/max quirk for ThinkPad X240
+
+Jan Kara (1):
+      ocfs2: fix quota file corruption
+
+Jason Wang (1):
+      virtio-net: alloc big buffers also when guest can receive UFO
+
+Johan Hovold (1):
+      USB: pl2303: fix data corruption on termios updates
+
+Johannes Berg (1):
+      mac80211: clear sequence/fragment number in QoS-null frames
+
+Julius Werner (2):
+      usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
+      usb: Make DELAY_INIT quirk wait 100ms between Get Configuration requests
+
+Kleber Sacilotto de Souza (1):
+      of: fix PCI bus match for PCIe slots
+
+Konrad Rzeszutek Wilk (1):
+      intel_idle: Check cpu_idle_get_driver() for NULL before dereferencing it.
+
+Konstantin Khlebnikov (1):
+      ipc/msg: fix race around refcount
+
+Lauri Kasanen (1):
+      drm/radeon: TTM must be init with cpu-visible VRAM, v2
+
+Li Zefan (1):
+      cpuset: fix a race condition in __cpuset_node_allowed_softwall()
+
+Linus Torvalds (1):
+      x86: fix compile error due to X86_TRAP_NMI use in asm files
+
+Linus Walleij (1):
+      ARM: 7991/1: sa1100: fix compile problem on Collie
+
+Lukasz Dorau (1):
+      [SCSI] isci: correct erroneous for_each_isci_host macro
+
+Marc Kleine-Budde (2):
+      can: flexcan: fix shutdown: first disable chip, then all interrupts
+      can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
+
+Michael Chan (1):
+      tg3: Don't check undefined error bits in RXBD
+
+Michele Baldessari (1):
+      libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
+
+Neil Horman (1):
+      vmxnet3: fix netpoll race condition
+
+Paul E. McKenney (1):
+      jiffies: Avoid undefined behavior from signed overflow
+
+Peter Chen (1):
+      usb: ehci: add freescale imx28 special write register method
+
+Radim Krčmář (1):
+      KVM: SVM: fix cr8 intercept window
+
+Rob Clark (1):
+      drm/ttm: don't oops if no invalidate_caches()
+
+Roman Volkov (1):
+      ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
+
+Ross Lagerwall (1):
+      acpi-cpufreq: set current frequency based on target P-State
+
+Samuel Thibault (1):
+      staging: speakup: Prefix externally-visible symbols
+
+Stanislaw Gruszka (1):
+      ath9k: protect tid->sched check
+
+Stefan Richter (1):
+      firewire: net: fix use after free
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Do not add event files for modules that fail tracepoints
+
+Sujith Manoharan (1):
+      ath9k: Fix ETSI compliance for AR9462 2.0
+
+Takashi Iwai (2):
+      ALSA: usb-audio: Add quirk for Logitech Webcam C500
+      ALSA: hda/realtek - Avoid invalid COEFs for ALC271X
+
+Tejun Heo (2):
+      firewire: don't use PREPARE_DELAYED_WORK
+      libata: disable LPM for some WD SATA-I devices
+
+Theodore Ts'o (1):
+      ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+
+Trond Myklebust (1):
+      NFS: Fix a delegation callback race
