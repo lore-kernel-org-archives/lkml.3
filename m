@@ -1,109 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836AbaCaNcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:32:51 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64673 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294AbaCaNYm (ORCPT
+	id S1754884AbaCaNdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:33:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35787 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290AbaCaNYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:42 -0400
-Message-ID: <53396C95.3030005@monstr.eu>
-Date: Mon, 31 Mar 2014 15:24:37 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        michal.simek@xilinx.com, grant.likely@linaro.org,
-        gregkh@linuxfoundation.org, jason@lakedaemon.net,
-        ezequiel.garcia@free-electrons.com, arnd@arndb.de, dwmw2@infradead.org,
-        computersforpeace@gmail.com, artem.bityutskiy@linux.intel.com,
-        pekon@ti.com, jussi.kivilinna@iki.fi, acourbot@nvidia.com,
-        ivan.khoronzhuk@ti.com, joern@logfs.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, kpc528@gmail.com,
-        kalluripunnaiahchoudary@gmail.com,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Subject: Re: [PATCH RFC 3/3] nand: pl353: Add driver for arm pl353 smc nand
- interface
-References: <1395944467-26291-1-git-send-email-punnaia@xilinx.com> <04cb5d02-db4c-4a4c-ba3c-3a5958e42324@VA3EHSMHS036.ehs.local> <533963AE.30405@monstr.eu>
-In-Reply-To: <533963AE.30405@monstr.eu>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="dCCb1NKaXCFEPGQLGGSoDEgcdQvE3KB73"
+	Mon, 31 Mar 2014 09:24:41 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 56/71] Input: synaptics - add manual min/max quirk
+Date: Mon, 31 Mar 2014 14:23:02 +0100
+Message-Id: <1396272197-13394-57-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---dCCb1NKaXCFEPGQLGGSoDEgcdQvE3KB73
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+3.5.7.33 -stable review patch.  If anyone has any objections, please let me know.
 
-On 03/31/2014 02:46 PM, Michal Simek wrote:
-> On 03/27/2014 07:21 PM, Punnaiah Choudary Kalluri wrote:
->> Add driver for arm pl353 static memory controller nand interface.
->> This controller is used in xilinx zynq soc for interfacing the nand
->> flash memory.
->>
->> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
->> ---
->>  drivers/mtd/nand/Kconfig      |    8 +
->>  drivers/mtd/nand/Makefile     |    1 +
->>  drivers/mtd/nand/pl353_nand.c | 1122 ++++++++++++++++++++++++++++++++=
-+++++++++
->>  3 files changed, 1131 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/mtd/nand/pl353_nand.c
->>
->> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
->> index 90ff447..31c1d0c 100644
->> --- a/drivers/mtd/nand/Kconfig
->> +++ b/drivers/mtd/nand/Kconfig
->> @@ -510,4 +510,12 @@ config MTD_NAND_XWAY
->>  	  Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is =
-attached
->>  	  to the External Bus Unit (EBU).
->> =20
->> +config MTD_NAND_PL353
->> +	tristate "ARM Pl353 NAND flash driver"
->> +	depends on MTD_NAND && ARM
->> +	select PL353_SMC
->=20
-> Here should be probably depends on PL353_SMC.
-> I just found it.
+------------------
 
-Just to be accurate.
-When MEMORY=3Dn with select PL353_SMC you are not able select PL353_SMC
-and compile it.
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-Thanks,
-Michal
+commit 421e08c41fda1f0c2ff6af81a67b491389b653a5 upstream.
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
+However, these new Synaptics devices report bad axis ranges.
+Under Windows, it is not a problem because the Windows driver uses RMI4
+over SMBus to talk to the device. Under Linux, we are using the PS/2
+fallback interface and it occurs the reported ranges are wrong.
 
+Of course, it would be too easy to have only one range for the whole
+series, each touchpad seems to be calibrated in a different way.
 
+We can not use SMBus to get the actual range because I suspect the firmware
+will switch into the SMBus mode and stop talking through PS/2 (this is the
+case for hybrid HID over I2C / PS/2 Synaptics touchpads).
 
---dCCb1NKaXCFEPGQLGGSoDEgcdQvE3KB73
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+So as a temporary solution (until RMI4 land into upstream), start a new
+list of quirks with the min/max manually set.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/input/mouse/synaptics.c | 47 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-iEYEARECAAYFAlM5bJUACgkQykllyylKDCF0qQCcDmHw949CMV8efFU+LmmhfcUv
-qWQAoJJeFYO+0Cc6OIOpYAO7E5Mfwus1
-=1YW9
------END PGP SIGNATURE-----
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 4dc7136..3597477 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -231,11 +231,22 @@ static int synaptics_identify(struct psmouse *psmouse)
+  * Read touchpad resolution and maximum reported coordinates
+  * Resolution is left zero if touchpad does not support the query
+  */
++
++static const int *quirk_min_max;
++
+ static int synaptics_resolution(struct psmouse *psmouse)
+ {
+ 	struct synaptics_data *priv = psmouse->private;
+ 	unsigned char resp[3];
+ 
++	if (quirk_min_max) {
++		priv->x_min = quirk_min_max[0];
++		priv->x_max = quirk_min_max[1];
++		priv->y_min = quirk_min_max[2];
++		priv->y_max = quirk_min_max[3];
++		return 0;
++	}
++
+ 	if (SYN_ID_MAJOR(priv->identity) < 4)
+ 		return 0;
+ 
+@@ -1411,10 +1422,46 @@ static const struct dmi_system_id __initconst olpc_dmi_table[] = {
+ 	{ }
+ };
+ 
++static const struct dmi_system_id min_max_dmi_table[] __initconst = {
++#if defined(CONFIG_DMI)
++	{
++		/* Lenovo ThinkPad Helix */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
++		},
++		.driver_data = (int []){1024, 5052, 2258, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T440s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T540p */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
++		},
++		.driver_data = (int []){1024, 5056, 2058, 4832},
++	},
++#endif
++	{ }
++};
++
+ void __init synaptics_module_init(void)
+ {
++	const struct dmi_system_id *min_max_dmi;
++
+ 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+ 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
++
++	min_max_dmi = dmi_first_match(min_max_dmi_table);
++	if (min_max_dmi)
++		quirk_min_max = min_max_dmi->driver_data;
+ }
+ 
+ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+-- 
+1.9.1
 
---dCCb1NKaXCFEPGQLGGSoDEgcdQvE3KB73--
