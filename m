@@ -1,203 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321AbaCaVZg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 17:25:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60729 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153AbaCaVZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 17:25:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,767,1389772800"; 
-   d="scan'208";a="484326327"
-Date: Mon, 31 Mar 2014 14:25:22 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>, Jim Lin <jilin@nvidia.com>
-Subject: Re: [PATCH] usb: xhci: Correct last context entry calculation for
- Configure Endpoint
-Message-ID: <20140331212522.GB8979@xanatos>
-References: <1395772963-14127-1-git-send-email-jwerner@chromium.org>
+	id S1751431AbaCaV0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 17:26:11 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:39179 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaCaV0H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 17:26:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395772963-14127-1-git-send-email-jwerner@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3E5CB7F4-0CB6-4D50-85DC-D19FC47FCBD8@primarydata.com>
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
+ <20140326194847.0e994d0b@ipyr.poochiereds.net> <CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com>
+ <20140326202535.7d9b6f78@ipyr.poochiereds.net> <20140327070802.124fb34c@ipyr.poochiereds.net>
+ <20140330130328.GB7172@thunk.org> <20140331075145.4bd76872@tlielax.poochiereds.net>
+ <58D59025-ADA1-44CB-88E4-36BCEE763B64@primarydata.com> <CALCETrX5ta875ij08_SNmzrN+KLRNuYiM2psNyFn8JdLOd=8DQ@mail.gmail.com>
+ <3E5CB7F4-0CB6-4D50-85DC-D19FC47FCBD8@primarydata.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 31 Mar 2014 14:25:46 -0700
+Message-ID: <CALCETrU9nzyZf82jhVqOwGujBdeQqUTjVx3i_dFWUMyAnrR3Yw@mail.gmail.com>
+Subject: Re: Thoughts on credential switching
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Layton Jeff <jlayton@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jim Lieb <jlieb@panasas.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dr Fields James Bruce <bfields@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 11:42:43AM -0700, Julius Werner wrote:
-> The current XHCI driver recalculates the Context Entries field in the
-> Slot Context on every add_endpoint() and drop_endpoint() call. In the
-> case of drop_endpoint(), it seems to assume that the add_flags will
-> always contain every endpoint for the new configuration, which is not
-> necessarily correct if you don't make assumptions about how the USB core
-> uses the add_endpoint/drop_endpoint interface (add_flags only contains
-> endpoints that are new additions in the new configuration).
+On Mon, Mar 31, 2014 at 1:14 PM, Trond Myklebust
+<trond.myklebust@primarydata.com> wrote:
+>
+> On Mar 31, 2014, at 15:26, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+>> On Mon, Mar 31, 2014 at 11:06 AM, Trond Myklebust
+>> <trond.myklebust@primarydata.com> wrote:
+>>>
+>>> On Mar 31, 2014, at 7:51, Jeff Layton <jlayton@redhat.com> wrote:
+>>>
+>>>> On Sun, 30 Mar 2014 09:03:29 -0400
+>>>> "Theodore Ts'o" <tytso@mit.edu> wrote:
+>>>>
+>>>>> On Thu, Mar 27, 2014 at 07:08:02AM -0700, Jeff Layton wrote:
+>>>>>> I had some time to think about this last night...
+>>>>>>
+>>>>>> While using a fd to pass around credentials is convenient, the danger
+>>>>>> is that it's pretty opaque. You have a fd that you know has creds
+>>>>>> attached to it, but it's hard to be certain what is going to change.
+>>>>>
+>>>>> I don't think that's a particularly tough problem.  In general, the fd
+>>>>> isn't something that you would want to pass around, and so the process
+>>>>> which generated it will know exactly what it contained.
+>>>>>
+>>>>
+>>>> I think there's a bit more of a use-case for passing around such an fd
+>>>> via socket...
+>>>>
+>>>> Part of the problem is that the traditional uid/gid switching glibc
+>>>> wrappers are per-process. If we're proposing doing something like:
+>>>>
+>>>> seteuid()
+>>>> setegid()
+>>>> setgroups()
+>>>> fd = open()
+>>>> (...and then revert the creds using same syscalls)
+>>>>
+>>>> ...during the time that you're doing all of that, you can't really
+>>>> allow any thread in the process to be doing something that requires
+>>>> _other_ creds until you've completed the above.
+>>>
+>>> Umm... open() isn't the only operation that you want to be able to do with an assumed user identity. You want mknod(), mkdir(), link(), unlink(), ... Pretty much any interaction with the underlying filesystem needs to use the right identity.
+>>>
+>>>> So, I could envision a program like ganesha firing up a separate
+>>>> process to handle the credential switching and fd creation and then
+>>>> handing those back to the main process via a unix domain socket.
+>>>
+>>> How about using the keyrings interface to atomically cache and retrieve these user identities? We already have support for different types of keys that store/retrieve different types of structured information. How is this so different?
+>>
+>> This sounds considerably more complicated than just using fds.  What's
+>> the advantage?
+>
+> The advantage is that it's considerably _less_ complicated because it uses interfaces that were designed to carry security related information, and to share them across threads.
+>
+>> I guess using keys for local fs credentials fits in with using keys to
+>> access things like AFS, but I'm still not sure I see why this helps
+>> here.
+>
+> All you want to do is atomically store and retrieve a user identity (in practice a credential) and share it between members of a thread. As I said, that kind of storage/retrieval of structured data is what keyrings do. As far as I know, there are already LSM interfaces in place (see security_key_alloc/permission/free), and the generic keyring/keyctl interface exists with appropriate process sharing/inheritance rules via the kernel keyring interface.
+>
+> So basically, the recipe is:
+>
+> - You set up a kernel key type that takes a reference to the current process credential on instantiation (no upcalls, etc needed). Ganesha can then use standard libkeyutils methods to create the key and store it in its user, process or thread keyring.
+> - You add a new keyctl (KEYCTL_APPLY?) that enables any thread/process that has access to the key, via the keyring in which it is stored, to apply the stored process credential to itself (and perhaps cache it's old credential in a new key?).
 
-The last valid endpoint context has been discussed before:
+I can see pros and cons of using keys instead of fds:
 
-http://marc.info/?l=linux-usb&m=137158978503741&w=2
+Pros:
+ - You can change may_ptrace to check that you can legally ptrace any
+creds in the keyring.  (It's debatable how useful this is.)
+ - You could plausibly stick subsidiary uids into a user keyring and
+use them for uid_map, removing the need for newuidmap.
 
-There's an xHCI spec ambiguity:  Does the last valid context entry refer
-to the last valid endpoint context in the *input* device context or the
-*output* device context?
+Cons:
+ - You can't send them via SCM_RIGHTS.  I still think that the ability
+to do that is extremely useful.
 
-The code currently assumes it refers to the input device context, namely
-the endpoints we're adding or changing.  If hardware needs the last
-valid endpoint context for the re-calculated *output* device context,
-then yes, this needs to be changed.  However, based on spec errata, I
-believe that's not the intent of the spec authors:
+Neutral: What happens if the filesystem you're trying to share
+requires keys?  I don't think that credfd or credkeys can really do
+this.  I suppose that if the keys live in the user keyring
+corresponding to the user being impersonated, everything just works
+regardless of how this is implemented.
 
-http://marc.info/?l=linux-kernel&m=137208958411696&w=2
+Cue brain explosion: thread_keyring lives inside struct cred.  I
+suspect that any sane implementation of credential switching will need
+to change that.  Sigh.
 
-What is the impact if we calculate the valid last valid endpoint context
-for the input context?  Do you have evidence of hardware misbehaving?
-If so, which hardware?
 
-> Furthermore, EP0_FLAG is not consistently set in add_flags throughout
-> the lifetime of a device. This means that when all endpoints are
-> dropped, the Context Entries field can be set to 0 (which is invalid and
-> may cause a Parameter Error) or -1 (which is interpreted as 31 and
-> causes the driver to keep using the old, incorrect value).
+Anyway, the actual parts that seem like they need solving one way or
+another are:
 
-That should be fixed in a separate patch.
+ - The keyring pointers in struct cred are a problem.  (Solved with
+credkeys, but only if credkeys can only live on the thread keyring.
+Also, there will be a problem with circular references.)
 
-Sarah Sharp
+ - may_ptrace and all its users (e.g. procfs).  "Solved" by
+real_creds, but no one has really defined the semantics of real_creds,
+since it's not currently available to userspace.
 
-> The only surefire way to set this field right is to also take all
-> existing endpoints into account, and to force the value to 1 (meaning
-> only EP0 is active) if no other endpoint is found. This patch implements
-> that as a single step in the final check_bandwidth() call and removes
-> the intermediary calculations from add_endpoint() and drop_endpoint().
-> 
-> This patch should be backported to kernels as old as 2.6.31 that contain
-> the commit f94e0186312b0fc39f41eed4e21836ed74b7efe1 "USB: xhci:
-> Bandwidth allocation support".
-> 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  drivers/usb/host/xhci.c | 51 +++++++++++++++++--------------------------------
->  1 file changed, 18 insertions(+), 33 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index 924a6cc..e7d9dfa 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -1562,12 +1562,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	struct xhci_hcd *xhci;
->  	struct xhci_container_ctx *in_ctx, *out_ctx;
->  	struct xhci_input_control_ctx *ctrl_ctx;
-> -	struct xhci_slot_ctx *slot_ctx;
-> -	unsigned int last_ctx;
->  	unsigned int ep_index;
->  	struct xhci_ep_ctx *ep_ctx;
->  	u32 drop_flag;
-> -	u32 new_add_flags, new_drop_flags, new_slot_info;
-> +	u32 new_add_flags, new_drop_flags;
->  	int ret;
->  
->  	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
-> @@ -1614,24 +1612,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
->  	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
->  
-> -	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
-> -	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
-> -	/* Update the last valid endpoint context, if we deleted the last one */
-> -	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
-> -	    LAST_CTX(last_ctx)) {
-> -		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-> -		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
-> -	}
-> -	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
-> -
->  	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
->  
-> -	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-> +	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
->  			(unsigned int) ep->desc.bEndpointAddress,
->  			udev->slot_id,
->  			(unsigned int) new_drop_flags,
-> -			(unsigned int) new_add_flags,
-> -			(unsigned int) new_slot_info);
-> +			(unsigned int) new_add_flags);
->  	return 0;
->  }
->  
-> @@ -1654,11 +1641,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	struct xhci_hcd *xhci;
->  	struct xhci_container_ctx *in_ctx, *out_ctx;
->  	unsigned int ep_index;
-> -	struct xhci_slot_ctx *slot_ctx;
->  	struct xhci_input_control_ctx *ctrl_ctx;
->  	u32 added_ctxs;
-> -	unsigned int last_ctx;
-> -	u32 new_add_flags, new_drop_flags, new_slot_info;
-> +	u32 new_add_flags, new_drop_flags;
->  	struct xhci_virt_device *virt_dev;
->  	int ret = 0;
->  
-> @@ -1673,7 +1658,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  		return -ENODEV;
->  
->  	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
-> -	last_ctx = xhci_last_valid_endpoint(added_ctxs);
->  	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
->  		/* FIXME when we have to issue an evaluate endpoint command to
->  		 * deal with ep0 max packet size changing once we get the
-> @@ -1739,24 +1723,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
->  	 */
->  	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
->  
-> -	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
-> -	/* Update the last valid endpoint context, if we just added one past */
-> -	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
-> -	    LAST_CTX(last_ctx)) {
-> -		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-> -		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
-> -	}
-> -	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
-> -
->  	/* Store the usb_device pointer for later use */
->  	ep->hcpriv = udev;
->  
-> -	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-> +	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
->  			(unsigned int) ep->desc.bEndpointAddress,
->  			udev->slot_id,
->  			(unsigned int) new_drop_flags,
-> -			(unsigned int) new_add_flags,
-> -			(unsigned int) new_slot_info);
-> +			(unsigned int) new_add_flags);
->  	return 0;
->  }
->  
-> @@ -2723,8 +2697,19 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
->  			ctrl_ctx->drop_flags == 0)
->  		return 0;
->  
-> -	xhci_dbg(xhci, "New Input Control Context:\n");
-> +	/* Fix up Context Entries field. Minimum value is EP0 == BIT(1). */
->  	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
-> +	for (i = 31; i >= 1; i--) {
-> +		u32 le32 = cpu_to_le32(BIT(i));
-> +		if ((virt_dev->eps[i-1].ring && !(ctrl_ctx->drop_flags & le32))
-> +				|| (ctrl_ctx->add_flags & le32) || i == 1) {
-> +			slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-> +			slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i));
-> +			break;
-> +		}
-> +	}
-> +
-> +	xhci_dbg(xhci, "New Input Control Context:\n");
->  	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
->  		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
->  
-> -- 
-> 1.8.3.2
-> 
+--Andy
