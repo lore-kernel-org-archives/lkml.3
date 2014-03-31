@@ -1,29 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaCaKpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 06:45:21 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55054 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467AbaCaKpS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 06:45:18 -0400
-Date: Mon, 31 Mar 2014 11:44:59 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jim Lieb <jlieb@panasas.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+	id S1752275AbaCaKuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 06:50:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45530 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961AbaCaKua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 06:50:30 -0400
+Date: Mon, 31 Mar 2014 12:50:26 +0200
+From: Petr Tesarik <ptesarik@suse.cz>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Cooper <andrew.cooper3@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bfields@redhat.com, Jeff Layton <jlayton@redhat.com>
-Subject: Re: Thoughts on credential switching
-Message-ID: <20140331114459.4b3638f8@alan.etchedpixels.co.uk>
-In-Reply-To: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "jbeulich@suse.com" <jbeulich@suse.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [PATCH v2 01/11] kexec: introduce kexec_ops struct
+Message-ID: <20140331125026.0120eef7@hananiah.suse.cz>
+In-Reply-To: <09b41677-c9e7-4cd4-84a0-a1cb483d551d@email.android.com>
+References: <1353423893-23125-1-git-send-email-daniel.kiper@oracle.com>
+	<1353423893-23125-2-git-send-email-daniel.kiper@oracle.com>
+	<87lidwtego.fsf@xmission.com>
+	<20121121105221.GA2925@host-192-168-1-59.local.net-space.pl>
+	<87txshx28b.fsf@xmission.com>
+	<50AE6542.3020302@zytor.com>
+	<50AE69EF.4060909@citrix.com>
+	<09b41677-c9e7-4cd4-84a0-a1cb483d551d@email.android.com>
+Organization: SUSE Linux, s.r.o.
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,47 +42,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014 17:23:24 -0700
-Andy Lutomirski <luto@amacapital.net> wrote:
+On Thu, 22 Nov 2012 14:26:10 -0800
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-> Hi various people who care about user-space NFS servers and/or
-> security-relevant APIs.
+> Bullshit.  This should be a separate domain.
+
+Thanks for top-posting, hpa...
+
+> Andrew Cooper <andrew.cooper3@citrix.com> wrote:
 > 
-> I propose the following set of new syscalls:
-> 
-> int credfd_create(unsigned int flags): returns a new credfd that
-> corresponds to current's creds.
-> 
-> int credfd_activate(int fd, unsigned int flags): Change current's
-> creds to match the creds stored in fd.  To be clear, this changes both
-> the "subjective" and "objective" (aka real_cred and cred) because
-> there aren't any real semantics for what happens when userspace code
-> runs with real_cred != cred.
+> >On 22/11/12 17:47, H. Peter Anvin wrote:
+> >> The other thing that should be considered here is how utterly 
+> >> preposterous the notion of doing in-guest crash dumping is in a
+> >system 
+> >> that contains a hypervisor.  The reason for kdump is that on bare
+> >metal 
+> >> there are no other options, but in a hypervisor system the right
+> >thing 
+> >> should be for the hypervisor to do the dump (possibly spawning a
+> >clean 
+> >> I/O domain if the I/O domain is necessary to access the media.)
+> >>
+> >> There is absolutely no reason to have a crashkernel sitting around in
+> >
+> >> each guest, consuming memory, and possibly get corrupt.
+> >>
+> >> 	-hpa
+> >>
+> >
+> >I agree that regular guests should not be using the kexec/kdump. 
+> >However, this patch series is required for allowing a pvops kernel to
+> >be
+> >a crash kernel for Xen, which is very important from dom0/Xen's point
+> >of
+> >view.
 
-What is the sematic of a simultaneous ptrace racing a credfd_activate on
-another processor core ?
+In fact, a normal kernel is used for dumping, so it can handle both,
+Dom0 crashes _and_ hypervisor crashes. If you wanted to address
+hypervisor crashes, you'd have to allocate some space for that, too, so
+you may view this "madness" as a way to conserve resources.
 
-What are the rules for simultaneous threads doing I/O and and credential
-changes ?
+The memory area is reserved by the Xen hypervisor, and only the extents
+are passed down to the Dom0 kernel. In other words, there is indeed no
+physical mapping for this area.
 
-What is the rule for a faulting of an mmapped page in a multithreaded app
-one thread of which has changed credentials ?
+Having said that, I see no reason why that physical mapping cannot be
+created if it is needed.
 
-Who owns a file created while you are changing credentials ?
-
->  - credfd_activate fails (-EINVAL) if dumpable.  This is because we
-> don't want a privileged daemon to be ptraced while impersonating
-> someone else.
-
-That's one of the obvious problems but if you have that problem then
-you've got races against signals and ptrace etc to deal with.
-
-One way to implement it I think safely but which requires a fair bit more
-work elsewhere is to apply the debug and signal type checks as
-
-   'you may only do X if you also posess the right to do so for *all*
-    credentials accessible to this task'
-
-which I think is the correct logical check.
-
-Alan
+Petr T
