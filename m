@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaCaNYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:24:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35785 "EHLO
+	id S1754578AbaCaNZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:25:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35882 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288AbaCaNYk (ORCPT
+	with ESMTP id S1754465AbaCaNZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:24:40 -0400
+	Mon, 31 Mar 2014 09:25:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+Cc: robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 55/71] ipc/msg: fix race around refcount
-Date: Mon, 31 Mar 2014 14:23:01 +0100
-Message-Id: <1396272197-13394-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 69/71] usb: ehci: add freescale imx28 special write register method
+Date: Mon, 31 Mar 2014 14:23:15 +0100
+Message-Id: <1396272197-13394-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
 References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
@@ -27,66 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-[fixed differently in 6062a8dc0517bce23e3c2f7d2fea5e22411269a3 upstream.]
+commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
 
-In older kernels (before v3.10) ipc_rcu_hdr->refcount was non-atomic int.
-There was possuble double-free bug: do_msgsnd() calls ipc_rcu_putref() under
-msq->q_perm->lock and RCU, while freequeue() calls it while it holds only
-'rw_mutex', so there is no sinchronization between them. Two function
-decrements '2' non-atomically, they both can get '0' as result.
+According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
+register error issue", All USB register write operations must
+use the ARM SWP instruction. So, we implement a special ehci_write
+for imx28.
 
-do_msgsnd()					freequeue()
+Discussion for it at below:
+http://marc.info/?l=linux-usb&m=137996395529294&w=2
 
-msq = msg_lock_check(ns, msqid);
-...
-ipc_rcu_getref(msq);
-msg_unlock(msq);
-schedule();
-						(caller locks spinlock)
-						expunge_all(msq, -EIDRM);
-						ss_wakeup(&msq->q_senders, 1);
-						msg_rmid(ns, msq);
-						msg_unlock(msq);
-ipc_lock_by_ptr(&msq->q_perm);
-ipc_rcu_putref(msq);				ipc_rcu_putref(msq);
-< both may get get --(...)->refcount == 0 >
+Without this patcheset, imx28 works unstable at high AHB bus loading.
+If the bus loading is not high, the imx28 usb can work well at the most
+of time. There is a IC errata for this problem, usually, we consider
+IC errata is a problem not a new feature, and this workaround is needed
+for that, so we need to add them to stable tree 3.11+.
 
-This patch locks ipc_lock and RCU around ipc_rcu_putref in freequeue.
-( RCU protects memory for spin_unlock() )
-
-Similar bugs might be in other users of ipc_rcu_putref().
-
-In the mainline this has been fixed in v3.10 indirectly in commmit
-6062a8dc0517bce23e3c2f7d2fea5e22411269a3
-("ipc,sem: fine grained locking for semtimedop") by Rik van Riel.
-That commit optimized locking and converted refcount into atomic.
-
-I'm not sure that anybody should care about this bug: it's very-very unlikely
-and no longer exists in actual mainline. I've found this just by looking into
-the code, probably this never happens in real life.
-
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: robert.hodaszi@digi.com
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- ipc/msg.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/ehci.h | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 7385de2..25f1a61 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -296,7 +296,9 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- 	}
- 	atomic_sub(msq->q_cbytes, &ns->msg_bytes);
- 	security_msg_queue_free(msq);
-+	ipc_lock_by_ptr(&msq->q_perm);
- 	ipc_rcu_putref(msq);
-+	ipc_unlock(&msq->q_perm);
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 2694ed6..b272634 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -149,6 +149,7 @@ struct ehci_hcd {			/* one per controller */
+ 	unsigned		use_dummy_qh:1;	/* AMD Frame List table quirk*/
+ 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
+ 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
++	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
+ 
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
+@@ -656,6 +657,18 @@ static inline unsigned int ehci_readl(const struct ehci_hcd *ehci,
+ #endif
  }
  
- /*
++#ifdef CONFIG_SOC_IMX28
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
++}
++#else
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++}
++#endif
+ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		const unsigned int val, __u32 __iomem *regs)
+ {
+@@ -664,7 +677,10 @@ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		writel_be(val, regs) :
+ 		writel(val, regs);
+ #else
+-	writel(val, regs);
++	if (ehci->imx28_write_fix)
++		imx28_ehci_writel(val, regs);
++	else
++		writel(val, regs);
+ #endif
+ }
+ 
 -- 
 1.9.1
 
