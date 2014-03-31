@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbaCaJJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 05:09:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34123 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365AbaCaJJM (ORCPT
+	id S1753726AbaCaJKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 05:10:15 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:48909 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498AbaCaJKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 05:09:12 -0400
-Date: Mon, 31 Mar 2014 10:09:08 +0100
-From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
-To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH < v3.10] ipc/msg: fix race around refcount
-Message-ID: <20140331090908.GC5042@hercules>
-References: <20140326101218.11221.74072.stgit@buzz>
+	Mon, 31 Mar 2014 05:10:13 -0400
+Message-ID: <533930EF.8080703@hitachi.com>
+Date: Mon, 31 Mar 2014 18:10:07 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140326101218.11221.74072.stgit@buzz>
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.org>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 14/28] ktap: add runtime/kp_events.[c|h]
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com> <1396014469-5937-15-git-send-email-jovi.zhangwei@gmail.com>
+In-Reply-To: <1396014469-5937-15-git-send-email-jovi.zhangwei@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 02:12:19PM +0400, Konstantin Khlebnikov wrote:
-> In older kernels (before v3.10) ipc_rcu_hdr->refcount was non-atomic int.
-> There was possuble double-free bug: do_msgsnd() calls ipc_rcu_putref() under
-> msq->q_perm->lock and RCU, while freequeue() calls it while it holds only
-> 'rw_mutex', so there is no sinchronization between them. Two function
-> decrements '2' non-atomically, they both can get '0' as result.
+(2014/03/28 22:47), Jovi Zhangwei wrote:
+> kp_events.c handle ktap events management(registry, destroy, event callback)
 > 
-> do_msgsnd()					freequeue()
+> This file is core event management interface between ktap and kernel.
 > 
-> msq = msg_lock_check(ns, msqid);
-> ...
-> ipc_rcu_getref(msq);
-> msg_unlock(msq);
-> schedule();
-> 						(caller locks spinlock)
-> 						expunge_all(msq, -EIDRM);
-> 						ss_wakeup(&msq->q_senders, 1);
-> 						msg_rmid(ns, msq);
-> 						msg_unlock(msq);
-> ipc_lock_by_ptr(&msq->q_perm);
-> ipc_rcu_putref(msq);				ipc_rcu_putref(msq);
-> < both may get get --(...)->refcount == 0 >
+> Exposed functions:
+> 1). kp_events_init/kp_events_exit
 > 
-> This patch locks ipc_lock and RCU around ipc_rcu_putref in freequeue.
-> ( RCU protects memory for spin_unlock() )
+> 2). kp_event_create_kprobe
+>         create kprobe event, for example:
+>                 kdebug.kprobe("SyS_futex", function () {})
 > 
-> Similar bugs might be in other users of ipc_rcu_putref().
+> 3). kp_event_create_tracepoint
+>         create tracepoint event, for example"
+>                 kdebug.tracepoint("sys_futex_enter", function () {})
 > 
-> In the mainline this has been fixed in v3.10 indirectly in commmit
-> 6062a8dc0517bce23e3c2f7d2fea5e22411269a3
-> ("ipc,sem: fine grained locking for semtimedop") by Rik van Riel.
-> That commit optimized locking and converted refcount into atomic.
+> 4). kp_event_create
+>         create perf backend event, for example:
+>                 trace sched:sched_switch { print(argstr) }
 > 
-> I'm not sure that anybody should care about this bug: it's very-very unlikely
-> and no longer exists in actual mainline. I've found this just by looking into
-> the code, probably this never happens in real life.
+>         It call kernel function 'perf_event_create_kernel_counter' to
+>         register event(tracepoint/kprobe/uprobe)
 > 
-> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+> 5). kp_event_getarg
+>         get argument of event, from arg0 to arg9,
+>         only can be called in probe context.
+>                 trace sched:sched_switch { print(arg0, arg1) }
+> 
+> 6). kp_event_stringify/kp_event_tostr
+>         stringify argstr, sometimes if store argstr as key to table,
+>         then it need to stringify firstly, like below:
+>                 var s={} trace sched:sched_switch { s[argstr] += 1 }
+>         (This is quite rare usage, but ktap support it)
+> 
+> Note:
+> Why ktap support 'kdebug.kprobe' and 'kdebug.tracepoint' when
+> it already support perf backend event(trace xxx {})?
+> 
+> Because benchmark shows raw kprobe and tracpoint interface is faster
+> than perf backed tracing, nearly 10+%, it's more fair to compare
+> with Systemtap by raw tracing syntax, not perf backend tracing.
+>
 
-Thank you, I'm queuing this for the 3.5 kernel.
+Do we really need it just for a +10% performance? I doubt that.
+I think the benefit point of ktap is "dynamic & simple programmable
+tracer in kernel", not the good performance at least at this point.
+Thus I think we should start ktap only with perf backend.
 
-Cheers,
---
-Luís
+Thank you,
 
-> ---
->  ipc/msg.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/ipc/msg.c b/ipc/msg.c
-> index 7385de2..25f1a61 100644
-> --- a/ipc/msg.c
-> +++ b/ipc/msg.c
-> @@ -296,7 +296,9 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
->  	}
->  	atomic_sub(msq->q_cbytes, &ns->msg_bytes);
->  	security_msg_queue_free(msq);
-> +	ipc_lock_by_ptr(&msq->q_perm);
->  	ipc_rcu_putref(msq);
-> +	ipc_unlock(&msq->q_perm);
->  }
->  
->  /*
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
