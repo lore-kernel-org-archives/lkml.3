@@ -1,120 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaCaQt2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 12:49:28 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:43067 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034AbaCaQtY (ORCPT
+	id S1754123AbaCaQue (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 12:50:34 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:38185 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012AbaCaQud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 12:49:24 -0400
+	Mon, 31 Mar 2014 12:50:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140331114459.4b3638f8@alan.etchedpixels.co.uk>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
- <20140331114459.4b3638f8@alan.etchedpixels.co.uk>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 31 Mar 2014 09:49:03 -0700
-Message-ID: <CALCETrX7mxsWTsvcZJ=i0GOPvUp7TRvbrgNCq3Ajk8YK7FFnaA@mail.gmail.com>
-Subject: Re: Thoughts on credential switching
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Jim Lieb <jlieb@panasas.com>, Jeff Layton <jlayton@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>, bfields@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+In-Reply-To: <CAG88wWYDHpYckgP=U+==_6A9-GLnw7PjiD=g-n7qbKCZbz-x4w@mail.gmail.com>
+References: <cover.1396111568.git.decot@googlers.com> <2fd338e34d809af14353a03bc1edd0935f332faf.1396111568.git.decot@googlers.com>
+ <20140329183628.509f1239@nehalam.linuxnetplumber.net> <1396144245.29410.2.camel@edumazet-glaptop2.roam.corp.google.com>
+ <CAG88wWYDHpYckgP=U+==_6A9-GLnw7PjiD=g-n7qbKCZbz-x4w@mail.gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Mon, 31 Mar 2014 09:49:52 -0700
+Message-ID: <CAGVrzcZvR+MWBVTp5g_DoMWe4i7Z4EiUmwpCGBcT9pgqztXu2g@mail.gmail.com>
+Subject: Re: [PATCH net-next v2] net-sysfs: expose number of carrier on/off changes
+To: David Decotigny <decot@googlers.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Dumazet <edumazet@google.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Weilong Chen <chenweilong@huawei.com>, Jiri Pirko <jiri@resnulli.us>,
+        Amir Vadai <amirv@mellanox.com>, Michael Dalton <mwdalton@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 31, 2014 3:45 AM, "One Thousand Gnomes"
-<gnomes@lxorguk.ukuu.org.uk> wrote:
->
-> On Wed, 26 Mar 2014 17:23:24 -0700
-> Andy Lutomirski <luto@amacapital.net> wrote:
->
-> > Hi various people who care about user-space NFS servers and/or
-> > security-relevant APIs.
-> >
-> > I propose the following set of new syscalls:
-> >
-> > int credfd_create(unsigned int flags): returns a new credfd that
-> > corresponds to current's creds.
-> >
-> > int credfd_activate(int fd, unsigned int flags): Change current's
-> > creds to match the creds stored in fd.  To be clear, this changes both
-> > the "subjective" and "objective" (aka real_cred and cred) because
-> > there aren't any real semantics for what happens when userspace code
-> > runs with real_cred != cred.
->
-> What is the sematic of a simultaneous ptrace racing a credfd_activate on
-> another processor core ?
+Hi David,
 
-Exactly the same as for the raw syscall setresuid.  That is, we
-require sequential consistency.  If the kernel fails to provide
-sequential consistency, it's a bug.
+2014-03-30 8:18 GMT-07:00 David Decotigny <decot@googlers.com>:
+> Hi all,
+>
+> As Eric mentioned, this is a per-link counter. I am not sure an
+> aggregate stat would be as useful.
+>
+> As suggested by Florian, I'm planning to add a doc. As far as I can
+> tell, I think it goes beyond just documenting this new counter: I
+> believe sysfs-class-net needs to be added as a whole.
+
+Right, I sort of started to do that here:
+http://patchwork.ozlabs.org/patch/334888/
+Once this gets accepted, I plan on documenting the other sysfs
+attributes in statistics/ and queues/ in particular
 
 >
-> What are the rules for simultaneous threads doing I/O and and credential
-> changes ?
-
-None.  credfd_activate affects only the calling thread.
-
+> Stephen: I have a patch for iproute2, I was planning to send it after
+> we're done with this one, unless you want it now. Also, should I
+> document this IFLA thing, where would be best?
 >
-> What is the rule for a faulting of an mmapped page in a multithreaded app
-> one thread of which has changed credentials ?
+> On Sat, Mar 29, 2014 at 6:50 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> On Sat, 2014-03-29 at 18:36 -0700, Stephen Hemminger wrote:
+>>> On Sat, 29 Mar 2014 09:48:35 -0700
+>>> David Decotigny <decot@googlers.com> wrote:
+>>>
+>>> > This allows to monitor carrier on/off transitions and detect link
+>>> > flapping issues:
+>>> >  - new /sys/class/net/X/carrier_changes
+>>> >  - new rtnetlink IFLA_CARRIER_CHANGES (getlink)
+>>> >
+>>> > Tested:
+>>> >   - grep . /sys/class/net/*/carrier_changes
+>>> >     + ip link set dev X down/up
+>>> >     + plug/unplug cable
+>>> >   - updated iproute2: prints IFLA_CARRIER_CHANGES
+>>> >   - iproute2 20121211-2 (debian): unchanged behavior
+>>> >
+>>> > Signed-off-by: David Decotigny <decot@googlers.com>
+>>>
+>>> Is there a related SNMP MIB variable? should there be?
+>>
+>> I don't think we have any SNMP MIB variable for devices ?
+>>
+>> It seems "ip link" is the facto standard.
+>>
+>> (BTW we put BusyPollRxPackets in TcpExt group, this was an error IMHO)
+>>
+>>
 
-Same as in current kernels.  Note that checking credentials in
-readpage, etc. is generally a bug.
 
->
-> Who owns a file created while you are changing credentials ?
 
-Can't happen.  See above.
-
->
-> >  - credfd_activate fails (-EINVAL) if dumpable.  This is because we
-> > don't want a privileged daemon to be ptraced while impersonating
-> > someone else.
->
-> That's one of the obvious problems but if you have that problem then
-> you've got races against signals and ptrace etc to deal with.
->
-> One way to implement it I think safely but which requires a fair bit more
-> work elsewhere is to apply the debug and signal type checks as
->
->    'you may only do X if you also posess the right to do so for *all*
->     credentials accessible to this task'
->
-> which I think is the correct logical check.
-
-Do we include credfd fds sitting in Unix sockets?
-
-More generally, there are plenty of cases where ptracing something
-might give you access to one of its fds that you shouldn't normally
-have access to.  Even real file fds are like this, and they could come
-from outside a namespace, they could be a result of odd selinux
-policy, etc.
-
-The only real new issue is that, while using a subsidiary credential,
-you don't want people who couldn't ptrace you before to suddenly be
-able to ptrace you.  This is where "subjective" and "objective"
-credentials came from, but the current in-kernel implementation is
-really half-baked.  Fixing it for real will probably run into all
-kinds of funny corner cases involving the existing syscalls, and it
-would be nice to have a way to handle this that doesn't involve
-auditing every commit_creds caller.
-
-Hmm.  What if we had initial_creds and creds, and initial_creds never
-changed unless explicitly requested.  There wouldn't be any way to
-revert to initial_creds, but may_ptrace would check initial_creds
-*and* creds.  This is a little hacky, and it might break Android (I'm
-not really sure how the zygote thing works), but it could do the
-trick.
-
-Or we can rely on dumpable, which I think can prevent unprivileged
-ptracers from attaching.
-
---Andy
+-- 
+Florian
