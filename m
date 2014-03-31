@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaCaV6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 17:58:04 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64957 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbaCaV6C (ORCPT
+	id S1751814AbaCaV6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 17:58:18 -0400
+Received: from smtprelay0135.hostedemail.com ([216.40.44.135]:44762 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751669AbaCaV6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 17:58:02 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5339E4E7.5080200@roeck-us.net>
-Date: Mon, 31 Mar 2014 14:57:59 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>, akpm@linux-foundation.org
-Subject: Re: [PATCH 3.2 000/200] 3.2.56-rc1 review
-References: <lsq.1396221814.369444335@decadent.org.uk>	 <20140331004857.GA10898@roeck-us.net> <1396227882.1241.36.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1396227882.1241.36.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Mar 2014 17:58:13 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:982:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3871:3874:5007:6119:6261:10004:10026:10848:11658:11914:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: spade47_d68bd90dfe45
+X-Filterd-Recvd-Size: 1933
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] checkpatch: Don't warn on bitfield spaces around :
+Date: Mon, 31 Mar 2014 14:58:08 -0700
+Message-Id: <ca5f8159ab8b0f66202b50be5fae07c185198ee4.1396302777.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
+References: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2014 06:04 PM, Ben Hutchings wrote:
-> On Sun, 2014-03-30 at 17:49 -0700, Guenter Roeck wrote:
->> On Mon, Mar 31, 2014 at 12:23:34AM +0100, Ben Hutchings wrote:
->>> This is the start of the stable review cycle for the 3.2.56 release.
->>> There are 200 patches in this series, which will be posted as responses
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Wed Apr 02 00:00:00 UTC 2014.
->>> Anything received after that time might be too late.
->>>
->> Build results:
->> 	total: 116 pass: 87 skipped: 22 fail: 7
->>
->> Qemu tests all passed. Results are as expected.
->>
->> Details are available at http://server.roeck-us.net:8010/builders.
->
+This test prevents code from being aligned around the :
+for easy visual counting of bitfield lengths.
 
-My pleasure.
+ie:
+	int foo		: 1,
+	int bar		: 2,
+	int foobar	:29;
 
-Just for completeness ... everything still builds after you dropped a patch.
-qemu tests are also still ok.
+should be acceptable so remove the test.
 
-Guenter
+Suggested-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index ac0169c..70c932b 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3153,10 +3153,13 @@ sub process {
+ 				# // is a comment
+ 				} elsif ($op eq '//') {
+ 
++				#   :   when part of a bitfield
++				} elsif ($opv eq ':B') {
++					# skip the bitfield test for now
++
+ 				# No spaces for:
+ 				#   ->
+-				#   :   when part of a bitfield
+-				} elsif ($op eq '->' || $opv eq ':B') {
++				} elsif ($op eq '->') {
+ 					if ($ctx =~ /Wx.|.xW/) {
+ 						if (ERROR("SPACING",
+ 							  "spaces prohibited around that '$op' $at\n" . $hereptr)) {
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
