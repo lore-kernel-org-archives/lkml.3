@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaCaNbe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 09:31:34 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:54120 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505AbaCaNb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 09:31:29 -0400
-Message-ID: <1396272676.7843.1.camel@phoenix>
-Subject: [PATCH 1/2] mfd: bcm590xx: Fix modalias prefix
-From: Axel Lin <axel.lin@ingics.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Matt Porter <mporter@linaro.org>, linux-kernel@vger.kernel.org
-Date: Mon, 31 Mar 2014 21:31:16 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754807AbaCaNbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 09:31:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754493AbaCaNbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 09:31:31 -0400
+Date: Mon, 31 Mar 2014 09:31:20 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, bfields@fieldses.org, matthew@wil.cx
+Subject: [GIT PULL] please pull file locking changes for 3.15
+Message-ID: <20140331093120.10aeaba6@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/Ha=+CRBN3swNDl2EaxsJLz3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a i2c driver, so uses i2c prefix in modalias.
+--Sig_/Ha=+CRBN3swNDl2EaxsJLz3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/mfd/bcm590xx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The following changes since commit 29723adee11804b548903ddb1db666cf4a60f60e:
 
-diff --git a/drivers/mfd/bcm590xx.c b/drivers/mfd/bcm590xx.c
-index e9a33c7..40c0dd3 100644
---- a/drivers/mfd/bcm590xx.c
-+++ b/drivers/mfd/bcm590xx.c
-@@ -90,4 +90,4 @@ module_i2c_driver(bcm590xx_i2c_driver);
- MODULE_AUTHOR("Matt Porter <mporter@linaro.org>");
- MODULE_DESCRIPTION("BCM590xx multi-function driver");
- MODULE_LICENSE("GPL v2");
--MODULE_ALIAS("platform:bcm590xx");
-+MODULE_ALIAS("i2c:bcm590xx");
--- 
-1.8.3.2
+  locks: make locks_mandatory_area check for file-private locks (2014-03-31=
+ 08:24:43 -0400)
 
+are available in the git repository at:
 
+  git://git.samba.org/jlayton/linux.git locks-3.15
 
+for you to fetch changes up to 29723adee11804b548903ddb1db666cf4a60f60e:
+
+  locks: make locks_mandatory_area check for file-private locks (2014-03-31=
+ 08:24:43 -0400)
+
+----------------------------------------------------------------
+(from the branch description for locks-3.15 local branch)
+
+file locking patches for 3.15
+
+----------------------------------------------------------------
+Highlights:
+
+- maintainership change for fs/locks.c. Willy's not interested in
+  maintaining it these days, and is OK with Bruce and I taking it.
+- fix for open vs. setlease race that Al ID'ed
+- cleanup and consolidation of file locking code
+- eliminate unneeded BUG() call
+- merge of file-private lock implementation
+
+--=20
+Jeff Layton <jlayton@redhat.com>
+
+--Sig_/Ha=+CRBN3swNDl2EaxsJLz3
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTOW4pAAoJEAAOaEEZVoIVTDAQALLpq4yFuvqteW3DGYjAEm0i
+jWCmqC9rpNhmt0UaX0TuF22pW+AyuXsL5/eQ1haa7IUKRCZlqzENYbzho1ByNqZF
+dDMp2GskUv1eh3MuEtoQHWw+lTIygF6xmmAnfSB7h60Chv6u4qDOYz7D2HlynPOZ
+4ALdTJHGzwIm5FnHSXkiAJTAwJUYRrz0iwGn4L6vCnlTX88JyOeFmJFTdsrqQPEF
+XEZvdIKEXeWU/QCl3KaknDG0hq3LRHB2XVZxs3GoHOjBfYzv6RrCwWydy9PCCaVk
+O8dhIWzvf83jNJj/+kpTfT5fZP6yI48RuA40RDit4CUAsC38aB24uEDe9YqS+27h
+dNGdhdbzJC1W5S1A+VKzDW2NCL9nAd8DmLyr6oJHxeYrA5AkW5YgyUymfXGn+63M
+RlulXccG9ttuIFZIyByFnkLn1BQKwr6ZpbnsVmpIWgVJ1u4l/TpCIEv85Kv9e/78
+09xaYXwnyywxkz92Tt9QpZCk6dBZ0JTHgt9dXJT6XaFGoMe+XlfcDQn09RYXuxYl
+nIr+EauqZKu2osIUz0mqnA7s/gzvpndQh4Gs6pRvR7M0JnCVaFCVaDUQS0ui3MRO
+U/jlzPMYnJBMgVTaf/2FNPsG3cxa10+lgki3bmKgOuCoQN8ck4SOjedlEmRe0yQk
+zxeL6LKpRzayEI0OrGNB
+=PMIe
+-----END PGP SIGNATURE-----
+
+--Sig_/Ha=+CRBN3swNDl2EaxsJLz3--
