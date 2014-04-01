@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaDAMWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:22:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42121 "EHLO
+	id S1752003AbaDAMXE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:23:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42112 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393AbaDALQN (ORCPT
+	with ESMTP id S1751544AbaDALQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:16:13 -0400
+	Tue, 1 Apr 2014 07:16:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@linaro.org>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 014/144] regulator: core: Replace direct ops->enable usage
-Date: Tue,  1 Apr 2014 12:13:38 +0100
-Message-Id: <1396350948-29910-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 013/144] mac80211: don't validate unchanged AP bandwidth while tracking
+Date: Tue,  1 Apr 2014 12:13:37 +0100
+Message-Id: <1396350948-29910-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,72 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 30c219710358c5cca2f8bd2e9e547c6aadf7cf8b upstream.
+commit 963a1852fbac4f75a2d938fa2e734ef1e6d4c044 upstream.
 
-There are some direct ops->enable in the regulator core driver. This is
-a potential issue as the function _regulator_do_enable() handles gpio
-regulators and the normal ops->enable calls. These gpio regulators are
-simply ignored when ops->enable is called directly.
+The MLME code in mac80211 must track whether or not the AP changed
+bandwidth, but if there's no change while tracking it shouldn't do
+anything, otherwise regulatory updates can make it impossible to
+connect to certain APs if the regulatory database doesn't match the
+information from the AP. See the precise scenario described in the
+code.
 
-One possible bug is that boot-on and always-on gpio regulators are not
-enabled on registration.
+This still leaves some possible problems with CSA or if the AP
+actually changed bandwidth, but those cases are less common and
+won't completely prevent using it.
 
-This patch replaces all ops->enable calls by _regulator_do_enable.
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=70881
 
-[Handle missing enable operations -- broonie]
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-
-regulator: Handle invalid enable operation for always/boot on regulators
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-and-tested-by: Nate Carlson <kernel@natecarlson.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/regulator/core.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/mac80211/mlme.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 288c75a..b94784e 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -919,6 +919,8 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
- 	return 0;
- }
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index 7a98d52..59f69fd 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -331,6 +331,28 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_data *sdata,
+ 	ret = 0;
  
-+static int _regulator_do_enable(struct regulator_dev *rdev);
+ out:
++	/*
++	 * When tracking the current AP, don't do any further checks if the
++	 * new chandef is identical to the one we're currently using for the
++	 * connection. This keeps us from playing ping-pong with regulatory,
++	 * without it the following can happen (for example):
++	 *  - connect to an AP with 80 MHz, world regdom allows 80 MHz
++	 *  - AP advertises regdom US
++	 *  - CRDA loads regdom US with 80 MHz prohibited (old database)
++	 *  - the code below detects an unsupported channel, downgrades, and
++	 *    we disconnect from the AP in the caller
++	 *  - disconnect causes CRDA to reload world regdomain and the game
++	 *    starts anew.
++	 * (see https://bugzilla.kernel.org/show_bug.cgi?id=70881)
++	 *
++	 * It seems possible that there are still scenarios with CSA or real
++	 * bandwidth changes where a this could happen, but those cases are
++	 * less common and wouldn't completely prevent using the AP.
++	 */
++	if (tracking &&
++	    cfg80211_chandef_identical(chandef, &sdata->vif.bss_conf.chandef))
++		return ret;
 +
- /**
-  * set_machine_constraints - sets regulator constraints
-  * @rdev: regulator source
-@@ -975,10 +977,9 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 	/* If the constraints say the regulator should be on at this point
- 	 * and we have control then make sure it is enabled.
- 	 */
--	if ((rdev->constraints->always_on || rdev->constraints->boot_on) &&
--	    ops->enable) {
--		ret = ops->enable(rdev);
--		if (ret < 0) {
-+	if (rdev->constraints->always_on || rdev->constraints->boot_on) {
-+		ret = _regulator_do_enable(rdev);
-+		if (ret < 0 && ret != -EINVAL) {
- 			rdev_err(rdev, "failed to enable\n");
- 			goto out;
- 		}
-@@ -3805,9 +3806,8 @@ int regulator_suspend_finish(void)
- 		struct regulator_ops *ops = rdev->desc->ops;
- 
- 		mutex_lock(&rdev->mutex);
--		if ((rdev->use_count > 0  || rdev->constraints->always_on) &&
--				ops->enable) {
--			error = ops->enable(rdev);
-+		if (rdev->use_count > 0  || rdev->constraints->always_on) {
-+			error = _regulator_do_enable(rdev);
- 			if (error)
- 				ret = error;
- 		} else {
+ 	/* don't print the message below for VHT mismatch if VHT is disabled */
+ 	if (ret & IEEE80211_STA_DISABLE_VHT)
+ 		vht_chandef = *chandef;
 -- 
 1.9.1
 
