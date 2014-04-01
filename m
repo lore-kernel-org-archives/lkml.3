@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaDAEHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:07:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53778 "EHLO
+	id S1752377AbaDAEJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:09:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53801 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaDAEHQ (ORCPT
+	with ESMTP id S1752349AbaDAEJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:07:16 -0400
+	Tue, 1 Apr 2014 00:09:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 4/9] Input: synaptics - add manual min/max quirk for ThinkPad X240
-Date: Mon, 31 Mar 2014 21:08:18 -0700
-Message-Id: <20140401040755.726152928@linuxfoundation.org>
+        John Sullivan <jsrhbz@kanargh.force9.co.uk>,
+        "Theodore Tso" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 1/9] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+Date: Mon, 31 Mar 2014 21:08:15 -0700
+Message-Id: <20140401040754.940984895@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040754.479538406@linuxfoundation.org>
 References: <20140401040754.479538406@linuxfoundation.org>
@@ -27,37 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
+commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
 
-This extends Benjamin Tissoires manual min/max quirk table with support for
-the ThinkPad X240.
+Use cmpxchg() to atomically set i_flags instead of clearing out the
+S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
+EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
+where an immutable file has the immutable flag cleared for a brief
+window of time.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/ext4/inode.c        |   15 +++++++++------
+ include/linux/bitops.h |   15 +++++++++++++++
+ 2 files changed, 24 insertions(+), 6 deletions(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1507,6 +1507,14 @@ static const struct dmi_system_id min_ma
- 		.driver_data = (int []){1024, 5052, 2258, 4832},
- 	},
- 	{
-+		/* Lenovo ThinkPad X240 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
-+		},
-+		.driver_data = (int []){1232, 5710, 1156, 4696},
-+	},
-+	{
- 		/* Lenovo ThinkPad T440s */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -38,6 +38,7 @@
+ #include <linux/slab.h>
+ #include <linux/ratelimit.h>
+ #include <linux/aio.h>
++#include <linux/bitops.h>
+ 
+ #include "ext4_jbd2.h"
+ #include "xattr.h"
+@@ -4044,18 +4045,20 @@ int ext4_get_inode_loc(struct inode *ino
+ void ext4_set_inode_flags(struct inode *inode)
+ {
+ 	unsigned int flags = EXT4_I(inode)->i_flags;
++	unsigned int new_fl = 0;
+ 
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+ 	if (flags & EXT4_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
++		new_fl |= S_SYNC;
+ 	if (flags & EXT4_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
++		new_fl |= S_APPEND;
+ 	if (flags & EXT4_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
++		new_fl |= S_IMMUTABLE;
+ 	if (flags & EXT4_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
++		new_fl |= S_NOATIME;
+ 	if (flags & EXT4_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++		new_fl |= S_DIRSYNC;
++	set_mask_bits(&inode->i_flags,
++		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
+ }
+ 
+ /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64
+ 
+ #ifdef __KERNEL__
+ 
++#ifndef set_mask_bits
++#define set_mask_bits(ptr, _mask, _bits)	\
++({								\
++	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
++	typeof(*ptr) old, new;					\
++								\
++	do {							\
++		old = ACCESS_ONCE(*ptr);			\
++		new = (old & ~mask) | bits;			\
++	} while (cmpxchg(ptr, old, new) != old);		\
++								\
++	new;							\
++})
++#endif
++
+ #ifndef find_last_bit
+ /**
+  * find_last_bit - find the last set bit in a memory region
 
 
