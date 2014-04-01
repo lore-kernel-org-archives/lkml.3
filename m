@@ -1,33 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaDALmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:42:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21679 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaDALmf (ORCPT
+	id S1752670AbaDALSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:18:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42558 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623AbaDALSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:42:35 -0400
-Date: Tue, 1 Apr 2014 14:42:17 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] checkpatch: Don't warn on bitfield spaces around :
-Message-ID: <20140401114217.GD18506@mwanda>
-References: <bf056087fcb8139db3bbf6c187555ab64758f9d4.1396302777.git.joe@perches.com>
- <ca5f8159ab8b0f66202b50be5fae07c185198ee4.1396302777.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ca5f8159ab8b0f66202b50be5fae07c185198ee4.1396302777.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 1 Apr 2014 07:18:06 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 095/144] drm/radeon/cik: properly set sdma ring status on disable
+Date: Tue,  1 Apr 2014 12:14:59 +0100
+Message-Id: <1396350948-29910-96-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Joe.
+3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
 
-regards,
-dan carpenter
+------------------
+
+From: Alex Deucher <alexander.deucher@amd.com>
+
+commit 7b1bbe883b3ed962ca2be4daf321f318f5091340 upstream.
+
+When we disable the rings, set the status properly.  If
+not other code pathes may try and use the rings which are
+not functional at this point.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.11:
+  - cik_sdma_gfx_stop() is defined in file cik.c ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/radeon/cik.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 8748a86..405bf0c 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -3349,6 +3349,8 @@ static void cik_sdma_gfx_stop(struct radeon_device *rdev)
+ 		WREG32(SDMA0_GFX_RB_CNTL + reg_offset, rb_cntl);
+ 		WREG32(SDMA0_GFX_IB_CNTL + reg_offset, 0);
+ 	}
++	rdev->ring[R600_RING_TYPE_DMA_INDEX].ready = false;
++	rdev->ring[CAYMAN_RING_TYPE_DMA1_INDEX].ready = false;
+ }
+ 
+ /**
+-- 
+1.9.1
 
