@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaDAQs6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:48:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44333 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaDAQJE (ORCPT
+	id S1752341AbaDAQuD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:50:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43969 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751477AbaDAQt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:04 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 18/86] ipv6: reuse ip6_frag_id from ip6_ufo_append_data
-Date: Tue,  1 Apr 2014 09:07:31 -0700
-Message-Id: <1396368519-12728-19-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 1 Apr 2014 12:49:58 -0400
+Message-ID: <1396370989.22689.7.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.2 000/200] 3.2.56-rc1 review
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Date: Tue, 01 Apr 2014 17:49:49 +0100
+In-Reply-To: <8761mt893q.wl%satoru.takeuchi@gmail.com>
+References: <lsq.1396221814.369444335@decadent.org.uk>
+	 <20140331004857.GA10898@roeck-us.net>
+	 <8761mt893q.wl%satoru.takeuchi@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-RsrVUU9N2iXXk0mcQKBm"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--=-RsrVUU9N2iXXk0mcQKBm
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+On Tue, 2014-04-01 at 22:36 +0900, Satoru Takeuchi wrote:
+> At Sun, 30 Mar 2014 17:49:46 -0700,
+> Guenter Roeck wrote:
+> >=20
+> > On Mon, Mar 31, 2014 at 12:23:34AM +0100, Ben Hutchings wrote:
+> > > This is the start of the stable review cycle for the 3.2.56 release.
+> > > There are 200 patches in this series, which will be posted as respons=
+es
+> > > to this one.  If anyone has any issues with these being applied, plea=
+se
+> > > let me know.
+> > >=20
+> > > Responses should be made by Wed Apr 02 00:00:00 UTC 2014.
+> > > Anything received after that time might be too late.
+> > >=20
+> > Build results:
+> > 	total: 116 pass: 87 skipped: 22 fail: 7
+> >=20
+> > Qemu tests all passed. Results are as expected.
+> >=20
+> > Details are available at http://server.roeck-us.net:8010/builders.
+> >=20
+> > Guenter
+>=20
+> This kernel passed my test.
+[...]
 
-[ Upstream commit 916e4cf46d0204806c062c8c6c4d1f633852c5b6 ]
+Thanks.
 
-Currently we generate a new fragmentation id on UFO segmentation. It
-is pretty hairy to identify the correct net namespace and dst there.
-Especially tunnels use IFF_XMIT_DST_RELEASE and thus have no skb_dst
-available at all.
+Ben.
 
-This causes unreliable or very predictable ipv6 fragmentation id
-generation while segmentation.
+--=20
+Ben Hutchings
+Computers are not intelligent.	They only think they are.
 
-Luckily we already have pregenerated the ip6_frag_id in
-ip6_ufo_append_data and can use it here.
+--=-RsrVUU9N2iXXk0mcQKBm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ipv6/udp_offload.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/net/ipv6/udp_offload.c b/net/ipv6/udp_offload.c
-index 0c8934a..38bfafd 100644
---- a/net/ipv6/udp_offload.c
-+++ b/net/ipv6/udp_offload.c
-@@ -97,7 +97,7 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_buff *skb,
- 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
- 	fptr->nexthdr = nexthdr;
- 	fptr->reserved = 0;
--	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
-+	fptr->identification = skb_shinfo(skb)->ip6_frag_id;
- 
- 	/* Fragment the skb. ipv6 header and the remaining fields of the
- 	 * fragment header are updated in ipv6_gso_segment()
--- 
-1.8.3.2
+iQIVAwUAUzruLee/yOyVhhEJAQpRTg/+Ke56ewW4rniLeOLOi5k6X98w5HkOpB4n
+5fdXjpnnVMZC2KVJP6tavL/BV3TyhMg1zf9WrF1Zovao4zdYX1RM2xtznzMM676I
+OvRKVVIb3UfkTzC1JQ5vdy7hAAlPZG4e+tRTxXZBFZyCsUckXH49c3YOQhTAsWcd
+7yesO0l9SSFBun0tZiiknUKh8Lv0x7AN7DcrEqm6YSf61HstmRevpNlndQGIB193
+hxy6rgUwDZFeMsRc4u1a7lsOJX7aetuulgml72FdWLU3Ls+r8BqgZbNBePf7A0/K
+VF1CWdeMm6LxfBPgxs2LLRjpekKgzs0ryV3/YRrv1yOJBtgEkEEGFpM6FxGMk9OJ
+rNaYhV3qzmu6H+ACZlbr34CSEi4OaVGCvpeL8C7lJgFXq4KJ6D1sG1+he2FDTHG5
+lDaljOitIEJwTr4j3AVjaXppDt+FCNA3K00vPpkzHyBctI8FmGAROM3K0CEIWu8Y
+F5O54dIT9TPVG1/Mm/jFXh4YVbUd1FMR2UkONIBkKFpbjzx/6csSjDPaPbldwDT/
+CfRMCxmtf97YwK5rgXI/+6AGB1cVNACz8WMp9NzHyhwN1n2Xl+rAlm5ZjO4qohu6
+dOkO011YBxJoX/uaYsbV7a4fXJCegvVhycxabYLOqimiMe4t5iT9ZA/KenHNS37s
+mn3pYyRDiT8=
+=bBFv
+-----END PGP SIGNATURE-----
 
+--=-RsrVUU9N2iXXk0mcQKBm--
