@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaDAQJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:09:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44450 "EHLO
+	id S1752490AbaDAQJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:09:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44443 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446AbaDAQJv (ORCPT
+	with ESMTP id S1752446AbaDAQJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:51 -0400
+	Tue, 1 Apr 2014 12:09:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laura Abbott <lauraa@codeaurora.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Anton Blanchard <anton@samba.org>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 66/86] mm/compaction: break out of loop on !PageBuddy in isolate_freepages_block
-Date: Tue,  1 Apr 2014 09:08:19 -0700
-Message-Id: <1396368519-12728-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 60/86] net: unix socket code abuses csum_partial
+Date: Tue,  1 Apr 2014 09:08:13 -0700
+Message-Id: <1396368519-12728-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -30,122 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laura Abbott <lauraa@codeaurora.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit 2af120bc040c5ebcda156df6be6a66610ab6957f upstream.
+commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
 
-We received several reports of bad page state when freeing CMA pages
-previously allocated with alloc_contig_range:
+The unix socket code is using the result of csum_partial to
+hash into a lookup table:
 
-    BUG: Bad page state in process Binder_A  pfn:63202
-    page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
-    page flags: 0x40080068(uptodate|lru|active|swapbacked)
+	unix_hash_fold(csum_partial(sunaddr, len, 0));
 
-Based on the page state, it looks like the page was still in use.  The
-page flags do not make sense for the use case though.  Further debugging
-showed that despite alloc_contig_range returning success, at least one
-page in the range still remained in the buddy allocator.
+csum_partial is only guaranteed to produce something that can be
+folded into a checksum, as its prototype explains:
 
-There is an issue with isolate_freepages_block.  In strict mode (which
-CMA uses), if any pages in the range cannot be isolated,
-isolate_freepages_block should return failure 0.  The current check
-keeps track of the total number of isolated pages and compares against
-the size of the range:
+ * returns a 32-bit number suitable for feeding into itself
+ * or csum_tcpudp_magic
 
-        if (strict && nr_strict_required > total_isolated)
-                total_isolated = 0;
+The 32bit value should not be used directly.
 
-After taking the zone lock, if one of the pages in the range is not in
-the buddy allocator, we continue through the loop and do not increment
-total_isolated.  If in the last iteration of the loop we isolate more
-than one page (e.g.  last page needed is a higher order page), the check
-for total_isolated may pass and we fail to detect that a page was
-skipped.  The fix is to bail out if the loop immediately if we are in
-strict mode.  There's no benfit to continuing anyway since we need all
-pages to be isolated.  Additionally, drop the error checking based on
-nr_strict_required and just check the pfn ranges.  This matches with
-what isolate_freepages_range does.
+Depending on the alignment, the ppc64 csum_partial will return
+different 32bit partial checksums that will fold into the same
+16bit checksum.
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This difference causes the following testcase (courtesy of
+Gustavo) to sometimes fail:
+
+#include <sys/socket.h>
+#include <stdio.h>
+
+int main()
+{
+	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	int i = 1;
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
+
+	struct sockaddr addr;
+	addr.sa_family = AF_LOCAL;
+	bind(fd, &addr, 2);
+
+	listen(fd, 128);
+
+	struct sockaddr_storage ss;
+	socklen_t sslen = (socklen_t)sizeof(ss);
+	getsockname(fd, (struct sockaddr*)&ss, &sslen);
+
+	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
+		perror(NULL);
+		return 1;
+	}
+	printf("OK\n");
+	return 0;
+}
+
+As suggested by davem, fix this by using csum_fold to fold the
+partial 32bit checksum into a 16bit checksum before using it.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/compaction.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ net/unix/af_unix.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 2a17e96..3ddb08b 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -248,7 +248,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index fdf0900..72f4e97 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -160,9 +160,8 @@ static inline void unix_set_secdata(struct scm_cookie *scm, struct sk_buff *skb)
+ 
+ static inline unsigned int unix_hash_fold(__wsum n)
  {
- 	int nr_scanned = 0, total_isolated = 0;
- 	struct page *cursor, *valid_page = NULL;
--	unsigned long nr_strict_required = end_pfn - blockpfn;
- 	unsigned long flags;
- 	bool locked = false;
+-	unsigned int hash = (__force unsigned int)n;
++	unsigned int hash = (__force unsigned int)csum_fold(n);
  
-@@ -261,11 +260,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 
- 		nr_scanned++;
- 		if (!pfn_valid_within(blockpfn))
--			continue;
-+			goto isolate_fail;
-+
- 		if (!valid_page)
- 			valid_page = page;
- 		if (!PageBuddy(page))
--			continue;
-+			goto isolate_fail;
- 
- 		/*
- 		 * The zone lock must be held to isolate freepages.
-@@ -286,12 +286,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 
- 		/* Recheck this is a buddy page under lock */
- 		if (!PageBuddy(page))
--			continue;
-+			goto isolate_fail;
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
--		if (!isolated && strict)
--			break;
- 		total_isolated += isolated;
- 		for (i = 0; i < isolated; i++) {
- 			list_add(&page->lru, freelist);
-@@ -302,7 +300,15 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		if (isolated) {
- 			blockpfn += isolated - 1;
- 			cursor += isolated - 1;
-+			continue;
- 		}
-+
-+isolate_fail:
-+		if (strict)
-+			break;
-+		else
-+			continue;
-+
- 	}
- 
- 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
-@@ -312,7 +318,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	 * pages requested were isolated. If there were any failures, 0 is
- 	 * returned and CMA will fail.
- 	 */
--	if (strict && nr_strict_required > total_isolated)
-+	if (strict && blockpfn < end_pfn)
- 		total_isolated = 0;
- 
- 	if (locked)
+-	hash ^= hash>>16;
+ 	hash ^= hash>>8;
+ 	return hash&(UNIX_HASH_SIZE-1);
+ }
 -- 
 1.8.3.2
 
