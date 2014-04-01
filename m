@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaDAQQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:16:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44742 "EHLO
+	id S1753200AbaDAQQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:16:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44710 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147AbaDAQQZ (ORCPT
+	with ESMTP id S1753147AbaDAQQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:25 -0400
+	Tue, 1 Apr 2014 12:16:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 27/86] ath9k: Fix ETSI compliance for AR9462 2.0
-Date: Tue,  1 Apr 2014 09:07:40 -0700
-Message-Id: <1396368519-12728-28-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 30/86] sched: Fix double normalization of vruntime
+Date: Tue,  1 Apr 2014 09:07:43 -0700
+Message-Id: <1396368519-12728-31-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,47 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: George McCollister <george.mccollister@gmail.com>
 
-commit b3050248c167871ca52cfdb2ce78aa2460249346 upstream.
+commit 791c9e0292671a3bfa95286bb5c08129d8605618 upstream.
 
-The minimum CCA power threshold values have to be adjusted
-for existing cards to be in compliance with new regulations.
-Newer cards will make use of the values obtained from EEPROM,
-support for this was added earlier. To make sure that cards
-that are already in use and don't have proper values in EEPROM,
-do not violate regulations, use the initvals instead.
+dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
+which appears to guarentee that the !se->on_rq condition is met.
+If the task has done set_current_state(TASK_INTERRUPTIBLE) without
+schedule() the second condition will be met and vruntime will be
+incorrectly adjusted twice.
 
-Reported-by: Jeang Daniel <dyjeong@qca.qualcomm.com>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+In certain cases this can result in the task's vruntime never increasing
+past the vruntime of other tasks on the CFS' run queue, starving them of
+CPU time.
+
+This patch changes switched_from_fair() to use !p->on_rq instead of
+!se->on_rq.
+
+I'm able to cause a task with a priority of 120 to starve all other
+tasks with the same priority on an ARM platform running 3.2.51-rt72
+PREEMPT RT by writing one character at time to a serial tty (16550 UART)
+in a tight loop. I'm also able to verify making this change corrects the
+problem on that platform and kernel version.
+
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1392767811-28916-1-git-send-email-george.mccollister@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-index ccc42a7..fbe42e1 100644
---- a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-@@ -56,7 +56,7 @@ static const u32 ar9462_2p0_baseband_postamble[][5] = {
- 	{0x00009e14, 0x37b95d5e, 0x37b9605e, 0x3376605e, 0x32395d5e},
- 	{0x00009e18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x00009e1c, 0x0001cf9c, 0x0001cf9c, 0x00021f9c, 0x00021f9c},
--	{0x00009e20, 0x000003b5, 0x000003b5, 0x000003ce, 0x000003ce},
-+	{0x00009e20, 0x000003a5, 0x000003a5, 0x000003a5, 0x000003a5},
- 	{0x00009e2c, 0x0000001c, 0x0000001c, 0x00000021, 0x00000021},
- 	{0x00009e3c, 0xcf946222, 0xcf946222, 0xcfd5c782, 0xcfd5c282},
- 	{0x00009e44, 0x62321e27, 0x62321e27, 0xfe291e27, 0xfe291e27},
-@@ -95,7 +95,7 @@ static const u32 ar9462_2p0_baseband_postamble[][5] = {
- 	{0x0000ae04, 0x001c0000, 0x001c0000, 0x001c0000, 0x00100000},
- 	{0x0000ae18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x0000ae1c, 0x0000019c, 0x0000019c, 0x0000019c, 0x0000019c},
--	{0x0000ae20, 0x000001b5, 0x000001b5, 0x000001ce, 0x000001ce},
-+	{0x0000ae20, 0x000001a6, 0x000001a6, 0x000001aa, 0x000001aa},
- 	{0x0000b284, 0x00000000, 0x00000000, 0x00000550, 0x00000550},
- };
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 843ab0b..8b5346f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5822,15 +5822,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+ 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
  
+ 	/*
+-	 * Ensure the task's vruntime is normalized, so that when its
++	 * Ensure the task's vruntime is normalized, so that when it's
+ 	 * switched back to the fair class the enqueue_entity(.flags=0) will
+ 	 * do the right thing.
+ 	 *
+-	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
+-	 * have normalized the vruntime, if it was !on_rq, then only when
++	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
++	 * have normalized the vruntime, if it's !on_rq, then only when
+ 	 * the task is sleeping will it still have non-normalized vruntime.
+ 	 */
+-	if (!se->on_rq && p->state != TASK_RUNNING) {
++	if (!p->on_rq && p->state != TASK_RUNNING) {
+ 		/*
+ 		 * Fix up our vruntime so that the current sleep doesn't
+ 		 * cause 'unlimited' sleep bonus.
 -- 
 1.8.3.2
 
