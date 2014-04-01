@@ -1,146 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaDAP5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:57:25 -0400
-Received: from [213.199.154.12] ([213.199.154.12]:19594 "EHLO
-	emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751190AbaDAP5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:57:22 -0400
-X-Greylist: delayed 922 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 11:57:22 EDT
-From: "Nekludov, Max" <Max.Nekludov@elster.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Nekludov, Max" <Max.Nekludov@elster.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Network Development" <netdev@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Matt Renzelmann <mjr@cs.wisc.edu>,
-        Jiri Pirko <jiri@resnulli.us>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "trivial@rustcorp.com.au" <trivial@rustcorp.com.au>,
-        "\"David S. Miller\"" <davem@davemloft.net>
-Subject: Bug in ks8851.c
-Thread-Topic: Bug in ks8851.c
-Thread-Index: Ac6d+MrH2BUYyQXkRHmkGOfhJTe8zCvx2cUl
-Date: Tue, 1 Apr 2014 15:41:58 +0000
-Message-ID: <b703c70840da4780bc93beed79a8503b@DB3PR02MB202.eurprd02.prod.outlook.com>
-References: <9525F3D6E0E9E64DA832F2587811AD6A200C24@USRAL1WVEXC01.elt.lcl>
-In-Reply-To: <9525F3D6E0E9E64DA832F2587811AD6A200C24@USRAL1WVEXC01.elt.lcl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [95.73.251.60]
-x-forefront-prvs: 016885DD9B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(56816005)(63696002)(74876001)(77982001)(76576001)(90146001)(95666003)(76786001)(558084003)(49866001)(2171001)(80976001)(20776003)(81686001)(85852003)(74366001)(59766001)(51856001)(99396002)(80022001)(94946001)(53806001)(83322001)(93516002)(87266001)(4396001)(95416001)(87936001)(74706001)(76796001)(86362001)(81816001)(66066001)(54356001)(85306002)(83072002)(93136001)(47976001)(47736001)(47446002)(76482001)(31966008)(94316002)(46102001)(74502001)(98676001)(50986001)(56776001)(54316002)(74662001)(81342001)(92566001)(79102001)(97186001)(81542001)(69226001)(74316001)(2656002)(65816001)(97336001)(33646001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR02MB203;H:DB3PR02MB202.eurprd02.prod.outlook.com;FPR:AC19DAD2.FDD1F6E9.D3EBD1C0.C7630050.200AA;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: multipart/mixed;
-	boundary="_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_"
+	id S1751800AbaDAP6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:58:34 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49979 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaDAP63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 11:58:29 -0400
+Date: Tue, 1 Apr 2014 16:58:15 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-doc@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Olof Johansson <olof@lixom.net>
+Message-ID: <20140401155815.GY2269@sirena.org.uk>
+References: <1395984022-8284-1-git-send-email-tushar.behera@linaro.org>
+ <1395984022-8284-3-git-send-email-tushar.behera@linaro.org>
+ <20140328102220.GU30768@sirena.org.uk>
+ <CAHbNUh0dwBWfT=AAYP_W2yx2xkbnjbhOBF_PSKrLdv1VaUv9Sw@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: elster.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="w1kQleqTSl6UE45G"
+Content-Disposition: inline
+In-Reply-To: <CAHbNUh0dwBWfT=AAYP_W2yx2xkbnjbhOBF_PSKrLdv1VaUv9Sw@mail.gmail.com>
+X-Cookie: Printed on recycled paper.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] regulator: core: Add reg_ignore_unused to keep boot
+ time regulators enabled
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
 
-Reset on RX failure and TX timeout.=0A=
-=0A=
-Electromagnetic noice can make device to not send TX interrupts.=0A=
-As result outgoing queue will be suspended forever.=0A=
-Also EMI can raise RX interrupt with zero value in KS_RXFC register.=0A=
-=0A=
-Patch attached.=
+--w1kQleqTSl6UE45G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
---_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_
-Content-Type: text/x-diff;
-	name="0001-ks8851-reset-on-RX-falure-and-TX-timeout.patch"
-Content-Description: 0001-ks8851-reset-on-RX-falure-and-TX-timeout.patch
-Content-Disposition: attachment;
-	filename="0001-ks8851-reset-on-RX-falure-and-TX-timeout.patch"; size=4553;
-	creation-date="Tue, 01 Apr 2014 15:40:18 GMT";
-	modification-date="Tue, 01 Apr 2014 15:40:18 GMT"
-Content-Transfer-Encoding: base64
+On Tue, Apr 01, 2014 at 06:59:04PM +0530, Tushar Behera wrote:
 
-a3M4ODUxOiByZXNldCBvbiBSWCBmYWlsdXJlIGFuZCBUWCB0aW1lb3V0CgpFbGVjdHJvbWFnbmV0
-aWMgbm9pY2UgY2FuIG1ha2UgZGV2aWNlIHRvIG5vdCBzZW5kIFRYIGludGVycnVwdHMuCkFzIHJl
-c3VsdCBvdXRnb2luZyBxdWV1ZSB3aWxsIGJlIHN1c3BlbmRlZCBmb3JldmVyLgpBbHNvIEVNSSBj
-YW4gcmFpc2UgUlggaW50ZXJydXB0IHdpdGggemVybyB2YWx1ZSBpbiBLU19SWEZDIHJlZ2lzdGVy
-LgoKU2lnbmVkLW9mZi1ieTogTWF4IE5la2x1ZG92IDxNYXguTmVrbHVkb3ZAZWxzdGVyLmNvbT4K
-LS0tCiBkcml2ZXJzL25ldC9ldGhlcm5ldC9taWNyZWwva3M4ODUxLmMgfCA2NiArKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrKysrKy0KIDEgZmlsZSBjaGFuZ2VkLCA2NSBpbnNlcnRpb25z
-KCspLCAxIGRlbGV0aW9uKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9uZXQvZXRoZXJuZXQvbWlj
-cmVsL2tzODg1MS5jIGIvZHJpdmVycy9uZXQvZXRoZXJuZXQvbWljcmVsL2tzODg1MS5jCmluZGV4
-IGUwYzkyZTAuLjI1YjcyMjkgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbmV0L2V0aGVybmV0L21pY3Jl
-bC9rczg4NTEuYworKysgYi9kcml2ZXJzL25ldC9ldGhlcm5ldC9taWNyZWwva3M4ODUxLmMKQEAg
-LTEyMyw2ICsxMjMsNyBAQCBzdHJ1Y3Qga3M4ODUxX25ldCB7CiAKIAlzdHJ1Y3Qgd29ya19zdHJ1
-Y3QJdHhfd29yazsKIAlzdHJ1Y3Qgd29ya19zdHJ1Y3QJcnhjdHJsX3dvcms7CisJc3RydWN0IGRl
-bGF5ZWRfd29yawl3ZHRfd29yazsKIAogCXN0cnVjdCBza19idWZmX2hlYWQJdHhxOwogCkBAIC0x
-NDAsNiArMTQxLDkgQEAgc3RhdGljIGludCBtc2dfZW5hYmxlOwogLyogc2hpZnQgZm9yIGJ5dGUt
-ZW5hYmxlIGRhdGEgKi8KICNkZWZpbmUgQllURV9FTihfeCkJKChfeCkgPDwgMikKIAorI2RlZmlu
-ZSBLUzg4NTFfVFhfUVVFVUVfU0laRSA2MTQ0CisjZGVmaW5lIEtTODg1MV9UWF9USU1FT1VUX01T
-IDEwMAorCiAvKiB0dXJuIHJlZ2lzdGVyIG51bWJlciBhbmQgYnl0ZS1lbmFibGUgbWFzayBpbnRv
-IGRhdGEgZm9yIHN0YXJ0IG9mIHBhY2tldCAqLwogI2RlZmluZSBNS19PUChfYnl0ZWVuLCBfcmVn
-KSAoQllURV9FTihfYnl0ZWVuKSB8IChfcmVnKSAgPDwgKDgrMikgfCAoX3JlZykgPj4gNikKIApA
-QCAtNDk1LDYgKzQ5OSw3IEBAIHN0YXRpYyB2b2lkIGtzODg1MV9kYmdfZHVtcGtrdChzdHJ1Y3Qg
-a3M4ODUxX25ldCAqa3MsIHU4ICpyeHBrdCkKIAkJICAgcnhwa3RbOF0sIHJ4cGt0WzldLCByeHBr
-dFsxMF0sIHJ4cGt0WzExXSwKIAkJICAgcnhwa3RbMTJdLCByeHBrdFsxM10sIHJ4cGt0WzE0XSwg
-cnhwa3RbMTVdKTsKIH0KK3N0YXRpYyB2b2lkIGtzODg1MV9yZXNldChzdHJ1Y3Qga3M4ODUxX25l
-dCAqa3MpOwogCiAvKioKICAqIGtzODg1MV9yeF9wa3RzIC0gcmVjZWl2ZSBwYWNrZXRzIGZyb20g
-dGhlIGhvc3QKQEAgLTUxNyw2ICs1MjIsMTIgQEAgc3RhdGljIHZvaWQga3M4ODUxX3J4X3BrdHMo
-c3RydWN0IGtzODg1MV9uZXQgKmtzKQogCiAJbmV0aWZfZGJnKGtzLCByeF9zdGF0dXMsIGtzLT5u
-ZXRkZXYsCiAJCSAgIiVzOiAlZCBwYWNrZXRzXG4iLCBfX2Z1bmNfXywgcnhmYyk7CisJCisJaWYg
-KHJ4ZmMgPT0gMCkgeworCQltZGVsYXkoMSk7CisJCS8qIFJYIGludGVycnVwdCBidXQgbm8gZGF0
-YSBpbiBidWZmZXIuIFdoaWNoIG1lYW5zIGhhcmR3YXJlIGZhaWx1cmUgY29uZGl0aW9uLiBSZXNl
-dC4gKi8KKwkJa3M4ODUxX3Jlc2V0KGtzKTsKKwl9CiAKIAkvKiBDdXJyZW50bHkgd2UncmUgaXNz
-dWluZyBhIHJlYWQgcGVyIHBhY2tldCwgYnV0IHdlIGNvdWxkIHBvc3NpYmx5CiAJICogaW1wcm92
-ZSB0aGUgY29kZSBieSBpc3N1aW5nIGEgc2luZ2xlIHJlYWQsIGdldHRpbmcgdGhlIHJlY2VpdmUK
-QEAgLTYxOSw2ICs2MzAsMTAgQEAgc3RhdGljIGlycXJldHVybl90IGtzODg1MV9pcnEoaW50IGly
-cSwgdm9pZCAqX2tzKQogCiAJaWYgKHN0YXR1cyAmIElSUV9UWEkpIHsKIAkJaGFuZGxlZCB8PSBJ
-UlFfVFhJOworCQkKKwkJbXV0ZXhfdW5sb2NrKCZrcy0+bG9jayk7CisJCWNhbmNlbF9kZWxheWVk
-X3dvcmtfc3luYygma3MtPndkdF93b3JrKTsKKwkJbXV0ZXhfbG9jaygma3MtPmxvY2spOwogCiAJ
-CS8qIG5vIGxvY2sgaGVyZSwgdHggcXVldWUgc2hvdWxkIGhhdmUgYmVlbiBzdG9wcGVkICovCiAK
-QEAgLTc0OSw2ICs3NjQsMTcgQEAgc3RhdGljIHZvaWQga3M4ODUxX2RvbmVfdHgoc3RydWN0IGtz
-ODg1MV9uZXQgKmtzLCBzdHJ1Y3Qgc2tfYnVmZiAqdHhiKQogCWRldl9rZnJlZV9za2IodHhiKTsK
-IH0KIAorc3RhdGljIHZvaWQga3M4ODUxX3dkdF93b3JrKHN0cnVjdCBkZWxheWVkX3dvcmsgKndv
-cmspCit7CisJc3RydWN0IGtzODg1MV9uZXQgKmtzID0gY29udGFpbmVyX29mKHdvcmssIHN0cnVj
-dCBrczg4NTFfbmV0LCB3ZHRfd29yayk7CisJbXV0ZXhfbG9jaygma3MtPmxvY2spOworCisJbWRl
-bGF5KDEpOworCWtzODg1MV9yZXNldChrcyk7CisKKwltdXRleF91bmxvY2soJmtzLT5sb2NrKTsK
-K30KKwogLyoqCiAgKiBrczg4NTFfdHhfd29yayAtIHByb2Nlc3MgdHggcGFja2V0KHMpCiAgKiBA
-d29yazogVGhlIHdvcmsgc3RydWN1dHJlIHdoYXQgd2FzIHNjaGVkdWxlZC4KQEAgLTc3OCw2ICs4
-MDQsOCBAQCBzdGF0aWMgdm9pZCBrczg4NTFfdHhfd29yayhzdHJ1Y3Qgd29ya19zdHJ1Y3QgKndv
-cmspCiAJCX0KIAl9CiAKKwlzY2hlZHVsZV9kZWxheWVkX3dvcmsoJmtzLT53ZHRfd29yaywgbXNl
-Y3NfdG9famlmZmllcyhLUzg4NTFfVFhfVElNRU9VVF9NUykpOworCiAJbXV0ZXhfdW5sb2NrKCZr
-cy0+bG9jayk7CiB9CiAKQEAgLTg1OCw2ICs4ODYsNDAgQEAgc3RhdGljIGludCBrczg4NTFfbmV0
-X29wZW4oc3RydWN0IG5ldF9kZXZpY2UgKmRldikKIAlyZXR1cm4gMDsKIH0KIAorc3RhdGljIHZv
-aWQga3M4ODUxX3Jlc2V0KHN0cnVjdCBrczg4NTFfbmV0ICprcykKK3sKKwluZXRpZl9zdG9wX3F1
-ZXVlKGtzLT5uZXRkZXYpOworCisJLyogdHVybiBvZmYgdGhlIElSUXMgYW5kIGFjayBhbnkgb3V0
-c3RhbmRpbmcgKi8KKwlrczg4NTFfd3JyZWcxNihrcywgS1NfSUVSLCAweDAwMDApOworCWtzODg1
-MV93cnJlZzE2KGtzLCBLU19JU1IsIDB4ZmZmZik7CisKKwkvKiBzaHV0ZG93biBSWCBwcm9jZXNz
-ICovCisJa3M4ODUxX3dycmVnMTYoa3MsIEtTX1JYQ1IxLCAweDAwMDApOworCisJLyogc2h1dGRv
-d24gVFggcHJvY2VzcyAqLworCWtzODg1MV93cnJlZzE2KGtzLCBLU19UWENSLCAweDAwMDApOwor
-CisJa3MtPnR4X3NwYWNlID0gS1M4ODUxX1RYX1FVRVVFX1NJWkU7CisKKwltdXRleF91bmxvY2so
-JmtzLT5sb2NrKTsKKwkKKwkvKiBlbnN1cmUgYW55IHF1ZXVlZCB0eCBidWZmZXJzIGFyZSBkdW1w
-ZWQgKi8KKwl3aGlsZSAoIXNrYl9xdWV1ZV9lbXB0eSgma3MtPnR4cSkpIHsKKwkJc3RydWN0IHNr
-X2J1ZmYgKnR4YiA9IHNrYl9kZXF1ZXVlKCZrcy0+dHhxKTsKKworCQluZXRpZl9kYmcoa3MsIGlm
-ZG93biwga3MtPm5ldGRldiwKKwkJCSAgIiVzOiBmcmVlaW5nIHR4YiAlcFxuIiwgX19mdW5jX18s
-IHR4Yik7CisKKwkJZGV2X2tmcmVlX3NrYih0eGIpOworCX0KKworCS8qIHJlb3BlbiBkZXZpY2Ug
-Ki8KKwlrczg4NTFfbmV0X29wZW4oa3MtPm5ldGRldik7CisKKwltdXRleF9sb2NrKCZrcy0+bG9j
-ayk7Cit9CisKIC8qKgogICoga3M4ODUxX25ldF9zdG9wIC0gY2xvc2UgbmV0d29yayBkZXZpY2UK
-ICAqIEBkZXY6IFRoZSBkZXZpY2UgYmVpbmcgY2xvc2VkLgpAQCAtODgzLDYgKzk0NSw3IEBAIHN0
-YXRpYyBpbnQga3M4ODUxX25ldF9zdG9wKHN0cnVjdCBuZXRfZGV2aWNlICpkZXYpCiAJLyogc3Rv
-cCBhbnkgb3V0c3RhbmRpbmcgd29yayAqLwogCWZsdXNoX3dvcmsoJmtzLT50eF93b3JrKTsKIAlm
-bHVzaF93b3JrKCZrcy0+cnhjdHJsX3dvcmspOworCWNhbmNlbF9kZWxheWVkX3dvcmtfc3luYygm
-a3MtPndkdF93b3JrKTsKIAogCW11dGV4X2xvY2soJmtzLT5sb2NrKTsKIAkvKiBzaHV0ZG93biBS
-WCBwcm9jZXNzICovCkBAIC0xNDE1LDcgKzE0NzgsNyBAQCBzdGF0aWMgaW50IGtzODg1MV9wcm9i
-ZShzdHJ1Y3Qgc3BpX2RldmljZSAqc3BpKQogCiAJa3MtPm5ldGRldiA9IG5kZXY7CiAJa3MtPnNw
-aWRldiA9IHNwaTsKLQlrcy0+dHhfc3BhY2UgPSA2MTQ0OworCWtzLT50eF9zcGFjZSA9IEtTODg1
-MV9UWF9RVUVVRV9TSVpFOwogCiAJa3MtPnZkZF9yZWcgPSByZWd1bGF0b3JfZ2V0X29wdGlvbmFs
-KCZzcGktPmRldiwgInZkZCIpOwogCWlmIChJU19FUlIoa3MtPnZkZF9yZWcpKSB7CkBAIC0xNDM3
-LDYgKzE1MDAsNyBAQCBzdGF0aWMgaW50IGtzODg1MV9wcm9iZShzdHJ1Y3Qgc3BpX2RldmljZSAq
-c3BpKQogCiAJSU5JVF9XT1JLKCZrcy0+dHhfd29yaywga3M4ODUxX3R4X3dvcmspOwogCUlOSVRf
-V09SSygma3MtPnJ4Y3RybF93b3JrLCBrczg4NTFfcnhjdHJsX3dvcmspOworCUlOSVRfREVMQVlF
-RF9XT1JLKCZrcy0+d2R0X3dvcmssIGtzODg1MV93ZHRfd29yayk7CiAKIAkvKiBpbml0aWFsaXNl
-IHByZS1tYWRlIHNwaSB0cmFuc2ZlciBtZXNzYWdlcyAqLwogCi0tIAoxLjguMy4yCgo=
+> I agree with your point that it may lead developers to write bad DTs,
+> but it becomes quite helpful while debugging issues.
 
---_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_--
+So make what you're trying to do look more like a debug option then...
+though to be honest given how easy things are to resolve and the prints
+that are there already I'm not sure it's that helpful.
+
+--w1kQleqTSl6UE45G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTOuIUAAoJELSic+t+oim9g8sQAJcDQlty5V4NA2Dt3Sp+jkug
+A2yKoC/Ii0LyCeixnI4qQhLNiqJAMaNRjUmKBCQtFJeIAscXHux+p9k6uVOga77e
+3E+R0iNNdNtav6q6jWPs3JuceQg7nZao99GQMRlHcrwMvnMLdImmf21E5qItsO3O
+j7e8WkjIyLMDxt0vjBfINx67Qa6/Piu39ItlnBNmyojXhUH9YUP7Wc4cSzSjvkRV
+gnJkgz8JvqvFk55OCBK6oIGlBTmFN6Duuy+yvBO+qvHNG+29QNxtSBXZr9jbB0ZK
+ixbBl/oeARkjyT+2Ay1GBJQj3kef3g212j2kgUNFZ6C4sLFZuh8myYDrCPGPvAgg
+sGi2rJTcnIQyt0UvusLqrOqD3Jn1O3gZk7uZz0PdvRFbbjLPZ3jJvIZolsIBO1tk
+p2en6ANJnEFfrWrK/inQo4I/Rx7dmWnu/3tDJ+tdRf/fAJgutLCG/dBrVTSkGZDG
++VoXRK5fq0OUTo+dyvMZaVBaIDgRx7oGde4RHePlTMHieBruN9DDiqiFfHId/WFr
+eg9Noay1+7DVnmyTwaQmqlubZ+BX8d/nmluwjRyh1YlDGjnFnXC4VGZ8AS4sEbGG
+EoK+PsNSr6dTzkm0YxgoPeem2NYxWGYRrBExx22AZ7rC2DoGnaIEkyoFSwm3GBy2
+whsqhEbG9ewCd3TOQcjL
+=UDuA
+-----END PGP SIGNATURE-----
+
+--w1kQleqTSl6UE45G--
