@@ -1,159 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaDAN7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 09:59:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043AbaDAN7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 09:59:14 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-doc@vger.kernel.org
-Subject: [PATCH] Add initcall_blacklist kernel parameter [v3]
-Date: Tue,  1 Apr 2014 09:58:21 -0400
-Message-Id: <1396360701-27197-1-git-send-email-prarit@redhat.com>
+	id S1751513AbaDAODX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:03:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43777 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaDAODW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 10:03:22 -0400
+Date: Tue, 1 Apr 2014 17:02:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
+Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
+	<ezequiel@vanguardiasur.com.ar>,
+        Walter Lozano <walter@vanguardiasur.com.ar>,
+        Forest Bond <forest@alittletooquiet.net>
+Subject: Re: [PATCH 1/3] staging: vt6655: fix DBG_PRT and PRINT_K macros
+Message-ID: <20140401140254.GS6991@mwanda>
+References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
+ <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a module is built into the kernel the module_init() function becomes
-an initcall.  Sometimes debugging through dynamic debug can help,
-however, debugging built in kernel modules is typically done by changing
-the .config, recompiling, and booting the new kernel in an effort to
-determine exactly which module caused a problem.
+On Tue, Apr 01, 2014 at 09:52:11AM -0300, Guido Martínez wrote:
+> Parenthesize both macros so they will not break program logic if used
+> within another 'if'. Also fix a usage of DBG_PRT with a missing
+> semicolon.
+> 
+> Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
+> ---
+>  drivers/staging/vt6655/device.h | 4 ++--
+>  drivers/staging/vt6655/wpactl.c | 2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
+> index 062c3a3..483b017 100644
+> --- a/drivers/staging/vt6655/device.h
+> +++ b/drivers/staging/vt6655/device.h
+> @@ -148,8 +148,8 @@
+>  
+>  /*---------------------  Export Types  ------------------------------*/
+>  
+> -#define DBG_PRT(l, p, args...) { if (l <= msglevel) printk(p, ##args); }
+> -#define PRINT_K(p, args...) { if (PRIVATE_Message) printk(p, ##args); }
+> +#define DBG_PRT(l, p, args...) ({ if (l <= msglevel) printk(p, ##args); })
+> +#define PRINT_K(p, args...) ({ if (PRIVATE_Message) printk(p, ##args); })
 
-This patchset can be useful stand-alone or combined with initcall_debug.
-There are cases where some initcalls can hang the machine before the
-console can be flushed, which can make initcall_debug output
-inaccurate.  Having the ability to skip initcalls can help further
-debugging of these scenarios.
+Use a do { } while(0) for this.
 
-Usage: initcall_blacklist=<list of comma separated initcalls>
+regards,
+dan carpenter
 
-ex) added "initcall_blacklist=sgi_uv_sysfs_init" as a kernel parameter and
-the log contains:
-
-	blacklisted initcall sgi_uv_sysfs_init
-	...
-	...
-	function sgi_uv_sysfs_init returning without executing
-
-ex) added "initcall_blacklist=foo_bar,sgi_uv_sysfs_init" as a kernel parameter
-and the log contains:
-
-	initcall blacklisted foo_bar
-	initcall blacklisted sgi_uv_sysfs_init
-	...
-	...
-	function sgi_uv_sysfs_init returning without executing
-
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-doc@vger.kernel.org
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-[v2]: A few people recommended that I add code to allow for a list of
-initcalls as there maybe dependencies between initcalls such that one cannot
-be made without the other.  I also updated the patch description.
-[v3]: Drop memory cleanup, suggested by Andi Kleen.
----
- Documentation/kernel-parameters.txt |    4 ++++
- init/main.c                         |   42 +++++++++++++++++++++++++++++++++++
- 2 files changed, 46 insertions(+)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 67755ea..ebeb8a5 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1275,6 +1275,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			for working out where the kernel is dying during
- 			startup.
- 
-+	initcall_blacklist=  [KNL] Do not execute a comma-separated list of
-+			initcall functions.  Useful for debugging built-in
-+			modules and initcalls.
-+
- 	initrd=		[BOOT] Specify the location of the initial ramdisk
- 
- 	inport.irq=	[HW] Inport (ATI XL and Microsoft) busmouse driver
-diff --git a/init/main.c b/init/main.c
-index 9c7fd4c..64a3b8b 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -77,6 +77,7 @@
- #include <linux/sched_clock.h>
- #include <linux/context_tracking.h>
- #include <linux/random.h>
-+#include <linux/list.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -666,6 +667,34 @@ static void __init do_ctors(void)
- bool initcall_debug;
- core_param(initcall_debug, initcall_debug, bool, 0644);
- 
-+struct blacklist_entry {
-+	struct list_head next;
-+	char *buf;
-+};
-+
-+static __initdata_or_module LIST_HEAD(blacklisted_initcalls);
-+
-+static int __init initcall_blacklist(char *str)
-+{
-+	char *str_entry;
-+	struct blacklist_entry *entry;
-+
-+	/* str argument is a comma-separated list of functions */
-+	do {
-+		str_entry = strsep(&str, ",");
-+		if (str_entry) {
-+			pr_debug("initcall blacklisted %s \n", str_entry);
-+			entry = alloc_bootmem(sizeof(*entry));
-+			entry->buf = alloc_bootmem(strlen(str_entry));
-+			strncpy(entry->buf, str_entry, strlen(str_entry));
-+			list_add(&entry->next, &blacklisted_initcalls);
-+		}
-+	} while (str_entry);
-+
-+	return 0;
-+}
-+__setup("initcall_blacklist=", initcall_blacklist);
-+
- static int __init_or_module do_one_initcall_debug(initcall_t fn)
- {
- 	ktime_t calltime, delta, rettime;
-@@ -689,6 +718,19 @@ int __init_or_module do_one_initcall(initcall_t fn)
- 	int count = preempt_count();
- 	int ret;
- 	char msgbuf[64];
-+	char fn_name[128] = "\0";
-+	struct list_head *tmp;
-+	struct blacklist_entry *entry;
-+
-+	snprintf(fn_name, 128, "%pf", fn);
-+	list_for_each(tmp, &blacklisted_initcalls) {
-+		entry = list_entry(tmp, struct blacklist_entry, next);
-+		if (!strcmp(fn_name, entry->buf)) {
-+			pr_debug("initcall %pf returning without executing\n",
-+				 fn);
-+			return -EPERM;
-+		}
-+	}
- 
- 	if (initcall_debug)
- 		ret = do_one_initcall_debug(fn);
--- 
-1.7.9.3
 
