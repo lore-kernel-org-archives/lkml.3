@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426AbaDAMfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:35:51 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18923 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaDAMft (ORCPT
+	id S1751507AbaDAMgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:36:07 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:57315 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaDAMgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 08:35:49 -0400
-Date: Tue, 1 Apr 2014 15:35:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Vegard Nossum <vegard.nossum@oracle.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
-Message-ID: <20140401123534.GE18506@mwanda>
-References: <1396346898-8950-1-git-send-email-vegard.nossum@oracle.com>
- <20140401103020.GG24150@order.stressinduktion.org>
- <533A990D.2040609@oracle.com>
- <20140401110255.GH24150@order.stressinduktion.org>
+	Tue, 1 Apr 2014 08:36:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401110255.GH24150@order.stressinduktion.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1396355585-458-1-git-send-email-jon@ringle.org>
+References: <1396355585-458-1-git-send-email-jon@ringle.org>
+Date: Tue, 1 Apr 2014 08:36:03 -0400
+X-Google-Sender-Auth: wAzWIzkZjSf5b5tupSxyfeG_0TY
+Message-ID: <CAMwGMjwmkeET-K7w1tEESS8Ram278aELs0_x+Gt6+Y3j4kLV0Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] video: da8xx-fb: Add support for Densitron 84-0023-001T
+From: Jon Ringle <jon@ringle.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org
+Cc: tomi.valkeinen@ti.com, plagnioj@jcrosoft.com,
+        Jon Ringle <jringle@gridpoint.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 01:02:55PM +0200, Hannes Frederic Sowa wrote:
-> On Tue, Apr 01, 2014 at 12:46:37PM +0200, Vegard Nossum wrote:
-> > On 04/01/2014 12:30 PM, Hannes Frederic Sowa wrote:
-> > >Looking down the problem, it seems the problem is that the strlen in 
-> > >strlcpy
-> > >could read beyond the input buffer?
-> > >
-> > >To prevent this problem in other parts of the kernel wouldn't it be better 
-> > >to
-> > >replace the strlen with strnlen in strlcpy?
-> > 
-> > Sorry, I should have included the link to the previous thread: 
-> > https://lkml.org/lkml/2014/3/7/712
-> > 
-> > I only resent (adding netdev to Cc) to get this into David Miller's 
-> > patch queue.
-> 
-> Ah ok, sorry I don't follow lkml as closely as netdev@.
-> 
-> > As you can see from the previous discussion, we _could_ change the Linux 
-> > kernel's definition of strlcpy(), but I wouldn't recommend it for the 
-> > following reasons:
-> > 
-> > 1. Both BSD man page and BSD implementation _require_ the source string 
-> > to be 0-terminated. Changing the semantics of strlcpy() in the Linux 
-> > kernel would probably be a bad idea and cause even more confusion that 
-> > what we already have.
-> 
-> Sure, we shouldn't change the documented semantics. If at all it would
-> be an additional safety net. Your patch would still be needed.
-> 
+On Tue, Apr 1, 2014 at 8:33 AM,  <jon@ringle.org> wrote:
+> From: Jon Ringle <jringle@gridpoint.com>
+>
+> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+> ---
+>  drivers/video/da8xx-fb.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+>
+> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+> index e030e17..d042624 100644
+> --- a/drivers/video/da8xx-fb.c
+> +++ b/drivers/video/da8xx-fb.c
+> @@ -243,6 +243,20 @@ static struct fb_videomode known_lcd_panels[] = {
+>                 .sync           = FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
+>                 .flag           = 0,
+>         },
+> +       [3] = {
+> +               /* Densitron 84-0023-001T */
+> +               .name           = "Densitron_LCD",
 
-Guys, really?  How would the patch "still be needed"?  I feel like if
-someone said we had to rub a chicken head on this code we do it in the
-name of security...
+Crap. I'm sorry. I will resend again. with the correct patch with the
+name Tomi suggested
 
-I don't understand what you think the point of strlcpy() is, if it's not
-to deal with source strings which aren't NUL terminated.
-
-I still maintain that the since the stack is full of NUL characters the
-current implimentation of strlcpy() is ok for this isdn_loop function
-and the patch is not needed at all without the strnlen() change.
-
-However for other heap allocated variables then I could imagine that
-the strlen() might be a problem.  I have two theories why we have never
-seen problems with this in running code. 1) The string would have to be
-at the end of a struct allocated at the end of a page.  You have to be
-very unlucky to hit this requirement.  2) Most people pass valid data.
-
-regards,
-dan carpenter
-
+Jon
