@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761AbaDALQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:16:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42168 "EHLO
+	id S1751867AbaDAMRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:17:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42178 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723AbaDALQX (ORCPT
+	with ESMTP id S1751734AbaDALQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:16:23 -0400
+	Tue, 1 Apr 2014 07:16:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George McCollister <george.mccollister@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 019/144] sched: Fix double normalization of vruntime
-Date: Tue,  1 Apr 2014 12:13:43 +0100
-Message-Id: <1396350948-29910-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 023/144] firewire: net: fix use after free
+Date: Tue,  1 Apr 2014 12:13:47 +0100
+Message-Id: <1396350948-29910-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 791c9e0292671a3bfa95286bb5c08129d8605618 upstream.
+commit 8987583366ae9e03c306c2b7d73bdb952df1d08d upstream.
 
-dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
-which appears to guarentee that the !se->on_rq condition is met.
-If the task has done set_current_state(TASK_INTERRUPTIBLE) without
-schedule() the second condition will be met and vruntime will be
-incorrectly adjusted twice.
+Commit 8408dc1c14c1 "firewire: net: use dev_printk API" introduced a
+use-after-free in a failure path.  fwnet_transmit_packet_failed(ptask)
+may free ptask, then the dev_err() call dereferenced it.  The fix is
+straightforward; simply reorder the two calls.
 
-In certain cases this can result in the task's vruntime never increasing
-past the vruntime of other tasks on the CFS' run queue, starving them of
-CPU time.
-
-This patch changes switched_from_fair() to use !p->on_rq instead of
-!se->on_rq.
-
-I'm able to cause a task with a priority of 120 to starve all other
-tasks with the same priority on an ARM platform running 3.2.51-rt72
-PREEMPT RT by writing one character at time to a serial tty (16550 UART)
-in a tight loop. I'm also able to verify making this change corrects the
-problem on that platform and kernel version.
-
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1392767811-28916-1-git-send-email-george.mccollister@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/fair.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/firewire/net.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b051edd..b758706 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5902,15 +5902,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+diff --git a/drivers/firewire/net.c b/drivers/firewire/net.c
+index 6b89598..4af0a7b 100644
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -929,8 +929,6 @@ static void fwnet_write_complete(struct fw_card *card, int rcode,
+ 	if (rcode == RCODE_COMPLETE) {
+ 		fwnet_transmit_packet_done(ptask);
+ 	} else {
+-		fwnet_transmit_packet_failed(ptask);
+-
+ 		if (printk_timed_ratelimit(&j,  1000) || rcode != last_rcode) {
+ 			dev_err(&ptask->dev->netdev->dev,
+ 				"fwnet_write_complete failed: %x (skipped %d)\n",
+@@ -938,8 +936,10 @@ static void fwnet_write_complete(struct fw_card *card, int rcode,
  
- 	/*
--	 * Ensure the task's vruntime is normalized, so that when its
-+	 * Ensure the task's vruntime is normalized, so that when it's
- 	 * switched back to the fair class the enqueue_entity(.flags=0) will
- 	 * do the right thing.
- 	 *
--	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
--	 * have normalized the vruntime, if it was !on_rq, then only when
-+	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
-+	 * have normalized the vruntime, if it's !on_rq, then only when
- 	 * the task is sleeping will it still have non-normalized vruntime.
- 	 */
--	if (!se->on_rq && p->state != TASK_RUNNING) {
-+	if (!p->on_rq && p->state != TASK_RUNNING) {
- 		/*
- 		 * Fix up our vruntime so that the current sleep doesn't
- 		 * cause 'unlimited' sleep bonus.
+ 			errors_skipped = 0;
+ 			last_rcode = rcode;
+-		} else
++		} else {
+ 			errors_skipped++;
++		}
++		fwnet_transmit_packet_failed(ptask);
+ 	}
+ }
+ 
 -- 
 1.9.1
 
