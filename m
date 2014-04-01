@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaDAVeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:34:00 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55893 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaDAVd6 (ORCPT
+	id S1751927AbaDAVfB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:35:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:56293 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720AbaDAVe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:33:58 -0400
-Date: Tue, 01 Apr 2014 17:33:54 -0400 (EDT)
-Message-Id: <20140401.173354.1207821556865053650.davem@davemloft.net>
-To: rgb@redhat.com
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        eparis@redhat.com, sgrubb@redhat.com, hadi@mojatatu.com
-Subject: Re: [PATCH 0/3] netlink: per-protocol bind fixup/enhancement set
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1396317747.git.rgb@redhat.com>
-References: <20140324183406.GE28666@madcap2.tricolour.ca>
-	<cover.1396317747.git.rgb@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 1 Apr 2014 17:34:59 -0400
+Message-ID: <533B30AF.4060702@ontolinux.com>
+Date: Tue, 01 Apr 2014 23:33:35 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Boaz Harrosh <openosd@gmail.com>
+CC: Chris Mason <clm@fb.com>, Felipe Balbi <balbi@ti.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] New Linux Patch Review Group
+References: <533AD000.307@fb.com> <533AD837.8010109@gmail.com> <533ADDE0.3050802@fb.com> <20140401155558.GG4717@saruman.home>
+In-Reply-To: <20140401155558.GG4717@saruman.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 01 Apr 2014 14:33:58 -0700 (PDT)
+X-Provags-ID: V02:K0:Fezls2inbvdBxofIkXY8RtGtt/DTBaPkO7TA9VS/xxk
+ 24cIzZ6ycpMUnGsB4+wNFv1mdM3B+7uJ848YFAs0KO28pgWIR7
+ /lIafvL1quKbyZZIwLdKf49KDrMWqLNzzAaskglflFvjY6d8vZ
+ hBkYCek0gEBVQ1JVIb4n6AO8WsKPf7Ywhy7vbGn1Fl5d8gxfXy
+ 9jxD7vCAs2iCrQ5iuIGziMy5s7I1NqvnKlptuO8k/MTlRBn5Zo
+ iZPO+wKT/lshdmapdcbvL4GCLvc+yVl4lN1ki2Lra/aqBbOPoZ
+ VO8Hgv35XOBIgiQ0Jw3PadCtnpDSjqckSsnino0PHpAOAs5nx4
+ 73WEXzXJQNDMzgAKoNUw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Guy Briggs <rgb@redhat.com>
-Date: Tue,  1 Apr 2014 10:14:55 -0400
+On Tue, 01.April.2014 17:55, Felipe Balbi wrote:
+> On Tue, Apr 01, 2014 at 11:40:16AM -0400, Chris Mason wrote:
+>>
+>> On 04/01/2014 11:16 AM, Boaz Harrosh wrote:
+>>> On 04/01/2014 05:41 PM, Chris Mason wrote:
+>>>> Hello everyone,
+>>>>
+>>>> During last week's Collab summit, Jon Corbet suggested we use the power
+>>>> of social media to improve the Linux kernel patch review process.
+>>>>
+>>>> We thought this was a great idea, and have been experimenting with a new
+>>>> Facebook group dedicated to patch discussion and review.  The new group
+>>>> provides a dramatically improved development workflow, including:
+>>>> 	
+>>>> 	* One click patch or comment approval
+>>>> 	* Comments enhanced with pictures and video
+>>>> 	* Who has seen your patches and comments
+>>>> 	* Searchable index of past submissions
+>>>> 	* A strong community without anonymous flames
+>>>>
+>>>> To help capture the group discussion in the final patch submission,
+>>>> we suggest adding a Liked-by: tag to commits that have been through
+>>>> group review.
+>>>>
+>>>> To use the new group, please join:
+>>>>
+>>>> https://www.facebook.com/groups/linuxpatches/
+>>>>
+>>>> Once you've joined, you can post patches in the group, or email patches to
+>>>> linuxpatches@groups.facebook.com
+>>>>
+>>>> -chris
+>>> NACK! I do not have facebook and I do not like patches to be discussed
+>>> behind my back. On the mailing list we don't even want HTML with bold
+>>> lettered words so no thanks facebook adds nothing
+>>>
+>>> Please obliterate this bad idea.
+>>>
+>>> (And I do not have Facebook shares or care to)
+>> It's always hard to move on to new technologies. But at some point we have
+>> to recognize that the internet has developed a rich culture that the kernel
+>> community isn't taking full advantage of.
+>>
+>> I certainly don't expect everyone to convert right away, but there's a whole
+>> world out there beyond port 25.
+> Agreed
+>
+> Acked-by: Felipe Balbi<balbi@ti.com>
+>
+> We might even be able to "recruit" a much more diverse group of
+> reviewers who are undiscovered as of now ;-)
+>
+Sorry, but definitely: Nack!!!
 
-> This set provides a way for per-protocol bind functions to signal an error and
-> to be able to clean up after themselves.
-> 
-> The first patch has already been accepted, but is included just in case to
-> avoid a merge error.
-> 
-> The second patch adds the per-protocol bind return code to signal to the
-> netlink code that no further processing should be done and to undo the work
-> already done.  This rev has fixed DaveM's last issue and flattened the
-> intentation as requested by Patrick McHardy by two by reworking the logic.
-> 
-> The third provides a way per protocol to undo actions on DROP.
-> 
-> Thanks for the feedback.
+First of all, I do not think that it will truely support the whole 
+(business) process of code development and review.
+Also, I do not think that it will attract more developers and reviewers.
+But if you really think that your arguments are right, then why do not 
+use a solution that is based on the same social concepts like for 
+example Linux itself and set up an own social network or channel for the 
+whole Linux "eco-system" respectively community by using for example 
+Friendica [1], Diaspora [2], StatusNet [3], pump.io [4], or what else fits.
 
-I would like to defer this to the next merge window.
 
-I'd also like to see how the AUDIT code is going to use this, provide
-the user in your next submission.
 
-Right now the only user is nfnetlink and it's merely to do a
-(sub-)module request.
+Have fun
+Christian Stroetmannn
 
-Therefore it's no surprise that we've never had any real well thought
-out semantics defined for the bind method, and it's also why we never
-thought of adding an unbind method before.
+[1] Friendica www.friendica.com
+[2] Diaspora diasporafoundation.org
+[3] StatusNet www.status.net
+[4] pump.io www.pump.io
+
