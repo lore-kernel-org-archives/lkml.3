@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313AbaDAENS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:13:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53848 "EHLO
+	id S1752627AbaDAENi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:13:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672AbaDAENP (ORCPT
+	with ESMTP id S1752344AbaDAENg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:13:15 -0400
+	Tue, 1 Apr 2014 00:13:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Liu <wei.liu2@citrix.com>, David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 3.13 07/22] xen/balloon: flush persistent kmaps in correct position
-Date: Mon, 31 Mar 2014 21:08:37 -0700
-Message-Id: <20140401040704.932839871@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.13 08/22] Revert "xen: properly account for _PAGE_NUMA during xen pte translations"
+Date: Mon, 31 Mar 2014 21:08:38 -0700
+Message-Id: <20140401040705.152847420@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -26,78 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 09ed3d5ba06137913960f9c9385f71fc384193ab upstream.
+commit 5926f87fdaad4be3ed10cec563bf357915e55a86 upstream.
 
-Xen balloon driver will update ballooned out pages' P2M entries to point
-to scratch page for PV guests. In 24f69373e2 ("xen/balloon: don't alloc
-page while non-preemptible", kmap_flush_unused was moved after updating
-P2M table. In that case for 32 bit PV guest we might end up with
+This reverts commit a9c8e4beeeb64c22b84c803747487857fe424b68.
 
-  P2M    X -----> S  (S is mfn of balloon scratch page)
-  M2P    Y -----> X  (Y is mfn in persistent kmap entry)
+PTEs in Xen PV guests must contain machine addresses if _PAGE_PRESENT
+is set and pseudo-physical addresses is _PAGE_PRESENT is clear.
 
-kmap_flush_unused() iterates through all the PTEs in the kmap address
-space, using pte_to_page() to obtain the page. If the p2m and the m2p
-are inconsistent the incorrect page is returned.  This will clear
-page->address on the wrong page which may cause subsequent oopses if
-that page is currently kmap'ed.
+This is because during a domain save/restore (migration) the page
+table entries are "canonicalised" and uncanonicalised". i.e., MFNs are
+converted to PFNs during domain save so that on a restore the page
+table entries may be rewritten with the new MFNs on the destination.
+This canonicalisation is only done for PTEs that are present.
 
-Move the flush back between get_page and __set_phys_to_machine to fix
-this.
+This change resulted in writing PTEs with MFNs if _PAGE_PROTNONE (or
+_PAGE_NUMA) was set but _PAGE_PRESENT was clear.  These PTEs would be
+migrated as-is which would result in unexpected behaviour in the
+destination domain.  Either a) the MFN would be translated to the
+wrong PFN/page; b) setting the _PAGE_PRESENT bit would clear the PTE
+because the MFN is no longer owned by the domain; or c) the present
+bit would not get set.
 
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Symptoms include "Bad page" reports when munmapping after migrating a
+domain.
+
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/balloon.c |   24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/pgtable.h |   14 ++------------
+ arch/x86/xen/mmu.c             |    4 ++--
+ 2 files changed, 4 insertions(+), 14 deletions(-)
 
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -406,11 +406,25 @@ static enum bp_state decrease_reservatio
- 			state = BP_EAGAIN;
- 			break;
- 		}
-+		scrub_page(page);
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -445,20 +445,10 @@ static inline int pte_same(pte_t a, pte_
+ 	return a.pte == b.pte;
+ }
  
--		pfn = page_to_pfn(page);
--		frame_list[i] = pfn_to_mfn(pfn);
-+		frame_list[i] = page_to_pfn(page);
-+	}
+-static inline int pteval_present(pteval_t pteval)
+-{
+-	/*
+-	 * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
+-	 * way clearly states that the intent is that protnone and numa
+-	 * hinting ptes are considered present for the purposes of
+-	 * pagetable operations like zapping, protection changes, gup etc.
+-	 */
+-	return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
+-}
+-
+ static inline int pte_present(pte_t a)
+ {
+-	return pteval_present(pte_flags(a));
++	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
++			       _PAGE_NUMA);
+ }
  
--		scrub_page(page);
-+	/*
-+	 * Ensure that ballooned highmem pages don't have kmaps.
-+	 *
-+	 * Do this before changing the p2m as kmap_flush_unused()
-+	 * reads PTEs to obtain pages (and hence needs the original
-+	 * p2m entry).
-+	 */
-+	kmap_flush_unused();
-+
-+	/* Update direct mapping, invalidate P2M, and add to balloon. */
-+	for (i = 0; i < nr_pages; i++) {
-+		pfn = frame_list[i];
-+		frame_list[i] = pfn_to_mfn(pfn);
-+		page = pfn_to_page(pfn);
+ #define pte_accessible pte_accessible
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct
+ /* Assume pteval_t is equivalent to all the other *val_t types. */
+ static pteval_t pte_mfn_to_pfn(pteval_t val)
+ {
+-	if (pteval_present(val)) {
++	if (val & _PAGE_PRESENT) {
+ 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		unsigned long pfn = mfn_to_pfn(mfn);
  
- #ifdef CONFIG_XEN_HAVE_PVMMU
- 		/*
-@@ -436,11 +450,9 @@ static enum bp_state decrease_reservatio
- 		}
- #endif
+@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t
  
--		balloon_append(pfn_to_page(pfn));
-+		balloon_append(page);
- 	}
- 
--	/* Ensure that ballooned highmem pages don't have kmaps. */
--	kmap_flush_unused();
- 	flush_tlb_all();
- 
- 	set_xen_guest_handle(reservation.extent_start, frame_list);
+ static pteval_t pte_pfn_to_mfn(pteval_t val)
+ {
+-	if (pteval_present(val)) {
++	if (val & _PAGE_PRESENT) {
+ 		unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		pteval_t flags = val & PTE_FLAGS_MASK;
+ 		unsigned long mfn;
 
 
