@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaDAWCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 18:02:40 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:24301 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaDAWCi (ORCPT
+	id S1751919AbaDAWCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 18:02:54 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:38238 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaDAWCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 18:02:38 -0400
-Message-ID: <1396389751.25314.26.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Tue, 01 Apr 2014 15:02:31 -0700
-In-Reply-To: <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
-	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
-	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
-	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
-	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
-	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
-	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
-	 <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
-	 <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
-	 <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
-	 <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Apr 2014 18:02:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <533B30AF.4060702@ontolinux.com>
+References: <533AD000.307@fb.com>
+	<533AD837.8010109@gmail.com>
+	<533ADDE0.3050802@fb.com>
+	<20140401155558.GG4717@saruman.home>
+	<533B30AF.4060702@ontolinux.com>
+Date: Wed, 2 Apr 2014 00:02:51 +0200
+Message-ID: <CAFLxGvxdqqj8Zhg-KxRAHsrpdYOxuResS_m6RkxF7WTNw0dj+g@mail.gmail.com>
+Subject: Re: [ANNOUNCE] New Linux Patch Review Group
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Christian Stroetmann <stroetmann@ontolinux.com>
+Cc: Boaz Harrosh <openosd@gmail.com>, Chris Mason <clm@fb.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 14:48 -0700, Andrew Morton wrote:
-> On Tue, 1 Apr 2014 17:41:54 -0400 KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
-> 
-> > >> > Hmmm so 0 won't really work because it could be weirdly used to disable
-> > >> > shm altogether... we cannot go to some negative value either since we're
-> > >> > dealing with unsigned, and cutting the range in half could also hurt
-> > >> > users that set the limit above that. So I was thinking of simply setting
-> > >> > SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
-> > >> > if they want a smaller value.
-> > >> >
-> > >> > Makes sense?
-> > >>
-> > >> I don't think people use 0 for disabling. but ULONG_MAX make sense to me too.
-> > >
-> > > Distros could have set it to [U]LONG_MAX in initscripts ten years ago
-> > > - less phone calls, happier customers.  And they could do so today.
-> > >
-> > > But they haven't.   What are the risks of doing this?
-> > 
-> > I have no idea really. But at least I'm sure current default is much worse.
-> > 
-> > 1. Solaris changed the default to total-memory/4 since Solaris 10 for DB.
-> >  http://www.postgresql.org/docs/9.1/static/kernel-resources.html
-> > 
-> > 2. RHEL changed the default to very big size since RHEL5 (now it is
-> > 64GB). Even tough many box don't have 64GB memory at that time.
-> 
-> Ah-hah, that's interesting info.
-> 
-> Let's make the default 64GB?
+On Tue, Apr 1, 2014 at 11:33 PM, Christian Stroetmann
+<stroetmann@ontolinux.com> wrote:
+> On Tue, 01.April.2014 17:55, Felipe Balbi wrote:
+>>
+>> On Tue, Apr 01, 2014 at 11:40:16AM -0400, Chris Mason wrote:
+>>>
+>>>
+>>> On 04/01/2014 11:16 AM, Boaz Harrosh wrote:
+>>>>
+>>>> On 04/01/2014 05:41 PM, Chris Mason wrote:
+>>>>>
+>>>>> Hello everyone,
+>>>>>
+>>>>> During last week's Collab summit, Jon Corbet suggested we use the power
+>>>>> of social media to improve the Linux kernel patch review process.
+>>>>>
+>>>>> We thought this was a great idea, and have been experimenting with a
+>>>>> new
+>>>>> Facebook group dedicated to patch discussion and review.  The new group
+>>>>> provides a dramatically improved development workflow, including:
+>>>>>
+>>>>>         * One click patch or comment approval
+>>>>>         * Comments enhanced with pictures and video
+>>>>>         * Who has seen your patches and comments
+>>>>>         * Searchable index of past submissions
+>>>>>         * A strong community without anonymous flames
+>>>>>
+>>>>> To help capture the group discussion in the final patch submission,
+>>>>> we suggest adding a Liked-by: tag to commits that have been through
+>>>>> group review.
+>>>>>
+>>>>> To use the new group, please join:
+>>>>>
+>>>>> https://www.facebook.com/groups/linuxpatches/
+>>>>>
+>>>>> Once you've joined, you can post patches in the group, or email patches
+>>>>> to
+>>>>> linuxpatches@groups.facebook.com
+>>>>>
+>>>>> -chris
+>>>>
+>>>> NACK! I do not have facebook and I do not like patches to be discussed
+>>>> behind my back. On the mailing list we don't even want HTML with bold
+>>>> lettered words so no thanks facebook adds nothing
+>>>>
+>>>> Please obliterate this bad idea.
+>>>>
+>>>> (And I do not have Facebook shares or care to)
+>>>
+>>> It's always hard to move on to new technologies. But at some point we
+>>> have
+>>> to recognize that the internet has developed a rich culture that the
+>>> kernel
+>>> community isn't taking full advantage of.
+>>>
+>>> I certainly don't expect everyone to convert right away, but there's a
+>>> whole
+>>> world out there beyond port 25.
+>>
+>> Agreed
+>>
+>> Acked-by: Felipe Balbi<balbi@ti.com>
+>>
+>> We might even be able to "recruit" a much more diverse group of
+>> reviewers who are undiscovered as of now ;-)
+>>
+> Sorry, but definitely: Nack!!!
 
-But again, yet another arbitrary value...
+We (the majority of the Linux maintainers) voted already on fb.com to
+make it out primary developing eco system
+and will abandon LKML starting with April 1st.
 
+-- 
+Thanks,
+//richard
