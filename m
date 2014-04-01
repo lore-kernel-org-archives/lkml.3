@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaDAMSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:18:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42163 "EHLO
+	id S1751699AbaDALQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:16:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42149 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaDALQW (ORCPT
+	with ESMTP id S1751410AbaDALQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:16:22 -0400
+	Tue, 1 Apr 2014 07:16:18 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>,
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Kevin Easton <kevin@guarana.org>,
+        Ruchi Kandoi <kandoiruchi@google.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 020/144] cpuset: fix a locking issue in cpuset_migrate_mm()
-Date: Tue,  1 Apr 2014 12:13:44 +0100
-Message-Id: <1396350948-29910-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 004/144] jiffies: Avoid undefined behavior from signed overflow
+Date: Tue,  1 Apr 2014 12:13:28 +0100
+Message-Id: <1396350948-29910-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,77 +34,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit 4729583006772b9530404bc1bb7c3aa4a10ffd4d upstream.
+commit 5a581b367b5df0531265311fc681c2abd377e5e6 upstream.
 
-I can trigger a lockdep warning:
+According to the C standard 3.4.3p3, overflow of a signed integer results
+in undefined behavior.  This commit therefore changes the definitions
+of time_after(), time_after_eq(), time_after64(), and time_after_eq64()
+to avoid this undefined behavior.  The trick is that the subtraction
+is done using unsigned arithmetic, which according to 6.2.5p9 cannot
+overflow because it is defined as modulo arithmetic.  This has the added
+(though admittedly quite small) benefit of shortening four lines of code
+by four characters each.
 
-  # mount -t cgroup -o cpuset xxx /cgroup
-  # mkdir /cgroup/cpuset
-  # mkdir /cgroup/tmp
-  # echo 0 > /cgroup/tmp/cpuset.cpus
-  # echo 0 > /cgroup/tmp/cpuset.mems
-  # echo 1 > /cgroup/tmp/cpuset.memory_migrate
-  # echo $$ > /cgroup/tmp/tasks
-  # echo 1 > /cgruop/tmp/cpuset.mems
+Note that the C standard considers the cast from unsigned to
+signed to be implementation-defined, see 6.3.1.3p3.  However, on a
+two's-complement system, an implementation that defines anything other
+than a reinterpretation of the bits is free to come to me, and I will be
+happy to act as a witness for its being committed to an insane asylum.
+(Although I have nothing against saturating arithmetic or signals in some
+cases, these things really should not be the default when compiling an
+operating-system kernel.)
 
-  ===============================
-  [ INFO: suspicious RCU usage. ]
-  3.14.0-rc1-0.1-default+ #32 Not tainted
-  -------------------------------
-  include/linux/cgroup.h:682 suspicious rcu_dereference_check() usage!
-  ...
-    [<ffffffff81582174>] dump_stack+0x72/0x86
-    [<ffffffff810b8f01>] lockdep_rcu_suspicious+0x101/0x140
-    [<ffffffff81105ba1>] cpuset_migrate_mm+0xb1/0xe0
-  ...
-
-We used to hold cgroup_mutex when calling cpuset_migrate_mm(), but now
-we hold cpuset_mutex, which causes task_css() to complain.
-
-This is not a false-positive but a real issue.
-
-Holding cpuset_mutex won't prevent a task from migrating to another
-cpuset, and it won't prevent the original task->cgroup from destroying
-during this change.
-
-Fixes: 5d21cc2db040 (cpuset: replace cgroup_mutex locking with cpuset internal locking)
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Sigend-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Kevin Easton <kevin@guarana.org>
+[ paulmck: Included time_after64() and time_after_eq64(), as suggested
+  by Eric Dumazet, also fixed commit message.]
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Ruchi Kandoi <kandoiruchi@google.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cpuset.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ include/linux/jiffies.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index b49f24a..84773c7 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -985,12 +985,6 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
-  *    Temporarilly set tasks mems_allowed to target nodes of migration,
-  *    so that the migration code can allocate pages on these nodes.
-  *
-- *    Call holding cpuset_mutex, so current's cpuset won't change
-- *    during this call, as manage_mutex holds off any cpuset_attach()
-- *    calls.  Therefore we don't need to take task_lock around the
-- *    call to guarantee_online_mems(), as we know no one is changing
-- *    our task's cpuset.
-- *
-  *    While the mm_struct we are migrating is typically from some
-  *    other task, the task_struct mems_allowed that we are hacking
-  *    is for our current task, which must allocate new pages for that
-@@ -1007,8 +1001,10 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 97ba4e7..d235e88 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -101,13 +101,13 @@ static inline u64 get_jiffies_64(void)
+ #define time_after(a,b)		\
+ 	(typecheck(unsigned long, a) && \
+ 	 typecheck(unsigned long, b) && \
+-	 ((long)(b) - (long)(a) < 0))
++	 ((long)((b) - (a)) < 0))
+ #define time_before(a,b)	time_after(b,a)
  
- 	do_migrate_pages(mm, from, to, MPOL_MF_MOVE_ALL);
- 
-+	rcu_read_lock();
- 	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
- 	guarantee_online_mems(mems_cs, &tsk->mems_allowed);
-+	rcu_read_unlock();
- }
+ #define time_after_eq(a,b)	\
+ 	(typecheck(unsigned long, a) && \
+ 	 typecheck(unsigned long, b) && \
+-	 ((long)(a) - (long)(b) >= 0))
++	 ((long)((a) - (b)) >= 0))
+ #define time_before_eq(a,b)	time_after_eq(b,a)
  
  /*
+@@ -130,13 +130,13 @@ static inline u64 get_jiffies_64(void)
+ #define time_after64(a,b)	\
+ 	(typecheck(__u64, a) &&	\
+ 	 typecheck(__u64, b) && \
+-	 ((__s64)(b) - (__s64)(a) < 0))
++	 ((__s64)((b) - (a)) < 0))
+ #define time_before64(a,b)	time_after64(b,a)
+ 
+ #define time_after_eq64(a,b)	\
+ 	(typecheck(__u64, a) && \
+ 	 typecheck(__u64, b) && \
+-	 ((__s64)(a) - (__s64)(b) >= 0))
++	 ((__s64)((a) - (b)) >= 0))
+ #define time_before_eq64(a,b)	time_after_eq64(b,a)
+ 
+ #define time_in_range64(a, b, c) \
 -- 
 1.9.1
 
