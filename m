@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaDAViu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:38:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51573 "EHLO mx2.suse.de"
+	id S1751794AbaDAVlC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:41:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63065 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735AbaDAVis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:38:48 -0400
-Date: Tue, 1 Apr 2014 23:38:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jakub Sitnicki <jsitnicki@gmail.com>
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ext2: acl: remove unneeded include of
- linux/capability.h
-Message-ID: <20140401213846.GA31099@quack.suse.cz>
-References: <1395645684-26512-1-git-send-email-jsitnicki@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395645684-26512-1-git-send-email-jsitnicki@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751366AbaDAVlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 17:41:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,775,1389772800"; 
+   d="scan'208";a="512182596"
+From: Andi Kleen <andi@firstfloor.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/3] Revert "lto: Make asmlinkage __visible"
+Date: Tue,  1 Apr 2014 23:40:10 +0200
+Message-Id: <1396388412-22573-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1396388412-22573-1-git-send-email-andi@firstfloor.org>
+References: <1396388412-22573-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 24-03-14 08:21:24, Jakub Sitnicki wrote:
-> acl.c has not been (directly) using the interface defined by
-> linux/capability.h header since commit 3bd858ab1c451725c07a
-> ("Introduce is_owner_or_cap() to wrap CAP_FOWNER use with fsuid
-> check"). Remove it.
-  Thanks. I've merged the patch.
+From: Andi Kleen <ak@linux.intel.com>
 
-								Honza
-> 
-> Signed-off-by: Jakub Sitnicki <jsitnicki@gmail.com>
-> ---
->  fs/ext2/acl.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/fs/ext2/acl.c b/fs/ext2/acl.c
-> index 1b8001b..27695e6 100644
-> --- a/fs/ext2/acl.c
-> +++ b/fs/ext2/acl.c
-> @@ -4,7 +4,6 @@
->   * Copyright (C) 2001-2003 Andreas Gruenbacher, <agruen@suse.de>
->   */
->  
-> -#include <linux/capability.h>
->  #include <linux/init.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
-> -- 
-> 1.8.5.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+As requested by Linus, revert adding __visible to asmlinkage.
+Instead we add __visible explicitely to all the symbols
+that need it.
+
+This reverts commit 128ea04a9885af9629059e631ddf0cab4815b589.
+---
+ include/linux/linkage.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+index 34a513a..a6a42dd 100644
+--- a/include/linux/linkage.h
++++ b/include/linux/linkage.h
+@@ -12,9 +12,9 @@
+ #endif
+ 
+ #ifdef __cplusplus
+-#define CPP_ASMLINKAGE extern "C" __visible
++#define CPP_ASMLINKAGE extern "C"
+ #else
+-#define CPP_ASMLINKAGE __visible
++#define CPP_ASMLINKAGE
+ #endif
+ 
+ #ifndef asmlinkage
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.5.2
+
