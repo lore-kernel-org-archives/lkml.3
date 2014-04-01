@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139AbaDALgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:36:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42631 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964AbaDALS1 (ORCPT
+	id S1753294AbaDALhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:37:07 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:57329 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753092AbaDALhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:27 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Filipe Brandenburger <filbranden@google.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 109/144] memcg: reparent charges of children before processing parent
-Date: Tue,  1 Apr 2014 12:15:13 +0100
-Message-Id: <1396350948-29910-110-git-send-email-luis.henriques@canonical.com>
+	Tue, 1 Apr 2014 07:37:03 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 1/1] serial: 8250, disable "too much work" messages
+Date: Tue,  1 Apr 2014 13:37:00 +0200
+Message-Id: <1396352220-5031-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
+The 8250 driver now reports many of these:
+  serial8250: too much work for irq4
+These messages turned out to be common these days with a use of
+virtualization. I tried to increase the limit of processed characters
+in commit e7328ae1848966181a7ac47e8ae6cddbd2cf55f3 (serial: 8250,
+increase PASS_LIMIT) in 2011. It was raised from 256 to 512, but it is
+still not enough, apparently.
 
-------------------
+So disable the warning unless somebody turns on DEBUG (or
+DYNAMIC_DEBUG _and_ the message).
 
-From: Filipe Brandenburger <filbranden@google.com>
-
-commit 4fb1a86fb5e4209a7d4426d4e586c58e9edc74ac upstream.
-
-Sometimes the cleanup after memcg hierarchy testing gets stuck in
-mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
-
-There may turn out to be several causes, but a major cause is this: the
-workitem to offline parent can get run before workitem to offline child;
-parent's mem_cgroup_reparent_charges() circles around waiting for the
-child's pages to be reparented to its lrus, but it's holding
-cgroup_mutex which prevents the child from reaching its
-mem_cgroup_reparent_charges().
-
-Further testing showed that an ordered workqueue for cgroup_destroy_wq
-is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
-stage on the way can mess up the order before reaching the workqueue.
-
-Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
-all its children (and grandchildren, in the correct order) to have their
-charges reparented first.
-
-Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
-Signed-off-by: Filipe Brandenburger <filbranden@google.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ Hugh:
-  Yes, more differences, and the old mem_cgroup_reparent_charges line
-  is intentionally left in for 3.10 whereas it was removed for 3.12+:
-  that's because the css/cgroup iterator changed in between, it used
-  not to supply the root of the subtree, but nowadays it does. ]
-[ luis: backported to 3.11: used Hugh's backport to 3.10 ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: Martin Pluskal <mpluskal@suse.com>
+Reported-by: Takashi Iwai <tiwai@suse.com>
+References: https://bugzilla.novell.com/show_bug.cgi?id=868394
 ---
- mm/memcontrol.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/tty/serial/8250/8250_core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index bb13089..4e4b328 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6346,11 +6346,25 @@ static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
- static void mem_cgroup_css_offline(struct cgroup *cont)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-+	struct cgroup *iter;
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 81f909c2101f..139ab1997e06 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1601,8 +1601,7 @@ static irqreturn_t serial8250_interrupt(int irq, void *dev_id)
+ 		l = l->next;
  
- 	kmem_cgroup_css_offline(memcg);
- 
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
-+
-+	/*
-+	 * This requires that offlining is serialized.  Right now that is
-+	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-+	 */
-+	rcu_read_lock();
-+	cgroup_for_each_descendant_post(iter, cont) {
-+		rcu_read_unlock();
-+		mem_cgroup_reparent_charges(mem_cgroup_from_cont(iter));
-+		rcu_read_lock();
-+	}
-+	rcu_read_unlock();
- 	mem_cgroup_reparent_charges(memcg);
-+
- 	mem_cgroup_destroy_all_caches(memcg);
- 	vmpressure_cleanup(&memcg->vmpressure);
- }
+ 		if (l == i->head && pass_counter++ > PASS_LIMIT) {
+-			/* If we hit this, we're dead. */
+-			printk_ratelimited(KERN_ERR
++			pr_debug_ratelimited(
+ 				"serial8250: too much work for irq%d\n", irq);
+ 			break;
+ 		}
 -- 
 1.9.1
 
