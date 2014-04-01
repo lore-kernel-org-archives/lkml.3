@@ -1,95 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaDASRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:17:08 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:47054 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353AbaDASRG (ORCPT
+	id S1751525AbaDAS0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:26:32 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:4120 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340AbaDAS0b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:17:06 -0400
-Message-ID: <533B0288.2020304@windriver.com>
-Date: Tue, 1 Apr 2014 14:16:40 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 1 Apr 2014 14:26:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 01 Apr 2014 11:22:04 -0700
+From: Arun Shamanna Lakshmi <aruns@nvidia.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Songhee Baek <sbaek@nvidia.com>
+Date: Tue, 1 Apr 2014 11:26:30 -0700
+Subject: RE: [PATCH] ASoC: DAPM: Add support for multi register mux
+Thread-Topic: [PATCH] ASoC: DAPM: Add support for multi register mux
+Thread-Index: Ac9NfqaUeS2HmY4dRnC0ftc6uLxCFgAV1unwAAAKJmA=
+Message-ID: <781A12BB53C15A4BB37291FDE08C03F3A05CDCD659@HQMAIL02.nvidia.com>
+References: <1396333288-19113-1-git-send-email-aruns@nvidia.com>
+ <533A6F4A.2060702@metafoo.de>
+ <781A12BB53C15A4BB37291FDE08C03F3A05CDCD63B@HQMAIL02.nvidia.com>
+In-Reply-To: <781A12BB53C15A4BB37291FDE08C03F3A05CDCD63B@HQMAIL02.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Len Brown <len.brown@intel.com>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Arne Bockholdt <linux-kernel@bockholdt.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>, <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Regression in intel_idle on Avaton/Rangely Mohon Peak board
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.56.57]
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
 
-I've got an eval board with a 1.7GHz Avaton/C2000 that hangs at boot
-shortly after the idle driver registration -- typically 1/2 dozen
-dmesg lines later, around rtc init, or net stack init.
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Tuesday, April 01, 2014 12:48 AM
+> To: Arun Shamanna Lakshmi
+> Cc: lgirdwood@gmail.com; broonie@kernel.org;
+swarren@wwwdotorg.org;
+> perex@perex.cz; tiwai@suse.de; alsa- devel@alsa-project.org;
+> linux-kernel@vger.kernel.org; Songhee Baek
+> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
+>
+> On 04/01/2014 08:21 AM, Arun Shamanna Lakshmi wrote:
+> > Modify soc_enum struct to handle pointers for reg and mask. Add
+dapm
+> > get and put APIs for multi register mux with one hot encoding.
+> >
+> > Signed-off-by: Arun Shamanna Lakshmi <aruns@nvidia.com>
+> > Signed-off-by: Songhee Baek <sbaek@nvidia.com>
+>
+> Looks in my opinion much better than the previous version :) Just a
+> few minor issues, comments inline
+>
+> > ---
+> >   include/sound/soc-dapm.h |   10 ++++
+> >   include/sound/soc.h      |   22 +++++--
+> >   sound/soc/soc-core.c     |   12 ++--
+> >   sound/soc/soc-dapm.c     |  143
+> +++++++++++++++++++++++++++++++++++++++++-----
+> >   4 files changed, 162 insertions(+), 25 deletions(-)
+> >
+> > diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+> index
+> > ef78f56..983b0ab 100644
+> > --- a/include/sound/soc-dapm.h
+> > +++ b/include/sound/soc-dapm.h
+> > @@ -305,6 +305,12 @@ struct device;
+> >    	.get = snd_soc_dapm_get_enum_double, \
+> >    	.put = snd_soc_dapm_put_enum_double, \
+> >     	.private_value = (unsigned long)&xenum }
+> > +#define SOC_DAPM_ENUM_WIDE(xname, xenum) \
+>
+> maybe just call it ENUM_ONEHOT, since it doesn't actually have to be
+> more than one register.
+>
+> [...]
+> > diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c index
+> > cd52d52..aba0094 100644
+> > --- a/sound/soc/soc-core.c
+> > +++ b/sound/soc/soc-core.c
+> > @@ -2601,12 +2601,12 @@ int snd_soc_get_enum_double(struct
+> snd_kcontrol *kcontrol,
+> >   	unsigned int val, item;
+> >   	unsigned int reg_val;
+> >
+> > -	reg_val = snd_soc_read(codec, e->reg);
+> > -	val = (reg_val >> e->shift_l) & e->mask;
+> > +	reg_val = snd_soc_read(codec, e->reg[0]);
+> > +	val = (reg_val >> e->shift_l) & e->mask[0];
+> >   	item = snd_soc_enum_val_to_item(e, val);
+> >   	ucontrol->value.enumerated.item[0] = item;
+> >   	if (e->shift_l != e->shift_r) {
+> > -		val = (reg_val >> e->shift_l) & e->mask;
+> > +		val = (reg_val >> e->shift_l) & e->mask[0];
+> >   		item = snd_soc_enum_val_to_item(e, val);
+> >   		ucontrol->value.enumerated.item[1] = item;
+> >   	}
+> > @@ -2636,15 +2636,15 @@ int snd_soc_put_enum_double(struct
+> snd_kcontrol *kcontrol,
+> >   	if (item[0] >= e->items)
+> >   		return -EINVAL;
+> >   	val = snd_soc_enum_item_to_val(e, item[0]) << e->shift_l;
+> > -	mask = e->mask << e->shift_l;
+> > +	mask = e->mask[0] << e->shift_l;
+> >   	if (e->shift_l != e->shift_r) {
+> >   		if (item[1] >= e->items)
+> >   			return -EINVAL;
+> >   		val |= snd_soc_enum_item_to_val(e, item[1]) << e-
+shift_r;
+> > -		mask |= e->mask << e->shift_r;
+> > +		mask |= e->mask[0] << e->shift_r;
+> >   	}
+> >
+> > -	return snd_soc_update_bits_locked(codec, e->reg, mask, val);
+> > +	return snd_soc_update_bits_locked(codec, e->reg[0], mask, val);
+> >   }
+> >   EXPORT_SYMBOL_GPL(snd_soc_put_enum_double);
+> >
+> > diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c index
+> > c8a780d..4d2b35c 100644
+> > --- a/sound/soc/soc-dapm.c
+> > +++ b/sound/soc/soc-dapm.c
+> > @@ -514,9 +514,9 @@ static int dapm_connect_mux(struct
+> snd_soc_dapm_context *dapm,
+> >   	unsigned int val, item;
+> >   	int i;
+> >
+> > -	if (e->reg != SND_SOC_NOPM) {
+> > -		soc_widget_read(dest, e->reg, &val);
+> > -		val = (val >> e->shift_l) & e->mask;
+> > +	if (e->reg[0] != SND_SOC_NOPM) {
+> > +		soc_widget_read(dest, e->reg[0], &val);
+> > +		val = (val >> e->shift_l) & e->mask[0];
+> >   		item = snd_soc_enum_val_to_item(e, val);
+>
+> This probably should handle the new enum type as well. You'll probably
+> need some kind of flag in the struct to distinguish between the two
+> enum types.
 
-It may be that this early board/early bios makes it a non-issue for
-mainline, but I figured I'd better mention it anyway.
+Any suggestion on the flag name ?
 
-Problem starts with commit v3.12-rc4-32-gfab04b2208dd
-("intel_idle: Support Intel Atom Processor C2000 Product Family").
+>
+> >   	} else {
+> >   		/* since a virtual mux has no backing registers to
+> [...]
+> >   /**
+> > + * snd_soc_dapm_get_enum_wide - dapm semi enumerated multiple
+> > + registers
+>
+> What's a semi-enumerated register?
+>
+> > + *					mixer get callback
+> > + * @kcontrol: mixer control
+> > + * @ucontrol: control element information
+> > + *
+> > + * Callback to get the value of a dapm semi enumerated multiple
+> > +register mixer
+> > + * control.
+> > + *
+> > + * semi enumerated multiple registers mixer:
+> > + * the mixer has multiple registers to set the enumerated items.
+> > +The enumerated
+> > + * items are referred as values.
+> > + * Can be used for handling bit field coded enumeration for example.
+> > + *
+> > + * Returns 0 for success.
+> > + */
+> > +int snd_soc_dapm_get_enum_wide(struct snd_kcontrol *kcontrol,
+> > +			struct snd_ctl_elem_value *ucontrol) {
+> > +	struct snd_soc_codec *codec =
+> snd_soc_dapm_kcontrol_codec(kcontrol);
+> > +	struct soc_enum *e = (struct soc_enum *)kcontrol-
+> >private_value;
+> > +	unsigned int reg_val, val, bit_pos = 0, reg_idx;
+> > +
+> > +	for (reg_idx = 0; reg_idx < e->num_regs; reg_idx++) {
+> > +		reg_val = snd_soc_read(codec, e->reg[reg_idx]);
+> > +		val = reg_val & e->mask[reg_idx];
+> > +		if (val != 0) {
+> > +			bit_pos = ffs(val) + (e->reg_width * reg_idx);
+>
+> Should be __ffs. __ffs returns the bits zero-indexed and ffs one-indexed.
+> That will work better for cases where there is not additional value
+> table necessary, since it means bit 1 maps to value 0.
+>
+> > +			break;
+> > +		}
+> > +	}
+> > +
+> > +	ucontrol->value.enumerated.item[0] =
+> > +			snd_soc_enum_val_to_item(e, bit_pos);
+> > +
+> > +	return 0;
+> > +}
+> [...]
+> > +int snd_soc_dapm_put_enum_wide(struct snd_kcontrol *kcontrol,
+> > +			struct snd_ctl_elem_value *ucontrol) {
+> > +	struct snd_soc_codec *codec =
+> snd_soc_dapm_kcontrol_codec(kcontrol);
+> > +	struct snd_soc_card *card = codec->card;
+> > +	struct soc_enum *e = (struct soc_enum *)kcontrol-
+> >private_value;
+> > +	unsigned int *item = ucontrol->value.enumerated.item;
+> > +	unsigned int change = 0, reg_idx = 0, value, bit_pos;
+> > +	struct snd_soc_dapm_update update;
+> > +	int ret = 0, reg_val = 0, i;
+> > +
+> > +	if (item[0] >= e->items)
+> > +		return -EINVAL;
+> > +
+> > +	value = snd_soc_enum_item_to_val(e, item[0]);
+> > +
+> > +	if (value) {
+> > +		/* get the register index and value to set */
+> > +		reg_idx = (value - 1) / e->reg_width;
+> > +		bit_pos = (value - 1) % e->reg_width;
+>
+> Changing the ffs to __ffs also means you can drop the ' - 1' here.
+>
+> Also e->reg_width should be (codec->val_bytes * 8) and reg_width field
+> should be dropped from the enum struct.
+>
+> > +		reg_val = BIT(bit_pos);
+> > +	}
+> > +
+> > +	for (i = 0; i < e->num_regs; i++) {
+> > +		if (i == reg_idx) {
+> > +			change = snd_soc_test_bits(codec, e->reg[i],
+> > +							e->mask[i],
+> reg_val);
+> > +
+> > +		} else {
+> > +			/* accumulate the change to update the DAPM
+> path
+> > +			    when none is selected */
+> > +			change += snd_soc_test_bits(codec, e->reg[i],
+> > +							e->mask[i], 0);
+>
+> change |=
+>
+> > +
+> > +			/* clear the register when not selected */
+> > +			snd_soc_write(codec, e->reg[i], 0);
+>
+> I think this should happen as part of the DAPM update sequence like
+> you had earlier. Some special care should probably be take to make
+> sure that you de-select the previous mux input before selecting the
+> new one if the new one is in a different register than the previous one.
 
-Even though a bisect leads here, this commit shouldn't be considered
-in isolation however, since it depends on these earlier v3.12 commits:
+I am not sure I follow this part. We are clearing the 'not selected'
+registers before we set the one we want. Do you want us to loop the
+logic of soc_dapm_mux_update_power for each register ? or do you
+want to change the dapm_update structure so that it takes all the regs,
+masks, and values together ?
+>
+> > +		}
+> > +	}
+> > +
+> > +	mutex_lock_nested(&card->dapm_mutex,
+> SND_SOC_DAPM_CLASS_RUNTIME);
+> > +
+> [...]
 
-commit v3.12-rc2-1-geba682a5aeb6
-   "intel_idle: shrink states tables"
-
-commit v3.12-rc2-2-g9d046ccb9808
-   "intel_idle: mark states tables with __initdata tag"
-
-..and then these v3.13 subsequent fixups;
-
-commit v3.13-rc1-1-g22e580d07f65
-   "intel_idle: Fixed C6 state on Avoton/Rangeley processors"
-
-commit v3.13-rc7-1-gba0dc81ed5d9
-   "Revert "intel_idle: mark states tables with __initdata tag""
-
-commit v3.13-rc7-2-g88390996c95b
-   "intel_idle: close avn_cstates array with correct marker"
-
-However, even with all these present in v3.13-final, the board
-still does the same thing as the bisected fab 04 commit.  Same
-for v3.14-final and today's linux-next -- i.e. the regression
-remains uninterrupted.
-
-The interesting part is that a nearly identical board, but with
-different (newer/faster) CPU and newer BIOS doesn't have the hang.
-
-Hardware details:
-
-board: intel Mohon Peak CRB GA-95PEV ALPHA2  rev0.3
-BIOS: EDVLCRB1.86B.0010.R00.1303272109  03/27/2013
-CPU (dmidecode):
-        Family: Pentium 4
-        ID: D0 06 04 00 FF FB EB 9F
-        Signature: Type 0, Family 6, Model 77, Stepping 0
-        Version: Genuine Intel(R) CPU   4000  @ 1.70GHz
-
-The same board that doesn't hang, for comparison, has:
-
-BIOS: EDVLCRB1.86B.0017.R00.1305271414  05/27/2013
-CPU: (dmidecode):
-        Family: Pentium 4
-        ID: D0 06 04 00 FF FB EB 9F
-        Signature: Type 0, Family 6, Model 77, Stepping 0
-        Version: Genuine Intel(R) CPU   4000  @ 2.40GHz
-
-Since it appears only the clock multiplier has changed, I'm
-guessing we've hit a bug in the earlier BIOS.  These boards
-don't have flash capable BIOS AFAICT -- looks like the little
-trap-door socket style that houses a removable chip?
-
-I have the full dmidecode files, dmesg from 3.11-distro kernel,
-lspci, and /proc/cpuinfo from both boards, if that is needed.
-
-Paul.
