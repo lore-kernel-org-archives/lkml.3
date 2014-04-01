@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaDAMzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:55:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50129 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351AbaDAMzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 08:55:46 -0400
-Message-ID: <533AB741.5080508@redhat.com>
-Date: Tue, 01 Apr 2014 08:55:29 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751808AbaDAM4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:56:11 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:54613 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbaDAM4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 08:56:09 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, shli@kernel.org,
-        akpm@linux-foundation.org, hughd@google.com, mgorman@suse.de,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86,mm: delay TLB flush after clearing accessed bit
-References: <20140331113442.0d628362@annuminas.surriel.com> <20140401105318.GA2823@gmail.com>
-In-Reply-To: <20140401105318.GA2823@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Tue, 1 Apr 2014 08:56:08 -0400
+X-Google-Sender-Auth: nfXZ7QBUMn0XvWJZxhAx_GGmf8M
+Message-ID: <CA+5PVA67oBeHUiPXj0viNgrX+uDnJ9LsZSPXF1cLt_D511KKtA@mail.gmail.com>
+Subject: liblockdep soname versioning
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 06:53 AM, Ingo Molnar wrote:
-> 
-> The speedup looks good to me!
-> 
-> I have one major concern (see the last item), plus a few minor nits:
+Hi Sasha,
 
-I will address all the minor issues. Let me explain the major one :)
+We've had a request [1] to package up liblockdep in Fedora.  Looking
+things over, I noticed the library isn't actually versioned at all and
+instead just builds a plain .so file.  That's likely fine during
+development of it, but if distros are to ship it for broader use then
+it would be a good idea to specify the soname and use a versioned .so.
 
->> @@ -196,6 +201,13 @@ static inline void reset_lazy_tlbstate(void)
->>  	this_cpu_write(cpu_tlbstate.active_mm, &init_mm);
->>  }
->>  
->> +static inline void tlb_set_force_flush(int cpu)
->> +{
->> +	struct tlb_state *percputlb= &per_cpu(cpu_tlbstate, cpu);
-> 
-> s/b= /b = /
-> 
->> +	if (percputlb->force_flush == false)
->> +		percputlb->force_flush = true;
->> +}
->> +
->>  #endif	/* SMP */
+The makefile already has LIBLOCKDEP_VERSION defined.  Would it be
+possible to use this as the soname and version number?  Then
+liblockdep.so could be the normal symlink to the versioned .so
+(liblockdep.so.0.0.1 in this case).
 
-This code does a test before the set, so each cache line will only be
-grabbed exclusively once, if there is heavy pageout scanning activity.
+Thanks.
 
->> @@ -399,11 +400,13 @@ int pmdp_test_and_clear_young(struct vm_area_struct *vma,
->>  int ptep_clear_flush_young(struct vm_area_struct *vma,
->>  			   unsigned long address, pte_t *ptep)
->>  {
->> -	int young;
->> +	int young, cpu;
->>  
->>  	young = ptep_test_and_clear_young(vma, address, ptep);
->> -	if (young)
->> -		flush_tlb_page(vma, address);
->> +	if (young) {
->> +		for_each_cpu(cpu, vma->vm_mm->cpu_vm_mask_var)
->> +			tlb_set_force_flush(cpu);
-> 
-> Hm, just to play the devil's advocate - what happens when we have a va 
-> that is used on a few dozen, a few hundred or a few thousand CPUs? 
-> Will the savings be dwarved by the O(nr_cpus_used) loop overhead?
-> 
-> Especially as this is touching cachelines on other CPUs and likely 
-> creating the worst kind of cachemisses. That can really kill 
-> performance.
+josh
 
-flush_tlb_page does the same O(nr_cpus_used) loop, but it sends an
-IPI to each CPU every time, instead of dirtying a cache line once
-per pageout run (or until the next context switch).
-
-Does that address your concern?
-
--- 
-All rights reversed
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=1082763
