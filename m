@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaDALxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:53:35 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:58124
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752939AbaDALxC (ORCPT
+	id S1752336AbaDALRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:17:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42432 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaDALRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:53:02 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: <broonie@kernel.org>, <shawn.guo@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
-        <Li.Xiubo@freescale.com>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: [PATCH 2/2] ARM: dts: Add ipg clock for sai2 on VF610 platform
-Date: Tue, 1 Apr 2014 19:52:53 +0800
-Message-ID: <0c5ca85a8d6ab2e8ee5e543d7ab8ec4c2ff5bf2a.1396352401.git.Guangyu.Chen@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1396352401.git.Guangyu.Chen@freescale.com>
-References: <cover.1396352401.git.Guangyu.Chen@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Tue, 1 Apr 2014 07:17:34 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 069/144] virtio-net: alloc big buffers also when guest can receive UFO
+Date: Tue,  1 Apr 2014 12:14:33 +0100
+Message-Id: <1396350948-29910-70-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we added ipg clock to the DT binding, we should update the current
-SAI dts/dtsi so as not to break their functions.
+3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+------------------
+
+From: Jason Wang <jasowang@redhat.com>
+
+commit 0e7ede80d929ff0f830c44a543daa1acd590c749 upstream.
+
+We should alloc big buffers also when guest can receive UFO
+packets to let the big packets fit into guest rx buffer.
+
+Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
+(virtio-net: Allow UFO feature to be set and advertised.)
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/vf610.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/virtio_net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index d31ce1b..493c498 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -140,6 +140,6 @@
- 				reg = <0x40031000 0x1000>;
- 				interrupts = <0 86 0x04>;
--				clocks = <&clks VF610_CLK_SAI2>;
--				clock-names = "sai";
-+				clocks = <&clks VF610_CLK_SAI2>, <&clks VF610_CLK_SAI2>;
-+				clock-names = "ipg", "sai";
- 				status = "disabled";
- 			};
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index a0c05e0..2835bfe 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1597,7 +1597,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+ 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
+ 		vi->big_packets = true;
+ 
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
 -- 
-1.8.4
-
+1.9.1
 
