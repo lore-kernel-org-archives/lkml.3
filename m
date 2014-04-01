@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaDAMqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:46:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:27122 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaDAMqO (ORCPT
+	id S1751579AbaDAMrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:47:13 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:62998 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786AbaDAMrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 08:46:14 -0400
-Date: Tue, 1 Apr 2014 08:46:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jungseok Lee <jays.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, sungjinn.chung@samsung.com,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH] swiotlb: Correct kernel command line handler
-Message-ID: <20140401124606.GA7135@phenom.dumpdata.com>
-References: <011801cf4d4c$f7ba51f0$e72ef5d0$@samsung.com>
+	Tue, 1 Apr 2014 08:47:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <011801cf4d4c$f7ba51f0$e72ef5d0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Date: Tue, 1 Apr 2014 09:47:09 -0300
+Message-ID: <CAGG-pURwpGGFyCp-htffegnVhf1VwAke1XPrC+GirXKy-HhqJA@mail.gmail.com>
+Subject: [RFC] Only a.out QMAGIC format is working
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "open list:FILESYSTEMS (VFS...), linux-kernel@vger.kernel.org (open
+	list)" <linux-fsdevel@vger.kernel.org>,
+        kernel-br <kernel-br@googlegroups.com>,
+        kernelnewbies <Kernelnewbies@kernelnewbies.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 10:51:58AM +0900, Jungseok Lee wrote:
-> This patch corrects kernel command line handler when io_tlb_nslabs
-> is set to 0.
-> 
-> A current implementation allocates default size memory (64MB) when
-> 0 is given to io_tlb_nslabs ("swiotlb=0") by kernel command line.
-> In other words, memory is allocated unintentionally.
+Sirs,
 
-What are the other IOMMUs that end up taking over the DMA ops?
-Or do you end up with no DMA ops?
+I was researching about old binary formats and did some tests.
+Meantime, I was able to run sucessfully only the QMAGIC format.
+Nonetheless, the OMAGIC, NMAGIC and ZMAGIC didn't work anymore.
 
-> 
-> Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-> Signed-off-by: Sungjinn Chung <sungjinn.chung@samsung.com>
-> ---
->  lib/swiotlb.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> index b604b83..9fe9f71 100644
-> --- a/lib/swiotlb.c
-> +++ b/lib/swiotlb.c
-> @@ -55,6 +55,8 @@
->  
->  int swiotlb_force;
->  
-> +static int swiotlb_no_use;
-> +
->  /*
->   * Used to do a quick range check in swiotlb_tbl_unmap_single and
->   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
-> @@ -102,6 +104,8 @@ setup_io_tlb_npages(char *str)
->  		io_tlb_nslabs = simple_strtoul(str, &str, 0);
->  		/* avoid tail segment of size < IO_TLB_SEGSIZE */
->  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-> +		if (!io_tlb_nslabs)
-> +			swiotlb_no_use = 1;
->  	}
->  	if (*str == ',')
->  		++str;
-> @@ -212,7 +216,7 @@ swiotlb_init(int verbose)
->  	unsigned char *vstart;
->  	unsigned long bytes;
->  
-> -	if (!io_tlb_nslabs) {
-> +	if (!swiotlb_no_use && !io_tlb_nslabs) {
->  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
->  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
->  	}
-> @@ -244,7 +248,7 @@ swiotlb_late_init_with_default_size(size_t default_size)
->  	unsigned int order;
->  	int rc = 0;
->  
-> -	if (!io_tlb_nslabs) {
-> +	if (!swiotlb_no_use && !io_tlb_nslabs) {
->  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
->  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
->  	}
-> -- 
-> 1.7.10.4
-> 
-> 
+The test occurred using old slackware binaries and some new, the
+latter compiled by me, using cross-compiled as and ld. In any case,
+the QMAGIC was the only functional.
+
+After some debugging I identified (when loading a OMAGIC) that the
+kernel sigkill the current after this checking:
+
+http://lxr.linux.no/linux+v3.13.5/arch/x86/ia32/ia32_aout.c#L325
+
+ 325                error = vm_brk(text_addr & PAGE_MASK, map_size);
+ 326
+ 327                if (error != (text_addr & PAGE_MASK)) {
+ 328                        send_sig(SIGKILL, current, 0);
+ 329                        return error;
+ 330                }
+
+I suppose this happens due to changes made, in the course of time, in
+the memory mapping (vm_brk/do_brk), therefore the only one that still
+works is the QMAGIC (the aligned one). Or maybe, it's purposely. [RFC]
+
+Is important to note that when a ZMAGIC is loaded what happens is a
+"Segmentation fault" and not "SIGKILL".
+
+That was reported by others too:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/966472
+
+-- 
+Regards,
+
+Geyslan G. Bem
+hackingbits.com
