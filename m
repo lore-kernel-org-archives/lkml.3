@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbaDAQNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:13:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44560 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaDAQNq (ORCPT
+	id S1752890AbaDAQOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:14:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:36563 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752091AbaDAQOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:13:46 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Artem Fetishev <artem_fetishev@epam.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 82/86] x86: fix boot on uniprocessor systems
-Date: Tue,  1 Apr 2014 09:08:35 -0700
-Message-Id: <1396368519-12728-83-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 1 Apr 2014 12:14:15 -0400
+Date: Tue, 1 Apr 2014 12:14:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
+Subject: [GIT PULL] ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
+Message-ID: <20140401121412.24945d54@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+Linus,
 
-From: Artem Fetishev <artem_fetishev@epam.com>
+This just contains a single update by Satoru Takeuchi, which adds
+CLOSE_CONSOLE_SIGNAL to the kvm.conf file, as the kvm guest requires
+a different signal than a normal console uses.
 
-commit 825600c0f20e595daaa7a6dd8970f84fa2a2ee57 upstream.
+Please pull the latest ktest-v3.15 tree, which can be found at:
 
-On x86 uniprocessor systems topology_physical_package_id() returns -1
-which causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized
-which leads to GPF in rapl_pmu_init().
 
-See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+ktest-v3.15
 
-It turns out that physical_package_id and core_id can actually be
-retreived for uniprocessor systems too.  Enabling them also fixes
-rapl_pmu code.
+Tag SHA1: 13497aad499b1d051de60c988fdbe8bcecf2fa4a
+Head SHA1: 62183dcac539a14ed0a820b8392db353d72a7d7e
 
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/include/asm/topology.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index 095b215..60bd274 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
+Satoru Takeuchi (1):
+      ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
+
+----
+ tools/testing/ktest/examples/kvm.conf | 4 ++++
+ 1 file changed, 4 insertions(+)
+---------------------------
+commit 62183dcac539a14ed0a820b8392db353d72a7d7e
+Author: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Date:   Sun Feb 23 10:19:28 2014 +0900
+
+    ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
+    
+    As mentioned at commit 5a5d8e48449, we can't terminate 'virsh console'
+    with the default signal(INT). So it's better to set CLOSE_CONSOLE_SIGNAL
+    in the kvm.conf.
+    
+    Link: http://lkml.kernel.org/r/8738jatylb.wl%satoru.takeuchi@gmail.com
+    
+    Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+    [ Typo fixed by ]
+    Signed-off-by: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/tools/testing/ktest/examples/kvm.conf b/tools/testing/ktest/examples/kvm.conf
+index 831c7c5..fbc134f 100644
+--- a/tools/testing/ktest/examples/kvm.conf
++++ b/tools/testing/ktest/examples/kvm.conf
+@@ -10,6 +10,10 @@ MACHINE = Guest
+ # Use virsh to read the serial console of the guest
+ CONSOLE =  virsh console ${MACHINE}
  
- extern const struct cpumask *cpu_coregroup_mask(int cpu);
- 
--#ifdef ENABLE_TOPO_DEFINES
- #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
++# Use SIGKILL to terminate virsh console. We can't kill virsh console
++# by the default signal, SIGINT.
++CLOSE_CONSOLE_SIGNAL = KILL
 +
-+#ifdef ENABLE_TOPO_DEFINES
- #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
- 
--- 
-1.8.3.2
-
+ #*************************************#
+ # This part is the same as test.conf  #
+ #*************************************#
