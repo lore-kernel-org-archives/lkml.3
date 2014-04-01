@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaDAV3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:29:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58593 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbaDAV3s (ORCPT
+	id S1751924AbaDAV3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:29:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38638 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaDAV3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:29:48 -0400
-Message-ID: <533B2FC3.80300@pengutronix.de>
-Date: Tue, 01 Apr 2014 23:29:39 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Benedikt Spranger <b.spranger@linutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Subject: Re: [patch 00/12] can: c_can: Fix a series of serious bugs and improve
- the performance
-References: <20140318171007.528610837@linutronix.de> <alpine.DEB.2.02.1403312355280.14882@ionos.tec.linutronix.de> <533A742F.4090703@pengutronix.de>
-In-Reply-To: <533A742F.4090703@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 1 Apr 2014 17:29:49 -0400
+Date: Tue, 1 Apr 2014 14:29:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+Message-Id: <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+In-Reply-To: <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	<20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	<1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+	<1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+	<1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, 1 Apr 2014 17:12:50 -0400 KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
 
-On 04/01/2014 10:09 AM, Marc Kleine-Budde wrote:
->> What's the state of this series?
->=20
-> I'll apply your patches today.
+> On Tue, Apr 1, 2014 at 5:01 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > On Tue, 2014-04-01 at 15:51 -0400, KOSAKI Motohiro wrote:
+> >> >> So, I personally like 0 byte per default.
+> >> >
+> >> > If by this you mean 0 bytes == unlimited, then I agree. It's less harsh
+> >> > then removing it entirely. So instead of removing the limit we can just
+> >> > set it by default to 0, and in newseg() if shm_ctlmax == 0 then we don't
+> >> > return EINVAL if the passed size is great (obviously), otherwise, if the
+> >> > user _explicitly_ set it via sysctl then we respect that. Andrew, do you
+> >> > agree with this? If so I'll send a patch.
+> >>
+> >> Yes, my 0 bytes mean unlimited. I totally agree we shouldn't remove the knob
+> >> entirely.
+> >
+> > Hmmm so 0 won't really work because it could be weirdly used to disable
+> > shm altogether... we cannot go to some negative value either since we're
+> > dealing with unsigned, and cutting the range in half could also hurt
+> > users that set the limit above that. So I was thinking of simply setting
+> > SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
+> > if they want a smaller value.
+> >
+> > Makes sense?
+> 
+> I don't think people use 0 for disabling. but ULONG_MAX make sense to me too.
 
-I've applied all patches of this series (with some with minor tweaks of
-the subject and/or commit message) to the can tree and skipped the
-non-series "can: c_can: Reduce interrupt load by 50%".
+Distros could have set it to [U]LONG_MAX in initscripts ten years ago
+- less phone calls, happier customers.  And they could do so today.
 
-Thanks.
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlM7L8MACgkQjTAFq1RaXHPEqACfbQ6/53LYb7yI29Xox0VAdWn/
-I84An3QqJYNoK3q0ttMrHoGPYlA7uKsq
-=phoy
------END PGP SIGNATURE-----
-
---IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE--
+But they haven't.   What are the risks of doing this?
