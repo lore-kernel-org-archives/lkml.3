@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaDAQfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:35:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34709 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535AbaDAQfZ (ORCPT
+	id S1753079AbaDAQgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:36:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44468 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbaDAQKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:35:25 -0400
-Date: Tue, 1 Apr 2014 09:37:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
-        grant.likely@linaro.org, mark.rutland@arm.com, galak@codeaurora.org,
-        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
-        m.szyprowski@samsung.com, t.figa@samsung.com,
-        laurent.pinchart@ideasonboard.com, s.hauer@pengutronix.de
-Subject: Re: [PATCH RFC v4 2/2] clk: Add handling of clk parent and rate
- assigned from DT
-Message-ID: <20140401163744.GE3842@kroah.com>
-References: <1396284116-19178-1-git-send-email-s.nawrocki@samsung.com>
- <1396284116-19178-3-git-send-email-s.nawrocki@samsung.com>
- <20140331200620.GA13881@kroah.com>
- <533ABCEC.8040701@codethink.co.uk>
- <533ACBD0.8030209@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533ACBD0.8030209@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 1 Apr 2014 12:10:09 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Lukasz Dorau <lukasz.dorau@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 63/86] [SCSI] isci: correct erroneous for_each_isci_host macro
+Date: Tue,  1 Apr 2014 09:08:16 -0700
+Message-Id: <1396368519-12728-64-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 04:23:12PM +0200, Sylwester Nawrocki wrote:
-> On 01/04/14 15:19, Ben Dooks wrote:
-> > On 31/03/14 21:06, Greg KH wrote:
-> >> > On Mon, Mar 31, 2014 at 06:41:56PM +0200, Sylwester Nawrocki wrote:
-> [...]
-> >> > I don't understand why you need the driver core to initialize this one
-> >> > type of thing?  That should be in a driver, or in a class, or at worse
-> >> > case, the platform code.
-> >> >
-> >> > What makes clocks so "unique" here?
-> 
-> The reason I put it in the driver core was mainly to avoid having many
-> drivers doing same call to this initialization function.
-> I was considering moving it to the bus code, still there are several
-> buses for which it would need to be repeated.
+3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
 
-"several" is how many?  2?  3?  10?
+------------------
 
-Please fix it "correctly" and don't put it in the driver core just
-because it seems easier that way.
+From: Lukasz Dorau <lukasz.dorau@intel.com>
 
-> Maybe really_probe() is not a best place to put this, nonetheless
-> the requirements I could list were:
-> 
->  1. not involving individual drivers,
+commit c59053a23d586675c25d789a7494adfdc02fba57 upstream.
 
-Why not?
+In the first place, the loop 'for' in the macro 'for_each_isci_host'
+(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
+the 3rd element of 2 element array. After the 2nd iteration it executes
+the instruction:
+        ihost = to_pci_info(pdev)->hosts[2]
+(while the size of the 'hosts' array equals 2) and reads an
+out of range element.
 
->  2. have such an initialization call done for all devices, irrespective
->     of Linux bus or class type,
+In the second place, this loop is incorrectly optimized by GCC v4.8
+(see http://marc.info/?l=linux-kernel&m=138998871911336&w=2).
+As a result, on platforms with two SCU controllers,
+the loop is executed more times than it can be (for i=0,1 and 2).
+It causes kernel panic during entering the S3 state
+and the following oops after 'rmmod isci':
 
-Why?  Do _all_ devices that Linux supports have this issue to be
-resolved?
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
+Oops: 0000 [#1] SMP
+RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
+Call Trace:
+  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
+  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
+  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
+  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
+  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
+  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
+  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
+  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
+  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
+  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
+  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
+  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
+  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
+  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
+  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
+  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
 
->  3. Handle errors properly, e.g. defer driver probing if a clock for
->    a device is not yet available.
+The loop has been corrected.
+This patch fixes kernel panic during entering the S3 state
+and the above oops.
 
-Then do it in the bus that controls that device, as it knows to defer
-probing at that point in time.
+Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
+Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/scsi/isci/host.h | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-> One advantage I could see from making the call from within a device
-> driver is that a device could keep using the common DT bindings and
-> replace the common initialization function with a private one, if
-> there is a need for some quirks handled for a device. With approach
-> as in this patch it's difficult to override the default behaviour.
-> However then there is a question whether we strive for the clocks
-> management to be possibly kept away from device drivers.
-> 
-> > I suppose the issue here is that a lot of drivers currently use
-> > clocks and a number of systems have badly setup default clock trees
-> > at start time.
-> > 
-> > Mark Brown and others have argued that the management of clocks which
-> > is common to all devices should not live in the driver.
-> 
-> True, motivation behind this patch series was also replacing custom
-> code in multiple drivers doing similar clock rate or parent setting
-> by a common code, using standardized DT binding.
+diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
+index 4911310..22a9bb1 100644
+--- a/drivers/scsi/isci/host.h
++++ b/drivers/scsi/isci/host.h
+@@ -311,9 +311,8 @@ static inline struct Scsi_Host *to_shost(struct isci_host *ihost)
+ }
+ 
+ #define for_each_isci_host(id, ihost, pdev) \
+-	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
+-	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
+-	     ihost = to_pci_info(pdev)->hosts[++id])
++	for (id = 0; id < SCI_MAX_CONTROLLERS && \
++	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
+ 
+ static inline void wait_for_start(struct isci_host *ihost)
+ {
+-- 
+1.8.3.2
 
-Then put it in the bus that controls these broken devices / platforms.
-
-greg k-h
