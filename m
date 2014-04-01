@@ -1,113 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaDAEGH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:06:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53740 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaDAEGE (ORCPT
+	id S1751817AbaDAE27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:28:59 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:51778 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaDAE25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:06:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Sullivan <jsrhbz@kanargh.force9.co.uk>,
-        "Theodore Tso" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 2/6] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-Date: Mon, 31 Mar 2014 21:07:52 -0700
-Message-Id: <20140401032816.169166318@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140401032815.814334997@linuxfoundation.org>
-References: <20140401032815.814334997@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 1 Apr 2014 00:28:57 -0400
+Date: Mon, 31 Mar 2014 21:28:55 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: drepper@gmail.com, anatol.pomozov@gmail.com, jkosina@suse.cz,
+        akpm@linux-foundation.org, xemul@parallels.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: NUMA node information for pages
+In-Reply-To: <533a1566.540db40a.274d.ffff8616SMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <alpine.DEB.2.02.1403312126580.20972@chino.kir.corp.google.com>
+References: <87eh1ix7g0.fsf@x240.local.i-did-not-set--mail-host-address--so-tickle-me> <533a1566.540db40a.274d.ffff8616SMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 31 Mar 2014, Naoya Horiguchi wrote:
 
-------------------
+> > I might be missing something but I couldn't find a way to use the
+> > pagemap information to then look up the NUMA node the respective page is
+> > located on.  Especially when analyzing anomalities this is really
+> > useful.  The /proc/kpageflags and /proc/kpagecount files don't have that
+> > information.
+> > 
+> > If this is correct, could the attached patch be considered?  It's really
+> > simple and follows the same line as the kpageflags file.
+> 
+> The information about "pfn-node" mapping seldom (or never) changes after boot,
+> so it seems better to me that adding a new interface somewhere under
+> /sys/devices/system/node/nodeN which shows pfn range of a given node.
 
-From: Theodore Ts'o <tytso@mit.edu>
-
-commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
-
-Use cmpxchg() to atomically set i_flags instead of clearing out the
-S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
-EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
-where an immutable file has the immutable flag cleared for a brief
-window of time.
-
-Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/inode.c        |   15 +++++++++------
- include/linux/bitops.h |   15 +++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
-
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -37,6 +37,7 @@
- #include <linux/printk.h>
- #include <linux/slab.h>
- #include <linux/ratelimit.h>
-+#include <linux/bitops.h>
- 
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -3580,18 +3581,20 @@ int ext4_get_inode_loc(struct inode *ino
- void ext4_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT4_I(inode)->i_flags;
-+	unsigned int new_fl = 0;
- 
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
- 	if (flags & EXT4_SYNC_FL)
--		inode->i_flags |= S_SYNC;
-+		new_fl |= S_SYNC;
- 	if (flags & EXT4_APPEND_FL)
--		inode->i_flags |= S_APPEND;
-+		new_fl |= S_APPEND;
- 	if (flags & EXT4_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
-+		new_fl |= S_IMMUTABLE;
- 	if (flags & EXT4_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
-+		new_fl |= S_NOATIME;
- 	if (flags & EXT4_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+		new_fl |= S_DIRSYNC;
-+	set_mask_bits(&inode->i_flags,
-+		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
- }
- 
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64
- 
- #ifdef __KERNEL__
- 
-+#ifndef set_mask_bits
-+#define set_mask_bits(ptr, _mask, _bits)	\
-+({								\
-+	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
-+	typeof(*ptr) old, new;					\
-+								\
-+	do {							\
-+		old = ACCESS_ONCE(*ptr);			\
-+		new = (old & ~mask) | bits;			\
-+	} while (cmpxchg(ptr, old, new) != old);		\
-+								\
-+	new;							\
-+})
-+#endif
-+
- #ifndef find_last_bit
- /**
-  * find_last_bit - find the last set bit in a memory region
-
-
+If that's the direction we're going, I'd much prefer just the physical 
+start and end addresses be exported rather than pfn so we don't need to do
+getpagesize() in userspace.
