@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaDALhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:37:07 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:57329 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753092AbaDALhD (ORCPT
+	id S1752952AbaDALgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:36:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42635 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbaDALS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:37:03 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 1/1] serial: 8250, disable "too much work" messages
-Date: Tue,  1 Apr 2014 13:37:00 +0200
-Message-Id: <1396352220-5031-1-git-send-email-jslaby@suse.cz>
+	Tue, 1 Apr 2014 07:18:27 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 110/144] PNP / ACPI: proper handling of ACPI IO/Memory resource parsing failures
+Date: Tue,  1 Apr 2014 12:15:14 +0100
+Message-Id: <1396350948-29910-111-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 8250 driver now reports many of these:
-  serial8250: too much work for irq4
-These messages turned out to be common these days with a use of
-virtualization. I tried to increase the limit of processed characters
-in commit e7328ae1848966181a7ac47e8ae6cddbd2cf55f3 (serial: 8250,
-increase PASS_LIMIT) in 2011. It was raised from 256 to 512, but it is
-still not enough, apparently.
+3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
 
-So disable the warning unless somebody turns on DEBUG (or
-DYNAMIC_DEBUG _and_ the message).
+------------------
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: Martin Pluskal <mpluskal@suse.com>
-Reported-by: Takashi Iwai <tiwai@suse.com>
-References: https://bugzilla.novell.com/show_bug.cgi?id=868394
+From: Zhang Rui <rui.zhang@intel.com>
+
+commit 89935315f192abf7068d0044cefc84f162c3c81f upstream.
+
+Before commit b355cee88e3b (ACPI / resources: ignore invalid ACPI
+device resources), if acpi_dev_resource_memory()/acpi_dev_resource_io()
+returns false, it means the the resource is not a memeory/IO resource.
+
+But after commit b355cee88e3b, those functions return false if the
+given memory/IO resource entry is invalid (the length of the resource
+is zero).
+
+This breaks pnpacpi_allocated_resource(), because it now recognizes
+the invalid memory/io resources as resources of unknown type.  Thus
+users see confusing warning messages on machines with zero length
+ACPI memory/IO resources.
+
+Fix the problem by rearranging pnpacpi_allocated_resource() so that
+it calls acpi_dev_resource_memory() for memory type and IO type
+resources only, respectively.
+
+Fixes: b355cee88e3b (ACPI / resources: ignore invalid ACPI device resources)
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Reported-and-tested-by: Julian Wollrath <jwollrath@web.de>
+Reported-and-tested-by: Paul Bolle <pebolle@tiscali.nl>
+[rjw: Changelog]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/8250/8250_core.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pnp/pnpacpi/rsparser.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 81f909c2101f..139ab1997e06 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1601,8 +1601,7 @@ static irqreturn_t serial8250_interrupt(int irq, void *dev_id)
- 		l = l->next;
+diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
+index 167f3d0..66977eb 100644
+--- a/drivers/pnp/pnpacpi/rsparser.c
++++ b/drivers/pnp/pnpacpi/rsparser.c
+@@ -183,9 +183,7 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
+ 	struct resource r = {0};
+ 	int i, flags;
  
- 		if (l == i->head && pass_counter++ > PASS_LIMIT) {
--			/* If we hit this, we're dead. */
--			printk_ratelimited(KERN_ERR
-+			pr_debug_ratelimited(
- 				"serial8250: too much work for irq%d\n", irq);
- 			break;
- 		}
+-	if (acpi_dev_resource_memory(res, &r)
+-	    || acpi_dev_resource_io(res, &r)
+-	    || acpi_dev_resource_address_space(res, &r)
++	if (acpi_dev_resource_address_space(res, &r)
+ 	    || acpi_dev_resource_ext_address_space(res, &r)) {
+ 		pnp_add_resource(dev, &r);
+ 		return AE_OK;
+@@ -217,6 +215,17 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
+ 	}
+ 
+ 	switch (res->type) {
++	case ACPI_RESOURCE_TYPE_MEMORY24:
++	case ACPI_RESOURCE_TYPE_MEMORY32:
++	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
++		if (acpi_dev_resource_memory(res, &r))
++			pnp_add_resource(dev, &r);
++		break;
++	case ACPI_RESOURCE_TYPE_IO:
++	case ACPI_RESOURCE_TYPE_FIXED_IO:
++		if (acpi_dev_resource_io(res, &r))
++			pnp_add_resource(dev, &r);
++		break;
+ 	case ACPI_RESOURCE_TYPE_DMA:
+ 		dma = &res->data.dma;
+ 		if (dma->channel_count > 0 && dma->channels[0] != (u8) -1)
 -- 
 1.9.1
 
