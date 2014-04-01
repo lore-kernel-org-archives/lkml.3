@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521AbaDAKqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 06:46:51 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:47088 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaDAKqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 06:46:48 -0400
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: broonie@kernel.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] regmap: adds missing braces in regmap_init()
-Date: Tue, 01 Apr 2014 19:46:43 +0900
-Message-ID: <5822859.Za3p9c1V74@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751376AbaDAKsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 06:48:32 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36889 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaDAKsa convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Tue, 1 Apr 2014 06:48:30 -0400
+Message-Id: <533AB59A020000780000409F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Tue, 01 Apr 2014 11:48:26 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daeseok Youn" <daeseok.youn@gmail.com>, <konrad.wilk@oracle.com>
+Cc: <david.vrabel@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <joe@perches.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] xen: fix memory leak in
+ __xen_pcibk_add_pci_dev()
+References: <2172979.BN2CJo57Rq@daeseok-laptop.cloud.net>
+In-Reply-To: <2172979.BN2CJo57Rq@daeseok-laptop.cloud.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 01.04.14 at 12:15, <daeseok.youn@gmail.com> wrote:
 
-It need to add curly braces because the inner for "if" has
-two statements.
+> It need to free dev_entry when it failed to assign to a new
+> slot on the virtual PCI bus.
+> 
+> smatch says:
+>  drivers/xen/xen-pciback/vpci.c:142 __xen_pcibk_add_pci_dev() warn:
+> possible memory leak of 'dev_entry'
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 
-coccicheck says:
- drivers/base/regmap/regmap.c:765:2-44:
-code aligned with following code on line 766
+As before
+Reviewed-by: Jan Beulich <jbeulich@suse.com>
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/base/regmap/regmap.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> ---
+> v2: The kfree() invocation is moved outside the locked region.
+> 
+>  drivers/xen/xen-pciback/vpci.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/xen/xen-pciback/vpci.c b/drivers/xen/xen-pciback/vpci.c
+> index 3165ce3..51afff9 100644
+> --- a/drivers/xen/xen-pciback/vpci.c
+> +++ b/drivers/xen/xen-pciback/vpci.c
+> @@ -137,6 +137,8 @@ unlock:
+>  	/* Publish this device. */
+>  	if (!err)
+>  		err = publish_cb(pdev, 0, 0, PCI_DEVFN(slot, func), devid);
+> +	else
+> +		kfree(dev_entry);
+>  
+>  out:
+>  	return err;
+> -- 
+> 1.7.4.4
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index d0a0724..63e30ef 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -761,10 +761,11 @@ skip_format_initialization:
- 	if (ret != 0)
- 		goto err_range;
- 
--	if (dev)
-+	if (dev) {
- 		ret = regmap_attach_dev(dev, map, config);
- 		if (ret != 0)
- 			goto err_regcache;
-+	}
- 
- 	return map;
- 
--- 
-1.7.4.4
 
 
