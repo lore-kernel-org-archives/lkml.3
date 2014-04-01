@@ -1,106 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaDAQpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:45:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34855 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaDAQpF (ORCPT
+	id S1752626AbaDAQow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:44:52 -0400
+Received: from ns3094689.ip-91-121-202.eu ([91.121.202.112]:50806 "EHLO
+	ns3094689.ip-91-121-202.eu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751757AbaDAQot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:45:05 -0400
-Date: Tue, 1 Apr 2014 09:47:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: stuart.yoder@freescale.com, kvm@vger.kernel.org, jan.kiszka@siemens.com,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        bhelgaas@google.com, Varun.Sethi@freescale.com,
-        kvmarm@lists.cs.columbia.edu, rafael.j.wysocki@intel.com,
-        agraf@suse.de, linux-pci@vger.kernel.org, linux@roeck-us.net,
-        konrad.wilk@oracle.com, d.kasatkin@samsung.com, tj@kernel.org,
-        scottwood@freescale.com, a.motakis@virtualopensystems.com,
-        tech@virtualopensystems.com, Bharat.Bhushan@freescale.com,
-        toshi.kani@hp.com, kim.phillips@linaro.org,
-        a.rigo@virtualopensystems.com, iommu@lists.linux-foundation.org,
-        joe@perches.com, christoffer.dall@linaro.org
-Subject: Re: [RFC PATCH] PCI: Introduce new device binding path using
- pci_dev.driver_override
-Message-ID: <20140401164725.GA4649@kroah.com>
-References: <20140401161851.18815.31108.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401161851.18815.31108.stgit@bling.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 1 Apr 2014 12:44:49 -0400
+From: Denis Pithon <denis.pithon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: khoroshilov@ispras.ru, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 1/3] staging/wlan-ng: improve readability of usb_prism_tbl[]
+Date: Tue,  1 Apr 2014 18:43:17 +0200
+Message-Id: <1396370599-27618-1-git-send-email-denis.pithon@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20140331213431.GA31288@kroah.com>
+References: <20140331213431.GA31288@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 10:28:54AM -0600, Alex Williamson wrote:
-> The driver_override field allows us to specify the driver for a device
-> rather than relying on the driver to provide a positive match of the
-> device.  This shortcuts the existing process of looking up the vendor
-> and device ID, adding them to the driver new_id, binding the device,
-> then removing the ID, but it also provides a couple advantages.
-> 
-> First, the above process allows the driver to bind to any device
-> matching the new_id for the window where it's enabled.  This is often
-> not desired, such as the case of trying to bind a single device to a
-> meta driver like pci-stub or vfio-pci.  Using driver_override we can
-> do this deterministically using:
-> 
-> echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> 
-> Previously we could not invoke drivers_probe after adding a device
-> to new_id for a driver as we get non-deterministic behavior whether
-> the driver we intend or the standard driver will claim the device.
-> Now it becomes a deterministic process, only the driver matching
-> driver_override will probe the device.
-> 
-> To return the device to the standard driver, we simply clear the
-> driver_override and reprobe the device, ex:
-> 
-> echo > /sys/bus/pci/devices/0000:03:00.0/preferred_driver
-> echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> 
-> Another advantage to this approach is that we can specify a driver
-> override to force a specific binding or prevent any binding.  For
-> instance when an IOMMU group is exposed to userspace through VFIO
-> we require that all devices within that group are owned by VFIO.
-> However, devices can be hot-added into an IOMMU group, in which case
-> we want to prevent the device from binding to any driver (preferred
-> driver = "none") or perhaps have it automatically bind to vfio-pci.
-> With driver_override it's a simple matter for this field to be set
-> internally when the device is first discovered to prevent driver
-> matches.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
-> Apologies for the exceptionally long cc list, this is a follow-up to
-> Stuart's "Subject: mechanism to allow a driver to bind to any device"
-> thread.  This is effectively a v2 of the proof-of-concept patch I
-> posted in that thread.  This version changes to use a dummy id struct
-> to return on an "override" match, which removes the collateral damage
-> and greatly simplifies the patch.  This feels fairly well baked for
-> PCI and I would expect that platform drivers could do a similar
-> implementation.  From there perhaps we can discuss whether there's
-> any advantage to placing driver_override on struct device.  The logic
-> for incorporating it into the match still needs to happen per bus
-> driver, so it might only contribute to consistency of the show/store
-> sysfs attributes to move it up to struct device.  Please comment.
-> Thanks,
-> 
-> Alex
-> 
->  drivers/pci/pci-driver.c |   25 ++++++++++++++++++++++---
->  drivers/pci/pci-sysfs.c  |   40 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci.h      |    1 +
->  3 files changed, 63 insertions(+), 3 deletions(-)
+Minor changes to nicely line up device entries.
 
-No Documentation/ABI/ update to reflect the ABI you are creating?
+Signed-off-by: Denis Pithon <denis.pithon@gmail.com>
+---
+ drivers/staging/wlan-ng/prism2usb.c | 118 ++++++++++++++----------------------
+ 1 file changed, 47 insertions(+), 71 deletions(-)
 
-thanks,
+diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
+index 4739c14..9f2427c 100644
+--- a/drivers/staging/wlan-ng/prism2usb.c
++++ b/drivers/staging/wlan-ng/prism2usb.c
+@@ -4,80 +4,56 @@
+ #include "prism2sta.c"
+ #include "prism2fw.c"
+ 
+-#define PRISM_USB_DEVICE(vid, pid, name)	\
+-	USB_DEVICE(vid, pid),			\
+-	.driver_info = (unsigned long) name
++#define PRISM_DEV(vid, pid, name)		\
++	{ USB_DEVICE(vid, pid),			\
++	.driver_info = (unsigned long) name }
+ 
+ static struct usb_device_id usb_prism_tbl[] = {
+-	{PRISM_USB_DEVICE(0x04bb, 0x0922, "IOData AirPort WN-B11/USBS")},
+-	{PRISM_USB_DEVICE(0x07aa, 0x0012, "Corega Wireless LAN USB Stick-11")},
+-	{PRISM_USB_DEVICE(0x09aa, 0x3642, "Prism2.x 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x1668, 0x0408, "Actiontec Prism2.5 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x1668, 0x0421, "Actiontec Prism2.5 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x1915, 0x2236, "Linksys WUSB11v3.0 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x066b, 0x2212, "Linksys WUSB11v2.5 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x066b, 0x2213, "Linksys WUSB12v1.1 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x067c, 0x1022, "Siemens SpeedStream 1022 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x049f, 0x0033,
+-	 "Compaq/Intel W100 PRO/Wireless 11Mbps multiport WLAN Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0411, 0x0016, "Melco WLI-USB-S11 11Mbps WLAN Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x08de, 0x7a01, "PRISM25 IEEE 802.11 Mini USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x8086, 0x1111, "Intel PRO/Wireless 2011B LAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0d8e, 0x7a01, "PRISM25 IEEE 802.11 Mini USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x045e, 0x006e, "Microsoft MN510 Wireless USB Adapter")},
+-	{PRISM_USB_DEVICE(0x0967, 0x0204, "Acer Warplink USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0cde, 0x0002, "Z-Com 725/726 Prism2.5 USB/USB Integrated")},
+-	{PRISM_USB_DEVICE
+-	 (0x0cde, 0x0005, "Z-Com Xl735 Wireless 802.11b USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x413c, 0x8100, "Dell TrueMobile 1180 Wireless USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0b3b, 0x1601, "ALLNET 0193 11Mbps WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0b3b, 0x1602, "ZyXEL ZyAIR B200 Wireless USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0baf, 0x00eb, "USRobotics USR1120 Wireless USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0411, 0x0027, "Melco WLI-USB-KS11G 11Mbps WLAN Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x04f1, 0x3009, "JVC MP-XP7250 Builtin USB WLAN Adapter")},
+-	{PRISM_USB_DEVICE(0x0846, 0x4110, "NetGear MA111")},
+-	{PRISM_USB_DEVICE(0x03f3, 0x0020, "Adaptec AWN-8020 USB WLAN Adapter")},
+-	{PRISM_USB_DEVICE(0x2821, 0x3300, "ASUS-WL140 Wireless USB Adapter")},
+-	{PRISM_USB_DEVICE(0x2001, 0x3700, "DWL-122 Wireless USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x2001, 0x3702, "DWL-120 Rev F Wireless USB Adapter")},
+-	{PRISM_USB_DEVICE(0x50c2, 0x4013, "Averatec USB WLAN Adapter")},
+-	{PRISM_USB_DEVICE(0x2c02, 0x14ea, "Planex GW-US11H WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE(0x124a, 0x168b, "Airvast PRISM3 WLAN USB Adapter")},
+-	{PRISM_USB_DEVICE(0x083a, 0x3503, "T-Sinus 111 USB WLAN Adapter")},
+-	{PRISM_USB_DEVICE(0x2821, 0x3300, "Hawking HighDB USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0411, 0x0044, "Melco WLI-USB-KB11 11Mbps WLAN Adapter")},
+-	{PRISM_USB_DEVICE(0x1668, 0x6106, "ROPEX FreeLan 802.11b USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x124a, 0x4017, "Pheenet WL-503IA 802.11b USB Adapter")},
+-	{PRISM_USB_DEVICE(0x0bb2, 0x0302, "Ambit Microsystems Corp.")},
+-	{PRISM_USB_DEVICE
+-	 (0x9016, 0x182d, "Sitecom WL-022 802.11b USB Adapter")},
+-	{PRISM_USB_DEVICE
+-	 (0x0543, 0x0f01, "ViewSonic Airsync USB Adapter 11Mbps (Prism2.5)")},
+-	{ /* terminator */ }
++	PRISM_DEV(0x04bb, 0x0922, "IOData AirPort WN-B11/USBS"),
++	PRISM_DEV(0x07aa, 0x0012, "Corega Wireless LAN USB Stick-11"),
++	PRISM_DEV(0x09aa, 0x3642, "Prism2.x 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x1668, 0x0408, "Actiontec Prism2.5 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x1668, 0x0421, "Actiontec Prism2.5 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x1915, 0x2236, "Linksys WUSB11v3.0 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x066b, 0x2212, "Linksys WUSB11v2.5 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x066b, 0x2213, "Linksys WUSB12v1.1 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x0411, 0x0016, "Melco WLI-USB-S11 11Mbps WLAN Adapter"),
++	PRISM_DEV(0x08de, 0x7a01, "PRISM25 IEEE 802.11 Mini USB Adapter"),
++	PRISM_DEV(0x8086, 0x1111, "Intel PRO/Wireless 2011B LAN USB Adapter"),
++	PRISM_DEV(0x0d8e, 0x7a01, "PRISM25 IEEE 802.11 Mini USB Adapter"),
++	PRISM_DEV(0x045e, 0x006e, "Microsoft MN510 Wireless USB Adapter"),
++	PRISM_DEV(0x0967, 0x0204, "Acer Warplink USB Adapter"),
++	PRISM_DEV(0x0cde, 0x0002, "Z-Com 725/726 Prism2.5 USB/USB Integrated"),
++	PRISM_DEV(0x0cde, 0x0005, "Z-Com Xl735 Wireless 802.11b USB Adapter"),
++	PRISM_DEV(0x413c, 0x8100, "Dell TrueMobile 1180 Wireless USB Adapter"),
++	PRISM_DEV(0x0b3b, 0x1601, "ALLNET 0193 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x0b3b, 0x1602, "ZyXEL ZyAIR B200 Wireless USB Adapter"),
++	PRISM_DEV(0x0baf, 0x00eb, "USRobotics USR1120 Wireless USB Adapter"),
++	PRISM_DEV(0x0411, 0x0027, "Melco WLI-USB-KS11G 11Mbps WLAN Adapter"),
++	PRISM_DEV(0x04f1, 0x3009, "JVC MP-XP7250 Builtin USB WLAN Adapter"),
++	PRISM_DEV(0x0846, 0x4110, "NetGear MA111"),
++	PRISM_DEV(0x03f3, 0x0020, "Adaptec AWN-8020 USB WLAN Adapter"),
++	PRISM_DEV(0x2821, 0x3300, "ASUS-WL140 Wireless USB Adapter"),
++	PRISM_DEV(0x2001, 0x3700, "DWL-122 Wireless USB Adapter"),
++	PRISM_DEV(0x2001, 0x3702, "DWL-120 Rev F Wireless USB Adapter"),
++	PRISM_DEV(0x50c2, 0x4013, "Averatec USB WLAN Adapter"),
++	PRISM_DEV(0x2c02, 0x14ea, "Planex GW-US11H WLAN USB Adapter"),
++	PRISM_DEV(0x124a, 0x168b, "Airvast PRISM3 WLAN USB Adapter"),
++	PRISM_DEV(0x083a, 0x3503, "T-Sinus 111 USB WLAN Adapter"),
++	PRISM_DEV(0x2821, 0x3300, "Hawking HighDB USB Adapter"),
++	PRISM_DEV(0x0411, 0x0044, "Melco WLI-USB-KB11 11Mbps WLAN Adapter"),
++	PRISM_DEV(0x1668, 0x6106, "ROPEX FreeLan 802.11b USB Adapter"),
++	PRISM_DEV(0x124a, 0x4017, "Pheenet WL-503IA 802.11b USB Adapter"),
++	PRISM_DEV(0x0bb2, 0x0302, "Ambit Microsystems Corp."),
++	PRISM_DEV(0x9016, 0x182d, "Sitecom WL-022 802.11b USB Adapter"),
++	PRISM_DEV(0x0543, 0x0f01,
++		"ViewSonic Airsync USB Adapter 11Mbps (Prism2.5)"),
++	PRISM_DEV(0x067c, 0x1022,
++		"Siemens SpeedStream 1022 11Mbps WLAN USB Adapter"),
++	PRISM_DEV(0x049f, 0x0033,
++		"Compaq/Intel W100 PRO/Wireless 11Mbps multiport WLAN Adapter"),
++	{ } /* terminator */
+ };
+-
+ MODULE_DEVICE_TABLE(usb, usb_prism_tbl);
+ 
+ /*----------------------------------------------------------------
+-- 
+1.9.0
 
-greg k-h
