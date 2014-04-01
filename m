@@ -1,145 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631AbaDAON0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 10:13:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18182 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaDAONY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 10:13:24 -0400
-Date: Tue, 1 Apr 2014 17:13:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org,
-        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
-	<ezequiel@vanguardiasur.com.ar>,
-        Walter Lozano <walter@vanguardiasur.com.ar>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH 3/3] staging: vt6655: fix checkpatch bracing issues
-Message-ID: <20140401141302.GT6991@mwanda>
-References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
- <1396356733-5344-4-git-send-email-guido@vanguardiasur.com.ar>
+	id S1751771AbaDAOOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:14:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58165 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531AbaDAOOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 10:14:06 -0400
+Date: Tue, 1 Apr 2014 09:11:35 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <linux@arm.linux.org.uk>, <tony@atomide.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <tomi.valkeinen@ti.com>, <eduardo.valentin@ti.com>, <arnd@arndb.de>,
+        <balbi@ti.com>
+Subject: Re: [PATCH] ARM: OMAP2+: Fix config name for USB3 PHY
+Message-ID: <20140401141135.GA4717@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1396347274-32750-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1396356733-5344-4-git-send-email-guido@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1396347274-32750-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 09:52:13AM -0300, Guido Martínez wrote:
-> @@ -624,13 +622,10 @@ device_receive_frame(
->  
->  // Data frame Handle
->  
-> -	if (pDevice->bEnablePSMode) {
-> -		if (!IS_FC_MOREDATA((skb->data+4))) {
-> +	if (pDevice->bEnablePSMode)
-> +		if (!IS_FC_MOREDATA((skb->data+4)))
->  			if (pDevice->pMgmt->bInTIMWake == true)
->  				pDevice->pMgmt->bInTIMWake = false;
-> -			}
-> -		}
-> -	}
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Use braces for multi-line indents for readability.
+On Tue, Apr 01, 2014 at 03:44:34PM +0530, Kishon Vijay Abraham I wrote:
+> commit a70143 (drivers: phy: usb3/pipe3: Adapt pipe3 driver to Generic PHY
+> Framework) moved phy-omap-usb3 driver in drivers/usb/phy to drivers/phy a=
+nd
+> also renamed the file to phy-ti-pipe3. It also renamed the config from
+> OMAP_USB3 to TI_PIPE3 in Kconfig. However the config name was not changed=
+ in
+> omap2plus_defconfig. Fixed it here.
+>=20
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-> @@ -1502,26 +1501,26 @@ int iwctl_siwauth(struct net_device *dev,
->  		break;
->  	case IW_AUTH_CIPHER_PAIRWISE:
->  		pairwise = wrq->value;
-> -		if (pairwise == IW_AUTH_CIPHER_CCMP) {
-> +		if (pairwise == IW_AUTH_CIPHER_CCMP)
->  			pDevice->eEncryptionStatus = Ndis802_11Encryption3Enabled;
-> -		} else if (pairwise == IW_AUTH_CIPHER_TKIP) {
-> +		else if (pairwise == IW_AUTH_CIPHER_TKIP)
->  			pDevice->eEncryptionStatus = Ndis802_11Encryption2Enabled;
-> -		} else if (pairwise == IW_AUTH_CIPHER_WEP40 || pairwise == IW_AUTH_CIPHER_WEP104) {
-> +		else if (pairwise == IW_AUTH_CIPHER_WEP40 || pairwise == IW_AUTH_CIPHER_WEP104)
->  			pDevice->eEncryptionStatus = Ndis802_11Encryption1Enabled;
-> -		} else if (pairwise == IW_AUTH_CIPHER_NONE) {
-> -			//do nothing,einsn liu
-> -		} else pDevice->eEncryptionStatus = Ndis802_11EncryptionDisabled;
-> +		else if (pairwise == IW_AUTH_CIPHER_NONE)
-> +			; //do nothing,einsn liu
-> +		else
-> +		pDevice->eEncryptionStatus = Ndis802_11EncryptionDisabled;
->  
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-The indenting is messed up on the last else statement.
+> ---
+>  arch/arm/configs/omap2plus_defconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap=
+2plus_defconfig
+> index a966795..a4e8d01 100644
+> --- a/arch/arm/configs/omap2plus_defconfig
+> +++ b/arch/arm/configs/omap2plus_defconfig
+> @@ -226,7 +226,7 @@ CONFIG_USB_DWC3=3Dm
+>  CONFIG_USB_TEST=3Dy
+>  CONFIG_NOP_USB_XCEIV=3Dy
+>  CONFIG_OMAP_USB2=3Dy
+> -CONFIG_OMAP_USB3=3Dy
+> +CONFIG_TI_PIPE3=3Dy
+>  CONFIG_AM335X_PHY_USB=3Dy
+>  CONFIG_USB_GADGET=3Dy
+>  CONFIG_USB_GADGET_DEBUG=3Dy
+> --=20
+> 1.7.9.5
+>=20
 
-> @@ -276,24 +276,20 @@ PSbSendNullPacket(
->  	PSMgmtObject        pMgmt = pDevice->pMgmt;
->  	unsigned int uIdx;
->  
-> -	if (!pDevice->bLinkPass) {
-> +	if (!pDevice->bLinkPass)
->  		return false;
-> -	}
-> +
->  #ifdef TxInSleep
-> -	if (!pDevice->bEnablePSMode && !pDevice->fTxDataInSleep) {
-> +	if (!pDevice->bEnablePSMode && !pDevice->fTxDataInSleep)
->  		return false;
-> -	}
->  #else
-> -	if (!pDevice->bEnablePSMode) {
-> +	if (!pDevice->bEnablePSMode)
->  		return false;
-> -	}
->  #endif
-> -	if (pDevice->bEnablePSMode) {
-> -		for (uIdx = 0; uIdx < TYPE_MAXTD; uIdx++) {
-> +	if (pDevice->bEnablePSMode)
-> +		for (uIdx = 0; uIdx < TYPE_MAXTD; uIdx++)
->  			if (pDevice->iTDUsed[uIdx] != 0)
->  				return false;
-> -		}
-> -	}
+--=20
+balbi
 
+--AqsLC8rIMeq19msA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Multi-line indent.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTOskXAAoJEIaOsuA1yqREKwgP/ikXoe5qAZO9M5WhJPxwN7vQ
+lJ1NwAgwH1hHbEzk7GxGAfdM4qFsQG/1cPMl/g0sw/csP7VhCIDrpkawkXMsp5Q9
+jq8vGgURSpwy7o6mP2ZRv3HhoyPObfLWmCO/9gvGSsMCNGP0tBmTTPTS2vdkY4Ys
+yNL/9u/7A6pbtvE535GVfmG6zONe3+RCr4Y/syYvc3Ltpju+/yU9fIm0wCkhf126
+NpvpsEiZ3VccYyiGDBobnyEhrJJ/VjQEcqX3vl9oqEP2fFrsP9U0C4rqXsgFrfJx
+wCQyNiC9ujkcfts+fyTFPlYV0zjHnIMS6n7EXspzEbvRTh5PdLdoX3+EihsM72iY
+dVAQ6VOflpoSUKu9knnjwPCYCJMHgCl8D26PGVRxsSYyazdnGzWJfIVHuzMsraDv
+h13Ft1ys7SV4fAs+upWE7nVXvzKewVT8tgAlpKSZRm0Kfdh8ao7uBOGFekpb6yZx
+VhfVRXqIw8fcuuh8gO2r/ev1VbpDgUYRDs8OD8qBclsvRseEgv1JRzxKYnIWq1C4
+owV54oAkcXZky8kkdGC0+rhmhm+QVbhEFTBcGBupVSSsXzwZ7CpROTN0c2g20Fkh
+AErwVJO2/P0mrwsHxDUTjZVlG2Y9PoPfrnDOl3XlI8IH+glbH3Cuk8dA2YxRe0Um
+tbTABohEdHadzJH0HM5A
+=5EQU
+-----END PGP SIGNATURE-----
 
-> @@ -4285,14 +4252,9 @@ vMgrRxManagePacket(
->  
->  	case WLAN_FSTYPE_BEACON:
->  		// Frame Clase = 0
-> -<<<<<<< HEAD
-> -		//DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "rx beacon\n");
-> -		if (pMgmt->eScanState != WMAC_NO_SCANNING) {
-> -=======
->  		if (pMgmt->eScanState != WMAC_NO_SCANNING)
-> ->>>>>>> f3c59ed... staging: vt6655: remove dead code
->  			bInScan = true;
-> -		}
-> +
->  		s_vMgrRxBeacon(pDevice, pMgmt, pRxPacket, bInScan);
->  		break;
->  
-> @@ -4357,16 +4319,11 @@ bMgrPrepareBeaconToSend(
->  	PSDevice            pDevice = (PSDevice)hDeviceContext;
->  	PSTxMgmtPacket      pTxPacket;
->  
-> -<<<<<<< HEAD
-> -//    pDevice->bBeaconBufReady = false;
-> -	if (pDevice->bEncryptionEnable || pDevice->bEnable8021x) {
-> -=======
->  	if (pDevice->bEncryptionEnable || pDevice->bEnable8021x)
-> ->>>>>>> f3c59ed... staging: vt6655: remove dead code
->  		pMgmt->wCurrCapInfo |= WLAN_SET_CAP_INFO_PRIVACY(1);
-> -	} else {
-> +	else
->  		pMgmt->wCurrCapInfo &= ~WLAN_SET_CAP_INFO_PRIVACY(1);
-> -	}
-> +
-
-Wat?
-
-regards,
-dan carpenter
-
+--AqsLC8rIMeq19msA--
