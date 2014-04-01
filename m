@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaDAMyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:54:15 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:62309 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaDAMyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 08:54:08 -0400
-From: =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
-To: linux-kernel@vger.kernel.org
-Cc: driverdev-devel@linuxdriverproject.org,
-        =?UTF-8?q?Ezequiel=20Garc=C3=ADa?= <ezequiel@vanguardiasur.com.ar>,
-        Walter Lozano <walter@vanguardiasur.com.ar>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
-Subject: [PATCH 0/3] staging: vt6655: style fixes
-Date: Tue,  1 Apr 2014 09:52:10 -0300
-Message-Id: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
-X-Mailer: git-send-email 1.9.0
+	id S1751277AbaDAMyX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:54:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167AbaDAMyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 08:54:20 -0400
+Date: Tue, 1 Apr 2014 08:54:13 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Eric Paris <eparis@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the audit tree with Linus' tree
+Message-ID: <20140401125413.GB21711@madcap2.tricolour.ca>
+References: <20140401150721.1e9d4e6c36660d5411c10f37@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401150721.1e9d4e6c36660d5411c10f37@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miscellaneous style fixes for the vt6655 driver. Should not affect
-functionality at all. Also remove dead code, shrink driver size by
-1203 lines.
+On 14/04/01, Stephen Rothwell wrote:
+> Hi Eric,
 
-Guido Martínez (3):
-  staging: vt6655: fix DBG_PRT and PRINT_K macros
-  staging: vt6655: remove dead code
-  staging: vt6655: fix checkpatch bracing issues
+Hi Stephen,
 
- drivers/staging/vt6655/IEEE11h.c     |   6 -
- drivers/staging/vt6655/baseband.c    | 101 ++++-----
- drivers/staging/vt6655/bssdb.c       |   6 +-
- drivers/staging/vt6655/bssdb.h       |   2 -
- drivers/staging/vt6655/card.c        | 195 ++++++----------
- drivers/staging/vt6655/card.h        |   1 -
- drivers/staging/vt6655/channel.c     |  95 ++++----
- drivers/staging/vt6655/datarate.c    |  21 +-
- drivers/staging/vt6655/desc.h        |  47 ----
- drivers/staging/vt6655/device.h      |  10 +-
- drivers/staging/vt6655/device_main.c | 354 +++++++++--------------------
- drivers/staging/vt6655/dpc.c         | 155 ++++---------
- drivers/staging/vt6655/hostap.c      |  66 +-----
- drivers/staging/vt6655/ioctl.c       |   1 -
- drivers/staging/vt6655/ioctl.h       |   9 -
- drivers/staging/vt6655/iowpa.h       |   7 -
- drivers/staging/vt6655/iwctl.c       | 391 ++++++--------------------------
- drivers/staging/vt6655/key.c         |  55 ++---
- drivers/staging/vt6655/key.h         |   2 -
- drivers/staging/vt6655/mac.c         |  96 ++++----
- drivers/staging/vt6655/mac.h         |   1 -
- drivers/staging/vt6655/mib.c         |  95 ++++----
- drivers/staging/vt6655/mib.h         |   8 -
- drivers/staging/vt6655/michael.c     |  33 +--
- drivers/staging/vt6655/power.c       |  42 ++--
- drivers/staging/vt6655/power.h       |   3 -
- drivers/staging/vt6655/rf.c          |  69 +++---
- drivers/staging/vt6655/rxtx.c        | 329 ++++++++++-----------------
- drivers/staging/vt6655/rxtx.h        |  11 -
- drivers/staging/vt6655/tether.c      |   4 +-
- drivers/staging/vt6655/tkip.c        |   7 +-
- drivers/staging/vt6655/vntwifi.c     | 124 +++--------
- drivers/staging/vt6655/vntwifi.h     |  14 --
- drivers/staging/vt6655/wcmd.c        | 126 ++++-------
- drivers/staging/vt6655/wctl.c        |   9 +-
- drivers/staging/vt6655/wmgr.c        | 418 ++++++++++++-----------------------
- drivers/staging/vt6655/wmgr.h        |  30 ---
- drivers/staging/vt6655/wpa.c         |   9 +-
- drivers/staging/vt6655/wpa2.c        |  44 ++--
- drivers/staging/vt6655/wpactl.c      |  68 ++----
- drivers/staging/vt6655/wroute.c      |   1 -
- 41 files changed, 931 insertions(+), 2134 deletions(-)
+> Today's linux-next merge of the audit tree got a conflict in
+> kernel/audit.c between commit aa4af831bb4f ("AUDIT: Allow login in
+> non-init namespaces") from Linus' tree and commit 5a3cb3b6c3a0 ("audit:
+> allow user processes to log from another PID namespace") from the audit
+> tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
--- 
-1.9.0
+I expected this conflict.  Thanks for fixing it up!
 
+> [Eric: that audit tree commit has no Signed-off-by from you even though
+> you committed it ... there are a few like that]
+
+I added my Signed-off to the list posting.
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc kernel/audit.c
+> index 95a20f3f52f1,ad77d1e80895..000000000000
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@@ -607,20 -607,9 +607,19 @@@ static int audit_netlink_ok(struct sk_b
+>   {
+>   	int err = 0;
+>   
+> - 	/* Only support the initial namespaces for now. */
+> + 	/* Only support initial user namespace for now. */
+>  +	/*
+>  +	 * We return ECONNREFUSED because it tricks userspace into thinking
+>  +	 * that audit was not configured into the kernel.  Lots of users
+>  +	 * configure their PAM stack (because that's what the distro does)
+>  +	 * to reject login if unable to send messages to audit.  If we return
+>  +	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
+>  +	 * configured in and will let login proceed.  If we return EPERM
+>  +	 * userspace will reject all logins.  This should be removed when we
+>  +	 * support non init namespaces!!
+>  +	 */
+> - 	if ((current_user_ns() != &init_user_ns) ||
+> - 	    (task_active_pid_ns(current) != &init_pid_ns))
+> + 	if ((current_user_ns() != &init_user_ns))
+>  -		return -EPERM;
+>  +		return -ECONNREFUSED;
+>   
+>   	switch (msg_type) {
+>   	case AUDIT_LIST:
+
+
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
