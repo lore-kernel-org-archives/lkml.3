@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaDAJUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:20:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751715AbaDAJQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:16:42 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Abhi Das <adas@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 21/29] GFS2: check NULL return value in gfs2_ok_to_move
-Date: Tue,  1 Apr 2014 10:15:33 +0100
-Message-Id: <1396343741-1524-22-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
-References: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
+	id S1751961AbaDAJU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:20:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42167 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaDAJU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 05:20:57 -0400
+Date: Tue, 1 Apr 2014 11:21:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] x86 iommu updates for 3.15
+Message-ID: <alpine.DEB.2.02.1404011115290.14882@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhi Das <adas@redhat.com>
+Linus,
 
-gfs2_lookupi() can return NULL if the path to the root is broken by
-another rename/rmdir. In this case gfs2_ok_to_move() must check for
-this NULL pointer and return error.
+please pull the latest x86-iommu-for-linus git tree from:
 
-Resolves: rhbz#1060246
-Signed-off-by: Abhi Das <adas@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-iommu-for-linus
 
-diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index ec455b9..b52ebf8 100644
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -1299,6 +1299,10 @@ static int gfs2_ok_to_move(struct gfs2_inode *this, struct gfs2_inode *to)
- 		}
+
+* A quirk for the iommu quirk to include silicon which was assumed not
+  to be out in the wild.
+
+This time with the correct logic applied.
+
+Thanks,
+
+	tglx
+
+------------------>
+Neil Horman (1):
+      x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
+
+
+ arch/x86/kernel/early-quirks.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index bc4a088..6d7d5a1 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -203,18 +203,15 @@ static void __init intel_remapping_check(int num, int slot, int func)
+ 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
  
- 		tmp = gfs2_lookupi(dir, &gfs2_qdotdot, 1);
-+		if (!tmp) {
-+			error = -ENOENT;
-+			break;
-+		}
- 		if (IS_ERR(tmp)) {
- 			error = PTR_ERR(tmp);
- 			break;
--- 
-1.8.3.1
-
+ 	/*
+- 	 * Revision 13 of all triggering devices id in this quirk have
+-	 * a problem draining interrupts when irq remapping is enabled,
+-	 * and should be flagged as broken.  Additionally revisions 0x12
+-	 * and 0x22 of device id 0x3405 has this problem.
++	 * Revision <= 13 of all triggering devices id in this quirk
++	 * have a problem draining interrupts when irq remapping is
++	 * enabled, and should be flagged as broken. Additionally
++	 * revision 0x22 of device id 0x3405 has this problem.
+ 	 */
+-	if (revision == 0x13)
++	if (revision <= 0x13)
+ 		set_irq_remapping_broken();
+-	else if ((device == 0x3405) &&
+-	    ((revision == 0x12) ||
+-	     (revision == 0x22)))
++	else if (device == 0x3405 && revision == 0x22)
+ 		set_irq_remapping_broken();
+-
+ }
+ 
+ /*
