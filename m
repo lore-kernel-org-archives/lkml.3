@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251AbaDAJrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:47:10 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:36641 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaDAJrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:47:05 -0400
-Message-ID: <1396345609.28055.7.camel@pasglop>
-Subject: Re: [PATCH REPOST v5 1/3] powernv, cpufreq: Select CPUFreq related
- Kconfig options for powernv
-From: Benjamin Herrenschmidt <benh@au1.ibm.com>
-To: "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, rjw@rjwysocki.net,
-        linuxppc-dev@ozlabs.org, Linux PM list <linux-pm@vger.kernel.org>,
-        svaidy@linux.vnet.ibm.com, srivatsa.bhat@linux.vnet.ibm.com,
-        Anton Blanchard <anton@samba.org>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 01 Apr 2014 20:46:49 +1100
-In-Reply-To: <1396336408-20954-3-git-send-email-ego@linux.vnet.ibm.com>
-References: <CAKohpo=jvswNPmUPEbS79bSp9ZWC1e3DjaEUX=O4CWMXfufHrw@mail.gmail.com>
-	 <1396336408-20954-1-git-send-email-ego@linux.vnet.ibm.com>
-	 <1396336408-20954-3-git-send-email-ego@linux.vnet.ibm.com>
-Organization: IBM Australia
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040109-0260-0000-0000-000004A01D01
+	id S1751247AbaDAJz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:55:27 -0400
+Received: from sauhun.de ([89.238.76.85]:38641 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751057AbaDAJz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 05:55:26 -0400
+Date: Tue, 1 Apr 2014 11:55:22 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        kbuild-all@01.org, daniel.lezcano@linaro.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH] avr32: remove cpu_data macro to fix compiles
+Message-ID: <20140401095521.GA3326@katana>
+References: <53060d5d.XcmAdOiLt1MCo6Y5%fengguang.wu@intel.com>
+ <1393057709-17925-1-git-send-email-wsa@the-dreams.de>
+ <20140224072820.GA9069@samfundet.no>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+In-Reply-To: <20140224072820.GA9069@samfundet.no>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 12:43 +0530, Gautham R. Shenoy wrote:
-> From: "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>
-> 
-> Enable CPUFreq for PowerNV. Select "performance", "powersave",
-> "userspace" and "ondemand" governors. Choose "ondemand" to be the
-> default governor.
 
-Rafael, are you going to take these or should I send them to Linus ?
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(I'd rather you take them :-)
+On Mon, Feb 24, 2014 at 08:28:20AM +0100, Hans-Christian Egtvedt wrote:
+> Around Sat 22 Feb 2014 09:28:27 +0100 or thereabout, Wolfram Sang wrote:
+> > Having cpu_data as a parameterless macro can easily cause build failures
+> > because it can be a variable name like in linux/pm_domain.h [1]. So,
+> > remove the macro and convert its only user. Because this architecture
+> > cannot do SMP, remove the whole SMP block, too. Only compile tested due
+> > to no hardware.
+>=20
+> Looks sane, AVR32 doesn't support SMP, so this change should be fine.
+>=20
+> > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> >=20
+>=20
+> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+>=20
+> > [1] https://lists.01.org/pipermail/kbuild-all/2014-February/003252.html
+> >
+>=20
+> clockevents/3.15 branch, mens what you have queued up for 3.15?
+>=20
+> I can queue this in my linux-next, and send Linus an early pull request t=
+he
+> moment 3.14 is released.
 
-Cheers,
-Ben.
-
-> 
-> Signed-off-by: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/configs/pseries_defconfig    | 1 +
->  arch/powerpc/configs/pseries_le_defconfig | 1 +
->  arch/powerpc/platforms/powernv/Kconfig    | 6 ++++++
->  3 files changed, 8 insertions(+)
-> 
-> diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
-> index 9ea8342b..a905063 100644
-> --- a/arch/powerpc/configs/pseries_defconfig
-> +++ b/arch/powerpc/configs/pseries_defconfig
-> @@ -306,3 +306,4 @@ CONFIG_KVM_BOOK3S_64=m
->  CONFIG_KVM_BOOK3S_64_HV=y
->  CONFIG_TRANSPARENT_HUGEPAGE=y
->  CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
-> +CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
-> diff --git a/arch/powerpc/configs/pseries_le_defconfig b/arch/powerpc/configs/pseries_le_defconfig
-> index 3c84f9d..58e3dbf 100644
-> --- a/arch/powerpc/configs/pseries_le_defconfig
-> +++ b/arch/powerpc/configs/pseries_le_defconfig
-> @@ -301,3 +301,4 @@ CONFIG_CRYPTO_LZO=m
->  # CONFIG_CRYPTO_ANSI_CPRNG is not set
->  CONFIG_CRYPTO_DEV_NX=y
->  CONFIG_CRYPTO_DEV_NX_ENCRYPT=m
-> +CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
-> diff --git a/arch/powerpc/platforms/powernv/Kconfig b/arch/powerpc/platforms/powernv/Kconfig
-> index 895e8a2..c252ee9 100644
-> --- a/arch/powerpc/platforms/powernv/Kconfig
-> +++ b/arch/powerpc/platforms/powernv/Kconfig
-> @@ -11,6 +11,12 @@ config PPC_POWERNV
->  	select PPC_UDBG_16550
->  	select PPC_SCOM
->  	select ARCH_RANDOM
-> +	select CPU_FREQ
-> +	select CPU_FREQ_GOV_PERFORMANCE
-> +	select CPU_FREQ_GOV_POWERSAVE
-> +	select CPU_FREQ_GOV_USERSPACE
-> +	select CPU_FREQ_GOV_ONDEMAND
-> +	select CPU_FREQ_GOV_CONSERVATIVE
->  	default y
->  
->  config PPC_POWERNV_RTAS
+Have you done this already? I can't find it, yet I see the pull request
+for the clocks is already out.
 
 
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTOo0JAAoJEBQN5MwUoCm2b4wP/ismeZ66ZObhabBDXqgEYRh1
+nyj/4xQ0HTcvwnZDMRjGyYe67Z0VlWf5f3tbBd+7qJpGrJskPXGTwnY/8JLiaOXG
+ZD937jGkd3M7ingW3vM/Wrjt7bwKCbeM1bKp7T1lPr+aqSKLMj/PEVVdlPCxrK4/
+wjzVx7n4cv5ba+miOufbSK+/1z4OIew/r05Id6ZfGQhgGtW4qcyHYysFAiXauKUX
+Y0J87f6rcBElp0W2zENqLTQC5pNTaHZxSuxPcSFXDayxhTdakqGxJ0Yoa9aVlY0c
+Aq1MyDya7FqbPF1vg6jP2w12AkuYLfZfamjGV38rAV9pR62YggKg3QMGksVtu6rB
+F3jSg2xV2Ccvfb/c9rRE0aa+qK1XVtTPWuRJyUD68Qf2tPsG+hQrsJhgdrTy5oEN
+rIkFYAX6wn6GFptNuz+fXGOTu2ccEkge9ubLSL5BCqNqFMkbN4vsm1nPxW5t3Ruv
+JiLdE3YeGo7bPOexnS7HKI3jKlqWD5FFcgnNfnDftICBQxU7km2TkYIFAqrxlQYz
+UnF/PoJWNbHd85SkqoU0gKQRdOLl+g2yiVY+COUkPwLVNCoMGsJrttiKD9iQropG
+p+l2ArA0AJKd/gAQIKKELICaAx+ZY0uT7sfCD4MoI8LAZsil1BSBQmw6/2/iwdeD
+o5+FvD+4nv8PmNc4hsAK
+=KeKQ
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
