@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635AbaDARzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 13:55:51 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50509 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaDARzt (ORCPT
+	id S1751814AbaDAR4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 13:56:02 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:36740 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaDARz7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 13:55:49 -0400
-Date: Tue, 1 Apr 2014 10:55:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401175545.GV4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
- <20140401150849.GA14757@redhat.com>
- <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
+	Tue, 1 Apr 2014 13:55:59 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Anton Leontiev <bunder@t-25.ru>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] uvcvideo: Fix marking buffer erroneous in case of FID toggling
+Date: Tue, 01 Apr 2014 17:24:14 +0200
+Message-ID: <10422468.Ah80osK73i@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <533659E2.4010001@t-25.ru>
+References: <1395722457-28080-1-git-send-email-bunder@t-25.ru> <1459346.J1YUbuH55p@avalon> <533659E2.4010001@t-25.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401172244.GA10363@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040117-7164-0000-0000-000000B6C00D
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 01:22:44PM -0400, Dave Jones wrote:
-> On Tue, Apr 01, 2014 at 08:30:32AM -0700, Paul E. McKenney wrote:
->  > > [14403.765300] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [14403.766405]  (detected by 0, t=260067 jiffies, g=449892, c=449891, q=0)
->  > > and on and on..
->  > > 
->  > > so kernel space still works like before, but userspace is locked up.
->  > 
->  > Interesting.  I suspect that if you reverted the rest of this merge
->  > window's RCU patches, you would get the same result.
->  > 
->  > >  > If that doesn't work, I will need to put together some diagnostic patches.
->  > >  > Starting with the one below.
->  > > 
->  > > bugger, I forgot to apply this last night. I'll do it on the next run.
->  > 
->  > But let's see what this shows first.
+Hi Anton,
+
+On Saturday 29 March 2014 09:28:02 Anton Leontiev wrote:
+> 28.03.2014 20:12, Laurent Pinchart пишет:
+> >>>> + * Set error flag for incomplete buffer.
+> >>>> + */
+> >>>> +static void uvc_buffer_check_bytesused(const struct uvc_streaming
+> >>>> *const stream,
+> > 
+> > No need for the second const keyword here.
+> > 
+> > I would have used "uvc_video_" as a prefix, to be in sync with the
+> > surrounding functions. What would you think of
+> > uvc_video_validate_buffer() ?
+> > 
+> >>>> +	struct uvc_buffer *const buf)
+> > 
+> > And no need for const at all here.
+> > 
+> >>>> +{
+> >>>> +	if (buf->length != buf->bytesused &&
+> >>>> +			!(stream->cur_format->flags & UVC_FMT_FLAG_COMPRESSED))
+> > 
+> > The indentation is wrong here, the ! on the second line should be aligned
+> > to the first 'buf' of the first line.
+> > 
+> > If you agree with these changes I can perform them while applying, there's
+> > no need to resubmit the patch.
 > 
-> [ 1173.923463] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1173.924457] 	(detected by 0, t=6502 jiffies, g=47728, c=47727, q=0)
-> [ 1173.925199] INFO: Stall ended before state dump start, gp_kthread state: 0x2
-> [ 1368.859744] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1368.860754] 	(detected by 0, t=26007 jiffies, g=47728, c=47727, q=0)
-> [ 1368.861559] INFO: Stall ended before state dump start, gp_kthread state: 0x2
-> [ 1563.796416] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1563.797426] 	(detected by 0, t=45512 jiffies, g=47728, c=47727, q=0)
-> [ 1563.798293] INFO: Stall ended before state dump start, gp_kthread state: 0x2
-> [ 1758.733747] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1758.734725] 	(detected by 0, t=65017 jiffies, g=47728, c=47727, q=0)
-> [ 1758.735526] INFO: Stall ended before state dump start, gp_kthread state: 0x2
-> [ 1953.670944] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1953.671932] 	(detected by 0, t=84522 jiffies, g=47728, c=47727, q=0)
-> [ 1953.672735] INFO: Stall ended before state dump start, gp_kthread state: 0x2
-> [ 2148.608132] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 2148.609140] 	(detected by 0, t=104027 jiffies, g=47728, c=47727, q=0)
-> etc etc.
+> Thank you for reviewing my first patch to Linux kernel.
 
-Waiting uninterruptibly.  Presumably blocked on mutex_lock().  But
-you have CONFIG_PROVE_LOCKING(), so any deadlocks should have been
-reported.
+Thank you for submitting it :-)
 
-Given that you have CONFIG_RCU_TRACE=y, could you please enable the
-following trace events and dump the trace before things hang?
+> I completely agree with your changes.
+> 
+> Just want to ask why there is no need for the second 'const' after pointer
+> character '*'? I thought it marks pointer itself as constant for type-
+> checking opposite to first 'const', which marks memory it points to as
+> constant for type-checking.
 
-	trace_event=rcu:rcu_grace_period,rcu:rcu_grace_period_init
+Your understanding is correct (as far as I know).
 
-If it is not feasible to dump the trace before things hang, let me
-know, and I will work out some other diagnostic regime.
+> I understand that the function is simple enough to verify it by hand but
+> it's better to add more information for automatic checking.
+>
+> Is there any guidelines on 'const' keyword usage in Linux kernel code?
 
-							Thanx, Paul
+Marking the memory pointed to by the pointer as const ensures that the 
+function won't modify memory that the caller thought wouldn't be modified. It 
+thus serves as a contract between the caller and the callee, enforced by the 
+compiler.
+
+Marking the pointer as const, on the other hand, only affects the function 
+implementation, without influencing its call contract. Its only use in this 
+case would be to prevent the function from modifying a pointer that the 
+function itself thought it shouldn't modify. While not useless in all cases, 
+this compile-time checked if usually not performed in the kernel, especially 
+for simple functions. I'm not aware of any explicit rule regarding const usage 
+though.
+
+-- 
+Regards,
+
+Laurent Pinchart
 
