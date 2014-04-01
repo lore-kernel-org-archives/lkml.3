@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaDAMQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:16:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42183 "EHLO
+	id S1752048AbaDAMQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:16:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42187 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723AbaDALQ2 (ORCPT
+	with ESMTP id S1751732AbaDALQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 07:16:28 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 024/144] mwifiex: do not advertise usb autosuspend support
-Date: Tue,  1 Apr 2014 12:13:48 +0100
-Message-Id: <1396350948-29910-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 025/144] ACPI / resources: ignore invalid ACPI device resources
+Date: Tue,  1 Apr 2014 12:13:49 +0100
+Message-Id: <1396350948-29910-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit adb07df1e039e9fe43e66aeea8b4771f83659dbb upstream.
+commit b355cee88e3b1a193f0e9a81db810f6f83ad728b upstream.
 
-As many Surface Pro I & II users have found out, the mwifiex_usb
-doesn't support usb autosuspend, and it has caused some system
-stability issues.
+ACPI table may export resource entry with 0 length.
+But the current code interprets this kind of resource in a wrong way.
+It will create a resource structure with
+res->end = acpi_resource->start + acpi_resource->len - 1;
 
-Bug 69661 - mwifiex_usb on MS Surface Pro 1 is unstable
-Bug 60815 - Interface hangs in mwifiex_usb
-Bug 64111 - mwifiex_usb USB8797 crash failed to get signal
- 	    information
+This patch fixes a problem on my machine that a platform device fails
+to be created because one of its ACPI IO resource entry (start = 0,
+end = 0, length = 0) is translated into a generic resource with
+start = 0, end = 0xffffffff.
 
-USB autosuspend get triggered when Surface Pro's AC power is
-removed or powertop enables power saving on USB8797 device.
-Driver's suspend handler is called here, but resume handler
-won't be called until the AC power is put back on or powertop
-disables power saving for USB8797.
-
-We need to refactor the suspend/resume handlers to support
-usb autosuspend properly. For now let's just remove it.
-
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/usb.c | 8 --------
- 1 file changed, 8 deletions(-)
+ drivers/acpi/resource.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
-index b7adf3d..923e348 100644
---- a/drivers/net/wireless/mwifiex/usb.c
-+++ b/drivers/net/wireless/mwifiex/usb.c
-@@ -511,13 +511,6 @@ static int mwifiex_usb_resume(struct usb_interface *intf)
- 						   MWIFIEX_BSS_ROLE_ANY),
- 				  MWIFIEX_ASYNC_CMD);
- 
--#ifdef CONFIG_PM
--	/* Resume handler may be called due to remote wakeup,
--	 * force to exit suspend anyway
--	 */
--	usb_disable_autosuspend(card->udev);
--#endif /* CONFIG_PM */
--
- 	return 0;
- }
- 
-@@ -576,7 +569,6 @@ static struct usb_driver mwifiex_usb_driver = {
- 	.id_table = mwifiex_usb_table,
- 	.suspend = mwifiex_usb_suspend,
- 	.resume = mwifiex_usb_resume,
--	.supports_autosuspend = 1,
- };
- 
- static int mwifiex_usb_tx_init(struct mwifiex_adapter *adapter)
+diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+index 3322b47..c2dd598 100644
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -77,18 +77,24 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_MEMORY24:
+ 		memory24 = &ares->data.memory24;
++		if (!memory24->address_length)
++			return false;
+ 		acpi_dev_get_memresource(res, memory24->minimum,
+ 					 memory24->address_length,
+ 					 memory24->write_protect);
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_MEMORY32:
+ 		memory32 = &ares->data.memory32;
++		if (!memory32->address_length)
++			return false;
+ 		acpi_dev_get_memresource(res, memory32->minimum,
+ 					 memory32->address_length,
+ 					 memory32->write_protect);
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+ 		fixed_memory32 = &ares->data.fixed_memory32;
++		if (!fixed_memory32->address_length)
++			return false;
+ 		acpi_dev_get_memresource(res, fixed_memory32->address,
+ 					 fixed_memory32->address_length,
+ 					 fixed_memory32->write_protect);
+@@ -144,12 +150,16 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
+ 	switch (ares->type) {
+ 	case ACPI_RESOURCE_TYPE_IO:
+ 		io = &ares->data.io;
++		if (!io->address_length)
++			return false;
+ 		acpi_dev_get_ioresource(res, io->minimum,
+ 					io->address_length,
+ 					io->io_decode);
+ 		break;
+ 	case ACPI_RESOURCE_TYPE_FIXED_IO:
+ 		fixed_io = &ares->data.fixed_io;
++		if (!fixed_io->address_length)
++			return false;
+ 		acpi_dev_get_ioresource(res, fixed_io->address,
+ 					fixed_io->address_length,
+ 					ACPI_DECODE_10);
 -- 
 1.9.1
 
