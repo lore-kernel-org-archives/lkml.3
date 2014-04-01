@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaDAXQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 19:16:32 -0400
-Received: from [65.55.169.252] ([65.55.169.252]:24483 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754109AbaDAXQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 19:16:28 -0400
-Reply-To: <adrian_bayford101@yahoo.com>
-From: "Adrian Gillian  Bayford" <living712@morrisville.edu>
-Subject: You have received 1.5m pounds as donation see link www.bbc.co.uk/news/uk-england-19254228 send name address and phone number for info
-Date: Wed, 2 Apr 2014 04:45:36 +0530
-MIME-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <d84131e6-bfbe-42d5-83d4-62fa217aa429@system38.csntprod.morrisville.edu>
-To: Undisclosed recipients:;
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: =?windows-1251?Q?CIP:136.204.34.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(1?=
- =?windows-1251?Q?0019001)(6009001)(448001)(189002)(199002)(87936001)(8530?=
- =?windows-1251?Q?6002)(90146001)(77096001)(94316002)(50226001)(54316002)(?=
- =?windows-1251?Q?46102001)(80976001)(76786001)(87266001)(62966002)(692260?=
- =?windows-1251?Q?01)(92726001)(83072002)(56816005)(33646001)(99396002)(93?=
- =?windows-1251?Q?516002)(93916002)(61296002)(74502001)(47446002)(74876001?=
- =?windows-1251?Q?)(86362001)(76176001)(4396001)(76796001)(49866001)(75432?=
- =?windows-1251?Q?001)(97336001)(50466002)(65816001)(23686002)(85852003)(9?=
- =?windows-1251?Q?5666003)(31686003)(74706001)(87286001)(93136001)(9867600?=
- =?windows-1251?Q?1)(881003)(40036003)(44976005)(79102001)(76482001)(20776?=
- =?windows-1251?Q?003)(97186001)(1671002)(51856001)(59766001)(44716002)(88?=
- =?windows-1251?Q?136002)(218223001)(62236002)(50986001)(47976001)(6210650?=
- =?windows-1251?Q?02)(83322001)(89996001)(80022001)(85326001)(81342001)(63?=
- =?windows-1251?Q?696002)(47776003)(77156001)(47736001)(95416001)(81542001?=
- =?windows-1251?Q?)(77982001)(73894003)(74662001)(94946001)(6806004)(31696?=
- =?windows-1251?Q?002)(56776001)(43066001)(74366001)(82782002);DIR:OUT;SFP?=
- =?windows-1251?Q?:1501;SCL:5;SRVR:BN1AFFO11HUB028;H:morrisville.edu;FPR:;?=
- =?windows-1251?Q?MLV:spm;PTR:mail.morrisville.edu;MX:1;A:1;LANG:en;?=
-X-OriginatorOrg: morrisville.edu
-X-Forefront-PRVS: 016885DD9B
+	id S1754152AbaDAXTq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 19:19:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62395 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752785AbaDAXPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 19:15:48 -0400
+Message-ID: <1396394127.5088.0.camel@menhir>
+Subject: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Date: Wed, 02 Apr 2014 00:15:27 +0100
+Organization: Red Hat UK Ltd
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-nEfaWSnCtKqeTgjXGG62"
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--=-nEfaWSnCtKqeTgjXGG62
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+
+Hi,
+
+Please consider pulling the following changes,
+
+Steve.
+
+---------------------------------------------------------------------------=
+---
+The following changes since commit 1b2ad41214c9bf6e8befa000f0522629194bf540=
+:
+
+  GFS2: Fix address space from page function (2014-03-31 17:48:27 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git tags=
+/gfs2-merge-window
+
+for you to fetch changes up to 1b2ad41214c9bf6e8befa000f0522629194bf540:
+
+  GFS2: Fix address space from page function (2014-03-31 17:48:27 +0100)
+
+----------------------------------------------------------------
+One of the main highlights this time, is not the patches themselves
+but instead the widening contributor base. It is good to see that
+interest is increasing in GFS2, and I'd like to thank all the
+contributors to this patch set.
+
+In addition to the usual set of bug fixes and clean ups, there are
+patches to improve inode creation performance when xattrs are
+required and some improvements to the transaction code which is
+intended to help improve scalability after further changes in due
+course.
+
+Journal extent mapping is also updated to make it more efficient
+and again, this is a foundation for future work in this area.
+
+The maximum number of ACLs has been increased to 300 (for a 4k
+block size) which means that even with a few additional xattrs
+from selinux, everything should fit within a single fs block.
+
+There is also a patch to bring GFS2's own copy of the writepages
+code up to the same level as the core VFS. Eventually we may be
+able to merge some of this code, since it is fairly similar.
+
+The other major change this time, is bringing consistency to
+the printing of messages via fs_<level>, pr_<level> macros.
+
+----------------------------------------------------------------
+
+
+
+--=-nEfaWSnCtKqeTgjXGG62
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABAgAGBQJTO0iYAAoJEMrg3m4a/8jSM1EP/RRjcf84RxBO/Yx/um4n3wG0
+gfp9d3YfDoUY1jcp3xzxmgzhunEnDm2wPbZtWtBdGqaAJejxoK8xC1E9rA2mwLjR
+H46U0+B6yHS2lNA6Uu7c8ff0SMfBUSw0+nJTfRfboRpNr7sdJodMn1vEs1m8poxN
+eTzrSMcgQf2oUnDrDDu6FjINSzRKxzyIrL9XTnfCNYvtcvKB2cZlv9boe9ihtMcq
+I2jktN2WzHxOWlcWCLeCvc0It5CtZ8Cni9f8/MWFWkvFKNKxfggsczm3UFh4PIa9
+hjO3F9oUL6mrT/1lxyIRrOohpWmFgeRGOB3JxPxtM0yD5umH05KdxC9aGfem+uh8
+9Q0bB1AdmjyUJ0pyd+mZsXGHrJmJr8olzYkEyYURWeoUEvEm0qR1bjXrUgjwU2Qj
+iQP/II9t2ilEHwXlc4BrG7Lr+tLr3CiFUAWxHx1vqu53qLNDGsdWhYI5BE2adede
+cKqIVQyuh31CE2OwtMzSQ5lpqNanZbdUbbTN0IQspR7SUzqBBct5Ad2MBkOF8kb1
+7xWDR+axM9jXiWb/18xOQEX0NKFv8xJnD4UryHqs+CQtH1gMXPxhFJ57O11H06Q1
+xnNw4bGBTEIeFTHGj6NqJcosCTaiQyIj4ELJvc77jCsN7sXFVNLjBDKpXOXLZqQc
++G+9B1j0dPoBqek1gs8r
+=OuCA
+-----END PGP SIGNATURE-----
+
+--=-nEfaWSnCtKqeTgjXGG62--
 
