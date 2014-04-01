@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaDAQP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:15:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44571 "EHLO
+	id S1753112AbaDAQQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:16:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44664 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897AbaDAQPT (ORCPT
+	with ESMTP id S1752664AbaDAQQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:15:19 -0400
+	Tue, 1 Apr 2014 12:16:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Xiaotian Feng <xtfeng@gmail.com>, Mike Galbraith <bitbucket@online.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 59/86] mwifiex: copy AP's HT capability info correctly
-Date: Tue,  1 Apr 2014 09:08:12 -0700
-Message-Id: <1396368519-12728-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 44/86] rapidio/tsi721: fix tasklet termination in dma channel release
+Date: Tue,  1 Apr 2014 09:07:57 -0700
+Message-Id: <1396368519-12728-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,39 +31,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
+commit 04379dffdd4da820d51a1566ad2e86f3b1ad97ed upstream.
 
-While preparing association request, intersection of device's HT
-capability information and corresponding fields advertised by AP
-is used.
+This patch is a modification of the patch originally proposed by
+Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
+This new version disables DMA channel interrupts and ensures that the
+tasklet wil not be scheduled again before calling tasklet_kill().
 
-This patch fixes an error while copying this field from AP's
-beacon.
+Unfortunately the updated patch was not released at that time due to
+planned rework of Tsi721 mport driver to use threaded interrupts (which
+has yet to happen).  Recently the issue was reported again:
+https://lkml.org/lkml/2014/2/19/762.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Description from the original Xiaotian's patch:
+
+ "Some drivers use tasklet_disable in device remove/release process,
+  tasklet_disable will inc tasklet->count and return.  If the tasklet is
+  not handled yet under some softirq pressure, the tasklet will be
+  placed on the tasklet_vec, never have a chance to be excuted.  This
+  might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq,
+  but tasklet is disabled.  tasklet_kill should be used in this case."
+
+This patch is applicable to kernel versions starting from v3.5.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/mwifiex/11n.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/rapidio/devices/tsi721.h     |  1 +
+ drivers/rapidio/devices/tsi721_dma.c | 27 ++++++++++++++++++---------
+ 2 files changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/11n.c b/drivers/net/wireless/mwifiex/11n.c
-index 245a371..072ac2a 100644
---- a/drivers/net/wireless/mwifiex/11n.c
-+++ b/drivers/net/wireless/mwifiex/11n.c
-@@ -300,8 +300,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifiex_private *priv,
- 		ht_cap->header.len =
- 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
- 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *) bss_desc->bcn_ht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_ht_cap,
- 		       le16_to_cpu(ht_cap->header.len));
+diff --git a/drivers/rapidio/devices/tsi721.h b/drivers/rapidio/devices/tsi721.h
+index b4b0d83..7061ac0 100644
+--- a/drivers/rapidio/devices/tsi721.h
++++ b/drivers/rapidio/devices/tsi721.h
+@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
+ 	struct list_head	free_list;
+ 	dma_cookie_t		completed_cookie;
+ 	struct tasklet_struct	tasklet;
++	bool			active;
+ };
  
- 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
+index 502663f..91245f5 100644
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_bdma_chan *bdma_chan)
+ {
+ 	/* Disable BDMA channel interrupts */
+ 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
+-
+-	tasklet_schedule(&bdma_chan->tasklet);
++	if (bdma_chan->active)
++		tasklet_schedule(&bdma_chan->tasklet);
+ }
+ 
+ #ifdef CONFIG_PCI_MSI
+@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(struct dma_chan *dchan)
+ 	}
+ #endif /* CONFIG_PCI_MSI */
+ 
+-	tasklet_enable(&bdma_chan->tasklet);
++	bdma_chan->active = true;
+ 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
+ 
+ 	return bdma_chan->bd_num - 1;
+@@ -576,9 +576,7 @@ err_out:
+ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ {
+ 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
+-#ifdef CONFIG_PCI_MSI
+ 	struct tsi721_device *priv = to_tsi721(dchan->device);
+-#endif
+ 	LIST_HEAD(list);
+ 
+ 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
+@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ 	BUG_ON(!list_empty(&bdma_chan->active_list));
+ 	BUG_ON(!list_empty(&bdma_chan->queue));
+ 
+-	tasklet_disable(&bdma_chan->tasklet);
++	tsi721_bdma_interrupt_enable(bdma_chan, 0);
++	bdma_chan->active = false;
++
++#ifdef CONFIG_PCI_MSI
++	if (priv->flags & TSI721_USING_MSIX) {
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
++					   bdma_chan->id].vector);
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
++					   bdma_chan->id].vector);
++	} else
++#endif
++	synchronize_irq(priv->pdev->irq);
++
++	tasklet_kill(&bdma_chan->tasklet);
+ 
+ 	spin_lock_bh(&bdma_chan->lock);
+ 	list_splice_init(&bdma_chan->free_list, &list);
+ 	spin_unlock_bh(&bdma_chan->lock);
+ 
+-	tsi721_bdma_interrupt_enable(bdma_chan, 0);
+-
+ #ifdef CONFIG_PCI_MSI
+ 	if (priv->flags & TSI721_USING_MSIX) {
+ 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
+@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_device *priv)
+ 		bdma_chan->dchan.cookie = 1;
+ 		bdma_chan->dchan.chan_id = i;
+ 		bdma_chan->id = i;
++		bdma_chan->active = false;
+ 
+ 		spin_lock_init(&bdma_chan->lock);
+ 
+@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_device *priv)
+ 
+ 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
+ 			     (unsigned long)bdma_chan);
+-		tasklet_disable(&bdma_chan->tasklet);
+ 		list_add_tail(&bdma_chan->dchan.device_node,
+ 			      &mport->dma.channels);
+ 	}
 -- 
 1.8.3.2
 
