@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaDASCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:02:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204AbaDASCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:02:14 -0400
-Date: Tue, 1 Apr 2014 15:01:34 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        zhang yanying <zhuangyanying@huawei.com>,
-        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        Zhanghailiang <zhang.zhanghailiang@huawei.com>
-Subject: Re: VDSO pvclock may increase host cpu consumption, is this a
- problem?
-Message-ID: <20140401180134.GA17963@amt.cnet>
-References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
- <5339AB59.4050906@mit.edu>
- <20140331213032.GA5866@amt.cnet>
- <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
+	id S1751873AbaDASDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:03:06 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:49825 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaDASDD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 14:03:03 -0400
+Message-ID: <533AFF51.2070806@gmail.com>
+Date: Wed, 02 Apr 2014 02:02:57 +0800
+From: Nicolas Porcel <nicolasporcel06@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kieran Clancy <clancy.kieran@gmail.com>
+CC: "D. G. Jansen" <d.g.jansen@gmail.com>,
+        Stefan Biereigel <stefan@biereigel.de>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Stefan Biereigel <security@biereigel-wb.de>,
+        Lan Tianyu <lantianyu1986@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        San Zamoyski <san@plusnet.pl>, "D. Jansen" <dennis.jansen@web.de>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
+Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
+ suspend to RAM.
+References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com> <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com> <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com> <5331E5EB.5000304@biereigel-wb.de> <5331E9E4.4050201@gmail.com> <5332099B.8090305@gmail.com> <5332AF10.90109@biereigel.de> <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com> <CAM6oVw2v9ptr0c08uPiB_3z3e41VO+Vp3OhoHXiBxagAOfPBZA@mail.gmail.com> <CAGf84QLcXnmjRQFsb7z09xMrKXG0DiO7gT_10QZqGMN0CJYnLA@mail.gmail.com> <533AA4A4.1010101@gmail.com> <CAGf84QJyzDTjd3=XJBDANJgwh4mT5yxPLoCrsMRuq5ZA8XJkJg@mail.gmail.com> <533AAEA3.6070703@gmail.com>
+In-Reply-To: <533AAEA3.6070703@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 10:33:41PM -0700, Andy Lutomirski wrote:
-> On Mar 31, 2014 8:45 PM, "Marcelo Tosatti" <mtosatti@redhat.com> wrote:
-> >
-> > On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
-> > > On 03/29/2014 01:47 AM, Zhanghailiang wrote:
-> > > > Hi,
-> > > > I found when Guest is idle, VDSO pvclock may increase host consumption.
-> > > > We can calcutate as follow, Correct me if I am wrong.
-> > > >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
-> > > > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
-> > > > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call.
-> > > > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
-> > > > Both Host and Guest is linux-3.13.6.
-> > > > So, whether the host cpu consumption is a problem?
-> > >
-> > > Does pvclock serve any real purpose on systems with fully-functional
-> > > TSCs?  The x86 guest implementation is awful, so it's about 2x slower
-> > > than TSC.  It could be improved a lot, but I'm not sure I understand why
-> > > it exists in the first place.
-> >
-> > VM migration.
-> 
-> Why does that need percpu stuff?  Wouldn't it be sufficient to
-> interrupt all CPUs (or at least all cpus running in userspace) on
-> migration and update the normal timing data structures?
+I managed to recompile the kernel. Here is what I see in the logs:
+kernel: ACPI : EC: acpi_ec_clear: EC_SC 0x20
+kernel: ACPI : EC: acpi_ec_clear: EC_SC 0x08
+kernel: ACPI : EC: 1 stale EC events cleared
 
-Are you suggesting to allow interruption of the timekeeping code 
-at any time to update frequency information ?
+I hope this will help
 
-Do you want to that as a special tsc clocksource driver ? 
+Regards,
 
-> Even better: have the VM offer to invalidate the physical page
-> containing the kernel's clock data on migration and interrupt one CPU.
->  If another CPU races, it'll fault and wait for the guest kernel to
-> update its timing.
+Nicolas Porcel
 
-Perhaps that is a good idea.
-
-> Does the current kvmclock stuff track CLOCK_MONOTONIC and
-> CLOCK_REALTIME separately?
-
-No. kvmclock counting is interrupted on vm pause (the "hw" clock does not
-count during vm pause).
-
-> > Can you explain why you consider it so bad ? How you think it could be
-> > improved ?
-> 
-> The second rdtsc_barrier looks unnecessary.  Even better, if rdtscp is
-> available, then rdtscp can replace rdtsc_barrier, rdtsc, and the
-> getcpu call.
+Le 01/04/2014 20:18, Nicolas Porcel a écrit :
+> Sure, I understand that you need to test it, that's why I am asking. I 
+> don't want an untested patch to be included in the kernel either. We 
+> also have to make sure that the patch fix the regression for all the 
+> affected Samsung laptops.
 >
-> It would also be nice to avoid having two sets of rescalings of the timing data.
-
-Yep, probably good improvements, patches are welcome :-)
+> For the EC_SC code, I am using the first version of the patch without 
+> the pr_info line, so I need to recompile the kernel. I'll let you know 
+> as soon as it's done.
+>
+> Best regards,
+>
+> Nicolas Porcel
+>
+> On 01/04/2014 19:58, Kieran Clancy wrote:
+>> On Tue, Apr 1, 2014 at 10:06 PM, Nicolas Porcel
+>> <nicolasporcel06@gmail.com> wrote:
+>>> Do you have any idea of how much time will it take to merge it to the
+>>> mainline ?
+>> Apologies for the breakage. The key here is that we want a patch which
+>> works 100% on all Samsung systems. If we rush a fix for this
+>> regression, we may risk breaking things on other systems.
+>>
+>> Fortunately, the work-around in the case of this regression is very
+>> simple (just repeat whatever event was ignored the first time, be it
+>> lid open, ac plug, etc) compared to the bug which the original patch
+>> fixed (which had no real workaround and caused near-permanent
+>> malfunction).
+>>
+>> This is why I am asking people with Samsung systems to test the patch
+>> (with the debug output I added in the kernel bugzilla attachment) and
+>> confirm that it is working. I am also asking them to report EC_SC data
+>> because we may be able to create a more targeted patch with this
+>> information.
+>>
+>> Speaking of which, can you please let me know the EC_SC bytes you see
+>> when you test it on your system, and if it is always the same?
+>>
+>> Once I hear back from users on a range of Samsung systems, I will
+>> submit a patch. It should have enough time to land before 3.15. I will
+>> also ask for it to be included in other stable branches.
+>>
+>> Kind regards,
+>> Kieran
+>
 
