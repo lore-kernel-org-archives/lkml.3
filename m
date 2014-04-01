@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaDAXk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 19:40:27 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58170 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250AbaDAXk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 19:40:26 -0400
-Date: Tue, 1 Apr 2014 18:38:18 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Felipe Balbi <balbi@ti.com>, <rob@landley.net>, <clm@fb.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: SubmittingPatches: mention our new
- Facebook group
-Message-ID: <20140401233818.GA28102@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <533AD000.307@fb.com>
- <1396368515-8547-1-git-send-email-balbi@ti.com>
- <20140401203208.GB30033@thunk.org>
- <20140401225655.GH19658@home.goodmis.org>
- <1396395422.3989.15.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1754218AbaDAXp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 19:45:59 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62729 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaDAXp5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 19:45:57 -0400
+Date: Tue, 1 Apr 2014 19:46:13 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: "Brown, Len" <len.brown@intel.com>
+CC: "WYSOCKI, RAFAL" <rafael.j.wysocki@intel.com>,
+        Arne Bockholdt <linux-kernel@bockholdt.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression in intel_idle on Avaton/Rangely Mohon Peak board
+Message-ID: <20140401234612.GA22782@windriver.com>
+References: <533B0288.2020304@windriver.com>
+ <1A7043D5F58CCB44A599DFD55ED4C948452FD582@FMSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1396395422.3989.15.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C948452FD582@FMSMSX106.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[RE: Regression in intel_idle on Avaton/Rangely Mohon Peak board] On 01/04/2014 (Tue 17:59) Brown, Len wrote:
 
-On Tue, Apr 01, 2014 at 04:37:02PM -0700, Eric Dumazet wrote:
-> On Tue, 2014-04-01 at 18:56 -0400, Steven Rostedt wrote:
-> > On Tue, Apr 01, 2014 at 04:32:08PM -0400, Theodore Ts'o wrote:
-> > > One suggestion: the documentation should add a tip that if you can't
-> > > get someone to review your post, one option is to pay Facebook to
-> > > promote your post[1] so it shows more prominently (or at all) on more
-> > > kernel dvelopers' streams:
-> > >=20
-> > > 					- Ted
-> > >=20
-> > > [1] http://hothardware.com/News/Facebook-Looking-at-New-Revenue-Strea=
-m-Pay-To-Promote-Friends-Posts-/
-> >=20
-> > The more likes you get (or pay for), the more likely your patch will be
-> > pulled into mainline.
->=20
->=20
-> I do not want to ruin your day guys, but I own a patent on this whole
-> idea.
->=20
-> Fortunately it ends in 20 years, April 1st, 2034, so you only have to be
-> patient.
+> > I've got an eval board with a 1.7GHz Avaton/C2000 that hangs at boot
+> > shortly after the idle driver registration -- typically 1/2 dozen
+> > dmesg lines later, around rtc init, or net stack init.
+> 
+> Paul,
+> Please boot the failing board with "intel_idle.max_cstate=0"
+> to disable intel_idle entirely, and then show the C-states
+> exported by acpi_idle, that predumably, are stable on both boards:
+> 
+> dmesg | grep idle
+> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
+> 
+> Then go back and boot with "intel_idle.max_cstate=N"
+> where N is incremented by 1 until when the system fails
+> and note the largest N that still works.
 
-Darn it... By then we will all become Government-controlled zombies with
-brain implants. Looking at the bright side, though, we will be able to
-review a patch by just thinking about it.
+OK, I kept the failing board on loan, since I expected a reply that
+would contain "can you try this..."  :)   I will be able to do the
+above tomorrow (EST).
 
---=20
-balbi
+> 
+> > The interesting part is that a nearly identical board, but with
+> > different (newer/faster) CPU and newer BIOS doesn't have the hang.
+> 
+> Possibly an electrical bug in the earlier board.
+> Maybe they worked around it by disabling a C-state in ACPI
+> and didn't test upstream Linux?
+> 
+> I'd be interested in the acpi_idle output above for both the
+> new and old boards to see if they are exporting different states
+> on the two boards.
 
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Could be ; I can probably get access to the newer one again too, if
+that will be useful.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> 
+> dmidecode isn't useful in this case.  The CPUID in /proc/cpuinfo
+> may be useful if the problem turns out to be associated with
+> some stepping.
 
-iQIcBAEBAgAGBQJTO03qAAoJEIaOsuA1yqRE+38P/RZXjsl8/pd1WnZn0CYKltnv
-Jm2+dSJSQZ5zyY+NsRezahxn7+RmJ33llZgMJBdlCNscaXYBHrxX3xQcv/qqg1xT
-0Cj/BIRjdSbOK3SLD6wVivGgMtAOi88LdaxRTtBgzpMKoEX/ZiziGviampGQUDv/
-TiXtSzYDDmwqKyHoSpOnbAR8RQXCm4CaXUAg1xy+fo6CrnEe3e8nc38q76qbjNQa
-Ixcf1Quh4GU69wEHQiIDRNkU506zDK+UFQwQELY74xJ++PRXLnxQYNBfojt9GHbT
-UYlgSYgBqQ5PkrFUQIL2ek5mF409+HHVNwIPiQ0FH/tYDugQ0CXkjp0ClvRdtlnD
-taNhdTShGlpKVO/KaeUk3TADsqC/8FAsIXOtEqYjjKVE1DgIQ63Njm471LSuAjcI
-72e1yc22GLAHIEwUa5B3uUt0KSw1Q6/3tFaYlkVoTl57aohTla2btPnkHA3BFNiY
-nVneQk+e5Wcde/3a6ytzdKl1IgtMzHsEDPXU42B5l7IzL5g3azcwelB7xDseyO0/
-DDZDgbpbblJNDrC07FcsCoGxBiYocte+mFQ0kj6/Z1uVO1sxfgTqemQGfDXfhpnM
-zsK9mdWt6FTGKQlu6H6InNU/wfrefluG0dS+PougK6GFtv7slZpuSt3AdArII43y
-rCivbAWOM8zlJ+zxFTEo
-=xXJ7
------END PGP SIGNATURE-----
+The dmidecode info I'd posted indicated that the steppings were
+unnchanged.  I can get the /proc/cpuinfo tomorrow, but I figured
+the dmidecode stepping info was accurate.  Is it not reliable?
 
---tThc/1wpZn/ma/RB--
+P.
+--
+
+> 
+> thanks,
+> -Len
+> 
