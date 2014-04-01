@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaDAQJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:09:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44340 "EHLO
+	id S1752246AbaDAQJa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:09:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44362 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814AbaDAQJE (ORCPT
+	with ESMTP id S1751836AbaDAQJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:04 -0400
+	Tue, 1 Apr 2014 12:09:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Cong Wang <cwang@twopensource.com>,
+Cc: John Ogness <john.ogness@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 03/86] ipv4: Fix runtime WARNING in rtmsg_ifa()
-Date: Tue,  1 Apr 2014 09:07:16 -0700
-Message-Id: <1396368519-12728-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 06/86] tcp: tsq: fix nonagle handling
+Date: Tue,  1 Apr 2014 09:07:19 -0700
+Message-Id: <1396368519-12728-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -29,68 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: John Ogness <john.ogness@linutronix.de>
 
-[ Upstream commit 63b5f152eb4a5bb79b9caf7ec37b4201d12f6e66 ]
+[ Upstream commit bf06200e732de613a1277984bf34d1a21c2de03d ]
 
-On m68k/ARAnyM:
+Commit 46d3ceabd8d9 ("tcp: TCP Small Queues") introduced a possible
+regression for applications using TCP_NODELAY.
 
-WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
-Modules linked in:
-CPU: 0 PID: 407 Comm: ifconfig Not tainted
-3.13.0-atari-09263-g0c71d68014d1 #1378
-Stack from 10c4fdf0:
-        10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
-        00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
-        c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
-        00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
-        008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
-        eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
-Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
- [<00024416>] warn_slowpath_null+0x14/0x1a
- [<002501b4>] rtmsg_ifa+0xdc/0xf0
- [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
- [<0024f9b4>] inet_abc_len+0x0/0x42
- [<00250b52>] inet_insert_ifa+0xc/0x12
- [<00252390>] devinet_ioctl+0x2ae/0x5d6
+If TCP session is throttled because of tsq, we should consult
+tp->nonagle when TX completion is done and allow us to send additional
+segment, especially if this segment is not a full MSS.
+Otherwise this segment is sent after an RTO.
 
-Adding some debugging code reveals that net_fill_ifaddr() fails in
+[edumazet] : Cooked the changelog, added another fix about testing
+sk_wmem_alloc twice because TX completion can happen right before
+setting TSQ_THROTTLED bit.
 
-    put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
-                              preferred, valid))
+This problem is particularly visible with recent auto corking,
+but might also be triggered with low tcp_limit_output_bytes
+values or NIC drivers delaying TX completion by hundred of usec,
+and very low rtt.
 
-nla_put complains:
+Thomas Glanzmann for example reported an iscsi regression, caused
+by tcp auto corking making this bug quite visible.
 
-    lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
-
-Apparently commit 5c766d642bcaffd0c2a5b354db2068515b3846cf ("ipv4:
-introduce address lifetime") forgot to take into account the addition of
-struct ifa_cacheinfo in inet_nlmsg_size(). Hence add it, like is already
-done for ipv6.
-
-Suggested-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
+Fixes: 46d3ceabd8d9 ("tcp: TCP Small Queues")
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Thomas Glanzmann <thomas@glanzmann.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/devinet.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_output.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index a8e4f26..1b35f0d 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1243,7 +1243,8 @@ static size_t inet_nlmsg_size(void)
- 	       + nla_total_size(4) /* IFA_ADDRESS */
- 	       + nla_total_size(4) /* IFA_LOCAL */
- 	       + nla_total_size(4) /* IFA_BROADCAST */
--	       + nla_total_size(IFNAMSIZ); /* IFA_LABEL */
-+	       + nla_total_size(IFNAMSIZ) /* IFA_LABEL */
-+	       + nla_total_size(sizeof(struct ifa_cacheinfo)); /* IFA_CACHEINFO */
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index aa215b8..df953b3 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -851,7 +851,8 @@ static void tcp_tsq_handler(struct sock *sk)
+ 	if ((1 << sk->sk_state) &
+ 	    (TCPF_ESTABLISHED | TCPF_FIN_WAIT1 | TCPF_CLOSING |
+ 	     TCPF_CLOSE_WAIT  | TCPF_LAST_ACK))
+-		tcp_write_xmit(sk, tcp_current_mss(sk), 0, 0, GFP_ATOMIC);
++		tcp_write_xmit(sk, tcp_current_mss(sk), tcp_sk(sk)->nonagle,
++			       0, GFP_ATOMIC);
  }
+ /*
+  * One tasklest per cpu tries to send more skbs.
+@@ -2028,7 +2029,15 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
  
- static int inet_fill_ifaddr(struct sk_buff *skb, struct in_ifaddr *ifa,
+ 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+ 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
+-			break;
++			/* It is possible TX completion already happened
++			 * before we set TSQ_THROTTLED, so we must
++			 * test again the condition.
++			 * We abuse smp_mb__after_clear_bit() because
++			 * there is no smp_mb__after_set_bit() yet
++			 */
++			smp_mb__after_clear_bit();
++			if (atomic_read(&sk->sk_wmem_alloc) > limit)
++				break;
+ 		}
+ 
+ 		limit = mss_now;
 -- 
 1.8.3.2
 
