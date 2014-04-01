@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaDAJY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:24:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48874 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaDAJQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751513AbaDAJQT (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 1 Apr 2014 05:16:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751057AbaDAJQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 05:16:12 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 08/29] GFS2: Reduce struct gfs2_trans in size
-Date: Tue,  1 Apr 2014 10:15:20 +0100
-Message-Id: <1396343741-1524-9-git-send-email-swhiteho@redhat.com>
+Cc: Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 04/29] GFS2: Lock i_mutex and use a local gfs2_holder for fallocate
+Date: Tue,  1 Apr 2014 10:15:16 +0100
+Message-Id: <1396343741-1524-5-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
 References: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple of "int" fields were being used as boolean values
-so we can make them bitfields of one bit, and put them in
-what might otherwise be a hole in the structure with 64
-bit alignment.
+From: Bob Peterson <rpeterso@redhat.com>
 
+This patch causes GFS2 to lock the i_mutex during fallocate. It
+also switches from using a dinode's inode glock to using a local
+holder like the other GFS2 i_operations.
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
-index cf0e344..645655c 100644
---- a/fs/gfs2/incore.h
-+++ b/fs/gfs2/incore.h
-@@ -462,11 +462,11 @@ struct gfs2_trans {
- 	unsigned int tr_blocks;
- 	unsigned int tr_revokes;
- 	unsigned int tr_reserved;
-+	unsigned int tr_touched:1;
-+	unsigned int tr_attached:1;
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index efc078f..6c79408 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -811,6 +811,8 @@ static long gfs2_fallocate(struct file *file, int mode, loff_t offset,
+ 	loff_t bsize_mask = ~((loff_t)sdp->sd_sb.sb_bsize - 1);
+ 	loff_t next = (offset + len - 1) >> sdp->sd_sb.sb_bsize_shift;
+ 	loff_t max_chunk_size = UINT_MAX & bsize_mask;
++	struct gfs2_holder gh;
++
+ 	next = (next + 1) << sdp->sd_sb.sb_bsize_shift;
  
- 	struct gfs2_holder tr_t_gh;
+ 	/* We only support the FALLOC_FL_KEEP_SIZE mode */
+@@ -831,8 +833,10 @@ static long gfs2_fallocate(struct file *file, int mode, loff_t offset,
+ 	if (error)
+ 		return error;
  
--	int tr_touched;
--	int tr_attached;
+-	gfs2_holder_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &ip->i_gh);
+-	error = gfs2_glock_nq(&ip->i_gh);
++	mutex_lock(&inode->i_mutex);
++
++	gfs2_holder_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &gh);
++	error = gfs2_glock_nq(&gh);
+ 	if (unlikely(error))
+ 		goto out_uninit;
  
- 	unsigned int tr_num_buf_new;
- 	unsigned int tr_num_databuf_new;
-diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
-index 2b20d70..963b28c 100644
---- a/fs/gfs2/trans.c
-+++ b/fs/gfs2/trans.c
-@@ -98,7 +98,7 @@ static void gfs2_print_trans(const struct gfs2_trans *tr)
- {
- 	printk(KERN_WARNING "GFS2: Transaction created at: %pSR\n",
- 	       (void *)tr->tr_ip);
--	printk(KERN_WARNING "GFS2: blocks=%u revokes=%u reserved=%u touched=%d\n",
-+	printk(KERN_WARNING "GFS2: blocks=%u revokes=%u reserved=%u touched=%u\n",
- 	       tr->tr_blocks, tr->tr_revokes, tr->tr_reserved, tr->tr_touched);
- 	printk(KERN_WARNING "GFS2: Buf %u/%u Databuf %u/%u Revoke %u/%u\n",
- 	       tr->tr_num_buf_new, tr->tr_num_buf_rm,
+@@ -900,9 +904,10 @@ out_trans_fail:
+ out_qunlock:
+ 	gfs2_quota_unlock(ip);
+ out_unlock:
+-	gfs2_glock_dq(&ip->i_gh);
++	gfs2_glock_dq(&gh);
+ out_uninit:
+-	gfs2_holder_uninit(&ip->i_gh);
++	gfs2_holder_uninit(&gh);
++	mutex_unlock(&inode->i_mutex);
+ 	return error;
+ }
+ 
 -- 
 1.8.3.1
 
