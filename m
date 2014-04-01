@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaDAT0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 15:26:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36438 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaDAT0Z (ORCPT
+	id S1751451AbaDATcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 15:32:18 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:47759 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaDATcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 15:26:25 -0400
-Date: Tue, 1 Apr 2014 12:26:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-Message-Id: <20140401122623.30f9d4e8106031f714e01ebb@linux-foundation.org>
-In-Reply-To: <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
-	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
-	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
-	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
-	<20140331170546.3b3e72f0.akpm@linux-foundation.org>
-	<1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 1 Apr 2014 15:32:15 -0400
+Message-ID: <533B1439.3010403@gmail.com>
+Date: Tue, 01 Apr 2014 21:32:09 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Richard Hansen <rhansen@bbn.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+CC: mtk.manpages@gmail.com, linux-api@vger.kernel.org,
+        Greg Troxel <gdt@ir.bbn.com>
+Subject: Re: [PATCH] mm: msync: require either MS_ASYNC or MS_SYNC
+References: <533B04A9.6090405@bbn.com>
+In-Reply-To: <533B04A9.6090405@bbn.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Apr 2014 10:01:39 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+Richard,
 
-> > > EINVAL A new segment was to be created and size < SHMMIN or size >
-> > > SHMMAX, or no new segment was to be created, a segment with given key
-> > > existed, but size is greater than the size of that segment.
-> > 
-> > So their system will act as if they had set SHMMAX=enormous.  What
-> > problems could that cause?
+On 04/01/2014 08:25 PM, Richard Hansen wrote:
+> For the flags parameter, POSIX says "Either MS_ASYNC or MS_SYNC shall
+> be specified, but not both." [1]  There was already a test for the
+> "both" condition.  Add a test to ensure that the caller specified one
+> of the flags; fail with EINVAL if neither are specified.
 > 
-> So, just like any sysctl configurable, only privileged users can change
-> this value. If we remove this option, users can theoretically create
-> huge segments, thus ignoring any custom limit previously set. This is
-> what I fear.
+> Without this change, specifying neither is the same as specifying
+> flags=MS_ASYNC because nothing in msync() is conditioned on the
+> MS_ASYNC flag.  This has not always been true, 
 
-What's wrong with that?  Waht are we actually ptoecting the system
-from?  tmpfs exhaustion?
+I am curious (since such things should be documented)--when was
+it not true?
 
-> Think of it kind of like mlock's rlimit. And for that
-> matter, why does sysctl exist at all, the same would go for the rest of
-> the limits.
-
-These things exist to protect the system from intentional or accidental
-service denials.  What are the service denials in this case?
-
-> > Look.  The 32M thing is causing problems.  Arbitrarily increasing the
-> > arbitrary 32M to an arbitrary 128M won't fix anything - we still have
-> > the problem.  Think bigger, please: how can we make this problem go
-> > away for ever?
+> and there's no good
+> reason to believe that this behavior would have persisted
+> indefinitely.
 > 
-> That's the thing, I don't think we can make it go away without breaking
-> userspace.
+> The msync(2) man page (as currently written in man-pages.git) is
+> silent on the behavior if both flags are unset, so this change should
+> not break an application written by somone who carefully reads the
+> Linux man pages or the POSIX spec.
 
-Still waiting for details!
+Sadly, people do not always carefully read man pages, so there
+remains the chance that a change like this will break applications.
+Aside from standards conformance, what do you see as the benefit
+of the change?
 
-> I'm not saying that my 4x increase is the correct value, I
-> don't think any default value is really correct, as with any other
-> hardcoded limits there are pros and cons. That's really why we give
-> users the option to change it to the "correct" one via sysctl. All I'm
-> saying is that 32mb is just too small for default in today's systems,
-> and increasing it is just making a bad situation a tiny bit better.
+Thanks,
 
-Let's understand what's preventing us from making it a great deal better.
+Michael
+
+
+> [1] http://pubs.opengroup.org/onlinepubs/9699919799/functions/msync.html
+> 
+> Signed-off-by: Richard Hansen <rhansen@bbn.com>
+> Reported-by: Greg Troxel <gdt@ir.bbn.com>
+> Reviewed-by: Greg Troxel <gdt@ir.bbn.com>
+> ---
+> 
+> This is a resend of:
+> http://article.gmane.org/gmane.linux.kernel/1554416
+> I didn't get any feedback from that submission, so I'm resending it
+> without changes.
+> 
+>  mm/msync.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/mm/msync.c b/mm/msync.c
+> index 632df45..472ad3e 100644
+> --- a/mm/msync.c
+> +++ b/mm/msync.c
+> @@ -42,6 +42,8 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t,
+> len, int, flags)
+>  		goto out;
+>  	if ((flags & MS_ASYNC) && (flags & MS_SYNC))
+>  		goto out;
+> +	if (!(flags & (MS_ASYNC | MS_SYNC)))
+> +		goto out;
+>  	error = -ENOMEM;
+>  	len = (len + ~PAGE_MASK) & PAGE_MASK;
+>  	end = start + len;
+> 
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
