@@ -1,131 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbaDAEMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:12:38 -0400
-Received: from ozlabs.org ([203.10.76.45]:57440 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273AbaDAEMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:12:34 -0400
-Date: Tue, 1 Apr 2014 15:12:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>
-Subject: linux-next: manual merge of the audit tree with the net-next tree
-Message-Id: <20140401151211.522eed6e3c26c2c10da77d7f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Apr_2014_15_12_11_+1100_rp0a2i9a6pYHK6G+"
+	id S1752313AbaDAENS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:13:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53848 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672AbaDAENP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 00:13:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wei Liu <wei.liu2@citrix.com>, David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH 3.13 07/22] xen/balloon: flush persistent kmaps in correct position
+Date: Mon, 31 Mar 2014 21:08:37 -0700
+Message-Id: <20140401040704.932839871@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
+References: <20140401040703.045139933@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Apr_2014_15_12_11_+1100_rp0a2i9a6pYHK6G+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Hi all,
+------------------
 
-Today's linux-next merge of the audit tree got a conflict in
-kernel/seccomp.c between commit bd4cf0ed331a ("net: filter:
-rework/optimize internal BPF interpreter's instruction set") from the
-net-next tree and commit 5e937a9ae913 ("syscall_get_arch: remove useless
-function arguments") from the audit tree.
+From: Wei Liu <wei.liu2@citrix.com>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+commit 09ed3d5ba06137913960f9c9385f71fc384193ab upstream.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Xen balloon driver will update ballooned out pages' P2M entries to point
+to scratch page for PV guests. In 24f69373e2 ("xen/balloon: don't alloc
+page while non-preemptible", kmap_flush_unused was moved after updating
+P2M table. In that case for 32 bit PV guest we might end up with
 
-diff --cc kernel/seccomp.c
-index fd609bd9d6dd,eda2da3df822..000000000000
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@@ -65,23 -74,41 +65,23 @@@ struct seccomp_filter=20
-   * Endianness is explicitly ignored and left for BPF program authors to m=
-anage
-   * as per the specific architecture.
-   */
- -static inline u32 get_u32(u64 data, int index)
- +static void populate_seccomp_data(struct seccomp_data *sd)
-  {
- -	return ((u32 *)&data)[index];
- -}
- +	struct task_struct *task =3D current;
- +	struct pt_regs *regs =3D task_pt_regs(task);
- =20
- -/* Helper for bpf_load below. */
- -#define BPF_DATA(_name) offsetof(struct seccomp_data, _name)
- -/**
- - * bpf_load: checks and returns a pointer to the requested offset
- - * @off: offset into struct seccomp_data to load from
- - *
- - * Returns the requested 32-bits of data.
- - * seccomp_check_filter() should assure that @off is 32-bit aligned
- - * and not out of bounds.  Failure to do so is a BUG.
- - */
- -u32 seccomp_bpf_load(int off)
- -{
- -	struct pt_regs *regs =3D task_pt_regs(current);
- -	if (off =3D=3D BPF_DATA(nr))
- -		return syscall_get_nr(current, regs);
- -	if (off =3D=3D BPF_DATA(arch))
- -		return syscall_get_arch();
- -	if (off >=3D BPF_DATA(args[0]) && off < BPF_DATA(args[6])) {
- -		unsigned long value;
- -		int arg =3D (off - BPF_DATA(args[0])) / sizeof(u64);
- -		int index =3D !!(off % sizeof(u64));
- -		syscall_get_arguments(current, regs, arg, 1, &value);
- -		return get_u32(value, index);
- -	}
- -	if (off =3D=3D BPF_DATA(instruction_pointer))
- -		return get_u32(KSTK_EIP(current), 0);
- -	if (off =3D=3D BPF_DATA(instruction_pointer) + sizeof(u32))
- -		return get_u32(KSTK_EIP(current), 1);
- -	/* seccomp_check_filter should make this impossible. */
- -	BUG();
- +	sd->nr =3D syscall_get_nr(task, regs);
-- 	sd->arch =3D syscall_get_arch(task, regs);
-++	sd->arch =3D syscall_get_arch();
- +
- +	/* Unroll syscall_get_args to help gcc on arm. */
- +	syscall_get_arguments(task, regs, 0, 1, (unsigned long *) &sd->args[0]);
- +	syscall_get_arguments(task, regs, 1, 1, (unsigned long *) &sd->args[1]);
- +	syscall_get_arguments(task, regs, 2, 1, (unsigned long *) &sd->args[2]);
- +	syscall_get_arguments(task, regs, 3, 1, (unsigned long *) &sd->args[3]);
- +	syscall_get_arguments(task, regs, 4, 1, (unsigned long *) &sd->args[4]);
- +	syscall_get_arguments(task, regs, 5, 1, (unsigned long *) &sd->args[5]);
- +
- +	sd->instruction_pointer =3D KSTK_EIP(task);
-  }
- =20
-  /**
+  P2M    X -----> S  (S is mfn of balloon scratch page)
+  M2P    Y -----> X  (Y is mfn in persistent kmap entry)
 
---Signature=_Tue__1_Apr_2014_15_12_11_+1100_rp0a2i9a6pYHK6G+
-Content-Type: application/pgp-signature
+kmap_flush_unused() iterates through all the PTEs in the kmap address
+space, using pte_to_page() to obtain the page. If the p2m and the m2p
+are inconsistent the incorrect page is returned.  This will clear
+page->address on the wrong page which may cause subsequent oopses if
+that page is currently kmap'ed.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Move the flush back between get_page and __set_phys_to_machine to fix
+this.
 
-iQIcBAEBCAAGBQJTOjywAAoJEMDTa8Ir7ZwV4G8QAIT/z3U8eniQNOrCE7a/LFrS
-VjyYotNIzcZIpbB4pS3JR4m1do+iUGki3KVdnKrC0XAR8NxYKDoYopU1oVVwOHO9
-4IWxDpWHsf0HEJBOAM1FJQ85e5e0gKY6wqh5T85lxiclmHsNabm8zeAS58AzKX3k
-1Vc3+qawGrsC5myxUBBWuJ/t35vyqMkJjhOR09qtr07vhkP70iplOuP/fE0+KWS9
-SEcVq1/g4GdNuk4yuNp6ND5b5mse45ligs/SbOZ4XLFCxDRfB9Vw56OaKIxDHa6Q
-wXqYzY3F5uSwejEhDhxmze+N3TARTdhphI5O1w+zFFR5WpqMHPZVet9wZez1QEKn
-TZ6GRdT+AWbXbh6eAroisUjiukJ6NhVncgdHloSE/uhNeBYmqGEBNJ1ikL6rBEIZ
-lMztP+ekhu8wOtoYbbGJ+TVO2Bhg4Z80PGP0ZH4xWyVXtiQTmSiQ/AWY7ScBhPet
-sshmQnniD1PEB3UIEAOYhapibu2t8tGwSzhtfGCAOhJGcWrXPA2CjzFkqGNxMyQ6
-FBtU9gGIeqVO09m20DUu0tQGmhl3mdMmaun1mTvGmQsOSMTd8Qpnn1ZT/XEpWD7r
-hICGk46Ac5rQEY2iTTVCs3n/4lOzlT5CDh6o/xNMrE7twf7T/xYtnK1OtGDSRwjZ
-AlnCyVXxAzWgn2ApAVXc
-=Db6I
------END PGP SIGNATURE-----
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---Signature=_Tue__1_Apr_2014_15_12_11_+1100_rp0a2i9a6pYHK6G+--
+---
+ drivers/xen/balloon.c |   24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -406,11 +406,25 @@ static enum bp_state decrease_reservatio
+ 			state = BP_EAGAIN;
+ 			break;
+ 		}
++		scrub_page(page);
+ 
+-		pfn = page_to_pfn(page);
+-		frame_list[i] = pfn_to_mfn(pfn);
++		frame_list[i] = page_to_pfn(page);
++	}
+ 
+-		scrub_page(page);
++	/*
++	 * Ensure that ballooned highmem pages don't have kmaps.
++	 *
++	 * Do this before changing the p2m as kmap_flush_unused()
++	 * reads PTEs to obtain pages (and hence needs the original
++	 * p2m entry).
++	 */
++	kmap_flush_unused();
++
++	/* Update direct mapping, invalidate P2M, and add to balloon. */
++	for (i = 0; i < nr_pages; i++) {
++		pfn = frame_list[i];
++		frame_list[i] = pfn_to_mfn(pfn);
++		page = pfn_to_page(pfn);
+ 
+ #ifdef CONFIG_XEN_HAVE_PVMMU
+ 		/*
+@@ -436,11 +450,9 @@ static enum bp_state decrease_reservatio
+ 		}
+ #endif
+ 
+-		balloon_append(pfn_to_page(pfn));
++		balloon_append(page);
+ 	}
+ 
+-	/* Ensure that ballooned highmem pages don't have kmaps. */
+-	kmap_flush_unused();
+ 	flush_tlb_all();
+ 
+ 	set_xen_guest_handle(reservation.extent_start, frame_list);
+
+
