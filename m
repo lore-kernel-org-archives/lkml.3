@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaDAENn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:13:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53867 "EHLO
+	id S1752677AbaDAEOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:14:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53874 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaDAENi (ORCPT
+	with ESMTP id S1752179AbaDAEOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:13:38 -0400
+	Tue, 1 Apr 2014 00:14:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Todd Previte <tprevite@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.13 10/22] drm/i915: Undo gtt scratch pte unmapping again
-Date: Mon, 31 Mar 2014 21:08:40 -0700
-Message-Id: <20140401040705.540077828@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.13 12/22] make prepend_name() work correctly when called with negative *buflen
+Date: Mon, 31 Mar 2014 21:08:42 -0700
+Message-Id: <20140401040706.285713373@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -29,41 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 8ee661b505613ef2747b350ca2871a31b3781bee upstream.
+commit e825196d48d2b89a6ec3a8eff280098d2a78207e upstream.
 
-It apparently blows up on some machines. This functionally reverts
+In all callchains leading to prepend_name(), the value left in *buflen
+is eventually discarded unused if prepend_name() has returned a negative.
+So we are free to do what prepend() does, and subtract from *buflen
+*before* checking for underflow (which turns into checking the sign
+of subtraction result, of course).
 
-commit 828c79087cec61eaf4c76bb32c222fbe35ac3930
-Author: Ben Widawsky <benjamin.widawsky@intel.com>
-Date:   Wed Oct 16 09:21:30 2013 -0700
-
-    drm/i915: Disable GGTT PTEs on GEN6+ suspend
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64841
-Reported-and-Tested-by: Brad  Jackson <bjackson0971@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Cc: Todd Previte <tprevite@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_gtt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/dcache.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_gtt.c
-+++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
-@@ -828,7 +828,7 @@ void i915_gem_suspend_gtt_mappings(struc
- 	dev_priv->gtt.base.clear_range(&dev_priv->gtt.base,
- 				       dev_priv->gtt.base.start / PAGE_SIZE,
- 				       dev_priv->gtt.base.total / PAGE_SIZE,
--				       false);
-+				       true);
- }
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2833,9 +2833,9 @@ static int prepend_name(char **buffer, i
+ 	u32 dlen = ACCESS_ONCE(name->len);
+ 	char *p;
  
- void i915_gem_restore_gtt_mappings(struct drm_device *dev)
+-	if (*buflen < dlen + 1)
+-		return -ENAMETOOLONG;
+ 	*buflen -= dlen + 1;
++	if (*buflen < 0)
++		return -ENAMETOOLONG;
+ 	p = *buffer -= dlen + 1;
+ 	*p++ = '/';
+ 	while (dlen--) {
 
 
