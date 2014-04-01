@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaDAEHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:07:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53782 "EHLO
+	id S1752264AbaDAEIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:08:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593AbaDAEHs (ORCPT
+	with ESMTP id S1752243AbaDAEII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:07:48 -0400
+	Tue, 1 Apr 2014 00:08:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Williamson <awilliam@redhat.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 5/9] Input: cypress_ps2 - dont report as a button pads
-Date: Mon, 31 Mar 2014 21:08:19 -0700
-Message-Id: <20140401040756.009755147@linuxfoundation.org>
+        Artem Fetishev <artem_fetishev@epam.com>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 6/9] x86: fix boot on uniprocessor systems
+Date: Mon, 31 Mar 2014 21:08:20 -0700
+Message-Id: <20140401040756.403407872@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040754.479538406@linuxfoundation.org>
 References: <20140401040754.479538406@linuxfoundation.org>
@@ -29,48 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Artem Fetishev <artem_fetishev@epam.com>
 
-commit 6797b39e6f6f34c74177736e146406e894b9482b upstream.
+commit 825600c0f20e595daaa7a6dd8970f84fa2a2ee57 upstream.
 
-The cypress PS/2 trackpad models supported by the cypress_ps2 driver
-emulate BTN_RIGHT events in firmware based on the finger position, as part
-of this no motion events are sent when the finger is in the button area.
+On x86 uniprocessor systems topology_physical_package_id() returns -1
+which causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized
+which leads to GPF in rapl_pmu_init().
 
-The INPUT_PROP_BUTTONPAD property is there to indicate to userspace that
-BTN_RIGHT events should be emulated in userspace, which is not necessary
-in this case.
+See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
 
-When INPUT_PROP_BUTTONPAD is advertised userspace will wait for a motion
-event before propagating the button event higher up the stack, as it needs
-current abs x + y data for its BTN_RIGHT emulation. Since in the
-cypress_ps2 pads don't report motion events in the button area, this means
-that clicks in the button area end up being ignored, so
-INPUT_PROP_BUTTONPAD actually causes problems for these touchpads, and
-removing it fixes:
+It turns out that physical_package_id and core_id can actually be
+retreived for uniprocessor systems too.  Enabling them also fixes
+rapl_pmu code.
 
-https://bugs.freedesktop.org/show_bug.cgi?id=76341
-
-Reported-by: Adam Williamson <awilliam@redhat.com>
-Tested-by: Adam Williamson <awilliam@redhat.com>
-Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/cypress_ps2.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/include/asm/topology.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -410,7 +410,6 @@ static int cypress_set_input_params(stru
- 	__clear_bit(REL_X, input->relbit);
- 	__clear_bit(REL_Y, input->relbit);
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask
  
--	__set_bit(INPUT_PROP_BUTTONPAD, input->propbit);
- 	__set_bit(EV_KEY, input->evbit);
- 	__set_bit(BTN_LEFT, input->keybit);
- 	__set_bit(BTN_RIGHT, input->keybit);
+ extern const struct cpumask *cpu_coregroup_mask(int cpu);
+ 
+-#ifdef ENABLE_TOPO_DEFINES
+ #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
+ #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
++
++#ifdef ENABLE_TOPO_DEFINES
+ #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
+ #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
+ 
 
 
