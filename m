@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaDAOGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 10:06:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48336 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663AbaDAOEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 10:04:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,772,1389772800"; 
-   d="scan'208";a="504351078"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
-        Marc Dietrich <marvin24@gmx.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org
-Subject: [PATCHv3 2/5] net: rfkill: gpio: remove unused and obsolete platform parameters
-Date: Tue,  1 Apr 2014 17:02:53 +0300
-Message-Id: <1396360976-28657-3-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1751540AbaDAOKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:10:00 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:38224 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaDAOJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 10:09:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140401135242.GC7972@stefanha-thinkpad.redhat.com>
+References: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
+ <20140327064158.GA17563@redhat.com> <87y4zwt7mu.fsf@blackfin.pond.sub.org>
+ <20140327081040.GA21756@redhat.com> <20140327085347.GB9580@stefanha-thinkpad.redhat.com>
+ <CAMrG31wx5WLrFMmGg-uasugS+S=e8T156ZPuEofRJeVB-4fVeQ@mail.gmail.com>
+ <53351E2C.3070508@msgid.tls.msk.ru> <20140328084749.GA11688@stefanha-thinkpad.redhat.com>
+ <CAMrG31ykbYAChLhF5qoUUCFU-tpdxNd5mcWyVOW7DuV-USEHrg@mail.gmail.com> <20140401135242.GC7972@stefanha-thinkpad.redhat.com>
+From: Alejandro Comisario <alejandro.comisario@mercadolibre.com>
+Date: Tue, 1 Apr 2014 11:09:37 -0300
+Message-ID: <CAMrG31zp5Sq4j7O+1AsaVNLpyc2QpfRU5FEFDmS7hyOSELS50Q@mail.gmail.com>
+Subject: Re: [Qemu-devel] Massive read only kvm guests when backing file was missing
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Michael Tokarev <mjt@tls.msk.ru>, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        ghammer@redhat.com, Jason Wang <jasowang@redhat.com>,
+        linux-kernel@vger.kernel.org, Markus Armbruster <armbru@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After upgrading to descriptor based gpios, the gpio numbers
-are not used anymore. The power_clk_name and the platform
-specific setup and close hooks are not used by anybody, and
-we should not encourage use of such things, so removing them.
+The conclusion is that the backing file stored on NFS that is the same
+for all 950 hosts / 10500 guests was deleted and immediatelly raised a
+read-only filesystem on the guest, seems that there's no way to avoid
+that.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- include/linux/rfkill-gpio.h | 10 ----------
- net/rfkill/rfkill-gpio.c    | 15 +--------------
- 2 files changed, 1 insertion(+), 24 deletions(-)
+We developed a script to recover from that scenario if the same happens.
+Basically doing:
 
-diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
-index 4d09f6e..20bcb55 100644
---- a/include/linux/rfkill-gpio.h
-+++ b/include/linux/rfkill-gpio.h
-@@ -27,21 +27,11 @@
-  * struct rfkill_gpio_platform_data - platform data for rfkill gpio device.
-  * for unused gpio's, the expected value is -1.
-  * @name:		name for the gpio rf kill instance
-- * @reset_gpio:		GPIO which is used for reseting rfkill switch
-- * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
-- * @power_clk_name:	[optional] name of clk to turn off while blocked
-- * @gpio_runtime_close:	clean up platform specific gpio configuration
-- * @gpio_runtime_setup:	set up platform specific gpio configuration
-  */
- 
- struct rfkill_gpio_platform_data {
- 	char			*name;
--	int			reset_gpio;
--	int			shutdown_gpio;
--	const char		*power_clk_name;
- 	enum rfkill_type	type;
--	void	(*gpio_runtime_close)(struct platform_device *);
--	int	(*gpio_runtime_setup)(struct platform_device *);
- };
- 
- #endif /* __RFKILL_GPIO_H */
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index bd2a5b9..0adda44 100644
---- a/net/rfkill/rfkill-gpio.c
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -87,7 +87,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- {
- 	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
- 	struct rfkill_gpio_data *rfkill;
--	const char *clk_name = NULL;
- 	struct gpio_desc *gpio;
- 	int ret;
- 	int len;
-@@ -101,7 +100,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		if (ret)
- 			return ret;
- 	} else if (pdata) {
--		clk_name = pdata->power_clk_name;
- 		rfkill->name = pdata->name;
- 		rfkill->type = pdata->type;
- 	} else {
-@@ -120,7 +118,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 	snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
- 	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
- 
--	rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
-+	rfkill->clk = devm_clk_get(&pdev->dev, NULL);
- 
- 	gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
- 	if (!IS_ERR(gpio)) {
-@@ -146,14 +144,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	if (pdata && pdata->gpio_runtime_setup) {
--		ret = pdata->gpio_runtime_setup(pdev);
--		if (ret) {
--			dev_err(&pdev->dev, "can't set up gpio\n");
--			return ret;
--		}
--	}
--
- 	rfkill->rfkill_dev = rfkill_alloc(rfkill->name, &pdev->dev,
- 					  rfkill->type, &rfkill_gpio_ops,
- 					  rfkill);
-@@ -174,10 +164,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- static int rfkill_gpio_remove(struct platform_device *pdev)
- {
- 	struct rfkill_gpio_data *rfkill = platform_get_drvdata(pdev);
--	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
- 
--	if (pdata && pdata->gpio_runtime_close)
--		pdata->gpio_runtime_close(pdev);
- 	rfkill_unregister(rfkill->rfkill_dev);
- 	rfkill_destroy(rfkill->rfkill_dev);
- 
--- 
-1.9.1
+* virsh stop
+* qemu-ndb connect
+* fsck
+* qemu-ndb disconnect
+* virsh start
 
+best regards.
+
+
+Alejandro Comisario
+MercadoLibre Cloud Services
+Arias 3751, Piso 7 (C1430CRG)
+Ciudad de Buenos Aires - Argentina
+Cel: +549(11) 15-3770-1857
+Tel : +54(11) 4640-8443
+
+
+On Tue, Apr 1, 2014 at 10:52 AM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
+> On Mon, Mar 31, 2014 at 09:51:23PM -0300, Alejandro Comisario wrote:
+>> Again, thanks to everyone.
+>
+> Did you reach a conclusion or is there still a problem that might be a
+> bug in KVM?
+>
+> Stefan
