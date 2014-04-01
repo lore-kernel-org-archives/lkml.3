@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaDAWQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 18:16:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaDAWQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 18:16:26 -0400
-Date: Tue, 1 Apr 2014 18:16:16 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401221616.GA961@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
- <20140401150849.GA14757@redhat.com>
- <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
- <20140401180414.GA12326@redhat.com>
- <20140401183245.GA12473@linux.vnet.ibm.com>
+	id S1751944AbaDAWS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 18:18:26 -0400
+Received: from ausc60pc101.us.dell.com ([143.166.85.206]:16348 "EHLO
+	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaDAWSY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 18:18:24 -0400
+X-LoopCount0: from 10.208.46.70
+X-IronPort-AV: E=Sophos;i="4.97,775,1389765600"; 
+   d="scan'208";a="585657735"
+Message-ID: <533B3B18.1030000@dell.com>
+Date: Tue, 01 Apr 2014 17:18:00 -0500
+From: Mario Limonciello <mario_limonciello@dell.com>
+Organization: Dell Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401183245.GA12473@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "matthew.garrett@nebula.com" <matthew.garrett@nebula.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH v5 0/1] Add WMI driver to control AlienFX features
+References: <1395842248-27868-1-git-send-email-mario_limonciello@dell.com>
+In-Reply-To: <1395842248-27868-1-git-send-email-mario_limonciello@dell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 11:32:45AM -0700, Paul E. McKenney wrote:
- 
- > >  > Given that you have CONFIG_RCU_TRACE=y, could you please enable the
- > >  > following trace events and dump the trace before things hang?
- > >  > 
- > >  > 	trace_event=rcu:rcu_grace_period,rcu:rcu_grace_period_init
- > >  > 
- > >  > If it is not feasible to dump the trace before things hang, let me
- > >  > know, and I will work out some other diagnostic regime.
- > > 
- > > I'll give that a shot when I get back in a few hours.
+On 03/26/2014 08:57 AM, Limonciello, Mario wrote:
+> This is a driver for the Alienware X51, X51 R2 and some future HW.
+>   - For the X51 / X51 R2 it allows control of the color and brightness
+>     of each zone via a sysfs interface for the color and a LED interface
+>     for the brightness
+>   - For the future HW it allows control of color and brightness as well
+>     as an HDMI mux that's included in the HW.
+>
+> Changes from v4 to v5:
+>   - Make zone control more like the thingm RGB LED in the kernel.  Brightness
+>     control is independent of the RGB adjustment.  RGB adjustment takes a 24-bit
+>     hexadecimal triplet.
+>   - Introduced a new WMAX method for platforms that use HDMI as well as a new
+>     lighting control interface.  This removes the present necessity of having
+>     to do a DMI match on HDMI for now.
+>   - Dynamically create number of sysfs zone nodes based on DMI data. Present
+>     platforms have 3 nodes, but some future ones will have anywhere from 2
+>     to 32 nodes.
+>   - Make lighting control state and HDMI more readable and usable for
+>     interacting. Rather than having to know numbers, cat'ing the nodes will
+>     output the available options and the presently selected option (in a
+>     single line)
+>
+> Mario Limonciello (1):
+>    Add WMI driver for controlling AlienFX features on some Alienware
+>      products
+>
+>   drivers/platform/x86/Kconfig         |  12 +
+>   drivers/platform/x86/Makefile        |   2 +
+>   drivers/platform/x86/alienware-wmi.c | 557 +++++++++++++++++++++++++++++++++++
+>   3 files changed, 571 insertions(+)
+>   create mode 100644 drivers/platform/x86/alienware-wmi.c
+>
+Matthew,
 
-ok, this is tricky, and I'm not sure how helpful the below is.
-because I don't know when the hang is going to happen, in parallel to my usual workload
-I did this..
-while [ 1 ];
-do
-  cat trace
-  echo > trace
-done
+Any feedback to apply on this?
 
-and got this...
-
-
-
-# entries-in-buffer/entries-written: 7/7   #P:4
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-          <idle>-0     [000] dNs3   851.748475: rcu_grace_period: rcu_preempt 21342 cpuend
-          <idle>-0     [000] dNs3   851.748477: rcu_grace_period: rcu_preempt 21343 cpustart
-          <idle>-0     [000] dNs3   851.748477: rcu_grace_period: rcu_sched 20080 cpuend
-          <idle>-0     [000] dN.2   851.748480: rcu_grace_period: rcu_preempt 21343 cpuqs
-     rcu_preempt-9     [000] ...1   851.748485: rcu_grace_period: rcu_preempt 21343 fqsstart
-     rcu_preempt-9     [000] ...1   851.748487: rcu_grace_period: rcu_preempt 21343 fqsend
-     rcu_preempt-9     [000] ...1   851.748487: rcu_grace_period: rcu_preempt 21343 fqswait
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 13/13   #P:4
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-     rcu_preempt-9     [003] d..2   851.878457: rcu_grace_period: rcu_preempt 21349 end
-     rcu_preempt-9     [003] d..2   851.878459: rcu_grace_period: rcu_preempt 21349 newreq
-     rcu_preempt-9     [003] ...1   851.878459: rcu_grace_period: rcu_preempt 21349 reqwait
-     rcu_preempt-9     [003] d..2   851.878460: rcu_grace_period: rcu_preempt 21350 start
-     rcu_preempt-9     [003] d..2   851.878461: rcu_grace_period: rcu_preempt 21350 cpustart
-     rcu_preempt-9     [003] d..2   851.878462: rcu_grace_period_init: rcu_preempt 21350 0 0 7 f
-     rcu_preempt-9     [003] ...1   851.878463: rcu_grace_period: rcu_preempt 21350 fqswait
-     rcu_preempt-9     [003] d..2   851.878464: rcu_grace_period: rcu_preempt 21350 cpuqs
-          <idle>-0     [000] dNs3   851.878482: rcu_grace_period: rcu_preempt 21349 cpuend
-          <idle>-0     [000] dNs3   851.878483: rcu_grace_period: rcu_preempt 21350 cpustart
-          <idle>-0     [000] dNs3   851.878484: rcu_grace_period: rcu_sched 20086 cpuend
-          <idle>-0     [000] .N.2   851.878486: rcu_grace_period: rcu_sched 20086 cpuqs
-          <idle>-0     [000] dN.2   851.878487: rcu_grace_period: rcu_preempt 21350 cpuqs
-
-
-followed by a half dozen 'empty' traces before it totally locked up.
-
-	Dave
-
+Thanks,
