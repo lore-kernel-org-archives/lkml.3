@@ -1,63 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaDASfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:35:45 -0400
-Received: from na6sys009bog017.obsmtp.com ([74.125.150.74]:59152 "HELO
-	na6sys009bog017.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751351AbaDASfn (ORCPT
+	id S1751574AbaDASgv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:36:51 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:58963 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaDASgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:35:43 -0400
-X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 14:35:42 EDT
+	Tue, 1 Apr 2014 14:36:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <3586fbc4.12f75.1451de4826d.Coremail.asuka.com@163.com>
-References: <1395957398-24546-1-git-send-email-asuka.com@163.com>
- <CAEP_g=_qJ1uHKZmZdkUrT+NUkzbRgaHfShZoMbnnCb+LwjOneQ@mail.gmail.com>
- <4fd27e6c.c96a.14512e82018.Coremail.asuka.com@163.com> <CAEP_g=_84HXCZLOzQ0JdLBF5WVhqwTJeEAY-xjqDD8YCv8yrRg@mail.gmail.com>
- <3586fbc4.12f75.1451de4826d.Coremail.asuka.com@163.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Tue, 1 Apr 2014 11:27:56 -0700
-Message-ID: <CAEP_g=-an14xN7Q2fmC+wMk1G9WTAX+JrVeBx5QGnw2-XU3ezQ@mail.gmail.com>
-Subject: Re: [PATCH] openvswitch: supply a dummy err_handler of
- gre_cisco_protocol to prevent kernel crash
-To: wei zhang <asuka.com@163.com>
-Cc: David Miller <davem@davemloft.net>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <533AFF77.5030106@codeaurora.org>
+References: <1396346657-7166-1-git-send-email-holler@ahsoftware.de>
+	<533AFF77.5030106@codeaurora.org>
+Date: Tue, 1 Apr 2014 11:36:48 -0700
+X-Google-Sender-Auth: Lz27gCpGrlCcRU-Bc-5kq0zbzLs
+Message-ID: <CAGXu5jKMF9n9svQBhyQFvCoUe86QhLycDTt-fWyiRfySbn=Fug@mail.gmail.com>
+Subject: Re: [PATCH] arm: don't allow CONFIG_DEBUG_SET_MODULE_RONX if
+ CONFIG_JUMP_LABEL is enabled
+From: Kees Cook <keescook@chromium.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Alexander Holler <holler@ahsoftware.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 8:24 AM, wei zhang <asuka.com@163.com> wrote:
-> At 2014-04-01 08:49:53,"Jesse Gross" <jesse@nicira.com> wrote:
->>On Sun, Mar 30, 2014 at 5:12 AM, wei zhang <asuka.com@163.com> wrote:
->>> At 2014-03-29 06:02:25,"Jesse Gross" <jesse@nicira.com> wrote:
->
->>> Maybe I misunderstand something? I think if we discard all packet pass to us
->>> when we use gre vport, new gre_cisco_protocol which has lower priority could
->>> not see the packet intended to it.
->>
->>That's true but in this case it would also not see any data packets,
->>so I don't think that situation would work well anyways.
->>
->>> I checked the implementation of the ipgre_err(), which has be called before
->>> the err_handler of gre vport. It use the the (local address, remote address, key)
->>> to distinguish the packet which is realy intended to it, although it could not
->>> always get the key from the icmp packet. Should we do as the same as it?
->>> I'm not sure this is feasible, any advice is appreciate.
->>
->>OVS does flow based matching rather than using a static set of
->>configuration parameters, so everything "matches" in some way
->>(although the result might be to drop).
->
-> So the flow based match could dynamically determine by the ovs daemon, we could
-> not find out the belonging of the packet as far as we call ovs_dp_upcall(), isn't it?
+On Tue, Apr 1, 2014 at 11:03 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> On 4/1/2014 3:04 AM, Alexander Holler wrote:
+>> CONFIG_DEBUG_SET_MODULE_RONX sounds like a nice security feature, but
+>> things might fail late (and unexpected) if module code is set to read-only
+>> while CONFIG_JUMP_LABEL is enabled (e.g. modprobe bridge).
 
-That's right - and since the OVS flow table always has a default
-behavior (even if it is drop or send to controller) there's never a
-packet that isn't considered to be destined to OVS once it is
-received.
+Isn't this a ordering problem? I thought jump labels got set up once,
+and then after that, the memory could be made RO?
 
-If this makes sense to you, would you mind submitting the patch you
-had earlier formally with a commit message and signed off by line?
+>>
+>> Avoid this.
+>>
+>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+>> ---
+>>  arch/arm/Kconfig.debug | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>> index 0531da8..6627b9e 100644
+>> --- a/arch/arm/Kconfig.debug
+>> +++ b/arch/arm/Kconfig.debug
+>> @@ -1197,7 +1197,7 @@ config PID_IN_CONTEXTIDR
+>>
+>>  config DEBUG_SET_MODULE_RONX
+>>       bool "Set loadable kernel module data as NX and text as RO"
+>> -     depends on MODULES
+>> +     depends on MODULES && !JUMP_LABEL
+>>       ---help---
+>>         This option helps catch unintended modifications to loadable
+>>         kernel module's text and read-only data. It also prevents execution
+>>
+>
+> Kees Cook has something similar[1] for not-module space as well, we probably want
+> this there as well. A shame we keep finding reasons these features will be turned
+> off. Looks good to me otherwise.
+>
+> Laura
+>
+> [1]http://lists.infradead.org/pipermail/linux-arm-kernel/2014-February/232644.html
+
+I've solidly stumbled over ftrace with my series now. I can't figure
+out why it doesn't work, though. I wrote code to flip the PMD flags
+back to writable (via set_kernel_text_rw), but it seems like the
+system is ignoring the changes, even though I call flush_pmd_entry.
+
+struct section_perm section_perms[] = {
+       /* Make kernel code and rodata RX (set RO). */
+       [ARM_TEXT_SECTION] = {
+              .start       = (unsigned long)_stext,
+              .end       = (unsigned long)__init_begin,
+#ifdef CONFIG_ARM_LPAE
+              .mask       = ~PMD_SECT_RDONLY,
+              .prot       = PMD_SECT_RDONLY,
+#else
+              .mask       = ~(PMD_SECT_APX | PMD_SECT_AP_WRITE),
+              .prot       = PMD_SECT_APX | PMD_SECT_AP_WRITE,
+              .clear       = PMD_SECT_AP_WRITE,
+#endif
+       },
+
+...
+
+static inline void section_update(unsigned long addr, pmdval_t mask,
+                              pmdval_t prot)
+{
+       pmd_t *pmd = pmd_off_k(addr);
+
+#ifdef CONFIG_ARM_LPAE
+       pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
+#else
+       if (addr & SECTION_SIZE)
+              pmd[1] = __pmd((pmd_val(pmd[1]) & mask) | prot);
+       else
+              pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
+#endif
+       flush_pmd_entry(pmd);
+}
+
+...
+
+void set_kernel_text_rw(void)
+{
+       unsigned long addr;
+
+       if (!arch_can_set_perms())
+              return;
+
+       for (addr = section_perms[ARM_TEXT_SECTION].start;
+            addr < section_perms[ARM_TEXT_SECTION].end;
+            addr += SECTION_SIZE)
+              section_update(addr, section_perms[ARM_TEXT_SECTION].mask,
+                            section_perms[ARM_TEXT_SECTION].clear);
+}
+
+Is there something "sticky" about PMD sections that I'm not aware of?
+Even after calling set_kernel_text_rw(), any writes to kernel memory
+fault. :(
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
