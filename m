@@ -1,119 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690AbaDAP6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:58:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37903 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633AbaDAP6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:58:02 -0400
-Date: Tue, 1 Apr 2014 10:55:58 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Chris Mason <clm@fb.com>
-CC: Boaz Harrosh <openosd@gmail.com>, <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] New Linux Patch Review Group
-Message-ID: <20140401155558.GG4717@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <533AD000.307@fb.com>
- <533AD837.8010109@gmail.com>
- <533ADDE0.3050802@fb.com>
+	id S1751544AbaDAP5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:57:25 -0400
+Received: from [213.199.154.12] ([213.199.154.12]:19594 "EHLO
+	emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751190AbaDAP5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 11:57:22 -0400
+X-Greylist: delayed 922 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 11:57:22 EDT
+From: "Nekludov, Max" <Max.Nekludov@elster.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Nekludov, Max" <Max.Nekludov@elster.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Network Development" <netdev@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Matt Renzelmann <mjr@cs.wisc.edu>,
+        Jiri Pirko <jiri@resnulli.us>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "trivial@rustcorp.com.au" <trivial@rustcorp.com.au>,
+        "\"David S. Miller\"" <davem@davemloft.net>
+Subject: Bug in ks8851.c
+Thread-Topic: Bug in ks8851.c
+Thread-Index: Ac6d+MrH2BUYyQXkRHmkGOfhJTe8zCvx2cUl
+Date: Tue, 1 Apr 2014 15:41:58 +0000
+Message-ID: <b703c70840da4780bc93beed79a8503b@DB3PR02MB202.eurprd02.prod.outlook.com>
+References: <9525F3D6E0E9E64DA832F2587811AD6A200C24@USRAL1WVEXC01.elt.lcl>
+In-Reply-To: <9525F3D6E0E9E64DA832F2587811AD6A200C24@USRAL1WVEXC01.elt.lcl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [95.73.251.60]
+x-forefront-prvs: 016885DD9B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(56816005)(63696002)(74876001)(77982001)(76576001)(90146001)(95666003)(76786001)(558084003)(49866001)(2171001)(80976001)(20776003)(81686001)(85852003)(74366001)(59766001)(51856001)(99396002)(80022001)(94946001)(53806001)(83322001)(93516002)(87266001)(4396001)(95416001)(87936001)(74706001)(76796001)(86362001)(81816001)(66066001)(54356001)(85306002)(83072002)(93136001)(47976001)(47736001)(47446002)(76482001)(31966008)(94316002)(46102001)(74502001)(98676001)(50986001)(56776001)(54316002)(74662001)(81342001)(92566001)(79102001)(97186001)(81542001)(69226001)(74316001)(2656002)(65816001)(97336001)(33646001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR02MB203;H:DB3PR02MB202.eurprd02.prod.outlook.com;FPR:AC19DAD2.FDD1F6E9.D3EBD1C0.C7630050.200AA;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: multipart/mixed;
+	boundary="_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f5QefDQHtn8hx44O"
-Content-Disposition: inline
-In-Reply-To: <533ADDE0.3050802@fb.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: elster.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f5QefDQHtn8hx44O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Apr 01, 2014 at 11:40:16AM -0400, Chris Mason wrote:
->=20
->=20
-> On 04/01/2014 11:16 AM, Boaz Harrosh wrote:
-> >On 04/01/2014 05:41 PM, Chris Mason wrote:
-> >>
-> >>Hello everyone,
-> >>
-> >>During last week's Collab summit, Jon Corbet suggested we use the power
-> >>of social media to improve the Linux kernel patch review process.
-> >>
-> >>We thought this was a great idea, and have been experimenting with a new
-> >>Facebook group dedicated to patch discussion and review.  The new group
-> >>provides a dramatically improved development workflow, including:
-> >>=09
-> >>	* One click patch or comment approval
-> >>	* Comments enhanced with pictures and video
-> >>	* Who has seen your patches and comments
-> >>	* Searchable index of past submissions
-> >>	* A strong community without anonymous flames
-> >>
-> >>To help capture the group discussion in the final patch submission,
-> >>we suggest adding a Liked-by: tag to commits that have been through
-> >>group review.
-> >>
-> >>To use the new group, please join:
-> >>
-> >>https://www.facebook.com/groups/linuxpatches/
-> >>
-> >>Once you've joined, you can post patches in the group, or email patches=
- to
-> >>linuxpatches@groups.facebook.com
-> >>
-> >>-chris
-> >
-> >NACK! I do not have facebook and I do not like patches to be discussed
-> >behind my back. On the mailing list we don't even want HTML with bold
-> >lettered words so no thanks facebook adds nothing
-> >
-> >Please obliterate this bad idea.
-> >
-> >(And I do not have Facebook shares or care to)
->=20
-> It's always hard to move on to new technologies. But at some point we have
-> to recognize that the internet has developed a rich culture that the kern=
-el
-> community isn't taking full advantage of.
->=20
-> I certainly don't expect everyone to convert right away, but there's a wh=
-ole
-> world out there beyond port 25.
+Reset on RX failure and TX timeout.=0A=
+=0A=
+Electromagnetic noice can make device to not send TX interrupts.=0A=
+As result outgoing queue will be suspended forever.=0A=
+Also EMI can raise RX interrupt with zero value in KS_RXFC register.=0A=
+=0A=
+Patch attached.=
 
-Agreed
+--_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_
+Content-Type: text/x-diff;
+	name="0001-ks8851-reset-on-RX-falure-and-TX-timeout.patch"
+Content-Description: 0001-ks8851-reset-on-RX-falure-and-TX-timeout.patch
+Content-Disposition: attachment;
+	filename="0001-ks8851-reset-on-RX-falure-and-TX-timeout.patch"; size=4553;
+	creation-date="Tue, 01 Apr 2014 15:40:18 GMT";
+	modification-date="Tue, 01 Apr 2014 15:40:18 GMT"
+Content-Transfer-Encoding: base64
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+a3M4ODUxOiByZXNldCBvbiBSWCBmYWlsdXJlIGFuZCBUWCB0aW1lb3V0CgpFbGVjdHJvbWFnbmV0
+aWMgbm9pY2UgY2FuIG1ha2UgZGV2aWNlIHRvIG5vdCBzZW5kIFRYIGludGVycnVwdHMuCkFzIHJl
+c3VsdCBvdXRnb2luZyBxdWV1ZSB3aWxsIGJlIHN1c3BlbmRlZCBmb3JldmVyLgpBbHNvIEVNSSBj
+YW4gcmFpc2UgUlggaW50ZXJydXB0IHdpdGggemVybyB2YWx1ZSBpbiBLU19SWEZDIHJlZ2lzdGVy
+LgoKU2lnbmVkLW9mZi1ieTogTWF4IE5la2x1ZG92IDxNYXguTmVrbHVkb3ZAZWxzdGVyLmNvbT4K
+LS0tCiBkcml2ZXJzL25ldC9ldGhlcm5ldC9taWNyZWwva3M4ODUxLmMgfCA2NiArKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKy0KIDEgZmlsZSBjaGFuZ2VkLCA2NSBpbnNlcnRpb25z
+KCspLCAxIGRlbGV0aW9uKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9uZXQvZXRoZXJuZXQvbWlj
+cmVsL2tzODg1MS5jIGIvZHJpdmVycy9uZXQvZXRoZXJuZXQvbWljcmVsL2tzODg1MS5jCmluZGV4
+IGUwYzkyZTAuLjI1YjcyMjkgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbmV0L2V0aGVybmV0L21pY3Jl
+bC9rczg4NTEuYworKysgYi9kcml2ZXJzL25ldC9ldGhlcm5ldC9taWNyZWwva3M4ODUxLmMKQEAg
+LTEyMyw2ICsxMjMsNyBAQCBzdHJ1Y3Qga3M4ODUxX25ldCB7CiAKIAlzdHJ1Y3Qgd29ya19zdHJ1
+Y3QJdHhfd29yazsKIAlzdHJ1Y3Qgd29ya19zdHJ1Y3QJcnhjdHJsX3dvcms7CisJc3RydWN0IGRl
+bGF5ZWRfd29yawl3ZHRfd29yazsKIAogCXN0cnVjdCBza19idWZmX2hlYWQJdHhxOwogCkBAIC0x
+NDAsNiArMTQxLDkgQEAgc3RhdGljIGludCBtc2dfZW5hYmxlOwogLyogc2hpZnQgZm9yIGJ5dGUt
+ZW5hYmxlIGRhdGEgKi8KICNkZWZpbmUgQllURV9FTihfeCkJKChfeCkgPDwgMikKIAorI2RlZmlu
+ZSBLUzg4NTFfVFhfUVVFVUVfU0laRSA2MTQ0CisjZGVmaW5lIEtTODg1MV9UWF9USU1FT1VUX01T
+IDEwMAorCiAvKiB0dXJuIHJlZ2lzdGVyIG51bWJlciBhbmQgYnl0ZS1lbmFibGUgbWFzayBpbnRv
+IGRhdGEgZm9yIHN0YXJ0IG9mIHBhY2tldCAqLwogI2RlZmluZSBNS19PUChfYnl0ZWVuLCBfcmVn
+KSAoQllURV9FTihfYnl0ZWVuKSB8IChfcmVnKSAgPDwgKDgrMikgfCAoX3JlZykgPj4gNikKIApA
+QCAtNDk1LDYgKzQ5OSw3IEBAIHN0YXRpYyB2b2lkIGtzODg1MV9kYmdfZHVtcGtrdChzdHJ1Y3Qg
+a3M4ODUxX25ldCAqa3MsIHU4ICpyeHBrdCkKIAkJICAgcnhwa3RbOF0sIHJ4cGt0WzldLCByeHBr
+dFsxMF0sIHJ4cGt0WzExXSwKIAkJICAgcnhwa3RbMTJdLCByeHBrdFsxM10sIHJ4cGt0WzE0XSwg
+cnhwa3RbMTVdKTsKIH0KK3N0YXRpYyB2b2lkIGtzODg1MV9yZXNldChzdHJ1Y3Qga3M4ODUxX25l
+dCAqa3MpOwogCiAvKioKICAqIGtzODg1MV9yeF9wa3RzIC0gcmVjZWl2ZSBwYWNrZXRzIGZyb20g
+dGhlIGhvc3QKQEAgLTUxNyw2ICs1MjIsMTIgQEAgc3RhdGljIHZvaWQga3M4ODUxX3J4X3BrdHMo
+c3RydWN0IGtzODg1MV9uZXQgKmtzKQogCiAJbmV0aWZfZGJnKGtzLCByeF9zdGF0dXMsIGtzLT5u
+ZXRkZXYsCiAJCSAgIiVzOiAlZCBwYWNrZXRzXG4iLCBfX2Z1bmNfXywgcnhmYyk7CisJCisJaWYg
+KHJ4ZmMgPT0gMCkgeworCQltZGVsYXkoMSk7CisJCS8qIFJYIGludGVycnVwdCBidXQgbm8gZGF0
+YSBpbiBidWZmZXIuIFdoaWNoIG1lYW5zIGhhcmR3YXJlIGZhaWx1cmUgY29uZGl0aW9uLiBSZXNl
+dC4gKi8KKwkJa3M4ODUxX3Jlc2V0KGtzKTsKKwl9CiAKIAkvKiBDdXJyZW50bHkgd2UncmUgaXNz
+dWluZyBhIHJlYWQgcGVyIHBhY2tldCwgYnV0IHdlIGNvdWxkIHBvc3NpYmx5CiAJICogaW1wcm92
+ZSB0aGUgY29kZSBieSBpc3N1aW5nIGEgc2luZ2xlIHJlYWQsIGdldHRpbmcgdGhlIHJlY2VpdmUK
+QEAgLTYxOSw2ICs2MzAsMTAgQEAgc3RhdGljIGlycXJldHVybl90IGtzODg1MV9pcnEoaW50IGly
+cSwgdm9pZCAqX2tzKQogCiAJaWYgKHN0YXR1cyAmIElSUV9UWEkpIHsKIAkJaGFuZGxlZCB8PSBJ
+UlFfVFhJOworCQkKKwkJbXV0ZXhfdW5sb2NrKCZrcy0+bG9jayk7CisJCWNhbmNlbF9kZWxheWVk
+X3dvcmtfc3luYygma3MtPndkdF93b3JrKTsKKwkJbXV0ZXhfbG9jaygma3MtPmxvY2spOwogCiAJ
+CS8qIG5vIGxvY2sgaGVyZSwgdHggcXVldWUgc2hvdWxkIGhhdmUgYmVlbiBzdG9wcGVkICovCiAK
+QEAgLTc0OSw2ICs3NjQsMTcgQEAgc3RhdGljIHZvaWQga3M4ODUxX2RvbmVfdHgoc3RydWN0IGtz
+ODg1MV9uZXQgKmtzLCBzdHJ1Y3Qgc2tfYnVmZiAqdHhiKQogCWRldl9rZnJlZV9za2IodHhiKTsK
+IH0KIAorc3RhdGljIHZvaWQga3M4ODUxX3dkdF93b3JrKHN0cnVjdCBkZWxheWVkX3dvcmsgKndv
+cmspCit7CisJc3RydWN0IGtzODg1MV9uZXQgKmtzID0gY29udGFpbmVyX29mKHdvcmssIHN0cnVj
+dCBrczg4NTFfbmV0LCB3ZHRfd29yayk7CisJbXV0ZXhfbG9jaygma3MtPmxvY2spOworCisJbWRl
+bGF5KDEpOworCWtzODg1MV9yZXNldChrcyk7CisKKwltdXRleF91bmxvY2soJmtzLT5sb2NrKTsK
+K30KKwogLyoqCiAgKiBrczg4NTFfdHhfd29yayAtIHByb2Nlc3MgdHggcGFja2V0KHMpCiAgKiBA
+d29yazogVGhlIHdvcmsgc3RydWN1dHJlIHdoYXQgd2FzIHNjaGVkdWxlZC4KQEAgLTc3OCw2ICs4
+MDQsOCBAQCBzdGF0aWMgdm9pZCBrczg4NTFfdHhfd29yayhzdHJ1Y3Qgd29ya19zdHJ1Y3QgKndv
+cmspCiAJCX0KIAl9CiAKKwlzY2hlZHVsZV9kZWxheWVkX3dvcmsoJmtzLT53ZHRfd29yaywgbXNl
+Y3NfdG9famlmZmllcyhLUzg4NTFfVFhfVElNRU9VVF9NUykpOworCiAJbXV0ZXhfdW5sb2NrKCZr
+cy0+bG9jayk7CiB9CiAKQEAgLTg1OCw2ICs4ODYsNDAgQEAgc3RhdGljIGludCBrczg4NTFfbmV0
+X29wZW4oc3RydWN0IG5ldF9kZXZpY2UgKmRldikKIAlyZXR1cm4gMDsKIH0KIAorc3RhdGljIHZv
+aWQga3M4ODUxX3Jlc2V0KHN0cnVjdCBrczg4NTFfbmV0ICprcykKK3sKKwluZXRpZl9zdG9wX3F1
+ZXVlKGtzLT5uZXRkZXYpOworCisJLyogdHVybiBvZmYgdGhlIElSUXMgYW5kIGFjayBhbnkgb3V0
+c3RhbmRpbmcgKi8KKwlrczg4NTFfd3JyZWcxNihrcywgS1NfSUVSLCAweDAwMDApOworCWtzODg1
+MV93cnJlZzE2KGtzLCBLU19JU1IsIDB4ZmZmZik7CisKKwkvKiBzaHV0ZG93biBSWCBwcm9jZXNz
+ICovCisJa3M4ODUxX3dycmVnMTYoa3MsIEtTX1JYQ1IxLCAweDAwMDApOworCisJLyogc2h1dGRv
+d24gVFggcHJvY2VzcyAqLworCWtzODg1MV93cnJlZzE2KGtzLCBLU19UWENSLCAweDAwMDApOwor
+CisJa3MtPnR4X3NwYWNlID0gS1M4ODUxX1RYX1FVRVVFX1NJWkU7CisKKwltdXRleF91bmxvY2so
+JmtzLT5sb2NrKTsKKwkKKwkvKiBlbnN1cmUgYW55IHF1ZXVlZCB0eCBidWZmZXJzIGFyZSBkdW1w
+ZWQgKi8KKwl3aGlsZSAoIXNrYl9xdWV1ZV9lbXB0eSgma3MtPnR4cSkpIHsKKwkJc3RydWN0IHNr
+X2J1ZmYgKnR4YiA9IHNrYl9kZXF1ZXVlKCZrcy0+dHhxKTsKKworCQluZXRpZl9kYmcoa3MsIGlm
+ZG93biwga3MtPm5ldGRldiwKKwkJCSAgIiVzOiBmcmVlaW5nIHR4YiAlcFxuIiwgX19mdW5jX18s
+IHR4Yik7CisKKwkJZGV2X2tmcmVlX3NrYih0eGIpOworCX0KKworCS8qIHJlb3BlbiBkZXZpY2Ug
+Ki8KKwlrczg4NTFfbmV0X29wZW4oa3MtPm5ldGRldik7CisKKwltdXRleF9sb2NrKCZrcy0+bG9j
+ayk7Cit9CisKIC8qKgogICoga3M4ODUxX25ldF9zdG9wIC0gY2xvc2UgbmV0d29yayBkZXZpY2UK
+ICAqIEBkZXY6IFRoZSBkZXZpY2UgYmVpbmcgY2xvc2VkLgpAQCAtODgzLDYgKzk0NSw3IEBAIHN0
+YXRpYyBpbnQga3M4ODUxX25ldF9zdG9wKHN0cnVjdCBuZXRfZGV2aWNlICpkZXYpCiAJLyogc3Rv
+cCBhbnkgb3V0c3RhbmRpbmcgd29yayAqLwogCWZsdXNoX3dvcmsoJmtzLT50eF93b3JrKTsKIAlm
+bHVzaF93b3JrKCZrcy0+cnhjdHJsX3dvcmspOworCWNhbmNlbF9kZWxheWVkX3dvcmtfc3luYygm
+a3MtPndkdF93b3JrKTsKIAogCW11dGV4X2xvY2soJmtzLT5sb2NrKTsKIAkvKiBzaHV0ZG93biBS
+WCBwcm9jZXNzICovCkBAIC0xNDE1LDcgKzE0NzgsNyBAQCBzdGF0aWMgaW50IGtzODg1MV9wcm9i
+ZShzdHJ1Y3Qgc3BpX2RldmljZSAqc3BpKQogCiAJa3MtPm5ldGRldiA9IG5kZXY7CiAJa3MtPnNw
+aWRldiA9IHNwaTsKLQlrcy0+dHhfc3BhY2UgPSA2MTQ0OworCWtzLT50eF9zcGFjZSA9IEtTODg1
+MV9UWF9RVUVVRV9TSVpFOwogCiAJa3MtPnZkZF9yZWcgPSByZWd1bGF0b3JfZ2V0X29wdGlvbmFs
+KCZzcGktPmRldiwgInZkZCIpOwogCWlmIChJU19FUlIoa3MtPnZkZF9yZWcpKSB7CkBAIC0xNDM3
+LDYgKzE1MDAsNyBAQCBzdGF0aWMgaW50IGtzODg1MV9wcm9iZShzdHJ1Y3Qgc3BpX2RldmljZSAq
+c3BpKQogCiAJSU5JVF9XT1JLKCZrcy0+dHhfd29yaywga3M4ODUxX3R4X3dvcmspOwogCUlOSVRf
+V09SSygma3MtPnJ4Y3RybF93b3JrLCBrczg4NTFfcnhjdHJsX3dvcmspOworCUlOSVRfREVMQVlF
+RF9XT1JLKCZrcy0+d2R0X3dvcmssIGtzODg1MV93ZHRfd29yayk7CiAKIAkvKiBpbml0aWFsaXNl
+IHByZS1tYWRlIHNwaSB0cmFuc2ZlciBtZXNzYWdlcyAqLwogCi0tIAoxLjguMy4yCgo=
 
-We might even be able to "recruit" a much more diverse group of
-reviewers who are undiscovered as of now ;-)
-
---=20
-balbi
-
---f5QefDQHtn8hx44O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTOuGOAAoJEIaOsuA1yqREvrcQAK4SnJsxS+7KiGz+rbdfqr1d
-NBrHdgweVRzB0e8Mr/zeeJHcpJcusnx1c/iy1wRGrZP+Z5bQXeEuXXwEGtPgyzqN
-Tds4XOU5AqobKXInZ9JhslhjurwxxEZK6CQmyJn12JpZVZVUx1CpWkdZ2Ss1vQ7g
-vnu6oTPl7MNFKJEfHoiswHjOUFHUN4/6gPtZu3GFGBYDseaehbXGQtt2OxchJ+AU
-UcdUiWjEGHxca8ALCZf6CRhlOpmQBv7rlmVd61BTQzgYIO6PTDAtjpkC2lDxe9nC
-vZakOqGSo79iFHxnzLAulbTARDeHxegqtFY7jRiOg4yjc8oeQUpKirCB+5dkLUgC
-dlRlg/PoM2JnHIIST4UMwM1YDCAR7eO/lf7rRPUTNyiuZxvoSdE9JWMG8C/O9Yrs
-xcbIzd9adDmx6nIs+VU5lsp4YM8WbbNzm/7kmhIfEYhQE5sona1nsuv+RvaO0kw3
-8Fjmtmk1rCIuuymklQ451V5/I8w6lf7qe6fB03o4NdQ834RI5wQ0F48H8qMBgEU5
-B76l+hetU0cVXSQPYYuAg/nvEaqCyxlrDK8wAH4P0UMkpCyraC1TxFJ+H/FqjITL
-Ynqp3rXHnBRIUkjKx/hf9XJJf0YzhorgjYcRMuAyZWmvCxQi/PY2Zigst9OlhegK
-j+HBcfeIs4Sv247+Harv
-=m19n
------END PGP SIGNATURE-----
-
---f5QefDQHtn8hx44O--
+--_002_b703c70840da4780bc93beed79a8503bDB3PR02MB202eurprd02pro_--
