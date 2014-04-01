@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903AbaDAG73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 02:59:29 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:53398 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaDAG72 (ORCPT
+	id S1752082AbaDAHCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 03:02:10 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:50185 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaDAHCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 02:59:28 -0400
-Message-ID: <533A63C8.70800@hitachi.com>
-Date: Tue, 01 Apr 2014 15:59:20 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Re: [PATCH 14/28] ktap: add runtime/kp_events.[c|h]
-References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com> <1396014469-5937-15-git-send-email-jovi.zhangwei@gmail.com> <533930EF.8080703@hitachi.com> <CAGdX0WHarh12K_2D8M=UAtwEJaZr_eZupXzsw-SXqd2X4NGTmg@mail.gmail.com>
-In-Reply-To: <CAGdX0WHarh12K_2D8M=UAtwEJaZr_eZupXzsw-SXqd2X4NGTmg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Apr 2014 03:02:08 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-80-533a646dfb00
+Message-id: <1396335724.8272.0.camel@AMDC1943>
+Subject: Re: [PATCH 2/2] regulator: s2mps11: Don't check enable_shift before
+ setting enable ramp rate
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@kernel.org>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 01 Apr 2014 09:02:04 +0200
+In-reply-to: <1395389784.29259.2.camel@phoenix>
+References: <1395389720.29259.1.camel@phoenix>
+ <1395389784.29259.2.camel@phoenix>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xK7p5KVbBBitlLY7M+cpsMfXhEzaL
+	b1c6mCwu75rDZnHyTy+jxcUVX5gc2Dx2zrrL7tH2s8xj06pONo871/awefRtWcXo8XmTXABb
+	FJdNSmpOZllqkb5dAldGw53D7AVTuCqWfpzO1MA4j6OLkZNDQsBEYsP2H8wQtpjEhXvr2boY
+	uTiEBJYySny795AJwvnMKDF3xjJ2kCpeAT2JCW9uM4HYwgLpEo93dLCB2GwCxhKbly8Bs0UE
+	lCRW3b/MAtLMLLCNUeLy6rNgzSwCqhI3dxxjAbE5BfQlVtzoBhrEAbQhWGLHC2+QMLOAusSk
+	eYugLlKS2N3eyQ4Rl5fYvOYtM8QNghI/Jt9jmcAoMAtJyywkZbOQlC1gZF7FKJpamlxQnJSe
+	a6RXnJhbXJqXrpecn7uJERLiX3cwLj1mdYhRgINRiYfXotwyWIg1say4MvcQowQHs5II75Eo
+	q2Ah3pTEyqrUovz4otKc1OJDjEwcnFINjP22ojueP5sj3aqgeHHLZUOT+dNVt4mentvQ0Fbt
+	bOay+Fwd86l45w0Xd+kmnndsfm12tPqAl2l8X57gQQmlitdbrj727/Xn/6K3M02xwdL4oLzL
+	S3PVtT4ya3T2Pv3DtcyLtSU6IGvqK+dQxkMmc7qqt79ZrmMXbHfTqUDsB9cX56O7Dk84rsRS
+	nJFoqMVcVJwIAOcuNVFPAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/03/31 19:14), Jovi Zhangwei wrote:
-> On Mon, Mar 31, 2014 at 5:10 PM, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
->> (2014/03/28 22:47), Jovi Zhangwei wrote:
->>> kp_events.c handle ktap events management(registry, destroy, event callback)
->>>
->>> This file is core event management interface between ktap and kernel.
->>>
->>> Exposed functions:
->>> 1). kp_events_init/kp_events_exit
->>>
->>> 2). kp_event_create_kprobe
->>>         create kprobe event, for example:
->>>                 kdebug.kprobe("SyS_futex", function () {})
->>>
->>> 3). kp_event_create_tracepoint
->>>         create tracepoint event, for example"
->>>                 kdebug.tracepoint("sys_futex_enter", function () {})
->>>
->>> 4). kp_event_create
->>>         create perf backend event, for example:
->>>                 trace sched:sched_switch { print(argstr) }
->>>
->>>         It call kernel function 'perf_event_create_kernel_counter' to
->>>         register event(tracepoint/kprobe/uprobe)
->>>
->>> 5). kp_event_getarg
->>>         get argument of event, from arg0 to arg9,
->>>         only can be called in probe context.
->>>                 trace sched:sched_switch { print(arg0, arg1) }
->>>
->>> 6). kp_event_stringify/kp_event_tostr
->>>         stringify argstr, sometimes if store argstr as key to table,
->>>         then it need to stringify firstly, like below:
->>>                 var s={} trace sched:sched_switch { s[argstr] += 1 }
->>>         (This is quite rare usage, but ktap support it)
->>>
->>> Note:
->>> Why ktap support 'kdebug.kprobe' and 'kdebug.tracepoint' when
->>> it already support perf backend event(trace xxx {})?
->>>
->>> Because benchmark shows raw kprobe and tracpoint interface is faster
->>> than perf backed tracing, nearly 10+%, it's more fair to compare
->>> with Systemtap by raw tracing syntax, not perf backend tracing.
->>>
->>
->> Do we really need it just for a +10% performance? I doubt that.
->> I think the benefit point of ktap is "dynamic & simple programmable
->> tracer in kernel", not the good performance at least at this point.
->> Thus I think we should start ktap only with perf backend.
->>
-> Yeah, agreed, most people like the perf-backed tracing syntax,
-> that raw trace interface is just for benchmark when I wanted to look
-> overhead compare with stap, the result is very inspiring, ktap table
-> operation overhead is lower than stap.
+On Fri, 2014-03-21 at 16:16 +0800, Axel Lin wrote:
+> Current code misses updating the register when enable_shift is 0.
+> e.g. S2MPS11_BUCK9_RAMP_SHIFT and S2MPS11_BUCK6_RAMP_EN_SHIFT are 0.
 > 
-> On the performance overhead of dynamic tracing tools(ktap/stap/dtrace),
-> it's interesting enough that dtrace was used in production many year,
-> _but_ IMO the runtime of dtrace is slow after I checked dtrace source
-> code :),  system workload does big matter than tracing tool overhead.
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/regulator/s2mps11.c | 12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
 
-Yeah, I see that less overhead is also required especially for enterprise
-people. I just doubt that it is solved by ktap itself. Should we improve
-perf(or ftrace) to export more effective interfaces for this kind of
-tracers?
+Looks good.
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Thank you,
+Best regards,
+Krzysztof
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
 
+> diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+> index 68fd547..e713c16 100644
+> --- a/drivers/regulator/s2mps11.c
+> +++ b/drivers/regulator/s2mps11.c
+> @@ -202,13 +202,11 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+>  	if (!ramp_enable)
+>  		goto ramp_disable;
+>  
+> -	if (enable_shift) {
+> -		ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
+> -					1 << enable_shift, 1 << enable_shift);
+> -		if (ret) {
+> -			dev_err(&rdev->dev, "failed to enable ramp rate\n");
+> -			return ret;
+> -		}
+> +	ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
+> +				 1 << enable_shift, 1 << enable_shift);
+> +	if (ret) {
+> +		dev_err(&rdev->dev, "failed to enable ramp rate\n");
+> +		return ret;
+>  	}
+>  
+>  	ramp_val = get_ramp_delay(ramp_delay);
 
