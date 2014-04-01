@@ -1,45 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaDAG1I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 02:27:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35174 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777AbaDAG1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 02:27:06 -0400
-Date: Tue, 1 Apr 2014 08:27:03 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Sebastien Bourdelin <sebastien.bourdelin@savoirfairelinux.com>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        jerome.oufella@savoirfairelinux.com
-Subject: Re: [lm-sensors] [PATCH] misc: (ds1682) replace obsolete
- simple_strtoull() with kstrtoull()
-Message-ID: <20140401082703.6782c30c@endymion.delvare>
-In-Reply-To: <1395864664-16404-1-git-send-email-sebastien.bourdelin@savoirfairelinux.com>
-References: <1395864664-16404-1-git-send-email-sebastien.bourdelin@savoirfairelinux.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752060AbaDAG33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 02:29:29 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35008 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaDAG31 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 02:29:27 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <533A5CB1.1@jp.fujitsu.com>
+Date: Tue, 01 Apr 2014 15:29:05 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+CC: Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
+        chenhanxiao <chenhanxiao@cn.fujitsu.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+In-Reply-To: <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastien, 
+(2014/04/01 9:05), Andrew Morton wrote:
+> On Mon, 31 Mar 2014 16:25:32 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+>
+>> On Mon, 2014-03-31 at 16:13 -0700, Andrew Morton wrote:
+>>> On Mon, 31 Mar 2014 15:59:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+>>>
+>>>>>
+>>>>> - Shouldn't there be a way to alter this namespace's shm_ctlmax?
+>>>>
+>>>> Unfortunately this would also add the complexity I previously mentioned.
+>>>
+>>> But if the current namespace's shm_ctlmax is too small, you're screwed.
+>>> Have to shut down the namespace all the way back to init_ns and start
+>>> again.
+>>>
+>>>>> - What happens if we just nuke the limit altogether and fall back to
+>>>>>    the next check, which presumably is the rlimit bounds?
+>>>>
+>>>> afaik we only have rlimit for msgqueues. But in any case, while I like
+>>>> that simplicity, it's too late. Too many workloads (specially DBs) rely
+>>>> heavily on shmmax. Removing it and relying on something else would thus
+>>>> cause a lot of things to break.
+>>>
+>>> It would permit larger shm segments - how could that break things?  It
+>>> would make most or all of these issues go away?
+>>>
+>>
+>> So sysadmins wouldn't be very happy, per man shmget(2):
+>>
+>> EINVAL A new segment was to be created and size < SHMMIN or size >
+>> SHMMAX, or no new segment was to be created, a segment with given key
+>> existed, but size is greater than the size of that segment.
+>
+> So their system will act as if they had set SHMMAX=enormous.  What
+> problems could that cause?
+>
+>
+> Look.  The 32M thing is causing problems.  Arbitrarily increasing the
+> arbitrary 32M to an arbitrary 128M won't fix anything - we still have
+> the problem.  Think bigger, please: how can we make this problem go
+> away for ever?
+>
 
-On Wed, 26 Mar 2014 16:11:04 -0400, Sebastien Bourdelin wrote:
-> simple_strtoull() is obsolete, use the newer kstrtoull() instead.
-> 
-> Signed-off-by: Sebastien Bourdelin <sebastien.bourdelin@savoirfairelinux.com>
-> ---
->  drivers/misc/ds1682.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> (...)
+Our middleware engineers has been complaining about this sysctl limit.
+System administrator need to calculate required sysctl value by making sum
+of all planned middlewares, and middleware provider needs to write "please
+calculate systcl param by....." in their installation manuals.
 
-You are sending this patch to the wrong list. The ds1682 driver has
-nothing to do with lm-sensors. Please use ./scripts/get_maintainer.pl
-to figure out who this patch should be sent to.
+Now, I think containers will be the base application platform. In the container,
+the memory is limited by "memory cgroup" and the admin of container should be able
+to overwrite the limit in the container to the value arbitrarily.
 
--- 
-Jean Delvare
-SUSE L3 Support
+Because of these, I vote for
+
+  1. remove the limit
+     (but removing this may cause applications corrupted...)
+  or
+
+  2. A container admin should set the value considering memcg's limit.
+
+  BTW, if /proc/sys is bind-mounted as read-only by lxc runtime,
+  it seems difficult for admin to modify it. I have no idea whether it's lack
+  of kernel feature or it's userland's problem.
+
+Thanks,
+-Kame
+
+
+
+
+
+
+  
+
+
+
+
+
