@@ -1,52 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaDAQI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:08:27 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:52330 "EHLO kirsi1.inet.fi"
+	id S1751650AbaDAQIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:08:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31460 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426AbaDAQIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:08:25 -0400
-Date: Tue, 1 Apr 2014 19:07:38 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, Yury Gribov <y.gribov@samsung.com>,
-        Alexandr Andreev <aandreev@parallels.com>,
-        Vassili Karpov <av1474@comtv.ru>,
+	id S1751316AbaDAQIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 12:08:40 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>, Rob Landley <rob@landley.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH RFC] drivers/char/mem: byte generating devices and
- poisoned mappings
-Message-ID: <20140401160738.GA15175@node.dhcp.inet.fi>
-References: <20140331211607.26784.43976.stgit@zurg>
- <20140401103617.GA10882@node.dhcp.inet.fi>
- <CALYGNiPvZSg7_b47+TbjhTzt0vBSRiXN8edVH=9A3YJOMQMqjA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiPvZSg7_b47+TbjhTzt0vBSRiXN8edVH=9A3YJOMQMqjA@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-doc@vger.kernel.org
+Subject: [PATCH] Add initcall_blacklist kernel parameter [v4]
+Date: Tue,  1 Apr 2014 11:19:05 -0400
+Message-Id: <1396365545-12279-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 07:15:31PM +0400, Konstantin Khlebnikov wrote:
-> On Tue, Apr 1, 2014 at 2:36 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
-> > On Tue, Apr 01, 2014 at 01:16:07AM +0400, Konstantin Khlebnikov wrote:
-> >> This patch adds 256 virtual character devices: /dev/byte0, ..., /dev/byte255.
-> >> Each works like /dev/zero but generates memory filled with particular byte.
-> >
-> > Shouldn't /dev/byte0 be an alias for /dev/zero?
-> > I see you reuse ZERO_PAGE(0) for that, but what about all these special
-> > cases /dev/zero has?
-> 
-> What special cases? I found rss-accounting part, you've mentioned coredump.
+When a module is built into the kernel the module_init() function becomes
+an initcall.  Sometimes debugging through dynamic debug can help,
+however, debugging built in kernel modules is typically done by changing
+the .config, recompiling, and booting the new kernel in an effort to
+determine exactly which module caused a problem.
 
-I'm not sure what else is there. It's probably good idea to check all
-users of vm_normal_page().
+This patchset can be useful stand-alone or combined with initcall_debug.
+There are cases where some initcalls can hang the machine before the
+console can be flushed, which can make initcall_debug output
+inaccurate.  Having the ability to skip initcalls can help further
+debugging of these scenarios.
 
-One thing is zero page coloring which some archs have.
+Usage: initcall_blacklist=<list of comma separated initcalls>
 
+ex) added "initcall_blacklist=sgi_uv_sysfs_init" as a kernel parameter and
+the log contains:
+
+	blacklisted initcall sgi_uv_sysfs_init
+	...
+	...
+	function sgi_uv_sysfs_init returning without executing
+
+ex) added "initcall_blacklist=foo_bar,sgi_uv_sysfs_init" as a kernel parameter
+and the log contains:
+
+	initcall blacklisted foo_bar
+	initcall blacklisted sgi_uv_sysfs_init
+	...
+	...
+	function sgi_uv_sysfs_init returning without executing
+
+Cc: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Rob Landley <rob@landley.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-doc@vger.kernel.org
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+
+[v2]: A few people recommended that I add code to allow for a list of
+initcalls as there maybe dependencies between initcalls such that one cannot
+be made without the other.  I also updated the patch description.
+[v3]: Andi Kleen - don't worry about free'ing the small amount of memory.
+[v4]: Richard Weinberger -- add CONFIG_KALLSYMS dependency.
+---
+ Documentation/kernel-parameters.txt |    4 +++
+ init/main.c                         |   50 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 67755ea..ebeb8a5 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1275,6 +1275,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			for working out where the kernel is dying during
+ 			startup.
+ 
++	initcall_blacklist=  [KNL] Do not execute a comma-separated list of
++			initcall functions.  Useful for debugging built-in
++			modules and initcalls.
++
+ 	initrd=		[BOOT] Specify the location of the initial ramdisk
+ 
+ 	inport.irq=	[HW] Inport (ATI XL and Microsoft) busmouse driver
+diff --git a/init/main.c b/init/main.c
+index 9c7fd4c..e050c24 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -77,6 +77,7 @@
+ #include <linux/sched_clock.h>
+ #include <linux/context_tracking.h>
+ #include <linux/random.h>
++#include <linux/list.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -666,6 +667,42 @@ static void __init do_ctors(void)
+ bool initcall_debug;
+ core_param(initcall_debug, initcall_debug, bool, 0644);
+ 
++struct blacklist_entry {
++	struct list_head next;
++	char *buf;
++};
++
++static __initdata_or_module LIST_HEAD(blacklisted_initcalls);
++
++#ifdef CONFIG_KALLSYMS
++static int __init initcall_blacklist(char *str)
++{
++	char *str_entry;
++	struct blacklist_entry *entry;
++
++	/* str argument is a comma-separated list of functions */
++	do {
++		str_entry = strsep(&str, ",");
++		if (str_entry) {
++			pr_debug("initcall blacklisted %s \n", str_entry);
++			entry = alloc_bootmem(sizeof(*entry));
++			entry->buf = alloc_bootmem(strlen(str_entry));
++			strncpy(entry->buf, str_entry, strlen(str_entry));
++			list_add(&entry->next, &blacklisted_initcalls);
++		}
++	} while (str_entry);
++
++	return 0;
++}
++#else
++static int __init initcall_blacklist(char *str)
++{
++	pr_warning("initcall_blacklist requires CONFIG_KALLSYMS to be enabled.\n");
++	return 0;
++}
++#endif
++__setup("initcall_blacklist=", initcall_blacklist);
++
+ static int __init_or_module do_one_initcall_debug(initcall_t fn)
+ {
+ 	ktime_t calltime, delta, rettime;
+@@ -689,6 +726,19 @@ int __init_or_module do_one_initcall(initcall_t fn)
+ 	int count = preempt_count();
+ 	int ret;
+ 	char msgbuf[64];
++	char fn_name[128] = "\0";
++	struct list_head *tmp;
++	struct blacklist_entry *entry;
++
++	snprintf(fn_name, 128, "%pf", fn);
++	list_for_each(tmp, &blacklisted_initcalls) {
++		entry = list_entry(tmp, struct blacklist_entry, next);
++		if (!strcmp(fn_name, entry->buf)) {
++			pr_debug("initcall %pf returning without executing\n",
++				 fn);
++			return -EPERM;
++		}
++	}
+ 
+ 	if (initcall_debug)
+ 		ret = do_one_initcall_debug(fn);
 -- 
- Kirill A. Shutemov
+1.7.9.3
+
