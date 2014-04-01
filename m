@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368AbaDAKqC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 06:46:02 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:47934 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaDAKqA (ORCPT
+	id S1751482AbaDAKqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 06:46:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32570 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaDAKqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 06:46:00 -0400
-Message-ID: <533A97EF.7030900@linux.vnet.ibm.com>
-Date: Tue, 01 Apr 2014 16:11:51 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 1 Apr 2014 06:46:43 -0400
+Message-ID: <533A990D.2040609@oracle.com>
+Date: Tue, 01 Apr 2014 12:46:37 +0200
+From: Vegard Nossum <vegard.nossum@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        Morten.Rasmussen@arm.com, efault@gmx.de,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC 4/4] sched: add per group cpu_power_orig
-References: <1396013246-6577-1-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1396013246-6577-1-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
+References: <1396346898-8950-1-git-send-email-vegard.nossum@oracle.com> <20140401103020.GG24150@order.stressinduktion.org>
+In-Reply-To: <20140401103020.GG24150@order.stressinduktion.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040110-6688-0000-0000-000000C41E78
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+On 04/01/2014 12:30 PM, Hannes Frederic Sowa wrote:
+> On Tue, Apr 01, 2014 at 12:08:18PM +0200, Vegard Nossum wrote:
+>> Both the in-kernel and BSD strlcpy() require that the source string is
+>> NUL terminated. We could use strncpy() + explicitly terminate the result,
+>> but this relies on src and dest having the same size, so the safest thing
+>> to do seems to explicitly terminate the source string before doing the
+>> strlcpy().
+>>
+>> Fixes: f9a23c84486ed35 ("isdnloop: use strlcpy() instead of strcpy()")
+>> Cc: Dan Carpenter <dan.carpenter@oracle.com>
+>> Cc: David S. Miller <davem@davemloft.net>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
+>> ---
+>>   drivers/isdn/isdnloop/isdnloop.c |    8 ++++++++
+>>   1 file changed, 8 insertions(+)
+>>
+>> diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+>> index 02125e6..50cd348 100644
+>> --- a/drivers/isdn/isdnloop/isdnloop.c
+>> +++ b/drivers/isdn/isdnloop/isdnloop.c
+>> @@ -1070,6 +1070,14 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
+>>   		return -EBUSY;
+>>   	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
+>>   		return -EFAULT;
+>> +
+>> +	/*
+>> +	 * Null terminate strings from userspace so we don't have to worry
+>> +	 * about this later on.
+>> +	 */
+>> +	for (i = 0; i < 3; i++)
+>> +		sdef.num[i][sizeof(sdef.num[0]) - 1] = '\0';
+>> +
+>
+> Looking down the problem, it seems the problem is that the strlen in strlcpy
+> could read beyond the input buffer?
+>
+> To prevent this problem in other parts of the kernel wouldn't it be better to
+> replace the strlen with strnlen in strlcpy?
 
-On 03/28/2014 06:57 PM, Vincent Guittot wrote:
-> This new field cpu_power_orig reflects the available capacity of a CPUs unlike
-> the cpu_power which reflects the current capacity that can be altered by
-> frequency and rt tasks.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+Sorry, I should have included the link to the previous thread: 
+https://lkml.org/lkml/2014/3/7/712
 
-Should not the subject be "add per rq cpu_power_orig"?
+I only resent (adding netdev to Cc) to get this into David Miller's 
+patch queue.
 
-Regards
-Preeti U Murthy
-> ---
->  kernel/sched/core.c  | 2 +-
->  kernel/sched/fair.c  | 1 +
->  kernel/sched/sched.h | 1 +
->  3 files changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 5b20b27..8513f83 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6911,7 +6911,7 @@ void __init sched_init(void)
->  #ifdef CONFIG_SMP
->  		rq->sd = NULL;
->  		rq->rd = NULL;
-> -		rq->cpu_power = SCHED_POWER_SCALE;
-> +		rq->cpu_power = rq->cpu_power_orig = SCHED_POWER_SCALE;
->  		rq->post_schedule = 0;
->  		rq->active_balance = 0;
->  		rq->next_balance = jiffies;
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 7387c05..f1e4db6 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5611,6 +5611,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
-> 
->  	power >>= SCHED_POWER_SHIFT;
-> 
-> +	cpu_rq(cpu)->cpu_power_orig = power;
->  	sdg->sgp->power_orig = power;
-> 
->  	if (sched_feat(ARCH_POWER))
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 46c3784..2abdf5c 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -578,6 +578,7 @@ struct rq {
->  	struct sched_domain *sd;
-> 
->  	unsigned long cpu_power;
-> +	unsigned long cpu_power_orig;
-> 
->  	unsigned char idle_balance;
->  	/* For active balancing */
-> 
+As you can see from the previous discussion, we _could_ change the Linux 
+kernel's definition of strlcpy(), but I wouldn't recommend it for the 
+following reasons:
 
+1. Both BSD man page and BSD implementation _require_ the source string 
+to be 0-terminated. Changing the semantics of strlcpy() in the Linux 
+kernel would probably be a bad idea and cause even more confusion that 
+what we already have.
+
+2. Even if we changed strlcpy() to use strnlen(), it would still be 
+unsafe if the source string is not 0-terminated and the source buffer is 
+shorter than the destination buffer. That's because the size passed to 
+strlcpy() is conceptually the length of the _destination_ buffer, not 
+the source string.
+
+I'm not against changing strlcpy() per se (changing to strnlen() might 
+be a performance improvement), but we shouldn't use that as an excuse to 
+use the interface incorrectly.
+
+
+Vegard
