@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaDAIL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 04:11:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739AbaDAILz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 04:11:55 -0400
-Date: Tue, 1 Apr 2014 10:11:44 +0200
-From: Robin Hack <rhack@redhat.com>
-To: Eunbong Song <eunb.song@samsung.com>
-Cc: ak@linux.intel.com, sasha.levin@oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: tools/liblockdep: Build failure
-Message-ID: <20140401081144.GB10429@bigoook.brq.redhat.com>
-References: <22212997.138341396332274687.JavaMail.weblogic@epml01>
- <20140401080258.GA10429@bigoook.brq.redhat.com>
+	id S1751277AbaDAIS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 04:18:26 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:58543 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaDAISY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 04:18:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401080258.GA10429@bigoook.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <533A85A70200007800003F59@nat28.tlf.novell.com>
+References: <2186395.ZOncrV6nFS@daeseok-laptop.cloud.net>
+	<533A85A70200007800003F59@nat28.tlf.novell.com>
+Date: Tue, 1 Apr 2014 17:17:55 +0900
+Message-ID: <CAHb8M2AXChNkeXqHfThO8=JBQ8QCN7rLTs-Rbdgz3XWzwY_EQA@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH] xen: fix memory leak in __xen_pcibk_add_pci_dev()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        Joe Perches <joe@perches.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More investigation reveals this:
+2014-04-01 16:23 GMT+09:00 Jan Beulich <JBeulich@suse.com>:
+>>>> On 31.03.14 at 12:08, <daeseok.youn@gmail.com> wrote:
+>
+>> It need to free dev_entry when it failed to assign to a new
+>> slot on the virtual PCI bus.
+>>
+>> smatch says:
+>>  drivers/xen/xen-pciback/vpci.c:142 __xen_pcibk_add_pci_dev() warn:
+>> possible memory leak of 'dev_entry'
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>
+> Reviewed-by: Jan Beulich <jbeulich@suse.com>
+>
+> albeit the solution is not ideal:
+>
+>> --- a/drivers/xen/xen-pciback/vpci.c
+>> +++ b/drivers/xen/xen-pciback/vpci.c
+>> @@ -130,6 +130,7 @@ static int __xen_pcibk_add_pci_dev(struct
+>> xen_pcibk_device *pdev,
+>>       err = -ENOMEM;
+>>       xenbus_dev_fatal(pdev->xdev, err,
+>>                        "No more space on root virtual PCI bus");
+>> +     kfree(dev_entry);
+>>
+>>  unlock:
+>>       mutex_unlock(&vpci_dev->lock);
+>
+> The kfree() invocation would better be placed outside the locked
+> region (e.g. in an else to the "if (!err)" a little further down).
 
-(from common.o which is output of gcc -E)
-# 1 "./uinclude/linux/linkage.h" 1
+You're right.
+I will change my patch as your comment and send it again.
 
-pwd is: linux/tools/lib/lockdep
-$ cat ./uinclude/linux/linkage.h
+Thanks for review.
+Daeseok Youn
 
-/* empty file */
-
-
-Have nice day
-Robin Hack
-On Tue, Apr 01, 2014 at 10:02:58AM +0200, Robin Hack wrote:
-> Hi.
-> 
-> I have same issue.
-> 
-> I investigated output of gcc -E and I found that asmlinkage macro isn't
-> expanded as is expected.
-> 
-> $ grep asmlinkage common.o
-> asmlinkage extern void lockdep_sys_exit(void);
-> 
-> On Tue, Apr 01, 2014 at 06:04:35AM +0000, Eunbong Song wrote:
-> > 
-> > There is tools/liblockdep build failure.
-> > I have been trying to find the cause and i found commit id 63f9a7fde715352e0769302527670542a664b981 is the casue.
-> > 
-> > Author: Andi Kleen <ak@linux.intel.com>
-> > Date:   Sat Feb 8 08:52:01 2014 +0100
-> > 
-> >     asmlinkage: Make lockdep_sys_exit asmlinkage
-> > 
-> >     lockdep_sys_exit can be called from assembler code, so make it
-> >     asmlinkage.
-> > 
-> >     Cc: Peter Zijlstra <peterz@infradead.org>
-> >     Cc: Ingo Molnar <mingo@kernel.org>
-> >     Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> >     Link: http://lkml.kernel.org/r/1391845930-28580-5-git-send-email-ak@linux.intel.com
-> >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > 
-> > diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-> > index 92b1bfc..7df9aa6 100644
-> > --- a/include/linux/lockdep.h
-> > +++ b/include/linux/lockdep.h
-> > @@ -265,7 +265,7 @@ extern void lockdep_info(void);
-> >  extern void lockdep_reset(void);
-> >  extern void lockdep_reset_lock(struct lockdep_map *lock);
-> >  extern void lockdep_free_key_range(void *start, unsigned long size);
-> > -extern void lockdep_sys_exit(void);
-> > +extern asmlinkage void lockdep_sys_exit(void);
-> > 
-> >  extern void lockdep_off(void);
-> >  extern void lockdep_on(void);
-> > diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-> > index eb8a547..c8b6753 100644
-> > --- a/kernel/locking/lockdep.c
-> > +++ b/kernel/locking/lockdep.c
-> > @@ -4191,7 +4191,7 @@ void debug_show_held_locks(struct task_struct *task)
-> >  }
-> >  EXPORT_SYMBOL_GPL(debug_show_held_locks);
-> > 
-> > -void lockdep_sys_exit(void)
-> > +asmlinkage void lockdep_sys_exit(void)
-> >  {
-> >         struct task_struct *curr = current;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> Jan
+>
