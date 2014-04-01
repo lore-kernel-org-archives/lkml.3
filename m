@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204AbaDADKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 23:10:20 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:58955 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaDADKS (ORCPT
+	id S1751741AbaDADLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 23:11:08 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:55621 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaDADLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 23:10:18 -0400
-Message-ID: <1396321814.5324.27.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 01 Apr 2014 05:10:14 +0200
-In-Reply-To: <20140331160003.GD19658@home.goodmis.org>
-References: <1396164244.28950.15.camel@marge.simpson.net>
-	 <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
-	 <1396239636.5361.57.camel@marge.simpson.net>
-	 <20140331160003.GD19658@home.goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Mon, 31 Mar 2014 23:11:03 -0400
+Message-ID: <533A2E3F.7060705@hitachi.com>
+Date: Tue, 01 Apr 2014 12:10:55 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] uprobes/x86: Kill the "ia32_compat" check in handle_riprel_insn(),
+ remove "mm" arg
+References: <20140331194405.GA9290@redhat.com>
+In-Reply-To: <20140331194405.GA9290@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 12:00 -0400, Steven Rostedt wrote: 
-> On Mon, Mar 31, 2014 at 06:20:36AM +0200, Mike Galbraith wrote:
-> > 
-> > Cc: <stable@vger.kernel.org>
-> > Signed-off-by: 	Mike Galbraith <umgwanakikbuti@gmail.com>
-> > ---
-> >  kernel/sched/core.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -118,7 +118,7 @@ void update_rq_clock(struct rq *rq)
-> >  {
-> >  	s64 delta;
-> >  
+(2014/04/01 4:44), Oleg Nesterov wrote:
+> Kill the "mm->context.ia32_compat" check in handle_riprel_insn(), if
+> it is true insn_rip_relative() must return false. validate_insn_bits()
+> passed "ia32_compat" as !x86_64 to insn_init(), and insn_rip_relative()
+> checks insn->x86_64.
 > 
-> Mike,
+> Also, remove the no longer needed "struct mm_struct *mm" argument and
+> the unnecessary "return" at the end.
 > 
-> If I understand this code correctly, skip_clock_update gets set to one,
-> where it should skip the next call to update_rq_clock(), but only the
-> next skip_clock_update(), and after that, it should resume calling it again.
-> Is that correct?
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Yeah, it's supposed to prevent us from doing back to back fastpath
-update + math for no good reason.  Actually, decrement isn't perfect,
-simple set/clear is.. iff we are really headed to schedule() RSN.  Tick
-time clear would bound error too.
+This looks good to me.
 
-Maybe it should just die as more potential trouble than it's worth.  It
-has saved a pile of fastpath cycles, losing those again would be a
-shame.  Accounting doesn't need to be perfect (is the enemy of good),
-but it does need to be a guaranteed good.
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
--Mike
+Thank you,
+
+> ---
+>  arch/x86/kernel/uprobes.c |   10 +++-------
+>  1 files changed, 3 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index d72dfbf..382a69d 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -253,14 +253,11 @@ static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
+>   *  - The displacement is always 4 bytes.
+>   */
+>  static void
+> -handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
+> +handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
+>  {
+>  	u8 *cursor;
+>  	u8 reg;
+>  
+> -	if (mm->context.ia32_compat)
+> -		return;
+> -
+>  	if (!insn_rip_relative(insn))
+>  		return;
+>  
+> @@ -314,7 +311,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct ins
+>  		cursor++;
+>  		memmove(cursor, cursor + insn->displacement.nbytes, insn->immediate.nbytes);
+>  	}
+> -	return;
+>  }
+>  
+>  static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
+> @@ -343,7 +339,7 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  	return validate_insn_64bits(auprobe, insn);
+>  }
+>  #else /* 32-bit: */
+> -static void handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
+> +static void handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
+>  {
+>  	/* No RIP-relative addressing on 32-bit */
+>  }
+> @@ -406,7 +402,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  		}
+>  		/* fall through */
+>  	default:
+> -		handle_riprel_insn(auprobe, mm, &insn);
+> +		handle_riprel_insn(auprobe, &insn);
+>  	}
+>  
+>  	if (fix_ip)
+> 
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
