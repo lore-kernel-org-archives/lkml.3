@@ -1,131 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaDAVHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:07:49 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:58665 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbaDAVHr convert rfc822-to-8bit (ORCPT
+	id S1751655AbaDAVJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:09:54 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:48153 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaDAVJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:07:47 -0400
+	Tue, 1 Apr 2014 17:09:52 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 17:09:52 EDT
+To: linux-scsi@vger.kernel.org
+Subject: [PATCH 0/2] wd719x: Introduce Western Digital WD7193/7197/7296 PCI SCSI card driver
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Tue, 1 Apr 2014 23:02:46 +0200
 MIME-Version: 1.0
-In-Reply-To: <20140401142051.GO28304@titan.lakedaemon.net>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-	<20140319201838.GA11403@redhat.com>
-	<CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
-	<20140321132816.GW15608@titan.lakedaemon.net>
-	<532DC3D3.9060008@linux.com>
-	<CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
-	<20140323193839.GY15608@titan.lakedaemon.net>
-	<CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
-	<20140401142051.GO28304@titan.lakedaemon.net>
-Date: Wed, 2 Apr 2014 00:07:46 +0300
-Message-ID: <CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-From: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Levente Kurusa <levex@linux.com>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404012302.47815.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 5:20 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Sun, Mar 30, 2014 at 12:17:17PM +0200, Levente Kurusa wrote:
->> Hi all,
->>
->> (sorry for the late reply, looks like this mail has ran away from my clients)
+Hello,
+this is a new driver for Western Digital WD7193, WD7197 and WD7296 PCI SCSI
+controllers based on WD33C296A chip. These nice cards never worked good with
+Linux.
 
-same here.
+It's based on old and ugly wd719x driver written back in 2.0 days, then hacked 
+to 2.2 and finally to 2.4 kernels. Most of the code is rewritten: from ~4100 
+lines to ~1200.
 
->>
->> 2014-03-23 20:38 GMT+01:00 Jason Cooper <jason@lakedaemon.net>:
->> > All,
->> >
->> > On Sat, Mar 22, 2014 at 08:20:01PM +0200, Teodora Băluţă wrote:
->> >> On Sat, Mar 22, 2014 at 7:09 PM, Levente Kurusa <levex@linux.com> wrote:
->> >> > On 03/21/2014 02:28 PM, Jason Cooper wrote:
->> > ...
->> >> >> I would definitely like to see the QR output incorporated into a
->> >> >> kernel.org url.  That would remove the need for installing another app,
->> >> >> and would ease bug reporting.
->> >> >
->> >> > I still struggle to understand how could that be done. We can encode the
->> >> > QR code as ASCII. Okay, that's fine, however it is very long. Encoding
->> >> > 'Unable to handle kernel paging request at 0000000f' gave a 449 character
->> >> > long sequence with very strange characters [0]. We should try to shorten
->> >> > it, imho. Not sure how to do that though.
->> >
->> > The man page for qrencode says you can have up to 4000 characters in a
->> > qrcode.  However, I've seen readers have trouble with a 2048bit ascii
->> > armored PGP public key (3929 characters).
->> >
->> > I grabbed a random oops from oops.kernel.org, it weighed in at 1544
->> > bytes, not too bad.  I then did:
->> >
->> > $ echo "https://oops.kernel.org/?qr=`cat oops.txt | gzip -9 | base64 -wrap=0`" | wc -c
->> > 993
->>
->> I did the same with another OOPS and it had 1953 characters. That's quite a big
->> a big difference! :-)
->>
->> I created a QR image from the URL then, and it was 147x147, which is
->> pretty small.
->> It took me quite a long time to make my phone recognize it, but it
->> worked nicely.
->>
->> Result of work is in this directory:
->>
->> http://levex.fedorapeople.org/kernel/qr/
->
-> nice!
->
->> > The benefit of a url is that any QR reader can automagically report an
->> > oops.  While a specific app could parse the URL/oops locally if the
->> > user desires.
->> >
->> >> it misses the point of having a QR code in the first place. The way I
->> >> see it, having a QR decoder app installed that can do an offline
->> >> decoding is a less greater effort than popping out a browser on the
->> >> machine you're working on.
->> >
->> > I think you're selling the advantage of the QR code short.  Automated
->> > reporting (via the url) is a _huge_ plus.  The app you conceive of could
->> > still parse it in place if the user desires.
->> >
->> > My point for the URL isn't to use the internet/server to automate oops
->> > parsing for the user.  Rather it's to make it easy to report oopses to
->> > developers.  While still preserving the ability of your app to parse it
->> > for the user.
->>
->> Ah I see now. oops.kernel.org/?qr=<QR> would simply parse the
->> base64'd+gzip'd oops message and then report it.
->
-> If you mean the server behind oops.k.o would parse it, then yes.  No
-> special app should be required other than a QR code scanner for the
-> usecase of reporting oopses to developers.
->
->> Now I guess we need to think how to make it work without a
->> framebuffer. I already suggested using the ASCII characters,
->> but seeing the resolution of this QR code for example (147x147),
->> made me realize that we can't shuffle that into a 80x25 textmode
->> display. Any ideas how to fix that or should we just simply depend
->> on a framebuffer being present?
->
-> I think depending on the framebuffer being present (via kconfig) is
-> sane.  Folks running old systems know what they're in for, like missing
-> shiny new features. ;-)
+I've tested the driver on a WD7193 card with some hard drives and CD-ROMs:
+QUANTUM  LP240S GM240S01X 4.6
+IBM      0663L12          e g
+IBM      DORS-32160       WA0A
+SONY     CD-ROM CDU-55S   1.0t
+SONY     CD-ROM CDU-415   1.1g
 
-Ok, this may work. I agree that doing this with the help of the frame
-buffer is more natural.
+The card supports TCQ and linked commands (for cmd_per_lun > 1?) but I don't 
+know how it should be implemented in a driver.
 
-Thanks,
---
-Teodora
+Device/bus/host resets seem to work fine when tested by sg_reset.
+But don't know how to test command abort.
 
->
-> thx,
->
-> Jason.
+The card requires firmware that can be cut out of the Windows NT driver that 
+can be downloaded from WD at: 
+http://support.wdc.com/product/download.asp?groupid=801&sid=27&lang=en
+There is no license anywhere in the file or on the page - so I guess that the 
+firmware cannot be added to linux-firmware.
+
+This script downloads and extracts the firmware:
+
+#!/bin/sh
+wget http://support.wdc.com/download/archive/pciscsi.exe
+lha xi pciscsi.exe pci-scsi.exe
+lha xi pci-scsi.exe nt/wd7296a.sys
+rm pci-scsi.exe
+dd if=wd7296a.sys of=wd719x-risc.bin bs=1 skip=5760 count=14336
+dd if=wd7296a.sys of=wd719x-wcs.bin bs=1 skip=20096 count=514
+rm wd7296a.sys
+
+
+-- 
+Ondrej Zary
