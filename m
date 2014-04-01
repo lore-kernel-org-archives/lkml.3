@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaDAXiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 19:38:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39581 "EHLO gate.crashing.org"
+	id S1754465AbaDAXk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 19:40:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58170 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250AbaDAXiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 19:38:13 -0400
-Message-ID: <1396395482.19762.32.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git powernv-cpuidle branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Wed, 02 Apr 2014 10:38:02 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753250AbaDAXk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 19:40:26 -0400
+Date: Tue, 1 Apr 2014 18:38:18 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Felipe Balbi <balbi@ti.com>, <rob@landley.net>, <clm@fb.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: SubmittingPatches: mention our new
+ Facebook group
+Message-ID: <20140401233818.GA28102@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <533AD000.307@fb.com>
+ <1396368515-8547-1-git-send-email-balbi@ti.com>
+ <20140401203208.GB30033@thunk.org>
+ <20140401225655.GH19658@home.goodmis.org>
+ <1396395422.3989.15.camel@edumazet-glaptop2.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Disposition: inline
+In-Reply-To: <1396395422.3989.15.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+--tThc/1wpZn/ma/RB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is the branch I mentioned in my other pull request which contains
-our improved cpuidle support for the "powernv" platform
-(non-virtualized). It adds support for the "fast sleep" feature of the
-processor which provides higher power savings than our usual "nap" mode
-but at the cost of losing the timers while asleep, and thus exploits the
-new timer broadcast framework to work around that limitation.
+On Tue, Apr 01, 2014 at 04:37:02PM -0700, Eric Dumazet wrote:
+> On Tue, 2014-04-01 at 18:56 -0400, Steven Rostedt wrote:
+> > On Tue, Apr 01, 2014 at 04:32:08PM -0400, Theodore Ts'o wrote:
+> > > One suggestion: the documentation should add a tip that if you can't
+> > > get someone to review your post, one option is to pay Facebook to
+> > > promote your post[1] so it shows more prominently (or at all) on more
+> > > kernel dvelopers' streams:
+> > >=20
+> > > 					- Ted
+> > >=20
+> > > [1] http://hothardware.com/News/Facebook-Looking-at-New-Revenue-Strea=
+m-Pay-To-Promote-Friends-Posts-/
+> >=20
+> > The more likes you get (or pay for), the more likely your patch will be
+> > pulled into mainline.
+>=20
+>=20
+> I do not want to ruin your day guys, but I own a patent on this whole
+> idea.
+>=20
+> Fortunately it ends in 20 years, April 1st, 2034, so you only have to be
+> patient.
 
-It's based on a tip timer tree that you seem to have already merged
+Darn it... By then we will all become Government-controlled zombies with
+brain implants. Looking at the bright side, though, we will be able to
+review a patch by just thinking about it.
 
-Cheers,
-Ben.
+--=20
+balbi
 
-The following changes since commit 849401b66d305f3feb75b6db7459b95ad190552a:
+--tThc/1wpZn/ma/RB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  tick: Fixup more fallout from hrtimer broadcast mode (2014-02-09 15:11:47 +0100)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-are available in the git repository at:
+iQIcBAEBAgAGBQJTO03qAAoJEIaOsuA1yqRE+38P/RZXjsl8/pd1WnZn0CYKltnv
+Jm2+dSJSQZ5zyY+NsRezahxn7+RmJ33llZgMJBdlCNscaXYBHrxX3xQcv/qqg1xT
+0Cj/BIRjdSbOK3SLD6wVivGgMtAOi88LdaxRTtBgzpMKoEX/ZiziGviampGQUDv/
+TiXtSzYDDmwqKyHoSpOnbAR8RQXCm4CaXUAg1xy+fo6CrnEe3e8nc38q76qbjNQa
+Ixcf1Quh4GU69wEHQiIDRNkU506zDK+UFQwQELY74xJ++PRXLnxQYNBfojt9GHbT
+UYlgSYgBqQ5PkrFUQIL2ek5mF409+HHVNwIPiQ0FH/tYDugQ0CXkjp0ClvRdtlnD
+taNhdTShGlpKVO/KaeUk3TADsqC/8FAsIXOtEqYjjKVE1DgIQ63Njm471LSuAjcI
+72e1yc22GLAHIEwUa5B3uUt0KSw1Q6/3tFaYlkVoTl57aohTla2btPnkHA3BFNiY
+nVneQk+e5Wcde/3a6ytzdKl1IgtMzHsEDPXU42B5l7IzL5g3azcwelB7xDseyO0/
+DDZDgbpbblJNDrC07FcsCoGxBiYocte+mFQ0kj6/Z1uVO1sxfgTqemQGfDXfhpnM
+zsK9mdWt6FTGKQlu6H6InNU/wfrefluG0dS+PougK6GFtv7slZpuSt3AdArII43y
+rCivbAWOM8zlJ+zxFTEo
+=xXJ7
+-----END PGP SIGNATURE-----
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git powernv-cpuidle
-
-for you to fetch changes up to 0888839c5b62c44a55ac9d28acc273ba663c65ea:
-
-  cpuidle/powernv: Parse device tree to setup idle states (2014-03-05 15:57:08 +1100)
-
-----------------------------------------------------------------
-Preeti U Murthy (3):
-      powerpc: Split timer_interrupt() into timer handling and interrupt handling routines
-      cpuidle/powernv: Add "Fast-Sleep" CPU idle state
-      cpuidle/powernv: Parse device tree to setup idle states
-
-Srivatsa S. Bhat (2):
-      powerpc: Free up the slot of PPC_MSG_CALL_FUNC_SINGLE IPI message
-      powerpc: Implement tick broadcast IPI as a fixed IPI message
-
-Vaidyanathan Srinivasan (2):
-      powerpc/powernv: Add context management for Fast Sleep
-      powerpc/powernv: Add OPAL call to resync timebase on wakeup
-
- arch/powerpc/Kconfig                           |   2 +
- arch/powerpc/include/asm/opal.h                |   2 +
- arch/powerpc/include/asm/processor.h           |   1 +
- arch/powerpc/include/asm/smp.h                 |   2 +-
- arch/powerpc/include/asm/time.h                |   1 +
- arch/powerpc/kernel/exceptions-64s.S           |  10 ++-
- arch/powerpc/kernel/idle_power7.S              |  90 +++++++++++++++++-----
- arch/powerpc/kernel/smp.c                      |  25 ++++--
- arch/powerpc/kernel/time.c                     |  90 +++++++++++++---------
- arch/powerpc/platforms/cell/interrupt.c        |   2 +-
- arch/powerpc/platforms/powernv/opal-wrappers.S |   1 +
- arch/powerpc/platforms/ps3/smp.c               |   2 +-
- drivers/cpuidle/cpuidle-powernv.c              | 102 ++++++++++++++++++++++---
- 13 files changed, 253 insertions(+), 77 deletions(-)
-
-
+--tThc/1wpZn/ma/RB--
