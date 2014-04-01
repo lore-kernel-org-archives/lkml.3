@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaDAQP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:15:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44641 "EHLO
+	id S1753040AbaDAQPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:15:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695AbaDAQPw (ORCPT
+	with ESMTP id S1752967AbaDAQPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:15:52 -0400
+	Tue, 1 Apr 2014 12:15:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 85/86] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-Date: Tue,  1 Apr 2014 09:08:38 -0700
-Message-Id: <1396368519-12728-86-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 80/86] Input: synaptics - add manual min/max quirk
+Date: Tue,  1 Apr 2014 09:08:33 -0700
+Message-Id: <1396368519-12728-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,90 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
+commit 421e08c41fda1f0c2ff6af81a67b491389b653a5 upstream.
 
-Use cmpxchg() to atomically set i_flags instead of clearing out the
-S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
-EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
-where an immutable file has the immutable flag cleared for a brief
-window of time.
+The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
+However, these new Synaptics devices report bad axis ranges.
+Under Windows, it is not a problem because the Windows driver uses RMI4
+over SMBus to talk to the device. Under Linux, we are using the PS/2
+fallback interface and it occurs the reported ranges are wrong.
 
-Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Of course, it would be too easy to have only one range for the whole
+series, each touchpad seems to be calibrated in a different way.
+
+We can not use SMBus to get the actual range because I suspect the firmware
+will switch into the SMBus mode and stop talking through PS/2 (this is the
+case for hybrid HID over I2C / PS/2 Synaptics touchpads).
+
+So as a temporary solution (until RMI4 land into upstream), start a new
+list of quirks with the min/max manually set.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/inode.c        | 15 +++++++++------
- include/linux/bitops.h | 15 +++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
+ drivers/input/mouse/synaptics.c | 47 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 46c10b5..8aed7eb 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -37,6 +37,7 @@
- #include <linux/printk.h>
- #include <linux/slab.h>
- #include <linux/ratelimit.h>
-+#include <linux/bitops.h>
- 
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -3770,18 +3771,20 @@ int ext4_get_inode_loc(struct inode *inode, struct ext4_iloc *iloc)
- void ext4_set_inode_flags(struct inode *inode)
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 12d12ca..43146cd 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -265,11 +265,22 @@ static int synaptics_identify(struct psmouse *psmouse)
+  * Read touchpad resolution and maximum reported coordinates
+  * Resolution is left zero if touchpad does not support the query
+  */
++
++static const int *quirk_min_max;
++
+ static int synaptics_resolution(struct psmouse *psmouse)
  {
- 	unsigned int flags = EXT4_I(inode)->i_flags;
-+	unsigned int new_fl = 0;
+ 	struct synaptics_data *priv = psmouse->private;
+ 	unsigned char resp[3];
  
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
- 	if (flags & EXT4_SYNC_FL)
--		inode->i_flags |= S_SYNC;
-+		new_fl |= S_SYNC;
- 	if (flags & EXT4_APPEND_FL)
--		inode->i_flags |= S_APPEND;
-+		new_fl |= S_APPEND;
- 	if (flags & EXT4_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
-+		new_fl |= S_IMMUTABLE;
- 	if (flags & EXT4_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
-+		new_fl |= S_NOATIME;
- 	if (flags & EXT4_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+		new_fl |= S_DIRSYNC;
-+	set_mask_bits(&inode->i_flags,
-+		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
++	if (quirk_min_max) {
++		priv->x_min = quirk_min_max[0];
++		priv->x_max = quirk_min_max[1];
++		priv->y_min = quirk_min_max[2];
++		priv->y_max = quirk_min_max[3];
++		return 0;
++	}
++
+ 	if (SYN_ID_MAJOR(priv->identity) < 4)
+ 		return 0;
+ 
+@@ -1459,10 +1470,46 @@ static const struct dmi_system_id __initconst olpc_dmi_table[] = {
+ 	{ }
+ };
+ 
++static const struct dmi_system_id min_max_dmi_table[] __initconst = {
++#if defined(CONFIG_DMI)
++	{
++		/* Lenovo ThinkPad Helix */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
++		},
++		.driver_data = (int []){1024, 5052, 2258, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T440s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T540p */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
++		},
++		.driver_data = (int []){1024, 5056, 2058, 4832},
++	},
++#endif
++	{ }
++};
++
+ void __init synaptics_module_init(void)
+ {
++	const struct dmi_system_id *min_max_dmi;
++
+ 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+ 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
++
++	min_max_dmi = dmi_first_match(min_max_dmi_table);
++	if (min_max_dmi)
++		quirk_min_max = min_max_dmi->driver_data;
  }
  
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index a3b6b82..c1dde8e 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64 word)
- 
- #ifdef __KERNEL__
- 
-+#ifndef set_mask_bits
-+#define set_mask_bits(ptr, _mask, _bits)	\
-+({								\
-+	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
-+	typeof(*ptr) old, new;					\
-+								\
-+	do {							\
-+		old = ACCESS_ONCE(*ptr);			\
-+		new = (old & ~mask) | bits;			\
-+	} while (cmpxchg(ptr, old, new) != old);		\
-+								\
-+	new;							\
-+})
-+#endif
-+
- #ifndef find_last_bit
- /**
-  * find_last_bit - find the last set bit in a memory region
+ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
 -- 
 1.8.3.2
 
