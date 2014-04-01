@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaDAQjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:39:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44422 "EHLO
+	id S1753175AbaDAQjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:39:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44414 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaDAQJi (ORCPT
+	with ESMTP id S1752283AbaDAQJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:38 -0400
+	Tue, 1 Apr 2014 12:09:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Artem Fetishev <artem_fetishev@epam.com>,
+        Aleksandr Terekhov <aleksandr_terekhov@epam.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 53/86] ARM: fix noMMU kallsyms symbol filtering
-Date: Tue,  1 Apr 2014 09:08:06 -0700
-Message-Id: <1396368519-12728-54-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 67/86] fs/proc/base.c: fix GPF in /proc/$PID/map_files
+Date: Tue,  1 Apr 2014 09:08:20 -0700
+Message-Id: <1396368519-12728-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,81 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Artem Fetishev <artem_fetishev@epam.com>
 
-commit 006fa2599bf0daf107cbb7a8a99fcfb9a998a169 upstream.
+commit 70335abb2689c8cd5df91bf2d95a65649addf50b upstream.
 
-With noMMU, CONFIG_PAGE_OFFSET was not being set correctly.  As there's
-no MMU, PAGE_OFFSET should be equal to PHYS_OFFSET in all cases.  This
-commit makes that explicit.
+The expected logic of proc_map_files_get_link() is either to return 0
+and initialize 'path' or return an error and leave 'path' uninitialized.
 
-Since we do this, we don't need to mess around in asm/memory.h with
-ifdefs to sort this out, so let's get rid of that, and there's no point
-offering the "Memory split" option for noMMU as that's meaningless
-there.
+By the time dname_to_vma_addr() returns 0 the corresponding vma may have
+already be gone.  In this case the path is not initialized but the
+return value is still 0.  This results in 'general protection fault'
+inside d_path().
 
-Fixes: b9b32bf70f2f ("ARM: use linker magic for vectors and vector stubs")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[ kamal: backport to 3.8 (context) ]
+Steps to reproduce:
+
+  CONFIG_CHECKPOINT_RESTORE=y
+
+    fd = open(...);
+    while (1) {
+        mmap(fd, ...);
+        munmap(fd, ...);
+    }
+
+  ls -la /proc/$PID/map_files
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=68991
+
+Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+Signed-off-by: Aleksandr Terekhov <aleksandr_terekhov@epam.com>
+Reported-by: <wiebittewas@gmail.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/Kconfig              | 2 ++
- arch/arm/include/asm/memory.h | 9 +++------
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ fs/proc/base.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5c037b9..4a582ab 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1596,6 +1596,7 @@ config HAVE_ARM_TWD
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 9b43ff77..78150a0 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1784,6 +1784,7 @@ static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
+ 	if (rc)
+ 		goto out_mmput;
  
- choice
- 	prompt "Memory split"
-+	depends on MMU
- 	default VMSPLIT_3G
- 	help
- 	  Select the desired split between kernel and user memory.
-@@ -1613,6 +1614,7 @@ endchoice
- 
- config PAGE_OFFSET
- 	hex
-+	default PHYS_OFFSET if !MMU
- 	default 0x40000000 if VMSPLIT_1G
- 	default 0x80000000 if VMSPLIT_2G
- 	default 0xC0000000
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 1c4df27..179bf0b 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -28,14 +28,15 @@
-  */
- #define UL(x) _AC(x, UL)
- 
-+/* PAGE_OFFSET - the virtual address of the start of the kernel image */
-+#define PAGE_OFFSET		UL(CONFIG_PAGE_OFFSET)
-+
- #ifdef CONFIG_MMU
- 
- /*
-- * PAGE_OFFSET - the virtual address of the start of the kernel image
-  * TASK_SIZE - the maximum size of a user space task.
-  * TASK_UNMAPPED_BASE - the lower boundary of the mmap VM area
-  */
--#define PAGE_OFFSET		UL(CONFIG_PAGE_OFFSET)
- #define TASK_SIZE		(UL(CONFIG_PAGE_OFFSET) - UL(0x01000000))
- #define TASK_UNMAPPED_BASE	ALIGN(TASK_SIZE / 3, SZ_16M)
- 
-@@ -106,10 +107,6 @@
- #define END_MEM     		(UL(CONFIG_DRAM_BASE) + CONFIG_DRAM_SIZE)
- #endif
- 
--#ifndef PAGE_OFFSET
--#define PAGE_OFFSET		(PHYS_OFFSET)
--#endif
--
- /*
-  * The module can be at any place in ram in nommu mode.
-  */
++	rc = -ENOENT;
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_exact_vma(mm, vm_start, vm_end);
+ 	if (vma && vma->vm_file) {
 -- 
 1.8.3.2
 
