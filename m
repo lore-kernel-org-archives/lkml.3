@@ -1,77 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaDAWeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 18:34:06 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:62095 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603AbaDAWeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 18:34:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <1395658064.3465.7.camel@linaro1.home>
-References: <1392339850-18686-1-git-send-email-keescook@chromium.org>
-	<1392339850-18686-3-git-send-email-keescook@chromium.org>
-	<20140214162257.GB2331@e103592.cambridge.arm.com>
-	<CAGXu5jLmYLQpu9CDhoL-2OTdwxqrfVCFbojmpjpcpLqmA=wWYA@mail.gmail.com>
-	<20140217123415.GA2182@e103592.cambridge.arm.com>
-	<532F2C48.6050509@codeaurora.org>
-	<CAGXu5jK_8adL=6DoF9gFBMWxKcxKUHw7238ighE2agFU7cqhWg@mail.gmail.com>
-	<1395658064.3465.7.camel@linaro1.home>
-Date: Tue, 1 Apr 2014 15:34:02 -0700
-X-Google-Sender-Auth: bLNujuhjoV2rPJhyqIMpoyJTrwE
-Message-ID: <CAGXu5jLEA5u58yNe0k4BobWphAhEiREJ1ped30LVgDRPzOGy7A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: mm: keep rodata non-executable
-From: Kees Cook <keescook@chromium.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Larry Bassel <lbassel@codeaurora.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Martin <Dave.Martin@arm.com>, Jiang Liu <liuj97@gmail.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Simon Baatz <gmbnomis@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751655AbaDAWpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 18:45:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27657 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371AbaDAWpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 18:45:02 -0400
+Message-ID: <1396392298.476.226.camel@ul30vt.home>
+Subject: Re: [PATCH v2] PCI: rework new_id interface for known vendor/device
+ values
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bandan Das <bsd@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 01 Apr 2014 16:44:58 -0600
+In-Reply-To: <jpgr45gk8wn.fsf@nelium.bos.redhat.com>
+References: <jpgeh1gpwwo.fsf@nelium.bos.redhat.com>
+	 <1396388707.476.188.camel@ul30vt.home>
+	 <jpgr45gk8wn.fsf@nelium.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 3:47 AM, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> On Sun, 2014-03-23 at 16:21 -0600, Kees Cook wrote:
->> For this stage, how about I make this "depends on KEXEC=n &&
->> KPROBES=n"?
->
-> There's also ftrace (CONFIG_DYNAMIC_FTRACE I believe) which modifies
-> kernel code with a call to probe_kernel_write(), which GDB uses as well.
->
-> And grepping for the patch_text() function also shows
-> __arch_jump_label_transform() modifies kernel code. Not sure how and
-> when that gets used.
+On Tue, 2014-04-01 at 18:00 -0400, Bandan Das wrote:
+> Alex Williamson <alex.williamson@redhat.com> writes:
+> 
+> > On Tue, 2014-04-01 at 17:22 -0400, Bandan Das wrote:
+> >> While using the new_id interface, the user can unintentionally feed
+> >> incorrect values if the driver static table has a matching entry.
+> >> This is possible since only the device and vendor fields are
+> >> mandatory and the rest are optional. As a result, store_new_id
+> >> will fill in default values that are then passed on to the driver
+> >> and can have unintended consequences.
+> >> 
+> >> As an example, consider the ixgbe driver and the 82599EB network card :
+> >> echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
+> >> 
+> >> This will pass a driver_data value of 0 to the driver whereas
+> >> the index 0 in ixgbe actually points to a different set of card
+> >> operations.
+> >> 
+> >> This change returns an error if the user attempts to add a dynid for
+> >> a vendor/device combination for which a static entry already exists.
+> >> However, if the user intentionally wants a different set of values,
+> >> she must provide all the 7 fields and that will be accepted.
+> >> 
+> >> In KVM/device assignment scenario, the user might want 
+> >> to bind a device back to the host driver by writing to new_id
+> >> and trip on a possible null pointer dereference.
+> >> 
+> >> Signed-off-by: Bandan Das <bsd@redhat.com>
+> >> ---
+> >> v2:
+> >> 1. Return error if there is a matching static entry
+> >> and change commit message to reflect this behavior
+> >> 3. Fill in a pdev and call pci_match_id instead of creating
+> >> a new matching function
+> >> 4. Change commit message to reflect that libvirt does not
+> >> depend on this behavior
+> >> 
+> >>  drivers/pci/pci-driver.c | 23 ++++++++++++++++++++++-
+> >>  1 file changed, 22 insertions(+), 1 deletion(-)
+> >> 
+> >> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> >> index 25f0bc6..493514e 100644
+> >> --- a/drivers/pci/pci-driver.c
+> >> +++ b/drivers/pci/pci-driver.c
+> >> @@ -103,11 +103,12 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+> >>  {
+> >>  	struct pci_driver *pdrv = to_pci_driver(driver);
+> >>  	const struct pci_device_id *ids = pdrv->id_table;
+> >> +	struct pci_dev *pdev;
+> >>  	__u32 vendor, device, subvendor=PCI_ANY_ID,
+> >>  		subdevice=PCI_ANY_ID, class=0, class_mask=0;
+> >>  	unsigned long driver_data=0;
+> >>  	int fields=0;
+> >> -	int retval;
+> >> +	int retval = 0;
+> >>  
+> >>  	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
+> >>  			&vendor, &device, &subvendor, &subdevice,
+> >> @@ -115,6 +116,26 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+> >>  	if (fields < 2)
+> >>  		return -EINVAL;
+> >>  
+> >> +	if (fields != 7) {
+> >
+> > nit, pdev could be declared within this scope.
+> 
+> Ok, will spin a new one.
+> 
+> >> +		pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+> >> +		if (!pdev)
+> >> +			return -ENOMEM;
+> >> +
+> >> +		pdev->vendor = vendor;
+> >> +		pdev->device = device;
+> >> +		pdev->subsystem_vendor = subvendor;
+> >> +		pdev->subsystem_device = subdevice;
+> >> +		pdev->class = class;
+> >
+> > Why not class_mask?
+> pdev->class_mask isn't used anywhere.
 
-Right, so, I'm trying to fix ftrace now, and I've hit a wall. It is as
-if changes to the kernel text PMD aren't being noticed after the
-kernel is running. Does anyone know why this might be happening?
+Ah, you're right.  Ok.  Thanks,
 
-Code and details here:
-https://lkml.org/lkml/2014/4/1/674
+Alex
 
--Kees
+> >> +
+> >> +		if (pci_match_id(pdrv->id_table, pdev))
+> >> +			retval = -EEXIST;
+> >> +
+> >> +		kfree(pdev);
+> >> +
+> >> +		if (retval)
+> >> +			return retval;
+> >> +	}
+> >> +
+> >>  	/* Only accept driver_data values that match an existing id_table
+> >>  	   entry */
+> >>  	if (ids) {
 
--- 
-Kees Cook
-Chrome OS Security
+
+
