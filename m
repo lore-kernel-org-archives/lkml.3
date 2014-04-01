@@ -1,66 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaDAPer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:34:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33852 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189AbaDAPep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:34:45 -0400
-Date: Tue, 1 Apr 2014 16:33:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] uprobes/x86: Conditionalize the usage of
-	handle_riprel_insn()
-Message-ID: <20140401143346.GA18503@redhat.com>
-References: <20140331194402.GA9287@redhat.com> <533A2FE3.3050101@hitachi.com>
+	id S1751716AbaDAPfD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:35:03 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:57967 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635AbaDAPe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 11:34:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533A2FE3.3050101@hitachi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <533ADC3A.6090800@oracle.com>
+References: <CA+5PVA67oBeHUiPXj0viNgrX+uDnJ9LsZSPXF1cLt_D511KKtA@mail.gmail.com>
+	<533ABCCB.4090502@oracle.com>
+	<CA+5PVA7eiCX_DHqkFx8t86naqs6o=rVcm0Ok5E2Pw9kXhSD_jg@mail.gmail.com>
+	<533AC08F.6020909@oracle.com>
+	<533ADC3A.6090800@oracle.com>
+Date: Tue, 1 Apr 2014 11:34:59 -0400
+X-Google-Sender-Auth: cz5jcQ3neiUz7UNa9e4RrPdRzOk
+Message-ID: <CA+5PVA4T_ibOCQoPXtY88_3J==FL7zmXMzyFQKwAh+O8OV6e3g@mail.gmail.com>
+Subject: Re: liblockdep soname versioning
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01, Masami Hiramatsu wrote:
+On Tue, Apr 1, 2014 at 11:33 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 04/01/2014 09:35 AM, Sasha Levin wrote:
+>>
+>> On 04/01/2014 09:28 AM, Josh Boyer wrote:
+>>>
+>>> On Tue, Apr 1, 2014 at 9:19 AM, Sasha Levin <sasha.levin@oracle.com>
+>>> wrote:
+>>>>
+>>>> On 04/01/2014 08:56 AM, Josh Boyer wrote:
+>>>>>
+>>>>>
+>>>>> Hi Sasha,
+>>>>>
+>>>>> We've had a request [1] to package up liblockdep in Fedora.  Looking
+>>>>> things over, I noticed the library isn't actually versioned at all and
+>>>>> instead just builds a plain .so file.  That's likely fine during
+>>>>> development of it, but if distros are to ship it for broader use then
+>>>>> it would be a good idea to specify the soname and use a versioned .so.
+>>>>>
+>>>>> The makefile already has LIBLOCKDEP_VERSION defined.  Would it be
+>>>>> possible to use this as the soname and version number?  Then
+>>>>> liblockdep.so could be the normal symlink to the versioned .so
+>>>>> (liblockdep.so.0.0.1 in this case).
+>>>>>
+>>>>> Thanks.
+>>>>>
+>>>>> josh
+>>>>>
+>>>>> [1] https://bugzilla.redhat.com/show_bug.cgi?id=1082763
+>>>>>
+>>>>
+>>>> Sure! I never expected it to live outside the kernel tree as a separate
+>>>> package, but I'm happy to accommodate for that.
+>>>>
+>>>> I think that I'll just match the version number with the kernel version
+>>>> since what mostly matters is what you have in kernel/lockdep.c, so for
+>>>> example, right now we'll have 'liblockdep.so.3.15.0'. Sounds good?
+>>>
+>>>
+>>> The only concern I would have is that it would require applications
+>>> linking to it to rebuild with every kernel release even if nothing
+>>> else changed.  Maybe nothing changing is going to be rare enough that
+>>> in practice people will need to rebuild anyway.  Either way, it's
+>>> better to be explicit rather than break users silently, so it sounds
+>>> good to me.
+>>
+>>
+>> I don't think we ever had a kernel version without changes to lockdep :)
+>>
+>> Since lockdep isn't an ABI either, no one promises me it'll work the same
+>> way between versions either, so I'm kinda happy about just forcing
+>> rebuilds.
 >
-> (2014/04/01 4:44), Oleg Nesterov wrote:
-> > arch_uprobe_analyze_insn() calls handle_riprel_insn() at the start,
-> > but only "0xff" and "default" cases need the UPROBE_FIX_RIP_ logic.
-> > Move the callsite into "default" case and change the "0xff" case to
-> > fall-through.
-> >
-> > We are going to add the various hooks to handle the rip-relative
-> > jmp/call instructions (and more), we need this change to enforce the
-> > fact that the new code can't conflict with is_riprel_insn() code.
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 >
-> Hmm, this seems not obviously reasonable at this point.
-> However, the code itself is not wrong. Could you merge
-> this change to that new hooks?
+> Hi Josh,
+>
+> Could you please confirm that the below is what you'd expect it to be:
+>
+> sasha@lappy:~/linux/tools/lib/lockdep$ make
+>   CC FPIC            common.o
+>   CC FPIC            lockdep.o
+>   CC FPIC            preload.o
+>   CC FPIC            rbtree.o
+>   BUILD STATIC LIB   liblockdep.a
+>   BUILD SHARED LIB   liblockdep.so.3.14.0
+>
+> sasha@lappy:~/linux/tools/lib/lockdep$ ls -al liblockdep.so
+> lrwxrwxrwx 1 sasha sasha 20 Apr  1 11:31 liblockdep.so ->
+> liblockdep.so.3.14.0
+>
+> sasha@lappy:~/linux/tools/lib/lockdep$ readelf -d liblockdep.so  | grep
+> SONAME
+>  0x000000000000000e (SONAME)             Library soname:
+> ["liblockdep.so.3.14.0"]
 
-Good point, I'll send v2.
+Yep, that does indeed look like what I would expect.  Thanks for such
+a quick turn around!
 
-I'd still prefer to do this in a separate patch if you do not object,
-and this patch should come after "add uprobe_xol_ops". In this case
-it should be more clear why do we need this change, and the changelog
-can tell more. Say, it can mention that otherwise uprobe_abort_xol()
-can be confused until at least we add uprobe_xol_ops->abort().
-
-And probably I'll add another patch into this series, "restart if
-->post_xol() fails" (see "TODO:" in 7/7). We need this change anyway
-to emulate the "call" insn. We could fix this before we add the hooks,
-but after 7/7 the change will be more simple/clear.
-
-Thanks!
-
-Oleg.
-
+josh
