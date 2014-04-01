@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaDAEJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:09:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53820 "EHLO
+	id S1752519AbaDAEKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:10:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450AbaDAEJe (ORCPT
+	with ESMTP id S1752487AbaDAEKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:09:34 -0400
+	Tue, 1 Apr 2014 00:10:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Sullivan <jsrhbz@kanargh.force9.co.uk>,
-        "Theodore Tso" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 01/22] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-Date: Mon, 31 Mar 2014 21:08:31 -0700
-Message-Id: <20140401040703.320575581@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.13 02/22] rcuwalk: recheck mount_lock after mountpoint crossing attempts
+Date: Mon, 31 Mar 2014 21:08:32 -0700
+Message-Id: <20140401040703.502846264@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -28,86 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
+commit b37199e626b31e1175fb06764c5d1d687723aac2 upstream.
 
-Use cmpxchg() to atomically set i_flags instead of clearing out the
-S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
-EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
-where an immutable file has the immutable flag cleared for a brief
-window of time.
+We can get false negative from __lookup_mnt() if an unrelated vfsmount
+gets moved.  In that case legitimize_mnt() is guaranteed to fail,
+and we will fall back to non-RCU walk... unless we end up running
+into a hard error on a filesystem object we wouldn't have reached
+if not for that false negative.  IOW, delaying that check until
+the end of pathname resolution is wrong - we should recheck right
+after we attempt to cross the mountpoint.  We don't need to recheck
+unless we see d_mountpoint() being true - in that case even if
+we have just raced with mount/umount, we can simply go on as if
+we'd come at the moment when the sucker wasn't a mountpoint; if we
+run into a hard error as the result, it was a legitimate outcome.
+__lookup_mnt() returning NULL is different in that respect, since
+it might've happened due to operation on completely unrelated
+mountpoint.
 
-Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c        |   15 +++++++++------
- include/linux/bitops.h |   15 +++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
+ fs/namei.c |   29 +++++++++++++----------------
+ 1 file changed, 13 insertions(+), 16 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -38,6 +38,7 @@
- #include <linux/slab.h>
- #include <linux/ratelimit.h>
- #include <linux/aio.h>
-+#include <linux/bitops.h>
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1098,7 +1098,7 @@ static bool __follow_mount_rcu(struct na
+ 			return false;
  
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -3926,18 +3927,20 @@ int ext4_get_inode_loc(struct inode *ino
- void ext4_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT4_I(inode)->i_flags;
-+	unsigned int new_fl = 0;
+ 		if (!d_mountpoint(path->dentry))
+-			break;
++			return true;
  
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
- 	if (flags & EXT4_SYNC_FL)
--		inode->i_flags |= S_SYNC;
-+		new_fl |= S_SYNC;
- 	if (flags & EXT4_APPEND_FL)
--		inode->i_flags |= S_APPEND;
-+		new_fl |= S_APPEND;
- 	if (flags & EXT4_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
-+		new_fl |= S_IMMUTABLE;
- 	if (flags & EXT4_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
-+		new_fl |= S_NOATIME;
- 	if (flags & EXT4_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+		new_fl |= S_DIRSYNC;
-+	set_mask_bits(&inode->i_flags,
-+		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
+ 		mounted = __lookup_mnt(path->mnt, path->dentry);
+ 		if (!mounted)
+@@ -1114,20 +1114,7 @@ static bool __follow_mount_rcu(struct na
+ 		 */
+ 		*inode = path->dentry->d_inode;
+ 	}
+-	return true;
+-}
+-
+-static void follow_mount_rcu(struct nameidata *nd)
+-{
+-	while (d_mountpoint(nd->path.dentry)) {
+-		struct mount *mounted;
+-		mounted = __lookup_mnt(nd->path.mnt, nd->path.dentry);
+-		if (!mounted)
+-			break;
+-		nd->path.mnt = &mounted->mnt;
+-		nd->path.dentry = mounted->mnt.mnt_root;
+-		nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
+-	}
++	return read_seqretry(&mount_lock, nd->m_seq);
  }
  
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -196,6 +196,21 @@ static inline unsigned long __ffs64(u64
+ static int follow_dotdot_rcu(struct nameidata *nd)
+@@ -1155,7 +1142,17 @@ static int follow_dotdot_rcu(struct name
+ 			break;
+ 		nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
+ 	}
+-	follow_mount_rcu(nd);
++	while (d_mountpoint(nd->path.dentry)) {
++		struct mount *mounted;
++		mounted = __lookup_mnt(nd->path.mnt, nd->path.dentry);
++		if (!mounted)
++			break;
++		nd->path.mnt = &mounted->mnt;
++		nd->path.dentry = mounted->mnt.mnt_root;
++		nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
++		if (!read_seqretry(&mount_lock, nd->m_seq))
++			goto failed;
++	}
+ 	nd->inode = nd->path.dentry->d_inode;
+ 	return 0;
  
- #ifdef __KERNEL__
- 
-+#ifndef set_mask_bits
-+#define set_mask_bits(ptr, _mask, _bits)	\
-+({								\
-+	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
-+	typeof(*ptr) old, new;					\
-+								\
-+	do {							\
-+		old = ACCESS_ONCE(*ptr);			\
-+		new = (old & ~mask) | bits;			\
-+	} while (cmpxchg(ptr, old, new) != old);		\
-+								\
-+	new;							\
-+})
-+#endif
-+
- #ifndef find_last_bit
- /**
-  * find_last_bit - find the last set bit in a memory region
 
 
