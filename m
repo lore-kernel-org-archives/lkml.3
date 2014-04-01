@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaDALSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42550 "EHLO
+	id S1752925AbaDALlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:41:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42579 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaDALSE (ORCPT
+	with ESMTP id S1752623AbaDALSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:04 -0400
+	Tue, 1 Apr 2014 07:18:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heinz Mauelshagen <heinzm@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Arnd Bergmann <arnd@arndb.de>, Neil Horman <nhorman@tuxdriver.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 093/144] dm cache: fix access beyond end of origin device
-Date: Tue,  1 Apr 2014 12:14:57 +0100
-Message-Id: <1396350948-29910-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 098/144] vmxnet3: fix building without CONFIG_PCI_MSI
+Date: Tue,  1 Apr 2014 12:15:02 +0100
+Message-Id: <1396350948-29910-99-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,64 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit e893fba90c09f9b57fb97daae204ea9cc2c52fa5 upstream.
+commit 0a8d8c446b5429d15ff2d48f46e00d8a08552303 upstream.
 
-In order to avoid wasting cache space a partial block at the end of the
-origin device is not cached.  Unfortunately, the check for such a
-partial block at the end of the origin device was flawed.
+Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
+the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
+because it unconditionally references the vmxnet3_msix_rx()
+function.
 
-Fix accesses beyond the end of the origin device that occured due to
-attempted promotion of an undetected partial block by:
+To fix this, use the same #ifdef in the caller that exists around
+the function definition.
 
-- initializing the per bio data struct to allow cache_end_io to work properly
-- recognizing access to the partial block at the end of the origin device
-- avoiding out of bounds access to the discard bitset
-
-Otherwise, users can experience errors like the following:
-
- attempt to access beyond end of device
- dm-5: rw=0, want=20971520, limit=20971456
- ...
- device-mapper: cache: promotion failed; couldn't copy block
-
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: "VMware, Inc." <pv-drivers@vmware.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-cache-target.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/vmxnet3/vmxnet3_drv.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index e36beca..a2d7e04 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2179,20 +2179,18 @@ static int cache_map(struct dm_target *ti, struct bio *bio)
- 	bool discarded_block;
- 	struct dm_bio_prison_cell *cell;
- 	struct policy_result lookup_result;
--	struct per_bio_data *pb;
-+	struct per_bio_data *pb = init_per_bio_data(bio, pb_data_size);
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 434837f..d081585 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1740,13 +1740,16 @@ static void
+ vmxnet3_netpoll(struct net_device *netdev)
+ {
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+-	int i;
  
--	if (from_oblock(block) > from_oblock(cache->origin_blocks)) {
-+	if (unlikely(from_oblock(block) >= from_oblock(cache->origin_blocks))) {
- 		/*
- 		 * This can only occur if the io goes to a partial block at
- 		 * the end of the origin device.  We don't cache these.
- 		 * Just remap to the origin and carry on.
- 		 */
--		remap_to_origin_clear_discard(cache, bio, block);
-+		remap_to_origin(cache, bio);
- 		return DM_MAPIO_REMAPPED;
- 	}
- 
--	pb = init_per_bio_data(bio, pb_data_size);
--
- 	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA | REQ_DISCARD)) {
- 		defer_bio(cache, bio);
- 		return DM_MAPIO_SUBMITTED;
+ 	switch (adapter->intr.type) {
+-	case VMXNET3_IT_MSIX:
++#ifdef CONFIG_PCI_MSI
++	case VMXNET3_IT_MSIX: {
++		int i;
+ 		for (i = 0; i < adapter->num_rx_queues; i++)
+ 			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
+ 		break;
++	}
++#endif
+ 	case VMXNET3_IT_MSI:
+ 	default:
+ 		vmxnet3_intr(0, adapter->netdev);
 -- 
 1.9.1
 
