@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaDAMMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:12:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42231 "EHLO
+	id S1751870AbaDALQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:16:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42217 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844AbaDALQm (ORCPT
+	with ESMTP id S1751844AbaDALQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:16:42 -0400
+	Tue, 1 Apr 2014 07:16:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 034/144] can: flexcan: factor out transceiver {en,dis}able into seperate functions
-Date: Tue,  1 Apr 2014 12:13:58 +0100
-Message-Id: <1396350948-29910-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 031/144] can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
+Date: Tue,  1 Apr 2014 12:13:55 +0100
+Message-Id: <1396350948-29910-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -29,69 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit f003698e23f6f56a791774f14d0ac35d04872490 upstream.
+commit 7e9e148af01ef388efb6e2490805970be4622792 upstream.
 
-This patch moves the transceiver enable and disable into seperate functions,
-where the NULL pointer check is hidden.
+If flexcan_chip_start() in flexcan_open() fails, the interrupt is not freed,
+this patch adds the missing cleanup.
 
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/can/flexcan.c | 27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+ drivers/net/can/flexcan.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index c9ea959..d065715 100644
+index ce3ee69..394b2eb 100644
 --- a/drivers/net/can/flexcan.c
 +++ b/drivers/net/can/flexcan.c
-@@ -261,6 +261,22 @@ static inline void flexcan_write(u32 val, void __iomem *addr)
- }
- #endif
+@@ -860,7 +860,7 @@ static int flexcan_open(struct net_device *dev)
+ 	/* start chip and queuing */
+ 	err = flexcan_chip_start(dev);
+ 	if (err)
+-		goto out_close;
++		goto out_free_irq;
  
-+static inline int flexcan_transceiver_enable(const struct flexcan_priv *priv)
-+{
-+	if (!priv->reg_xceiver)
-+		return 0;
-+
-+	return regulator_enable(priv->reg_xceiver);
-+}
-+
-+static inline int flexcan_transceiver_disable(const struct flexcan_priv *priv)
-+{
-+	if (!priv->reg_xceiver)
-+		return 0;
-+
-+	return regulator_disable(priv->reg_xceiver);
-+}
-+
- static inline int flexcan_has_and_handle_berr(const struct flexcan_priv *priv,
- 					      u32 reg_esr)
- {
-@@ -805,11 +821,9 @@ static int flexcan_chip_start(struct net_device *dev)
- 	if (priv->devtype_data->features & FLEXCAN_HAS_V10_FEATURES)
- 		flexcan_write(0x0, &regs->rxfgmask);
+ 	can_led_event(dev, CAN_LED_EVENT_OPEN);
  
--	if (priv->reg_xceiver)	{
--		err = regulator_enable(priv->reg_xceiver);
--		if (err)
--			goto out;
--	}
-+	err = flexcan_transceiver_enable(priv);
-+	if (err)
-+		goto out;
+@@ -869,6 +869,8 @@ static int flexcan_open(struct net_device *dev)
  
- 	/* synchronize with the can bus */
- 	reg_mcr = flexcan_read(&regs->mcr);
-@@ -854,8 +868,7 @@ static void flexcan_chip_stop(struct net_device *dev)
- 	flexcan_write(priv->reg_ctrl_default & ~FLEXCAN_CTRL_ERR_ALL,
- 		      &regs->ctrl);
+ 	return 0;
  
--	if (priv->reg_xceiver)
--		regulator_disable(priv->reg_xceiver);
-+	flexcan_transceiver_disable(priv);
- 	priv->can.state = CAN_STATE_STOPPED;
- 
- 	return;
++ out_free_irq:
++	free_irq(dev->irq, dev);
+  out_close:
+ 	close_candev(dev);
+  out:
 -- 
 1.9.1
 
