@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaDAXSd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 19:18:33 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:36721 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899AbaDAXS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 19:18:27 -0400
-Date: Tue, 1 Apr 2014 16:18:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401231822.GC4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
- <20140401150849.GA14757@redhat.com>
- <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
- <20140401180414.GA12326@redhat.com>
- <20140401183245.GA12473@linux.vnet.ibm.com>
- <20140401221616.GA961@redhat.com>
+	id S1754156AbaDAXRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 19:17:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40977 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753175AbaDAXRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 19:17:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,776,1389772800"; 
+   d="scan'208";a="512710030"
+Date: Tue, 1 Apr 2014 16:17:41 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, gleb@redhat.com,
+        hpa@zytor.com, hubicka@ucw.cz, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pbonzini@redhat.com, perex@perex.cz,
+        peterz@infradead.org, rostedt@goodmis.org, rusty@rustcorp.com.au,
+        tglx@linutronix.de
+Subject: Re: [GIT PULL] x86 LTO changes for v3.15
+Message-ID: <20140401231741.GM32556@tassilo.jf.intel.com>
+References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
+ <1396385391.23763.30.camel@x220>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140401221616.GA961@redhat.com>
+In-Reply-To: <1396385391.23763.30.camel@x220>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040123-3532-0000-0000-000000B9EE21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 06:16:16PM -0400, Dave Jones wrote:
-> On Tue, Apr 01, 2014 at 11:32:45AM -0700, Paul E. McKenney wrote:
+On Tue, Apr 01, 2014 at 10:49:51PM +0200, Paul Bolle wrote:
+> On Mon, 2014-03-31 at 14:05 -0700, H. Peter Anvin wrote:
+> > --- a/include/linux/init.h
+> > +++ b/include/linux/init.h
+> > @@ -163,6 +163,23 @@ extern bool initcall_debug;
+> >  
+> >  #ifndef __ASSEMBLY__
+> >  
+> > +#ifdef CONFIG_LTO
 > 
->  > >  > Given that you have CONFIG_RCU_TRACE=y, could you please enable the
->  > >  > following trace events and dump the trace before things hang?
->  > >  > 
->  > >  > 	trace_event=rcu:rcu_grace_period,rcu:rcu_grace_period_init
->  > >  > 
->  > >  > If it is not feasible to dump the trace before things hang, let me
->  > >  > know, and I will work out some other diagnostic regime.
->  > > 
->  > > I'll give that a shot when I get back in a few hours.
-> 
-> ok, this is tricky, and I'm not sure how helpful the below is.
-> because I don't know when the hang is going to happen, in parallel to my usual workload
-> I did this..
-> while [ 1 ];
-> do
->   cat trace
->   echo > trace
-> done
-> 
-> and got this...
-> 
-> 
-> 
-> # entries-in-buffer/entries-written: 7/7   #P:4
-> #
-> #                              _-----=> irqs-off
-> #                             / _----=> need-resched
-> #                            | / _---=> hardirq/softirq
-> #                            || / _--=> preempt-depth
-> #                            ||| /     delay
-> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> #              | |       |   ||||       |         |
->           <idle>-0     [000] dNs3   851.748475: rcu_grace_period: rcu_preempt 21342 cpuend
->           <idle>-0     [000] dNs3   851.748477: rcu_grace_period: rcu_preempt 21343 cpustart
->           <idle>-0     [000] dNs3   851.748477: rcu_grace_period: rcu_sched 20080 cpuend
->           <idle>-0     [000] dN.2   851.748480: rcu_grace_period: rcu_preempt 21343 cpuqs
->      rcu_preempt-9     [000] ...1   851.748485: rcu_grace_period: rcu_preempt 21343 fqsstart
->      rcu_preempt-9     [000] ...1   851.748487: rcu_grace_period: rcu_preempt 21343 fqsend
->      rcu_preempt-9     [000] ...1   851.748487: rcu_grace_period: rcu_preempt 21343 fqswait
-> # tracer: nop
-> #
-> # entries-in-buffer/entries-written: 13/13   #P:4
-> #
-> #                              _-----=> irqs-off
-> #                             / _----=> need-resched
-> #                            | / _---=> hardirq/softirq
-> #                            || / _--=> preempt-depth
-> #                            ||| /     delay
-> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> #              | |       |   ||||       |         |
->      rcu_preempt-9     [003] d..2   851.878457: rcu_grace_period: rcu_preempt 21349 end
->      rcu_preempt-9     [003] d..2   851.878459: rcu_grace_period: rcu_preempt 21349 newreq
->      rcu_preempt-9     [003] ...1   851.878459: rcu_grace_period: rcu_preempt 21349 reqwait
->      rcu_preempt-9     [003] d..2   851.878460: rcu_grace_period: rcu_preempt 21350 start
->      rcu_preempt-9     [003] d..2   851.878461: rcu_grace_period: rcu_preempt 21350 cpustart
->      rcu_preempt-9     [003] d..2   851.878462: rcu_grace_period_init: rcu_preempt 21350 0 0 7 f
->      rcu_preempt-9     [003] ...1   851.878463: rcu_grace_period: rcu_preempt 21350 fqswait
->      rcu_preempt-9     [003] d..2   851.878464: rcu_grace_period: rcu_preempt 21350 cpuqs
->           <idle>-0     [000] dNs3   851.878482: rcu_grace_period: rcu_preempt 21349 cpuend
->           <idle>-0     [000] dNs3   851.878483: rcu_grace_period: rcu_preempt 21350 cpustart
->           <idle>-0     [000] dNs3   851.878484: rcu_grace_period: rcu_sched 20086 cpuend
->           <idle>-0     [000] .N.2   851.878486: rcu_grace_period: rcu_sched 20086 cpuqs
->           <idle>-0     [000] dN.2   851.878487: rcu_grace_period: rcu_preempt 21350 cpuqs
-> 
-> 
-> followed by a half dozen 'empty' traces before it totally locked up.
+> I can't find a Kconfig symbol LTO nor a preprocessor define for
+> CONFIG_LTO. (I only checked master of Linus's tree and linux-next.)
 
-Cool, thank you!
+The patch for LTO is not merged yet, this is all preparation.
 
-Could you please also send the RCU CPU stall warning messages?
+> 
+> Why is this check for CONFIG_LTO needed?
 
-							Thanx, Paul
+The comment just below describes the problem.
 
+Or is your question what LTO is? Link Time Optimization
+
+> 
+> > +/* Work around a LTO gcc problem: when there is no reference to a variable
+> > + * in a module it will be moved to the end of the program. This causes
+> > + * reordering of initcalls which the kernel does not like.
+> > + * Add a dummy reference function to avoid this. The function is
+> > + * deleted by the linker.
+> > + */
+> > +#define LTO_REFERENCE_INITCALL(x) \
+> > +	; /* yes this is needed */			\
+> > +	static __used __exit void *reference_##x(void)	\
+> > +	{						\
+> > +		return &x;				\
+> > +	}
+> > +#else
+> > +#define LTO_REFERENCE_INITCALL(x)
+> > +#endif
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
