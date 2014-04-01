@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292AbaDALYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:24:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42771 "EHLO
+	id S1753296AbaDALZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:25:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42765 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903AbaDALTE (ORCPT
+	with ESMTP id S1753012AbaDALTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 07:19:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 134/144] [media] cxusb: unlock on error in cxusb_i2c_xfer()
-Date: Tue,  1 Apr 2014 12:15:38 +0100
-Message-Id: <1396350948-29910-135-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 135/144] [media] cx18: check for allocation failure in cx18_read_eeprom()
+Date: Tue,  1 Apr 2014 12:15:39 +0100
+Message-Id: <1396350948-29910-136-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -30,84 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1cdbcc5db4e6d51ce9bb1313195167cada9aa6e9 upstream.
+commit e351bf25fa373a3de0be2141b962c5c3c27006a2 upstream.
 
-We recently introduced some new error paths which are missing their
-unlocks.
-Fixes: 64f7ef8afbf8 ('[media] cxusb: Don't use dynamic static allocation')
+It upsets static checkers when we don't check for allocation failure.  I
+moved the memset() of "tv" earlier so we don't use uninitialized data on
+error.
+Fixes: 1d212cf0c2d8 ('[media] cx18: struct i2c_client is too big for stack')
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Andy Walls <awalls@md.metrocast.net>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/usb/dvb-usb/cxusb.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ drivers/media/pci/cx18/cx18-driver.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/dvb-usb/cxusb.c b/drivers/media/usb/dvb-usb/cxusb.c
-index 20e345d..a1c641e 100644
---- a/drivers/media/usb/dvb-usb/cxusb.c
-+++ b/drivers/media/usb/dvb-usb/cxusb.c
-@@ -149,6 +149,7 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
- 			  int num)
- {
- 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
-+	int ret;
- 	int i;
+diff --git a/drivers/media/pci/cx18/cx18-driver.c b/drivers/media/pci/cx18/cx18-driver.c
+index 6386ced..91c694b 100644
+--- a/drivers/media/pci/cx18/cx18-driver.c
++++ b/drivers/media/pci/cx18/cx18-driver.c
+@@ -327,13 +327,16 @@ void cx18_read_eeprom(struct cx18 *cx, struct tveeprom *tv)
+ 	struct i2c_client *c;
+ 	u8 eedata[256];
  
- 	if (mutex_lock_interruptible(&d->i2c_mutex) < 0)
-@@ -173,7 +174,8 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
- 			if (1 + msg[i].len > sizeof(ibuf)) {
- 				warn("i2c rd: len=%d is too big!\n",
- 				     msg[i].len);
--				return -EOPNOTSUPP;
-+				ret = -EOPNOTSUPP;
-+				goto unlock;
- 			}
- 			obuf[0] = 0;
- 			obuf[1] = msg[i].len;
-@@ -193,12 +195,14 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
- 			if (3 + msg[i].len > sizeof(obuf)) {
- 				warn("i2c wr: len=%d is too big!\n",
- 				     msg[i].len);
--				return -EOPNOTSUPP;
-+				ret = -EOPNOTSUPP;
-+				goto unlock;
- 			}
- 			if (1 + msg[i + 1].len > sizeof(ibuf)) {
- 				warn("i2c rd: len=%d is too big!\n",
- 				     msg[i + 1].len);
--				return -EOPNOTSUPP;
-+				ret = -EOPNOTSUPP;
-+				goto unlock;
- 			}
- 			obuf[0] = msg[i].len;
- 			obuf[1] = msg[i+1].len;
-@@ -223,7 +227,8 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
- 			if (2 + msg[i].len > sizeof(obuf)) {
- 				warn("i2c wr: len=%d is too big!\n",
- 				     msg[i].len);
--				return -EOPNOTSUPP;
-+				ret = -EOPNOTSUPP;
-+				goto unlock;
- 			}
- 			obuf[0] = msg[i].addr;
- 			obuf[1] = msg[i].len;
-@@ -237,8 +242,14 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
- 		}
- 	}
- 
-+	if (i == num)
-+		ret = num;
-+	else
-+		ret = -EREMOTEIO;
++	memset(tv, 0, sizeof(*tv));
 +
-+unlock:
- 	mutex_unlock(&d->i2c_mutex);
--	return i == num ? num : -EREMOTEIO;
-+	return ret;
- }
+ 	c = kzalloc(sizeof(*c), GFP_KERNEL);
++	if (!c)
++		return;
  
- static u32 cxusb_i2c_func(struct i2c_adapter *adapter)
+ 	strlcpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
+ 	c->adapter = &cx->i2c_adap[0];
+ 	c->addr = 0xa0 >> 1;
+ 
+-	memset(tv, 0, sizeof(*tv));
+ 	if (tveeprom_read(c, eedata, sizeof(eedata)))
+ 		goto ret;
+ 
 -- 
 1.9.1
 
