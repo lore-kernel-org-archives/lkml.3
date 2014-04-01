@@ -1,115 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058AbaDAGwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 02:52:44 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:53999 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaDAGw0 (ORCPT
+	id S1751903AbaDAG73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 02:59:29 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:53398 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaDAG72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 02:52:26 -0400
-Date: Tue, 1 Apr 2014 08:52:18 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [GIT PULL] s390 patches for the 3.15 merge window
-Message-ID: <20140401085218.72f67e51@mschwide>
-In-Reply-To: <CA+55aFzPP6kBzWrcvps6NVu=f-FUtrfs1U6DyRpdwX6hH6PM-Q@mail.gmail.com>
-References: <20140331092400.17071766@mschwide>
-	<CA+55aFzPP6kBzWrcvps6NVu=f-FUtrfs1U6DyRpdwX6hH6PM-Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 1 Apr 2014 02:59:28 -0400
+Message-ID: <533A63C8.70800@hitachi.com>
+Date: Tue, 01 Apr 2014 15:59:20 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: Re: [PATCH 14/28] ktap: add runtime/kp_events.[c|h]
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com> <1396014469-5937-15-git-send-email-jovi.zhangwei@gmail.com> <533930EF.8080703@hitachi.com> <CAGdX0WHarh12K_2D8M=UAtwEJaZr_eZupXzsw-SXqd2X4NGTmg@mail.gmail.com>
+In-Reply-To: <CAGdX0WHarh12K_2D8M=UAtwEJaZr_eZupXzsw-SXqd2X4NGTmg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040106-1948-0000-0000-0000084FC821
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Mar 2014 14:45:32 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Mon, Mar 31, 2014 at 12:24 AM, Martin Schwidefsky
-> <schwidefsky@de.ibm.com> wrote:
-> >
-> > There are two memory management related changes, the CMMA support for
-> > KVM to avoid swap-in of freed pages and the split page table lock for
-> > the PMD level. These two come with common code changes in mm/.
+(2014/03/31 19:14), Jovi Zhangwei wrote:
+> On Mon, Mar 31, 2014 at 5:10 PM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> (2014/03/28 22:47), Jovi Zhangwei wrote:
+>>> kp_events.c handle ktap events management(registry, destroy, event callback)
+>>>
+>>> This file is core event management interface between ktap and kernel.
+>>>
+>>> Exposed functions:
+>>> 1). kp_events_init/kp_events_exit
+>>>
+>>> 2). kp_event_create_kprobe
+>>>         create kprobe event, for example:
+>>>                 kdebug.kprobe("SyS_futex", function () {})
+>>>
+>>> 3). kp_event_create_tracepoint
+>>>         create tracepoint event, for example"
+>>>                 kdebug.tracepoint("sys_futex_enter", function () {})
+>>>
+>>> 4). kp_event_create
+>>>         create perf backend event, for example:
+>>>                 trace sched:sched_switch { print(argstr) }
+>>>
+>>>         It call kernel function 'perf_event_create_kernel_counter' to
+>>>         register event(tracepoint/kprobe/uprobe)
+>>>
+>>> 5). kp_event_getarg
+>>>         get argument of event, from arg0 to arg9,
+>>>         only can be called in probe context.
+>>>                 trace sched:sched_switch { print(arg0, arg1) }
+>>>
+>>> 6). kp_event_stringify/kp_event_tostr
+>>>         stringify argstr, sometimes if store argstr as key to table,
+>>>         then it need to stringify firstly, like below:
+>>>                 var s={} trace sched:sched_switch { s[argstr] += 1 }
+>>>         (This is quite rare usage, but ktap support it)
+>>>
+>>> Note:
+>>> Why ktap support 'kdebug.kprobe' and 'kdebug.tracepoint' when
+>>> it already support perf backend event(trace xxx {})?
+>>>
+>>> Because benchmark shows raw kprobe and tracpoint interface is faster
+>>> than perf backed tracing, nearly 10+%, it's more fair to compare
+>>> with Systemtap by raw tracing syntax, not perf backend tracing.
+>>>
+>>
+>> Do we really need it just for a +10% performance? I doubt that.
+>> I think the benefit point of ktap is "dynamic & simple programmable
+>> tracer in kernel", not the good performance at least at this point.
+>> Thus I think we should start ktap only with perf backend.
+>>
+> Yeah, agreed, most people like the perf-backed tracing syntax,
+> that raw trace interface is just for benchmark when I wanted to look
+> overhead compare with stap, the result is very inspiring, ktap table
+> operation overhead is lower than stap.
 > 
-> Ugh. I pulled it, but things like this makes me want to dig my eyes
-> out with a spoon:
-> 
->   +#ifdef finish_arch_post_lock_switch
->   +        finish_arch_post_lock_switch();
->   +#endif
-> 
-> when I think the proper thing to do would have been to move the
-> #ifndef that creates an empty finish_arch_post_lock_switch() from
-> kernel/sched/sched.h to some common file, or possibly even just
-> duplicate it.
-> 
-> I detest #ifdef's in the middle of code. Yes, we do have them, but we
-> should try to avoid adding more of them.
-> 
-> Maybe we could have a <linux/mmu_context.h> that includes the
-> <asm/mmu_context.h> and then does that "let's add the dummy function
-> for architectures that don't need it"?
-> 
-> Added Ingo to the cc, since this ends up intersecting with the
-> scheduler code that now does the wrapper on its own.
+> On the performance overhead of dynamic tracing tools(ktap/stap/dtrace),
+> it's interesting enough that dtrace was used in production many year,
+> _but_ IMO the runtime of dtrace is slow after I checked dtrace source
+> code :),  system workload does big matter than tracing tool overhead.
 
-Yes, I feel the pain. I actually tried to move the finish_arch_post_lock_switch
-to linux/mmu_context.h but it turned out that this does not work. It broke
-the corgi_defconfig, this is what I got from the friendly kbuild test robot:
+Yeah, I see that less overhead is also required especially for enterprise
+people. I just doubt that it is solved by ktap itself. Should we improve
+perf(or ftrace) to export more effective interfaces for this kind of
+tracers?
 
--- snip
-
-tree:   git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git features
-head:   05bb2956f28ff01a102bf16702ba7bcb116ecf72
-commit: 8f6d84ba48d8d4377c61477803c8ff2cd4b007b7 [10/14] sched/mm: call finish_arch_post_lock_switch in idle_task_exit and use_mm
-config: make ARCH=arm corgi_defconfig
-
-All error/warnings:
-
-   In file included from include/linux/mmu_context.h:5:0,
-                    from drivers/usb/gadget/inode.c:27:
-   arch/arm/include/asm/mmu_context.h: In function 'finish_arch_post_lock_switch':
->> arch/arm/include/asm/mmu_context.h:82:3: error: implicit declaration of function 'preempt_enable_no_resched' [-Werror=implicit-function-declaration]  
-   cc1: some warnings being treated as errors
-
-vim +/preempt_enable_no_resched +82 arch/arm/include/asm/mmu_context.h
-
-bdae73cd arch/arm/include/asm/mmu_context.h Catalin Marinas 2013-07-23  76  		 */
-bdae73cd arch/arm/include/asm/mmu_context.h Catalin Marinas 2013-07-23  77  		preempt_disable();
-bdae73cd arch/arm/include/asm/mmu_context.h Catalin Marinas 2013-07-23  78  		if (mm->context.switch_pending) {
-bdae73cd arch/arm/include/asm/mmu_context.h Catalin Marinas 2013-07-23  79  			mm->context.switch_pending = 0;
-bdae73cd arch/arm/include/asm/mmu_context.h Catalin Marinas 2013-07-23  80  			cpu_switch_mm(mm->pgd, mm);
-bdae73cd arch/arm/include/asm/mmu_context.h Catalin Marinas 2013-07-23  81  		}
-bdae73cd arch/arm/include/asm/mmu_context.h Catalin Marinas 2013-07-23 @82  		preempt_enable_no_resched();
-b9d4d42a arch/arm/include/asm/mmu_context.h Catalin Marinas 2011-11-28  83  	}
-b9d4d42a arch/arm/include/asm/mmu_context.h Catalin Marinas 2011-11-28  84  }
-^1da177e include/asm-arm/mmu_context.h      Linus Torvalds  2005-04-16  85  
-
-:::::: The code at line 82 was first introduced by commit
-:::::: bdae73cd374e28db544fdd9b77de689a36e3c129 ARM: 7790/1: Fix deferred mm switch on VIVT processors
-
-:::::: TO: Catalin Marinas <catalin.marinas@arm.com>
-:::::: CC: Russell King <rmk+kernel@arm.linux.org.uk>
-
--- snip
-
-I gave up after a few hours trying to solve the header dependencies, the two
-trouble makes are alpha with the task_thread_info call in mmu_context.h and
-arm with the preempt_enable_no_resched call. Welcome to include file hell.
-
+Thank you,
 
 -- 
-blue skies,
-   Martin.
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-"Reality continues to ruin my life." - Calvin.
 
