@@ -1,230 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaDARqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 13:46:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8955 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452AbaDARou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 13:44:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,774,1389772800"; 
-   d="scan'208";a="504496641"
-From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/4] asmlinkage: Add explicit __visible to drivers/*, lib/*, kernel/*
-Date: Tue,  1 Apr 2014 19:32:37 +0200
-Message-Id: <1396373557-3387-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1396373557-3387-1-git-send-email-andi@firstfloor.org>
-References: <1396373557-3387-1-git-send-email-andi@firstfloor.org>
+	id S1751687AbaDARwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 13:52:16 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:57426 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaDARwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 13:52:14 -0400
+Message-ID: <533AFCC3.3030504@ahsoftware.de>
+Date: Tue, 01 Apr 2014 19:52:03 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Levente Kurusa <levex@linux.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 2/2 v3] initramfs: print error and shell out for unsupported
+ content
+References: <532CC625.7020509@ahsoftware.de> <1395491361-28069-1-git-send-email-holler@ahsoftware.de> <1395491361-28069-2-git-send-email-holler@ahsoftware.de> <532DD4E7.3070706@ahsoftware.de> <5339D096.4040302@suse.cz> <533AA1A0.10802@ahsoftware.de> <533AAFCB.7060409@suse.cz>
+In-Reply-To: <533AAFCB.7060409@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Am 01.04.2014 14:23, schrieb Michal Marek:
+> On 2014-04-01 13:23, Alexander Holler wrote:
+>> But as I already said, trying to use arbitrary filenames in a Makefile
+>> doesn't really work. There are still other problems, e.g. filenames with
+>> a / (directory separator), *, or some of the special make variables like $<.
+>>
+>> So the really working solution would be to get rid of that generated
+>> (and hidden) include. Modifying gen_init_cpio.c to browse and collect
+>> all filenames and types itself doesn't look like much work (an evening
+>> should be enough).
+>>
+>> The drawback is that such a solution would build the initramfs every
+>> time make is called (while CONFIG_INITRAMFS_SOURCE points to a
+>> directory), but I think that time is negligible.
+>
+> Well, the cpio is embedded in the kernel image, so a rebuild of the cpio
+> means a relink of the kernel. One option would be to implement the
+> timestamp checking in gen_init_cpio.c, but I'm not sure if that's worth it.
 
-As requested by Linus add explicit __visible to the asmlinkage users.
-This marks both functions visible to assembler and some functions
-defined in assembler to make it clear to the  compiler that they
-exist elsewhere.
+I can't answer that too, but if someone spends the time implement the 
+directory traversing and collecting stats, it would just be one stat 
+more (to get the timestamp of an maybe already built cpio archive).
 
-Tree sweep for rest of tree.
+But I'm fine with just avoiding the most common problems (in my case 
+colons and spaces). And the little patch which makes sure that make 
+clean, distclean or mrproper will work always, avoids the need to search 
+how to fix the problem (deleting that hidden include) once a broken 
+include was generated.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/pnp/pnpbios/bioscalls.c |  2 +-
- init/main.c                     |  2 +-
- kernel/context_tracking.c       |  2 +-
- kernel/locking/lockdep.c        |  2 +-
- kernel/power/snapshot.c         |  2 +-
- kernel/printk/printk.c          |  4 ++--
- kernel/sched/core.c             | 10 +++++-----
- kernel/softirq.c                |  4 ++--
- lib/dump_stack.c                |  4 ++--
- 9 files changed, 16 insertions(+), 16 deletions(-)
+Regards,
 
-diff --git a/drivers/pnp/pnpbios/bioscalls.c b/drivers/pnp/pnpbios/bioscalls.c
-index deb7f4b..438d4c7 100644
---- a/drivers/pnp/pnpbios/bioscalls.c
-+++ b/drivers/pnp/pnpbios/bioscalls.c
-@@ -37,7 +37,7 @@ __visible struct {
-  * kernel begins at offset 3GB...
-  */
- 
--asmlinkage void pnp_bios_callfunc(void);
-+asmlinkage __visible void pnp_bios_callfunc(void);
- 
- __asm__(".text			\n"
- 	__ALIGN_STR "\n"
-diff --git a/init/main.c b/init/main.c
-index 9c7fd4c..48655ce 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -476,7 +476,7 @@ static void __init mm_init(void)
- 	vmalloc_init();
- }
- 
--asmlinkage void __init start_kernel(void)
-+asmlinkage __visible void __init start_kernel(void)
- {
- 	char * command_line;
- 	extern const struct kernel_param __start___param[], __stop___param[];
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 6cb20d2..019d450 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -120,7 +120,7 @@ void context_tracking_user_enter(void)
-  * instead of preempt_schedule() to exit user context if needed before
-  * calling the scheduler.
-  */
--asmlinkage void __sched notrace preempt_schedule_context(void)
-+asmlinkage __visible void __sched notrace preempt_schedule_context(void)
- {
- 	enum ctx_state prev_ctx;
- 
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index b0e9467..d24e433 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -4188,7 +4188,7 @@ void debug_show_held_locks(struct task_struct *task)
- }
- EXPORT_SYMBOL_GPL(debug_show_held_locks);
- 
--asmlinkage void lockdep_sys_exit(void)
-+asmlinkage __visible void lockdep_sys_exit(void)
- {
- 	struct task_struct *curr = current;
- 
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index d9f61a1..7567b0d 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -1585,7 +1585,7 @@ swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
- 	return -ENOMEM;
- }
- 
--asmlinkage int swsusp_save(void)
-+asmlinkage __visible int swsusp_save(void)
- {
- 	unsigned int nr_pages, nr_highmem;
- 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 4dae9cb..17a73b4 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1671,7 +1671,7 @@ EXPORT_SYMBOL(printk_emit);
-  *
-  * See the vsnprintf() documentation for format string extensions over C99.
-  */
--asmlinkage int printk(const char *fmt, ...)
-+asmlinkage __visible int printk(const char *fmt, ...)
- {
- 	va_list args;
- 	int r;
-@@ -1734,7 +1734,7 @@ void early_vprintk(const char *fmt, va_list ap)
- 	}
- }
- 
--asmlinkage void early_printk(const char *fmt, ...)
-+asmlinkage __visible void early_printk(const char *fmt, ...)
- {
- 	va_list ap;
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a47902c..82eee7f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2194,7 +2194,7 @@ static inline void post_schedule(struct rq *rq)
-  * schedule_tail - first thing a freshly forked thread must call.
-  * @prev: the thread we just switched away from.
-  */
--asmlinkage void schedule_tail(struct task_struct *prev)
-+asmlinkage __visible void schedule_tail(struct task_struct *prev)
- 	__releases(rq->lock)
- {
- 	struct rq *rq = this_rq();
-@@ -2743,7 +2743,7 @@ static inline void sched_submit_work(struct task_struct *tsk)
- 		blk_schedule_flush_plug(tsk);
- }
- 
--asmlinkage void __sched schedule(void)
-+asmlinkage __visible void __sched schedule(void)
- {
- 	struct task_struct *tsk = current;
- 
-@@ -2753,7 +2753,7 @@ asmlinkage void __sched schedule(void)
- EXPORT_SYMBOL(schedule);
- 
- #ifdef CONFIG_CONTEXT_TRACKING
--asmlinkage void __sched schedule_user(void)
-+asmlinkage __visible void __sched schedule_user(void)
- {
- 	/*
- 	 * If we come here after a random call to set_need_resched(),
-@@ -2785,7 +2785,7 @@ void __sched schedule_preempt_disabled(void)
-  * off of preempt_enable. Kernel preemptions off return from interrupt
-  * occur there and call schedule directly.
-  */
--asmlinkage void __sched notrace preempt_schedule(void)
-+asmlinkage __visible void __sched notrace preempt_schedule(void)
- {
- 	/*
- 	 * If there is a non-zero preempt_count or interrupts are disabled,
-@@ -2815,7 +2815,7 @@ EXPORT_SYMBOL(preempt_schedule);
-  * Note, that this is called and return with irqs disabled. This will
-  * protect us against recursive calling from irq.
-  */
--asmlinkage void __sched preempt_schedule_irq(void)
-+asmlinkage __visible void __sched preempt_schedule_irq(void)
- {
- 	enum ctx_state prev_state;
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 490fcbb..6761973 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -222,7 +222,7 @@ static inline bool lockdep_softirq_start(void) { return false; }
- static inline void lockdep_softirq_end(bool in_hardirq) { }
- #endif
- 
--asmlinkage void __do_softirq(void)
-+asmlinkage __visible void __do_softirq(void)
- {
- 	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
- 	unsigned long old_flags = current->flags;
-@@ -298,7 +298,7 @@ restart:
- 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
- }
- 
--asmlinkage void do_softirq(void)
-+asmlinkage __visible void do_softirq(void)
- {
- 	__u32 pending;
- 	unsigned long flags;
-diff --git a/lib/dump_stack.c b/lib/dump_stack.c
-index f23b63f..6745c62 100644
---- a/lib/dump_stack.c
-+++ b/lib/dump_stack.c
-@@ -23,7 +23,7 @@ static void __dump_stack(void)
- #ifdef CONFIG_SMP
- static atomic_t dump_lock = ATOMIC_INIT(-1);
- 
--asmlinkage void dump_stack(void)
-+asmlinkage __visible void dump_stack(void)
- {
- 	int was_locked;
- 	int old;
-@@ -55,7 +55,7 @@ retry:
- 	preempt_enable();
- }
- #else
--asmlinkage void dump_stack(void)
-+asmlinkage __visible void dump_stack(void)
- {
- 	__dump_stack();
- }
--- 
-1.8.5.2
+Alexander Holler
 
