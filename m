@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaDALSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42667 "EHLO
+	id S1753048AbaDALdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:33:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42673 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaDALSf (ORCPT
+	with ESMTP id S1752827AbaDALSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:35 -0400
+	Tue, 1 Apr 2014 07:18:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Agner <stefan@agner.ch>, daniel.lezcano@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 114/144] clocksource: vf_pit_timer: use complement for sched_clock reading
-Date: Tue,  1 Apr 2014 12:15:18 +0100
-Message-Id: <1396350948-29910-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 116/144] ALSA: compress: Pass through return value of open ops callback
+Date: Tue,  1 Apr 2014 12:15:20 +0100
+Message-Id: <1396350948-29910-117-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -29,41 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Agner <stefan@agner.ch>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 224aa3ed45c8735ae02bb2ecca002409fa6aa772 upstream.
+commit 749d32237bf39e6576dd95bfdf24e4378e51716c upstream.
 
-Vybrids PIT register is monitonic decreasing. However, sched_clock
-reading needs to be monitonic increasing. Use bitwise not to get
-the complement of the clock register. This fixes the clock going
-backward. Also, the clock now starts at 0 since we load the
-register with the maximum value at start.
+The snd_compr_open function would always return 0 even if the compressed
+ops open function failed, obviously this is incorrect. Looks like this
+was introduced by a small typo in:
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: daniel.lezcano@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk
-Link: http://lkml.kernel.org/r/d25af915993aec1b486be653eb86f748ddef54fe.1394057313.git.stefan@agner.ch
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+commit a0830dbd4e42b38aefdf3fb61ba5019a1a99ea85
+ALSA: Add a reference counter to card instance
+
+This patch returns the value from the compressed op as it should.
+
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clocksource/vf_pit_timer.c | 2 +-
+ sound/core/compress_offload.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/clocksource/vf_pit_timer.c b/drivers/clocksource/vf_pit_timer.c
-index 587e020..e559095 100644
---- a/drivers/clocksource/vf_pit_timer.c
-+++ b/drivers/clocksource/vf_pit_timer.c
-@@ -54,7 +54,7 @@ static inline void pit_irq_acknowledge(void)
- 
- static unsigned int pit_read_sched_clock(void)
- {
--	return __raw_readl(clksrc_base + PITCVAL);
-+	return ~__raw_readl(clksrc_base + PITCVAL);
+diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+index 1979993..3fdf998 100644
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -133,7 +133,7 @@ static int snd_compr_open(struct inode *inode, struct file *f)
+ 		kfree(data);
+ 	}
+ 	snd_card_unref(compr->card);
+-	return 0;
++	return ret;
  }
  
- static int __init pit_clocksource_init(unsigned long rate)
+ static int snd_compr_free(struct inode *inode, struct file *f)
 -- 
 1.9.1
 
