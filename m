@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaDASyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:54:31 -0400
-Received: from smtp.bbn.com ([128.33.0.80]:49409 "EHLO smtp.bbn.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763AbaDASy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:54:26 -0400
-X-Greylist: delayed 1716 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 14:54:26 EDT
-X-Submitted: to socket.bbn.com (Postfix) with ESMTPSA id 85A69401AE
-Message-ID: <533B04A9.6090405@bbn.com>
-Date: Tue, 01 Apr 2014 14:25:45 -0400
-From: Richard Hansen <rhansen@bbn.com>
+	id S1751890AbaDASys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:54:48 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:37994 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579AbaDASya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 14:54:30 -0400
+Message-ID: <533B0B2B.5070402@ahsoftware.de>
+Date: Tue, 01 Apr 2014 20:53:31 +0200
+From: Alexander Holler <holler@ahsoftware.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-CC: linux-api@vger.kernel.org, Greg Troxel <gdt@ir.bbn.com>
-Subject: [PATCH] mm: msync: require either MS_ASYNC or MS_SYNC
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kees Cook <keescook@chromium.org>, Laura Abbott <lauraa@codeaurora.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] arm: don't allow CONFIG_DEBUG_SET_MODULE_RONX if CONFIG_JUMP_LABEL
+ is enabled
+References: <1396346657-7166-1-git-send-email-holler@ahsoftware.de>	<533AFF77.5030106@codeaurora.org> <CAGXu5jKMF9n9svQBhyQFvCoUe86QhLycDTt-fWyiRfySbn=Fug@mail.gmail.com>
+In-Reply-To: <CAGXu5jKMF9n9svQBhyQFvCoUe86QhLycDTt-fWyiRfySbn=Fug@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the flags parameter, POSIX says "Either MS_ASYNC or MS_SYNC shall
-be specified, but not both." [1]  There was already a test for the
-"both" condition.  Add a test to ensure that the caller specified one
-of the flags; fail with EINVAL if neither are specified.
+Am 01.04.2014 20:36, schrieb Kees Cook:
+> On Tue, Apr 1, 2014 at 11:03 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
+>> On 4/1/2014 3:04 AM, Alexander Holler wrote:
+>>> CONFIG_DEBUG_SET_MODULE_RONX sounds like a nice security feature, but
+>>> things might fail late (and unexpected) if module code is set to read-only
+>>> while CONFIG_JUMP_LABEL is enabled (e.g. modprobe bridge).
+>
+> Isn't this a ordering problem? I thought jump labels got set up once,
+> and then after that, the memory could be made RO?
 
-Without this change, specifying neither is the same as specifying
-flags=MS_ASYNC because nothing in msync() is conditioned on the
-MS_ASYNC flag.  This has not always been true, and there's no good
-reason to believe that this behavior would have persisted
-indefinitely.
+I basically just run into that and looked up what happened. But the 
+problem appears e.g. in netfiler/core.c function nf_register_hook() 
+which calls static_key_slow_inc(). So you would have to make sure 
+nf_register_hook() will be called before the code is set ro. Something 
+that doesn't look easy to do.
 
-The msync(2) man page (as currently written in man-pages.git) is
-silent on the behavior if both flags are unset, so this change should
-not break an application written by somone who carefully reads the
-Linux man pages or the POSIX spec.
+I would have to look up when that might be called, but I assume there 
+are many ways to register and unregister hooks in netfilter and some of 
+them might happen outside any init, probe or whatever one might set the 
+code read-only afterwards. You would have to set the code rw too, before 
+nf_unregister_hook() happens.
 
-[1] http://pubs.opengroup.org/onlinepubs/9699919799/functions/msync.html
+Maybe it's possible to mark some modules to not become ro at all, I 
+don't know. And doing so would make them a prefered target for exploits. 
+So I'm not sure if it would make sense.
 
-Signed-off-by: Richard Hansen <rhansen@bbn.com>
-Reported-by: Greg Troxel <gdt@ir.bbn.com>
-Reviewed-by: Greg Troxel <gdt@ir.bbn.com>
----
+Regards,
 
-This is a resend of:
-http://article.gmane.org/gmane.linux.kernel/1554416
-I didn't get any feedback from that submission, so I'm resending it
-without changes.
-
- mm/msync.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/mm/msync.c b/mm/msync.c
-index 632df45..472ad3e 100644
---- a/mm/msync.c
-+++ b/mm/msync.c
-@@ -42,6 +42,8 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t,
-len, int, flags)
- 		goto out;
- 	if ((flags & MS_ASYNC) && (flags & MS_SYNC))
- 		goto out;
-+	if (!(flags & (MS_ASYNC | MS_SYNC)))
-+		goto out;
- 	error = -ENOMEM;
- 	len = (len + ~PAGE_MASK) & PAGE_MASK;
- 	end = start + len;
--- 
-1.8.4
-
+Alexander Holler
