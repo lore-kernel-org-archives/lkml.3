@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaDALRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:17:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42330 "EHLO
+	id S1752936AbaDALSu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:18:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42706 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbaDALRG (ORCPT
+	with ESMTP id S1752908AbaDALSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:06 -0400
+	Tue, 1 Apr 2014 07:18:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 052/144] firewire: ohci: fix probe failure with Agere/LSI controllers
-Date: Tue,  1 Apr 2014 12:14:16 +0100
-Message-Id: <1396350948-29910-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 122/144] net: mvneta: fix usage as a module on RGMII configurations
+Date: Tue,  1 Apr 2014 12:15:26 +0100
+Message-Id: <1396350948-29910-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,99 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 0ca49345b6f489e95f8d6edeb0b092e257475b2a upstream.
+commit e3a8786c10e75903f1269474e21fe8cb49c3a670 upstream.
 
-Since commit bd972688eb24
-"firewire: ohci: Fix 'failed to read phy reg' on FW643 rev8",
-there is a high chance that firewire-ohci fails to initialize LSI née
-Agere controllers.
-https://bugzilla.kernel.org/show_bug.cgi?id=65151
+Commit 5445eaf309ff ('mvneta: Try to fix mvneta when compiled as
+module') fixed the mvneta driver to make it work properly when loaded
+as a module in SGMII configuration, which was tested successful by the
+author on the Armada XP OpenBlocks AX3, which uses SGMII.
 
-Peter Hurley points out the reason:  IEEE 1394a:2000 clause 5A.1 (or
-IEEE 1394:2008 clause 17.2.1) say:  "The PHY shall insure that no more
-than 10 ms elapse from the reassertion of LPS until the interface is
-reset.  The link shall not assert LReq until the reset is complete."
-In other words, the link needs to give the PHY at least 10 ms to get
-the interface operational.
+However, it turns out that the Armada XP GP, which uses RGMII, is
+affected by a similar problem: its SERDES configuration is lost when
+mvneta is loaded as a module, because this configuration is set by the
+bootloader, and then lost because the clock is gated by the clock
+framework until the mvneta driver is loaded again and the clock is
+re-enabled.
 
-With just the msleep(1) in bd972688eb24, the first read_phy_reg()
-during ohci_enable() may happen before the phy-link interface reset was
-finished, and fail.  Due to the high variability of msleep(n) with small
-n, this failure was not fully reproducible, and not apparent at all with
-low CONFIG_HZ setting.
+However, it turns out that for the RGMII case, setting the SERDES
+configuration is not sufficient: the PCS enable bit in the
+MVNETA_GMAC_CTRL_2 register must also be set, like in the SGMII
+configuration.
 
-On the other hand, Peter can no longer reproduce the issue with FW643
-rev8.  The read phy reg failures that happened back then may have had an
-unrelated cause.  So, just revert bd972688eb24, except for the valid
-comment on TSB82AA2 cards.
+Therefore, this commit reworks the SGMII/RGMII initialization: the
+only difference between the two now is a different SERDES
+configuration, all the rest is identical.
 
-Reported-by: Mikhail Gavrilov
-Reported-by: Jay Fenlason <fenlason@redhat.com>
-Reported-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+In detail, to achieve this, the commit:
+
+ * Renames MVNETA_SGMII_SERDES_CFG to MVNETA_SERDES_CFG because it is
+   not specific to SGMII, but also used on RGMII configurations.
+
+ * Adds a MVNETA_RGMII_SERDES_PROTO definition, that must be used as
+   the MVNETA_SERDES_CFG value in RGMII configurations.
+
+ * Removes the mvneta_gmac_rgmii_set() and mvneta_port_sgmii_config()
+   functions, and instead directly do the SGMII/RGMII configuration in
+   mvneta_port_up(), from where those functions where called. It is
+   worth mentioning that mvneta_gmac_rgmii_set() had an 'enable'
+   parameter that was always passed as '1', so it was pretty useless.
+
+ * Reworks the mvneta_port_up() function to set the MVNETA_SERDES_CFG
+   register to the appropriate value depending on the RGMII vs. SGMII
+   configuration. It also unconditionally set the PCS_ENABLE bit (was
+   already done for SGMII, but is now also needed for RGMII), and sets
+   the PORT_RGMII bit (which was already done for both SGMII and
+   RGMII).
+
+This commit was successfully tested with mvneta compiled as a module,
+on both the OpenBlocks AX3 (SGMII configuration) and the Armada XP GP
+(RGMII configuration).
+
+Reported-by: Steve McIntyre <steve@einval.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firewire/ohci.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c | 41 +++++++----------------------------
+ 1 file changed, 8 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 66a63b4..0f3e304 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -288,7 +288,6 @@ static char ohci_driver_name[] = KBUILD_MODNAME;
- #define QUIRK_NO_MSI			0x10
- #define QUIRK_TI_SLLZ059		0x20
- #define QUIRK_IR_WAKE			0x40
--#define QUIRK_PHY_LCTRL_TIMEOUT		0x80
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index b8aea9a..79ffd68 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -88,8 +88,9 @@
+ #define      MVNETA_TX_IN_PRGRS                  BIT(1)
+ #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
+ #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
+-#define MVNETA_SGMII_SERDES_CFG			 0x24A0
++#define MVNETA_SERDES_CFG			 0x24A0
+ #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
++#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
+ #define MVNETA_TYPE_PRIO                         0x24bc
+ #define      MVNETA_FORCE_UNI                    BIT(21)
+ #define MVNETA_TXQ_CMD_1                         0x24e4
+@@ -634,35 +635,6 @@ static void mvneta_rxq_bm_disable(struct mvneta_port *pp,
+ 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
+ }
  
- /* In case of multiple matches in ohci_quirks[], only the first one is used. */
- static const struct {
-@@ -301,10 +300,7 @@ static const struct {
- 		QUIRK_BE_HEADERS},
- 
- 	{PCI_VENDOR_ID_ATT, PCI_DEVICE_ID_AGERE_FW643, 6,
--		QUIRK_PHY_LCTRL_TIMEOUT | QUIRK_NO_MSI},
 -
--	{PCI_VENDOR_ID_ATT, PCI_ANY_ID, PCI_ANY_ID,
--		QUIRK_PHY_LCTRL_TIMEOUT},
-+		QUIRK_NO_MSI},
- 
- 	{PCI_VENDOR_ID_CREATIVE, PCI_DEVICE_ID_CREATIVE_SB1394, PCI_ANY_ID,
- 		QUIRK_RESET_PACKET},
-@@ -351,7 +347,6 @@ MODULE_PARM_DESC(quirks, "Chip quirks (default = 0"
- 	", disable MSI = "		__stringify(QUIRK_NO_MSI)
- 	", TI SLLZ059 erratum = "	__stringify(QUIRK_TI_SLLZ059)
- 	", IR wake unreliable = "	__stringify(QUIRK_IR_WAKE)
--	", phy LCtrl timeout = "	__stringify(QUIRK_PHY_LCTRL_TIMEOUT)
- 	")");
- 
- #define OHCI_PARAM_DEBUG_AT_AR		1
-@@ -2293,9 +2288,6 @@ static int ohci_enable(struct fw_card *card,
- 	 * TI TSB82AA2 + TSB81BA3(A) cards signal LPS enabled early but
- 	 * cannot actually use the phy at that time.  These need tens of
- 	 * millisecods pause between LPS write and first phy access too.
--	 *
--	 * But do not wait for 50msec on Agere/LSI cards.  Their phy
--	 * arbitration state machine may time out during such a long wait.
- 	 */
- 
- 	reg_write(ohci, OHCI1394_HCControlSet,
-@@ -2303,11 +2295,8 @@ static int ohci_enable(struct fw_card *card,
- 		  OHCI1394_HCControl_postedWriteEnable);
- 	flush_writes(ohci);
- 
--	if (!(ohci->quirks & QUIRK_PHY_LCTRL_TIMEOUT))
-+	for (lps = 0, i = 0; !lps && i < 3; i++) {
- 		msleep(50);
 -
--	for (lps = 0, i = 0; !lps && i < 150; i++) {
--		msleep(1);
- 		lps = reg_read(ohci, OHCI1394_HCControlSet) &
- 		      OHCI1394_HCControl_LPS;
- 	}
+-/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
+-static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
+-{
+-	u32  val;
+-
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-
+-	if (enable)
+-		val |= MVNETA_GMAC2_PORT_RGMII;
+-	else
+-		val &= ~MVNETA_GMAC2_PORT_RGMII;
+-
+-	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+-}
+-
+-/* Config SGMII port */
+-static void mvneta_port_sgmii_config(struct mvneta_port *pp)
+-{
+-	u32 val;
+-
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-	val |= MVNETA_GMAC2_PCS_ENABLE;
+-	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+-
+-	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
+-}
+-
+ /* Start the Ethernet port RX and TX activity */
+ static void mvneta_port_up(struct mvneta_port *pp)
+ {
+@@ -2674,12 +2646,15 @@ static void mvneta_port_power_up(struct mvneta_port *pp, int phy_mode)
+ 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
+ 
+ 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
+-		mvneta_port_sgmii_config(pp);
++		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
++	else
++		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
+ 
+-	mvneta_gmac_rgmii_set(pp, 1);
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
++
++	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
+ 
+ 	/* Cancel Port Reset */
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+ 	val &= ~MVNETA_GMAC2_PORT_RESET;
+ 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+ 
 -- 
 1.9.1
 
