@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaDAJHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:07:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41920 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaDAJHF (ORCPT
+	id S1751384AbaDAJI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:08:58 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:39560 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaDAJI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:07:05 -0400
-Date: Tue, 1 Apr 2014 11:07:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Benedikt Spranger <b.spranger@linutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Subject: Re: [patch 00/12] can: c_can: Fix a series of serious bugs and
- improve the performance
-In-Reply-To: <533A742F.4090703@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1404011106020.14882@ionos.tec.linutronix.de>
-References: <20140318171007.528610837@linutronix.de> <alpine.DEB.2.02.1403312355280.14882@ionos.tec.linutronix.de> <533A742F.4090703@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 1 Apr 2014 05:08:56 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC 0/5] of: Automatic console registration cleanups
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: devicetree@vger.kernel.org, christoffer.dall@linaro.org,
+        linux-kernel@vger.kernel.org, olof@lixom.net, benh@kernel.crashing.org,
+        rob.herring@linaro.org
+In-Reply-To: <20140401061216.GQ17250@pengutronix.de>
+References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org> < 20140331071014.GN17250@pengutronix.de> <20140331094124.6DEF3C408E1@trevor. secretlab.ca> <20140401061216.GQ17250@pengutronix.de>
+Date: Tue, 01 Apr 2014 10:08:48 +0100
+Message-Id: <20140401090848.E9758C408A6@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014, Marc Kleine-Budde wrote:
-> On 04/01/2014 12:35 AM, Thomas Gleixner wrote:
-> > Dear Maintainers,
+On Tue, 1 Apr 2014 08:12:16 +0200, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Mon, Mar 31, 2014 at 10:41:24AM +0100, Grant Likely wrote:
+> > On Mon, 31 Mar 2014 09:10:15 +0200, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > > On Fri, Mar 28, 2014 at 09:08:00AM -0700, Grant Likely wrote:
+> > > > Hi all,
+> > > > 
+> > > > This is a series that I've been playing with over the last few days to
+> > > > clean up the selection of default console devices when using the device
+> > > > tree. The device tree defines a way of specifying the console by using a
+> > > > "stdout-path" property in the /chosen node, but very few drivers
+> > > > actually attempt to use that data, and so for most platforms there needs
+> > > > to be a "console=" line in the command line if a serial port is intended
+> > > > to be used as the console.
+> > > > 
+> > > > With this series, if there is a /chosen/stdout-path property, and if
+> > > > that property points to a serial port node, then when the serial driver
+> > > > registers the port, the core uart_add_one_port() function will notice
+> > > > and if no console= argument was provided then add it as a preferred
+> > > > console.
+> > > > 
+> > > > I've not tested this very extensively yet, but I want to get some
+> > > > feedback before I go further.
+> > > 
+> > > I gave it a test on i.MX. It works as expected with both
+> > > linux,stdout-path and stdout-path. Specifying a console on the
+> > > commandline still works and overrides the devicetree setting.
+> > > 
+> > > Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
 > > 
-> > On Tue, 18 Mar 2014, Thomas Gleixner wrote:
-> >> The driver is full of serious bugs:
-> >>
-> >>     - Two HW init routines are not spec compliant.
-> >>
-> >>     - Completely defective message buffer handling in several ways
-> >>       That leads to interrupt storms and complete lockups.
-> >>
-> >>     - Complete lack of SMP awareness
-> >>
-> >> What's amazing is that people "optimize" and "fix" the driver over and
-> >> over, but nobody bothered to understand the manual and repair the code
-> >> for real.
-> >>
-> >> The series fixes _ALL_ bugs which I found so far, but I'm sure there
-> >> are more issues burried in that unreadable mess. I'm just not able to
-> >> trigger them.
+> > Brilliant! Thanks Sascha.
 > > 
-> > What's the state of this series?
+> > Can you supply a patch to add stdout to the imx dts files?
 > 
-> I'll apply your patches today.
+> The information which console is used on each board is not in the
+> kernel. I can create a patch adding stdout for a handful of boards I
+> know, but I won't catch all.
 
-Thanks! Please drop the last one which was not part of the series:
+That's all I'm asking for. I don't expect all platforms.
 
-	Subject: can: c_can: Reduce interrupt load by 50%
+g.
 
-While it works like a charm, we've seen an odd case were TX started to
-stall. Had not yet time to dig into that.
-
-Thanks,
-
-	tglx
