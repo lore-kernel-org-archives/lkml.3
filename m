@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaDANSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 09:18:08 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:46144 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322AbaDANSG (ORCPT
+	id S1751716AbaDANTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 09:19:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44815 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaDANTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 09:18:06 -0400
-X-IronPort-AV: E=Sophos;i="4.97,772,1389744000"; 
-   d="scan'208";a="115679865"
-Message-ID: <533ABC8A.5080405@citrix.com>
-Date: Tue, 1 Apr 2014 14:18:02 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Tue, 1 Apr 2014 09:19:13 -0400
+Message-ID: <533ABCCB.4090502@oracle.com>
+Date: Tue, 01 Apr 2014 09:19:07 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <Ian.Campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <JBeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 3/4] xen/manage: Guard against user-space initiated poweroff
- and XenBus.
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Josh Boyer <jwboyer@fedoraproject.org>
+CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: liblockdep soname versioning
+References: <CA+5PVA67oBeHUiPXj0viNgrX+uDnJ9LsZSPXF1cLt_D511KKtA@mail.gmail.com>
+In-Reply-To: <CA+5PVA67oBeHUiPXj0viNgrX+uDnJ9LsZSPXF1cLt_D511KKtA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> There is a race case where the user does 'poweroff'
-> and at the same time the system admin does 'xl shutdown'.
-> 
-> Depending on the race, the system_state will be SYSTEM_RUNNING or
-> SYSTEM_POWER_OFF. If SYSTEM_RUNNING we just end up making
-> a duplicate call to 'poweroff' (while it is running).
-> 
-> That will fail or execute (And if executed then it will be
-> stuck in the reboot_mutex mutex). But nobody will care b/c the
-> machine is in poweroff sequence.
+On 04/01/2014 08:56 AM, Josh Boyer wrote:
+> Hi Sasha,
+>
+> We've had a request [1] to package up liblockdep in Fedora.  Looking
+> things over, I noticed the library isn't actually versioned at all and
+> instead just builds a plain .so file.  That's likely fine during
+> development of it, but if distros are to ship it for broader use then
+> it would be a good idea to specify the soname and use a versioned .so.
+>
+> The makefile already has LIBLOCKDEP_VERSION defined.  Would it be
+> possible to use this as the soname and version number?  Then
+> liblockdep.so could be the normal symlink to the versioned .so
+> (liblockdep.so.0.0.1 in this case).
+>
+> Thanks.
+>
+> josh
+>
+> [1] https://bugzilla.redhat.com/show_bug.cgi?id=1082763
+>
 
-If this race isn't a problem...
+Sure! I never expected it to live outside the kernel tree as a separate
+package, but I'm happy to accommodate for that.
 
-> If the system_state is SYSTEM_POWER_OFF then we end up making
-> a duplicate call to kernel_power_off. There is no locking
-> there so we walk in the same steps as what 'poweroff'
-> has been doing.
+I think that I'll just match the version number with the kernel version
+since what mostly matters is what you have in kernel/lockdep.c, so for
+example, right now we'll have 'liblockdep.so.3.15.0'. Sounds good?
 
-... and this one doesn't happen because do_power_off() calls
-orderly_poweroff(false) so does not call kernel_power_off().
 
-Then isn't the patch unnecessary?
-
-David
+Thanks,
+Sasha
