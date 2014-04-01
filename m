@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaDALSu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42706 "EHLO
+	id S1752963AbaDALSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:18:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42720 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaDALSp (ORCPT
+	with ESMTP id S1752886AbaDALSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:45 -0400
+	Tue, 1 Apr 2014 07:18:51 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 122/144] net: mvneta: fix usage as a module on RGMII configurations
-Date: Tue,  1 Apr 2014 12:15:26 +0100
-Message-Id: <1396350948-29910-123-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 126/144] Input: mousedev - fix race when creating mixed device
+Date: Tue,  1 Apr 2014 12:15:30 +0100
+Message-Id: <1396350948-29910-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,134 +27,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit e3a8786c10e75903f1269474e21fe8cb49c3a670 upstream.
+commit e4dbedc7eac7da9db363a36f2bd4366962eeefcc upstream.
 
-Commit 5445eaf309ff ('mvneta: Try to fix mvneta when compiled as
-module') fixed the mvneta driver to make it work properly when loaded
-as a module in SGMII configuration, which was tested successful by the
-author on the Armada XP OpenBlocks AX3, which uses SGMII.
+We should not be using static variable mousedev_mix in methods that can be
+called before that singleton gets assigned. While at it let's add open and
+close methods to mousedev structure so that we do not need to test if we
+are dealing with multiplexor or normal device and simply call appropriate
+method directly.
 
-However, it turns out that the Armada XP GP, which uses RGMII, is
-affected by a similar problem: its SERDES configuration is lost when
-mvneta is loaded as a module, because this configuration is set by the
-bootloader, and then lost because the clock is gated by the clock
-framework until the mvneta driver is loaded again and the clock is
-re-enabled.
+This fixes: https://bugzilla.kernel.org/show_bug.cgi?id=71551
 
-However, it turns out that for the RGMII case, setting the SERDES
-configuration is not sufficient: the PCS enable bit in the
-MVNETA_GMAC_CTRL_2 register must also be set, like in the SGMII
-configuration.
-
-Therefore, this commit reworks the SGMII/RGMII initialization: the
-only difference between the two now is a different SERDES
-configuration, all the rest is identical.
-
-In detail, to achieve this, the commit:
-
- * Renames MVNETA_SGMII_SERDES_CFG to MVNETA_SERDES_CFG because it is
-   not specific to SGMII, but also used on RGMII configurations.
-
- * Adds a MVNETA_RGMII_SERDES_PROTO definition, that must be used as
-   the MVNETA_SERDES_CFG value in RGMII configurations.
-
- * Removes the mvneta_gmac_rgmii_set() and mvneta_port_sgmii_config()
-   functions, and instead directly do the SGMII/RGMII configuration in
-   mvneta_port_up(), from where those functions where called. It is
-   worth mentioning that mvneta_gmac_rgmii_set() had an 'enable'
-   parameter that was always passed as '1', so it was pretty useless.
-
- * Reworks the mvneta_port_up() function to set the MVNETA_SERDES_CFG
-   register to the appropriate value depending on the RGMII vs. SGMII
-   configuration. It also unconditionally set the PCS_ENABLE bit (was
-   already done for SGMII, but is now also needed for RGMII), and sets
-   the PORT_RGMII bit (which was already done for both SGMII and
-   RGMII).
-
-This commit was successfully tested with mvneta compiled as a module,
-on both the OpenBlocks AX3 (SGMII configuration) and the Armada XP GP
-(RGMII configuration).
-
-Reported-by: Steve McIntyre <steve@einval.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: GiulioDP <depasquale.giulio@gmail.com>
+Tested-by: GiulioDP <depasquale.giulio@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/marvell/mvneta.c | 41 +++++++----------------------------
- 1 file changed, 8 insertions(+), 33 deletions(-)
+ drivers/input/mousedev.c | 73 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 42 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index b8aea9a..79ffd68 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -88,8 +88,9 @@
- #define      MVNETA_TX_IN_PRGRS                  BIT(1)
- #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
- #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
--#define MVNETA_SGMII_SERDES_CFG			 0x24A0
-+#define MVNETA_SERDES_CFG			 0x24A0
- #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
-+#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
- #define MVNETA_TYPE_PRIO                         0x24bc
- #define      MVNETA_FORCE_UNI                    BIT(21)
- #define MVNETA_TXQ_CMD_1                         0x24e4
-@@ -634,35 +635,6 @@ static void mvneta_rxq_bm_disable(struct mvneta_port *pp,
- 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index 4c842c3..b604564 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -67,7 +67,6 @@ struct mousedev {
+ 	struct device dev;
+ 	struct cdev cdev;
+ 	bool exist;
+-	bool is_mixdev;
+ 
+ 	struct list_head mixdev_node;
+ 	bool opened_by_mixdev;
+@@ -77,6 +76,9 @@ struct mousedev {
+ 	int old_x[4], old_y[4];
+ 	int frac_dx, frac_dy;
+ 	unsigned long touch;
++
++	int (*open_device)(struct mousedev *mousedev);
++	void (*close_device)(struct mousedev *mousedev);
+ };
+ 
+ enum mousedev_emul {
+@@ -116,9 +118,6 @@ static unsigned char mousedev_imex_seq[] = { 0xf3, 200, 0xf3, 200, 0xf3, 80 };
+ static struct mousedev *mousedev_mix;
+ static LIST_HEAD(mousedev_mix_list);
+ 
+-static void mixdev_open_devices(void);
+-static void mixdev_close_devices(void);
+-
+ #define fx(i)  (mousedev->old_x[(mousedev->pkt_count - (i)) & 03])
+ #define fy(i)  (mousedev->old_y[(mousedev->pkt_count - (i)) & 03])
+ 
+@@ -428,9 +427,7 @@ static int mousedev_open_device(struct mousedev *mousedev)
+ 	if (retval)
+ 		return retval;
+ 
+-	if (mousedev->is_mixdev)
+-		mixdev_open_devices();
+-	else if (!mousedev->exist)
++	if (!mousedev->exist)
+ 		retval = -ENODEV;
+ 	else if (!mousedev->open++) {
+ 		retval = input_open_device(&mousedev->handle);
+@@ -446,9 +443,7 @@ static void mousedev_close_device(struct mousedev *mousedev)
+ {
+ 	mutex_lock(&mousedev->mutex);
+ 
+-	if (mousedev->is_mixdev)
+-		mixdev_close_devices();
+-	else if (mousedev->exist && !--mousedev->open)
++	if (mousedev->exist && !--mousedev->open)
+ 		input_close_device(&mousedev->handle);
+ 
+ 	mutex_unlock(&mousedev->mutex);
+@@ -459,21 +454,29 @@ static void mousedev_close_device(struct mousedev *mousedev)
+  * stream. Note that this function is called with mousedev_mix->mutex
+  * held.
+  */
+-static void mixdev_open_devices(void)
++static int mixdev_open_devices(struct mousedev *mixdev)
+ {
+-	struct mousedev *mousedev;
++	int error;
++
++	error = mutex_lock_interruptible(&mixdev->mutex);
++	if (error)
++		return error;
+ 
+-	if (mousedev_mix->open++)
+-		return;
++	if (!mixdev->open++) {
++		struct mousedev *mousedev;
+ 
+-	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
+-		if (!mousedev->opened_by_mixdev) {
+-			if (mousedev_open_device(mousedev))
+-				continue;
++		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
++			if (!mousedev->opened_by_mixdev) {
++				if (mousedev_open_device(mousedev))
++					continue;
+ 
+-			mousedev->opened_by_mixdev = true;
++				mousedev->opened_by_mixdev = true;
++			}
+ 		}
+ 	}
++
++	mutex_unlock(&mixdev->mutex);
++	return 0;
  }
  
--
--
--/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
--static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
--{
--	u32  val;
--
--	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--
--	if (enable)
--		val |= MVNETA_GMAC2_PORT_RGMII;
--	else
--		val &= ~MVNETA_GMAC2_PORT_RGMII;
--
--	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
--}
--
--/* Config SGMII port */
--static void mvneta_port_sgmii_config(struct mvneta_port *pp)
--{
--	u32 val;
--
--	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--	val |= MVNETA_GMAC2_PCS_ENABLE;
--	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
--
--	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
--}
--
- /* Start the Ethernet port RX and TX activity */
- static void mvneta_port_up(struct mvneta_port *pp)
+ /*
+@@ -481,19 +484,22 @@ static void mixdev_open_devices(void)
+  * device. Note that this function is called with mousedev_mix->mutex
+  * held.
+  */
+-static void mixdev_close_devices(void)
++static void mixdev_close_devices(struct mousedev *mixdev)
  {
-@@ -2674,12 +2646,15 @@ static void mvneta_port_power_up(struct mvneta_port *pp, int phy_mode)
- 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
+-	struct mousedev *mousedev;
++	mutex_lock(&mixdev->mutex);
  
- 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
--		mvneta_port_sgmii_config(pp);
-+		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
-+	else
-+		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
+-	if (--mousedev_mix->open)
+-		return;
++	if (!--mixdev->open) {
++		struct mousedev *mousedev;
  
--	mvneta_gmac_rgmii_set(pp, 1);
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
+-		if (mousedev->opened_by_mixdev) {
+-			mousedev->opened_by_mixdev = false;
+-			mousedev_close_device(mousedev);
++		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
++			if (mousedev->opened_by_mixdev) {
++				mousedev->opened_by_mixdev = false;
++				mousedev_close_device(mousedev);
++			}
+ 		}
+ 	}
 +
-+	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
++	mutex_unlock(&mixdev->mutex);
+ }
  
- 	/* Cancel Port Reset */
--	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
- 	val &= ~MVNETA_GMAC2_PORT_RESET;
- 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
  
+@@ -522,7 +528,7 @@ static int mousedev_release(struct inode *inode, struct file *file)
+ 	mousedev_detach_client(mousedev, client);
+ 	kfree(client);
+ 
+-	mousedev_close_device(mousedev);
++	mousedev->close_device(mousedev);
+ 
+ 	return 0;
+ }
+@@ -550,7 +556,7 @@ static int mousedev_open(struct inode *inode, struct file *file)
+ 	client->mousedev = mousedev;
+ 	mousedev_attach_client(mousedev, client);
+ 
+-	error = mousedev_open_device(mousedev);
++	error = mousedev->open_device(mousedev);
+ 	if (error)
+ 		goto err_free_client;
+ 
+@@ -861,16 +867,21 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
+ 
+ 	if (mixdev) {
+ 		dev_set_name(&mousedev->dev, "mice");
++
++		mousedev->open_device = mixdev_open_devices;
++		mousedev->close_device = mixdev_close_devices;
+ 	} else {
+ 		int dev_no = minor;
+ 		/* Normalize device number if it falls into legacy range */
+ 		if (dev_no < MOUSEDEV_MINOR_BASE + MOUSEDEV_MINORS)
+ 			dev_no -= MOUSEDEV_MINOR_BASE;
+ 		dev_set_name(&mousedev->dev, "mouse%d", dev_no);
++
++		mousedev->open_device = mousedev_open_device;
++		mousedev->close_device = mousedev_close_device;
+ 	}
+ 
+ 	mousedev->exist = true;
+-	mousedev->is_mixdev = mixdev;
+ 	mousedev->handle.dev = input_get_device(dev);
+ 	mousedev->handle.name = dev_name(&mousedev->dev);
+ 	mousedev->handle.handler = handler;
+@@ -919,7 +930,7 @@ static void mousedev_destroy(struct mousedev *mousedev)
+ 	device_del(&mousedev->dev);
+ 	mousedev_cleanup(mousedev);
+ 	input_free_minor(MINOR(mousedev->dev.devt));
+-	if (!mousedev->is_mixdev)
++	if (mousedev != mousedev_mix)
+ 		input_unregister_handle(&mousedev->handle);
+ 	put_device(&mousedev->dev);
+ }
 -- 
 1.9.1
 
