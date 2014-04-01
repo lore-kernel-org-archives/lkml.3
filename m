@@ -1,29 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaDAWG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 18:06:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38949 "EHLO
+	id S1751822AbaDAWIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 18:08:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38958 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaDAWG5 (ORCPT
+	with ESMTP id S1751470AbaDAWIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 18:06:57 -0400
-Date: Tue, 1 Apr 2014 15:06:54 -0700
+	Tue, 1 Apr 2014 18:08:45 -0400
+Date: Tue, 1 Apr 2014 15:08:43 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Roger <rogerable@realtek.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
-        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
-Subject: Re: [PATCH v5 3/3] memstick: Add realtek USB memstick host driver
-Message-Id: <20140401150654.fe27636428a62fdf9e0d2dc1@linux-foundation.org>
-In-Reply-To: <533A3080.2020008@realtek.com>
-References: <1395744293-24398-1-git-send-email-rogerable@realtek.com>
-	<1395744293-24398-4-git-send-email-rogerable@realtek.com>
-	<533A3080.2020008@realtek.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+Message-Id: <20140401150843.13da3743554ad541629c936d@linux-foundation.org>
+In-Reply-To: <1396389751.25314.26.camel@buesod1.americas.hpqcorp.net>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	<20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	<1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+	<1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+	<1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+	<20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+	<CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+	<20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+	<1396389751.25314.26.camel@buesod1.americas.hpqcorp.net>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -32,29 +40,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014 11:20:32 +0800 Roger <rogerable@realtek.com> wrote:
+On Tue, 01 Apr 2014 15:02:31 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-> On 03/25/2014 06:44 PM, rogerable@realtek.com wrote:
-> > From: Roger Tseng <rogerable@realtek.com>
-> >
-> > Realtek USB memstick host driver provides memstick host support based on the
-> > Realtek USB card reader MFD driver.
-> >
-> > Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> > ---
-> >   drivers/memstick/host/Kconfig       |  10 +
-> >   drivers/memstick/host/Makefile      |   1 +
-> >   drivers/memstick/host/rtsx_usb_ms.c | 839 ++++++++++++++++++++++++++++++++++++
-> >   3 files changed, 850 insertions(+)
-> >   create mode 100644 drivers/memstick/host/rtsx_usb_ms.c
-> Hi Andrew,
+> On Tue, 2014-04-01 at 14:48 -0700, Andrew Morton wrote:
+> > On Tue, 1 Apr 2014 17:41:54 -0400 KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+> > 
+> > > >> > Hmmm so 0 won't really work because it could be weirdly used to disable
+> > > >> > shm altogether... we cannot go to some negative value either since we're
+> > > >> > dealing with unsigned, and cutting the range in half could also hurt
+> > > >> > users that set the limit above that. So I was thinking of simply setting
+> > > >> > SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
+> > > >> > if they want a smaller value.
+> > > >> >
+> > > >> > Makes sense?
+> > > >>
+> > > >> I don't think people use 0 for disabling. but ULONG_MAX make sense to me too.
+> > > >
+> > > > Distros could have set it to [U]LONG_MAX in initscripts ten years ago
+> > > > - less phone calls, happier customers.  And they could do so today.
+> > > >
+> > > > But they haven't.   What are the risks of doing this?
+> > > 
+> > > I have no idea really. But at least I'm sure current default is much worse.
+> > > 
+> > > 1. Solaris changed the default to total-memory/4 since Solaris 10 for DB.
+> > >  http://www.postgresql.org/docs/9.1/static/kernel-resources.html
+> > > 
+> > > 2. RHEL changed the default to very big size since RHEL5 (now it is
+> > > 64GB). Even tough many box don't have 64GB memory at that time.
+> > 
+> > Ah-hah, that's interesting info.
+> > 
+> > Let's make the default 64GB?
 > 
-> Since I'll have to send next revision(v6, to modify patch 1/3) and 
-> you've commented v4, would you also comment or Ack the 3/3 of this one? 
-> This should save one revision for me to make any necessary change.
+> But again, yet another arbitrary value...
 
-It looks OK to my inexpert eye.  It would be better if Maxim and/or Alex
-could review the code.  If that doesn't happen then I guess the best we
-can do is to go ahead and merge it.  Have you worked out via which tree
-the patches will be merged?
+Well, I'm assuming 64GB==infinity.  It *was* infinity in the RHEL5
+timeframe, but infinity has since become larger so pickanumber.
 
