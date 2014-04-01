@@ -1,331 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaDAJWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:22:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30991 "EHLO mx1.redhat.com"
+	id S1751077AbaDAJQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:16:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27902 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603AbaDAJQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:16:28 -0400
+	id S1751546AbaDAJQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 05:16:21 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 14/29] GFS2: Clean up journal extent mapping
-Date: Tue,  1 Apr 2014 10:15:26 +0100
-Message-Id: <1396343741-1524-15-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 10/29] GFS2: Move log buffer accounting to transaction
+Date: Tue,  1 Apr 2014 10:15:22 +0100
+Message-Id: <1396343741-1524-11-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
 References: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a long standing issue in mapping the journal
-extents. Most journals will consist of only a single extent,
-and although the cache took account of that by merging extents,
-it did not actually map large extents, but instead was doing a
-block by block mapping. Since the journal was only being mapped
-on mount, this was not normally noticeable.
+Now we have a master transaction into which other transactions
+are merged, the accounting can be done using this master
+transaction. We no longer require the superblock fields which
+were being used for this function.
 
-With the updated code, it is now possible to use the same extent
-mapping system during journal recovery (which will be added in a
-later patch). This will allow checking of the integrity of the
-journal before any reply of the journal content is attempted. For
-this reason the code is moving to bmap.c, since it will be used
-more widely in due course.
-
-An exercise left for the reader is to compare the new function
-gfs2_map_journal_extents() with gfs2_write_alloc_required()
-
-Additionally, should there be a failure, the error reporting is
-also updated to show more detail about what went wrong.
+In addition, this allows for a clean up in calc_reserved()
+making it rather easier understand. Also, by reducing the
+number of variables used to track the buffers being added
+and removed from the journal, a number of error checks are
+now no longer required.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
-index fe0500c..c62d4b9 100644
---- a/fs/gfs2/bmap.c
-+++ b/fs/gfs2/bmap.c
-@@ -1328,6 +1328,121 @@ int gfs2_file_dealloc(struct gfs2_inode *ip)
- }
- 
- /**
-+ * gfs2_free_journal_extents - Free cached journal bmap info
-+ * @jd: The journal
-+ *
-+ */
-+
-+void gfs2_free_journal_extents(struct gfs2_jdesc *jd)
-+{
-+	struct gfs2_journal_extent *jext;
-+
-+	while(!list_empty(&jd->extent_list)) {
-+		jext = list_entry(jd->extent_list.next, struct gfs2_journal_extent, list);
-+		list_del(&jext->list);
-+		kfree(jext);
-+	}
-+}
-+
-+/**
-+ * gfs2_add_jextent - Add or merge a new extent to extent cache
-+ * @jd: The journal descriptor
-+ * @lblock: The logical block at start of new extent
-+ * @pblock: The physical block at start of new extent
-+ * @blocks: Size of extent in fs blocks
-+ *
-+ * Returns: 0 on success or -ENOMEM
-+ */
-+
-+static int gfs2_add_jextent(struct gfs2_jdesc *jd, u64 lblock, u64 dblock, u64 blocks)
-+{
-+	struct gfs2_journal_extent *jext;
-+
-+	if (!list_empty(&jd->extent_list)) {
-+		jext = list_entry(jd->extent_list.prev, struct gfs2_journal_extent, list);
-+		if ((jext->dblock + jext->blocks) == dblock) {
-+			jext->blocks += blocks;
-+			return 0;
-+		}
-+	}
-+
-+	jext = kzalloc(sizeof(struct gfs2_journal_extent), GFP_NOFS);
-+	if (jext == NULL)
-+		return -ENOMEM;
-+	jext->dblock = dblock;
-+	jext->lblock = lblock;
-+	jext->blocks = blocks;
-+	list_add_tail(&jext->list, &jd->extent_list);
-+	jd->nr_extents++;
-+	return 0;
-+}
-+
-+/**
-+ * gfs2_map_journal_extents - Cache journal bmap info
-+ * @sdp: The super block
-+ * @jd: The journal to map
-+ *
-+ * Create a reusable "extent" mapping from all logical
-+ * blocks to all physical blocks for the given journal.  This will save
-+ * us time when writing journal blocks.  Most journals will have only one
-+ * extent that maps all their logical blocks.  That's because gfs2.mkfs
-+ * arranges the journal blocks sequentially to maximize performance.
-+ * So the extent would map the first block for the entire file length.
-+ * However, gfs2_jadd can happen while file activity is happening, so
-+ * those journals may not be sequential.  Less likely is the case where
-+ * the users created their own journals by mounting the metafs and
-+ * laying it out.  But it's still possible.  These journals might have
-+ * several extents.
-+ *
-+ * Returns: 0 on success, or error on failure
-+ */
-+
-+int gfs2_map_journal_extents(struct gfs2_sbd *sdp, struct gfs2_jdesc *jd)
-+{
-+	u64 lblock = 0;
-+	u64 lblock_stop;
-+	struct gfs2_inode *ip = GFS2_I(jd->jd_inode);
-+	struct buffer_head bh;
-+	unsigned int shift = sdp->sd_sb.sb_bsize_shift;
-+	u64 size;
-+	int rc;
-+
-+	lblock_stop = i_size_read(jd->jd_inode) >> shift;
-+	size = (lblock_stop - lblock) << shift;
-+	jd->nr_extents = 0;
-+	WARN_ON(!list_empty(&jd->extent_list));
-+
-+	do {
-+		bh.b_state = 0;
-+		bh.b_blocknr = 0;
-+		bh.b_size = size;
-+		rc = gfs2_block_map(jd->jd_inode, lblock, &bh, 0);
-+		if (rc || !buffer_mapped(&bh))
-+			goto fail;
-+		rc = gfs2_add_jextent(jd, lblock, bh.b_blocknr, bh.b_size >> shift);
-+		if (rc)
-+			goto fail;
-+		size -= bh.b_size;
-+		lblock += (bh.b_size >> ip->i_inode.i_blkbits);
-+	} while(size > 0);
-+
-+	fs_info(sdp, "journal %d mapped with %u extents\n", jd->jd_jid,
-+		jd->nr_extents);
-+	return 0;
-+
-+fail:
-+	fs_warn(sdp, "error %d mapping journal %u at offset %llu (extent %u)\n",
-+		rc, jd->jd_jid,
-+		(unsigned long long)(i_size_read(jd->jd_inode) - size),
-+		jd->nr_extents);
-+	fs_warn(sdp, "bmap=%d lblock=%llu block=%llu, state=0x%08lx, size=%llu\n",
-+		rc, (unsigned long long)lblock, (unsigned long long)bh.b_blocknr,
-+		bh.b_state, (unsigned long long)bh.b_size);
-+	gfs2_free_journal_extents(jd);
-+	return rc;
-+}
-+
-+/**
-  * gfs2_write_alloc_required - figure out if a write will require an allocation
-  * @ip: the file being written to
-  * @offset: the offset to write to
-diff --git a/fs/gfs2/bmap.h b/fs/gfs2/bmap.h
-index 42fea03..81ded5e 100644
---- a/fs/gfs2/bmap.h
-+++ b/fs/gfs2/bmap.h
-@@ -55,5 +55,7 @@ extern int gfs2_truncatei_resume(struct gfs2_inode *ip);
- extern int gfs2_file_dealloc(struct gfs2_inode *ip);
- extern int gfs2_write_alloc_required(struct gfs2_inode *ip, u64 offset,
- 				     unsigned int len);
-+extern int gfs2_map_journal_extents(struct gfs2_sbd *sdp, struct gfs2_jdesc *jd);
-+extern void gfs2_free_journal_extents(struct gfs2_jdesc *jd);
- 
- #endif /* __BMAP_DOT_H__ */
 diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
-index d0c3928..456d8fa 100644
+index 99aab64..d0c3928 100644
 --- a/fs/gfs2/incore.h
 +++ b/fs/gfs2/incore.h
-@@ -485,7 +485,7 @@ struct gfs2_trans {
- };
+@@ -748,15 +748,10 @@ struct gfs2_sbd {
  
- struct gfs2_journal_extent {
--	struct list_head extent_list;
-+	struct list_head list;
+ 	struct gfs2_trans *sd_log_tr;
+ 	unsigned int sd_log_blks_reserved;
+-	unsigned int sd_log_commited_buf;
+-	unsigned int sd_log_commited_databuf;
+ 	int sd_log_commited_revoke;
  
- 	unsigned int lblock; /* First logical block */
- 	u64 dblock; /* First disk block */
-@@ -495,6 +495,7 @@ struct gfs2_journal_extent {
- struct gfs2_jdesc {
- 	struct list_head jd_list;
- 	struct list_head extent_list;
-+	unsigned int nr_extents;
- 	struct work_struct jd_work;
- 	struct inode *jd_inode;
- 	unsigned long jd_flags;
-diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
-index 23c6e72..ae1d635 100644
---- a/fs/gfs2/lops.c
-+++ b/fs/gfs2/lops.c
-@@ -146,8 +146,8 @@ static u64 gfs2_log_bmap(struct gfs2_sbd *sdp)
- 	struct gfs2_journal_extent *je;
- 	u64 block;
+ 	atomic_t sd_log_pinned;
+-	unsigned int sd_log_num_buf;
+ 	unsigned int sd_log_num_revoke;
+-	unsigned int sd_log_num_rg;
+-	unsigned int sd_log_num_databuf;
  
--	list_for_each_entry(je, &sdp->sd_jdesc->extent_list, extent_list) {
--		if (lbn >= je->lblock && lbn < je->lblock + je->blocks) {
-+	list_for_each_entry(je, &sdp->sd_jdesc->extent_list, list) {
-+		if ((lbn >= je->lblock) && (lbn < (je->lblock + je->blocks))) {
- 			block = je->dblock + lbn - je->lblock;
- 			gfs2_log_incr_head(sdp);
- 			return block;
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index 1f855a7..e0d0db5 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -517,67 +517,6 @@ out:
- 	return ret;
+ 	struct list_head sd_log_le_revoke;
+ 	struct list_head sd_log_le_ordered;
+diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
+index 975712c..c1c9a29 100644
+--- a/fs/gfs2/log.c
++++ b/fs/gfs2/log.c
+@@ -414,24 +414,22 @@ static inline unsigned int log_distance(struct gfs2_sbd *sdp, unsigned int newer
+ static unsigned int calc_reserved(struct gfs2_sbd *sdp)
+ {
+ 	unsigned int reserved = 0;
+-	unsigned int mbuf_limit, metabufhdrs_needed;
+-	unsigned int dbuf_limit, databufhdrs_needed;
+-	unsigned int revokes = 0;
++	unsigned int mbuf;
++	unsigned int dbuf;
++	struct gfs2_trans *tr = sdp->sd_log_tr;
+ 
+-	mbuf_limit = buf_limit(sdp);
+-	metabufhdrs_needed = (sdp->sd_log_commited_buf +
+-			      (mbuf_limit - 1)) / mbuf_limit;
+-	dbuf_limit = databuf_limit(sdp);
+-	databufhdrs_needed = (sdp->sd_log_commited_databuf +
+-			      (dbuf_limit - 1)) / dbuf_limit;
++	if (tr) {
++		mbuf = tr->tr_num_buf_new - tr->tr_num_buf_rm;
++		dbuf = tr->tr_num_databuf_new - tr->tr_num_databuf_rm;
++		reserved = mbuf + dbuf;
++		/* Account for header blocks */
++		reserved += DIV_ROUND_UP(mbuf, buf_limit(sdp));
++		reserved += DIV_ROUND_UP(dbuf, databuf_limit(sdp));
++	}
+ 
+ 	if (sdp->sd_log_commited_revoke > 0)
+-		revokes = gfs2_struct2blk(sdp, sdp->sd_log_commited_revoke,
++		reserved += gfs2_struct2blk(sdp, sdp->sd_log_commited_revoke,
+ 					  sizeof(u64));
+-
+-	reserved = sdp->sd_log_commited_buf + metabufhdrs_needed +
+-		sdp->sd_log_commited_databuf + databufhdrs_needed +
+-		revokes;
+ 	/* One for the overall header */
+ 	if (reserved)
+ 		reserved++;
+@@ -693,16 +691,6 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl)
+ 		INIT_LIST_HEAD(&tr->tr_ail2_list);
+ 	}
+ 
+-	if (sdp->sd_log_num_buf != sdp->sd_log_commited_buf) {
+-		printk(KERN_INFO "GFS2: log buf %u %u\n", sdp->sd_log_num_buf,
+-		       sdp->sd_log_commited_buf);
+-		gfs2_assert_withdraw(sdp, 0);
+-	}
+-	if (sdp->sd_log_num_databuf != sdp->sd_log_commited_databuf) {
+-		printk(KERN_INFO "GFS2: log databuf %u %u\n",
+-		       sdp->sd_log_num_databuf, sdp->sd_log_commited_databuf);
+-		gfs2_assert_withdraw(sdp, 0);
+-	}
+ 	gfs2_assert_withdraw(sdp,
+ 			sdp->sd_log_num_revoke == sdp->sd_log_commited_revoke);
+ 
+@@ -727,8 +715,6 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl)
+ 	gfs2_log_lock(sdp);
+ 	sdp->sd_log_head = sdp->sd_log_flush_head;
+ 	sdp->sd_log_blks_reserved = 0;
+-	sdp->sd_log_commited_buf = 0;
+-	sdp->sd_log_commited_databuf = 0;
+ 	sdp->sd_log_commited_revoke = 0;
+ 
+ 	spin_lock(&sdp->sd_ail_lock);
+@@ -769,31 +755,29 @@ static void log_refund(struct gfs2_sbd *sdp, struct gfs2_trans *tr)
+ {
+ 	unsigned int reserved;
+ 	unsigned int unused;
++	unsigned int maxres;
+ 
+ 	gfs2_log_lock(sdp);
+ 
+-	sdp->sd_log_commited_buf += tr->tr_num_buf_new - tr->tr_num_buf_rm;
+-	sdp->sd_log_commited_databuf += tr->tr_num_databuf_new -
+-		tr->tr_num_databuf_rm;
+-	gfs2_assert_withdraw(sdp, (((int)sdp->sd_log_commited_buf) >= 0) ||
+-			     (((int)sdp->sd_log_commited_databuf) >= 0));
++	if (sdp->sd_log_tr) {
++		gfs2_merge_trans(sdp->sd_log_tr, tr);
++	} else if (tr->tr_num_buf_new || tr->tr_num_databuf_new) {
++		gfs2_assert_withdraw(sdp, tr->tr_t_gh.gh_gl);
++		sdp->sd_log_tr = tr;
++		tr->tr_attached = 1;
++	}
++
+ 	sdp->sd_log_commited_revoke += tr->tr_num_revoke - tr->tr_num_revoke_rm;
+ 	reserved = calc_reserved(sdp);
+-	gfs2_assert_withdraw(sdp, sdp->sd_log_blks_reserved + tr->tr_reserved >= reserved);
+-	unused = sdp->sd_log_blks_reserved - reserved + tr->tr_reserved;
++	maxres = sdp->sd_log_blks_reserved + tr->tr_reserved;
++	gfs2_assert_withdraw(sdp, maxres >= reserved);
++	unused = maxres - reserved;
+ 	atomic_add(unused, &sdp->sd_log_blks_free);
+ 	trace_gfs2_log_blocks(sdp, unused);
+ 	gfs2_assert_withdraw(sdp, atomic_read(&sdp->sd_log_blks_free) <=
+ 			     sdp->sd_jdesc->jd_blocks);
+ 	sdp->sd_log_blks_reserved = reserved;
+ 
+-	if (sdp->sd_log_tr) {
+-		gfs2_merge_trans(sdp->sd_log_tr, tr);
+-	} else if (tr->tr_num_buf_new || tr->tr_num_databuf_new) {
+-		gfs2_assert_withdraw(sdp, tr->tr_t_gh.gh_gl);
+-		sdp->sd_log_tr = tr;
+-		tr->tr_attached = 1;
+-	}
+ 	gfs2_log_unlock(sdp);
  }
  
--/**
-- * map_journal_extents - create a reusable "extent" mapping from all logical
-- * blocks to all physical blocks for the given journal.  This will save
-- * us time when writing journal blocks.  Most journals will have only one
-- * extent that maps all their logical blocks.  That's because gfs2.mkfs
-- * arranges the journal blocks sequentially to maximize performance.
-- * So the extent would map the first block for the entire file length.
-- * However, gfs2_jadd can happen while file activity is happening, so
-- * those journals may not be sequential.  Less likely is the case where
-- * the users created their own journals by mounting the metafs and
-- * laying it out.  But it's still possible.  These journals might have
-- * several extents.
-- *
-- * TODO: This should be done in bigger chunks rather than one block at a time,
-- *       but since it's only done at mount time, I'm not worried about the
-- *       time it takes.
-- */
--static int map_journal_extents(struct gfs2_sbd *sdp)
--{
--	struct gfs2_jdesc *jd = sdp->sd_jdesc;
--	unsigned int lb;
--	u64 db, prev_db; /* logical block, disk block, prev disk block */
--	struct gfs2_inode *ip = GFS2_I(jd->jd_inode);
--	struct gfs2_journal_extent *jext = NULL;
--	struct buffer_head bh;
--	int rc = 0;
--
--	prev_db = 0;
--
--	for (lb = 0; lb < i_size_read(jd->jd_inode) >> sdp->sd_sb.sb_bsize_shift; lb++) {
--		bh.b_state = 0;
--		bh.b_blocknr = 0;
--		bh.b_size = 1 << ip->i_inode.i_blkbits;
--		rc = gfs2_block_map(jd->jd_inode, lb, &bh, 0);
--		db = bh.b_blocknr;
--		if (rc || !db) {
--			printk(KERN_INFO "GFS2 journal mapping error %d: lb="
--			       "%u db=%llu\n", rc, lb, (unsigned long long)db);
--			break;
--		}
--		if (!prev_db || db != prev_db + 1) {
--			jext = kzalloc(sizeof(struct gfs2_journal_extent),
--				       GFP_KERNEL);
--			if (!jext) {
--				printk(KERN_INFO "GFS2 error: out of memory "
--				       "mapping journal extents.\n");
--				rc = -ENOMEM;
--				break;
--			}
--			jext->dblock = db;
--			jext->lblock = lb;
--			jext->blocks = 1;
--			list_add_tail(&jext->extent_list, &jd->extent_list);
--		} else {
--			jext->blocks++;
--		}
--		prev_db = db;
--	}
--	return rc;
--}
--
- static void gfs2_others_may_mount(struct gfs2_sbd *sdp)
- {
- 	char *message = "FIRSTMOUNT=Done";
-@@ -779,7 +718,7 @@ static int init_journal(struct gfs2_sbd *sdp, int undo)
- 		atomic_set(&sdp->sd_log_thresh2, 4*sdp->sd_jdesc->jd_blocks/5);
+@@ -833,10 +817,7 @@ void gfs2_log_shutdown(struct gfs2_sbd *sdp)
+ 	down_write(&sdp->sd_log_flush_lock);
  
- 		/* Map the extents for this journal's blocks */
--		map_journal_extents(sdp);
-+		gfs2_map_journal_extents(sdp, sdp->sd_jdesc);
+ 	gfs2_assert_withdraw(sdp, !sdp->sd_log_blks_reserved);
+-	gfs2_assert_withdraw(sdp, !sdp->sd_log_num_buf);
+ 	gfs2_assert_withdraw(sdp, !sdp->sd_log_num_revoke);
+-	gfs2_assert_withdraw(sdp, !sdp->sd_log_num_rg);
+-	gfs2_assert_withdraw(sdp, !sdp->sd_log_num_databuf);
+ 	gfs2_assert_withdraw(sdp, list_empty(&sdp->sd_ail1_list));
+ 
+ 	sdp->sd_log_flush_head = sdp->sd_log_head;
+diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
+index ee9ec7f..23c6e72 100644
+--- a/fs/gfs2/lops.c
++++ b/fs/gfs2/lops.c
+@@ -494,9 +494,11 @@ static void gfs2_before_commit(struct gfs2_sbd *sdp, unsigned int limit,
+ static void buf_lo_before_commit(struct gfs2_sbd *sdp, struct gfs2_trans *tr)
+ {
+ 	unsigned int limit = buf_limit(sdp); /* 503 for 4k blocks */
++	unsigned int nbuf;
+ 	if (tr == NULL)
+ 		return;
+-	gfs2_before_commit(sdp, limit, sdp->sd_log_num_buf, &tr->tr_buf, 0);
++	nbuf = tr->tr_num_buf_new - tr->tr_num_buf_rm;
++	gfs2_before_commit(sdp, limit, nbuf, &tr->tr_buf, 0);
+ }
+ 
+ static void buf_lo_after_commit(struct gfs2_sbd *sdp, struct gfs2_trans *tr)
+@@ -511,11 +513,8 @@ static void buf_lo_after_commit(struct gfs2_sbd *sdp, struct gfs2_trans *tr)
+ 	while (!list_empty(head)) {
+ 		bd = list_entry(head->next, struct gfs2_bufdata, bd_list);
+ 		list_del_init(&bd->bd_list);
+-		sdp->sd_log_num_buf--;
+-
+ 		gfs2_unpin(sdp, bd->bd_bh, tr);
  	}
- 	trace_gfs2_log_blocks(sdp, atomic_read(&sdp->sd_log_blks_free));
+-	gfs2_assert_warn(sdp, !sdp->sd_log_num_buf);
+ }
  
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index 60f60f6..2574744 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -295,9 +295,8 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
+ static void buf_lo_before_scan(struct gfs2_jdesc *jd,
+@@ -761,10 +760,12 @@ static void revoke_lo_after_scan(struct gfs2_jdesc *jd, int error, int pass)
  
- void gfs2_jindex_free(struct gfs2_sbd *sdp)
+ static void databuf_lo_before_commit(struct gfs2_sbd *sdp, struct gfs2_trans *tr)
  {
--	struct list_head list, *head;
-+	struct list_head list;
- 	struct gfs2_jdesc *jd;
--	struct gfs2_journal_extent *jext;
+-	unsigned int limit = buf_limit(sdp) / 2;
++	unsigned int limit = databuf_limit(sdp);
++	unsigned int nbuf;
+ 	if (tr == NULL)
+ 		return;
+-	gfs2_before_commit(sdp, limit, sdp->sd_log_num_databuf, &tr->tr_databuf, 1);
++	nbuf = tr->tr_num_databuf_new - tr->tr_num_databuf_rm;
++	gfs2_before_commit(sdp, limit, nbuf, &tr->tr_databuf, 1);
+ }
  
- 	spin_lock(&sdp->sd_jindex_spin);
- 	list_add(&list, &sdp->sd_jindex_list);
-@@ -307,14 +306,7 @@ void gfs2_jindex_free(struct gfs2_sbd *sdp)
+ static int databuf_lo_scan_elements(struct gfs2_jdesc *jd, unsigned int start,
+@@ -849,10 +850,8 @@ static void databuf_lo_after_commit(struct gfs2_sbd *sdp, struct gfs2_trans *tr)
+ 	while (!list_empty(head)) {
+ 		bd = list_entry(head->next, struct gfs2_bufdata, bd_list);
+ 		list_del_init(&bd->bd_list);
+-		sdp->sd_log_num_databuf--;
+ 		gfs2_unpin(sdp, bd->bd_bh, tr);
+ 	}
+-	gfs2_assert_warn(sdp, !sdp->sd_log_num_databuf);
+ }
  
- 	while (!list_empty(&list)) {
- 		jd = list_entry(list.next, struct gfs2_jdesc, jd_list);
--		head = &jd->extent_list;
--		while (!list_empty(head)) {
--			jext = list_entry(head->next,
--					  struct gfs2_journal_extent,
--					  extent_list);
--			list_del(&jext->extent_list);
--			kfree(jext);
+ 
+diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
+index c7f2469..005e468 100644
+--- a/fs/gfs2/meta_io.c
++++ b/fs/gfs2/meta_io.c
+@@ -267,15 +267,10 @@ void gfs2_remove_from_journal(struct buffer_head *bh, struct gfs2_trans *tr, int
+ 		trace_gfs2_pin(bd, 0);
+ 		atomic_dec(&sdp->sd_log_pinned);
+ 		list_del_init(&bd->bd_list);
+-		if (meta) {
+-			gfs2_assert_warn(sdp, sdp->sd_log_num_buf);
+-			sdp->sd_log_num_buf--;
++		if (meta)
+ 			tr->tr_num_buf_rm++;
+-		} else {
+-			gfs2_assert_warn(sdp, sdp->sd_log_num_databuf);
+-			sdp->sd_log_num_databuf--;
++		else
+ 			tr->tr_num_databuf_rm++;
 -		}
-+		gfs2_free_journal_extents(jd);
- 		list_del(&jd->jd_list);
- 		iput(jd->jd_inode);
- 		kfree(jd);
+ 		tr->tr_touched = 1;
+ 		was_pinned = 1;
+ 		brelse(bh);
+diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
+index e0464a2..295f400 100644
+--- a/fs/gfs2/trans.c
++++ b/fs/gfs2/trans.c
+@@ -213,7 +213,6 @@ void gfs2_trans_add_data(struct gfs2_glock *gl, struct buffer_head *bh)
+ 		set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
+ 		gfs2_pin(sdp, bd->bd_bh);
+ 		tr->tr_num_databuf_new++;
+-		sdp->sd_log_num_databuf++;
+ 		list_add_tail(&bd->bd_list, &tr->tr_databuf);
+ 	}
+ 	gfs2_log_unlock(sdp);
+@@ -241,7 +240,6 @@ static void meta_lo_add(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
+ 	gfs2_pin(sdp, bd->bd_bh);
+ 	mh->__pad0 = cpu_to_be64(0);
+ 	mh->mh_jid = cpu_to_be32(sdp->sd_jdesc->jd_jid);
+-	sdp->sd_log_num_buf++;
+ 	list_add(&bd->bd_list, &tr->tr_buf);
+ 	tr->tr_num_buf_new++;
+ }
 -- 
 1.8.3.1
 
