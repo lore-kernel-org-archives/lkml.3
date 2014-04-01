@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaDAQQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:16:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44664 "EHLO
+	id S1753236AbaDAQQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:16:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44740 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664AbaDAQQD (ORCPT
+	with ESMTP id S1753196AbaDAQQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:03 -0400
+	Tue, 1 Apr 2014 12:16:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Xiaotian Feng <xtfeng@gmail.com>, Mike Galbraith <bitbucket@online.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 44/86] rapidio/tsi721: fix tasklet termination in dma channel release
-Date: Tue,  1 Apr 2014 09:07:57 -0700
-Message-Id: <1396368519-12728-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 45/86] spi: coldfire-qspi: Fix getting correct address for *mcfqspi
+Date: Tue,  1 Apr 2014 09:07:58 -0700
+Message-Id: <1396368519-12728-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -31,135 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 04379dffdd4da820d51a1566ad2e86f3b1ad97ed upstream.
+commit ee73b4c6e3fc0755a91752ab8eebc8e070038b53 upstream.
 
-This patch is a modification of the patch originally proposed by
-Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
-This new version disables DMA channel interrupts and ensures that the
-tasklet wil not be scheduled again before calling tasklet_kill().
+dev_get_drvdata() returns the address of master rather than mcfqspi.
 
-Unfortunately the updated patch was not released at that time due to
-planned rework of Tsi721 mport driver to use threaded interrupts (which
-has yet to happen).  Recently the issue was reported again:
-https://lkml.org/lkml/2014/2/19/762.
-
-Description from the original Xiaotian's patch:
-
- "Some drivers use tasklet_disable in device remove/release process,
-  tasklet_disable will inc tasklet->count and return.  If the tasklet is
-  not handled yet under some softirq pressure, the tasklet will be
-  placed on the tasklet_vec, never have a chance to be excuted.  This
-  might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq,
-  but tasklet is disabled.  tasklet_kill should be used in this case."
-
-This patch is applicable to kernel versions starting from v3.5.
-
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: af361079 (spi/coldfire-qspi: Drop extra calls to spi_master_get in suspend/resume functions)
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/rapidio/devices/tsi721.h     |  1 +
- drivers/rapidio/devices/tsi721_dma.c | 27 ++++++++++++++++++---------
- 2 files changed, 19 insertions(+), 9 deletions(-)
+ drivers/spi/spi-coldfire-qspi.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rapidio/devices/tsi721.h b/drivers/rapidio/devices/tsi721.h
-index b4b0d83..7061ac0 100644
---- a/drivers/rapidio/devices/tsi721.h
-+++ b/drivers/rapidio/devices/tsi721.h
-@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
- 	struct list_head	free_list;
- 	dma_cookie_t		completed_cookie;
- 	struct tasklet_struct	tasklet;
-+	bool			active;
- };
- 
- #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
-diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
-index 502663f..91245f5 100644
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_bdma_chan *bdma_chan)
+diff --git a/drivers/spi/spi-coldfire-qspi.c b/drivers/spi/spi-coldfire-qspi.c
+index 58466b8..7c23879 100644
+--- a/drivers/spi/spi-coldfire-qspi.c
++++ b/drivers/spi/spi-coldfire-qspi.c
+@@ -566,7 +566,8 @@ static int mcfqspi_resume(struct device *dev)
+ #ifdef CONFIG_PM_RUNTIME
+ static int mcfqspi_runtime_suspend(struct device *dev)
  {
- 	/* Disable BDMA channel interrupts */
- 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
--
--	tasklet_schedule(&bdma_chan->tasklet);
-+	if (bdma_chan->active)
-+		tasklet_schedule(&bdma_chan->tasklet);
- }
+-	struct mcfqspi *mcfqspi = platform_get_drvdata(to_platform_device(dev));
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct mcfqspi *mcfqspi = spi_master_get_devdata(master);
  
- #ifdef CONFIG_PCI_MSI
-@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(struct dma_chan *dchan)
- 	}
- #endif /* CONFIG_PCI_MSI */
+ 	clk_disable(mcfqspi->clk);
  
--	tasklet_enable(&bdma_chan->tasklet);
-+	bdma_chan->active = true;
- 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
+@@ -575,7 +576,8 @@ static int mcfqspi_runtime_suspend(struct device *dev)
  
- 	return bdma_chan->bd_num - 1;
-@@ -576,9 +576,7 @@ err_out:
- static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ static int mcfqspi_runtime_resume(struct device *dev)
  {
- 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
--#ifdef CONFIG_PCI_MSI
- 	struct tsi721_device *priv = to_tsi721(dchan->device);
--#endif
- 	LIST_HEAD(list);
+-	struct mcfqspi *mcfqspi = platform_get_drvdata(to_platform_device(dev));
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct mcfqspi *mcfqspi = spi_master_get_devdata(master);
  
- 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
-@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(struct dma_chan *dchan)
- 	BUG_ON(!list_empty(&bdma_chan->active_list));
- 	BUG_ON(!list_empty(&bdma_chan->queue));
+ 	clk_enable(mcfqspi->clk);
  
--	tasklet_disable(&bdma_chan->tasklet);
-+	tsi721_bdma_interrupt_enable(bdma_chan, 0);
-+	bdma_chan->active = false;
-+
-+#ifdef CONFIG_PCI_MSI
-+	if (priv->flags & TSI721_USING_MSIX) {
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-+					   bdma_chan->id].vector);
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
-+					   bdma_chan->id].vector);
-+	} else
-+#endif
-+	synchronize_irq(priv->pdev->irq);
-+
-+	tasklet_kill(&bdma_chan->tasklet);
- 
- 	spin_lock_bh(&bdma_chan->lock);
- 	list_splice_init(&bdma_chan->free_list, &list);
- 	spin_unlock_bh(&bdma_chan->lock);
- 
--	tsi721_bdma_interrupt_enable(bdma_chan, 0);
--
- #ifdef CONFIG_PCI_MSI
- 	if (priv->flags & TSI721_USING_MSIX) {
- 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 		bdma_chan->dchan.cookie = 1;
- 		bdma_chan->dchan.chan_id = i;
- 		bdma_chan->id = i;
-+		bdma_chan->active = false;
- 
- 		spin_lock_init(&bdma_chan->lock);
- 
-@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 
- 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
- 			     (unsigned long)bdma_chan);
--		tasklet_disable(&bdma_chan->tasklet);
- 		list_add_tail(&bdma_chan->dchan.device_node,
- 			      &mport->dma.channels);
- 	}
 -- 
 1.8.3.2
 
