@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaDALRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:17:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42479 "EHLO
+	id S1752666AbaDALt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:49:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42489 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaDALRq (ORCPT
+	with ESMTP id S1752452AbaDALRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:46 -0400
+	Tue, 1 Apr 2014 07:17:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Anton Blanchard <anton@samba.org>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 078/144] mwifiex: copy AP's HT capability info correctly
-Date: Tue,  1 Apr 2014 12:14:42 +0100
-Message-Id: <1396350948-29910-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 081/144] ibmveth: Fix endian issues with MAC addresses
+Date: Tue,  1 Apr 2014 12:14:45 +0100
+Message-Id: <1396350948-29910-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +27,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
+commit d746ca9561440685edb62614d1bcbbc27ff50e66 upstream.
 
-While preparing association request, intersection of device's HT
-capability information and corresponding fields advertised by AP
-is used.
+The code to load a MAC address into a u64 for passing to the
+hypervisor via a register is broken on little endian.
 
-This patch fixes an error while copying this field from AP's
-beacon.
+Create a helper function called ibmveth_encode_mac_addr
+which does the right thing in both big and little endian.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+We were storing the MAC address in a long in struct ibmveth_adapter.
+It's never used so remove it - we don't need another place in the
+driver where we create endian issues with MAC addresses.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/11n.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/ibm/ibmveth.c | 25 ++++++++++++++++---------
+ drivers/net/ethernet/ibm/ibmveth.h |  1 -
+ 2 files changed, 16 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/11n.c b/drivers/net/wireless/mwifiex/11n.c
-index 41e9d25..2658c8c 100644
---- a/drivers/net/wireless/mwifiex/11n.c
-+++ b/drivers/net/wireless/mwifiex/11n.c
-@@ -307,8 +307,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifiex_private *priv,
- 		ht_cap->header.len =
- 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
- 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *) bss_desc->bcn_ht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_ht_cap,
- 		       le16_to_cpu(ht_cap->header.len));
+diff --git a/drivers/net/ethernet/ibm/ibmveth.c b/drivers/net/ethernet/ibm/ibmveth.c
+index 70fd559..2b3aada 100644
+--- a/drivers/net/ethernet/ibm/ibmveth.c
++++ b/drivers/net/ethernet/ibm/ibmveth.c
+@@ -523,10 +523,21 @@ retry:
+ 	return rc;
+ }
  
- 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
++static u64 ibmveth_encode_mac_addr(u8 *mac)
++{
++	int i;
++	u64 encoded = 0;
++
++	for (i = 0; i < ETH_ALEN; i++)
++		encoded = (encoded << 8) | mac[i];
++
++	return encoded;
++}
++
+ static int ibmveth_open(struct net_device *netdev)
+ {
+ 	struct ibmveth_adapter *adapter = netdev_priv(netdev);
+-	u64 mac_address = 0;
++	u64 mac_address;
+ 	int rxq_entries = 1;
+ 	unsigned long lpar_rc;
+ 	int rc;
+@@ -580,8 +591,7 @@ static int ibmveth_open(struct net_device *netdev)
+ 	adapter->rx_queue.num_slots = rxq_entries;
+ 	adapter->rx_queue.toggle = 1;
+ 
+-	memcpy(&mac_address, netdev->dev_addr, netdev->addr_len);
+-	mac_address = mac_address >> 16;
++	mac_address = ibmveth_encode_mac_addr(netdev->dev_addr);
+ 
+ 	rxq_desc.fields.flags_len = IBMVETH_BUF_VALID |
+ 					adapter->rx_queue.queue_len;
+@@ -1184,8 +1194,8 @@ static void ibmveth_set_multicast_list(struct net_device *netdev)
+ 		/* add the addresses to the filter table */
+ 		netdev_for_each_mc_addr(ha, netdev) {
+ 			/* add the multicast address to the filter table */
+-			unsigned long mcast_addr = 0;
+-			memcpy(((char *)&mcast_addr)+2, ha->addr, 6);
++			u64 mcast_addr;
++			mcast_addr = ibmveth_encode_mac_addr(ha->addr);
+ 			lpar_rc = h_multicast_ctrl(adapter->vdev->unit_address,
+ 						   IbmVethMcastAddFilter,
+ 						   mcast_addr);
+@@ -1369,9 +1379,6 @@ static int ibmveth_probe(struct vio_dev *dev, const struct vio_device_id *id)
+ 
+ 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
+ 
+-	adapter->mac_addr = 0;
+-	memcpy(&adapter->mac_addr, mac_addr_p, 6);
+-
+ 	netdev->irq = dev->irq;
+ 	netdev->netdev_ops = &ibmveth_netdev_ops;
+ 	netdev->ethtool_ops = &netdev_ethtool_ops;
+@@ -1380,7 +1387,7 @@ static int ibmveth_probe(struct vio_dev *dev, const struct vio_device_id *id)
+ 		NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
+ 	netdev->features |= netdev->hw_features;
+ 
+-	memcpy(netdev->dev_addr, &adapter->mac_addr, netdev->addr_len);
++	memcpy(netdev->dev_addr, mac_addr_p, ETH_ALEN);
+ 
+ 	for (i = 0; i < IBMVETH_NUM_BUFF_POOLS; i++) {
+ 		struct kobject *kobj = &adapter->rx_buff_pool[i].kobj;
+diff --git a/drivers/net/ethernet/ibm/ibmveth.h b/drivers/net/ethernet/ibm/ibmveth.h
+index 43a794f..48639ba 100644
+--- a/drivers/net/ethernet/ibm/ibmveth.h
++++ b/drivers/net/ethernet/ibm/ibmveth.h
+@@ -139,7 +139,6 @@ struct ibmveth_adapter {
+     struct napi_struct napi;
+     struct net_device_stats stats;
+     unsigned int mcastFilterSize;
+-    unsigned long mac_addr;
+     void * buffer_list_addr;
+     void * filter_list_addr;
+     dma_addr_t buffer_list_dma;
 -- 
 1.9.1
 
