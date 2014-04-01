@@ -1,62 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaDAAuQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 20:50:16 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:46382 "HELO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751095AbaDAAuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 20:50:14 -0400
+	id S1751757AbaDAAuY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 20:50:24 -0400
+Received: from tundra.namei.org ([65.99.196.166]:47316 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751717AbaDAAuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 20:50:18 -0400
+Date: Tue, 1 Apr 2014 11:53:37 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [GIT] Security subsystem changes for 3.15
+Message-ID: <alpine.LRH.2.02.1404011149310.21976@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <4fd27e6c.c96a.14512e82018.Coremail.asuka.com@163.com>
-References: <1395957398-24546-1-git-send-email-asuka.com@163.com>
- <CAEP_g=_qJ1uHKZmZdkUrT+NUkzbRgaHfShZoMbnnCb+LwjOneQ@mail.gmail.com> <4fd27e6c.c96a.14512e82018.Coremail.asuka.com@163.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Mon, 31 Mar 2014 17:49:53 -0700
-Message-ID: <CAEP_g=_84HXCZLOzQ0JdLBF5WVhqwTJeEAY-xjqDD8YCv8yrRg@mail.gmail.com>
-Subject: Re: [PATCH] openvswitch: supply a dummy err_handler of
- gre_cisco_protocol to prevent kernel crash
-To: wei zhang <asuka.com@163.com>
-Cc: David Miller <davem@davemloft.net>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 30, 2014 at 5:12 AM, wei zhang <asuka.com@163.com> wrote:
-> At 2014-03-29 06:02:25,"Jesse Gross" <jesse@nicira.com> wrote:
->
->>I'm not sure that rejecting all ICMP packets is the correct thing do
->>here since it means that we could pass them onto a later caller even
->>though they are intended for us. We should probably use the same logic
->>as for receiving packets and just discard them here.
->
-> Thank you very much for your advice, did you mean this logic?
+Apart from reordering the SELinux mmap code to ensure DAC is called 
+before MAC, these are minor maintenance updates.
 
-Yes, that's what I was thinking.
+Please pull.
 
-[...]
+The following changes since commit 01d5f3b598b18a5035426c30801adf65822dbd0c:
 
-> Maybe I misunderstand something? I think if we discard all packet pass to us
-> when we use gre vport, new gre_cisco_protocol which has lower priority could
-> not see the packet intended to it.
+  Merge branch 'for-3.15' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata (2014-03-31 15:27:37 -0700)
 
-That's true but in this case it would also not see any data packets,
-so I don't think that situation would work well anyways.
+are available in the git repository at:
 
-> I checked the implementation of the ipgre_err(), which has be called before
-> the err_handler of gre vport. It use the the (local address, remote address, key)
-> to distinguish the packet which is realy intended to it, although it could not
-> always get the key from the icmp packet. Should we do as the same as it?
-> I'm not sure this is feasible, any advice is appreciate.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
 
-OVS does flow based matching rather than using a static set of
-configuration parameters, so everything "matches" in some way
-(although the result might be to drop). This generally means that OVS
-is the receiver of last resort and nothing currently has a lower
-priority. That actually means the difference between the patches is
-somewhat academic but it seems more robust for the logic to be
-consistent.
+Dmitry Kasatkin (6):
+      ima: fix erroneous removal of security.ima xattr
+      integrity: fix checkpatch errors
+      ima: return d_name.name if d_path fails
+      evm: EVM does not use MD5
+      ima: skip memory allocation for empty files
+      evm: enable key retention service automatically
+
+James Morris (1):
+      Merge branch 'next-fixes' of git://git.kernel.org/.../zohar/linux-integrity into next
+
+Jeff Layton (1):
+      security: have cap_dentry_init_security return error
+
+Jingoo Han (1):
+      security: replace strict_strto*() with kstrto*()
+
+Joe Perches (2):
+      capability: Use current logging styles
+      security: integrity: Use a more current logging style
+
+Libo Chen (1):
+      ima: new helper: file_inode(file)
+
+Mimi Zohar (3):
+      ima: use static const char array definitions
+      fs: move i_readcount
+      MAINTAINERS: email updates and other misc. changes
+
+Paul Moore (4):
+      selinux: fix the output of ./scripts/get_maintainer.pl for SELinux
+      selinux: fix the output of ./scripts/get_maintainer.pl for SELinux
+      selinux: put the mmap() DAC controls before the MAC controls
+      selinux: correctly label /proc inodes in use before the policy is loaded
+
+Rashika Kheria (1):
+      kernel: Mark function as static in kernel/seccomp.c
+
+Roberto Sassu (2):
+      ima: restore the original behavior for sending data with ima template
+      ima: reduce memory usage when a template containing the n field is used
+
+Sam Ravnborg (1):
+      security: cleanup Makefiles to use standard syntax for specifying sub-directories
+
+Tetsuo Handa (1):
+      Integrity: Pass commname via get_task_comm()
+
+ MAINTAINERS                               |   22 +++++---
+ include/linux/fs.h                        |    6 +-
+ kernel/capability.c                       |   29 ++++-------
+ kernel/seccomp.c                          |    2 +-
+ security/Makefile                         |   12 ++--
+ security/apparmor/lsm.c                   |    2 +-
+ security/capability.c                     |    2 +-
+ security/integrity/Makefile               |    4 +-
+ security/integrity/evm/Kconfig            |    6 +-
+ security/integrity/evm/evm.h              |   28 +++++-----
+ security/integrity/evm/evm_crypto.c       |    8 ++-
+ security/integrity/evm/evm_main.c         |    6 ++-
+ security/integrity/evm/evm_secfs.c        |    6 ++-
+ security/integrity/iint.c                 |    2 +-
+ security/integrity/ima/ima.h              |    2 +-
+ security/integrity/ima/ima_api.c          |   20 ++++----
+ security/integrity/ima/ima_appraise.c     |    4 +-
+ security/integrity/ima/ima_crypto.c       |   37 +++++++++----
+ security/integrity/ima/ima_fs.c           |    8 ++-
+ security/integrity/ima/ima_init.c         |    9 ++-
+ security/integrity/ima/ima_main.c         |   11 +---
+ security/integrity/ima/ima_policy.c       |   79 +++++++++++++++--------------
+ security/integrity/ima/ima_queue.c        |   12 +++--
+ security/integrity/ima/ima_template.c     |   19 ++++---
+ security/integrity/ima/ima_template_lib.c |   29 ++++-------
+ security/integrity/integrity_audit.c      |    7 ++-
+ security/keys/encrypted-keys/encrypted.c  |    2 +-
+ security/keys/trusted.c                   |    6 +-
+ security/selinux/hooks.c                  |   60 +++++++++++++--------
+ security/selinux/selinuxfs.c              |    2 +-
+ 30 files changed, 235 insertions(+), 207 deletions(-)
