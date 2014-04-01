@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaDATJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 15:09:29 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:55191 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaDATJ0 (ORCPT
+	id S1751834AbaDATJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 15:09:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:30237 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353AbaDATJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 15:09:26 -0400
+	Tue, 1 Apr 2014 15:09:46 -0400
+X-IronPort-AV: E=Sophos;i="4.97,775,1389744000"; 
+   d="scan'208";a="115839614"
+Message-ID: <533B0EF8.6000900@citrix.com>
+Date: Tue, 1 Apr 2014 20:09:44 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwUOe9twEU2F7K5PcDRPk-eS+B9CN=P327bhCYH9Ew=fg@mail.gmail.com>
-References: <1396373557-3387-1-git-send-email-andi@firstfloor.org>
-	<1396373557-3387-4-git-send-email-andi@firstfloor.org>
-	<CA+55aFwUOe9twEU2F7K5PcDRPk-eS+B9CN=P327bhCYH9Ew=fg@mail.gmail.com>
-Date: Tue, 1 Apr 2014 12:09:24 -0700
-X-Google-Sender-Auth: -8PmlSS9tBDVzLsvHs42Lehiu3o
-Message-ID: <CA+55aFyVD5MEt2-sKg8roFJymT1gHHadqq=+q1GBje=mObQhXg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] asmlinkage, x86: Add explicit __visible to arch/x86/crypto/*
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Content-Type: text/plain; charset=UTF-8
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 2/2] xen-netback: Grant copy the header instead
+ of map and memcpy
+References: <1396278539-27639-1-git-send-email-zoltan.kiss@citrix.com>	 <1396278539-27639-2-git-send-email-zoltan.kiss@citrix.com> <1396352440.8667.117.camel@kazak.uk.xensource.com>
+In-Reply-To: <1396352440.8667.117.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 11:53 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 01/04/14 12:40, Ian Campbell wrote:
+> On Mon, 2014-03-31 at 16:08 +0100, Zoltan Kiss wrote:
+>>
+>>   check_frags:
+>> -	for (i = start; i < nr_frags; i++) {
+>> +	for (i = 0; i < nr_frags; i++, gop_map++) {
+>>   		int j, newerr;
+>>
+>>   		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
+>> -		tx_info = &vif->pending_tx_info[pending_idx];
+>>
+>>   		/* Check error status: if okay then remember grant handle. */
+>> -		newerr = (++gop_map)->status;
+>> +		newerr = (gop_map)->status;
 >
-> You're adding them to assembly routines called from C, which is
-> exactly the wrong way around, and pointless. And it's worse than
-> pointless churn, it just confuses people, and shows that you are
-> confused about the meaning of it.
+> You've reworked the handling of gop_map and when and where it is
+> incremented, which might be a legit cleanup but does it relate to the
+> bulk of this change somehow that I'm missing?
+That original "++gop_map" assumed the header was also grant mapped, and 
+incremented the pointer first here, which is wrong now.
 
-Basically, all these grep's should return the empty set:
+>
+>>   [...]
+>>   		__skb_put(skb, data_len);
+>> +		vif->tx_copy_ops[*copy_ops].source.u.ref = txreq.gref;
+>> +		vif->tx_copy_ops[*copy_ops].source.domid = vif->domid;
+>> +		vif->tx_copy_ops[*copy_ops].source.offset = txreq.offset;
+>> +
+>> +		vif->tx_copy_ops[*copy_ops].dest.u.gmfn =
+>> +			virt_to_mfn(skb->data);
+>> +		vif->tx_copy_ops[*copy_ops].dest.domid = DOMID_SELF;
+>> +		vif->tx_copy_ops[*copy_ops].dest.offset =
+>> +			offset_in_page(skb->data);
+>> +
+>> +		vif->tx_copy_ops[*copy_ops].len = data_len;
+>> +		vif->tx_copy_ops[*copy_ops].flags = GNTCOPY_source_gref;
+>
+> We have gnttab_set_map_op. Should we have gnttap_set_copy_op too?
+This is the only place at the moment when we do this, so I wouldn't 
+bother to do it.
 
-   git grep static.*__visible
-   git grep extern.*__visible
-   git grep "__visible.*(.*);"
+>
+>> -	BUG_ON(ret);
+>> +	else {
+>> +		gnttab_batch_copy(vif->tx_copy_ops, nr_cops);
+>> +		if (nr_mops != 0) {
+>
+>
+> if (nr_mops) would do.
+>
+>> +			ret = gnttab_map_refs(vif->tx_map_ops,
+>
+> So we use gnttab_batch_copy and gnttab_map_refs.
+>
+> Shouldn't we either use gnttab_batch_copy and gnttab_batch_map or
+> gnttab_copy gnttab_map_refs. (where gnttab_copy might be a bare
+> GNTTABOP_copy or might be a helper wrapper).
+>
+> The point of the batch interface is to handle page unsharing etc, but
+> doing it only for copies seems like a waste one way or another.
+The difference between gnttab_batch_map and gnttab_map_refs is that the 
+latter calls set_foreign_p2m_mapping, which we need for sure.
+gnttab_batch_copy calls the hypercall and tries again if op->status == 
+GNTST_eagain. I think that's exactly what we need here as well.
+The naming might be confusing indeed, but that should be the topic of an 
+another patch.
 
-because they are all signs of confusion. A 'static' variable
-(declaration _or_ definition) should never be externally visible (as a
-definition it might be called from inline asm, I guess, but then it
-should be done as an argument so that the compiler sees the use). An
-extern declaration can never sanely be marked "__visible", because the
-only use of such a declaration is for C code (which by definition
-doesn't need it). And the last case is for a function declaration,
-which have an implicit extern.
-
-And yeah, we do have a few confused users already (28, to be exact).
-They should be fixed. But more importantly, we certainly shouldn't be
-adding more of them.
-
-                    Linus
+Zoli
