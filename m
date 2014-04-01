@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaDAQJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:09:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44366 "EHLO
+	id S1752555AbaDAQJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:09:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44456 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaDAQJF (ORCPT
+	with ESMTP id S1752446AbaDAQJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:05 -0400
+	Tue, 1 Apr 2014 12:09:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 12/86] net: add and use skb_gso_transport_seglen()
-Date: Tue,  1 Apr 2014 09:07:25 -0700
-Message-Id: <1396368519-12728-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 68/86] vmxnet3: fix netpoll race condition
+Date: Tue,  1 Apr 2014 09:08:21 -0700
+Message-Id: <1396368519-12728-69-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,77 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit de960aa9ab4decc3304959f69533eef64d05d8e8 upstream.
+commit d25f06ea466ea521b563b76661180b4e44714ae6 upstream.
 
-[ no skb_gso_seglen helper in 3.10, leave tbf alone ]
+vmxnet3's netpoll driver is incorrectly coded.  It directly calls
+vmxnet3_do_poll, which is the driver internal napi poll routine.  As the netpoll
+controller method doesn't block real napi polls in any way, there is a potential
+for race conditions in which the netpoll controller method and the napi poll
+method run concurrently.  The result is data corruption causing panics such as this
+one recently observed:
+PID: 1371   TASK: ffff88023762caa0  CPU: 1   COMMAND: "rs:main Q:Reg"
+ #0 [ffff88023abd5780] machine_kexec at ffffffff81038f3b
+ #1 [ffff88023abd57e0] crash_kexec at ffffffff810c5d92
+ #2 [ffff88023abd58b0] oops_end at ffffffff8152b570
+ #3 [ffff88023abd58e0] die at ffffffff81010e0b
+ #4 [ffff88023abd5910] do_trap at ffffffff8152add4
+ #5 [ffff88023abd5970] do_invalid_op at ffffffff8100cf95
+ #6 [ffff88023abd5a10] invalid_op at ffffffff8100bf9b
+    [exception RIP: vmxnet3_rq_rx_complete+1968]
+    RIP: ffffffffa00f1e80  RSP: ffff88023abd5ac8  RFLAGS: 00010086
+    RAX: 0000000000000000  RBX: ffff88023b5dcee0  RCX: 00000000000000c0
+    RDX: 0000000000000000  RSI: 00000000000005f2  RDI: ffff88023b5dcee0
+    RBP: ffff88023abd5b48   R8: 0000000000000000   R9: ffff88023a3b6048
+    R10: 0000000000000000  R11: 0000000000000002  R12: ffff8802398d4cd8
+    R13: ffff88023af35140  R14: ffff88023b60c890  R15: 0000000000000000
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #7 [ffff88023abd5b50] vmxnet3_do_poll at ffffffffa00f204a [vmxnet3]
+ #8 [ffff88023abd5b80] vmxnet3_netpoll at ffffffffa00f209c [vmxnet3]
+ #9 [ffff88023abd5ba0] netpoll_poll_dev at ffffffff81472bb7
 
-This moves part of Eric Dumazets skb_gso_seglen helper from tbf sched to
-skbuff core so it may be reused by upcoming ip forwarding path patch.
+The fix is to do as other drivers do, and have the poll controller call the top
+half interrupt handler, which schedules a napi poll properly to recieve frames
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Tested by myself, successfully.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Shreyas Bhatewara <sbhatewara@vmware.com>
+CC: "VMware, Inc." <pv-drivers@vmware.com>
+CC: "David S. Miller" <davem@davemloft.net>
+Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/skbuff.h |  2 ++
- net/core/skbuff.c      | 25 +++++++++++++++++++++++++
- 2 files changed, 27 insertions(+)
+ drivers/net/vmxnet3/vmxnet3_drv.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index db29f78..98fc2f7 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2364,6 +2364,8 @@ extern int	       skb_shift(struct sk_buff *tgt, struct sk_buff *skb,
- extern struct sk_buff *skb_segment(struct sk_buff *skb,
- 				   netdev_features_t features);
- 
-+unsigned int skb_gso_transport_seglen(const struct sk_buff *skb);
-+
- static inline void *skb_header_pointer(const struct sk_buff *skb, int offset,
- 				       int len, void *buffer)
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 12c6440..b87753c 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1751,12 +1751,18 @@ static void
+ vmxnet3_netpoll(struct net_device *netdev)
  {
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index cdcb448..e255b9c 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -47,6 +47,8 @@
- #include <linux/in.h>
- #include <linux/inet.h>
- #include <linux/slab.h>
-+#include <linux/tcp.h>
-+#include <linux/udp.h>
- #include <linux/netdevice.h>
- #ifdef CONFIG_NET_CLS_ACT
- #include <net/pkt_sched.h>
-@@ -3445,3 +3447,26 @@ bool skb_try_coalesce(struct sk_buff *to, struct sk_buff *from,
- 	return true;
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
++	int i;
+ 
+-	if (adapter->intr.mask_mode == VMXNET3_IMM_ACTIVE)
+-		vmxnet3_disable_all_intrs(adapter);
+-
+-	vmxnet3_do_poll(adapter, adapter->rx_queue[0].rx_ring[0].size);
+-	vmxnet3_enable_all_intrs(adapter);
++	switch (adapter->intr.type) {
++	case VMXNET3_IT_MSIX:
++		for (i = 0; i < adapter->num_rx_queues; i++)
++			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
++		break;
++	case VMXNET3_IT_MSI:
++	default:
++		vmxnet3_intr(0, adapter->netdev);
++		break;
++	}
+ 
  }
- EXPORT_SYMBOL(skb_try_coalesce);
-+
-+/**
-+ * skb_gso_transport_seglen - Return length of individual segments of a gso packet
-+ *
-+ * @skb: GSO skb
-+ *
-+ * skb_gso_transport_seglen is used to determine the real size of the
-+ * individual segments, including Layer4 headers (TCP/UDP).
-+ *
-+ * The MAC/L2 or network (IP, IPv6) headers are not accounted for.
-+ */
-+unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
-+{
-+	const struct skb_shared_info *shinfo = skb_shinfo(skb);
-+	unsigned int hdr_len;
-+
-+	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
-+		hdr_len = tcp_hdrlen(skb);
-+	else
-+		hdr_len = sizeof(struct udphdr);
-+	return hdr_len + shinfo->gso_size;
-+}
-+EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
+ #endif	/* CONFIG_NET_POLL_CONTROLLER */
 -- 
 1.8.3.2
 
