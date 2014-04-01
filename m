@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaDAEIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:08:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53796 "EHLO
+	id S1752183AbaDAEHZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:07:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294AbaDAEIa (ORCPT
+	with ESMTP id S1750739AbaDAEHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:08:30 -0400
+	Tue, 1 Apr 2014 00:07:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 7/9] net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
-Date: Mon, 31 Mar 2014 21:08:21 -0700
-Message-Id: <20140401040756.649492702@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 4/9] Input: synaptics - add manual min/max quirk for ThinkPad X240
+Date: Mon, 31 Mar 2014 21:08:18 -0700
+Message-Id: <20140401040755.726152928@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040754.479538406@linuxfoundation.org>
 References: <20140401040754.479538406@linuxfoundation.org>
@@ -27,41 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit a79121d3b57e7ad61f0b5d23eae05214054f3ccd upstream.
+commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
 
-Bit 3 of the MVNETA_GMAC_CTRL_2 is actually used to enable the PCS,
-not the PSC: there was a typo in the name of the define, which this
-commit fixes.
+This extends Benjamin Tissoires manual min/max quirk table with support for
+the ThinkPad X240.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/marvell/mvneta.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/mouse/synaptics.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -119,7 +119,7 @@
- #define      MVNETA_GMAC_MAX_RX_SIZE_MASK        0x7ffc
- #define      MVNETA_GMAC0_PORT_ENABLE            BIT(0)
- #define MVNETA_GMAC_CTRL_2                       0x2c08
--#define      MVNETA_GMAC2_PSC_ENABLE             BIT(3)
-+#define      MVNETA_GMAC2_PCS_ENABLE             BIT(3)
- #define      MVNETA_GMAC2_PORT_RGMII             BIT(4)
- #define      MVNETA_GMAC2_PORT_RESET             BIT(6)
- #define MVNETA_GMAC_STATUS                       0x2c10
-@@ -655,7 +655,7 @@ static void mvneta_port_sgmii_config(str
- 	u32 val;
- 
- 	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--	val |= MVNETA_GMAC2_PSC_ENABLE;
-+	val |= MVNETA_GMAC2_PCS_ENABLE;
- 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
- }
- 
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1507,6 +1507,14 @@ static const struct dmi_system_id min_ma
+ 		.driver_data = (int []){1024, 5052, 2258, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad X240 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
 
 
