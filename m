@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaDAV3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:29:43 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:61698 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaDAV3k (ORCPT
+	id S1751946AbaDAV3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:29:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58593 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879AbaDAV3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:29:40 -0400
+	Tue, 1 Apr 2014 17:29:48 -0400
+Message-ID: <533B2FC3.80300@pengutronix.de>
+Date: Tue, 01 Apr 2014 23:29:39 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140331212522.GB8979@xanatos>
-References: <1395772963-14127-1-git-send-email-jwerner@chromium.org>
-	<20140331212522.GB8979@xanatos>
-Date: Tue, 1 Apr 2014 14:29:40 -0700
-X-Google-Sender-Auth: Uy3yUwJNVqaiwgCiHQ5o9cD2IYE
-Message-ID: <CAODwPW9i-pwgzE-OELwwkw2M_Vnhtsq4p=_5ppO7R6xXpzu==w@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci: Correct last context entry calculation for
- Configure Endpoint
-From: Julius Werner <jwerner@chromium.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>, Jim Lin <jilin@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+CC: Wolfgang Grandegger <wg@grandegger.com>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: Re: [patch 00/12] can: c_can: Fix a series of serious bugs and improve
+ the performance
+References: <20140318171007.528610837@linutronix.de> <alpine.DEB.2.02.1403312355280.14882@ionos.tec.linutronix.de> <533A742F.4090703@pengutronix.de>
+In-Reply-To: <533A742F.4090703@pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> http://marc.info/?l=linux-usb&m=137158978503741&w=2
->
-> There's an xHCI spec ambiguity:  Does the last valid context entry refer
-> to the last valid endpoint context in the *input* device context or the
-> *output* device context?
->
-> The code currently assumes it refers to the input device context, namely
-> the endpoints we're adding or changing.  If hardware needs the last
-> valid endpoint context for the re-calculated *output* device context,
-> then yes, this needs to be changed.  However, based on spec errata, I
-> believe that's not the intent of the spec authors:
->
-> http://marc.info/?l=linux-kernel&m=137208958411696&w=2
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Oh, okay, it didn't even occur to me to interpret it that way. It
-seems very odd since then Context Entries is essentially redundant
-with the information already provided by the Add Context flags.
+On 04/01/2014 10:09 AM, Marc Kleine-Budde wrote:
+>> What's the state of this series?
+>=20
+> I'll apply your patches today.
 
-> What is the impact if we calculate the valid last valid endpoint context
-> for the input context?  Do you have evidence of hardware misbehaving?
-> If so, which hardware?
+I've applied all patches of this series (with some with minor tweaks of
+the subject and/or commit message) to the can tree and skipped the
+non-series "can: c_can: Reduce interrupt load by 50%".
 
-I haven't actually seen a problem from this, it just seemed like the
-right thing to do for me when looking at it. The only real error we
-had was when the command fails due to Context Entries being 0.
+Thanks.
+Marc
 
-However, the question remains: What is the right value for Context
-Entries when we have no Add Context flags, or only the SLOT_FLAG? It
-should be perfectly legal to just drop a bunch of endpoints without
-adding/changing anything else, such as when you switch a UVC interface
-back to alternate setting 0 (which has no endpoints). Then the Input
-Context really ends at the Slot Context (DCI = 0), but Context Entries
-= 0 is very clearly forbidden in the spec. I guess we could just force
-it to 1 there and it would probably work, but that would technically
-be incorrect since the EP0 context is not updated and not part of the
-Add Context flags.
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlM7L8MACgkQjTAFq1RaXHPEqACfbQ6/53LYb7yI29Xox0VAdWn/
+I84An3QqJYNoK3q0ttMrHoGPYlA7uKsq
+=phoy
+-----END PGP SIGNATURE-----
+
+--IkOFxdI3osvLMbH3K2bLQJlFGe8wV0pUE--
