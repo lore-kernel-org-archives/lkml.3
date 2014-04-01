@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbaDALTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:19:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42813 "EHLO
+	id S1751453AbaDALTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:19:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42818 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaDALTQ (ORCPT
+	with ESMTP id S1753092AbaDALTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 07:19:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dong Aisheng <b29396@freescale.com>, Chris Ball <chris@printf.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 143/144] mmc: sdhci: fix lockdep error in tuning routine
-Date: Tue,  1 Apr 2014 12:15:47 +0100
-Message-Id: <1396350948-29910-144-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 144/144] HID:hid-lg4ff: Initialize device properties before we touch autocentering.
+Date: Tue,  1 Apr 2014 12:15:48 +0100
+Message-Id: <1396350948-29910-145-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,179 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aisheng Dong <b29396@freescale.com>
+From: Simon Wood <simon@mungewell.org>
 
-commit 2b35bd83467df6f8284b9148d6f768148c3a5e5f upstream.
+commit 114a55cf9dd1576e7ac56189832cd4d7dc56c218 upstream.
 
-The sdhci_execute_tuning routine gets lock separately by
-disable_irq(host->irq);
-spin_lock(&host->lock);
-It will cause the following lockdep error message since the &host->lock
-could also be got in irq context.
-Use spin_lock_irqsave/spin_unlock_restore instead to get rid of
-this error message.
+Re-arrange code slightly to ensure that device properties are configured
+before calling auto-center command.
 
-[ INFO: inconsistent lock state ]
-3.13.0-rc1+ #287 Not tainted
----------------------------------
-inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
-kworker/u2:1/33 [HC0[0]:SC0[0]:HE1:SE1] takes:
- (&(&host->lock)->rlock){?.-...}, at: [<8045f7f4>] sdhci_execute_tuning+0x4c/0x710
-{IN-HARDIRQ-W} state was registered at:
-  [<8005f030>] mark_lock+0x140/0x6ac
-  [<80060760>] __lock_acquire+0xb30/0x1cbc
-  [<800620d0>] lock_acquire+0x70/0x84
-  [<8061d1c8>] _raw_spin_lock+0x30/0x40
-  [<804605cc>] sdhci_irq+0x24/0xa68
-  [<8006b1d4>] handle_irq_event_percpu+0x54/0x18c
-  [<8006b350>] handle_irq_event+0x44/0x64
-  [<8006e50c>] handle_fasteoi_irq+0xa0/0x170
-  [<8006a8f0>] generic_handle_irq+0x30/0x44
-  [<8000f238>] handle_IRQ+0x54/0xbc
-  [<8000864c>] gic_handle_irq+0x30/0x64
-  [<80013024>] __irq_svc+0x44/0x5c
-  [<80329bf4>] dev_vprintk_emit+0x50/0x58
-  [<80329c24>] dev_printk_emit+0x28/0x30
-  [<80329fec>] __dev_printk+0x4c/0x90
-  [<8032a180>] dev_err+0x3c/0x48
-  [<802dd4f0>] _regulator_get+0x158/0x1cc
-  [<802dd5b4>] regulator_get_optional+0x18/0x1c
-  [<80461df4>] sdhci_add_host+0x42c/0xbd8
-  [<80464820>] sdhci_esdhc_imx_probe+0x378/0x67c
-  [<8032ee88>] platform_drv_probe+0x20/0x50
-  [<8032d48c>] driver_probe_device+0x118/0x234
-  [<8032d690>] __driver_attach+0x9c/0xa0
-  [<8032b89c>] bus_for_each_dev+0x68/0x9c
-  [<8032cf44>] driver_attach+0x20/0x28
-  [<8032cbc8>] bus_add_driver+0x148/0x1f4
-  [<8032dce0>] driver_register+0x80/0x100
-  [<8032ee54>] __platform_driver_register+0x50/0x64
-  [<8084b094>] sdhci_esdhc_imx_driver_init+0x18/0x20
-  [<80008980>] do_one_initcall+0x108/0x16c
-  [<8081cca4>] kernel_init_freeable+0x10c/0x1d0
-  [<80611b28>] kernel_init+0x10/0x120
-  [<8000e9c8>] ret_from_fork+0x14/0x2c
-irq event stamp: 805
-hardirqs last  enabled at (805): [<8061d43c>] _raw_spin_unlock_irqrestore+0x38/0x4c
-hardirqs last disabled at (804): [<8061d2c8>] _raw_spin_lock_irqsave+0x24/0x54
-softirqs last  enabled at (570): [<8002b824>] __do_softirq+0x1c4/0x290
-softirqs last disabled at (561): [<8002bcf4>] irq_exit+0xb4/0x10c
-
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(&(&host->lock)->rlock);
-  <Interrupt>
-    lock(&(&host->lock)->rlock);
-
- *** DEADLOCK ***
-
-2 locks held by kworker/u2:1/33:
- #0:  (kmmcd){.+.+..}, at: [<8003db18>] process_one_work+0x128/0x468
- #1:  ((&(&host->detect)->work)){+.+...}, at: [<8003db18>] process_one_work+0x128/0x468
-
-stack backtrace:
-CPU: 0 PID: 33 Comm: kworker/u2:1 Not tainted 3.13.0-rc1+ #287
-Workqueue: kmmcd mmc_rescan
-Backtrace:
-[<80012160>] (dump_backtrace+0x0/0x10c) from [<80012438>] (show_stack+0x18/0x1c)
- r6:bfad0900 r5:00000000 r4:8088ecc8 r3:bfad0900
-[<80012420>] (show_stack+0x0/0x1c) from [<806169ec>] (dump_stack+0x84/0x9c)
-[<80616968>] (dump_stack+0x0/0x9c) from [<806147b4>] (print_usage_bug+0x260/0x2d0)
- r5:8076ba88 r4:80977410
-[<80614554>] (print_usage_bug+0x0/0x2d0) from [<8005f0d0>] (mark_lock+0x1e0/0x6ac)
- r9:8005e678 r8:00000000 r7:bfad0900 r6:00001015 r5:bfad0cd0
-r4:00000002
-[<8005eef0>] (mark_lock+0x0/0x6ac) from [<80060234>] (__lock_acquire+0x604/0x1cbc)
-[<8005fc30>] (__lock_acquire+0x0/0x1cbc) from [<800620d0>] (lock_acquire+0x70/0x84)
-[<80062060>] (lock_acquire+0x0/0x84) from [<8061d1c8>] (_raw_spin_lock+0x30/0x40)
- r7:00000000 r6:bfb63000 r5:00000000 r4:bfb60568
-[<8061d198>] (_raw_spin_lock+0x0/0x40) from [<8045f7f4>] (sdhci_execute_tuning+0x4c/0x710)
- r4:bfb60000
-[<8045f7a8>] (sdhci_execute_tuning+0x0/0x710) from [<80453454>] (mmc_sd_init_card+0x5f8/0x660)
-[<80452e5c>] (mmc_sd_init_card+0x0/0x660) from [<80453748>] (mmc_attach_sd+0xb4/0x180)
- r9:bf92d400 r8:8065f364 r7:00061a80 r6:bfb60000 r5:8065f358
-r4:bfb60000
-[<80453694>] (mmc_attach_sd+0x0/0x180) from [<8044d9f8>] (mmc_rescan+0x284/0x2f0)
- r5:8065f358 r4:bfb602f8
-[<8044d774>] (mmc_rescan+0x0/0x2f0) from [<8003db94>] (process_one_work+0x1a4/0x468)
- r8:00000000 r7:bfb55eb0 r6:bf80dc00 r5:bfb602f8 r4:bfb35980
-r3:8044d774
-[<8003d9f0>] (process_one_work+0x0/0x468) from [<8003e850>] (worker_thread+0x118/0x3e0)
-[<8003e738>] (worker_thread+0x0/0x3e0) from [<80044de0>] (kthread+0xd4/0xf0)
-[<80044d0c>] (kthread+0x0/0xf0) from [<8000e9c8>] (ret_from_fork+0x14/0x2c)
- r7:00000000 r6:00000000 r5:80044d0c r4:bfb37b40
-
-Signed-off-by: Dong Aisheng <b29396@freescale.com>
-Signed-off-by: Chris Ball <chris@printf.net>
-[bwh: Backported to 3.2:
- - Adjust context
- - There's no platform_execute_tuning hook]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Michal Malý <madcatxster@prifuk.cz>
+Signed-off-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/sdhci.c | 17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/hid/hid-lg4ff.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index a78bd4f..ea6c7d7 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1844,12 +1844,12 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
- 	unsigned long timeout;
- 	int err = 0;
- 	bool requires_tuning_nonuhs = false;
-+	unsigned long flags;
+diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+index 49f6cc0..3518053 100644
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -574,17 +574,6 @@ int lg4ff_init(struct hid_device *hid)
+ 	if (error)
+ 		return error;
  
- 	host = mmc_priv(mmc);
- 
- 	sdhci_runtime_pm_get(host);
--	disable_irq(host->irq);
--	spin_lock(&host->lock);
-+	spin_lock_irqsave(&host->lock, flags);
- 
- 	ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
- 
-@@ -1869,8 +1869,7 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
- 	    requires_tuning_nonuhs)
- 		ctrl |= SDHCI_CTRL_EXEC_TUNING;
- 	else {
--		spin_unlock(&host->lock);
--		enable_irq(host->irq);
-+		spin_unlock_irqrestore(&host->lock, flags);
- 		sdhci_runtime_pm_put(host);
- 		return 0;
- 	}
-@@ -1942,15 +1941,12 @@ static int sdhci_execute_tuning(struct mmc_host *mmc, u32 opcode)
- 		host->cmd = NULL;
- 		host->mrq = NULL;
- 
--		spin_unlock(&host->lock);
--		enable_irq(host->irq);
+-	/* Check if autocentering is available and
+-	 * set the centering force to zero by default */
+-	if (test_bit(FF_AUTOCENTER, dev->ffbit)) {
+-		if (rev_maj == FFEX_REV_MAJ && rev_min == FFEX_REV_MIN)	/* Formula Force EX expects different autocentering command */
+-			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_ffex;
+-		else
+-			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_default;
 -
-+		spin_unlock_irqrestore(&host->lock, flags);
- 		/* Wait for Buffer Read Ready interrupt */
- 		wait_event_interruptible_timeout(host->buf_ready_int,
- 					(host->tuning_done == 1),
- 					msecs_to_jiffies(50));
--		disable_irq(host->irq);
--		spin_lock(&host->lock);
-+		spin_lock_irqsave(&host->lock, flags);
+-		dev->ff->set_autocenter(dev, 0);
+-	}
+-
+ 	/* Get private driver data */
+ 	drv_data = hid_get_drvdata(hid);
+ 	if (!drv_data) {
+@@ -605,6 +594,17 @@ int lg4ff_init(struct hid_device *hid)
+ 	entry->max_range = lg4ff_devices[i].max_range;
+ 	entry->set_range = lg4ff_devices[i].set_range;
  
- 		if (!host->tuning_done) {
- 			pr_info(DRIVER_NAME ": Timeout waiting for "
-@@ -2024,8 +2020,7 @@ out:
- 		err = 0;
- 
- 	sdhci_clear_set_irqs(host, SDHCI_INT_DATA_AVAIL, ier);
--	spin_unlock(&host->lock);
--	enable_irq(host->irq);
-+	spin_unlock_irqrestore(&host->lock, flags);
- 	sdhci_runtime_pm_put(host);
- 
- 	return err;
++	/* Check if autocentering is available and
++	 * set the centering force to zero by default */
++	if (test_bit(FF_AUTOCENTER, dev->ffbit)) {
++		if (rev_maj == FFEX_REV_MAJ && rev_min == FFEX_REV_MIN)	/* Formula Force EX expects different autocentering command */
++			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_ffex;
++		else
++			dev->ff->set_autocenter = hid_lg4ff_set_autocenter_default;
++
++		dev->ff->set_autocenter(dev, 0);
++	}
++
+ 	/* Create sysfs interface */
+ 	error = device_create_file(&hid->dev, &dev_attr_range);
+ 	if (error)
 -- 
 1.9.1
 
