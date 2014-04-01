@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaDAEIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:08:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53789 "EHLO
+	id S1752320AbaDAEIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:08:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53796 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaDAEII (ORCPT
+	with ESMTP id S1752294AbaDAEIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:08:08 -0400
+	Tue, 1 Apr 2014 00:08:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Fetishev <artem_fetishev@epam.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 6/9] x86: fix boot on uniprocessor systems
-Date: Mon, 31 Mar 2014 21:08:20 -0700
-Message-Id: <20140401040756.403407872@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 7/9] net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
+Date: Mon, 31 Mar 2014 21:08:21 -0700
+Message-Id: <20140401040756.649492702@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040754.479538406@linuxfoundation.org>
 References: <20140401040754.479538406@linuxfoundation.org>
@@ -31,47 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Fetishev <artem_fetishev@epam.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 825600c0f20e595daaa7a6dd8970f84fa2a2ee57 upstream.
+commit a79121d3b57e7ad61f0b5d23eae05214054f3ccd upstream.
 
-On x86 uniprocessor systems topology_physical_package_id() returns -1
-which causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized
-which leads to GPF in rapl_pmu_init().
+Bit 3 of the MVNETA_GMAC_CTRL_2 is actually used to enable the PCS,
+not the PSC: there was a typo in the name of the define, which this
+commit fixes.
 
-See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
-
-It turns out that physical_package_id and core_id can actually be
-retreived for uniprocessor systems too.  Enabling them also fixes
-rapl_pmu code.
-
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/topology.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/marvell/mvneta.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -119,7 +119,7 @@
+ #define      MVNETA_GMAC_MAX_RX_SIZE_MASK        0x7ffc
+ #define      MVNETA_GMAC0_PORT_ENABLE            BIT(0)
+ #define MVNETA_GMAC_CTRL_2                       0x2c08
+-#define      MVNETA_GMAC2_PSC_ENABLE             BIT(3)
++#define      MVNETA_GMAC2_PCS_ENABLE             BIT(3)
+ #define      MVNETA_GMAC2_PORT_RGMII             BIT(4)
+ #define      MVNETA_GMAC2_PORT_RESET             BIT(6)
+ #define MVNETA_GMAC_STATUS                       0x2c10
+@@ -655,7 +655,7 @@ static void mvneta_port_sgmii_config(str
+ 	u32 val;
  
- extern const struct cpumask *cpu_coregroup_mask(int cpu);
- 
--#ifdef ENABLE_TOPO_DEFINES
- #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
-+
-+#ifdef ENABLE_TOPO_DEFINES
- #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
+ 	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-	val |= MVNETA_GMAC2_PSC_ENABLE;
++	val |= MVNETA_GMAC2_PCS_ENABLE;
+ 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+ }
  
 
 
