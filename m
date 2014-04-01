@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627AbaDAAdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 20:33:55 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:51742 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaDAAdx (ORCPT
+	id S1751758AbaDAAfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 20:35:23 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:46466 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaDAAfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 20:33:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>
-References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
-	<CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>
-	<20140331230347.GH32556@tassilo.jf.intel.com>
-	<CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>
-Date: Mon, 31 Mar 2014 17:33:52 -0700
-X-Google-Sender-Auth: r3YLJyVrw3ZjpQfnE_mg4IO3wbo
-Message-ID: <CA+55aFxCCOASxhgRfGmNRPgHwZQJ2Q0Oa9-vwpMdmTqx99m26g@mail.gmail.com>
-Subject: Re: [GIT PULL] x86 LTO changes for v3.15
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Peter Anvin <hpa@zytor.com>, Jan Hubicka <hubicka@ucw.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 31 Mar 2014 20:35:21 -0400
+From: Jay Vosburgh <j.vosburgh@gmail.com>
+To: Zheng Li <zheng.x.li@oracle.com>
+cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, joe.jin@oracle.com
+Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's value to 1
+In-reply-to: <1395998529-5937-1-git-send-email-zheng.x.li@oracle.com>
+References: <1395998529-5937-1-git-send-email-zheng.x.li@oracle.com>
+Comments: In-reply-to Zheng Li <zheng.x.li@oracle.com>
+   message dated "Fri, 28 Mar 2014 17:22:09 +0800."
+X-Mailer: MH-E 8.3.1; nmh 1.5; GNU Emacs 24.4.50
+Date: Mon, 31 Mar 2014 17:35:19 -0700
+Message-ID: <21040.1396312519@famine>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 5:17 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So what I would propose is:
->
->  - don't do the __visible as part of asmlinkage, because it really is
-> conceptually wrong
->
->  - add the visible to the SYSCALL_DEFINEx() macros
->
-> and after that I strongly suspect that there will be only a handful of
-> cases left that are called from assembly language and that aren't
-> system calls. Things like "printk()" and friends that are really
-> special. They'd need a few manual "__visible" annotations.
+Zheng Li <zheng.x.li@oracle.com> wrote:
 
-I notice that there seems to be a handful of x86 system calls that
-don't use the SYSCALL_DEFINEx() macros to define the system call, some
-grepping finds at least ioperm(), modify_ldt(), sigreturn() and
-rt_sigreturn(). There are probably others. They should just be
-converted to SYSCALL_DEFINEx() while at it. No, x86 doesn't need the
-typecasting, but it won't hurt either, and it's good to be consistent.
+>In bond mode tlb and alb, inactive slaves should keep inactive flag to 1 to
+>refuse to receive broadcast packets. Now, active slave send broadcast packets
+>(for example ARP requests) which will arrive inactive slaves on same host from
+>switch, but inactive slave's inactive flag is zero that cause bridge receive the
+>broadcast packets to produce a wrong entry in forward table. Typical situation
+>is domu send some ARP request which go out from dom0 bond's active slave, then
+>the ARP broadcast request packets go back to inactive slave from switch, because
+>the inactive slave's inactive flag is zero, kernel will receive the packets and
+>pass them to bridge that cause dom0's bridge map domu's MAC address to port of
+>bond, bridge should map domu's MAC to port of vif.
 
-I'm not sure why those system calls didn't get converted (other
-x86-specific ones like vm86() _have_ gotten converted), maybe there's
-some reason for it. But I *think* the reason is "nobody noticed".
+	I think the patch is ok (I don't have a machine to test it on at
+the moment), but the description above is leaving out some details about
+how the problem is induced.
 
-                  Linus
+	The actual problem being fixed here is that bond_open is not
+setting the inactive flag correctly for some modes (alb and tlb),
+resulting in the behavior described above if the bond has been
+administratively set down and then back up.  This effect should not
+occur when slaves are added while the bond is up; it's something that
+only happens after a down/up bounce of the bond.
+
+	That said, the patch itself looks fine to me.
+
+Signed-off-by: Jay Vosburgh <j.vosburgh@gmail.com>
+
+	-J
+
+>Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+>---
+> drivers/net/bonding/bond_main.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>index e5628fc..f97d72e 100644
+>--- a/drivers/net/bonding/bond_main.c
+>+++ b/drivers/net/bonding/bond_main.c
+>@@ -3058,7 +3058,7 @@ static int bond_open(struct net_device *bond_dev)
+> 	if (bond_has_slaves(bond)) {
+> 		read_lock(&bond->curr_slave_lock);
+> 		bond_for_each_slave(bond, slave, iter) {
+>-			if ((bond->params.mode == BOND_MODE_ACTIVEBACKUP)
+>+			if ((bond->params.mode == BOND_MODE_ACTIVEBACKUP || bond_is_lb(bond))
+> 				&& (slave != bond->curr_active_slave)) {
+> 				bond_set_slave_inactive_flags(slave,
+> 							      BOND_SLAVE_NOTIFY_NOW);
+>-- 
+>1.7.6.5
+
+---
+	-Jay Vosburgh, j.vosburgh@gmail.com
