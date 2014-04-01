@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbaDALS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42625 "EHLO
+	id S1752973AbaDALf7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:35:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42647 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775AbaDALSZ (ORCPT
+	with ESMTP id S1752775AbaDALSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:25 -0400
+	Tue, 1 Apr 2014 07:18:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Suresh Siddha <sbsiddha@gmail.com>, George Spelvin <linux@horizon.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 108/144] iser-target: Fix post_send_buf_count for RDMA READ/WRITE
-Date: Tue,  1 Apr 2014 12:15:12 +0100
-Message-Id: <1396350948-29910-109-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 112/144] x86, fpu: Check tsk_used_math() in kernel_fpu_end() for eager FPU
+Date: Tue,  1 Apr 2014 12:15:16 +0100
+Message-Id: <1396350948-29910-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,101 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Suresh Siddha <sbsiddha@gmail.com>
 
-commit b6b87a1df604678ed1be40158080db012a99ccca upstream.
+commit 731bd6a93a6e9172094a2322bd0ee964bb1f4d63 upstream.
 
-This patch fixes the incorrect setting of ->post_send_buf_count
-related to RDMA WRITEs + READs where isert_rdma_rw->send_wr_num
-was not being taken into account.
+For non-eager fpu mode, thread's fpu state is allocated during the first
+fpu usage (in the context of device not available exception). This
+(math_state_restore()) can be a blocking call and hence we enable
+interrupts (which were originally disabled when the exception happened),
+allocate memory and disable interrupts etc.
 
-This includes incrementing ->post_send_buf_count within
-isert_put_datain() + isert_get_dataout(), decrementing within
-__isert_send_completion() + isert_response_completion(), and
-clearing wr->send_wr_num within isert_completion_rdma_read()
+But the eager-fpu mode, call's the same math_state_restore() from
+kernel_fpu_end(). The assumption being that tsk_used_math() is always
+set for the eager-fpu mode and thus avoid the code path of enabling
+interrupts, allocating fpu state using blocking call and disable
+interrupts etc.
 
-This is necessary because even though IB_SEND_SIGNALED is
-not set for RDMA WRITEs + READs, during a QP failure event
-the work requests will be returned with exception status
-from the TX completion queue.
+But the below issue was noticed by Maarten Baert, Nate Eldredge and
+few others:
 
-Acked-by: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ luis: backported to 3.11: adjusted context ]
+If a user process dumps core on an ecrypt fs while aesni-intel is loaded,
+we get a BUG() in __find_get_block() complaining that it was called with
+interrupts disabled; then all further accesses to our ecrypt fs hang
+and we have to reboot.
+
+The aesni-intel code (encrypting the core file that we are writing) needs
+the FPU and quite properly wraps its code in kernel_fpu_{begin,end}(),
+the latter of which calls math_state_restore(). So after kernel_fpu_end(),
+interrupts may be disabled, which nobody seems to expect, and they stay
+that way until we eventually get to __find_get_block() which barfs.
+
+For eager fpu, most the time, tsk_used_math() is true. At few instances
+during thread exit, signal return handling etc, tsk_used_math() might
+be false.
+
+In kernel_fpu_end(), for eager-fpu, call math_state_restore()
+only if tsk_used_math() is set. Otherwise, don't bother. Kernel code
+path which cleared tsk_used_math() knows what needs to be done
+with the fpu state.
+
+Reported-by: Maarten Baert <maarten-baert@hotmail.com>
+Reported-by: Nate Eldredge <nate@thatsmathematics.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Suresh Siddha <sbsiddha@gmail.com>
+Link: http://lkml.kernel.org/r/1391410583.3801.6.camel@europa
+Cc: George Spelvin <linux@horizon.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ arch/x86/kernel/i387.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 57a01df..5430b4a 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1374,6 +1374,7 @@ isert_completion_rdma_read(struct iser_tx_desc *tx_desc,
- 	}
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 5d576ab..21935af 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -86,10 +86,19 @@ EXPORT_SYMBOL(__kernel_fpu_begin);
  
- 	cmd->write_data_done = se_cmd->data_length;
-+	wr->send_wr_num = 0;
- 
- 	pr_debug("isert_do_rdma_read_comp, calling target_execute_cmd\n");
- 	spin_lock_bh(&cmd->istate_lock);
-@@ -1438,6 +1439,7 @@ isert_response_completion(struct iser_tx_desc *tx_desc,
- 			  struct ib_device *ib_dev)
+ void __kernel_fpu_end(void)
  {
- 	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
-+	struct isert_rdma_wr *wr = &isert_cmd->rdma_wr;
+-	if (use_eager_fpu())
+-		math_state_restore();
+-	else
++	if (use_eager_fpu()) {
++		/*
++		 * For eager fpu, most the time, tsk_used_math() is true.
++		 * Restore the user math as we are done with the kernel usage.
++		 * At few instances during thread exit, signal handling etc,
++		 * tsk_used_math() is false. Those few places will take proper
++		 * actions, so we don't need to restore the math here.
++		 */
++		if (likely(tsk_used_math(current)))
++			math_state_restore();
++	} else {
+ 		stts();
++	}
+ }
+ EXPORT_SYMBOL(__kernel_fpu_end);
  
- 	if (cmd->i_state == ISTATE_SEND_TASKMGTRSP ||
- 	    cmd->i_state == ISTATE_SEND_LOGOUTRSP ||
-@@ -1449,7 +1451,7 @@ isert_response_completion(struct iser_tx_desc *tx_desc,
- 		queue_work(isert_comp_wq, &isert_cmd->comp_work);
- 		return;
- 	}
--	atomic_dec(&isert_conn->post_send_buf_count);
-+	atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
- 
- 	cmd->i_state = ISTATE_SENT_STATUS;
- 	isert_completion_put(tx_desc, isert_cmd, ib_dev);
-@@ -1487,7 +1489,7 @@ isert_send_completion(struct iser_tx_desc *tx_desc,
- 	case ISER_IB_RDMA_READ:
- 		pr_debug("isert_send_completion: Got ISER_IB_RDMA_READ:\n");
- 
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 		isert_completion_rdma_read(tx_desc, isert_cmd);
- 		break;
- 	default:
-@@ -1951,12 +1953,12 @@ isert_put_datain(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
- 	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
- 	isert_init_send_wr(isert_cmd, &isert_cmd->tx_desc.send_wr);
- 
--	atomic_inc(&isert_conn->post_send_buf_count);
-+	atomic_add(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
- 
- 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
- 	if (rc) {
- 		pr_warn("ib_post_send() failed for IB_WR_RDMA_WRITE\n");
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
- 	}
- 	pr_debug("Posted RDMA_WRITE + Response for iSER Data READ\n");
- 	return 1;
-@@ -2059,12 +2061,12 @@ isert_get_dataout(struct iscsi_conn *conn, struct iscsi_cmd *cmd, bool recovery)
- 		data_left -= data_len;
- 	}
- 
--	atomic_inc(&isert_conn->post_send_buf_count);
-+	atomic_add(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 
- 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
- 	if (rc) {
- 		pr_warn("ib_post_send() failed for IB_WR_RDMA_READ\n");
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 	}
- 	pr_debug("Posted RDMA_READ memory for ISER Data WRITE\n");
- 	return 0;
 -- 
 1.9.1
 
