@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaDAQN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:13:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44537 "EHLO
+	id S1752848AbaDAQNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:13:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44550 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaDAQNY (ORCPT
+	with ESMTP id S1751472AbaDAQNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:13:24 -0400
+	Tue, 1 Apr 2014 12:13:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 83/86] Input: mousedev - fix race when creating mixed device
-Date: Tue,  1 Apr 2014 09:08:36 -0700
-Message-Id: <1396368519-12728-84-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 86/86] ioat: fix tasklet tear down
+Date: Tue,  1 Apr 2014 09:08:39 -0700
+Message-Id: <1396368519-12728-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,200 +30,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit e4dbedc7eac7da9db363a36f2bd4366962eeefcc upstream.
+commit da87ca4d4ca101f177fffd84f1f0a5e4c0343557 upstream.
 
-We should not be using static variable mousedev_mix in methods that can be
-called before that singleton gets assigned. While at it let's add open and
-close methods to mousedev structure so that we do not need to test if we
-are dealing with multiplexor or normal device and simply call appropriate
-method directly.
+Since commit 77873803363c "net_dma: mark broken" we no longer pin dma
+engines active for the network-receive-offload use case.  As a result
+the ->free_chan_resources() that occurs after the driver self test no
+longer has a NET_DMA induced ->alloc_chan_resources() to back it up.  A
+late firing irq can lead to ksoftirqd spinning indefinitely due to the
+tasklet_disable() performed by ->free_chan_resources().  Only
+->alloc_chan_resources() can clear this condition in affected kernels.
 
-This fixes: https://bugzilla.kernel.org/show_bug.cgi?id=71551
+This problem has been present since commit 3e037454bcfa "I/OAT: Add
+support for MSI and MSI-X" in 2.6.24, but is now exposed. Given the
+NET_DMA use case is deprecated we can revisit moving the driver to use
+threaded irqs.  For now, just tear down the irq and tasklet properly by:
 
-Reported-by: GiulioDP <depasquale.giulio@gmail.com>
-Tested-by: GiulioDP <depasquale.giulio@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+1/ Disable the irq from triggering the tasklet
+
+2/ Disable the irq from re-arming
+
+3/ Flush inflight interrupts
+
+4/ Flush the timer
+
+5/ Flush inflight tasklets
+
+References:
+https://lkml.org/lkml/2014/1/27/282
+https://lkml.org/lkml/2014/2/19/672
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Mike Galbraith <bitbucket@online.de>
+Reported-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Tested-by: Mike Galbraith <bitbucket@online.de>
+Tested-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - As there is no ioatdma_device::irq_mode member, check
+   pci_dev::msix_enabled instead]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Acked-by: Brad Figg <brad.figg@canonical.com>
+Acked-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/mousedev.c | 73 ++++++++++++++++++++++++++++--------------------
- 1 file changed, 42 insertions(+), 31 deletions(-)
+ drivers/dma/ioat/dma.c    | 46 +++++++++++++++++++++++++++++++++++++++-------
+ drivers/dma/ioat/dma.h    |  1 +
+ drivers/dma/ioat/dma_v2.c | 11 +++++------
+ drivers/dma/ioat/dma_v3.c |  3 +++
+ 4 files changed, 48 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
-index 4c842c3..b604564 100644
---- a/drivers/input/mousedev.c
-+++ b/drivers/input/mousedev.c
-@@ -67,7 +67,6 @@ struct mousedev {
- 	struct device dev;
- 	struct cdev cdev;
- 	bool exist;
--	bool is_mixdev;
- 
- 	struct list_head mixdev_node;
- 	bool opened_by_mixdev;
-@@ -77,6 +76,9 @@ struct mousedev {
- 	int old_x[4], old_y[4];
- 	int frac_dx, frac_dy;
- 	unsigned long touch;
-+
-+	int (*open_device)(struct mousedev *mousedev);
-+	void (*close_device)(struct mousedev *mousedev);
- };
- 
- enum mousedev_emul {
-@@ -116,9 +118,6 @@ static unsigned char mousedev_imex_seq[] = { 0xf3, 200, 0xf3, 200, 0xf3, 80 };
- static struct mousedev *mousedev_mix;
- static LIST_HEAD(mousedev_mix_list);
- 
--static void mixdev_open_devices(void);
--static void mixdev_close_devices(void);
--
- #define fx(i)  (mousedev->old_x[(mousedev->pkt_count - (i)) & 03])
- #define fy(i)  (mousedev->old_y[(mousedev->pkt_count - (i)) & 03])
- 
-@@ -428,9 +427,7 @@ static int mousedev_open_device(struct mousedev *mousedev)
- 	if (retval)
- 		return retval;
- 
--	if (mousedev->is_mixdev)
--		mixdev_open_devices();
--	else if (!mousedev->exist)
-+	if (!mousedev->exist)
- 		retval = -ENODEV;
- 	else if (!mousedev->open++) {
- 		retval = input_open_device(&mousedev->handle);
-@@ -446,9 +443,7 @@ static void mousedev_close_device(struct mousedev *mousedev)
- {
- 	mutex_lock(&mousedev->mutex);
- 
--	if (mousedev->is_mixdev)
--		mixdev_close_devices();
--	else if (mousedev->exist && !--mousedev->open)
-+	if (mousedev->exist && !--mousedev->open)
- 		input_close_device(&mousedev->handle);
- 
- 	mutex_unlock(&mousedev->mutex);
-@@ -459,21 +454,29 @@ static void mousedev_close_device(struct mousedev *mousedev)
-  * stream. Note that this function is called with mousedev_mix->mutex
-  * held.
-  */
--static void mixdev_open_devices(void)
-+static int mixdev_open_devices(struct mousedev *mixdev)
- {
--	struct mousedev *mousedev;
-+	int error;
-+
-+	error = mutex_lock_interruptible(&mixdev->mutex);
-+	if (error)
-+		return error;
- 
--	if (mousedev_mix->open++)
--		return;
-+	if (!mixdev->open++) {
-+		struct mousedev *mousedev;
- 
--	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
--		if (!mousedev->opened_by_mixdev) {
--			if (mousedev_open_device(mousedev))
--				continue;
-+		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
-+			if (!mousedev->opened_by_mixdev) {
-+				if (mousedev_open_device(mousedev))
-+					continue;
- 
--			mousedev->opened_by_mixdev = true;
-+				mousedev->opened_by_mixdev = true;
-+			}
- 		}
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index 1a68a8b..8bcaef1 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -77,7 +77,8 @@ static irqreturn_t ioat_dma_do_interrupt(int irq, void *data)
+ 	attnstatus = readl(instance->reg_base + IOAT_ATTNSTATUS_OFFSET);
+ 	for_each_set_bit(bit, &attnstatus, BITS_PER_LONG) {
+ 		chan = ioat_chan_by_index(instance, bit);
+-		tasklet_schedule(&chan->cleanup_task);
++		if (test_bit(IOAT_RUN, &chan->state))
++			tasklet_schedule(&chan->cleanup_task);
  	}
-+
-+	mutex_unlock(&mixdev->mutex);
-+	return 0;
- }
  
- /*
-@@ -481,19 +484,22 @@ static void mixdev_open_devices(void)
-  * device. Note that this function is called with mousedev_mix->mutex
-  * held.
-  */
--static void mixdev_close_devices(void)
-+static void mixdev_close_devices(struct mousedev *mixdev)
+ 	writeb(intrctrl, instance->reg_base + IOAT_INTRCTRL_OFFSET);
+@@ -93,7 +94,8 @@ static irqreturn_t ioat_dma_do_interrupt_msix(int irq, void *data)
  {
--	struct mousedev *mousedev;
-+	mutex_lock(&mixdev->mutex);
+ 	struct ioat_chan_common *chan = data;
  
--	if (--mousedev_mix->open)
--		return;
-+	if (!--mixdev->open) {
-+		struct mousedev *mousedev;
+-	tasklet_schedule(&chan->cleanup_task);
++	if (test_bit(IOAT_RUN, &chan->state))
++		tasklet_schedule(&chan->cleanup_task);
  
--	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
--		if (mousedev->opened_by_mixdev) {
--			mousedev->opened_by_mixdev = false;
--			mousedev_close_device(mousedev);
-+		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
-+			if (mousedev->opened_by_mixdev) {
-+				mousedev->opened_by_mixdev = false;
-+				mousedev_close_device(mousedev);
-+			}
- 		}
- 	}
-+
-+	mutex_unlock(&mixdev->mutex);
+ 	return IRQ_HANDLED;
+ }
+@@ -116,7 +118,6 @@ void ioat_init_channel(struct ioatdma_device *device, struct ioat_chan_common *c
+ 	chan->timer.function = device->timer_fn;
+ 	chan->timer.data = data;
+ 	tasklet_init(&chan->cleanup_task, device->cleanup_fn, data);
+-	tasklet_disable(&chan->cleanup_task);
  }
  
+ /**
+@@ -354,13 +355,43 @@ static int ioat1_dma_alloc_chan_resources(struct dma_chan *c)
+ 	writel(((u64) chan->completion_dma) >> 32,
+ 	       chan->reg_base + IOAT_CHANCMP_OFFSET_HIGH);
  
-@@ -522,7 +528,7 @@ static int mousedev_release(struct inode *inode, struct file *file)
- 	mousedev_detach_client(mousedev, client);
- 	kfree(client);
- 
--	mousedev_close_device(mousedev);
-+	mousedev->close_device(mousedev);
- 
- 	return 0;
+-	tasklet_enable(&chan->cleanup_task);
++	set_bit(IOAT_RUN, &chan->state);
+ 	ioat1_dma_start_null_desc(ioat);  /* give chain to dma device */
+ 	dev_dbg(to_dev(chan), "%s: allocated %d descriptors\n",
+ 		__func__, ioat->desccount);
+ 	return ioat->desccount;
  }
-@@ -550,7 +556,7 @@ static int mousedev_open(struct inode *inode, struct file *file)
- 	client->mousedev = mousedev;
- 	mousedev_attach_client(mousedev, client);
  
--	error = mousedev_open_device(mousedev);
-+	error = mousedev->open_device(mousedev);
- 	if (error)
- 		goto err_free_client;
- 
-@@ -861,16 +867,21 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
- 
- 	if (mixdev) {
- 		dev_set_name(&mousedev->dev, "mice");
++void ioat_stop(struct ioat_chan_common *chan)
++{
++	struct ioatdma_device *device = chan->device;
++	struct pci_dev *pdev = device->pdev;
++	int chan_id = chan_num(chan);
 +
-+		mousedev->open_device = mixdev_open_devices;
-+		mousedev->close_device = mixdev_close_devices;
++	/* 1/ stop irq from firing tasklets
++	 * 2/ stop the tasklet from re-arming irqs
++	 */
++	clear_bit(IOAT_RUN, &chan->state);
++
++	/* flush inflight interrupts */
++#ifdef CONFIG_PCI_MSI
++	if (pdev->msix_enabled) {
++		struct msix_entry *msix = &device->msix_entries[chan_id];
++		synchronize_irq(msix->vector);
++	} else
++#endif
++		synchronize_irq(pdev->irq);
++
++	/* flush inflight timers */
++	del_timer_sync(&chan->timer);
++
++	/* flush inflight tasklet runs */
++	tasklet_kill(&chan->cleanup_task);
++
++	/* final cleanup now that everything is quiesced and can't re-arm */
++	device->cleanup_fn((unsigned long) &chan->common);
++}
++
+ /**
+  * ioat1_dma_free_chan_resources - release all the descriptors
+  * @chan: the channel to be cleaned
+@@ -379,9 +410,7 @@ static void ioat1_dma_free_chan_resources(struct dma_chan *c)
+ 	if (ioat->desccount == 0)
+ 		return;
+ 
+-	tasklet_disable(&chan->cleanup_task);
+-	del_timer_sync(&chan->timer);
+-	ioat1_cleanup(ioat);
++	ioat_stop(chan);
+ 
+ 	/* Delay 100ms after reset to allow internal DMA logic to quiesce
+ 	 * before removing DMA descriptor resources.
+@@ -526,8 +555,11 @@ ioat1_dma_prep_memcpy(struct dma_chan *c, dma_addr_t dma_dest,
+ static void ioat1_cleanup_event(unsigned long data)
+ {
+ 	struct ioat_dma_chan *ioat = to_ioat_chan((void *) data);
++	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	ioat1_cleanup(ioat);
++	if (!test_bit(IOAT_RUN, &chan->state))
++		return;
+ 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+ }
+ 
+diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+index 087935f..24a72e0 100644
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -320,6 +320,7 @@ bool ioat_cleanup_preamble(struct ioat_chan_common *chan,
+ 			   dma_addr_t *phys_complete);
+ void ioat_kobject_add(struct ioatdma_device *device, struct kobj_type *type);
+ void ioat_kobject_del(struct ioatdma_device *device);
++void ioat_stop(struct ioat_chan_common *chan);
+ extern const struct sysfs_ops ioat_sysfs_ops;
+ extern struct ioat_sysfs_entry ioat_version_attr;
+ extern struct ioat_sysfs_entry ioat_cap_attr;
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index 82d4e30..1b3af8a 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -190,8 +190,11 @@ static void ioat2_cleanup(struct ioat2_dma_chan *ioat)
+ void ioat2_cleanup_event(unsigned long data)
+ {
+ 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
++	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	ioat2_cleanup(ioat);
++	if (!test_bit(IOAT_RUN, &chan->state))
++		return;
+ 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
+ }
+ 
+@@ -538,10 +541,10 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+ 	ioat->issued = 0;
+ 	ioat->tail = 0;
+ 	ioat->alloc_order = order;
++	set_bit(IOAT_RUN, &chan->state);
+ 	spin_unlock_bh(&ioat->prep_lock);
+ 	spin_unlock_bh(&chan->cleanup_lock);
+ 
+-	tasklet_enable(&chan->cleanup_task);
+ 	ioat2_start_null_desc(ioat);
+ 
+ 	/* check that we got off the ground */
+@@ -551,7 +554,6 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
+ 	} while (i++ < 20 && !is_ioat_active(status) && !is_ioat_idle(status));
+ 
+ 	if (is_ioat_active(status) || is_ioat_idle(status)) {
+-		set_bit(IOAT_RUN, &chan->state);
+ 		return 1 << ioat->alloc_order;
  	} else {
- 		int dev_no = minor;
- 		/* Normalize device number if it falls into legacy range */
- 		if (dev_no < MOUSEDEV_MINOR_BASE + MOUSEDEV_MINORS)
- 			dev_no -= MOUSEDEV_MINOR_BASE;
- 		dev_set_name(&mousedev->dev, "mouse%d", dev_no);
-+
-+		mousedev->open_device = mousedev_open_device;
-+		mousedev->close_device = mousedev_close_device;
- 	}
+ 		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+@@ -794,11 +796,8 @@ void ioat2_free_chan_resources(struct dma_chan *c)
+ 	if (!ioat->ring)
+ 		return;
  
- 	mousedev->exist = true;
--	mousedev->is_mixdev = mixdev;
- 	mousedev->handle.dev = input_get_device(dev);
- 	mousedev->handle.name = dev_name(&mousedev->dev);
- 	mousedev->handle.handler = handler;
-@@ -919,7 +930,7 @@ static void mousedev_destroy(struct mousedev *mousedev)
- 	device_del(&mousedev->dev);
- 	mousedev_cleanup(mousedev);
- 	input_free_minor(MINOR(mousedev->dev.devt));
--	if (!mousedev->is_mixdev)
-+	if (mousedev != mousedev_mix)
- 		input_unregister_handle(&mousedev->handle);
- 	put_device(&mousedev->dev);
+-	tasklet_disable(&chan->cleanup_task);
+-	del_timer_sync(&chan->timer);
+-	device->cleanup_fn((unsigned long) c);
++	ioat_stop(chan);
+ 	device->reset_hw(chan);
+-	clear_bit(IOAT_RUN, &chan->state);
+ 
+ 	spin_lock_bh(&chan->cleanup_lock);
+ 	spin_lock_bh(&ioat->prep_lock);
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index 3e9d669..813abb0 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -325,8 +325,11 @@ static void ioat3_cleanup(struct ioat2_dma_chan *ioat)
+ static void ioat3_cleanup_event(unsigned long data)
+ {
+ 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
++	struct ioat_chan_common *chan = &ioat->base;
+ 
+ 	ioat3_cleanup(ioat);
++	if (!test_bit(IOAT_RUN, &chan->state))
++		return;
+ 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
  }
+ 
 -- 
 1.8.3.2
 
