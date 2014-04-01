@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaDAEQA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:16:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53922 "EHLO
+	id S1752398AbaDAEQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:16:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaDAEPw (ORCPT
+	with ESMTP id S1752260AbaDAEP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:15:52 -0400
+	Tue, 1 Apr 2014 00:15:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.13 21/22] cgroup: protect modifications to cgroup_idr with cgroup_mutex
-Date: Mon, 31 Mar 2014 21:08:51 -0700
-Message-Id: <20140401040708.267451128@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.13 17/22] keep shadowed vfsmounts together
+Date: Mon, 31 Mar 2014 21:08:47 -0700
+Message-Id: <20140401040707.502416673@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -27,131 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 0ab02ca8f887908152d1a96db5130fc661d36a1e upstream.
+commit 1d6a32acd70ab18499829c0a9a5dbe2bace72a13 upstream.
 
-Setup cgroupfs like this:
-  # mount -t cgroup -o cpuacct xxx /cgroup
-  # mkdir /cgroup/sub1
-  # mkdir /cgroup/sub2
+preparation to switching mnt_hash to hlist
 
-Then run these two commands:
-  # for ((; ;)) { mkdir /cgroup/sub1/tmp && rmdir /mnt/sub1/tmp; } &
-  # for ((; ;)) { mkdir /cgroup/sub2/tmp && rmdir /mnt/sub2/tmp; } &
-
-After seconds you may see this warning:
-
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 25243 at lib/idr.c:527 sub_remove+0x87/0x1b0()
-idr_remove called for id=6 which is not allocated.
-...
-Call Trace:
- [<ffffffff8156063c>] dump_stack+0x7a/0x96
- [<ffffffff810591ac>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff81059296>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff81300aa7>] sub_remove+0x87/0x1b0
- [<ffffffff810f3f02>] ? css_killed_work_fn+0x32/0x1b0
- [<ffffffff81300bf5>] idr_remove+0x25/0xd0
- [<ffffffff810f2bab>] cgroup_destroy_css_killed+0x5b/0xc0
- [<ffffffff810f4000>] css_killed_work_fn+0x130/0x1b0
- [<ffffffff8107cdbc>] process_one_work+0x26c/0x550
- [<ffffffff8107eefe>] worker_thread+0x12e/0x3b0
- [<ffffffff81085f96>] kthread+0xe6/0xf0
- [<ffffffff81570bac>] ret_from_fork+0x7c/0xb0
----[ end trace 2d1577ec10cf80d0 ]---
-
-It's because allocating/removing cgroup ID is not properly synchronized.
-
-The bug was introduced when we converted cgroup_ida to cgroup_idr.
-While synchronization is already done inside ida_simple_{get,remove}(),
-users are responsible for concurrent calls to idr_{alloc,remove}().
-
-tj: Refreshed on top of b58c89986a77 ("cgroup: fix error return from
-cgroup_create()").
-
-[mhocko@suse.cz: ported to 3.12]
-Fixes: 4e96ee8e981b ("cgroup: convert cgroup_ida to cgroup_idr")
-Cc: <stable@vger.kernel.org> #3.12+
-Reported-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/cgroup.h |    2 ++
- kernel/cgroup.c        |   26 +++++++++++++-------------
- 2 files changed, 15 insertions(+), 13 deletions(-)
 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -169,6 +169,8 @@ struct cgroup {
- 	 *
- 	 * The ID of the root cgroup is always 0, and a new cgroup
- 	 * will be assigned with a smallest available ID.
-+	 *
-+	 * Allocating/Removing ID must be protected by cgroup_mutex.
- 	 */
- 	int id;
+---
+ fs/namespace.c |   32 +++++++++++++++++++++++---------
+ 1 file changed, 23 insertions(+), 9 deletions(-)
+
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -621,12 +621,20 @@ struct mount *__lookup_mnt(struct vfsmou
+ struct mount *__lookup_mnt_last(struct vfsmount *mnt, struct dentry *dentry)
+ {
+ 	struct list_head *head = m_hash(mnt, dentry);
+-	struct mount *p;
++	struct mount *p, *res = NULL;
  
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4363,16 +4363,6 @@ static long cgroup_create(struct cgroup
- 	rcu_assign_pointer(cgrp->name, name);
+-	list_for_each_entry_reverse(p, head, mnt_hash)
++	list_for_each_entry(p, head, mnt_hash)
+ 		if (&p->mnt_parent->mnt == mnt && p->mnt_mountpoint == dentry)
+-			return p;
+-	return NULL;
++			goto found;
++	return res;
++found:
++	res = p;
++	list_for_each_entry_continue(p, head, mnt_hash) {
++		if (&p->mnt_parent->mnt != mnt || p->mnt_mountpoint != dentry)
++			break;
++		res = p;
++	}
++	return res;
+ }
  
- 	/*
--	 * Temporarily set the pointer to NULL, so idr_find() won't return
--	 * a half-baked cgroup.
--	 */
--	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
--	if (cgrp->id < 0) {
--		err = -ENOMEM;
--		goto err_free_name;
--	}
--
--	/*
- 	 * Only live parents can have children.  Note that the liveliness
- 	 * check isn't strictly necessary because cgroup_mkdir() and
- 	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
-@@ -4381,7 +4371,7 @@ static long cgroup_create(struct cgroup
- 	 */
- 	if (!cgroup_lock_live_group(parent)) {
- 		err = -ENODEV;
--		goto err_free_id;
-+		goto err_free_name;
+ /*
+@@ -769,14 +777,14 @@ static void attach_mnt(struct mount *mnt
+ 			struct mountpoint *mp)
+ {
+ 	mnt_set_mountpoint(parent, mp, mnt);
+-	list_add_tail(&mnt->mnt_hash, m_hash(&parent->mnt, mp->m_dentry));
++	list_add(&mnt->mnt_hash, m_hash(&parent->mnt, mp->m_dentry));
+ 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
+ }
+ 
+ /*
+  * vfsmount lock must be held for write
+  */
+-static void commit_tree(struct mount *mnt)
++static void commit_tree(struct mount *mnt, struct mount *shadows)
+ {
+ 	struct mount *parent = mnt->mnt_parent;
+ 	struct mount *m;
+@@ -791,7 +799,10 @@ static void commit_tree(struct mount *mn
+ 
+ 	list_splice(&head, n->list.prev);
+ 
+-	list_add_tail(&mnt->mnt_hash,
++	if (shadows)
++		list_add(&mnt->mnt_hash, &shadows->mnt_hash);
++	else
++		list_add(&mnt->mnt_hash,
+ 				m_hash(&parent->mnt, mnt->mnt_mountpoint));
+ 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
+ 	touch_mnt_namespace(n);
+@@ -1659,12 +1670,15 @@ static int attach_recursive_mnt(struct m
+ 		touch_mnt_namespace(source_mnt->mnt_ns);
+ 	} else {
+ 		mnt_set_mountpoint(dest_mnt, dest_mp, source_mnt);
+-		commit_tree(source_mnt);
++		commit_tree(source_mnt, NULL);
  	}
  
- 	/* Grab a reference on the superblock so the hierarchy doesn't
-@@ -4391,6 +4381,16 @@ static long cgroup_create(struct cgroup
- 	 * fs */
- 	atomic_inc(&sb->s_active);
- 
-+	/*
-+	 * Temporarily set the pointer to NULL, so idr_find() won't return
-+	 * a half-baked cgroup.
-+	 */
-+	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
-+	if (cgrp->id < 0) {
-+		err = -ENOMEM;
-+		goto err_unlock;
-+ 	}
-+
- 	init_cgroup_housekeeping(cgrp);
- 
- 	dentry->d_fsdata = cgrp;
-@@ -4491,11 +4491,11 @@ err_free_all:
- 			ss->css_free(css);
- 		}
+ 	list_for_each_entry_safe(child, p, &tree_list, mnt_hash) {
++		struct mount *q;
+ 		list_del_init(&child->mnt_hash);
+-		commit_tree(child);
++		q = __lookup_mnt_last(&child->mnt_parent->mnt,
++				      child->mnt_mountpoint);
++		commit_tree(child, q);
  	}
-+	idr_remove(&root->cgroup_idr, cgrp->id);
-+err_unlock:
- 	mutex_unlock(&cgroup_mutex);
- 	/* Release the reference count that we took on the superblock */
- 	deactivate_super(sb);
--err_free_id:
--	idr_remove(&root->cgroup_idr, cgrp->id);
- err_free_name:
- 	kfree(rcu_dereference_raw(cgrp->name));
- err_free_cgrp:
+ 	unlock_mount_hash();
+ 
 
 
