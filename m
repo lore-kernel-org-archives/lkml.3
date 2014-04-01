@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaDAQPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:15:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44621 "EHLO
+	id S1753356AbaDAQ2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:28:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44631 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936AbaDAQPl (ORCPT
+	with ESMTP id S1752974AbaDAQPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:15:41 -0400
+	Tue, 1 Apr 2014 12:15:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Weinberger <richard@nod.at>, Wolfram Sang <wsa@the-dreams.de>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 73/86] i2c: Remove usage of orphaned symbol OF_I2C
-Date: Tue,  1 Apr 2014 09:08:26 -0700
-Message-Id: <1396368519-12728-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 81/86] Input: synaptics - add manual min/max quirk for ThinkPad X240
+Date: Tue,  1 Apr 2014 09:08:34 -0700
+Message-Id: <1396368519-12728-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,34 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 62c19c9d29e65086e5ae76df371ed2e6b23f00cd upstream.
+commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
 
-The symbol is an orphan, don't depend on it anymore.
+This extends Benjamin Tissoires manual min/max quirk table with support for
+the ThinkPad X240.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-[wsa: enhanced commit message]
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Fixes: 687b81d083c0 (i2c: move OF helpers into the core)
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/mouse/synaptics.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 699f9da..7dbdfca 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -350,7 +350,7 @@ config I2C_CBUS_GPIO
- 
- config I2C_CPM
- 	tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
--	depends on (CPM1 || CPM2) && OF_I2C
-+	depends on CPM1 || CPM2
- 	help
- 	  This supports the use of the I2C interface on Freescale
- 	  processors with CPM1 or CPM2.
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 43146cd..1f683f8 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1481,6 +1481,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1024, 5052, 2258, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad X240 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
 -- 
 1.8.3.2
 
