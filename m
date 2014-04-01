@@ -1,406 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaDAJWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:22:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49265 "EHLO mx1.redhat.com"
+	id S1751832AbaDAJWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:22:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30991 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751636AbaDAJQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:16:33 -0400
+	id S1751603AbaDAJQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 05:16:28 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Fabian Frederick <fabf@skynet.be>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 16/29] GFS2: global conversion to pr_foo()
-Date: Tue,  1 Apr 2014 10:15:28 +0100
-Message-Id: <1396343741-1524-17-git-send-email-swhiteho@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 14/29] GFS2: Clean up journal extent mapping
+Date: Tue,  1 Apr 2014 10:15:26 +0100
+Message-Id: <1396343741-1524-15-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
 References: <1396343741-1524-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabian Frederick <fabf@skynet.be>
+This patch fixes a long standing issue in mapping the journal
+extents. Most journals will consist of only a single extent,
+and although the cache took account of that by merging extents,
+it did not actually map large extents, but instead was doing a
+block by block mapping. Since the journal was only being mapped
+on mount, this was not normally noticeable.
 
--All printk(KERN_foo converted to pr_foo().
--Messages updated to fit in 80 columns.
--fs_macros converted as well.
--fs_printk removed.
+With the updated code, it is now possible to use the same extent
+mapping system during journal recovery (which will be added in a
+later patch). This will allow checking of the integrity of the
+journal before any reply of the journal content is attempted. For
+this reason the code is moving to bmap.c, since it will be used
+more widely in due course.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+An exercise left for the reader is to compare the new function
+gfs2_map_journal_extents() with gfs2_write_alloc_required()
+
+Additionally, should there be a failure, the error reporting is
+also updated to show more detail about what went wrong.
+
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
-index ffcfdd1..39c7081 100644
---- a/fs/gfs2/dir.c
-+++ b/fs/gfs2/dir.c
-@@ -507,7 +507,7 @@ static int gfs2_check_dirent(struct gfs2_dirent *dent, unsigned int offset,
- 		goto error;
- 	return 0;
- error:
--	printk(KERN_WARNING "gfs2_check_dirent: %s (%s)\n", msg,
-+	pr_warn("gfs2_check_dirent: %s (%s)\n", msg,
- 	       first ? "first in block" : "not first in block");
- 	return -EIO;
- }
-@@ -531,8 +531,8 @@ static int gfs2_dirent_offset(const void *buf)
- 	}
- 	return offset;
- wrong_type:
--	printk(KERN_WARNING "gfs2_scan_dirent: wrong block type %u\n",
--	       be32_to_cpu(h->mh_type));
-+	pr_warn("gfs2_scan_dirent: wrong block type %u\n",
-+	        be32_to_cpu(h->mh_type));
- 	return -1;
- }
- 
-@@ -1006,7 +1006,7 @@ static int dir_split_leaf(struct inode *inode, const struct qstr *name)
- 	len = 1 << (dip->i_depth - be16_to_cpu(oleaf->lf_depth));
- 	half_len = len >> 1;
- 	if (!half_len) {
--		printk(KERN_WARNING "i_depth %u lf_depth %u index %u\n", dip->i_depth, be16_to_cpu(oleaf->lf_depth), index);
-+		pr_warn("i_depth %u lf_depth %u index %u\n", dip->i_depth, be16_to_cpu(oleaf->lf_depth), index);
- 		gfs2_consist_inode(dip);
- 		error = -EIO;
- 		goto fail_brelse;
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index ca0be6c..329dc80 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -468,7 +468,7 @@ retry:
- 			do_xmote(gl, gh, LM_ST_UNLOCKED);
- 			break;
- 		default: /* Everything else */
--			printk(KERN_ERR "GFS2: wanted %u got %u\n", gl->gl_target, state);
-+			pr_err("GFS2: wanted %u got %u\n", gl->gl_target, state);
- 			GLOCK_BUG_ON(gl, 1);
- 		}
- 		spin_unlock(&gl->gl_spin);
-@@ -542,7 +542,7 @@ __acquires(&gl->gl_spin)
- 		/* lock_dlm */
- 		ret = sdp->sd_lockstruct.ls_ops->lm_lock(gl, target, lck_flags);
- 		if (ret) {
--			printk(KERN_ERR "GFS2: lm_lock ret %d\n", ret);
-+			pr_err("GFS2: lm_lock ret %d\n", ret);
- 			GLOCK_BUG_ON(gl, 1);
- 		}
- 	} else { /* lock_nolock */
-@@ -935,7 +935,7 @@ void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...)
- 		vaf.fmt = fmt;
- 		vaf.va = &args;
- 
--		printk(KERN_ERR " %pV", &vaf);
-+		pr_err(" %pV", &vaf);
- 	}
- 
- 	va_end(args);
-@@ -1010,13 +1010,13 @@ do_cancel:
- 	return;
- 
- trap_recursive:
--	printk(KERN_ERR "original: %pSR\n", (void *)gh2->gh_ip);
--	printk(KERN_ERR "pid: %d\n", pid_nr(gh2->gh_owner_pid));
--	printk(KERN_ERR "lock type: %d req lock state : %d\n",
-+	pr_err("original: %pSR\n", (void *)gh2->gh_ip);
-+	pr_err("pid: %d\n", pid_nr(gh2->gh_owner_pid));
-+	pr_err("lock type: %d req lock state : %d\n",
- 	       gh2->gh_gl->gl_name.ln_type, gh2->gh_state);
--	printk(KERN_ERR "new: %pSR\n", (void *)gh->gh_ip);
--	printk(KERN_ERR "pid: %d\n", pid_nr(gh->gh_owner_pid));
--	printk(KERN_ERR "lock type: %d req lock state : %d\n",
-+	pr_err("new: %pSR\n", (void *)gh->gh_ip);
-+	pr_err("pid: %d\n", pid_nr(gh->gh_owner_pid));
-+	pr_err("lock type: %d req lock state : %d\n",
- 	       gh->gh_gl->gl_name.ln_type, gh->gh_state);
- 	gfs2_dump_glock(NULL, gl);
- 	BUG();
-diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
-index 6b97d98..a664ddd 100644
---- a/fs/gfs2/lock_dlm.c
-+++ b/fs/gfs2/lock_dlm.c
-@@ -176,7 +176,7 @@ static void gdlm_bast(void *arg, int mode)
- 		gfs2_glock_cb(gl, LM_ST_SHARED);
- 		break;
- 	default:
--		printk(KERN_ERR "unknown bast mode %d", mode);
-+		pr_err("unknown bast mode %d", mode);
- 		BUG();
- 	}
- }
-@@ -195,7 +195,7 @@ static int make_mode(const unsigned int lmstate)
- 	case LM_ST_SHARED:
- 		return DLM_LOCK_PR;
- 	}
--	printk(KERN_ERR "unknown LM state %d", lmstate);
-+	pr_err("unknown LM state %d", lmstate);
- 	BUG();
- 	return -1;
- }
-@@ -308,8 +308,7 @@ static void gdlm_put_lock(struct gfs2_glock *gl)
- 	error = dlm_unlock(ls->ls_dlm, gl->gl_lksb.sb_lkid, DLM_LKF_VALBLK,
- 			   NULL, gl);
- 	if (error) {
--		printk(KERN_ERR "gdlm_unlock %x,%llx err=%d\n",
--		       gl->gl_name.ln_type,
-+		pr_err("gdlm_unlock %x,%llx err=%d\n", gl->gl_name.ln_type,
- 		       (unsigned long long)gl->gl_name.ln_number, error);
- 		return;
- 	}
-diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-index c272e73..ae9b02b 100644
---- a/fs/gfs2/main.c
-+++ b/fs/gfs2/main.c
-@@ -165,7 +165,7 @@ static int __init init_gfs2_fs(void)
- 
- 	gfs2_register_debugfs();
- 
--	printk("GFS2 installed\n");
-+	pr_info("GFS2 installed\n");
- 
- 	return 0;
- 
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index e0d0db5..c3ef844 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -152,7 +152,7 @@ static int gfs2_check_sb(struct gfs2_sbd *sdp, int silent)
- 	if (sb->sb_magic != GFS2_MAGIC ||
- 	    sb->sb_type != GFS2_METATYPE_SB) {
- 		if (!silent)
--			printk(KERN_WARNING "GFS2: not a GFS2 filesystem\n");
-+			pr_warn("GFS2: not a GFS2 filesystem\n");
- 		return -EINVAL;
- 	}
- 
-@@ -174,7 +174,7 @@ static void end_bio_io_page(struct bio *bio, int error)
- 	if (!error)
- 		SetPageUptodate(page);
- 	else
--		printk(KERN_WARNING "gfs2: error %d reading superblock\n", error);
-+		pr_warn("gfs2: error %d reading superblock\n", error);
- 	unlock_page(page);
- }
- 
-@@ -945,7 +945,7 @@ static int gfs2_lm_mount(struct gfs2_sbd *sdp, int silent)
- 		lm = &gfs2_dlm_ops;
- #endif
- 	} else {
--		printk(KERN_INFO "GFS2: can't find protocol %s\n", proto);
-+		pr_info("GFS2: can't find protocol %s\n", proto);
- 		return -ENOENT;
- 	}
- 
-@@ -1052,7 +1052,7 @@ static int fill_super(struct super_block *sb, struct gfs2_args *args, int silent
- 
- 	sdp = init_sbd(sb);
- 	if (!sdp) {
--		printk(KERN_WARNING "GFS2: can't alloc struct gfs2_sbd\n");
-+		pr_warn("GFS2: can't alloc struct gfs2_sbd\n");
- 		return -ENOMEM;
- 	}
- 	sdp->sd_args = *args;
-@@ -1300,7 +1300,7 @@ static struct dentry *gfs2_mount(struct file_system_type *fs_type, int flags,
- 
- 	error = gfs2_mount_args(&args, data);
- 	if (error) {
--		printk(KERN_WARNING "GFS2: can't parse mount arguments\n");
-+		pr_warn("GFS2: can't parse mount arguments\n");
- 		goto error_super;
- 	}
- 
-@@ -1350,7 +1350,7 @@ static struct dentry *gfs2_mount_meta(struct file_system_type *fs_type,
- 
- 	error = kern_path(dev_name, LOOKUP_FOLLOW, &path);
- 	if (error) {
--		printk(KERN_WARNING "GFS2: path_lookup on %s returned error %d\n",
-+		pr_warn("GFS2: path_lookup on %s returned error %d\n",
- 		       dev_name, error);
- 		return ERR_PTR(error);
- 	}
-@@ -1358,7 +1358,7 @@ static struct dentry *gfs2_mount_meta(struct file_system_type *fs_type,
- 		 path.dentry->d_inode->i_sb->s_bdev);
- 	path_put(&path);
- 	if (IS_ERR(s)) {
--		printk(KERN_WARNING "GFS2: gfs2 mount does not exist\n");
-+		pr_warn("GFS2: gfs2 mount does not exist\n");
- 		return ERR_CAST(s);
- 	}
- 	if ((flags ^ s->s_flags) & MS_RDONLY) {
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index a5cccf6..6e25ee4 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -1081,7 +1081,7 @@ static int print_message(struct gfs2_quota_data *qd, char *type)
- {
- 	struct gfs2_sbd *sdp = qd->qd_gl->gl_sbd;
- 
--	printk(KERN_INFO "GFS2: fsid=%s: quota %s for %s %u\n",
-+	pr_info("GFS2: fsid=%s: quota %s for %s %u\n",
- 	       sdp->sd_fsname, type,
- 	       (qd->qd_id.type == USRQUOTA) ? "user" : "group",
- 	       from_kqid(&init_user_ns, qd->qd_id));
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index f585746..8d12038 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -99,11 +99,11 @@ static inline void gfs2_setbit(const struct gfs2_rbm *rbm, bool do_clone,
- 	cur_state = (*byte1 >> bit) & GFS2_BIT_MASK;
- 
- 	if (unlikely(!valid_change[new_state * 4 + cur_state])) {
--		printk(KERN_WARNING "GFS2: buf_blk = 0x%x old_state=%d, "
-+		pr_warn("GFS2: buf_blk = 0x%x old_state=%d, "
- 		       "new_state=%d\n", rbm->offset, cur_state, new_state);
--		printk(KERN_WARNING "GFS2: rgrp=0x%llx bi_start=0x%x\n",
-+		pr_warn("GFS2: rgrp=0x%llx bi_start=0x%x\n",
- 		       (unsigned long long)rbm->rgd->rd_addr, bi->bi_start);
--		printk(KERN_WARNING "GFS2: bi_offset=0x%x bi_len=0x%x\n",
-+		pr_warn("GFS2: bi_offset=0x%x bi_len=0x%x\n",
- 		       bi->bi_offset, bi->bi_len);
- 		dump_stack();
- 		gfs2_consist_rgrpd(rbm->rgd);
-@@ -736,11 +736,11 @@ void gfs2_clear_rgrpd(struct gfs2_sbd *sdp)
- 
- static void gfs2_rindex_print(const struct gfs2_rgrpd *rgd)
- {
--	printk(KERN_INFO "  ri_addr = %llu\n", (unsigned long long)rgd->rd_addr);
--	printk(KERN_INFO "  ri_length = %u\n", rgd->rd_length);
--	printk(KERN_INFO "  ri_data0 = %llu\n", (unsigned long long)rgd->rd_data0);
--	printk(KERN_INFO "  ri_data = %u\n", rgd->rd_data);
--	printk(KERN_INFO "  ri_bitbytes = %u\n", rgd->rd_bitbytes);
-+	pr_info("  ri_addr = %llu\n", (unsigned long long)rgd->rd_addr);
-+	pr_info("  ri_length = %u\n", rgd->rd_length);
-+	pr_info("  ri_data0 = %llu\n", (unsigned long long)rgd->rd_data0);
-+	pr_info("  ri_data = %u\n", rgd->rd_data);
-+	pr_info("  ri_bitbytes = %u\n", rgd->rd_bitbytes);
+diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
+index fe0500c..c62d4b9 100644
+--- a/fs/gfs2/bmap.c
++++ b/fs/gfs2/bmap.c
+@@ -1328,6 +1328,121 @@ int gfs2_file_dealloc(struct gfs2_inode *ip)
  }
  
  /**
-@@ -2278,7 +2278,7 @@ int gfs2_alloc_blocks(struct gfs2_inode *ip, u64 *bn, unsigned int *nblocks,
- 		}
- 	}
- 	if (rbm.rgd->rd_free < *nblocks) {
--		printk(KERN_WARNING "nblocks=%u\n", *nblocks);
-+		pr_warn("nblocks=%u\n", *nblocks);
- 		goto rgrp_error;
- 	}
++ * gfs2_free_journal_extents - Free cached journal bmap info
++ * @jd: The journal
++ *
++ */
++
++void gfs2_free_journal_extents(struct gfs2_jdesc *jd)
++{
++	struct gfs2_journal_extent *jext;
++
++	while(!list_empty(&jd->extent_list)) {
++		jext = list_entry(jd->extent_list.next, struct gfs2_journal_extent, list);
++		list_del(&jext->list);
++		kfree(jext);
++	}
++}
++
++/**
++ * gfs2_add_jextent - Add or merge a new extent to extent cache
++ * @jd: The journal descriptor
++ * @lblock: The logical block at start of new extent
++ * @pblock: The physical block at start of new extent
++ * @blocks: Size of extent in fs blocks
++ *
++ * Returns: 0 on success or -ENOMEM
++ */
++
++static int gfs2_add_jextent(struct gfs2_jdesc *jd, u64 lblock, u64 dblock, u64 blocks)
++{
++	struct gfs2_journal_extent *jext;
++
++	if (!list_empty(&jd->extent_list)) {
++		jext = list_entry(jd->extent_list.prev, struct gfs2_journal_extent, list);
++		if ((jext->dblock + jext->blocks) == dblock) {
++			jext->blocks += blocks;
++			return 0;
++		}
++	}
++
++	jext = kzalloc(sizeof(struct gfs2_journal_extent), GFP_NOFS);
++	if (jext == NULL)
++		return -ENOMEM;
++	jext->dblock = dblock;
++	jext->lblock = lblock;
++	jext->blocks = blocks;
++	list_add_tail(&jext->list, &jd->extent_list);
++	jd->nr_extents++;
++	return 0;
++}
++
++/**
++ * gfs2_map_journal_extents - Cache journal bmap info
++ * @sdp: The super block
++ * @jd: The journal to map
++ *
++ * Create a reusable "extent" mapping from all logical
++ * blocks to all physical blocks for the given journal.  This will save
++ * us time when writing journal blocks.  Most journals will have only one
++ * extent that maps all their logical blocks.  That's because gfs2.mkfs
++ * arranges the journal blocks sequentially to maximize performance.
++ * So the extent would map the first block for the entire file length.
++ * However, gfs2_jadd can happen while file activity is happening, so
++ * those journals may not be sequential.  Less likely is the case where
++ * the users created their own journals by mounting the metafs and
++ * laying it out.  But it's still possible.  These journals might have
++ * several extents.
++ *
++ * Returns: 0 on success, or error on failure
++ */
++
++int gfs2_map_journal_extents(struct gfs2_sbd *sdp, struct gfs2_jdesc *jd)
++{
++	u64 lblock = 0;
++	u64 lblock_stop;
++	struct gfs2_inode *ip = GFS2_I(jd->jd_inode);
++	struct buffer_head bh;
++	unsigned int shift = sdp->sd_sb.sb_bsize_shift;
++	u64 size;
++	int rc;
++
++	lblock_stop = i_size_read(jd->jd_inode) >> shift;
++	size = (lblock_stop - lblock) << shift;
++	jd->nr_extents = 0;
++	WARN_ON(!list_empty(&jd->extent_list));
++
++	do {
++		bh.b_state = 0;
++		bh.b_blocknr = 0;
++		bh.b_size = size;
++		rc = gfs2_block_map(jd->jd_inode, lblock, &bh, 0);
++		if (rc || !buffer_mapped(&bh))
++			goto fail;
++		rc = gfs2_add_jextent(jd, lblock, bh.b_blocknr, bh.b_size >> shift);
++		if (rc)
++			goto fail;
++		size -= bh.b_size;
++		lblock += (bh.b_size >> ip->i_inode.i_blkbits);
++	} while(size > 0);
++
++	fs_info(sdp, "journal %d mapped with %u extents\n", jd->jd_jid,
++		jd->nr_extents);
++	return 0;
++
++fail:
++	fs_warn(sdp, "error %d mapping journal %u at offset %llu (extent %u)\n",
++		rc, jd->jd_jid,
++		(unsigned long long)(i_size_read(jd->jd_inode) - size),
++		jd->nr_extents);
++	fs_warn(sdp, "bmap=%d lblock=%llu block=%llu, state=0x%08lx, size=%llu\n",
++		rc, (unsigned long long)lblock, (unsigned long long)bh.b_blocknr,
++		bh.b_state, (unsigned long long)bh.b_size);
++	gfs2_free_journal_extents(jd);
++	return rc;
++}
++
++/**
+  * gfs2_write_alloc_required - figure out if a write will require an allocation
+  * @ip: the file being written to
+  * @offset: the offset to write to
+diff --git a/fs/gfs2/bmap.h b/fs/gfs2/bmap.h
+index 42fea03..81ded5e 100644
+--- a/fs/gfs2/bmap.h
++++ b/fs/gfs2/bmap.h
+@@ -55,5 +55,7 @@ extern int gfs2_truncatei_resume(struct gfs2_inode *ip);
+ extern int gfs2_file_dealloc(struct gfs2_inode *ip);
+ extern int gfs2_write_alloc_required(struct gfs2_inode *ip, u64 offset,
+ 				     unsigned int len);
++extern int gfs2_map_journal_extents(struct gfs2_sbd *sdp, struct gfs2_jdesc *jd);
++extern void gfs2_free_journal_extents(struct gfs2_jdesc *jd);
  
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index 2574744..584c757 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -175,7 +175,7 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 			break;
- 		case Opt_debug:
- 			if (args->ar_errors == GFS2_ERRORS_PANIC) {
--				printk(KERN_WARNING "GFS2: -o debug and -o errors=panic "
-+				pr_warn("GFS2: -o debug and -o errors=panic "
- 				       "are mutually exclusive.\n");
- 				return -EINVAL;
- 			}
-@@ -228,21 +228,21 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 		case Opt_commit:
- 			rv = match_int(&tmp[0], &args->ar_commit);
- 			if (rv || args->ar_commit <= 0) {
--				printk(KERN_WARNING "GFS2: commit mount option requires a positive numeric argument\n");
-+				pr_warn("GFS2: commit mount option requires a positive numeric argument\n");
- 				return rv ? rv : -EINVAL;
- 			}
- 			break;
- 		case Opt_statfs_quantum:
- 			rv = match_int(&tmp[0], &args->ar_statfs_quantum);
- 			if (rv || args->ar_statfs_quantum < 0) {
--				printk(KERN_WARNING "GFS2: statfs_quantum mount option requires a non-negative numeric argument\n");
-+				pr_warn("GFS2: statfs_quantum mount option requires a non-negative numeric argument\n");
- 				return rv ? rv : -EINVAL;
- 			}
- 			break;
- 		case Opt_quota_quantum:
- 			rv = match_int(&tmp[0], &args->ar_quota_quantum);
- 			if (rv || args->ar_quota_quantum <= 0) {
--				printk(KERN_WARNING "GFS2: quota_quantum mount option requires a positive numeric argument\n");
-+				pr_warn("GFS2: quota_quantum mount option requires a positive numeric argument\n");
- 				return rv ? rv : -EINVAL;
- 			}
- 			break;
-@@ -250,7 +250,7 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 			rv = match_int(&tmp[0], &args->ar_statfs_percent);
- 			if (rv || args->ar_statfs_percent < 0 ||
- 			    args->ar_statfs_percent > 100) {
--				printk(KERN_WARNING "statfs_percent mount option requires a numeric argument between 0 and 100\n");
-+				pr_warn("statfs_percent mount option requires a numeric argument between 0 and 100\n");
- 				return rv ? rv : -EINVAL;
- 			}
- 			break;
-@@ -259,7 +259,7 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 			break;
- 		case Opt_err_panic:
- 			if (args->ar_debug) {
--				printk(KERN_WARNING "GFS2: -o debug and -o errors=panic "
-+				pr_warn("GFS2: -o debug and -o errors=panic "
- 					"are mutually exclusive.\n");
- 				return -EINVAL;
- 			}
-@@ -279,7 +279,7 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
- 			break;
- 		case Opt_error:
- 		default:
--			printk(KERN_WARNING "GFS2: invalid mount option: %s\n", o);
-+			pr_warn("GFS2: invalid mount option: %s\n", o);
- 			return -EINVAL;
- 		}
- 	}
-diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
-index 295f400..3fe8e34 100644
---- a/fs/gfs2/trans.c
-+++ b/fs/gfs2/trans.c
-@@ -99,11 +99,10 @@ static void gfs2_log_release(struct gfs2_sbd *sdp, unsigned int blks)
+ #endif /* __BMAP_DOT_H__ */
+diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
+index d0c3928..456d8fa 100644
+--- a/fs/gfs2/incore.h
++++ b/fs/gfs2/incore.h
+@@ -485,7 +485,7 @@ struct gfs2_trans {
+ };
  
- static void gfs2_print_trans(const struct gfs2_trans *tr)
- {
--	printk(KERN_WARNING "GFS2: Transaction created at: %pSR\n",
--	       (void *)tr->tr_ip);
--	printk(KERN_WARNING "GFS2: blocks=%u revokes=%u reserved=%u touched=%u\n",
-+	pr_warn("GFS2: Transaction created at: %pSR\n", (void *)tr->tr_ip);
-+	pr_warn("GFS2: blocks=%u revokes=%u reserved=%u touched=%u\n",
- 	       tr->tr_blocks, tr->tr_revokes, tr->tr_reserved, tr->tr_touched);
--	printk(KERN_WARNING "GFS2: Buf %u/%u Databuf %u/%u Revoke %u/%u\n",
-+	pr_warn("GFS2: Buf %u/%u Databuf %u/%u Revoke %u/%u\n",
- 	       tr->tr_num_buf_new, tr->tr_num_buf_rm,
- 	       tr->tr_num_databuf_new, tr->tr_num_databuf_rm,
- 	       tr->tr_num_revoke, tr->tr_num_revoke_rm);
-@@ -232,8 +231,8 @@ static void meta_lo_add(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
- 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
- 	mh = (struct gfs2_meta_header *)bd->bd_bh->b_data;
- 	if (unlikely(mh->mh_magic != cpu_to_be32(GFS2_MAGIC))) {
--		printk(KERN_ERR
--		       "Attempting to add uninitialised block to journal (inplace block=%lld)\n",
-+		pr_err("Attempting to add uninitialised block to journal "
-+		       "(inplace block=%lld)\n",
- 		       (unsigned long long)bd->bd_bh->b_blocknr);
- 		BUG();
- 	}
-diff --git a/fs/gfs2/util.c b/fs/gfs2/util.c
-index f7109f6..e9d7001 100644
---- a/fs/gfs2/util.c
-+++ b/fs/gfs2/util.c
-@@ -30,8 +30,7 @@ mempool_t *gfs2_page_pool __read_mostly;
+ struct gfs2_journal_extent {
+-	struct list_head extent_list;
++	struct list_head list;
  
- void gfs2_assert_i(struct gfs2_sbd *sdp)
- {
--	printk(KERN_EMERG "GFS2: fsid=%s: fatal assertion failed\n",
--	       sdp->sd_fsname);
-+	pr_emerg("GFS2: fsid=%s: fatal assertion failed\n", sdp->sd_fsname);
+ 	unsigned int lblock; /* First logical block */
+ 	u64 dblock; /* First disk block */
+@@ -495,6 +495,7 @@ struct gfs2_journal_extent {
+ struct gfs2_jdesc {
+ 	struct list_head jd_list;
+ 	struct list_head extent_list;
++	unsigned int nr_extents;
+ 	struct work_struct jd_work;
+ 	struct inode *jd_inode;
+ 	unsigned long jd_flags;
+diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
+index 23c6e72..ae1d635 100644
+--- a/fs/gfs2/lops.c
++++ b/fs/gfs2/lops.c
+@@ -146,8 +146,8 @@ static u64 gfs2_log_bmap(struct gfs2_sbd *sdp)
+ 	struct gfs2_journal_extent *je;
+ 	u64 block;
+ 
+-	list_for_each_entry(je, &sdp->sd_jdesc->extent_list, extent_list) {
+-		if (lbn >= je->lblock && lbn < je->lblock + je->blocks) {
++	list_for_each_entry(je, &sdp->sd_jdesc->extent_list, list) {
++		if ((lbn >= je->lblock) && (lbn < (je->lblock + je->blocks))) {
+ 			block = je->dblock + lbn - je->lblock;
+ 			gfs2_log_incr_head(sdp);
+ 			return block;
+diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+index 1f855a7..e0d0db5 100644
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -517,67 +517,6 @@ out:
+ 	return ret;
  }
  
- int gfs2_lm_withdraw(struct gfs2_sbd *sdp, char *fmt, ...)
-@@ -105,8 +104,7 @@ int gfs2_assert_warn_i(struct gfs2_sbd *sdp, char *assertion,
- 		return -2;
+-/**
+- * map_journal_extents - create a reusable "extent" mapping from all logical
+- * blocks to all physical blocks for the given journal.  This will save
+- * us time when writing journal blocks.  Most journals will have only one
+- * extent that maps all their logical blocks.  That's because gfs2.mkfs
+- * arranges the journal blocks sequentially to maximize performance.
+- * So the extent would map the first block for the entire file length.
+- * However, gfs2_jadd can happen while file activity is happening, so
+- * those journals may not be sequential.  Less likely is the case where
+- * the users created their own journals by mounting the metafs and
+- * laying it out.  But it's still possible.  These journals might have
+- * several extents.
+- *
+- * TODO: This should be done in bigger chunks rather than one block at a time,
+- *       but since it's only done at mount time, I'm not worried about the
+- *       time it takes.
+- */
+-static int map_journal_extents(struct gfs2_sbd *sdp)
+-{
+-	struct gfs2_jdesc *jd = sdp->sd_jdesc;
+-	unsigned int lb;
+-	u64 db, prev_db; /* logical block, disk block, prev disk block */
+-	struct gfs2_inode *ip = GFS2_I(jd->jd_inode);
+-	struct gfs2_journal_extent *jext = NULL;
+-	struct buffer_head bh;
+-	int rc = 0;
+-
+-	prev_db = 0;
+-
+-	for (lb = 0; lb < i_size_read(jd->jd_inode) >> sdp->sd_sb.sb_bsize_shift; lb++) {
+-		bh.b_state = 0;
+-		bh.b_blocknr = 0;
+-		bh.b_size = 1 << ip->i_inode.i_blkbits;
+-		rc = gfs2_block_map(jd->jd_inode, lb, &bh, 0);
+-		db = bh.b_blocknr;
+-		if (rc || !db) {
+-			printk(KERN_INFO "GFS2 journal mapping error %d: lb="
+-			       "%u db=%llu\n", rc, lb, (unsigned long long)db);
+-			break;
+-		}
+-		if (!prev_db || db != prev_db + 1) {
+-			jext = kzalloc(sizeof(struct gfs2_journal_extent),
+-				       GFP_KERNEL);
+-			if (!jext) {
+-				printk(KERN_INFO "GFS2 error: out of memory "
+-				       "mapping journal extents.\n");
+-				rc = -ENOMEM;
+-				break;
+-			}
+-			jext->dblock = db;
+-			jext->lblock = lb;
+-			jext->blocks = 1;
+-			list_add_tail(&jext->extent_list, &jd->extent_list);
+-		} else {
+-			jext->blocks++;
+-		}
+-		prev_db = db;
+-	}
+-	return rc;
+-}
+-
+ static void gfs2_others_may_mount(struct gfs2_sbd *sdp)
+ {
+ 	char *message = "FIRSTMOUNT=Done";
+@@ -779,7 +718,7 @@ static int init_journal(struct gfs2_sbd *sdp, int undo)
+ 		atomic_set(&sdp->sd_log_thresh2, 4*sdp->sd_jdesc->jd_blocks/5);
  
- 	if (sdp->sd_args.ar_errors == GFS2_ERRORS_WITHDRAW)
--		printk(KERN_WARNING
--		       "GFS2: fsid=%s: warning: assertion \"%s\" failed\n"
-+		pr_warn("GFS2: fsid=%s: warning: assertion \"%s\" failed\n"
- 		       "GFS2: fsid=%s:   function = %s, file = %s, line = %u\n",
- 		       sdp->sd_fsname, assertion,
- 		       sdp->sd_fsname, function, file, line);
+ 		/* Map the extents for this journal's blocks */
+-		map_journal_extents(sdp);
++		gfs2_map_journal_extents(sdp, sdp->sd_jdesc);
+ 	}
+ 	trace_gfs2_log_blocks(sdp, atomic_read(&sdp->sd_log_blks_free));
+ 
+diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
+index 60f60f6..2574744 100644
+--- a/fs/gfs2/super.c
++++ b/fs/gfs2/super.c
+@@ -295,9 +295,8 @@ int gfs2_mount_args(struct gfs2_args *args, char *options)
+ 
+ void gfs2_jindex_free(struct gfs2_sbd *sdp)
+ {
+-	struct list_head list, *head;
++	struct list_head list;
+ 	struct gfs2_jdesc *jd;
+-	struct gfs2_journal_extent *jext;
+ 
+ 	spin_lock(&sdp->sd_jindex_spin);
+ 	list_add(&list, &sdp->sd_jindex_list);
+@@ -307,14 +306,7 @@ void gfs2_jindex_free(struct gfs2_sbd *sdp)
+ 
+ 	while (!list_empty(&list)) {
+ 		jd = list_entry(list.next, struct gfs2_jdesc, jd_list);
+-		head = &jd->extent_list;
+-		while (!list_empty(head)) {
+-			jext = list_entry(head->next,
+-					  struct gfs2_journal_extent,
+-					  extent_list);
+-			list_del(&jext->extent_list);
+-			kfree(jext);
+-		}
++		gfs2_free_journal_extents(jd);
+ 		list_del(&jd->jd_list);
+ 		iput(jd->jd_inode);
+ 		kfree(jd);
 -- 
 1.8.3.1
 
