@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaDAUbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:31:36 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:58110 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751375AbaDAUbf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:31:35 -0400
-Message-ID: <1396384291.23763.22.camel@x220>
-Subject: Re: [GIT PULL] RCU changes for v3.15
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 01 Apr 2014 22:31:31 +0200
-In-Reply-To: <20140331081724.GA3193@gmail.com>
-References: <20140331081724.GA3193@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Apr 2014 20:31:31.0522 (UTC) FILETIME=[5DE7BA20:01CF4DE9]
-X-RcptDomain: vger.kernel.org
+	id S1751635AbaDAUcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:32:15 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48490 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751383AbaDAUcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 16:32:13 -0400
+Date: Tue, 1 Apr 2014 16:32:08 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Felipe Balbi <balbi@ti.com>
+Cc: rob@landley.net, clm@fb.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Documentation: SubmittingPatches: mention our new
+ Facebook group
+Message-ID: <20140401203208.GB30033@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Felipe Balbi <balbi@ti.com>, rob@landley.net, clm@fb.com,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-doc@vger.kernel.org
+References: <533AD000.307@fb.com>
+ <1396368515-8547-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396368515-8547-1-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Paul E. McKenney (70):
->      [...]
->       locktorture: Add a lock-torture kernel module
+One suggestion: the documentation should add a tip that if you can't
+get someone to review your post, one option is to pay Facebook to
+promote your post[1] so it shows more prominently (or at all) on more
+kernel dvelopers' streams:
 
-This commit added a check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. But I
-can't find a Kconfig symbol LOCK_TORTURE_TEST_RUNNABLE nor a
-preprocessor define for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. (I only
-checked master of Linus's tree and linux-next.)
+					- Ted
 
-Is this check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE needed?
-
-
-Paul Bolle
+[1] http://hothardware.com/News/Facebook-Looking-at-New-Revenue-Stream-Pay-To-Promote-Friends-Posts-/
 
