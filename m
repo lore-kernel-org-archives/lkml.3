@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924AbaDALqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:46:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42538 "EHLO
+	id S1752567AbaDALR7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:17:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42496 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477AbaDALSA (ORCPT
+	with ESMTP id S1752401AbaDALRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:00 -0400
+	Tue, 1 Apr 2014 07:17:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 090/144] PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled
-Date: Tue,  1 Apr 2014 12:14:54 +0100
-Message-Id: <1396350948-29910-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 082/144] [SCSI] isci: fix reset timeout handling
+Date: Tue,  1 Apr 2014 12:14:46 +0100
+Message-Id: <1396350948-29910-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 3cdeb713dc66057b50682048c151eae07b186c42 upstream.
+commit ddfadd7736b677de2d4ca2cd5b4b655368c85a7a upstream.
 
-Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
-them disabled"), pciehp surprise removal stopped working.
+Remove an erroneous BUG_ON() in the case of a hard reset timeout.  The
+reset timeout handler puts the port into the "awaiting link-up" state.
+The timeout causes the device to be disconnected and we need to be in
+the awaiting link-up state to re-connect the port.  The BUG_ON() made
+the incorrect assumption that resets never timeout and we always
+complete the reset in the "resetting" state.
 
-This happens because pci_reenable_device() on the hotplug bridge (used in
-the pciehp_configure_device() path) clears the Interrupt Disable bit, which
-apparently breaks the bridge's MSI hotplug event reporting.
+Testing this patch also uncovered that libata continues to attempt to
+reset the port long after the driver has torn down the context.  Once
+the driver has committed to abandoning the link it must indicate to
+libata that recovery ends by returning -ENODEV from
+->lldd_I_T_nexus_reset().
 
-Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
-which is used by both pci_enable_device() and pci_reenable_device().  But
-we use pci_reenable_device() after the driver may have enabled MSI or
-MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
-
-This patch clears Interrupt Disable only when MSI/MSI-X has not been
-enabled.
-
-Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
-Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Reported-by: David Milburn <dmilburn@redhat.com>
+Reported-by: Xun Ni <xun.ni@intel.com>
+Tested-by: Xun Ni <xun.ni@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/pci.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/isci/port_config.c | 7 -------
+ drivers/scsi/isci/task.c        | 2 +-
+ 2 files changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 1088e0d..b5352fc 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1130,6 +1130,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
- 		return err;
- 	pci_fixup_device(pci_fixup_enable, dev);
+diff --git a/drivers/scsi/isci/port_config.c b/drivers/scsi/isci/port_config.c
+index cd962da..5017bde 100644
+--- a/drivers/scsi/isci/port_config.c
++++ b/drivers/scsi/isci/port_config.c
+@@ -615,13 +615,6 @@ static void sci_apc_agent_link_up(struct isci_host *ihost,
+ 					  SCIC_SDS_APC_WAIT_LINK_UP_NOTIFICATION);
+ 	} else {
+ 		/* the phy is already the part of the port */
+-		u32 port_state = iport->sm.current_state_id;
+-
+-		/* if the PORT'S state is resetting then the link up is from
+-		 * port hard reset in this case, we need to tell the port
+-		 * that link up is recieved
+-		 */
+-		BUG_ON(port_state != SCI_PORT_RESETTING);
+ 		port_agent->phy_ready_mask |= 1 << phy_index;
+ 		sci_port_link_up(iport, iphy);
+ 	}
+diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
+index 0d30ca8..5d6fda7 100644
+--- a/drivers/scsi/isci/task.c
++++ b/drivers/scsi/isci/task.c
+@@ -801,7 +801,7 @@ int isci_task_I_T_nexus_reset(struct domain_device *dev)
+ 		/* XXX: need to cleanup any ireqs targeting this
+ 		 * domain_device
+ 		 */
+-		ret = TMF_RESP_FUNC_COMPLETE;
++		ret = -ENODEV;
+ 		goto out;
+ 	}
  
-+	if (dev->msi_enabled || dev->msix_enabled)
-+		return 0;
-+
- 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
- 	if (pin) {
- 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
 -- 
 1.9.1
 
