@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505AbaDBA0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:26:21 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:55870 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaDBA0T (ORCPT
+	id S1756765AbaDBA0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:26:53 -0400
+Received: from nk11p20im-asmtp001.me.com ([17.158.216.160]:36368 "EHLO
+	nk11p20im-asmtp001.me.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643AbaDBA0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:26:19 -0400
-MIME-Version: 1.0
-X-Originating-IP: [36.239.233.75]
-In-Reply-To: <1394250929.3892.1.camel@phoenix>
-References: <1394250929.3892.1.camel@phoenix>
-Date: Wed, 2 Apr 2014 08:26:18 +0800
-Message-ID: <CAFRkauBA0XPQvoqsUkUwHksf4WbEGi=2Ekm-AY82SNmegHDsrg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] regulator: pbias: Fix is_enabled callback implementation
-From: Axel Lin <axel.lin@ingics.com>
-To: Chris Ball <chris@printf.net>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Balaji T K <balajitk@ti.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Apr 2014 20:26:52 -0400
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 20:26:52 EDT
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+Subject: Replacing GNU
+From: Andrew Stephenson <aste9@icloud.com>
+X-Mailer: iPhone Mail (11D169)
+Message-id: <2A318645-52BD-4650-BDEF-11F6215AA621@icloud.com>
+Date: Wed, 02 Apr 2014 10:26:44 +1100
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+x-icloud-spam-score: 34444444
+ f=icloud.com;e=icloud.com;is=no;ir=yes;pp=ham;spf=n/a;dkim=n/a;dmarc=n/a;wl=n/a;pwl=n/a;clxs=n/a;clxl=n/a
+X-MANTSH: 1TEIXREEbG1oaGkdHB0lGUkdDRl5PWBoaGREKTEMXGx0EGx8SBBscHwQdGxAbHho
+	fGhEKWE0XSxEKbX4XGhEKTFkXGxobGxEKWUkXEQpZXhdoY3kRCkNOF0sbGxpiTk1mHx5IfBl4c
+	wcZGxgZGBxbEQpYXBcZBBoEHQdNSx0SSEkcTAUbHQQbHxIEGxwfBB0bEBseGh8bEQpeWRdhSWU
+	FchEKQ1oXHhMEGxIbBBsdEgQYGRgRCkReFxgRCkJFF297HH9pXm4FUBhAEQpCThdrRRpSUB5DX
+	FlcaBEKQkwXYGReYU9OfR9JeUQRCkJsF3obH3hSHFJtQ29aEQpCQBdlGkJTQ11GH3pmfBEKQlg
+	XY0d5W2JMfm9bfl8RCnBoF3pZehpheWlJUEFhEQpwbBdkQ39nR2VbW2xkUBE=
+X-CLX-Spam: false
+X-CLX-Score: 1011
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-04-01_07:2014-04-01,2014-04-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=1 classifier=spam adjust=0
+ reason=mlx scancount=1 engine=7.0.1-1402240000 definitions=main-1404010136
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-08 11:55 GMT+08:00 Axel Lin <axel.lin@ingics.com>:
-> The is_enabled implementation is wrong in some cases:
-> e.g. for pbias_mmc_omap5: enable_mask is : BIT(27) | BIT(25) | BIT(26)
-> However, pbias_regulator_enable() only sets BIT(27) | BIT(26) bits.
-> So is_enabled callback will always return false in this case.
-> Fix the logic to compare the register value with info->enable rather than
-> info->enable_mask.
->
-
-Hi Chris,
-Would you pick up this patch serial?
-
-Regards,
-Axel
+What is the consensus on replacing GNU with software that won't become GPLv3 in the future, with the latest gcc for example.
