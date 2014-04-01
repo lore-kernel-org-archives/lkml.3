@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaDAPak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:30:40 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56186 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494AbaDAPai (ORCPT
+	id S1751472AbaDAPdY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:33:24 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43165 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaDAPdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:30:38 -0400
-Date: Tue, 1 Apr 2014 08:30:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401153032.GT4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
- <20140401150849.GA14757@redhat.com>
+	Tue, 1 Apr 2014 11:33:23 -0400
+Message-ID: <533ADC3A.6090800@oracle.com>
+Date: Tue, 01 Apr 2014 11:33:14 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401150849.GA14757@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040115-1344-0000-0000-000000A2E181
+To: Josh Boyer <jwboyer@fedoraproject.org>
+CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: liblockdep soname versioning
+References: <CA+5PVA67oBeHUiPXj0viNgrX+uDnJ9LsZSPXF1cLt_D511KKtA@mail.gmail.com>	<533ABCCB.4090502@oracle.com> <CA+5PVA7eiCX_DHqkFx8t86naqs6o=rVcm0Ok5E2Pw9kXhSD_jg@mail.gmail.com> <533AC08F.6020909@oracle.com>
+In-Reply-To: <533AC08F.6020909@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 11:08:49AM -0400, Dave Jones wrote:
-> On Mon, Mar 31, 2014 at 05:48:01PM -0700, Paul E. McKenney wrote:
-> 
->  > Alternatively, I suppose a wakeup could be getting lost.  The main change
->  > related to that this merge window was ffa83fb565fb, which eliminated
->  > idle wakeups from RCU in the CONFIG_RCU_NOCB_CPU_ALL=y case.
->  > 
->  > So, could you please try reverting ffa83fb565fb?
-> 
-> Did a run overnight with that reverted, no luck..
-> 
-> [11869.580161] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [11869.581245]  (detected by 0, t=6502 jiffies, g=449892, c=449891, q=0)
-> [11869.582047] INFO: Stall ended before state dump start
-> [12064.517461] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [12064.518539]  (detected by 0, t=26007 jiffies, g=449892, c=449891, q=0)
-> [12064.519347] INFO: Stall ended before state dump start
-> [12259.454767] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [12259.455818]  (detected by 0, t=45512 jiffies, g=449892, c=449891, q=0)
-> [12259.456602] INFO: Stall ended before state dump start
-> [12454.392112] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [12454.393131]  (detected by 0, t=65017 jiffies, g=449892, c=449891, q=0)
-> [12454.393942] INFO: Stall ended before state dump start
-> [12649.329446] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [12649.330446]  (detected by 0, t=84522 jiffies, g=449892, c=449891, q=0)
-> [12649.331267] INFO: Stall ended before state dump start
-> [12844.266776] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [12844.267695]  (detected by 0, t=104027 jiffies, g=449892, c=449891, q=0)
-> [12844.268571] INFO: Stall ended before state dump start
-> [13039.204102] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [13039.205119]  (detected by 0, t=123532 jiffies, g=449892, c=449891, q=0)
-> [13039.205871] INFO: Stall ended before state dump start
-> [13234.141424] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [13234.141424] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [13234.142448]  (detected by 0, t=143037 jiffies, g=449892, c=449891, q=0)
-> [13234.143339] INFO: Stall ended before state dump start
-> [13429.078730] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [13429.079771]  (detected by 0, t=162542 jiffies, g=449892, c=449891, q=0)
-> [13429.080591] INFO: Stall ended before state dump start
-> [13624.016058] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [13624.017116]  (detected by 0, t=182047 jiffies, g=449892, c=449891, q=0)
-> [13624.018033] INFO: Stall ended before state dump start
-> [13818.953370] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [13818.954437]  (detected by 0, t=201552 jiffies, g=449892, c=449891, q=0)
-> [13818.955334] INFO: Stall ended before state dump start
-> [14013.890682] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [14013.891761]  (detected by 0, t=221057 jiffies, g=449892, c=449891, q=0)
-> [14013.892691] INFO: Stall ended before state dump start
-> [14208.827993] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [14208.829088]  (detected by 0, t=240562 jiffies, g=449892, c=449891, q=0)
-> [14208.829977] INFO: Stall ended before state dump start
-> [14403.765300] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [14403.766405]  (detected by 0, t=260067 jiffies, g=449892, c=449891, q=0)
-> and on and on..
-> 
-> so kernel space still works like before, but userspace is locked up.
+On 04/01/2014 09:35 AM, Sasha Levin wrote:
+> On 04/01/2014 09:28 AM, Josh Boyer wrote:
+>> On Tue, Apr 1, 2014 at 9:19 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>> On 04/01/2014 08:56 AM, Josh Boyer wrote:
+>>>>
+>>>> Hi Sasha,
+>>>>
+>>>> We've had a request [1] to package up liblockdep in Fedora.  Looking
+>>>> things over, I noticed the library isn't actually versioned at all and
+>>>> instead just builds a plain .so file.  That's likely fine during
+>>>> development of it, but if distros are to ship it for broader use then
+>>>> it would be a good idea to specify the soname and use a versioned .so.
+>>>>
+>>>> The makefile already has LIBLOCKDEP_VERSION defined.  Would it be
+>>>> possible to use this as the soname and version number?  Then
+>>>> liblockdep.so could be the normal symlink to the versioned .so
+>>>> (liblockdep.so.0.0.1 in this case).
+>>>>
+>>>> Thanks.
+>>>>
+>>>> josh
+>>>>
+>>>> [1] https://bugzilla.redhat.com/show_bug.cgi?id=1082763
+>>>>
+>>>
+>>> Sure! I never expected it to live outside the kernel tree as a separate
+>>> package, but I'm happy to accommodate for that.
+>>>
+>>> I think that I'll just match the version number with the kernel version
+>>> since what mostly matters is what you have in kernel/lockdep.c, so for
+>>> example, right now we'll have 'liblockdep.so.3.15.0'. Sounds good?
+>>
+>> The only concern I would have is that it would require applications
+>> linking to it to rebuild with every kernel release even if nothing
+>> else changed.  Maybe nothing changing is going to be rare enough that
+>> in practice people will need to rebuild anyway.  Either way, it's
+>> better to be explicit rather than break users silently, so it sounds
+>> good to me.
+>
+> I don't think we ever had a kernel version without changes to lockdep :)
+>
+> Since lockdep isn't an ABI either, no one promises me it'll work the same
+> way between versions either, so I'm kinda happy about just forcing rebuilds.
 
-Interesting.  I suspect that if you reverted the rest of this merge
-window's RCU patches, you would get the same result.
+Hi Josh,
 
->  > If that doesn't work, I will need to put together some diagnostic patches.
->  > Starting with the one below.
-> 
-> bugger, I forgot to apply this last night. I'll do it on the next run.
+Could you please confirm that the below is what you'd expect it to be:
 
-But let's see what this shows first.
+sasha@lappy:~/linux/tools/lib/lockdep$ make
+   CC FPIC            common.o
+   CC FPIC            lockdep.o
+   CC FPIC            preload.o
+   CC FPIC            rbtree.o
+   BUILD STATIC LIB   liblockdep.a
+   BUILD SHARED LIB   liblockdep.so.3.14.0
 
-							Thanx, Paul
+sasha@lappy:~/linux/tools/lib/lockdep$ ls -al liblockdep.so
+lrwxrwxrwx 1 sasha sasha 20 Apr  1 11:31 liblockdep.so -> liblockdep.so.3.14.0
+
+sasha@lappy:~/linux/tools/lib/lockdep$ readelf -d liblockdep.so  | grep SONAME
+  0x000000000000000e (SONAME)             Library soname: ["liblockdep.so.3.14.0"]
+
+Thanks,
+Sasha
+
 
