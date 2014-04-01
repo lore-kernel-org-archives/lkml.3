@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247AbaDAJz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:55:27 -0400
-Received: from sauhun.de ([89.238.76.85]:38641 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaDAJz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:55:26 -0400
-Date: Tue, 1 Apr 2014 11:55:22 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        kbuild-all@01.org, daniel.lezcano@linaro.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH] avr32: remove cpu_data macro to fix compiles
-Message-ID: <20140401095521.GA3326@katana>
-References: <53060d5d.XcmAdOiLt1MCo6Y5%fengguang.wu@intel.com>
- <1393057709-17925-1-git-send-email-wsa@the-dreams.de>
- <20140224072820.GA9069@samfundet.no>
+	id S1751384AbaDAJ4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:56:16 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:62675 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaDAJzw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 05:55:52 -0400
+Date: Tue, 1 Apr 2014 11:55:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
+Message-ID: <20140401095548.GB1299@gmail.com>
+References: <1396164244.28950.15.camel@marge.simpson.net>
+ <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
+ <1396239636.5361.57.camel@marge.simpson.net>
+ <CA+55aFywHpvUfghS4GFc3UC1WGZx3Of+zeKHxmRNcMQMoKoiJQ@mail.gmail.com>
+ <1396290426.5261.80.camel@marge.simpson.net>
+ <CA+55aFwdosGtoh8=krpx9C-fT-H7OHsC0UVyXc8aNE7h=W1RxQ@mail.gmail.com>
+ <1396322880.5324.37.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140224072820.GA9069@samfundet.no>
+In-Reply-To: <1396322880.5324.37.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---MGYHOYXEY6WxJCY8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-On Mon, Feb 24, 2014 at 08:28:20AM +0100, Hans-Christian Egtvedt wrote:
-> Around Sat 22 Feb 2014 09:28:27 +0100 or thereabout, Wolfram Sang wrote:
-> > Having cpu_data as a parameterless macro can easily cause build failures
-> > because it can be a variable name like in linux/pm_domain.h [1]. So,
-> > remove the macro and convert its only user. Because this architecture
-> > cannot do SMP, remove the whole SMP block, too. Only compile tested due
-> > to no hardware.
->=20
-> Looks sane, AVR32 doesn't support SMP, so this change should be fine.
->=20
-> > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> >=20
->=20
-> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
->=20
-> > [1] https://lists.01.org/pipermail/kbuild-all/2014-February/003252.html
-> >
->=20
-> clockevents/3.15 branch, mens what you have queued up for 3.15?
->=20
-> I can queue this in my linux-next, and send Linus an early pull request t=
-he
-> moment 3.14 is released.
+> On Mon, 2014-03-31 at 11:37 -0700, Linus Torvalds wrote: 
+> > On Mon, Mar 31, 2014 at 11:27 AM, Mike Galbraith
+> > <umgwanakikbuti@gmail.com> wrote:
+> > >
+> > > Oh, I didn't cc you because I wanted it applied instantly as ultra
+> > > critical, only because the chain of events might be of interest.
+> > 
+> > Ok. That was my main worry, since I was in the process or releasing
+> > 3.14, and I just couldn't tell if the patch was something I should
+> > worry about or not.
+> > 
+> > And it seems that not applying it was the right thing, which is all
+> > that matters by now.
+> 
+> Yes.  Jocular red flag was to Peter and Ingo.  I don't try to bypass 
+> them, that would be plain rude.  I've been known to help maintainers 
+> a little, but I don't ever try to call the shots.  They do that 
+> well.
 
-Have you done this already? I can't find it, yet I see the pull request
-for the clocks is already out.
+Btw., in general feel free to Cc: Linus if a fix looks truly urgent, 
+as neither Peter nor me might be around on a weekend, shortly before a 
+release.
 
+Thanks,
 
---MGYHOYXEY6WxJCY8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTOo0JAAoJEBQN5MwUoCm2b4wP/ismeZ66ZObhabBDXqgEYRh1
-nyj/4xQ0HTcvwnZDMRjGyYe67Z0VlWf5f3tbBd+7qJpGrJskPXGTwnY/8JLiaOXG
-ZD937jGkd3M7ingW3vM/Wrjt7bwKCbeM1bKp7T1lPr+aqSKLMj/PEVVdlPCxrK4/
-wjzVx7n4cv5ba+miOufbSK+/1z4OIew/r05Id6ZfGQhgGtW4qcyHYysFAiXauKUX
-Y0J87f6rcBElp0W2zENqLTQC5pNTaHZxSuxPcSFXDayxhTdakqGxJ0Yoa9aVlY0c
-Aq1MyDya7FqbPF1vg6jP2w12AkuYLfZfamjGV38rAV9pR62YggKg3QMGksVtu6rB
-F3jSg2xV2Ccvfb/c9rRE0aa+qK1XVtTPWuRJyUD68Qf2tPsG+hQrsJhgdrTy5oEN
-rIkFYAX6wn6GFptNuz+fXGOTu2ccEkge9ubLSL5BCqNqFMkbN4vsm1nPxW5t3Ruv
-JiLdE3YeGo7bPOexnS7HKI3jKlqWD5FFcgnNfnDftICBQxU7km2TkYIFAqrxlQYz
-UnF/PoJWNbHd85SkqoU0gKQRdOLl+g2yiVY+COUkPwLVNCoMGsJrttiKD9iQropG
-p+l2ArA0AJKd/gAQIKKELICaAx+ZY0uT7sfCD4MoI8LAZsil1BSBQmw6/2/iwdeD
-o5+FvD+4nv8PmNc4hsAK
-=KeKQ
------END PGP SIGNATURE-----
-
---MGYHOYXEY6WxJCY8--
+	Ingo
