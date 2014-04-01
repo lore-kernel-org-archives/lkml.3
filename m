@@ -1,90 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359AbaDAEWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:22:21 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29581 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaDAEWO (ORCPT
+	id S1751926AbaDAEGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:06:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53740 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaDAEGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:22:14 -0400
-Message-ID: <533A3EE1.7000104@oracle.com>
-Date: Tue, 01 Apr 2014 00:21:53 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        kadlec@blackhole.kfki.hu, "David S. Miller" <davem@davemloft.net>
-CC: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: netfilter: NULL ptr deref on boot in xt_register_table
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 1 Apr 2014 00:06:04 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        John Sullivan <jsrhbz@kanargh.force9.co.uk>,
+        "Theodore Tso" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 2/6] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+Date: Mon, 31 Mar 2014 21:07:52 -0700
+Message-Id: <20140401032816.169166318@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140401032815.814334997@linuxfoundation.org>
+References: <20140401032815.814334997@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+3.4-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Theodore Ts'o <tytso@mit.edu>
+
+commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
+
+Use cmpxchg() to atomically set i_flags instead of clearing out the
+S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
+EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
+where an immutable file has the immutable flag cleared for a brief
+window of time.
+
+Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/inode.c        |   15 +++++++++------
+ include/linux/bitops.h |   15 +++++++++++++++
+ 2 files changed, 24 insertions(+), 6 deletions(-)
+
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -37,6 +37,7 @@
+ #include <linux/printk.h>
+ #include <linux/slab.h>
+ #include <linux/ratelimit.h>
++#include <linux/bitops.h>
+ 
+ #include "ext4_jbd2.h"
+ #include "xattr.h"
+@@ -3580,18 +3581,20 @@ int ext4_get_inode_loc(struct inode *ino
+ void ext4_set_inode_flags(struct inode *inode)
+ {
+ 	unsigned int flags = EXT4_I(inode)->i_flags;
++	unsigned int new_fl = 0;
+ 
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+ 	if (flags & EXT4_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
++		new_fl |= S_SYNC;
+ 	if (flags & EXT4_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
++		new_fl |= S_APPEND;
+ 	if (flags & EXT4_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
++		new_fl |= S_IMMUTABLE;
+ 	if (flags & EXT4_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
++		new_fl |= S_NOATIME;
+ 	if (flags & EXT4_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++		new_fl |= S_DIRSYNC;
++	set_mask_bits(&inode->i_flags,
++		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
+ }
+ 
+ /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64
+ 
+ #ifdef __KERNEL__
+ 
++#ifndef set_mask_bits
++#define set_mask_bits(ptr, _mask, _bits)	\
++({								\
++	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
++	typeof(*ptr) old, new;					\
++								\
++	do {							\
++		old = ACCESS_ONCE(*ptr);			\
++		new = (old & ~mask) | bits;			\
++	} while (cmpxchg(ptr, old, new) != old);		\
++								\
++	new;							\
++})
++#endif
++
+ #ifndef find_last_bit
+ /**
+  * find_last_bit - find the last set bit in a memory region
 
 
-While fuzzing with trinity inside a KVM tools guest running latest -next
-kernel I've stumbled on the following spew.
-
-Since it sometimes happens during boot it seems like a race, but I can't
-really figure what it's racing with so early in the process.
-
-[   28.463086] ip_tables: (C) 2000-2006 Netfilter Core Team
-[   28.465649] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-[   28.467037] IP: strcmp (lib/string.c:251)
-[   28.467999] PGD 0
-[   28.468274] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   28.468933] Dumping ftrace buffer:
-[   28.469426]    (ftrace buffer empty)
-[   28.469809] Modules linked in:
-[   28.470075] CPU: 8 PID: 1 Comm: swapper/0 Tainted: G        W     3.14.0-rc8-next-20140331-sasha-00013-g7a8780f #351
-[   28.470075] task: ffff88096c5c8000 ti: ffff88003e298000 task.ti: ffff88003e298000
-[   28.470075] RIP: strcmp (lib/string.c:251)
-[   28.470075] RSP: 0000:ffff88003e299be8  EFLAGS: 00010217
-[   28.470075] RAX: 0000000000000002 RBX: ffff88026beb7008 RCX: 0000000000000006
-[   28.470075] RDX: 0000000000000000 RSI: ffff88026beb7038 RDI: 0000000000000030
-[   28.470075] RBP: ffff88003e299be8 R08: 0000000000000000 R09: 0000000000000000
-[   28.470075] R10: 0000000000000001 R11: 0000000000000000 R12: ffffffffa2f291b8
-[   28.470075] R13: ffff88026beb7038 R14: ffffffffa2f28400 R15: 0000000000000000
-[   28.470075] FS:  0000000000000000(0000) GS:ffff88026cc00000(0000) knlGS:0000000000000000
-[   28.470075] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   28.470075] CR2: 0000000000000030 CR3: 0000000021e2c000 CR4: 00000000000006a0
-[   28.470075] Stack:
-[   28.470075]  ffff88003e299c58 ffffffffa0004d04 ffffffffa2f28400 ffff88026bea13b0
-[   28.470075]  ffff88003e299c78 0200000000000278 ffff88003e299c58 0000000000000000
-[   28.470075]  0000000000000008 ffff88026bea13b0 0000000000000000 ffff88003e299c78
-[   28.470075] Call Trace:
-[   28.470075] xt_register_table (net/netfilter/x_tables.c:905)
-[   28.470075] ipt_register_table (net/ipv4/netfilter/ip_tables.c:2088)
-[   28.470075] ? mutex_lock_nested (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:569 kernel/locking/mutex.c:587)
-[   28.470075] iptable_filter_net_init (net/ipv4/netfilter/iptable_filter.c:72)
-[   28.470075] ops_init (net/core/net_namespace.c:107)
-[   28.470075] ? mutex_lock_nested (arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
-[   28.470075] ? register_pernet_subsys (net/core/net_namespace.c:556)
-[   28.470075] register_pernet_operations (net/core/net_namespace.c:450 net/core/net_namespace.c:514)
-[   28.470075] ? printk (kernel/printk/printk.c:1695)
-[   28.470075] ? ip_tables_init (net/ipv4/netfilter/iptable_filter.c:87)
-[   28.470075] ? ip_tables_init (net/ipv4/netfilter/iptable_filter.c:87)
-[   28.470075] register_pernet_subsys (net/core/net_namespace.c:557)
-[   28.470075] iptable_filter_init (net/ipv4/netfilter/iptable_filter.c:91)
-[   28.470075] do_one_initcall (init/main.c:696)
-[   28.470075] ? parse_args (kernel/params.c:113 kernel/params.c:202)
-[   28.470075] kernel_init_freeable (init/main.c:761 init/main.c:770 init/main.c:789 init/main.c:910)
-[   28.470075] ? loglevel (init/main.c:241)
-[   28.470075] ? rest_init (init/main.c:837)
-[   28.470075] kernel_init (init/main.c:842)
-[   28.470075] ret_from_fork (arch/x86/kernel/entry_64.S:555)
-[   28.470075] ? rest_init (init/main.c:837)
-[   28.470075] Code: 83 c6 01 44 88 01 48 83 c1 01 45 84 c0 75 dc 0f 1f 40 00 5d c3 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 40 00 <0f> b6 07 48 83 c7 01 0f b6 16 48 83 c6 01 38 d0 74 0e 19 c0 83
-[   28.470075] RIP strcmp (lib/string.c:251)
-[   28.470075]  RSP <ffff88003e299be8>
-[   28.470075] CR2: 0000000000000030
-
-
-Thanks,
-Sasha
