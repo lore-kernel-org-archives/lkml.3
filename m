@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaDAXey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 19:34:54 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39557 "EHLO gate.crashing.org"
+	id S1754518AbaDAXfB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 19:35:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39561 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168AbaDAXev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 19:34:51 -0400
-Message-ID: <1396395275.19762.28.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
+	id S1753168AbaDAXe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 19:34:58 -0400
+Message-ID: <1396395283.19762.29.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git next branch
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
         Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Wed, 02 Apr 2014 10:34:35 +1100
+Date: Wed, 02 Apr 2014 10:34:43 +1100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.11.90 
 Mime-Version: 1.0
