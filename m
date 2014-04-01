@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaDAHI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 03:08:58 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:53892 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaDAHI5 (ORCPT
+	id S1751993AbaDAHMc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 03:12:32 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:37698 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750777AbaDAHMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 03:08:57 -0400
-Date: Tue, 1 Apr 2014 09:08:56 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH v2] avr32: replace simple_strtoul() with kstrtoul()
-Message-ID: <20140401070856.GA22185@samfundet.no>
-References: <1395177941-5680-1-git-send-email-artagnon@gmail.com>
- <1396312962-12483-1-git-send-email-artagnon@gmail.com>
+	Tue, 1 Apr 2014 03:12:30 -0400
+From: Bo Shen <voice.shen@atmel.com>
+To: <nicolas.ferre@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH] ARM: at91: fix spi cs on sama5d3 Xplained board
+Date: Tue, 1 Apr 2014 15:12:43 +0800
+Message-ID: <1396336363-13709-1-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396312962-12483-1-git-send-email-artagnon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Mon 31 Mar 2014 20:42:42 -0400 or thereabout, Ramkumar Ramachandra wrote:
-> simple_strtoul() is marked for obsoletion; use the newer and more
-> pleasant kstrtoul() in its place.
-> 
-> Cc: Alexey Dobriyan <adobriyan@gmail.com>
-> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->  arch/avr32/kernel/cpu.c | 48 ++++++++++++++++++++++++++----------------------
->  1 file changed, 26 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/avr32/kernel/cpu.c b/arch/avr32/kernel/cpu.c
+The PD16 is the CS3 for SPI0 while not SPI1.
 
-<snipp diff>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+---
+This patch is based on v3.14-rc8
 
-> @@ -61,11 +63,11 @@ static ssize_t store_pc0count(struct device *dev,
->  				const char *buf, size_t count)
->  {
->  	unsigned long val;
-> -	char *endp;
-> +	int ret;
->  
-> -	val = simple_strtoul(buf, &endp, 0);
-> -	if (endp == buf)
-> -		return -EINVAL;
-> +	ret = kstroul(buf, 0, &val);
+ arch/arm/boot/dts/at91-sama5d3_xplained.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I fixed this typo to kstrtoul.
-
-<snipp diff>
-
+diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+index ce13755..4537259 100644
+--- a/arch/arm/boot/dts/at91-sama5d3_xplained.dts
++++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+@@ -34,7 +34,7 @@
+ 			};
+ 
+ 			spi0: spi@f0004000 {
+-				cs-gpios = <&pioD 13 0>;
++				cs-gpios = <&pioD 13 0>, <0>, <0>, <&pioD 16 0>;
+ 				status = "okay";
+ 			};
+ 
+@@ -79,7 +79,7 @@
+ 			};
+ 
+ 			spi1: spi@f8008000 {
+-				cs-gpios = <&pioC 25 0>, <0>, <0>, <&pioD 16 0>;
++				cs-gpios = <&pioC 25 0>;
+ 				status = "okay";
+ 			};
+ 
 -- 
-mvh
-Hans-Christian Egtvedt
+1.8.5.2
+
