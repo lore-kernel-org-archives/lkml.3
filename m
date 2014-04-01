@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaDAQY5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:24:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44660 "EHLO
+	id S1753058AbaDAQP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:15:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44641 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaDAQQC (ORCPT
+	with ESMTP id S1752695AbaDAQPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:02 -0400
+	Tue, 1 Apr 2014 12:15:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 42/86] tracing: Do not add event files for modules that fail tracepoints
-Date: Tue,  1 Apr 2014 09:07:55 -0700
-Message-Id: <1396368519-12728-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 85/86] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+Date: Tue,  1 Apr 2014 09:08:38 -0700
+Message-Id: <1396368519-12728-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,94 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 45ab2813d40d88fc575e753c38478de242d03f88 upstream.
+commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
 
-If a module fails to add its tracepoints due to module tainting, do not
-create the module event infrastructure in the debugfs directory. As the events
-will not work and worse yet, they will silently fail, making the user wonder
-why the events they enable do not display anything.
+Use cmpxchg() to atomically set i_flags instead of clearing out the
+S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
+EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
+where an immutable file has the immutable flag cleared for a brief
+window of time.
 
-Having a warning on module load and the events not visible to the users
-will make the cause of the problem much clearer.
-
-Link: http://lkml.kernel.org/r/20140227154923.265882695@goodmis.org
-
-Fixes: 6d723736e472 "tracing/events: add support for modules to TRACE_EVENT"
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/tracepoint.h  |  6 ++++++
- kernel/trace/trace_events.c | 10 ++++++++++
- kernel/tracepoint.c         |  7 ++++++-
- 3 files changed, 22 insertions(+), 1 deletion(-)
+ fs/ext4/inode.c        | 15 +++++++++------
+ include/linux/bitops.h | 15 +++++++++++++++
+ 2 files changed, 24 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 2f322c3..eb68f19 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -60,6 +60,12 @@ struct tp_module {
- 	unsigned int num_tracepoints;
- 	struct tracepoint * const *tracepoints_ptrs;
- };
-+bool trace_module_has_bad_taint(struct module *mod);
-+#else
-+static inline bool trace_module_has_bad_taint(struct module *mod)
-+{
-+	return false;
-+}
- #endif /* CONFIG_MODULES */
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 46c10b5..8aed7eb 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -37,6 +37,7 @@
+ #include <linux/printk.h>
+ #include <linux/slab.h>
+ #include <linux/ratelimit.h>
++#include <linux/bitops.h>
  
- struct tracepoint_iter {
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 880073d..44141d4 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1376,6 +1376,16 @@ static void trace_module_add_events(struct module *mod)
- 	struct ftrace_module_file_ops *file_ops = NULL;
- 	struct ftrace_event_call **call, **start, **end;
- 
-+	if (!mod->num_trace_events)
-+		return;
-+
-+	/* Don't add infrastructure for mods without tracepoints */
-+	if (trace_module_has_bad_taint(mod)) {
-+		pr_err("%s: module has bad taint, not creating trace events\n",
-+		       mod->name);
-+		return;
-+	}
-+
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
- 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index d96ba22..23d8560 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -628,6 +628,11 @@ void tracepoint_iter_reset(struct tracepoint_iter *iter)
- EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
- 
- #ifdef CONFIG_MODULES
-+bool trace_module_has_bad_taint(struct module *mod)
-+{
-+	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
-+}
-+
- static int tracepoint_module_coming(struct module *mod)
+ #include "ext4_jbd2.h"
+ #include "xattr.h"
+@@ -3770,18 +3771,20 @@ int ext4_get_inode_loc(struct inode *inode, struct ext4_iloc *iloc)
+ void ext4_set_inode_flags(struct inode *inode)
  {
- 	struct tp_module *tp_mod, *iter;
-@@ -638,7 +643,7 @@ static int tracepoint_module_coming(struct module *mod)
- 	 * module headers (for forced load), to make sure we don't cause a crash.
- 	 * Staging and out-of-tree GPL modules are fine.
- 	 */
--	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-+	if (trace_module_has_bad_taint(mod))
- 		return 0;
- 	mutex_lock(&tracepoints_mutex);
- 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
+ 	unsigned int flags = EXT4_I(inode)->i_flags;
++	unsigned int new_fl = 0;
+ 
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+ 	if (flags & EXT4_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
++		new_fl |= S_SYNC;
+ 	if (flags & EXT4_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
++		new_fl |= S_APPEND;
+ 	if (flags & EXT4_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
++		new_fl |= S_IMMUTABLE;
+ 	if (flags & EXT4_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
++		new_fl |= S_NOATIME;
+ 	if (flags & EXT4_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++		new_fl |= S_DIRSYNC;
++	set_mask_bits(&inode->i_flags,
++		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
+ }
+ 
+ /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index a3b6b82..c1dde8e 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64 word)
+ 
+ #ifdef __KERNEL__
+ 
++#ifndef set_mask_bits
++#define set_mask_bits(ptr, _mask, _bits)	\
++({								\
++	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
++	typeof(*ptr) old, new;					\
++								\
++	do {							\
++		old = ACCESS_ONCE(*ptr);			\
++		new = (old & ~mask) | bits;			\
++	} while (cmpxchg(ptr, old, new) != old);		\
++								\
++	new;							\
++})
++#endif
++
+ #ifndef find_last_bit
+ /**
+  * find_last_bit - find the last set bit in a memory region
 -- 
 1.8.3.2
 
