@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaDAQOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:14:20 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:36563 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752091AbaDAQOP (ORCPT
+	id S1752850AbaDAQPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:15:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44542 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816AbaDAQN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:14:15 -0400
-Date: Tue, 1 Apr 2014 12:14:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
-Subject: [GIT PULL] ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
-Message-ID: <20140401121412.24945d54@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Tue, 1 Apr 2014 12:13:27 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel J Blueman <daniel@numascale.com>, Ingo Molnar <mingo@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 74/86] x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
+Date: Tue,  1 Apr 2014 09:08:27 -0700
+Message-Id: <1396368519-12728-75-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
 
-Linus,
+------------------
 
-This just contains a single update by Satoru Takeuchi, which adds
-CLOSE_CONSOLE_SIGNAL to the kvm.conf file, as the kvm guest requires
-a different signal than a normal console uses.
+From: Daniel J Blueman <daniel@numascale.com>
 
-Please pull the latest ktest-v3.15 tree, which can be found at:
+commit 847d7970defb45540735b3fb4e88471c27cacd85 upstream.
 
+For systems with multiple servers and routed fabric, all
+northbridges get assigned to the first server. Fix this by also
+using the node reported from the PCI bus. For single-fabric
+systems, the northbriges are on PCI bus 0 by definition, which
+are on NUMA node 0 by definition, so this is invarient on most
+systems.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
-ktest-v3.15
+Tested on fam10h and fam15h single and multi-fabric systems and
+candidate for stable.
 
-Tag SHA1: 13497aad499b1d051de60c988fdbe8bcecf2fa4a
-Head SHA1: 62183dcac539a14ed0a820b8392db353d72a7d7e
+Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+Acked-by: Steffen Persvold <sp@numascale.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1394710981-3596-1-git-send-email-daniel@numascale.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/x86/kernel/quirks.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-Satoru Takeuchi (1):
-      ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
-
-----
- tools/testing/ktest/examples/kvm.conf | 4 ++++
- 1 file changed, 4 insertions(+)
----------------------------
-commit 62183dcac539a14ed0a820b8392db353d72a7d7e
-Author: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Date:   Sun Feb 23 10:19:28 2014 +0900
-
-    ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
-    
-    As mentioned at commit 5a5d8e48449, we can't terminate 'virsh console'
-    with the default signal(INT). So it's better to set CLOSE_CONSOLE_SIGNAL
-    in the kvm.conf.
-    
-    Link: http://lkml.kernel.org/r/8738jatylb.wl%satoru.takeuchi@gmail.com
-    
-    Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-    [ Typo fixed by ]
-    Signed-off-by: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/tools/testing/ktest/examples/kvm.conf b/tools/testing/ktest/examples/kvm.conf
-index 831c7c5..fbc134f 100644
---- a/tools/testing/ktest/examples/kvm.conf
-+++ b/tools/testing/ktest/examples/kvm.conf
-@@ -10,6 +10,10 @@ MACHINE = Guest
- # Use virsh to read the serial console of the guest
- CONSOLE =  virsh console ${MACHINE}
+diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+index 26ee48a..b9ef5d9 100644
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -525,7 +525,7 @@ static void quirk_amd_nb_node(struct pci_dev *dev)
+ 		return;
  
-+# Use SIGKILL to terminate virsh console. We can't kill virsh console
-+# by the default signal, SIGINT.
-+CLOSE_CONSOLE_SIGNAL = KILL
-+
- #*************************************#
- # This part is the same as test.conf  #
- #*************************************#
+ 	pci_read_config_dword(nb_ht, 0x60, &val);
+-	node = val & 7;
++	node = pcibus_to_node(dev->bus) | (val & 7);
+ 	/*
+ 	 * Some hardware may return an invalid node ID,
+ 	 * so check it first:
+-- 
+1.8.3.2
+
