@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbaDAU04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:26:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28527 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567AbaDAU0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:26:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,775,1389772800"; 
-   d="scan'208";a="512618386"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: broonie@kernel.org, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Christophe PINCE <jean-christophe.pince@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH] regmap: rbtree: improve 64bits memory alignment
-Date: Tue,  1 Apr 2014 13:26:48 -0700
-Message-Id: <1396384008-14353-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
+	id S1751525AbaDAUbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:31:36 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:58110 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751375AbaDAUbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 16:31:35 -0400
+Message-ID: <1396384291.23763.22.camel@x220>
+Subject: Re: [GIT PULL] RCU changes for v3.15
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 01 Apr 2014 22:31:31 +0200
+In-Reply-To: <20140331081724.GA3193@gmail.com>
+References: <20140331081724.GA3193@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Apr 2014 20:31:31.0522 (UTC) FILETIME=[5DE7BA20:01CF4DE9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Christophe PINCE <jean-christophe.pince@intel.com>
+> Paul E. McKenney (70):
+>      [...]
+>       locktorture: Add a lock-torture kernel module
 
-Change regcache_rbtree_node strcuture fields order to align the pointers on
-64bits architectures.
+This commit added a check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. But I
+can't find a Kconfig symbol LOCK_TORTURE_TEST_RUNNABLE nor a
+preprocessor define for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. (I only
+checked master of Linus's tree and linux-next.)
 
-Signed-off-by: Jean-Christophe PINCE <jean-christophe.pince@intel.com>
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
- drivers/base/regmap/regcache-rbtree.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Is this check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE needed?
 
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 930cad4e5df8..6a7e4fa12854 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -23,16 +23,16 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- static int regcache_rbtree_exit(struct regmap *map);
- 
- struct regcache_rbtree_node {
--	/* the actual rbtree node holding this block */
--	struct rb_node node;
--	/* base register handled by this block */
--	unsigned int base_reg;
- 	/* block of adjacent registers */
- 	void *block;
- 	/* Which registers are present */
- 	long *cache_present;
-+	/* base register handled by this block */
-+	unsigned int base_reg;
- 	/* number of registers available in the block */
- 	unsigned int blklen;
-+	/* the actual rbtree node holding this block */
-+	struct rb_node node;
- } __attribute__ ((packed));
- 
- struct regcache_rbtree_ctx {
--- 
-1.9.0
+
+Paul Bolle
 
