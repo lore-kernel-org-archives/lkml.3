@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaDAV3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:29:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38638 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaDAV3t (ORCPT
+	id S1751846AbaDAVeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:34:00 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55893 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbaDAVd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:29:49 -0400
-Date: Tue, 1 Apr 2014 14:29:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-Message-Id: <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
-In-Reply-To: <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
-	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
-	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
-	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
-	<20140331170546.3b3e72f0.akpm@linux-foundation.org>
-	<1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-	<CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
-	<1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
-	<CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
-	<1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-	<CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 1 Apr 2014 17:33:58 -0400
+Date: Tue, 01 Apr 2014 17:33:54 -0400 (EDT)
+Message-Id: <20140401.173354.1207821556865053650.davem@davemloft.net>
+To: rgb@redhat.com
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        eparis@redhat.com, sgrubb@redhat.com, hadi@mojatatu.com
+Subject: Re: [PATCH 0/3] netlink: per-protocol bind fixup/enhancement set
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1396317747.git.rgb@redhat.com>
+References: <20140324183406.GE28666@madcap2.tricolour.ca>
+	<cover.1396317747.git.rgb@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 01 Apr 2014 14:33:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014 17:12:50 -0400 KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+From: Richard Guy Briggs <rgb@redhat.com>
+Date: Tue,  1 Apr 2014 10:14:55 -0400
 
-> On Tue, Apr 1, 2014 at 5:01 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > On Tue, 2014-04-01 at 15:51 -0400, KOSAKI Motohiro wrote:
-> >> >> So, I personally like 0 byte per default.
-> >> >
-> >> > If by this you mean 0 bytes == unlimited, then I agree. It's less harsh
-> >> > then removing it entirely. So instead of removing the limit we can just
-> >> > set it by default to 0, and in newseg() if shm_ctlmax == 0 then we don't
-> >> > return EINVAL if the passed size is great (obviously), otherwise, if the
-> >> > user _explicitly_ set it via sysctl then we respect that. Andrew, do you
-> >> > agree with this? If so I'll send a patch.
-> >>
-> >> Yes, my 0 bytes mean unlimited. I totally agree we shouldn't remove the knob
-> >> entirely.
-> >
-> > Hmmm so 0 won't really work because it could be weirdly used to disable
-> > shm altogether... we cannot go to some negative value either since we're
-> > dealing with unsigned, and cutting the range in half could also hurt
-> > users that set the limit above that. So I was thinking of simply setting
-> > SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
-> > if they want a smaller value.
-> >
-> > Makes sense?
+> This set provides a way for per-protocol bind functions to signal an error and
+> to be able to clean up after themselves.
 > 
-> I don't think people use 0 for disabling. but ULONG_MAX make sense to me too.
+> The first patch has already been accepted, but is included just in case to
+> avoid a merge error.
+> 
+> The second patch adds the per-protocol bind return code to signal to the
+> netlink code that no further processing should be done and to undo the work
+> already done.  This rev has fixed DaveM's last issue and flattened the
+> intentation as requested by Patrick McHardy by two by reworking the logic.
+> 
+> The third provides a way per protocol to undo actions on DROP.
+> 
+> Thanks for the feedback.
 
-Distros could have set it to [U]LONG_MAX in initscripts ten years ago
-- less phone calls, happier customers.  And they could do so today.
+I would like to defer this to the next merge window.
 
-But they haven't.   What are the risks of doing this?
+I'd also like to see how the AUDIT code is going to use this, provide
+the user in your next submission.
+
+Right now the only user is nfnetlink and it's merely to do a
+(sub-)module request.
+
+Therefore it's no surprise that we've never had any real well thought
+out semantics defined for the bind method, and it's also why we never
+thought of adding an unbind method before.
