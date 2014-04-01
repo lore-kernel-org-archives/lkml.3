@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaDAQSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:18:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44724 "EHLO
+	id S1752452AbaDAQSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:18:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44732 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbaDAQQV (ORCPT
+	with ESMTP id S1753183AbaDAQQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:21 -0400
+	Tue, 1 Apr 2014 12:16:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>,
-        Xiaoming Wang <xiaoming.wang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 29/86] genirq: Remove racy waitqueue_active check
-Date: Tue,  1 Apr 2014 09:07:42 -0700
-Message-Id: <1396368519-12728-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 41/86] can: flexcan: flexcan_remove(): add missing netif_napi_del()
+Date: Tue,  1 Apr 2014 09:07:54 -0700
+Message-Id: <1396368519-12728-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -29,63 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
+commit d96e43e8fce28cf97df576a07af9d65657a41a6f upstream.
 
-We hit one rare case below:
+This patch adds the missing netif_napi_del() to the flexcan_remove() function.
 
-T1 calling disable_irq(), but hanging at synchronize_irq()
-always;
-The corresponding irq thread is in sleeping state;
-And all CPUs are in idle state;
-
-After analysis, we found there is one possible scenerio which
-causes T1 is waiting there forever:
-CPU0                                       CPU1
- synchronize_irq()
-  wait_event()
-    spin_lock()
-                                           atomic_dec_and_test(&threads_active)
-      insert the __wait into queue
-    spin_unlock()
-                                           if(waitqueue_active)
-    atomic_read(&threads_active)
-                                             wake_up()
-
-Here after inserted the __wait into queue on CPU0, and before
-test if queue is empty on CPU1, there is no barrier, it maybe
-cause it is not visible for CPU1 immediately, although CPU0 has
-updated the queue list.
-It is similar for CPU0 atomic_read() threads_active also.
-
-So we'd need one smp_mb() before waitqueue_active.that, but removing
-the waitqueue_active() check solves it as wel l and it makes
-things simple and clear.
-
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: Xiaoming Wang <xiaoming.wang@intel.com>
-Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/irq/manage.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/can/flexcan.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index a9302d0..f3feefc 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -801,8 +801,7 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index 275b721..96eef58 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -1145,6 +1145,7 @@ static int flexcan_remove(struct platform_device *pdev)
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	release_mem_region(mem->start, resource_size(mem));
  
- static void wake_threads_waitq(struct irq_desc *desc)
- {
--	if (atomic_dec_and_test(&desc->threads_active) &&
--	    waitqueue_active(&desc->wait_for_threads))
-+	if (atomic_dec_and_test(&desc->threads_active))
- 		wake_up(&desc->wait_for_threads);
- }
++	netif_napi_del(&priv->napi);
+ 	free_candev(dev);
  
+ 	return 0;
 -- 
 1.8.3.2
 
