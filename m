@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaDAP1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:27:09 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:58295 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaDAP1A (ORCPT
+	id S1751757AbaDAP1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:27:06 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:39076 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaDAP1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:27:00 -0400
+	Tue, 1 Apr 2014 11:27:02 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org
-Subject: [PATCH 4/6] KVM: emulate: introduce memory_prepare callback to speed up memory access
-Date: Tue,  1 Apr 2014 17:26:44 +0200
-Message-Id: <1396366006-22227-5-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 5/6] KVM: emulate: activate memory access optimization
+Date: Tue,  1 Apr 2014 17:26:45 +0200
+Message-Id: <1396366006-22227-6-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1396366006-22227-1-git-send-email-pbonzini@redhat.com>
 References: <1396366006-22227-1-git-send-email-pbonzini@redhat.com>
@@ -20,175 +20,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emulating a RMW instruction currently walks the page tables
-twice.  To avoid this, store the virtual address in the host
-and access it directly.
+memory_prepare lets us replace segmented_read/segmented_write with direct
+calls to __copy_from_user/__copy_to_user.
 
-In fact, it turns out that the optimizations we can do
-actually benefit all memory accesses.
+This saves about 70 cycles (15%) on arithmetic with a memory source
+operand, and about 150 cycles (25%) on arithmetic with a memory
+destination operand.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_emulate.h | 26 +++++++++++++++
- arch/x86/kvm/x86.c                 | 67 ++++++++++++++++++++++++++++++++++++++
- include/linux/kvm_host.h           |  5 +++
- virt/kvm/kvm_main.c                |  5 ---
- 4 files changed, 98 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |  2 ++
+ arch/x86/kvm/emulate.c             | 50 ++++++++++++++++++++++++++++++++++----
+ 2 files changed, 47 insertions(+), 5 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index f7b1e45eb753..4a580be2553e 100644
+index 4a580be2553e..a572d4fabd4f 100644
 --- a/arch/x86/include/asm/kvm_emulate.h
 +++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -167,6 +167,32 @@ struct x86_emulate_ops {
- 				const void *new,
- 				unsigned int bytes,
- 				struct x86_exception *fault);
-+
-+	/*
-+	 * memory_prepare: Prepare userspace access fastpath.
-+	 *   @addr:     [IN ] Linear address to access.
-+	 *   @bytes:    [IN ] Number of bytes to access.
-+	 *   @write:    [IN ] True if *p_hva will be written to.
-+	 *   @p_opaque: [OUT] Value passed back to memory_finish.
-+	 *   @p_hva:    [OUT] Host virtual address for __copy_from/to_user.
-+	 */
-+	int (*memory_prepare)(struct x86_emulate_ctxt *ctxt,
-+			      unsigned long addr,
-+			      unsigned int bytes,
-+			      struct x86_exception *exception,
-+			      bool write,
-+			      void **p_opaque,
-+			      unsigned long *p_hva);
-+
-+	/*
-+	 * memory_finish: Complete userspace access fastpath.
-+	 *   @opaque: [OUT] Value passed back from memory_prepare.
-+	 *   @hva:    [OUT] Host virtual address computed in memory_prepare.
-+	 */
-+	void (*memory_finish)(struct x86_emulate_ctxt *ctxt,
-+			      void *p_opaque,
-+			      unsigned long p_hva);
-+
- 	void (*invlpg)(struct x86_emulate_ctxt *ctxt, ulong addr);
- 
- 	int (*pio_in_emulated)(struct x86_emulate_ctxt *ctxt,
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index e70a0e3227b1..64d0f171996b 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4273,6 +4273,71 @@ static const struct read_write_emulator_ops write_emultor = {
- 	.write = true,
+@@ -263,6 +263,8 @@ struct operand {
+ 		u64 mm_val;
+ 		void *data;
+ 	};
++	unsigned long hva;
++	void *opaque;
  };
  
-+static int emulator_memory_prepare(struct x86_emulate_ctxt *ctxt,
-+				   unsigned long addr,
-+				   unsigned int bytes,
-+				   struct x86_exception *exception,
-+				   bool write,
-+				   void **p_opaque,
-+				   unsigned long *p_hva)
-+{
-+	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
-+	struct kvm_memory_slot *memslot;
-+	int ret;
-+	gpa_t gpa;
-+	gfn_t gfn;
-+	unsigned long hva;
-+	
-+	if (unlikely(((addr + bytes - 1) ^ addr) & PAGE_MASK))
-+		goto no_hva;
-+
-+	ret = vcpu_mmio_gva_to_gpa(vcpu, addr, &gpa, exception, true);
-+	if (ret != 0) {
-+		if (ret < 0)
-+			return X86EMUL_PROPAGATE_FAULT;
-+		goto no_hva;
-+	}
-+
-+	/* A (heavily) simplified version of kvm_gfn_to_hva_cache_init.  */
-+	gfn = gpa >> PAGE_SHIFT;
-+	memslot = gfn_to_memslot(vcpu->kvm, gfn);
-+	if (!memslot)
-+		goto no_hva;
-+
-+	if (write) {
-+		if (memslot_is_readonly(memslot))
-+			goto no_hva;
-+
-+		*p_opaque = memslot->dirty_bitmap ? memslot : NULL;
-+	}
-+
-+	hva = __gfn_to_hva_memslot(memslot, gfn);
-+	if (kvm_is_error_hva(hva))
-+		goto no_hva;
-+
-+	*p_hva = hva + offset_in_page(gpa);
-+	return X86EMUL_CONTINUE;
-+
-+no_hva:
-+	*p_hva = KVM_HVA_ERR_BAD;
-+	return X86EMUL_CONTINUE;
-+}
-+
-+static void emulator_memory_finish(struct x86_emulate_ctxt *ctxt,
-+				   void *opaque,
-+				   unsigned long hva)
-+{
-+	struct kvm_memory_slot *memslot;
-+	gfn_t gfn;
-+
-+	if (!opaque)
-+		return;
-+
-+	memslot = opaque;
-+	gfn = hva_to_gfn_memslot(hva, memslot);
-+	mark_page_dirty_in_slot(memslot, gfn);
-+}
-+
- static int emulator_read_write_onepage(unsigned long addr, void *val,
- 				       unsigned int bytes,
- 				       struct x86_exception *exception,
-@@ -4816,6 +4881,8 @@ static const struct x86_emulate_ops emulate_ops = {
- 	.read_std            = kvm_read_guest_virt_system,
- 	.write_std           = kvm_write_guest_virt_system,
- 	.fetch               = kvm_fetch_guest_virt,
-+	.memory_prepare      = emulator_memory_prepare,
-+	.memory_finish       = emulator_memory_finish,
- 	.read_emulated       = emulator_read_emulated,
- 	.write_emulated      = emulator_write_emulated,
- 	.cmpxchg_emulated    = emulator_cmpxchg_emulated,
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 56289b487ddd..d4f213621c40 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -841,6 +841,11 @@ search_memslots(struct kvm_memslots *slots, gfn_t gfn)
- 	return NULL;
+ struct fetch_cache {
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index c7ef72c1289e..2c881e5cf5ad 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1546,9 +1546,37 @@ exception:
  }
  
-+static inline bool memslot_is_readonly(struct kvm_memory_slot *slot)
-+{
-+	return slot->flags & KVM_MEM_READONLY;
-+}
-+
- static inline struct kvm_memory_slot *
- __gfn_to_memslot(struct kvm_memslots *slots, gfn_t gfn)
+ static int prepare_memory_operand(struct x86_emulate_ctxt *ctxt,
+-				  struct operand *op)
++				  struct operand *op,
++				  bool write)
  {
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 98833e21d580..edfc901c012f 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1026,11 +1026,6 @@ out:
- 	return size;
+-	return segmented_read(ctxt, op->addr.mem, &op->val, op->bytes);
++	int rc;
++	unsigned long gva;
++	unsigned int size = op->bytes;
++
++	rc = linearize(ctxt, op->addr.mem, size, write, &gva);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++
++	rc = ctxt->ops->memory_prepare(ctxt, gva, size,
++					&ctxt->exception, true,
++					&op->opaque, &op->hva);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++
++	if (likely(!kvm_is_error_hva(op->hva))) {
++		rc = __copy_from_user(&op->val, (void __user *)op->hva,
++				      size);
++		if (!write)
++			ctxt->ops->memory_finish(ctxt, op->opaque, op->hva);
++
++		if (likely(!rc))
++			return X86EMUL_CONTINUE;
++
++		/* Should not happen.  */
++		op->hva = KVM_HVA_ERR_BAD;
++	}
++
++	return read_emulated(ctxt, gva, &op->val, size);
  }
  
--static bool memslot_is_readonly(struct kvm_memory_slot *slot)
--{
--	return slot->flags & KVM_MEM_READONLY;
--}
--
- static unsigned long __gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
- 				       gfn_t *nr_pages, bool write)
+ static int cmpxchg_memory_operand(struct x86_emulate_ctxt *ctxt,
+@@ -1563,6 +1591,17 @@ static int cmpxchg_memory_operand(struct x86_emulate_ctxt *ctxt,
+ static int write_memory_operand(struct x86_emulate_ctxt *ctxt,
+ 				struct operand *op)
  {
++	int rc;
++
++	if (likely(!kvm_is_error_hva(op->hva))) {
++		rc = __copy_to_user((void __user *)op->hva, &op->val,
++				    op->bytes);
++		ctxt->ops->memory_finish(ctxt, op->opaque, op->hva);
++
++		if (likely(!rc))
++			return X86EMUL_CONTINUE;
++	}
++
+ 	return segmented_write(ctxt, op->addr.mem,
+ 			       &op->val,
+ 			       op->bytes);
+@@ -4604,14 +4643,14 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+ 	}
+ 
+ 	if ((ctxt->src.type == OP_MEM) && !(ctxt->d & NoAccess)) {
+-		rc = prepare_memory_operand(ctxt, &ctxt->src);
++		rc = prepare_memory_operand(ctxt, &ctxt->src, false);
+ 		if (rc != X86EMUL_CONTINUE)
+ 			goto done;
+ 		ctxt->src.orig_val64 = ctxt->src.val64;
+ 	}
+ 
+ 	if (ctxt->src2.type == OP_MEM) {
+-		rc = prepare_memory_operand(ctxt, &ctxt->src2);
++		rc = prepare_memory_operand(ctxt, &ctxt->src2, false);
+ 		if (rc != X86EMUL_CONTINUE)
+ 			goto done;
+ 	}
+@@ -4622,7 +4661,8 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+ 
+ 	if ((ctxt->dst.type == OP_MEM) && !(ctxt->d & Mov)) {
+ 		/* optimisation - avoid slow emulated read if Mov */
+-		rc = prepare_memory_operand(ctxt, &ctxt->dst);
++		rc = prepare_memory_operand(ctxt, &ctxt->dst,
++					    !(ctxt->d & NoWrite));
+ 		if (rc != X86EMUL_CONTINUE)
+ 			goto done;
+ 	}
 -- 
 1.8.3.1
 
