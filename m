@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214AbaDAQJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:09:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44345 "EHLO
+	id S1752194AbaDAQJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:09:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44348 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaDAQJE (ORCPT
+	with ESMTP id S1751817AbaDAQJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:04 -0400
+	Tue, 1 Apr 2014 12:09:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 01/86] 6lowpan: fix lockdep splats
-Date: Tue,  1 Apr 2014 09:07:14 -0700
-Message-Id: <1396368519-12728-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 15/86] net: use __GFP_NORETRY for high order allocations
+Date: Tue,  1 Apr 2014 09:07:28 -0700
+Message-Id: <1396368519-12728-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -30,60 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 20e7c4e80dcd01dad5e6c8b32455228b8fe9c619 ]
+[ Upstream commit ed98df3361f059db42786c830ea96e2d18b8d4db ]
 
-When a device ndo_start_xmit() calls again dev_queue_xmit(),
-lockdep can complain because dev_queue_xmit() is re-entered and the
-spinlocks protecting tx queues share a common lockdep class.
+sock_alloc_send_pskb() & sk_page_frag_refill()
+have a loop trying high order allocations to prepare
+skb with low number of fragments as this increases performance.
 
-Same issue was fixed for bonding/l2tp/ppp in commits
+Problem is that under memory pressure/fragmentation, this can
+trigger OOM while the intent was only to try the high order
+allocations, then fallback to order-0 allocations.
 
-0daa2303028a6 ("[PATCH] bonding: lockdep annotation")
-49ee49202b4ac ("bonding: set qdisc_tx_busylock to avoid LOCKDEP splat")
-23d3b8bfb8eb2 ("net: qdisc busylock needs lockdep annotations ")
-303c07db487be ("ppp: set qdisc_tx_busylock to avoid LOCKDEP splat ")
+We had various reports from unexpected regressions.
 
-Reported-by: Alexander Aring <alex.aring@gmail.com>
+According to David, setting __GFP_NORETRY should be fine,
+as the asynchronous compaction is still enabled, and this
+will prevent OOM from kicking as in :
+
+CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
+oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
+CFSClientEventm
+
+Call Trace:
+ [<ffffffff8043766c>] dump_header+0xe1/0x23e
+ [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
+ [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
+ [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
+ [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
+ [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
+ [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
+ [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
+ [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
+ [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
+ [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
+ [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
+ [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
+ [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
+Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
+
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Alexander Aring <alex.aring@gmail.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ieee802154/6lowpan.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ net/core/sock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index f227061..d08949e 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -1086,7 +1086,27 @@ static struct header_ops lowpan_header_ops = {
- 	.create	= lowpan_header_create,
- };
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 7367c05..68aad38 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1801,7 +1801,7 @@ bool sk_page_frag_refill(struct sock *sk, struct page_frag *pfrag)
+ 		gfp_t gfp = sk->sk_allocation;
  
-+static struct lock_class_key lowpan_tx_busylock;
-+static struct lock_class_key lowpan_netdev_xmit_lock_key;
-+
-+static void lowpan_set_lockdep_class_one(struct net_device *dev,
-+					 struct netdev_queue *txq,
-+					 void *_unused)
-+{
-+	lockdep_set_class(&txq->_xmit_lock,
-+			  &lowpan_netdev_xmit_lock_key);
-+}
-+
-+
-+static int lowpan_dev_init(struct net_device *dev)
-+{
-+	netdev_for_each_tx_queue(dev, lowpan_set_lockdep_class_one, NULL);
-+	dev->qdisc_tx_busylock = &lowpan_tx_busylock;
-+	return 0;
-+}
-+
- static const struct net_device_ops lowpan_netdev_ops = {
-+	.ndo_init		= lowpan_dev_init,
- 	.ndo_start_xmit		= lowpan_xmit,
- 	.ndo_set_mac_address	= lowpan_set_address,
- };
+ 		if (order)
+-			gfp |= __GFP_COMP | __GFP_NOWARN;
++			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
+ 		pfrag->page = alloc_pages(gfp, order);
+ 		if (likely(pfrag->page)) {
+ 			pfrag->offset = 0;
 -- 
 1.8.3.2
 
