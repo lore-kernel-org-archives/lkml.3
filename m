@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaDAXhG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 19:37:06 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33555 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780AbaDAXhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 19:37:04 -0400
-Message-ID: <1396395422.3989.15.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] Documentation: SubmittingPatches: mention our new
- Facebook group
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Felipe Balbi <balbi@ti.com>,
-        rob@landley.net, clm@fb.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org
-Date: Tue, 01 Apr 2014 16:37:02 -0700
-In-Reply-To: <20140401225655.GH19658@home.goodmis.org>
-References: <533AD000.307@fb.com>
-	 <1396368515-8547-1-git-send-email-balbi@ti.com>
-	 <20140401203208.GB30033@thunk.org>
-	 <20140401225655.GH19658@home.goodmis.org>
+	id S1754559AbaDAXiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 19:38:14 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39581 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753250AbaDAXiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 19:38:13 -0400
+Message-ID: <1396395482.19762.32.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git powernv-cpuidle branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Wed, 02 Apr 2014 10:38:02 +1100
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.11.90 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 18:56 -0400, Steven Rostedt wrote:
-> On Tue, Apr 01, 2014 at 04:32:08PM -0400, Theodore Ts'o wrote:
-> > One suggestion: the documentation should add a tip that if you can't
-> > get someone to review your post, one option is to pay Facebook to
-> > promote your post[1] so it shows more prominently (or at all) on more
-> > kernel dvelopers' streams:
-> > 
-> > 					- Ted
-> > 
-> > [1] http://hothardware.com/News/Facebook-Looking-at-New-Revenue-Stream-Pay-To-Promote-Friends-Posts-/
-> 
-> The more likes you get (or pay for), the more likely your patch will be
-> pulled into mainline.
+Hi Linus !
 
+This is the branch I mentioned in my other pull request which contains
+our improved cpuidle support for the "powernv" platform
+(non-virtualized). It adds support for the "fast sleep" feature of the
+processor which provides higher power savings than our usual "nap" mode
+but at the cost of losing the timers while asleep, and thus exploits the
+new timer broadcast framework to work around that limitation.
 
-I do not want to ruin your day guys, but I own a patent on this whole
-idea.
+It's based on a tip timer tree that you seem to have already merged
 
-Fortunately it ends in 20 years, April 1st, 2034, so you only have to be
-patient.
+Cheers,
+Ben.
 
+The following changes since commit 849401b66d305f3feb75b6db7459b95ad190552a:
+
+  tick: Fixup more fallout from hrtimer broadcast mode (2014-02-09 15:11:47 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git powernv-cpuidle
+
+for you to fetch changes up to 0888839c5b62c44a55ac9d28acc273ba663c65ea:
+
+  cpuidle/powernv: Parse device tree to setup idle states (2014-03-05 15:57:08 +1100)
+
+----------------------------------------------------------------
+Preeti U Murthy (3):
+      powerpc: Split timer_interrupt() into timer handling and interrupt handling routines
+      cpuidle/powernv: Add "Fast-Sleep" CPU idle state
+      cpuidle/powernv: Parse device tree to setup idle states
+
+Srivatsa S. Bhat (2):
+      powerpc: Free up the slot of PPC_MSG_CALL_FUNC_SINGLE IPI message
+      powerpc: Implement tick broadcast IPI as a fixed IPI message
+
+Vaidyanathan Srinivasan (2):
+      powerpc/powernv: Add context management for Fast Sleep
+      powerpc/powernv: Add OPAL call to resync timebase on wakeup
+
+ arch/powerpc/Kconfig                           |   2 +
+ arch/powerpc/include/asm/opal.h                |   2 +
+ arch/powerpc/include/asm/processor.h           |   1 +
+ arch/powerpc/include/asm/smp.h                 |   2 +-
+ arch/powerpc/include/asm/time.h                |   1 +
+ arch/powerpc/kernel/exceptions-64s.S           |  10 ++-
+ arch/powerpc/kernel/idle_power7.S              |  90 +++++++++++++++++-----
+ arch/powerpc/kernel/smp.c                      |  25 ++++--
+ arch/powerpc/kernel/time.c                     |  90 +++++++++++++---------
+ arch/powerpc/platforms/cell/interrupt.c        |   2 +-
+ arch/powerpc/platforms/powernv/opal-wrappers.S |   1 +
+ arch/powerpc/platforms/ps3/smp.c               |   2 +-
+ drivers/cpuidle/cpuidle-powernv.c              | 102 ++++++++++++++++++++++---
+ 13 files changed, 253 insertions(+), 77 deletions(-)
 
 
