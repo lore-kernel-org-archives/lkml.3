@@ -1,56 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaDAVNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:13:13 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:57500 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaDAVNL (ORCPT
+	id S1751676AbaDAVNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:13:10 -0400
+Received: from mail-ie0-f194.google.com ([209.85.223.194]:34853 "EHLO
+	mail-ie0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaDAVNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:13:11 -0400
+	Tue, 1 Apr 2014 17:13:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
- <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
- <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net> <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
- <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org>
- <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
- <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
- <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 1 Apr 2014 17:12:50 -0400
-Message-ID: <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Tue, 1 Apr 2014 23:13:06 +0200
+Message-ID: <CAOte+=Y5bSq96wXUHQnAZQRn4jMf+6V5Py6nU3eLNEW9NaRzzg@mail.gmail.com>
+Subject: [PATCH v1] netconsole: Add tty driver
+From: Struan Bartlett <struan.bartlett@gmail.com>
+To: Matt Mackall <mpm@selenic.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Schwab <schwab@linux-m68k.org>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Pirko <jiri@resnulli.us>, Joe Perches <joe@perches.com>,
+        Dan Aloni <alonid@postram.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 5:01 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Tue, 2014-04-01 at 15:51 -0400, KOSAKI Motohiro wrote:
->> >> So, I personally like 0 byte per default.
->> >
->> > If by this you mean 0 bytes == unlimited, then I agree. It's less harsh
->> > then removing it entirely. So instead of removing the limit we can just
->> > set it by default to 0, and in newseg() if shm_ctlmax == 0 then we don't
->> > return EINVAL if the passed size is great (obviously), otherwise, if the
->> > user _explicitly_ set it via sysctl then we respect that. Andrew, do you
->> > agree with this? If so I'll send a patch.
->>
->> Yes, my 0 bytes mean unlimited. I totally agree we shouldn't remove the knob
->> entirely.
->
-> Hmmm so 0 won't really work because it could be weirdly used to disable
-> shm altogether... we cannot go to some negative value either since we're
-> dealing with unsigned, and cutting the range in half could also hurt
-> users that set the limit above that. So I was thinking of simply setting
-> SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
-> if they want a smaller value.
->
-> Makes sense?
+Adds tty driver to netconsole module. When module is loaded, it
+creates /dev/netcon0 device and enables support for console=netcon0
+kernel cmdline option, causing /dev/console output to be sent to
+/dev/netcon0. This allows startup/shutdown script output from
+headless platforms to be logged over (secure) network.
 
-I don't think people use 0 for disabling. but ULONG_MAX make sense to me too.
+Signed-off-by: Struan Bartlett <struan.bartlett@gmail.com>
+---
+
+--- a/drivers/net/netconsole.c  2014-03-31 04:40:15.000000000 +0100
++++ b/drivers/net/netconsole.c  2014-04-01 11:58:50.000000000 +0100
+@@ -15,6 +15,7 @@
+  *               generic card hooks
+  *               works non-modular
+  * 2003-09-07    rewritten with netpoll api
++ * 2014-03-31    tty driver by Struan Bartlett
+  */
+
+ /****************************************************************
+@@ -47,6 +48,7 @@
+ #include <linux/netpoll.h>
+ #include <linux/inet.h>
+ #include <linux/configfs.h>
++#include <linux/tty.h>
+
+ MODULE_AUTHOR("Maintainer: Matt Mackall <mpm@selenic.com>");
+ MODULE_DESCRIPTION("Console driver for network interfaces");
+@@ -728,7 +730,7 @@ static struct notifier_block netconsole_
+        .notifier_call  = netconsole_netdev_event,
+ };
+
+-static void write_msg(struct console *con, const char *msg, unsigned int len)
++static void _write_msg(const char *msg, unsigned int len)
+ {
+        int frag, left;
+        unsigned long flags;
+@@ -764,10 +766,63 @@ static void write_msg(struct console *co
+        spin_unlock_irqrestore(&target_list_lock, flags);
+ }
+
++static void write_msg(struct console *con, const char *msg, unsigned int len)
++{
++       _write_msg(msg, len);
++}
++
++static int netconsole_tty_open(struct tty_struct *tty, struct file *filp)
++{
++       return 0;
++}
++
++static void netconsole_tty_close(struct tty_struct *tty, struct file *filp)
++{
++}
++
++static int netconsole_tty_write(struct tty_struct *tty,
++                               const unsigned char *buf, int count)
++{
++       _write_msg(buf, count);
++       return count;
++}
++
++static int netconsole_tty_put_char(struct tty_struct *tty, unsigned char ch)
++{
++       char temp[2] = { ch, 0 };
++       _write_msg(temp, 1);
++       return 1;
++}
++
++static int netconsole_tty_write_room(struct tty_struct *tty)
++{
++       return MAX_PRINT_CHUNK;
++}
++
++static const struct tty_operations netconsole_tty_ops = {
++       .open           = netconsole_tty_open,
++       .close          = netconsole_tty_close,
++       .write          = netconsole_tty_write,
++       .put_char       = netconsole_tty_put_char,
++       .write_room     = netconsole_tty_write_room,
++};
++
++static struct tty_port netconsole_tty_port;
++static struct tty_driver *netconsole_tty_driver;
++
++static struct tty_driver *netconsole_device(struct console *co, int *index)
++{
++       if (!(co->flags & CON_ENABLED))
++               return NULL;
++       *index = co->index;
++       return netconsole_tty_driver;
++}
++
+ static struct console netconsole = {
+        .name   = "netcon",
+        .flags  = CON_ENABLED,
+        .write  = write_msg,
++       .device = netconsole_device
+ };
+
+ static int __init init_netconsole(void)
+@@ -802,11 +857,39 @@ static int __init init_netconsole(void)
+        if (err)
+                goto undonotifier;
+
++       netconsole_tty_driver = alloc_tty_driver(1);
++       if (!netconsole_tty_driver) {
++               err = -ENOMEM;
++               goto undonotifier;
++       }
++
++       tty_port_init(&netconsole_tty_port);
++
++       netconsole_tty_driver->driver_name = "netcon";
++       netconsole_tty_driver->name = "netcon";
++       netconsole_tty_driver->type = TTY_DRIVER_TYPE_SYSTEM;
++       netconsole_tty_driver->subtype = SYSTEM_TYPE_TTY;
++       netconsole_tty_driver->init_termios = tty_std_termios;
++       netconsole_tty_driver->init_termios.c_iflag = 0;
++       netconsole_tty_driver->init_termios.c_oflag = 0;
++       netconsole_tty_driver->flags = TTY_DRIVER_REAL_RAW;
++
++       tty_set_operations(netconsole_tty_driver, &netconsole_tty_ops);
++       tty_port_link_device(&netconsole_tty_port, netconsole_tty_driver, 0);
++
++       err = tty_register_driver(netconsole_tty_driver);
++       if (err)
++               goto undotty;
++
+        register_console(&netconsole);
+        pr_info("network logging started\n");
+
+        return err;
+
++undotty:
++       put_tty_driver(netconsole_tty_driver);
++       tty_port_destroy(&netconsole_tty_port);
++
+ undonotifier:
+        unregister_netdevice_notifier(&netconsole_netdev_notifier);
+
+@@ -830,6 +913,10 @@ static void __exit cleanup_netconsole(vo
+ {
+        struct netconsole_target *nt, *tmp;
+
++       tty_unregister_driver(netconsole_tty_driver);
++       put_tty_driver(netconsole_tty_driver);
++       tty_port_destroy(&netconsole_tty_port);
++
+        unregister_console(&netconsole);
+        dynamic_netconsole_exit();
+        unregister_netdevice_notifier(&netconsole_netdev_notifier);
