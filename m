@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaDAQPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:15:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44542 "EHLO
+	id S1752912AbaDAQP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:15:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44571 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816AbaDAQN1 (ORCPT
+	with ESMTP id S1752897AbaDAQPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:13:27 -0400
+	Tue, 1 Apr 2014 12:15:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel J Blueman <daniel@numascale.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 74/86] x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
-Date: Tue,  1 Apr 2014 09:08:27 -0700
-Message-Id: <1396368519-12728-75-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 59/86] mwifiex: copy AP's HT capability info correctly
+Date: Tue,  1 Apr 2014 09:08:12 -0700
+Message-Id: <1396368519-12728-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,43 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel J Blueman <daniel@numascale.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 847d7970defb45540735b3fb4e88471c27cacd85 upstream.
+commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
 
-For systems with multiple servers and routed fabric, all
-northbridges get assigned to the first server. Fix this by also
-using the node reported from the PCI bus. For single-fabric
-systems, the northbriges are on PCI bus 0 by definition, which
-are on NUMA node 0 by definition, so this is invarient on most
-systems.
+While preparing association request, intersection of device's HT
+capability information and corresponding fields advertised by AP
+is used.
 
-Tested on fam10h and fam15h single and multi-fabric systems and
-candidate for stable.
+This patch fixes an error while copying this field from AP's
+beacon.
 
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
-Acked-by: Steffen Persvold <sp@numascale.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1394710981-3596-1-git-send-email-daniel@numascale.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/quirks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/11n.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 26ee48a..b9ef5d9 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -525,7 +525,7 @@ static void quirk_amd_nb_node(struct pci_dev *dev)
- 		return;
+diff --git a/drivers/net/wireless/mwifiex/11n.c b/drivers/net/wireless/mwifiex/11n.c
+index 245a371..072ac2a 100644
+--- a/drivers/net/wireless/mwifiex/11n.c
++++ b/drivers/net/wireless/mwifiex/11n.c
+@@ -300,8 +300,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifiex_private *priv,
+ 		ht_cap->header.len =
+ 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
+ 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
+-		       (u8 *) bss_desc->bcn_ht_cap +
+-		       sizeof(struct ieee_types_header),
++		       (u8 *)bss_desc->bcn_ht_cap,
+ 		       le16_to_cpu(ht_cap->header.len));
  
- 	pci_read_config_dword(nb_ht, 0x60, &val);
--	node = val & 7;
-+	node = pcibus_to_node(dev->bus) | (val & 7);
- 	/*
- 	 * Some hardware may return an invalid node ID,
- 	 * so check it first:
+ 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
 -- 
 1.8.3.2
 
