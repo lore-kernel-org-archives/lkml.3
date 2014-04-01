@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaDAQ5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:57:38 -0400
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:58448 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaDAQ5g (ORCPT
+	id S1751537AbaDARBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 13:01:43 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:51468 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaDARBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:57:36 -0400
-Date: Tue, 1 Apr 2014 13:56:02 -0300
-From: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
-	<ezequiel@vanguardiasur.com.ar>,
-        Walter Lozano <walter@vanguardiasur.com.ar>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH 1/3] staging: vt6655: fix DBG_PRT and PRINT_K macros
-Message-ID: <20140401165602.GB8929@solid>
-References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
- <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
- <20140401163300.GB3842@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140401163300.GB3842@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 1 Apr 2014 13:01:41 -0400
+Message-ID: <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Tue, 01 Apr 2014 10:01:39 -0700
+In-Reply-To: <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 09:33:00AM -0700, Greg KH wrote:
-> On Tue, Apr 01, 2014 at 09:52:11AM -0300, Guido Martínez wrote:
-> > Parenthesize both macros so they will not break program logic if used
-> > within another 'if'. Also fix a usage of DBG_PRT with a missing
-> > semicolon.
-> > 
-> > Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
-> > ---
-> >  drivers/staging/vt6655/device.h | 4 ++--
-> >  drivers/staging/vt6655/wpactl.c | 2 +-
-> >  2 files changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
-> > index 062c3a3..483b017 100644
-> > --- a/drivers/staging/vt6655/device.h
-> > +++ b/drivers/staging/vt6655/device.h
-> > @@ -148,8 +148,8 @@
-> >  
-> >  /*---------------------  Export Types  ------------------------------*/
-> >  
-> > -#define DBG_PRT(l, p, args...) { if (l <= msglevel) printk(p, ##args); }
-> > -#define PRINT_K(p, args...) { if (PRIVATE_Message) printk(p, ##args); }
-> > +#define DBG_PRT(l, p, args...) ({ if (l <= msglevel) printk(p, ##args); })
-> > +#define PRINT_K(p, args...) ({ if (PRIVATE_Message) printk(p, ##args); })
+On Mon, 2014-03-31 at 17:05 -0700, Andrew Morton wrote:
+> On Mon, 31 Mar 2014 16:25:32 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 > 
-> I would much rather see these "fixed" by removing them entirely and
-> using the in-kernel calls instead (netdev_* and dev_* where applicable.)
+> > On Mon, 2014-03-31 at 16:13 -0700, Andrew Morton wrote:
+> > > On Mon, 31 Mar 2014 15:59:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > > 
+> > > > > 
+> > > > > - Shouldn't there be a way to alter this namespace's shm_ctlmax?
+> > > > 
+> > > > Unfortunately this would also add the complexity I previously mentioned.
+> > > 
+> > > But if the current namespace's shm_ctlmax is too small, you're screwed.
+> > > Have to shut down the namespace all the way back to init_ns and start
+> > > again.
+> > > 
+> > > > > - What happens if we just nuke the limit altogether and fall back to
+> > > > >   the next check, which presumably is the rlimit bounds?
+> > > > 
+> > > > afaik we only have rlimit for msgqueues. But in any case, while I like
+> > > > that simplicity, it's too late. Too many workloads (specially DBs) rely
+> > > > heavily on shmmax. Removing it and relying on something else would thus
+> > > > cause a lot of things to break.
+> > > 
+> > > It would permit larger shm segments - how could that break things?  It
+> > > would make most or all of these issues go away?
+> > > 
+> > 
+> > So sysadmins wouldn't be very happy, per man shmget(2):
+> > 
+> > EINVAL A new segment was to be created and size < SHMMIN or size >
+> > SHMMAX, or no new segment was to be created, a segment with given key
+> > existed, but size is greater than the size of that segment.
+> 
+> So their system will act as if they had set SHMMAX=enormous.  What
+> problems could that cause?
 
-Sounds OK. Is it ok to do that in another patch?  I made this change on a
-need-to basis because otherwise it was not possible to fix the bracing
-style.
+So, just like any sysctl configurable, only privileged users can change
+this value. If we remove this option, users can theoretically create
+huge segments, thus ignoring any custom limit previously set. This is
+what I fear. Think of it kind of like mlock's rlimit. And for that
+matter, why does sysctl exist at all, the same would go for the rest of
+the limits.
+
+> Look.  The 32M thing is causing problems.  Arbitrarily increasing the
+> arbitrary 32M to an arbitrary 128M won't fix anything - we still have
+> the problem.  Think bigger, please: how can we make this problem go
+> away for ever?
+
+That's the thing, I don't think we can make it go away without breaking
+userspace. I'm not saying that my 4x increase is the correct value, I
+don't think any default value is really correct, as with any other
+hardcoded limits there are pros and cons. That's really why we give
+users the option to change it to the "correct" one via sysctl. All I'm
+saying is that 32mb is just too small for default in today's systems,
+and increasing it is just making a bad situation a tiny bit better.
 
 Thanks,
+Davidlohr
 
--- 
-Guido Martínez, VanguardiaSur
-www.vanguardiasur.com.ar
