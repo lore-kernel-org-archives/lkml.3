@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776AbaDALSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42611 "EHLO
+	id S1753139AbaDALgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:36:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42631 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaDALSW (ORCPT
+	with ESMTP id S1751964AbaDALS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:22 -0400
+	Tue, 1 Apr 2014 07:18:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Magnus Damm <damm@opensource.se>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Wang Nan <wangnan0@huawei.com>,
+Cc: Filipe Brandenburger <filbranden@google.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 105/144] ARM: 7864/1: Handle 64-bit memory in case of 32-bit phys_addr_t
-Date: Tue,  1 Apr 2014 12:15:09 +0100
-Message-Id: <1396350948-29910-106-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 109/144] memcg: reparent charges of children before processing parent
+Date: Tue,  1 Apr 2014 12:15:13 +0100
+Message-Id: <1396350948-29910-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -29,69 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Magnus Damm <damm@opensource.se>
+From: Filipe Brandenburger <filbranden@google.com>
 
-commit 6d7d5da7d75c6df676c8b72d32b02ff024438f0c upstream.
+commit 4fb1a86fb5e4209a7d4426d4e586c58e9edc74ac upstream.
 
-Use CONFIG_ARCH_PHYS_ADDR_T_64BIT to determine
-if ignoring or truncating of memory banks is
-neccessary. This may be needed in the case of
-64-bit memory bank addresses but when phys_addr_t
-is kept 32-bit.
+Sometimes the cleanup after memcg hierarchy testing gets stuck in
+mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Wang Nan <wangnan0@huawei.com>
+There may turn out to be several causes, but a major cause is this: the
+workitem to offline parent can get run before workitem to offline child;
+parent's mem_cgroup_reparent_charges() circles around waiting for the
+child's pages to be reparented to its lrus, but it's holding
+cgroup_mutex which prevents the child from reaching its
+mem_cgroup_reparent_charges().
+
+Further testing showed that an ordered workqueue for cgroup_destroy_wq
+is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
+stage on the way can mess up the order before reaching the workqueue.
+
+Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
+all its children (and grandchildren, in the correct order) to have their
+charges reparented first.
+
+Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
+Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ Hugh:
+  Yes, more differences, and the old mem_cgroup_reparent_charges line
+  is intentionally left in for 3.10 whereas it was removed for 3.12+:
+  that's because the css/cgroup iterator changed in between, it used
+  not to supply the root of the subtree, but nowadays it does. ]
+[ luis: backported to 3.11: used Hugh's backport to 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/setup.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ mm/memcontrol.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index afc2489..f58f646 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -622,6 +622,7 @@ void __init dump_machine_table(void)
- int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index bb13089..4e4b328 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6346,11 +6346,25 @@ static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
+ static void mem_cgroup_css_offline(struct cgroup *cont)
  {
- 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
-+	u64 aligned_start;
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
++	struct cgroup *iter;
  
- 	if (meminfo.nr_banks >= NR_BANKS) {
- 		printk(KERN_CRIT "NR_BANKS too low, "
-@@ -634,10 +635,16 @@ int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
- 	 * Size is appropriately rounded down, start is rounded up.
- 	 */
- 	size -= start & ~PAGE_MASK;
--	bank->start = PAGE_ALIGN(start);
-+	aligned_start = PAGE_ALIGN(start);
+ 	kmem_cgroup_css_offline(memcg);
  
--#ifndef CONFIG_ARM_LPAE
--	if (bank->start + size < bank->start) {
-+#ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
-+	if (aligned_start > ULONG_MAX) {
-+		printk(KERN_CRIT "Ignoring memory at 0x%08llx outside "
-+		       "32-bit physical address space\n", (long long)start);
-+		return -EINVAL;
-+	}
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
 +
-+	if (aligned_start + size > ULONG_MAX) {
- 		printk(KERN_CRIT "Truncating memory at 0x%08llx to fit in "
- 			"32-bit physical address space\n", (long long)start);
- 		/*
-@@ -645,10 +652,11 @@ int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
- 		 * 32 bits, we use ULONG_MAX as the upper limit rather than 4GB.
- 		 * This means we lose a page after masking.
- 		 */
--		size = ULONG_MAX - bank->start;
-+		size = ULONG_MAX - aligned_start;
- 	}
- #endif
- 
-+	bank->start = aligned_start;
- 	bank->size = size & ~(phys_addr_t)(PAGE_SIZE - 1);
- 
- 	/*
++	/*
++	 * This requires that offlining is serialized.  Right now that is
++	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
++	 */
++	rcu_read_lock();
++	cgroup_for_each_descendant_post(iter, cont) {
++		rcu_read_unlock();
++		mem_cgroup_reparent_charges(mem_cgroup_from_cont(iter));
++		rcu_read_lock();
++	}
++	rcu_read_unlock();
+ 	mem_cgroup_reparent_charges(memcg);
++
+ 	mem_cgroup_destroy_all_caches(memcg);
+ 	vmpressure_cleanup(&memcg->vmpressure);
+ }
 -- 
 1.9.1
 
