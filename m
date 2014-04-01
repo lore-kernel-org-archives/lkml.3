@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaDAJI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:08:58 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:39560 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaDAJI4 (ORCPT
+	id S1751452AbaDAJJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:09:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47948 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaDAJJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:08:56 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC 0/5] of: Automatic console registration cleanups
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: devicetree@vger.kernel.org, christoffer.dall@linaro.org,
-        linux-kernel@vger.kernel.org, olof@lixom.net, benh@kernel.crashing.org,
-        rob.herring@linaro.org
-In-Reply-To: <20140401061216.GQ17250@pengutronix.de>
-References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org> < 20140331071014.GN17250@pengutronix.de> <20140331094124.6DEF3C408E1@trevor. secretlab.ca> <20140401061216.GQ17250@pengutronix.de>
-Date: Tue, 01 Apr 2014 10:08:48 +0100
-Message-Id: <20140401090848.E9758C408A6@trevor.secretlab.ca>
+	Tue, 1 Apr 2014 05:09:48 -0400
+Message-ID: <533A824B.1050304@pengutronix.de>
+Date: Tue, 01 Apr 2014 11:09:31 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: Re: [patch 00/12] can: c_can: Fix a series of serious bugs and improve
+ the performance
+References: <20140318171007.528610837@linutronix.de> <alpine.DEB.2.02.1403312355280.14882@ionos.tec.linutronix.de> <533A742F.4090703@pengutronix.de> <alpine.DEB.2.02.1404011106020.14882@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1404011106020.14882@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="EXfBg9Ejri3goSdg7v9gTqhrCmIDV6eIx"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014 08:12:16 +0200, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Mon, Mar 31, 2014 at 10:41:24AM +0100, Grant Likely wrote:
-> > On Mon, 31 Mar 2014 09:10:15 +0200, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > > On Fri, Mar 28, 2014 at 09:08:00AM -0700, Grant Likely wrote:
-> > > > Hi all,
-> > > > 
-> > > > This is a series that I've been playing with over the last few days to
-> > > > clean up the selection of default console devices when using the device
-> > > > tree. The device tree defines a way of specifying the console by using a
-> > > > "stdout-path" property in the /chosen node, but very few drivers
-> > > > actually attempt to use that data, and so for most platforms there needs
-> > > > to be a "console=" line in the command line if a serial port is intended
-> > > > to be used as the console.
-> > > > 
-> > > > With this series, if there is a /chosen/stdout-path property, and if
-> > > > that property points to a serial port node, then when the serial driver
-> > > > registers the port, the core uart_add_one_port() function will notice
-> > > > and if no console= argument was provided then add it as a preferred
-> > > > console.
-> > > > 
-> > > > I've not tested this very extensively yet, but I want to get some
-> > > > feedback before I go further.
-> > > 
-> > > I gave it a test on i.MX. It works as expected with both
-> > > linux,stdout-path and stdout-path. Specifying a console on the
-> > > commandline still works and overrides the devicetree setting.
-> > > 
-> > > Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
-> > 
-> > Brilliant! Thanks Sascha.
-> > 
-> > Can you supply a patch to add stdout to the imx dts files?
-> 
-> The information which console is used on each board is not in the
-> kernel. I can create a patch adding stdout for a handful of boards I
-> know, but I won't catch all.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--EXfBg9Ejri3goSdg7v9gTqhrCmIDV6eIx
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-That's all I'm asking for. I don't expect all platforms.
+On 04/01/2014 11:07 AM, Thomas Gleixner wrote:
+>>> What's the state of this series?
+>>
+>> I'll apply your patches today.
+>=20
+> Thanks! Please drop the last one which was not part of the series:
+>=20
+> 	Subject: can: c_can: Reduce interrupt load by 50%
+>=20
+> While it works like a charm, we've seen an odd case were TX started to
+> stall. Had not yet time to dig into that.
 
-g.
+Okay, thanks for the update.
 
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--EXfBg9Ejri3goSdg7v9gTqhrCmIDV6eIx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEUEARECAAYFAlM6gk8ACgkQjTAFq1RaXHMGVQCgl9biL53XylEt6alUD/4TZnnq
+QiIAl1aQ1bPKFEVVccXiudayizgcHE4=
+=se/I
+-----END PGP SIGNATURE-----
+
+--EXfBg9Ejri3goSdg7v9gTqhrCmIDV6eIx--
