@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaDAQsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:48:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44383 "EHLO
+	id S1751363AbaDAQsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:48:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44385 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaDAQJH (ORCPT
+	with ESMTP id S1751866AbaDAQJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 12:09:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Yao <ryao@gentoo.org>, "David S. Miller" <davem@davemloft.net>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 02/86] 9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
-Date: Tue,  1 Apr 2014 09:07:15 -0700
-Message-Id: <1396368519-12728-3-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 17/86] virtio-net: alloc big buffers also when guest can receive UFO
+Date: Tue,  1 Apr 2014 09:07:30 -0700
+Message-Id: <1396368519-12728-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,69 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Yao <ryao@gentoo.org>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit b6f52ae2f0d32387bde2b89883e3b64d88b9bfe8 ]
+[ Upstream commit 0e7ede80d929ff0f830c44a543daa1acd590c749 ]
 
-The 9p-virtio transport does zero copy on things larger than 1024 bytes
-in size. It accomplishes this by returning the physical addresses of
-pages to the virtio-pci device. At present, the translation is usually a
-bit shift.
+We should alloc big buffers also when guest can receive UFO
+packets to let the big packets fit into guest rx buffer.
 
-That approach produces an invalid page address when we read/write to
-vmalloc buffers, such as those used for Linux kernel modules. Any
-attempt to load a Linux kernel module from 9p-virtio produces the
-following stack.
+Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
+(virtio-net: Allow UFO feature to be set and advertised.)
 
-[<ffffffff814878ce>] p9_virtio_zc_request+0x45e/0x510
-[<ffffffff814814ed>] p9_client_zc_rpc.constprop.16+0xfd/0x4f0
-[<ffffffff814839dd>] p9_client_read+0x15d/0x240
-[<ffffffff811c8440>] v9fs_fid_readn+0x50/0xa0
-[<ffffffff811c84a0>] v9fs_file_readn+0x10/0x20
-[<ffffffff811c84e7>] v9fs_file_read+0x37/0x70
-[<ffffffff8114e3fb>] vfs_read+0x9b/0x160
-[<ffffffff81153571>] kernel_read+0x41/0x60
-[<ffffffff810c83ab>] copy_module_from_fd.isra.34+0xfb/0x180
-
-Subsequently, QEMU will die printing:
-
-qemu-system-x86_64: virtio: trying to map MMIO memory
-
-This patch enables 9p-virtio to correctly handle this case. This not
-only enables us to load Linux kernel modules off virtfs, but also
-enables ZFS file-based vdevs on virtfs to be used without killing QEMU.
-
-Special thanks to both Avi Kivity and Alexander Graf for their
-interpretation of QEMU backtraces. Without their guidence, tracking down
-this bug would have taken much longer. Also, special thanks to Linus
-Torvalds for his insightful explanation of why this should use
-is_vmalloc_addr() instead of is_vmalloc_or_module_addr():
-
-https://lkml.org/lkml/2014/2/8/272
-
-Signed-off-by: Richard Yao <ryao@gentoo.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/9p/trans_virtio.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/virtio_net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index fd05c81..f6aaae2 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -326,7 +326,10 @@ static int p9_get_mapped_pages(struct virtio_chan *chan,
- 		int count = nr_pages;
- 		while (nr_pages) {
- 			s = rest_of_page(data);
--			pages[index++] = kmap_to_page(data);
-+			if (is_vmalloc_addr(data))
-+				pages[index++] = vmalloc_to_page(data);
-+			else
-+				pages[index++] = kmap_to_page(data);
- 			data += s;
- 			nr_pages--;
- 		}
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 4380036..4d6a466 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1575,7 +1575,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+ 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
+ 		vi->big_packets = true;
+ 
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
 -- 
 1.8.3.2
 
