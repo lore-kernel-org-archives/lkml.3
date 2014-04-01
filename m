@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaDAUeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:34:06 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:61278 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751549AbaDAUeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:34:04 -0400
-Message-ID: <1396384443.23763.24.camel@x220>
-Subject: Re: [git pull] Devicetree changes for v3.15
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1751655AbaDAUfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:35:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36386 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751397AbaDAUfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 16:35:19 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFzb0a2j9r3sFmczquDU8CBp4y8HhfJ7BwL57rpJ2fNwPA@mail.gmail.com>
+References: <201403312105.s2VL5AqX010173@terminus.zytor.com> <CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com> <20140331230347.GH32556@tassilo.jf.intel.com> <CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com> <CA+55aFxCCOASxhgRfGmNRPgHwZQJ2Q0Oa9-vwpMdmTqx99m26g@mail.gmail.com> <533B0B5F.2040907@linux.intel.com> <CA+55aFzb0a2j9r3sFmczquDU8CBp4y8HhfJ7BwL57rpJ2fNwPA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [GIT PULL] x86 LTO changes for v3.15
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 01 Apr 2014 12:43:26 -0700
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
+        Jan Hubicka <hubicka@ucw.cz>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@linaro.org>
-Date: Tue, 01 Apr 2014 22:34:03 +0200
-In-Reply-To: <CAL_JsqKyLPa9PhNbzda1iPyLjfvQpsUMLR7sGRegYmLsrkY-LQ@mail.gmail.com>
-References: <CACxGe6vCrkHPL6UNy1p8AO4+z5VFRY6w4_2grQEZQwp_3jJ7Yw@mail.gmail.com>
-	 <1396381357.23763.16.camel@x220>
-	 <CAL_JsqKyLPa9PhNbzda1iPyLjfvQpsUMLR7sGRegYmLsrkY-LQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Apr 2014 20:34:03.0545 (UTC) FILETIME=[B8849890:01CF4DE9]
-X-RcptDomain: vger.kernel.org
+        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jaroslav Kysela <perex@perex.cz>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <91ba1e94-20ae-40f9-a591-dd9d4f496aae@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 15:18 -0500, Rob Herring wrote:
-> On Tue, Apr 1, 2014 at 2:42 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > That commit leaves a select for PROC_DEVICETREE dangling. See "config
-> > ARCH_OMAP2PLUS" in arch/arm/mach-omap2/Kconfig. Can that select
-> > statement just be dropped now or is something more elaborate needed?
-> 
-> Yes, it can and should be dropped. It never should have been there to
-> begin with. It should be a user selectable option, not a platform
-> selection.
+Should be an easy fix through.
 
-Should I draft a (trivial) patch to drop it or would you like to do
-that? (Your commit explanation will probably end up more useful.)
+On April 1, 2014 12:15:05 PM PDT, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>On Tue, Apr 1, 2014 at 11:54 AM, H. Peter Anvin <hpa@linux.intel.com>
+>wrote:
+>>
+>> Pretty much.  If nothing else, it breaks tracing.
+>
+>Good point. And those [rt_]sigreturn() system calls might actually be
+>something you want to see in traces.
+>
+>Although clearly nobody has noticed the lack so far, so nobody must
+>have cared all _that_ deeply about them so far ;)
+>
+>              Linus
 
-
-Paul Bolle
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
