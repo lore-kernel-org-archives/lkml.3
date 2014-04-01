@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaDAMXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:23:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42112 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaDALQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751559AbaDALQL (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 1 Apr 2014 07:16:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42084 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaDALQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 07:16:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 013/144] mac80211: don't validate unchanged AP bandwidth while tracking
-Date: Tue,  1 Apr 2014 12:13:37 +0100
-Message-Id: <1396350948-29910-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 007/144] iwlwifi: dvm: clear IWL_STA_UCODE_INPROGRESS when assoc fails
+Date: Tue,  1 Apr 2014 12:13:31 +0100
+Message-Id: <1396350948-29910-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 963a1852fbac4f75a2d938fa2e734ef1e6d4c044 upstream.
+commit ec6f678c74dbdb06a6a775bbb00f1d26c17c404b upstream.
 
-The MLME code in mac80211 must track whether or not the AP changed
-bandwidth, but if there's no change while tracking it shouldn't do
-anything, otherwise regulatory updates can make it impossible to
-connect to certain APs if the regulatory database doesn't match the
-information from the AP. See the precise scenario described in the
-code.
+We set IWL_STA_UCODE_INPROGRESS flag when we add a station
+and clear it when we send the LQ command for it. But the LQ
+command is sent only when the association succeeds.
+If the association doesn't succeed, we would leave this flag
+set and that wouldn't indicate the station entry as vacant.
 
-This still leaves some possible problems with CSA or if the AP
-actually changed bandwidth, but those cases are less common and
-won't completely prevent using it.
+This probably fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=1065663
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=70881
-
-Reported-and-tested-by: Nate Carlson <kernel@natecarlson.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/mlme.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/sta.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index 7a98d52..59f69fd 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -331,6 +331,28 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_data *sdata,
- 	ret = 0;
+diff --git a/drivers/net/wireless/iwlwifi/dvm/sta.c b/drivers/net/wireless/iwlwifi/dvm/sta.c
+index c3c13ce..e800002 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/sta.c
++++ b/drivers/net/wireless/iwlwifi/dvm/sta.c
+@@ -590,6 +590,7 @@ void iwl_deactivate_station(struct iwl_priv *priv, const u8 sta_id,
+ 			sizeof(priv->tid_data[sta_id][tid]));
  
- out:
-+	/*
-+	 * When tracking the current AP, don't do any further checks if the
-+	 * new chandef is identical to the one we're currently using for the
-+	 * connection. This keeps us from playing ping-pong with regulatory,
-+	 * without it the following can happen (for example):
-+	 *  - connect to an AP with 80 MHz, world regdom allows 80 MHz
-+	 *  - AP advertises regdom US
-+	 *  - CRDA loads regdom US with 80 MHz prohibited (old database)
-+	 *  - the code below detects an unsupported channel, downgrades, and
-+	 *    we disconnect from the AP in the caller
-+	 *  - disconnect causes CRDA to reload world regdomain and the game
-+	 *    starts anew.
-+	 * (see https://bugzilla.kernel.org/show_bug.cgi?id=70881)
-+	 *
-+	 * It seems possible that there are still scenarios with CSA or real
-+	 * bandwidth changes where a this could happen, but those cases are
-+	 * less common and wouldn't completely prevent using the AP.
-+	 */
-+	if (tracking &&
-+	    cfg80211_chandef_identical(chandef, &sdata->vif.bss_conf.chandef))
-+		return ret;
-+
- 	/* don't print the message below for VHT mismatch if VHT is disabled */
- 	if (ret & IEEE80211_STA_DISABLE_VHT)
- 		vht_chandef = *chandef;
+ 	priv->stations[sta_id].used &= ~IWL_STA_DRIVER_ACTIVE;
++	priv->stations[sta_id].used &= ~IWL_STA_UCODE_INPROGRESS;
+ 
+ 	priv->num_stations--;
+ 
 -- 
 1.9.1
 
