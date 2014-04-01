@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaDALQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:16:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42172 "EHLO
+	id S1752177AbaDAMOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:14:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42203 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaDALQZ (ORCPT
+	with ESMTP id S1751655AbaDALQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:16:25 -0400
+	Tue, 1 Apr 2014 07:16:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Marius Knaust <marius.knaust@gmail.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 022/144] mac80211: fix association to 20/40 MHz VHT networks
-Date: Tue,  1 Apr 2014 12:13:46 +0100
-Message-Id: <1396350948-29910-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 028/144] ALSA: hda - Added inverted digital-mic handling for Acer TravelMate 8371
+Date: Tue,  1 Apr 2014 12:13:52 +0100
+Message-Id: <1396350948-29910-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Marius Knaust <marius.knaust@gmail.com>
 
-commit cb664981607a6b5b3d670ad57bbda893b2528d96 upstream.
+commit a6b92b6650d010d58b6e6fe42c6271266e0b1134 upstream.
 
-When a VHT network uses 20 or 40 MHz as per the HT operation
-information, the channel center frequency segment 0 field in
-the VHT operation information is reserved, so ignore it.
-
-This fixes association with such networks when the AP puts 0
-into the field, previously we'd disconnect due to an invalid
-channel with the message
-wlan0: AP VHT information is invalid, disable VHT
-
-Fixes: f2d9d270c15ae ("mac80211: support VHT association")
-Reported-by: Tim Nelson <tim.l.nelson@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Marius Knaust <marius.knaust@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/mlme.c | 1 +
+ sound/pci/hda/patch_realtek.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index 59f69fd..a83d76a 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -282,6 +282,7 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_data *sdata,
- 	switch (vht_oper->chan_width) {
- 	case IEEE80211_VHT_CHANWIDTH_USE_HT:
- 		vht_chandef.width = chandef->width;
-+		vht_chandef.center_freq1 = chandef->center_freq1;
- 		break;
- 	case IEEE80211_VHT_CHANWIDTH_80MHZ:
- 		vht_chandef.width = NL80211_CHAN_WIDTH_80;
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index d2bd1d5..add9f3d 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3766,6 +3766,7 @@ static const struct hda_fixup alc269_fixups[] = {
+ };
+ 
+ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x1025, 0x0283, "Acer TravelMate 8371", ALC269_FIXUP_INV_DMIC),
+ 	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
+ 	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
+ 	SND_PCI_QUIRK(0x1028, 0x05bd, "Dell", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
 -- 
 1.9.1
 
