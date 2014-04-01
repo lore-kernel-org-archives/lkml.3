@@ -1,35 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727AbaDAF0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 01:26:17 -0400
-Received: from mailq1.tnnet.fi ([217.112.240.127]:35765 "EHLO mailq1.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaDAF0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 01:26:16 -0400
-X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 01:26:15 EDT
-Message-ID: <533A4C22.1285779C@users.sourceforge.net>
-Date: Tue, 01 Apr 2014 08:18:26 +0300
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
-To: linux-crypto@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Announce loop-AES-v3.7b file/swap crypto package
+	id S1751881AbaDAF26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 01:28:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34241 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaDAF25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 01:28:57 -0400
+Date: Tue, 1 Apr 2014 07:28:07 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: tthayer@altera.com
+Cc: dinguyen@altera.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, devicetree@hellion.org.uk, galak@codeaurora.org,
+        rob@landley.net, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/2] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+Message-ID: <20140401052807.GN5052@pengutronix.de>
+References: <1396303627-29198-1-git-send-email-tthayer@altera.com>
+ <1396303627-29198-2-git-send-email-tthayer@altera.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1396303627-29198-2-git-send-email-tthayer@altera.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 07:25:30 up 219 days, 14:56, 49 users,  load average: 0,12, 0,08,
+ 0,10
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop-AES changes since previous release:
-- Worked around block layer interface changes on 3.14 kernels.
+Hi!
 
-bzip2 compressed tarball is here:
+On Mon, Mar 31, 2014 at 05:07:06PM -0500, tthayer@altera.com wrote:
+> From: Thor Thayer <tthayer@altera.com>
+> 
+> Addition of the Altera SDRAM controller bindings and device
+> tree changes to the Altera SoC project.
+> 
+> Signed-off-by: Thor Thayer <tthayer@altera.com>
+> To: Rob Herring <rob.herring@calxeda.com>
+> To: Pawel Moll <pawel.moll@arm.com>
+> To: Mark Rutland <mark.rutland@arm.com>
+> To: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> To: Kumar Gala <galak@codeaurora.org>
+> To: Rob Landley <rob@landley.net>
+> To: Russell King <linux@arm.linux.org.uk>
+> To: Dinh Nguyen <dinguyen@altera.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> ---
+>  .../bindings/arm/altera/socfpga-sdram.txt          |   14 ++++++++++++++
+>  arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
+>  2 files changed, 19 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> new file mode 100644
+> index 0000000..351ab7b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> @@ -0,0 +1,14 @@
+> +Altera SOCFPGA SDRAM Controller
+> +
+> +Required properties:
+> +- compatible : "altr,sdr-ctl", "syscon";
+> +                Note that syscon is invoked for this device to support the FPGA
+> +		bridge driver and possibly other devices in the future.  See
+> +		also Documentation/devicetree/bindings/mfd/syscon.txt
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.7b.tar.bz2
-    md5sum 204572f246eddd08705f88189dd3b44d
+This note is really linux specific (and specific to some vendor kernel driver
+for that matter). I think you should remove that.
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.7b.tar.bz2.sign
+> +- reg : Should contain 1 register ranges(address and length)
+> +
+> +Example:
+> +	sdrctl@0xffc25000 {
+> +		compatible = "altr,sdr-ctl", "syscon";
+> +		reg = <0xffc25000 0x1000>;
+> +	};
+> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> index 9e78c1d..3634de7 100644
+> --- a/arch/arm/boot/dts/socfpga.dtsi
+> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> @@ -528,6 +528,11 @@
+>  			reg-io-width = <4>;
+>  		};
+>  
+> +		sdrctl@0xffc25000 {
+> +			compatible = "altr,sdr-ctl", "syscon";
+> +			reg = <0xffc25000 0x1000>;
+> +		};
+> +
+>  		rstmgr@ffd05000 {
+>  			compatible = "altr,rst-mgr";
+>  			reg = <0xffd05000 0x1000>;
 
-I have new release signing key. New key is signed with the old key.
+Regards,
+Steffen
 
 -- 
-Jari Ruusu  4096R/8132F189 12D6 4C3A DCDA 0AA4 27BD  ACDF F073 3C80 8132 F189
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
