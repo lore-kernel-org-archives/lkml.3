@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751310AbaDAARH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 20:17:07 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:57537 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaDAARF (ORCPT
+	id S1751270AbaDAAYc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 20:24:32 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65064 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaDAAY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 20:17:05 -0400
+	Mon, 31 Mar 2014 20:24:29 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <533A073A.6060807@roeck-us.net>
+Date: Mon, 31 Mar 2014 17:24:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140331230347.GH32556@tassilo.jf.intel.com>
-References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
-	<CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>
-	<20140331230347.GH32556@tassilo.jf.intel.com>
-Date: Mon, 31 Mar 2014 17:17:03 -0700
-X-Google-Sender-Auth: xkY92OB6m2nVkgKCjw3n3mrahU4
-Message-ID: <CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>
-Subject: Re: [GIT PULL] x86 LTO changes for v3.15
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Peter Anvin <hpa@zytor.com>, hubicka@ucw.cz,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Harini Katakam <harinik@xilinx.com>
+CC: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, michals@xilinx.com,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/2] watchdog: Add Cadence WDT driver
+References: <1396002720-7105-1-git-send-email-harinik@xilinx.com> <20140331113020.03be6894@alan.etchedpixels.co.uk>
+In-Reply-To: <20140331113020.03be6894@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 4:03 PM, Andi Kleen <ak@linux.intel.com> wrote:
+On 03/31/2014 03:30 AM, One Thousand Gnomes wrote:
 >
-> However with LTO pretty much all asmlinkages have to become
-> visible, as they are used by assembler code and we need to
-> tell that to the compiler, otherwise it'll optimize it away.
+>> +	wdt->cdns_wdt_notifier.notifier_call = &cdns_wdt_notify_sys;
+>> +	/* Register the reboot notifier */
+>> +	ret = register_reboot_notifier(&wdt->cdns_wdt_notifier);
+>> +	if (ret != 0) {
+>> +		dev_err(&pdev->dev, "cannot register reboot notifier err=%d)\n",
+>> +			ret);
+>> +		return ret;
 >
-> So I abused asmlinkage for this.
+> Your ordering is wrong. If the box reboots between here and the spin lock
+> in it further down it'll crash in your notifier.
+>
+Not only that, the callback also ends up using watchdog_get_drvdata()
+which is only set after registering the notifier.
 
-I see why you did it, but I suspect it's not really necessary.
+Guenter
 
-As far as I can tell, *most* of our current asmlinkage use is for the
-system call declarations (both compat and regular), and the actual
-*definition* of those system calls should pretty much universally use
-the SYSCALL_DEFINEx() and COMPAT_SYSCALL_DEFINEx() macros.
+> As
+>
+>> +	spin_lock_init(&wdt->io_lock);
+>
+> is needed before the code your notifier calls will work.
+>
+>> +	dev_info(&pdev->dev, "Xilinx Watchdog Timer at %p with timeout %ds%s\n",
+>> +		 wdt->regs, cdns_wdt_device->timeout,
+>> +		 nowayout ? ", nowayout" : "");
+>
+> dev_dbg
+>
+> if every driver felt the need to announce itself on boot you'd have pages
+> and pages of junk.
+>
+> Alan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-So what I would propose is:
-
- - don't do the __visible as part of asmlinkage, because it really is
-conceptually wrong
-
- - add the visible to the SYSCALL_DEFINEx() macros
-
-and after that I strongly suspect that there will be only a handful of
-cases left that are called from assembly language and that aren't
-system calls. Things like "printk()" and friends that are really
-special. They'd need a few manual "__visible" annotations.
-
-> If you prefer to do it explicitely  I can send
-> patches (it would be a very mechanic, long and boring
-> tree sweep ...).
-
-See above: I can pretty much guarantee that you should *not* need do
-any crazy automated sweeps.  Because you shouldn't need "__visible" at
-the declarations in the header files, only at the definition of the
-function, right? So SYSCALL_DEFINEx() really should catch all the
-normal cases.
-
-                       Linus
