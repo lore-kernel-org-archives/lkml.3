@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaDANTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 09:19:46 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:50142 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751397AbaDANTn (ORCPT
+	id S1751728AbaDANUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 09:20:42 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44390 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250AbaDANUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 09:19:43 -0400
-Message-ID: <533ABCEC.8040701@codethink.co.uk>
-Date: Tue, 01 Apr 2014 14:19:40 +0100
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Tue, 1 Apr 2014 09:20:41 -0400
+Date: Tue, 1 Apr 2014 15:20:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, shli@kernel.org,
+        akpm@linux-foundation.org, hughd@google.com, mgorman@suse.de,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86,mm: delay TLB flush after clearing accessed bit
+Message-ID: <20140401132037.GB7024@gmail.com>
+References: <20140331113442.0d628362@annuminas.surriel.com>
+ <20140401105318.GA2823@gmail.com>
+ <533AB741.5080508@redhat.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
-        linux@arm.linux.org.uk, robh+dt@kernel.org, grant.likely@linaro.org,
-        mark.rutland@arm.com, galak@codeaurora.org, kyungmin.park@samsung.com,
-        sw0312.kim@samsung.com, m.szyprowski@samsung.com, t.figa@samsung.com,
-        laurent.pinchart@ideasonboard.com, s.hauer@pengutronix.de
-Subject: Re: [PATCH RFC v4 2/2] clk: Add handling of clk parent and rate assigned
- from DT
-References: <1396284116-19178-1-git-send-email-s.nawrocki@samsung.com> <1396284116-19178-3-git-send-email-s.nawrocki@samsung.com> <20140331200620.GA13881@kroah.com>
-In-Reply-To: <20140331200620.GA13881@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533AB741.5080508@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/03/14 21:06, Greg KH wrote:
-> On Mon, Mar 31, 2014 at 06:41:56PM +0200, Sylwester Nawrocki wrote:
->> This function adds a helper function to configure clock parents and rates
->> as specified in clock-parents, clock-rates DT properties for a consumer
->> device and a call to it before driver is bound to a device.
->>
->> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-[snip]
+* Rik van Riel <riel@redhat.com> wrote:
 
->
-> I don't understand why you need the driver core to initialize this one
-> type of thing?  That should be in a driver, or in a class, or at worse
-> case, the platform code.
->
-> What makes clocks so "unique" here?
+> >>  int ptep_clear_flush_young(struct vm_area_struct *vma,
+> >>  			   unsigned long address, pte_t *ptep)
+> >>  {
+> >> -	int young;
+> >> +	int young, cpu;
+> >>  
+> >>  	young = ptep_test_and_clear_young(vma, address, ptep);
+> >> -	if (young)
+> >> -		flush_tlb_page(vma, address);
+> >> +	if (young) {
+> >> +		for_each_cpu(cpu, vma->vm_mm->cpu_vm_mask_var)
+> >> +			tlb_set_force_flush(cpu);
+> > 
+> > Hm, just to play the devil's advocate - what happens when we have 
+> > a va that is used on a few dozen, a few hundred or a few thousand 
+> > CPUs? Will the savings be dwarved by the O(nr_cpus_used) loop 
+> > overhead?
+> > 
+> > Especially as this is touching cachelines on other CPUs and likely 
+> > creating the worst kind of cachemisses. That can really kill 
+> > performance.
+> 
+> flush_tlb_page does the same O(nr_cpus_used) loop, but it sends an 
+> IPI to each CPU every time, instead of dirtying a cache line once 
+> per pageout run (or until the next context switch).
+> 
+> Does that address your concern?
 
-I suppose the issue here is that a lot of drivers currently use
-clocks and a number of systems have badly setup default clock trees
-at start time.
+That depends on the platform - which could implement flush_tlb_page() 
+as a broadcast IPI - but yes, it was bad before as well, now it became 
+more visible and I noticed it :)
 
-Mark Brown and others have argued that the management of clocks which
-is common to all devices should not live in the driver.
+Wouldn't it be more scalable to use a generation count as a timestamp, 
+and set that in the mm? mm that last flushed before that timestamp 
+need to flush, or so. That gets rid of the mask logic and the loop, 
+AFAICS.
 
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
+Thanks,
+
+	Ingo
