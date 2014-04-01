@@ -1,95 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341AbaDAQuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:50:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43969 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751477AbaDAQt6 (ORCPT
+	id S1751775AbaDAQs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:48:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44374 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaDAQJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:49:58 -0400
-Message-ID: <1396370989.22689.7.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.2 000/200] 3.2.56-rc1 review
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Date: Tue, 01 Apr 2014 17:49:49 +0100
-In-Reply-To: <8761mt893q.wl%satoru.takeuchi@gmail.com>
-References: <lsq.1396221814.369444335@decadent.org.uk>
-	 <20140331004857.GA10898@roeck-us.net>
-	 <8761mt893q.wl%satoru.takeuchi@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-RsrVUU9N2iXXk0mcQKBm"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 1 Apr 2014 12:09:05 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 11/86] net: sctp: fix sctp_connectx abi for ia32 emulation/compat mode
+Date: Tue,  1 Apr 2014 09:07:24 -0700
+Message-Id: <1396368519-12728-12-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
 
---=-RsrVUU9N2iXXk0mcQKBm
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Tue, 2014-04-01 at 22:36 +0900, Satoru Takeuchi wrote:
-> At Sun, 30 Mar 2014 17:49:46 -0700,
-> Guenter Roeck wrote:
-> >=20
-> > On Mon, Mar 31, 2014 at 12:23:34AM +0100, Ben Hutchings wrote:
-> > > This is the start of the stable review cycle for the 3.2.56 release.
-> > > There are 200 patches in this series, which will be posted as respons=
-es
-> > > to this one.  If anyone has any issues with these being applied, plea=
-se
-> > > let me know.
-> > >=20
-> > > Responses should be made by Wed Apr 02 00:00:00 UTC 2014.
-> > > Anything received after that time might be too late.
-> > >=20
-> > Build results:
-> > 	total: 116 pass: 87 skipped: 22 fail: 7
-> >=20
-> > Qemu tests all passed. Results are as expected.
-> >=20
-> > Details are available at http://server.roeck-us.net:8010/builders.
-> >=20
-> > Guenter
->=20
-> This kernel passed my test.
-[...]
+From: Daniel Borkmann <dborkman@redhat.com>
 
-Thanks.
+[ Upstream commit ffd5939381c609056b33b7585fb05a77b4c695f3 ]
 
-Ben.
+SCTP's sctp_connectx() abi breaks for 64bit kernels compiled with 32bit
+emulation (e.g. ia32 emulation or x86_x32). Due to internal usage of
+'struct sctp_getaddrs_old' which includes a struct sockaddr pointer,
+sizeof(param) check will always fail in kernel as the structure in
+64bit kernel space is 4bytes larger than for user binaries compiled
+in 32bit mode. Thus, applications making use of sctp_connectx() won't
+be able to run under such circumstances.
 
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
+Introduce a compat interface in the kernel to deal with such
+situations by using a 'struct compat_sctp_getaddrs_old' structure
+where user data is copied into it, and then sucessively transformed
+into a 'struct sctp_getaddrs_old' structure with the help of
+compat_ptr(). That fixes sctp_connectx() abi without any changes
+needed in user space, and lets the SCTP test suite pass when compiled
+in 32bit and run on 64bit kernels.
 
---=-RsrVUU9N2iXXk0mcQKBm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Fixes: f9c67811ebc0 ("sctp: Fix regression introduced by new sctp_connectx api")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/sctp/socket.c | 41 ++++++++++++++++++++++++++++++++---------
+ 1 file changed, 32 insertions(+), 9 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 89714ee..1652e95 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -71,6 +71,7 @@
+ #include <linux/crypto.h>
+ #include <linux/slab.h>
+ #include <linux/file.h>
++#include <linux/compat.h>
+ 
+ #include <net/ip.h>
+ #include <net/icmp.h>
+@@ -1383,11 +1384,19 @@ SCTP_STATIC int sctp_setsockopt_connectx(struct sock* sk,
+ /*
+  * New (hopefully final) interface for the API.
+  * We use the sctp_getaddrs_old structure so that use-space library
+- * can avoid any unnecessary allocations.   The only defferent part
++ * can avoid any unnecessary allocations. The only different part
+  * is that we store the actual length of the address buffer into the
+- * addrs_num structure member.  That way we can re-use the existing
++ * addrs_num structure member. That way we can re-use the existing
+  * code.
+  */
++#ifdef CONFIG_COMPAT
++struct compat_sctp_getaddrs_old {
++	sctp_assoc_t	assoc_id;
++	s32		addr_num;
++	compat_uptr_t	addrs;		/* struct sockaddr * */
++};
++#endif
++
+ SCTP_STATIC int sctp_getsockopt_connectx3(struct sock* sk, int len,
+ 					char __user *optval,
+ 					int __user *optlen)
+@@ -1396,16 +1405,30 @@ SCTP_STATIC int sctp_getsockopt_connectx3(struct sock* sk, int len,
+ 	sctp_assoc_t assoc_id = 0;
+ 	int err = 0;
+ 
+-	if (len < sizeof(param))
+-		return -EINVAL;
++#ifdef CONFIG_COMPAT
++	if (is_compat_task()) {
++		struct compat_sctp_getaddrs_old param32;
+ 
+-	if (copy_from_user(&param, optval, sizeof(param)))
+-		return -EFAULT;
++		if (len < sizeof(param32))
++			return -EINVAL;
++		if (copy_from_user(&param32, optval, sizeof(param32)))
++			return -EFAULT;
+ 
+-	err = __sctp_setsockopt_connectx(sk,
+-			(struct sockaddr __user *)param.addrs,
+-			param.addr_num, &assoc_id);
++		param.assoc_id = param32.assoc_id;
++		param.addr_num = param32.addr_num;
++		param.addrs = compat_ptr(param32.addrs);
++	} else
++#endif
++	{
++		if (len < sizeof(param))
++			return -EINVAL;
++		if (copy_from_user(&param, optval, sizeof(param)))
++			return -EFAULT;
++	}
+ 
++	err = __sctp_setsockopt_connectx(sk, (struct sockaddr __user *)
++					 param.addrs, param.addr_num,
++					 &assoc_id);
+ 	if (err == 0 || err == -EINPROGRESS) {
+ 		if (copy_to_user(optval, &assoc_id, sizeof(assoc_id)))
+ 			return -EFAULT;
+-- 
+1.8.3.2
 
-iQIVAwUAUzruLee/yOyVhhEJAQpRTg/+Ke56ewW4rniLeOLOi5k6X98w5HkOpB4n
-5fdXjpnnVMZC2KVJP6tavL/BV3TyhMg1zf9WrF1Zovao4zdYX1RM2xtznzMM676I
-OvRKVVIb3UfkTzC1JQ5vdy7hAAlPZG4e+tRTxXZBFZyCsUckXH49c3YOQhTAsWcd
-7yesO0l9SSFBun0tZiiknUKh8Lv0x7AN7DcrEqm6YSf61HstmRevpNlndQGIB193
-hxy6rgUwDZFeMsRc4u1a7lsOJX7aetuulgml72FdWLU3Ls+r8BqgZbNBePf7A0/K
-VF1CWdeMm6LxfBPgxs2LLRjpekKgzs0ryV3/YRrv1yOJBtgEkEEGFpM6FxGMk9OJ
-rNaYhV3qzmu6H+ACZlbr34CSEi4OaVGCvpeL8C7lJgFXq4KJ6D1sG1+he2FDTHG5
-lDaljOitIEJwTr4j3AVjaXppDt+FCNA3K00vPpkzHyBctI8FmGAROM3K0CEIWu8Y
-F5O54dIT9TPVG1/Mm/jFXh4YVbUd1FMR2UkONIBkKFpbjzx/6csSjDPaPbldwDT/
-CfRMCxmtf97YwK5rgXI/+6AGB1cVNACz8WMp9NzHyhwN1n2Xl+rAlm5ZjO4qohu6
-dOkO011YBxJoX/uaYsbV7a4fXJCegvVhycxabYLOqimiMe4t5iT9ZA/KenHNS37s
-mn3pYyRDiT8=
-=bBFv
------END PGP SIGNATURE-----
-
---=-RsrVUU9N2iXXk0mcQKBm--
