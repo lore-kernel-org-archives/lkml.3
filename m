@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaDALyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:54:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42439 "EHLO
+	id S1752300AbaDALRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:17:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42409 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314AbaDALRg (ORCPT
+	with ESMTP id S1752159AbaDALR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:36 -0400
+	Tue, 1 Apr 2014 07:17:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans Schillstrom <hans@schillstrom.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 072/144] ipv6: ipv6_find_hdr restore prev functionality
-Date: Tue,  1 Apr 2014 12:14:36 +0100
-Message-Id: <1396350948-29910-73-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 067/144] net-tcp: fastopen: fix high order allocations
+Date: Tue,  1 Apr 2014 12:14:31 +0100
+Message-Id: <1396350948-29910-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Schillstrom <hans@schillstrom.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit accfe0e356327da5bd53da8852b93fc22de9b5fc upstream.
+commit f5ddcbbb40aa0ba7fbfe22355d287603dbeeaaac upstream.
 
-The commit 9195bb8e381d81d5a315f911904cdf0cfcc919b8 ("ipv6: improve
-ipv6_find_hdr() to skip empty routing headers") broke ipv6_find_hdr().
+This patch fixes two bugs in fastopen :
 
-When a target is specified like IPPROTO_ICMPV6 ipv6_find_hdr()
-returns -ENOENT when it's found, not the header as expected.
+1) The tcp_sendmsg(...,  @size) argument was ignored.
 
-A part of IPVS is broken and possible also nft_exthdr_eval().
-When target is -1 which it is most cases, it works.
+   Code was relying on user not fooling the kernel with iovec mismatches
 
-This patch exits the do while loop if the specific header is found
-so the nexthdr could be returned as expected.
+2) When MTU is about 64KB, tcp_send_syn_data() attempts order-5
+allocations, which are likely to fail when memory gets fragmented.
 
-Reported-by: Art -kwaak- van Breemen <ard@telegraafnet.nl>
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-CC:Ansis Atteka <aatteka@nicira.com>
+Fixes: 783237e8daf13 ("net-tcp: Fast Open client - sending SYN-data")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Yuchung Cheng <ycheng@google.com>
+Tested-by: Yuchung Cheng <ycheng@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/exthdrs_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/tcp.h     | 3 ++-
+ net/ipv4/tcp.c        | 8 +++++---
+ net/ipv4/tcp_output.c | 7 ++++++-
+ 3 files changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv6/exthdrs_core.c b/net/ipv6/exthdrs_core.c
-index 140748d..8af3eb5 100644
---- a/net/ipv6/exthdrs_core.c
-+++ b/net/ipv6/exthdrs_core.c
-@@ -212,7 +212,7 @@ int ipv6_find_hdr(const struct sk_buff *skb, unsigned int *offset,
- 		found = (nexthdr == target);
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 46cb8a4..9e0f0f6 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -1308,7 +1308,8 @@ struct tcp_fastopen_request {
+ 	/* Fast Open cookie. Size 0 means a cookie request */
+ 	struct tcp_fastopen_cookie	cookie;
+ 	struct msghdr			*data;  /* data in MSG_FASTOPEN */
+-	u16				copied;	/* queued in tcp_connect() */
++	size_t				size;
++	int				copied;	/* queued in tcp_connect() */
+ };
+ void tcp_free_fastopen_req(struct tcp_sock *tp);
  
- 		if ((!ipv6_ext_hdr(nexthdr)) || nexthdr == NEXTHDR_NONE) {
--			if (target < 0)
-+			if (target < 0 || found)
- 				break;
- 			return -ENOENT;
- 		}
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 2d2e978..8e51886 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1004,7 +1004,8 @@ void tcp_free_fastopen_req(struct tcp_sock *tp)
+ 	}
+ }
+ 
+-static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg, int *size)
++static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
++				int *copied, size_t size)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	int err, flags;
+@@ -1019,11 +1020,12 @@ static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg, int *size)
+ 	if (unlikely(tp->fastopen_req == NULL))
+ 		return -ENOBUFS;
+ 	tp->fastopen_req->data = msg;
++	tp->fastopen_req->size = size;
+ 
+ 	flags = (msg->msg_flags & MSG_DONTWAIT) ? O_NONBLOCK : 0;
+ 	err = __inet_stream_connect(sk->sk_socket, msg->msg_name,
+ 				    msg->msg_namelen, flags);
+-	*size = tp->fastopen_req->copied;
++	*copied = tp->fastopen_req->copied;
+ 	tcp_free_fastopen_req(tp);
+ 	return err;
+ }
+@@ -1043,7 +1045,7 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 
+ 	flags = msg->msg_flags;
+ 	if (flags & MSG_FASTOPEN) {
+-		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn);
++		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn, size);
+ 		if (err == -EINPROGRESS && copied_syn > 0)
+ 			goto out;
+ 		else if (err)
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 20d01ff..24b88d5 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2898,7 +2898,12 @@ static int tcp_send_syn_data(struct sock *sk, struct sk_buff *syn)
+ 	space = __tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
+ 		MAX_TCP_OPTION_SPACE;
+ 
+-	syn_data = skb_copy_expand(syn, skb_headroom(syn), space,
++	space = min_t(size_t, space, fo->size);
++
++	/* limit to order-0 allocations */
++	space = min_t(size_t, space, SKB_MAX_HEAD(MAX_TCP_HEADER));
++
++	syn_data = skb_copy_expand(syn, MAX_TCP_HEADER, space,
+ 				   sk->sk_allocation);
+ 	if (syn_data == NULL)
+ 		goto fallback;
 -- 
 1.9.1
 
