@@ -1,156 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaDABmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 21:42:04 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39679 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaDABmB (ORCPT
+	id S1751512AbaDABpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 21:45:52 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56545 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaDABpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 21:42:01 -0400
-Message-ID: <533A1962.9040207@hitachi.com>
-Date: Tue, 01 Apr 2014 10:41:54 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 31 Mar 2014 21:45:50 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <533A1A4B.2090503@roeck-us.net>
+Date: Mon, 31 Mar 2014 18:45:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] uprobes: Kill UPROBE_SKIP_SSTEP and can_skip_sstep()
-References: <20140331194355.GA9275@redhat.com>
-In-Reply-To: <20140331194355.GA9275@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 2/2] watchdog: imx2_wdt: Add big-endian support
+References: <1395800500-22655-1-git-send-email-Li.Xiubo@freescale.com> <1395800500-22655-3-git-send-email-Li.Xiubo@freescale.com> <5338E1E8.4030700@roeck-us.net> <28375308b05f4cf4bc7d1559f2524c1b@BY2PR03MB505.namprd03.prod.outlook.com>
+In-Reply-To: <28375308b05f4cf4bc7d1559f2524c1b@BY2PR03MB505.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/01 4:43), Oleg Nesterov wrote:
-> UPROBE_COPY_INSN, UPROBE_SKIP_SSTEP, and uprobe->flags must die. This
-> patch kills UPROBE_SKIP_SSTEP. I never understood why it was added;
-> not only it doesn't help, it harms.
-> 
-> It can only help to avoid arch_uprobe_skip_sstep() if it was already
-> called before and failed. But this is ugly, if we want to know whether
-> we can emulate this instruction or not we should do this analysis in
-> arch_uprobe_analyze_insn(), not when we hit this probe for the first
-> time.
-> 
-> And in fact this logic is simply wrong. arch_uprobe_skip_sstep() can
-> fail or not depending on the task/register state, if this insn can be
-> emulated but, say, put_user() fails we need to xol it this time, but
-> this doesn't mean we shouldn't try to emulate it when this or another
-> thread hist this bp next time.
-> 
-> And this is the actual reason for this change. We need to emulate the
-> "call" insn, but push(return-address) can obviously fail.
-> 
-> Per-arch notes:
-> 
-> 	x86: __skip_sstep() can only emulate "rep;nop". With this
-> 	     change it will be called every time and most probably
-> 	     for no reason.
-> 
-> 	     This will be fixed by the next changes. We need to
-> 	     change this suboptimal code anyway.
-> 
-> 	arm: Should not be affected. It has its own "bool simulate"
-> 	     flag checked in arch_uprobe_skip_sstep().
-> 
-> 	ppc: Looks like, it can emulate almost everything. Does it
-> 	     actually needs to record the fact that emulate_step()
-> 	     failed? Hopefully not. But if yes, it can add the ppc-
-> 	     specific flag into arch_uprobe.
-> 
-> TODO: rename arch_uprobe_skip_sstep() to arch_uprobe_emulate_insn(),
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On 03/30/2014 09:18 PM, Li.Xiubo@freescale.com wrote:
+>
+>
+>> Subject: Re: [PATCHv2 2/2] watchdog: imx2_wdt: Add big-endian support
+>>
+>> On 03/25/2014 07:21 PM, Xiubo Li wrote:
+>>> For the platforms that this IP driver now supports:
+>>> SoC        CPU        Watchdog     Need 'big-endian'?
+>>> ------------------------------------------------------
+>>> Vybird     little     little       No
+>>> LS1        little     big          Yes
+>>> LS2        little     little       No
+>>> IMX+       little     little       No
+>>>
+>>> So for the LS1 SoCs, we need to do the big endianness converting.
+>>>
+>>> And this will also support the following case, for example:
+>>> SoC        CPU        Watchdog     Need 'big-endian'?
+>>> ------------------------------------------------------
+>>> PowerPC    big        big          Yes
+>>>
+>>> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+>>> Cc: Guenter Roeck <linux@roeck-us.net>
+>>
+>> Is this patch intended to solve the problem generically ?
+>>
+>> http://www.spinics.net/lists/kernel/msg1714375.html
+>>
+>
+> It's actually the following ones first, which will support 16-bits
+> Values for regmap-mmio:
+>
+> https://patchwork.kernel.org/patch/3896321/
+> https://patchwork.kernel.org/patch/3896331/
+> https://patchwork.kernel.org/patch/3901021/
+>
+> And the then the following one, which will support the LE endian:
+> http://www.spinics.net/lists/kernel/msg1714375.html
+>
+So what is the plan for this patch ? Seems to me it would make more sense
+to convert the driver to regmap.
 
-Looks reasonable to me.
+Guenter
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you,
-
-> ---
->  kernel/events/uprobes.c |   23 ++---------------------
->  1 files changed, 2 insertions(+), 21 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 307d87c..7a3e14e 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -60,8 +60,6 @@ static struct percpu_rw_semaphore dup_mmap_sem;
->  
->  /* Have a copy of original instruction */
->  #define UPROBE_COPY_INSN	0
-> -/* Can skip singlestep */
-> -#define UPROBE_SKIP_SSTEP	1
->  
->  struct uprobe {
->  	struct rb_node		rb_node;	/* node in the rb tree */
-> @@ -491,12 +489,9 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
->  	uprobe->offset = offset;
->  	init_rwsem(&uprobe->register_rwsem);
->  	init_rwsem(&uprobe->consumer_rwsem);
-> -	/* For now assume that the instruction need not be single-stepped */
-> -	__set_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
->  
->  	/* add to uprobes_tree, sorted on inode:offset */
->  	cur_uprobe = insert_uprobe(uprobe);
-> -
->  	/* a uprobe exists for this inode:offset combination */
->  	if (cur_uprobe) {
->  		kfree(uprobe);
-> @@ -1628,20 +1623,6 @@ bool uprobe_deny_signal(void)
->  	return true;
->  }
->  
-> -/*
-> - * Avoid singlestepping the original instruction if the original instruction
-> - * is a NOP or can be emulated.
-> - */
-> -static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
-> -{
-> -	if (test_bit(UPROBE_SKIP_SSTEP, &uprobe->flags)) {
-> -		if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
-> -			return true;
-> -		clear_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
-> -	}
-> -	return false;
-> -}
-> -
->  static void mmf_recalc_uprobes(struct mm_struct *mm)
->  {
->  	struct vm_area_struct *vma;
-> @@ -1859,13 +1840,13 @@ static void handle_swbp(struct pt_regs *regs)
->  		goto out;
->  
->  	handler_chain(uprobe, regs);
-> -	if (can_skip_sstep(uprobe, regs))
-> +	if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
->  		goto out;
->  
->  	if (!pre_ssout(uprobe, regs, bp_vaddr))
->  		return;
->  
-> -	/* can_skip_sstep() succeeded, or restart if can't singlestep */
-> +	/* arch_uprobe_skip_sstep() succeeded, or restart if can't singlestep */
->  out:
->  	put_uprobe(uprobe);
->  }
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+>
+> Thanks :)
+>
+> BRs
+> Xiubo
+>
+>
+>
+>
+>
+>> Guenter
+>>
+>>> ---
+>>>    drivers/watchdog/imx2_wdt.c | 40 +++++++++++++++++++++++++++++++---------
+>>>    1 file changed, 31 insertions(+), 9 deletions(-)
+>>>
+>>> diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+>>> index 1795922..32f8874 100644
+>>> --- a/drivers/watchdog/imx2_wdt.c
+>>> +++ b/drivers/watchdog/imx2_wdt.c
+>>> @@ -30,6 +30,7 @@
+>>>    #include <linux/miscdevice.h>
+>>>    #include <linux/module.h>
+>>>    #include <linux/moduleparam.h>
+>>> +#include <linux/of.h>
+>>>    #include <linux/platform_device.h>
+>>>    #include <linux/timer.h>
+>>>    #include <linux/uaccess.h>
+>>> @@ -64,9 +65,26 @@ static struct {
+>>>    	void __iomem *base;
+>>>    	unsigned timeout;
+>>>    	unsigned long status;
+>>> +	bool big_endian;
+>>>    	struct timer_list timer;	/* Pings the watchdog when closed */
+>>>    } imx2_wdt;
+>>>
+>>> +static inline u16 imx2_wdt_readw(void __iomem *addr)
+>>> +{
+>>> +	if (imx2_wdt.big_endian)
+>>> +		return ioread16be(addr);
+>>> +	else
+>>> +		return ioread16(addr);
+>>> +}
+>>> +
+>>> +static inline void imx2_wdt_writew(u16 val, void __iomem *addr)
+>>> +{
+>>> +	if (imx2_wdt.big_endian)
+>>> +		iowrite16be(val, addr);
+>>> +	else
+>>> +		iowrite16(val, addr);
+>>> +}
+>>> +
+>>>    static struct miscdevice imx2_wdt_miscdev;
+>>>
+>>>    static bool nowayout = WATCHDOG_NOWAYOUT;
+>>> @@ -87,7 +105,7 @@ static const struct watchdog_info imx2_wdt_info = {
+>>>
+>>>    static inline void imx2_wdt_setup(void)
+>>>    {
+>>> -	u16 val = __raw_readw(imx2_wdt.base + IMX2_WDT_WCR);
+>>> +	u16 val = imx2_wdt_readw(imx2_wdt.base + IMX2_WDT_WCR);
+>>>
+>>>    	/* Suspend timer in low power mode, write once-only */
+>>>    	val |= IMX2_WDT_WCR_WDZST;
+>>> @@ -100,17 +118,17 @@ static inline void imx2_wdt_setup(void)
+>>>    	/* Set the watchdog's Time-Out value */
+>>>    	val |= WDOG_SEC_TO_COUNT(imx2_wdt.timeout);
+>>>
+>>> -	__raw_writew(val, imx2_wdt.base + IMX2_WDT_WCR);
+>>> +	imx2_wdt_writew(val, imx2_wdt.base + IMX2_WDT_WCR);
+>>>
+>>>    	/* enable the watchdog */
+>>>    	val |= IMX2_WDT_WCR_WDE;
+>>> -	__raw_writew(val, imx2_wdt.base + IMX2_WDT_WCR);
+>>> +	imx2_wdt_writew(val, imx2_wdt.base + IMX2_WDT_WCR);
+>>>    }
+>>>
+>>>    static inline void imx2_wdt_ping(void)
+>>>    {
+>>> -	__raw_writew(IMX2_WDT_SEQ1, imx2_wdt.base + IMX2_WDT_WSR);
+>>> -	__raw_writew(IMX2_WDT_SEQ2, imx2_wdt.base + IMX2_WDT_WSR);
+>>> +	imx2_wdt_writew(IMX2_WDT_SEQ1, imx2_wdt.base + IMX2_WDT_WSR);
+>>> +	imx2_wdt_writew(IMX2_WDT_SEQ2, imx2_wdt.base + IMX2_WDT_WSR);
+>>>    }
+>>>
+>>>    static void imx2_wdt_timer_ping(unsigned long arg)
+>>> @@ -143,12 +161,12 @@ static void imx2_wdt_stop(void)
+>>>
+>>>    static void imx2_wdt_set_timeout(int new_timeout)
+>>>    {
+>>> -	u16 val = __raw_readw(imx2_wdt.base + IMX2_WDT_WCR);
+>>> +	u16 val = imx2_wdt_readw(imx2_wdt.base + IMX2_WDT_WCR);
+>>>
+>>>    	/* set the new timeout value in the WSR */
+>>>    	val &= ~IMX2_WDT_WCR_WT;
+>>>    	val |= WDOG_SEC_TO_COUNT(new_timeout);
+>>> -	__raw_writew(val, imx2_wdt.base + IMX2_WDT_WCR);
+>>> +	imx2_wdt_writew(val, imx2_wdt.base + IMX2_WDT_WCR);
+>>>    }
+>>>
+>>>    static int imx2_wdt_open(struct inode *inode, struct file *file)
+>>> @@ -192,7 +210,7 @@ static long imx2_wdt_ioctl(struct file *file, unsigned
+>> int cmd,
+>>>    		return put_user(0, p);
+>>>
+>>>    	case WDIOC_GETBOOTSTATUS:
+>>> -		val = __raw_readw(imx2_wdt.base + IMX2_WDT_WRSR);
+>>> +		val = imx2_wdt_readw(imx2_wdt.base + IMX2_WDT_WRSR);
+>>>    		new_value = val & IMX2_WDT_WRSR_TOUT ? WDIOF_CARDRESET : 0;
+>>>    		return put_user(new_value, p);
+>>>
+>>> @@ -257,8 +275,12 @@ static struct miscdevice imx2_wdt_miscdev = {
+>>>
+>>>    static int __init imx2_wdt_probe(struct platform_device *pdev)
+>>>    {
+>>> -	int ret;
+>>> +	struct device_node *np = pdev->dev.of_node;
+>>>    	struct resource *res;
+>>> +	int ret;
+>>> +
+>>> +	if (np)
+>>> +		imx2_wdt.big_endian = of_property_read_bool(np, "big-endian");
+>>>
+>>>    	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>    	imx2_wdt.base = devm_ioremap_resource(&pdev->dev, res);
+>>>
+>>
+>>
+>
+>
+>
 
