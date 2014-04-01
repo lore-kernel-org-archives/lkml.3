@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaDAJ4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:56:16 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:62675 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaDAJzw (ORCPT
+	id S1751345AbaDAJzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:55:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26981 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaDAJz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:55:52 -0400
-Date: Tue, 1 Apr 2014 11:55:48 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
-Message-ID: <20140401095548.GB1299@gmail.com>
-References: <1396164244.28950.15.camel@marge.simpson.net>
- <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
- <1396239636.5361.57.camel@marge.simpson.net>
- <CA+55aFywHpvUfghS4GFc3UC1WGZx3Of+zeKHxmRNcMQMoKoiJQ@mail.gmail.com>
- <1396290426.5261.80.camel@marge.simpson.net>
- <CA+55aFwdosGtoh8=krpx9C-fT-H7OHsC0UVyXc8aNE7h=W1RxQ@mail.gmail.com>
- <1396322880.5324.37.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396322880.5324.37.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Apr 2014 05:55:28 -0400
+X-AuditID: cbfee690-b7f266d00000287c-1e-533a8d0a51fd
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: return -EIO when node id is not matched
+Date: Tue, 01 Apr 2014 18:53:28 +0900
+Message-id: <1396346008-12753-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zfV2uXqtgg2vnTS2u7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgytjY/YitoJm9YtHX
+	Y4wNjJdYuxg5OSQETCQWHl4CZYtJXLi3nq2LkYtDSGAZo8TsBR/YYIoeHtnLCpFYxChx5+Nd
+	Zgink0ni2PTVjF2MHBxsAtoSm/cbgDSICDBLLJh6nhGkhllgAqPE/0XvWUASwgJ2EtNbb4PZ
+	LAKqEqveNbKD2LwC7hLfzk5mgtimLbHt+USwZgmBx2wSJ/Z2skM0CEh8m3yIBWSZhICsxKYD
+	zBD1khIHV9xgmcAouICRYRWjaGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGSBBO2MF474D1IcZk
+	oHETmaVEk/OBQZxXEm9obGZkYWpiamxkbmlGmrCSOK/ao6QgIYH0xJLU7NTUgtSi+KLSnNTi
+	Q4xMHJxSDYwuBm9XpZzsC1g/x3P318rym2ciV5Uavq25+d21r+eu2bHbW+YrG2iXtc26JJNr
+	v/69A/Pqx+nv9RfcnjM3UzrdYmFj9+/KN4dOzJo/b8PJ1+84cpRU3Zkqtj49JMsY8F6sJN7p
+	0L4m+bp3nevi/lhFJqb9mWvkd1t+o8jxe6r/3DS7cr523TmkxFKckWioxVxUnAgAf5oicFgC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jAV2uXqtgg57/hhbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWZs7H7EVtDMXrHo6zHGBsZLrF2MnBwSAiYSD4/shbLFJC7cW8/WxcjFISSw
+	iFHizse7zBBOJ5PEsemrGbsYOTjYBLQlNu83AGkQEWCWWDD1PCNIDbPABEaJ/4ves4AkhAXs
+	JKa33gazWQRUJVa9a2QHsXkF3CW+nZ3MBLFNW2Lb84mMExi5FzAyrGIUTS1ILihOSs810itO
+	zC0uzUvXS87P3cQIDvFn0jsYVzVYHGIU4GBU4uG1KLcMFmJNLCuuzD3EKMHBrCTCK9JjFSzE
+	m5JYWZValB9fVJqTWnyIMRlo+0RmKdHkfGD85ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBI
+	ID2xJDU7NbUgtQhmCxMHp1QDo/hblxvJPO+33F/nwuUgcXor70uD42r72o/PD/l03dqa23e3
+	eJzSpVaPdSor7Jw/n966Y8+Fn5+9LH4snJXzuX1G5rl/RoyK3C++CiZ/EpBkWPbn/gbDbSmr
+	s3Sk31zfP1FdsXhzxJ/YZQ1xL3k3nH8ZNtXpXtkB0YkuFZKv7ENTn2Uvq7r4vkWJpTgj0VCL
+	uag4EQDz2Lz8tQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+During the cleaing of node segments, F2FS can get errored node blocks due to
+data race between node page lock and its valid bitmap operations.
+In that case, it needs to return an error to skip such the obsolete block copy.
 
-* Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/node.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> On Mon, 2014-03-31 at 11:37 -0700, Linus Torvalds wrote: 
-> > On Mon, Mar 31, 2014 at 11:27 AM, Mike Galbraith
-> > <umgwanakikbuti@gmail.com> wrote:
-> > >
-> > > Oh, I didn't cc you because I wanted it applied instantly as ultra
-> > > critical, only because the chain of events might be of interest.
-> > 
-> > Ok. That was my main worry, since I was in the process or releasing
-> > 3.14, and I just couldn't tell if the patch was something I should
-> > worry about or not.
-> > 
-> > And it seems that not applying it was the right thing, which is all
-> > that matters by now.
-> 
-> Yes.  Jocular red flag was to Peter and Ingo.  I don't try to bypass 
-> them, that would be plain rude.  I've been known to help maintainers 
-> a little, but I don't ever try to call the shots.  They do that 
-> well.
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index eced8d7..065cd99 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -958,7 +958,7 @@ repeat:
+ 		goto got_it;
+ 
+ 	lock_page(page);
+-	if (unlikely(!PageUptodate(page))) {
++	if (unlikely(!PageUptodate(page) || nid != nid_of_node(page))) {
+ 		f2fs_put_page(page, 1);
+ 		return ERR_PTR(-EIO);
+ 	}
+@@ -967,7 +967,6 @@ repeat:
+ 		goto repeat;
+ 	}
+ got_it:
+-	f2fs_bug_on(nid != nid_of_node(page));
+ 	mark_page_accessed(page);
+ 	return page;
+ }
+-- 
+1.8.4.474.g128a96c
 
-Btw., in general feel free to Cc: Linus if a fix looks truly urgent, 
-as neither Peter nor me might be around on a weekend, shortly before a 
-release.
-
-Thanks,
-
-	Ingo
