@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaDAG1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 02:27:10 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:57351 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaDAG1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751987AbaDAG1I (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 1 Apr 2014 02:27:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35174 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750777AbaDAG1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 02:27:06 -0400
+Date: Tue, 1 Apr 2014 08:27:03 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Sebastien Bourdelin <sebastien.bourdelin@savoirfairelinux.com>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        jerome.oufella@savoirfairelinux.com
+Subject: Re: [lm-sensors] [PATCH] misc: (ds1682) replace obsolete
+ simple_strtoull() with kstrtoull()
+Message-ID: <20140401082703.6782c30c@endymion.delvare>
+In-Reply-To: <1395864664-16404-1-git-send-email-sebastien.bourdelin@savoirfairelinux.com>
+References: <1395864664-16404-1-git-send-email-sebastien.bourdelin@savoirfairelinux.com>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1395389720.29259.1.camel@phoenix>
-References: <1395389720.29259.1.camel@phoenix>
-Date: Tue, 1 Apr 2014 11:57:07 +0530
-Message-ID: <CAK9yfHyk8m3=De+ep8PkgzdZCgMgCd5sbsBhOFLGRO6eCvbMBg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] regulator: s2mpa01: Don't check enable_shift before
- setting enable ramp rate
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+Hi Sebastien, 
 
-On 21 March 2014 13:45, Axel Lin <axel.lin@ingics.com> wrote:
-> Current code misses updating the register when enable_shift is 0.
-> e.g. S2MPA01_BUCK4_RAMP_EN_SHIFT is 0.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+On Wed, 26 Mar 2014 16:11:04 -0400, Sebastien Bourdelin wrote:
+> simple_strtoull() is obsolete, use the newer kstrtoull() instead.
+> 
+> Signed-off-by: Sebastien Bourdelin <sebastien.bourdelin@savoirfairelinux.com>
+> ---
+>  drivers/misc/ds1682.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> (...)
 
-Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+You are sending this patch to the wrong list. The ds1682 driver has
+nothing to do with lm-sensors. Please use ./scripts/get_maintainer.pl
+to figure out who this patch should be sent to.
 
 -- 
-With warm regards,
-Sachin
+Jean Delvare
+SUSE L3 Support
