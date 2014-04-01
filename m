@@ -1,165 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaDAMHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:07:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42286 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953AbaDALQ5 (ORCPT
+	id S1752735AbaDAMHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:07:30 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49876 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146AbaDAMH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:16:57 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Xiaotian Feng <xtfeng@gmail.com>, Mike Galbraith <bitbucket@online.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 042/144] rapidio/tsi721: fix tasklet termination in dma channel release
-Date: Tue,  1 Apr 2014 12:14:06 +0100
-Message-Id: <1396350948-29910-43-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 1 Apr 2014 08:07:27 -0400
+Date: Tue, 1 Apr 2014 13:07:15 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        alsa-devel@alsa-project.org, timur@tabi.org, Li.Xiubo@freescale.com
+Message-ID: <20140401120715.GR2269@sirena.org.uk>
+References: <1396322227-482-1-git-send-email-Guangyu.Chen@freescale.com>
+ <1396322227-482-3-git-send-email-Guangyu.Chen@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NEvmWj2iiHf6S+l1"
+Content-Disposition: inline
+In-Reply-To: <1396322227-482-3-git-send-email-Guangyu.Chen@freescale.com>
+X-Cookie: Printed on recycled paper.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH bisect 2/2] ASoC: fsl_sai: Separately enable interrupts
+ for Tx and Rx streams
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--NEvmWj2iiHf6S+l1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+On Tue, Apr 01, 2014 at 11:17:07AM +0800, Nicolin Chen wrote:
+> We only enable one side interrupt for each stream since over/underrun
+> on the opposite stream would be resulted from what we previously did,
+> enabling TERE but remaining FRDE disabled, even though the xrun on the
+> opposite direction will not break the current stream.
 
-commit 04379dffdd4da820d51a1566ad2e86f3b1ad97ed upstream.
+This still doesn't apply against fsl-sai (nor for-next).
 
-This patch is a modification of the patch originally proposed by
-Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
-This new version disables DMA channel interrupts and ensures that the
-tasklet wil not be scheduled again before calling tasklet_kill().
+--NEvmWj2iiHf6S+l1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Unfortunately the updated patch was not released at that time due to
-planned rework of Tsi721 mport driver to use threaded interrupts (which
-has yet to happen).  Recently the issue was reported again:
-https://lkml.org/lkml/2014/2/19/762.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Description from the original Xiaotian's patch:
+iQIcBAEBAgAGBQJTOqvwAAoJELSic+t+oim9GMcP/3LAarX8wNmsxBGziZnwQuov
+ObyHFjDnn4V5jsOMDr+9cUocgSSkcUx+pHI3lWeQgeogt0b9gan1RIN8V8Sbp0Sw
+fN8I9SDvGZzyQQeqDCMwoLneZnN3rJ8d+SEXjIx88FdccGe5xM++1xflmtrTjan7
+JwhXXY3WptxiKmwN7/SIUQkplxQeccJ0r0nhOrkz+vQuLO6dip04MZ0MYsH8oS+8
+3/HZL5/DhyT77TP/BF2Qy046fSHN2Uv7XdEx5nIEcGewLFSBlhdHrdBgWyNMyw5/
+ye9Zb/fNyEnaEUeOg+5LzwZsWjeDweY6BJBbRxi7sqdUd+aac5D2iIQGaOgonH4Z
+JYpDJnwNNwoj9jSPufYILPIXO7lHRjB8mZfVOn28Bfgg1OrIGUo6R1U8HcThZ+i+
+zs9K/koZ08bRtHm2YFNddppuH1iqty6IR/5IJ/M9czjYVdebqEZwXGdN23xQnagM
+4U++uwI34DILJHmesHTyZj5RpJH+uR8F4u8gIVFKw9EAPKAKsD+SXfRrT6+Cu4hC
+8lGuPTWjFtE/MMD9p/buwO9JYXCEhvHC/Xz96kp/w3VGCgm6V0V1oTkwO2MjpFnx
+t8Vq0ucO1cIT82t2yXxPcFV1jbPTlY0KqHqcX0UEQqgCfmMypCvZqkNyLQfuQbd3
+/b6i/r/Ufsy/6LDn2IOd
+=mNci
+-----END PGP SIGNATURE-----
 
- "Some drivers use tasklet_disable in device remove/release process,
-  tasklet_disable will inc tasklet->count and return.  If the tasklet is
-  not handled yet under some softirq pressure, the tasklet will be
-  placed on the tasklet_vec, never have a chance to be excuted.  This
-  might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq,
-  but tasklet is disabled.  tasklet_kill should be used in this case."
-
-This patch is applicable to kernel versions starting from v3.5.
-
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/rapidio/devices/tsi721.h     |  1 +
- drivers/rapidio/devices/tsi721_dma.c | 27 ++++++++++++++++++---------
- 2 files changed, 19 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/rapidio/devices/tsi721.h b/drivers/rapidio/devices/tsi721.h
-index b4b0d83..7061ac0 100644
---- a/drivers/rapidio/devices/tsi721.h
-+++ b/drivers/rapidio/devices/tsi721.h
-@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
- 	struct list_head	free_list;
- 	dma_cookie_t		completed_cookie;
- 	struct tasklet_struct	tasklet;
-+	bool			active;
- };
- 
- #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
-diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
-index 502663f..91245f5 100644
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_bdma_chan *bdma_chan)
- {
- 	/* Disable BDMA channel interrupts */
- 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
--
--	tasklet_schedule(&bdma_chan->tasklet);
-+	if (bdma_chan->active)
-+		tasklet_schedule(&bdma_chan->tasklet);
- }
- 
- #ifdef CONFIG_PCI_MSI
-@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(struct dma_chan *dchan)
- 	}
- #endif /* CONFIG_PCI_MSI */
- 
--	tasklet_enable(&bdma_chan->tasklet);
-+	bdma_chan->active = true;
- 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
- 
- 	return bdma_chan->bd_num - 1;
-@@ -576,9 +576,7 @@ err_out:
- static void tsi721_free_chan_resources(struct dma_chan *dchan)
- {
- 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
--#ifdef CONFIG_PCI_MSI
- 	struct tsi721_device *priv = to_tsi721(dchan->device);
--#endif
- 	LIST_HEAD(list);
- 
- 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
-@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(struct dma_chan *dchan)
- 	BUG_ON(!list_empty(&bdma_chan->active_list));
- 	BUG_ON(!list_empty(&bdma_chan->queue));
- 
--	tasklet_disable(&bdma_chan->tasklet);
-+	tsi721_bdma_interrupt_enable(bdma_chan, 0);
-+	bdma_chan->active = false;
-+
-+#ifdef CONFIG_PCI_MSI
-+	if (priv->flags & TSI721_USING_MSIX) {
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-+					   bdma_chan->id].vector);
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
-+					   bdma_chan->id].vector);
-+	} else
-+#endif
-+	synchronize_irq(priv->pdev->irq);
-+
-+	tasklet_kill(&bdma_chan->tasklet);
- 
- 	spin_lock_bh(&bdma_chan->lock);
- 	list_splice_init(&bdma_chan->free_list, &list);
- 	spin_unlock_bh(&bdma_chan->lock);
- 
--	tsi721_bdma_interrupt_enable(bdma_chan, 0);
--
- #ifdef CONFIG_PCI_MSI
- 	if (priv->flags & TSI721_USING_MSIX) {
- 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 		bdma_chan->dchan.cookie = 1;
- 		bdma_chan->dchan.chan_id = i;
- 		bdma_chan->id = i;
-+		bdma_chan->active = false;
- 
- 		spin_lock_init(&bdma_chan->lock);
- 
-@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 
- 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
- 			     (unsigned long)bdma_chan);
--		tasklet_disable(&bdma_chan->tasklet);
- 		list_add_tail(&bdma_chan->dchan.device_node,
- 			      &mport->dma.channels);
- 	}
--- 
-1.9.1
-
+--NEvmWj2iiHf6S+l1--
