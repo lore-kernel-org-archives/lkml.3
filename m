@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaDANeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 09:34:31 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35310 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaDANe3 (ORCPT
+	id S1751505AbaDANfS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 09:35:18 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21904 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaDANfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 09:34:29 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
-        mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, t.figa@samsung.com,
-        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, m.szyprowski@samsung.com
-Subject: Re: [PATCH RFC v3 2/2] clk: Add handling of clk parent and rate assigned from DT
-Date: Tue, 01 Apr 2014 15:36:28 +0200
-Message-ID: <1915856.W2jCYOiLTu@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140331083210.GX24917@pengutronix.de>
-References: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com> <2134974.m5sRReBBJh@avalon> <20140331083210.GX24917@pengutronix.de>
+	Tue, 1 Apr 2014 09:35:16 -0400
+Message-ID: <533AC08F.6020909@oracle.com>
+Date: Tue, 01 Apr 2014 09:35:11 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Josh Boyer <jwboyer@fedoraproject.org>
+CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: liblockdep soname versioning
+References: <CA+5PVA67oBeHUiPXj0viNgrX+uDnJ9LsZSPXF1cLt_D511KKtA@mail.gmail.com>	<533ABCCB.4090502@oracle.com> <CA+5PVA7eiCX_DHqkFx8t86naqs6o=rVcm0Ok5E2Pw9kXhSD_jg@mail.gmail.com>
+In-Reply-To: <CA+5PVA7eiCX_DHqkFx8t86naqs6o=rVcm0Ok5E2Pw9kXhSD_jg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
-
-On Monday 31 March 2014 10:32:10 Sascha Hauer wrote:
-> On Fri, Mar 28, 2014 at 05:44:17PM +0100, Laurent Pinchart wrote:
-> > On Thursday 27 March 2014 15:47:12 Sascha Hauer wrote:
-> > > On Thu, Mar 27, 2014 at 03:08:10PM +0100, Laurent Pinchart wrote:
-> > [snip]
-> > 
-> > > > That's clearer indeed. Can the parents and rates depend on the board,
-> > > > or on the SoC only ? We might be getting dangerously close to
-> > > > specifying platform configuration instead of describing the hardware.
-> > > > A real example might be nice to support the discussion.
-> > > 
-> > > This patch comes just at the right time. This is what I do with it:
-> > > 
-> > > #define cko1_sel 57
-> > > #define pll4_audio_div 203
-> > > #define pll4_audio 173
-> > > #define ssi3_sel 47
-> > > 
-> > > &clks {
-> > > 	assigned-clocks {
-> > > 		clocks = <&clks cko1_sel>, <&clks ssi3_sel>, <&clks pll4_audio>;
-> > > 		clock-parents = <&clks pll4_audio_div>, <&clks pll4_audio_div>, 
-<0>;
-> > > 		clock-rates = <0>, <0>, <786432000>;
-> > > 	};
-> > > };
-> > > 
-> > > cko1_sel is a clock that can be routed out of the SoC. In my case it is
-> > > connected the sysclk of an external Audio Codec. ssi3_sel drives my SoC
-> > > internal I2S unit which I use in master mode. The above makes sure that
-> > > the I2S unit and the the external codec both get their clock from the
-> > > audio PLL. The audio PLL is configured to a rate of 786432000Hz which
-> > > is an exact multiple of the desired audio clock.
-> > 
-> > Thank you for the example.
-> > 
-> > Are the cko1_sel and ssi3_sel used only by the external audio codec and
-> > internal I2S unit respectively ? If so, it might make sense to move the
-> > configuration of their parent to the audio codec and I2S unit DT nodes.
-> > However, grouping the parent configuration and the pll4 rate configuration
-> > in a single place makes sense as well. Guidelines are probably needed.
+On 04/01/2014 09:28 AM, Josh Boyer wrote:
+> On Tue, Apr 1, 2014 at 9:19 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> On 04/01/2014 08:56 AM, Josh Boyer wrote:
+>>>
+>>> Hi Sasha,
+>>>
+>>> We've had a request [1] to package up liblockdep in Fedora.  Looking
+>>> things over, I noticed the library isn't actually versioned at all and
+>>> instead just builds a plain .so file.  That's likely fine during
+>>> development of it, but if distros are to ship it for broader use then
+>>> it would be a good idea to specify the soname and use a versioned .so.
+>>>
+>>> The makefile already has LIBLOCKDEP_VERSION defined.  Would it be
+>>> possible to use this as the soname and version number?  Then
+>>> liblockdep.so could be the normal symlink to the versioned .so
+>>> (liblockdep.so.0.0.1 in this case).
+>>>
+>>> Thanks.
+>>>
+>>> josh
+>>>
+>>> [1] https://bugzilla.redhat.com/show_bug.cgi?id=1082763
+>>>
+>>
+>> Sure! I never expected it to live outside the kernel tree as a separate
+>> package, but I'm happy to accommodate for that.
+>>
+>> I think that I'll just match the version number with the kernel version
+>> since what mostly matters is what you have in kernel/lockdep.c, so for
+>> example, right now we'll have 'liblockdep.so.3.15.0'. Sounds good?
 >
-> I didn't bother much to find the right place for the nodes. It indeed might
-> make sense to put them under the I2S unit and the codec. However, the clock-
-> rate is a shared property between the I2S unit and the codec which probably
-> should better be placed under the block which provides the clocks.
-> 
-> > I get a slight feeling of uneasiness about this, probably because we're at
-> > the boundary between hardware description and system configuration.
-> > Encoding in DT that "for this particular board this particular clock must
-> > be configured this particular way" sounds fine to me, but we need to make
-> > sure it won't turn to software-driven rather than hardware-driven use
-> > case descriptions.
->
-> I agree this is in the grey area between hardware and software description.
-> At least on i.MX it happens with audio and video that totally unrelated
-> units share a clock. Often it's next to impossible to find an algorithm that
-> configures the clocks correctly without the help of hardcoded assumptions
-> about parents and rates. I find specifying this in the devicetree much more
-> convenient than writing board specific code each time.
+> The only concern I would have is that it would require applications
+> linking to it to rebuild with every kernel release even if nothing
+> else changed.  Maybe nothing changing is going to be rare enough that
+> in practice people will need to rebuild anyway.  Either way, it's
+> better to be explicit rather than break users silently, so it sounds
+> good to me.
 
-I totally agree with you. The approach makes sense, I just wanted to point out 
-that this is a grey area and that we should be aware of it when designing the 
-DT bindings.
+I don't think we ever had a kernel version without changes to lockdep :)
 
--- 
-Regards,
+Since lockdep isn't an ABI either, no one promises me it'll work the same
+way between versions either, so I'm kinda happy about just forcing rebuilds.
 
-Laurent Pinchart
+
+Thanks,
+Sasha
 
