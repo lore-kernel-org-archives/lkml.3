@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaDAIoj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 04:44:39 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:42238 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaDAIoe (ORCPT
+	id S1751450AbaDAIr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 04:47:56 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:46301 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaDAIrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 04:44:34 -0400
-Date: Tue, 1 Apr 2014 10:44:29 +0200
+	Tue, 1 Apr 2014 04:47:51 -0400
+Date: Tue, 1 Apr 2014 10:47:47 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] timers/nohz changes for v3.15
-Message-ID: <20140401084429.GA23964@gmail.com>
+Subject: [GIT PULL] x86/threadinfo changes for v3.15
+Message-ID: <20140401084747.GA24379@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,453 +25,612 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest timers-nohz-for-linus git tree from:
+Please pull the latest x86-threadinfo-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-nohz-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-threadinfo-for-linus
 
-   # HEAD: 073d8224d299528778e90773becd1e890953443c arch: Remove stub cputime.h headers
+   # HEAD: 6cce16f99d7be23cec7cabdf32a8166eec6e5393 x86, threadinfo: Redo "x86: Use inline assembler to get sp"
 
-The main purpose is to fix a full dynticks bug related to 
-virtualization, where steal time accounting appears to be zero in 
-/proc/stat even after a few seconds of competing guests running busy 
-loops in a same host CPU. It's not a regression though as it was there 
-since the beginning.
-
-The other commits are preparatory work to fix the bug and various 
-cleanups.
+The main change here is the consolidation/unification of 32 and 64 bit 
+thread_info handling methods, from Steve Rostedt.
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Frederic Weisbecker (6):
-      cputime: Fix nsecs_to_cputime() return type cast
-      cputime: Default implementation of nsecs -> cputime conversion
-      cputime: Bring cputime -> nsecs conversion
-      cputime: Fix jiffies based cputime assumption on steal accounting
-      sched: Remove needless round trip nsecs <-> tick conversion of steal time
-      arch: Remove stub cputime.h headers
+Mathias Krause (1):
+      x86, threadinfo: Redo "x86: Use inline assembler to get sp"
+
+Steven Rostedt (4):
+      x86: Nuke the supervisor_stack field in i386 thread_info
+      x86: Prepare removal of previous_esp from i386 thread_info structure
+      x86: Keep thread_info on thread stack in x86_32
+      x86: Clean up dumpstack_64.c code
+
+Steven Rostedt (Red Hat) (1):
+      x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
 
 
- arch/alpha/include/asm/Kbuild         |  1 +
- arch/alpha/include/asm/cputime.h      |  6 ------
- arch/cris/include/asm/Kbuild          |  1 +
- arch/cris/include/asm/cputime.h       |  6 ------
- arch/frv/include/asm/Kbuild           |  1 +
- arch/frv/include/asm/cputime.h        |  6 ------
- arch/m32r/include/asm/Kbuild          |  1 +
- arch/m32r/include/asm/cputime.h       |  6 ------
- arch/microblaze/include/asm/Kbuild    |  1 +
- arch/microblaze/include/asm/cputime.h |  1 -
- arch/mn10300/include/asm/Kbuild       |  1 +
- arch/mn10300/include/asm/cputime.h    |  1 -
- arch/score/include/asm/Kbuild         |  1 +
- arch/score/include/asm/cputime.h      |  6 ------
- arch/x86/include/asm/Kbuild           |  1 +
- arch/x86/include/asm/cputime.h        |  1 -
- drivers/cpufreq/cpufreq_stats.c       |  2 +-
- drivers/s390/cio/cio.c                |  2 +-
- fs/proc/stat.c                        |  2 +-
- fs/proc/uptime.c                      |  2 +-
- include/asm-generic/cputime_jiffies.h |  4 +++-
- include/asm-generic/cputime_nsecs.h   |  5 ++++-
- include/linux/cputime.h               | 16 ++++++++++++++++
- include/linux/kernel_stat.h           |  2 +-
- include/linux/sched.h                 |  2 +-
- kernel/sched/core.c                   |  6 ------
- kernel/sched/cputime.c                | 16 +++++++++++-----
- kernel/sched/sched.h                  | 10 ----------
- 28 files changed, 48 insertions(+), 62 deletions(-)
- delete mode 100644 arch/alpha/include/asm/cputime.h
- delete mode 100644 arch/cris/include/asm/cputime.h
- delete mode 100644 arch/frv/include/asm/cputime.h
- delete mode 100644 arch/m32r/include/asm/cputime.h
- delete mode 100644 arch/microblaze/include/asm/cputime.h
- delete mode 100644 arch/mn10300/include/asm/cputime.h
- delete mode 100644 arch/score/include/asm/cputime.h
- delete mode 100644 arch/x86/include/asm/cputime.h
- create mode 100644 include/linux/cputime.h
+ arch/x86/include/asm/processor.h   |   9 +++
+ arch/x86/include/asm/thread_info.h |  53 ++---------------
+ arch/x86/kernel/cpu/common.c       |   8 +--
+ arch/x86/kernel/dumpstack_32.c     |  44 ++++++++++++--
+ arch/x86/kernel/dumpstack_64.c     | 117 ++++++++++++++++++++++++++-----------
+ arch/x86/kernel/irq_32.c           |  83 +++++++++++++-------------
+ arch/x86/kernel/process_32.c       |   4 ++
+ arch/x86/kernel/ptrace.c           |   8 +--
+ arch/x86/kernel/smpboot.c          |   2 +-
+ 9 files changed, 191 insertions(+), 137 deletions(-)
 
-diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-index 7736f42..96e54be 100644
---- a/arch/alpha/include/asm/Kbuild
-+++ b/arch/alpha/include/asm/Kbuild
-@@ -1,6 +1,7 @@
- 
- 
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += exec.h
- generic-y += hash.h
- generic-y += mcs_spinlock.h
-diff --git a/arch/alpha/include/asm/cputime.h b/arch/alpha/include/asm/cputime.h
-deleted file mode 100644
-index 19577fd..0000000
---- a/arch/alpha/include/asm/cputime.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef __ALPHA_CPUTIME_H
--#define __ALPHA_CPUTIME_H
--
--#include <asm-generic/cputime.h>
--
--#endif /* __ALPHA_CPUTIME_H */
-diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
-index 056027f..afff510 100644
---- a/arch/cris/include/asm/Kbuild
-+++ b/arch/cris/include/asm/Kbuild
-@@ -5,6 +5,7 @@ header-y += arch-v32/
- 
- generic-y += barrier.h
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += exec.h
- generic-y += hash.h
- generic-y += kvm_para.h
-diff --git a/arch/cris/include/asm/cputime.h b/arch/cris/include/asm/cputime.h
-deleted file mode 100644
-index 4446a65..0000000
---- a/arch/cris/include/asm/cputime.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef __CRIS_CPUTIME_H
--#define __CRIS_CPUTIME_H
--
--#include <asm-generic/cputime.h>
--
--#endif /* __CRIS_CPUTIME_H */
-diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
-index babb933..87b95eb 100644
---- a/arch/frv/include/asm/Kbuild
-+++ b/arch/frv/include/asm/Kbuild
-@@ -1,5 +1,6 @@
- 
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += exec.h
- generic-y += hash.h
- generic-y += mcs_spinlock.h
-diff --git a/arch/frv/include/asm/cputime.h b/arch/frv/include/asm/cputime.h
-deleted file mode 100644
-index f6c373a..0000000
---- a/arch/frv/include/asm/cputime.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_CPUTIME_H
--#define _ASM_CPUTIME_H
--
--#include <asm-generic/cputime.h>
--
--#endif /* _ASM_CPUTIME_H */
-diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
-index 5825a35..67779a7 100644
---- a/arch/m32r/include/asm/Kbuild
-+++ b/arch/m32r/include/asm/Kbuild
-@@ -1,5 +1,6 @@
- 
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += exec.h
- generic-y += hash.h
- generic-y += mcs_spinlock.h
-diff --git a/arch/m32r/include/asm/cputime.h b/arch/m32r/include/asm/cputime.h
-deleted file mode 100644
-index 0a47550..0000000
---- a/arch/m32r/include/asm/cputime.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef __M32R_CPUTIME_H
--#define __M32R_CPUTIME_H
--
--#include <asm-generic/cputime.h>
--
--#endif /* __M32R_CPUTIME_H */
-diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
-index 1f590ab..c98ed95 100644
---- a/arch/microblaze/include/asm/Kbuild
-+++ b/arch/microblaze/include/asm/Kbuild
-@@ -1,6 +1,7 @@
- 
- generic-y += barrier.h
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += exec.h
- generic-y += hash.h
- generic-y += mcs_spinlock.h
-diff --git a/arch/microblaze/include/asm/cputime.h b/arch/microblaze/include/asm/cputime.h
-deleted file mode 100644
-index 6d68ad7..0000000
---- a/arch/microblaze/include/asm/cputime.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/cputime.h>
-diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
-index cbc6b9b..654d5ba 100644
---- a/arch/mn10300/include/asm/Kbuild
-+++ b/arch/mn10300/include/asm/Kbuild
-@@ -1,6 +1,7 @@
- 
- generic-y += barrier.h
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += exec.h
- generic-y += hash.h
- generic-y += mcs_spinlock.h
-diff --git a/arch/mn10300/include/asm/cputime.h b/arch/mn10300/include/asm/cputime.h
-deleted file mode 100644
-index 6d68ad7..0000000
---- a/arch/mn10300/include/asm/cputime.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/cputime.h>
-diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
-index 4630cf2..2f947ab 100644
---- a/arch/score/include/asm/Kbuild
-+++ b/arch/score/include/asm/Kbuild
-@@ -4,6 +4,7 @@ header-y +=
- 
- generic-y += barrier.h
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += hash.h
- generic-y += mcs_spinlock.h
- generic-y += preempt.h
-diff --git a/arch/score/include/asm/cputime.h b/arch/score/include/asm/cputime.h
-deleted file mode 100644
-index 1fced99..0000000
---- a/arch/score/include/asm/cputime.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_SCORE_CPUTIME_H
--#define _ASM_SCORE_CPUTIME_H
--
--#include <asm-generic/cputime.h>
--
--#endif /* _ASM_SCORE_CPUTIME_H */
-diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
-index a8fee07..4acddc4 100644
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@ -5,4 +5,5 @@ genhdr-y += unistd_64.h
- genhdr-y += unistd_x32.h
- 
- generic-y += clkdev.h
-+generic-y += cputime.h
- generic-y += mcs_spinlock.h
-diff --git a/arch/x86/include/asm/cputime.h b/arch/x86/include/asm/cputime.h
-deleted file mode 100644
-index 6d68ad7..0000000
---- a/arch/x86/include/asm/cputime.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/cputime.h>
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index 5793e14..79911a2 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -13,7 +13,7 @@
- #include <linux/cpufreq.h>
- #include <linux/module.h>
- #include <linux/slab.h>
--#include <asm/cputime.h>
-+#include <linux/cputime.h>
- 
- static spinlock_t cpufreq_stats_lock;
- 
-diff --git a/drivers/s390/cio/cio.c b/drivers/s390/cio/cio.c
-index 88e35d8..5154513 100644
---- a/drivers/s390/cio/cio.c
-+++ b/drivers/s390/cio/cio.c
-@@ -28,7 +28,7 @@
- #include <asm/chpid.h>
- #include <asm/airq.h>
- #include <asm/isc.h>
--#include <asm/cputime.h>
-+#include <linux/cputime.h>
- #include <asm/fcx.h>
- #include <asm/nmi.h>
- #include <asm/crw.h>
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 6f599c6..9d231e9 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -9,7 +9,7 @@
- #include <linux/slab.h>
- #include <linux/time.h>
- #include <linux/irqnr.h>
--#include <asm/cputime.h>
-+#include <linux/cputime.h>
- #include <linux/tick.h>
- 
- #ifndef arch_irq_stat_cpu
-diff --git a/fs/proc/uptime.c b/fs/proc/uptime.c
-index 7141b8d..33de567 100644
---- a/fs/proc/uptime.c
-+++ b/fs/proc/uptime.c
-@@ -5,7 +5,7 @@
- #include <linux/seq_file.h>
- #include <linux/time.h>
- #include <linux/kernel_stat.h>
--#include <asm/cputime.h>
-+#include <linux/cputime.h>
- 
- static int uptime_proc_show(struct seq_file *m, void *v)
- {
-diff --git a/include/asm-generic/cputime_jiffies.h b/include/asm-generic/cputime_jiffies.h
-index 272ecba..d5cb78f5 100644
---- a/include/asm-generic/cputime_jiffies.h
-+++ b/include/asm-generic/cputime_jiffies.h
-@@ -15,8 +15,10 @@ typedef u64 __nocast cputime64_t;
- 
- 
- /*
-- * Convert nanoseconds to cputime
-+ * Convert nanoseconds <-> cputime
-  */
-+#define cputime_to_nsecs(__ct)		\
-+	jiffies_to_nsecs(cputime_to_jiffies(__ct))
- #define nsecs_to_cputime64(__nsec)	\
- 	jiffies64_to_cputime64(nsecs_to_jiffies64(__nsec))
- #define nsecs_to_cputime(__nsec)	\
-diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
-index 2c9e62c..4e81760 100644
---- a/include/asm-generic/cputime_nsecs.h
-+++ b/include/asm-generic/cputime_nsecs.h
-@@ -44,7 +44,10 @@ typedef u64 __nocast cputime64_t;
- /*
-  * Convert cputime <-> nanoseconds
-  */
--#define nsecs_to_cputime(__nsecs)	((__force u64)(__nsecs))
-+#define cputime_to_nsecs(__ct)		\
-+	(__force u64)(__ct)
-+#define nsecs_to_cputime(__nsecs)	\
-+	(__force cputime_t)(__nsecs)
- 
- 
- /*
-diff --git a/include/linux/cputime.h b/include/linux/cputime.h
-new file mode 100644
-index 0000000..f2eb2ee
---- /dev/null
-+++ b/include/linux/cputime.h
-@@ -0,0 +1,16 @@
-+#ifndef __LINUX_CPUTIME_H
-+#define __LINUX_CPUTIME_H
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index fdedd38..a4ea023 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -449,6 +449,15 @@ struct stack_canary {
+ };
+ DECLARE_PER_CPU_ALIGNED(struct stack_canary, stack_canary);
+ #endif
++/*
++ * per-CPU IRQ handling stacks
++ */
++struct irq_stack {
++	u32                     stack[THREAD_SIZE/sizeof(u32)];
++} __aligned(THREAD_SIZE);
 +
-+#include <asm/cputime.h>
-+
-+#ifndef cputime_to_nsecs
-+# define cputime_to_nsecs(__ct)	\
-+	(cputime_to_usecs(__ct) * NSEC_PER_USEC)
-+#endif
-+
-+#ifndef nsecs_to_cputime
-+# define nsecs_to_cputime(__nsecs)	\
-+	usecs_to_cputime((__nsecs) / NSEC_PER_USEC)
-+#endif
-+
-+#endif /* __LINUX_CPUTIME_H */
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 51c72be..d7c6131 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -9,7 +9,7 @@
- #include <linux/sched.h>
- #include <linux/vtime.h>
- #include <asm/irq.h>
--#include <asm/cputime.h>
-+#include <linux/cputime.h>
++DECLARE_PER_CPU(struct irq_stack *, hardirq_stack);
++DECLARE_PER_CPU(struct irq_stack *, softirq_stack);
+ #endif	/* X86_64 */
  
- /*
-  * 'kernel_stat.h' contains the definitions needed for doing
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 68a0e84..1ac566c 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -27,7 +27,7 @@ struct sched_param {
+ extern unsigned int xstate_size;
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index e1940c0..47e5de2 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -9,6 +9,7 @@
  
+ #include <linux/compiler.h>
  #include <asm/page.h>
- #include <asm/ptrace.h>
--#include <asm/cputime.h>
-+#include <linux/cputime.h>
++#include <asm/percpu.h>
+ #include <asm/types.h>
  
- #include <linux/smp.h>
- #include <linux/sem.h>
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..b14a188 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -823,19 +823,13 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
- #endif
- #ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
- 	if (static_key_false((&paravirt_steal_rq_enabled))) {
--		u64 st;
+ /*
+@@ -32,12 +33,6 @@ struct thread_info {
+ 	mm_segment_t		addr_limit;
+ 	struct restart_block    restart_block;
+ 	void __user		*sysenter_return;
+-#ifdef CONFIG_X86_32
+-	unsigned long           previous_esp;   /* ESP of the previous stack in
+-						   case of nested (IRQ) stacks
+-						*/
+-	__u8			supervisor_stack[0];
+-#endif
+ 	unsigned int		sig_on_uaccess_error:1;
+ 	unsigned int		uaccess_err:1;	/* uaccess failed */
+ };
+@@ -153,9 +148,9 @@ struct thread_info {
+ #define _TIF_WORK_CTXSW_PREV (_TIF_WORK_CTXSW|_TIF_USER_RETURN_NOTIFY)
+ #define _TIF_WORK_CTXSW_NEXT (_TIF_WORK_CTXSW)
+ 
+-#ifdef CONFIG_X86_32
++#define STACK_WARN		(THREAD_SIZE/8)
++#define KERNEL_STACK_OFFSET	(5*(BITS_PER_LONG/8))
+ 
+-#define STACK_WARN	(THREAD_SIZE/8)
+ /*
+  * macros/functions for gaining access to the thread information structure
+  *
+@@ -163,42 +158,6 @@ struct thread_info {
+  */
+ #ifndef __ASSEMBLY__
+ 
+-#define current_stack_pointer ({		\
+-	unsigned long sp;			\
+-	asm("mov %%esp,%0" : "=g" (sp));	\
+-	sp;					\
+-})
 -
- 		steal = paravirt_steal_clock(cpu_of(rq));
- 		steal -= rq->prev_steal_time_rq;
- 
- 		if (unlikely(steal > delta))
- 			steal = delta;
- 
--		st = steal_ticks(steal);
--		steal = st * TICK_NSEC;
--
- 		rq->prev_steal_time_rq += steal;
--
- 		delta -= steal;
- 	}
- #endif
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 9994791..c91b097 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -258,16 +258,22 @@ static __always_inline bool steal_account_process_tick(void)
- {
- #ifdef CONFIG_PARAVIRT
- 	if (static_key_false(&paravirt_steal_enabled)) {
--		u64 steal, st = 0;
-+		u64 steal;
-+		cputime_t steal_ct;
- 
- 		steal = paravirt_steal_clock(smp_processor_id());
- 		steal -= this_rq()->prev_steal_time;
- 
--		st = steal_ticks(steal);
--		this_rq()->prev_steal_time += st * TICK_NSEC;
-+		/*
-+		 * cputime_t may be less precise than nsecs (eg: if it's
-+		 * based on jiffies). Lets cast the result to cputime
-+		 * granularity and account the rest on the next rounds.
-+		 */
-+		steal_ct = nsecs_to_cputime(steal);
-+		this_rq()->prev_steal_time += cputime_to_nsecs(steal_ct);
- 
--		account_steal_time(st);
--		return st;
-+		account_steal_time(steal_ct);
-+		return steal_ct;
- 	}
- #endif
- 	return false;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c2119fd..5ec9910 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1214,16 +1214,6 @@ extern void update_idle_cpu_load(struct rq *this_rq);
- 
- extern void init_task_runnable_average(struct task_struct *p);
- 
--#ifdef CONFIG_PARAVIRT
--static inline u64 steal_ticks(u64 steal)
+-/* how to get the thread information struct from C */
+-static inline struct thread_info *current_thread_info(void)
 -{
--	if (unlikely(steal > NSEC_PER_SEC))
--		return div_u64(steal, TICK_NSEC);
--
--	return __iter_div_u64_rem(steal, TICK_NSEC, &steal);
+-	return (struct thread_info *)
+-		(current_stack_pointer & ~(THREAD_SIZE - 1));
 -}
+-
+-#else /* !__ASSEMBLY__ */
+-
+-/* how to get the thread information struct from ASM */
+-#define GET_THREAD_INFO(reg)	 \
+-	movl $-THREAD_SIZE, reg; \
+-	andl %esp, reg
+-
+-/* use this one if reg already contains %esp */
+-#define GET_THREAD_INFO_WITH_ESP(reg) \
+-	andl $-THREAD_SIZE, reg
+-
 -#endif
 -
- static inline void inc_nr_running(struct rq *rq)
+-#else /* X86_32 */
+-
+-#include <asm/percpu.h>
+-#define KERNEL_STACK_OFFSET (5*8)
+-
+-/*
+- * macros/functions for gaining access to the thread information structure
+- * preempt_count needs to be 1 initially, until the scheduler is functional.
+- */
+-#ifndef __ASSEMBLY__
+ DECLARE_PER_CPU(unsigned long, kernel_stack);
+ 
+ static inline struct thread_info *current_thread_info(void)
+@@ -213,8 +172,8 @@ static inline struct thread_info *current_thread_info(void)
+ 
+ /* how to get the thread information struct from ASM */
+ #define GET_THREAD_INFO(reg) \
+-	movq PER_CPU_VAR(kernel_stack),reg ; \
+-	subq $(THREAD_SIZE-KERNEL_STACK_OFFSET),reg
++	_ASM_MOV PER_CPU_VAR(kernel_stack),reg ; \
++	_ASM_SUB $(THREAD_SIZE-KERNEL_STACK_OFFSET),reg ;
+ 
+ /*
+  * Same if PER_CPU_VAR(kernel_stack) is, perhaps with some offset, already in
+@@ -224,8 +183,6 @@ static inline struct thread_info *current_thread_info(void)
+ 
+ #endif
+ 
+-#endif /* !X86_32 */
+-
+ /*
+  * Thread-synchronous status.
+  *
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 8e28bf2..29c1944 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1078,6 +1078,10 @@ static __init int setup_disablecpuid(char *arg)
+ }
+ __setup("clearcpuid=", setup_disablecpuid);
+ 
++DEFINE_PER_CPU(unsigned long, kernel_stack) =
++	(unsigned long)&init_thread_union - KERNEL_STACK_OFFSET + THREAD_SIZE;
++EXPORT_PER_CPU_SYMBOL(kernel_stack);
++
+ #ifdef CONFIG_X86_64
+ struct desc_ptr idt_descr = { NR_VECTORS * 16 - 1, (unsigned long) idt_table };
+ struct desc_ptr debug_idt_descr = { NR_VECTORS * 16 - 1,
+@@ -1094,10 +1098,6 @@ DEFINE_PER_CPU(struct task_struct *, current_task) ____cacheline_aligned =
+ 	&init_task;
+ EXPORT_PER_CPU_SYMBOL(current_task);
+ 
+-DEFINE_PER_CPU(unsigned long, kernel_stack) =
+-	(unsigned long)&init_thread_union - KERNEL_STACK_OFFSET + THREAD_SIZE;
+-EXPORT_PER_CPU_SYMBOL(kernel_stack);
+-
+ DEFINE_PER_CPU(char *, irq_stack_ptr) =
+ 	init_per_cpu_var(irq_stack_union.irq_stack) + IRQ_STACK_SIZE - 64;
+ 
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index f2a1770..dca820b 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -16,12 +16,35 @@
+ 
+ #include <asm/stacktrace.h>
+ 
++static void *is_irq_stack(void *p, void *irq)
++{
++	if (p < irq || p >= (irq + THREAD_SIZE))
++		return NULL;
++	return irq + THREAD_SIZE;
++}
++
++
++static void *is_hardirq_stack(unsigned long *stack, int cpu)
++{
++	void *irq = per_cpu(hardirq_stack, cpu);
++
++	return is_irq_stack(stack, irq);
++}
++
++static void *is_softirq_stack(unsigned long *stack, int cpu)
++{
++	void *irq = per_cpu(softirq_stack, cpu);
++
++	return is_irq_stack(stack, irq);
++}
+ 
+ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data)
  {
- 	rq->nr_running++;
++	const unsigned cpu = get_cpu();
+ 	int graph = 0;
++	u32 *prev_esp;
+ 
+ 	if (!task)
+ 		task = current;
+@@ -39,18 +62,31 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 
+ 	for (;;) {
+ 		struct thread_info *context;
++		void *end_stack;
++
++		end_stack = is_hardirq_stack(stack, cpu);
++		if (!end_stack)
++			end_stack = is_softirq_stack(stack, cpu);
+ 
+-		context = (struct thread_info *)
+-			((unsigned long)stack & (~(THREAD_SIZE - 1)));
+-		bp = ops->walk_stack(context, stack, bp, ops, data, NULL, &graph);
++		context = task_thread_info(task);
++		bp = ops->walk_stack(context, stack, bp, ops, data,
++				     end_stack, &graph);
+ 
+-		stack = (unsigned long *)context->previous_esp;
++		/* Stop if not on irq stack */
++		if (!end_stack)
++			break;
++
++		/* The previous esp is saved on the bottom of the stack */
++		prev_esp = (u32 *)(end_stack - THREAD_SIZE);
++		stack = (unsigned long *)*prev_esp;
+ 		if (!stack)
+ 			break;
++
+ 		if (ops->stack(data, "IRQ") < 0)
+ 			break;
+ 		touch_nmi_watchdog();
+ 	}
++	put_cpu();
+ }
+ EXPORT_SYMBOL(dump_trace);
+ 
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index addb207..346b1df 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -104,6 +104,45 @@ in_irq_stack(unsigned long *stack, unsigned long *irq_stack,
+ 	return (stack >= irq_stack && stack < irq_stack_end);
+ }
+ 
++static const unsigned long irq_stack_size =
++	(IRQ_STACK_SIZE - 64) / sizeof(unsigned long);
++
++enum stack_type {
++	STACK_IS_UNKNOWN,
++	STACK_IS_NORMAL,
++	STACK_IS_EXCEPTION,
++	STACK_IS_IRQ,
++};
++
++static enum stack_type
++analyze_stack(int cpu, struct task_struct *task,
++	      unsigned long *stack, unsigned long **stack_end, char **id)
++{
++	unsigned long *irq_stack;
++	unsigned long addr;
++	unsigned used = 0;
++
++	addr = ((unsigned long)stack & (~(THREAD_SIZE - 1)));
++	if ((unsigned long)task_stack_page(task) == addr)
++		return STACK_IS_NORMAL;
++
++	*stack_end = in_exception_stack(cpu, (unsigned long)stack,
++					 &used, id);
++	if (*stack_end)
++		return STACK_IS_EXCEPTION;
++
++	*stack_end = (unsigned long *)per_cpu(irq_stack_ptr, cpu);
++	if (!*stack_end)
++		return STACK_IS_UNKNOWN;
++
++	irq_stack = *stack_end - irq_stack_size;
++
++	if (in_irq_stack(stack, irq_stack, *stack_end))
++		return STACK_IS_IRQ;
++
++	return STACK_IS_UNKNOWN;
++}
++
+ /*
+  * x86-64 can have up to three kernel stacks:
+  * process stack
+@@ -116,12 +155,11 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 		const struct stacktrace_ops *ops, void *data)
+ {
+ 	const unsigned cpu = get_cpu();
+-	unsigned long *irq_stack_end =
+-		(unsigned long *)per_cpu(irq_stack_ptr, cpu);
+-	unsigned used = 0;
+ 	struct thread_info *tinfo;
+-	int graph = 0;
++	unsigned long *irq_stack;
+ 	unsigned long dummy;
++	int graph = 0;
++	int done = 0;
+ 
+ 	if (!task)
+ 		task = current;
+@@ -143,49 +181,60 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 	 * exceptions
+ 	 */
+ 	tinfo = task_thread_info(task);
+-	for (;;) {
++	while (!done) {
++		unsigned long *stack_end;
++		enum stack_type stype;
+ 		char *id;
+-		unsigned long *estack_end;
+-		estack_end = in_exception_stack(cpu, (unsigned long)stack,
+-						&used, &id);
+ 
+-		if (estack_end) {
++		stype = analyze_stack(cpu, task, stack, &stack_end, &id);
++
++		/* Default finish unless specified to continue */
++		done = 1;
++
++		switch (stype) {
++
++		/* Break out early if we are on the thread stack */
++		case STACK_IS_NORMAL:
++			break;
++
++		case STACK_IS_EXCEPTION:
++
+ 			if (ops->stack(data, id) < 0)
+ 				break;
+ 
+ 			bp = ops->walk_stack(tinfo, stack, bp, ops,
+-					     data, estack_end, &graph);
++					     data, stack_end, &graph);
+ 			ops->stack(data, "<EOE>");
+ 			/*
+ 			 * We link to the next stack via the
+ 			 * second-to-last pointer (index -2 to end) in the
+ 			 * exception stack:
+ 			 */
+-			stack = (unsigned long *) estack_end[-2];
+-			continue;
+-		}
+-		if (irq_stack_end) {
+-			unsigned long *irq_stack;
+-			irq_stack = irq_stack_end -
+-				(IRQ_STACK_SIZE - 64) / sizeof(*irq_stack);
+-
+-			if (in_irq_stack(stack, irq_stack, irq_stack_end)) {
+-				if (ops->stack(data, "IRQ") < 0)
+-					break;
+-				bp = ops->walk_stack(tinfo, stack, bp,
+-					ops, data, irq_stack_end, &graph);
+-				/*
+-				 * We link to the next stack (which would be
+-				 * the process stack normally) the last
+-				 * pointer (index -1 to end) in the IRQ stack:
+-				 */
+-				stack = (unsigned long *) (irq_stack_end[-1]);
+-				irq_stack_end = NULL;
+-				ops->stack(data, "EOI");
+-				continue;
+-			}
++			stack = (unsigned long *) stack_end[-2];
++			done = 0;
++			break;
++
++		case STACK_IS_IRQ:
++
++			if (ops->stack(data, "IRQ") < 0)
++				break;
++			bp = ops->walk_stack(tinfo, stack, bp,
++				     ops, data, stack_end, &graph);
++			/*
++			 * We link to the next stack (which would be
++			 * the process stack normally) the last
++			 * pointer (index -1 to end) in the IRQ stack:
++			 */
++			stack = (unsigned long *) (stack_end[-1]);
++			irq_stack = stack_end - irq_stack_size;
++			ops->stack(data, "EOI");
++			done = 0;
++			break;
++
++		case STACK_IS_UNKNOWN:
++			ops->stack(data, "UNK");
++			break;
+ 		}
+-		break;
+ 	}
+ 
+ 	/*
+diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
+index d7fcbed..63ce838 100644
+--- a/arch/x86/kernel/irq_32.c
++++ b/arch/x86/kernel/irq_32.c
+@@ -55,16 +55,8 @@ static inline int check_stack_overflow(void) { return 0; }
+ static inline void print_stack_overflow(void) { }
+ #endif
+ 
+-/*
+- * per-CPU IRQ handling contexts (thread information and stack)
+- */
+-union irq_ctx {
+-	struct thread_info      tinfo;
+-	u32                     stack[THREAD_SIZE/sizeof(u32)];
+-} __attribute__((aligned(THREAD_SIZE)));
+-
+-static DEFINE_PER_CPU(union irq_ctx *, hardirq_ctx);
+-static DEFINE_PER_CPU(union irq_ctx *, softirq_ctx);
++DEFINE_PER_CPU(struct irq_stack *, hardirq_stack);
++DEFINE_PER_CPU(struct irq_stack *, softirq_stack);
+ 
+ static void call_on_stack(void *func, void *stack)
+ {
+@@ -77,14 +69,26 @@ static void call_on_stack(void *func, void *stack)
+ 		     : "memory", "cc", "edx", "ecx", "eax");
+ }
+ 
++/* how to get the current stack pointer from C */
++#define current_stack_pointer ({		\
++	unsigned long sp;			\
++	asm("mov %%esp,%0" : "=g" (sp));	\
++	sp;					\
++})
++
++static inline void *current_stack(void)
++{
++	return (void *)(current_stack_pointer & ~(THREAD_SIZE - 1));
++}
++
+ static inline int
+ execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
+ {
+-	union irq_ctx *curctx, *irqctx;
+-	u32 *isp, arg1, arg2;
++	struct irq_stack *curstk, *irqstk;
++	u32 *isp, *prev_esp, arg1, arg2;
+ 
+-	curctx = (union irq_ctx *) current_thread_info();
+-	irqctx = __this_cpu_read(hardirq_ctx);
++	curstk = (struct irq_stack *) current_stack();
++	irqstk = __this_cpu_read(hardirq_stack);
+ 
+ 	/*
+ 	 * this is where we switch to the IRQ stack. However, if we are
+@@ -92,13 +96,14 @@ execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
+ 	 * handler) we can't do that and just have to keep using the
+ 	 * current stack (which is the irq stack already after all)
+ 	 */
+-	if (unlikely(curctx == irqctx))
++	if (unlikely(curstk == irqstk))
+ 		return 0;
+ 
+-	/* build the stack frame on the IRQ stack */
+-	isp = (u32 *) ((char *)irqctx + sizeof(*irqctx));
+-	irqctx->tinfo.task = curctx->tinfo.task;
+-	irqctx->tinfo.previous_esp = current_stack_pointer;
++	isp = (u32 *) ((char *)irqstk + sizeof(*irqstk));
++
++	/* Save the next esp at the bottom of the stack */
++	prev_esp = (u32 *)irqstk;
++	*prev_esp = current_stack_pointer;
+ 
+ 	if (unlikely(overflow))
+ 		call_on_stack(print_stack_overflow, isp);
+@@ -118,46 +123,40 @@ execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
+  */
+ void irq_ctx_init(int cpu)
+ {
+-	union irq_ctx *irqctx;
++	struct irq_stack *irqstk;
+ 
+-	if (per_cpu(hardirq_ctx, cpu))
++	if (per_cpu(hardirq_stack, cpu))
+ 		return;
+ 
+-	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
++	irqstk = page_address(alloc_pages_node(cpu_to_node(cpu),
+ 					       THREADINFO_GFP,
+ 					       THREAD_SIZE_ORDER));
+-	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
+-	irqctx->tinfo.cpu		= cpu;
+-	irqctx->tinfo.addr_limit	= MAKE_MM_SEG(0);
+-
+-	per_cpu(hardirq_ctx, cpu) = irqctx;
++	per_cpu(hardirq_stack, cpu) = irqstk;
+ 
+-	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
++	irqstk = page_address(alloc_pages_node(cpu_to_node(cpu),
+ 					       THREADINFO_GFP,
+ 					       THREAD_SIZE_ORDER));
+-	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
+-	irqctx->tinfo.cpu		= cpu;
+-	irqctx->tinfo.addr_limit	= MAKE_MM_SEG(0);
+-
+-	per_cpu(softirq_ctx, cpu) = irqctx;
++	per_cpu(softirq_stack, cpu) = irqstk;
+ 
+ 	printk(KERN_DEBUG "CPU %u irqstacks, hard=%p soft=%p\n",
+-	       cpu, per_cpu(hardirq_ctx, cpu),  per_cpu(softirq_ctx, cpu));
++	       cpu, per_cpu(hardirq_stack, cpu),  per_cpu(softirq_stack, cpu));
+ }
+ 
+ void do_softirq_own_stack(void)
+ {
+-	struct thread_info *curctx;
+-	union irq_ctx *irqctx;
+-	u32 *isp;
++	struct thread_info *curstk;
++	struct irq_stack *irqstk;
++	u32 *isp, *prev_esp;
+ 
+-	curctx = current_thread_info();
+-	irqctx = __this_cpu_read(softirq_ctx);
+-	irqctx->tinfo.task = curctx->task;
+-	irqctx->tinfo.previous_esp = current_stack_pointer;
++	curstk = current_stack();
++	irqstk = __this_cpu_read(softirq_stack);
+ 
+ 	/* build the stack frame on the softirq stack */
+-	isp = (u32 *) ((char *)irqctx + sizeof(*irqctx));
++	isp = (u32 *) ((char *)irqstk + sizeof(*irqstk));
++
++	/* Push the previous esp onto the stack */
++	prev_esp = (u32 *)irqstk;
++	*prev_esp = current_stack_pointer;
+ 
+ 	call_on_stack(__do_softirq, isp);
+ }
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 0de43e9..7bc86bb 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -314,6 +314,10 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	 */
+ 	arch_end_context_switch(next_p);
+ 
++	this_cpu_write(kernel_stack,
++		  (unsigned long)task_stack_page(next_p) +
++		  THREAD_SIZE - KERNEL_STACK_OFFSET);
++
+ 	/*
+ 	 * Restore %gs if needed (which is common)
+ 	 */
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 7461f50..678c0ad 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -184,14 +184,14 @@ unsigned long kernel_stack_pointer(struct pt_regs *regs)
+ {
+ 	unsigned long context = (unsigned long)regs & ~(THREAD_SIZE - 1);
+ 	unsigned long sp = (unsigned long)&regs->sp;
+-	struct thread_info *tinfo;
++	u32 *prev_esp;
+ 
+ 	if (context == (sp & ~(THREAD_SIZE - 1)))
+ 		return sp;
+ 
+-	tinfo = (struct thread_info *)context;
+-	if (tinfo->previous_esp)
+-		return tinfo->previous_esp;
++	prev_esp = (u32 *)(context);
++	if (prev_esp)
++		return (unsigned long)prev_esp;
+ 
+ 	return (unsigned long)regs;
+ }
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a32da80..867d53e 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -758,10 +758,10 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ #else
+ 	clear_tsk_thread_flag(idle, TIF_FORK);
+ 	initial_gs = per_cpu_offset(cpu);
++#endif
+ 	per_cpu(kernel_stack, cpu) =
+ 		(unsigned long)task_stack_page(idle) -
+ 		KERNEL_STACK_OFFSET + THREAD_SIZE;
+-#endif
+ 	early_gdt_descr.address = (unsigned long)get_cpu_gdt_table(cpu);
+ 	initial_code = (unsigned long)start_secondary;
+ 	stack_start  = idle->thread.sp;
