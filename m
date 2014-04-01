@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaDAMQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:16:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42187 "EHLO
+	id S1751761AbaDALQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:16:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42168 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaDALQ2 (ORCPT
+	with ESMTP id S1751723AbaDALQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:16:28 -0400
+	Tue, 1 Apr 2014 07:16:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 025/144] ACPI / resources: ignore invalid ACPI device resources
-Date: Tue,  1 Apr 2014 12:13:49 +0100
-Message-Id: <1396350948-29910-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 019/144] sched: Fix double normalization of vruntime
+Date: Tue,  1 Apr 2014 12:13:43 +0100
+Message-Id: <1396350948-29910-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,73 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: George McCollister <george.mccollister@gmail.com>
 
-commit b355cee88e3b1a193f0e9a81db810f6f83ad728b upstream.
+commit 791c9e0292671a3bfa95286bb5c08129d8605618 upstream.
 
-ACPI table may export resource entry with 0 length.
-But the current code interprets this kind of resource in a wrong way.
-It will create a resource structure with
-res->end = acpi_resource->start + acpi_resource->len - 1;
+dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
+which appears to guarentee that the !se->on_rq condition is met.
+If the task has done set_current_state(TASK_INTERRUPTIBLE) without
+schedule() the second condition will be met and vruntime will be
+incorrectly adjusted twice.
 
-This patch fixes a problem on my machine that a platform device fails
-to be created because one of its ACPI IO resource entry (start = 0,
-end = 0, length = 0) is translated into a generic resource with
-start = 0, end = 0xffffffff.
+In certain cases this can result in the task's vruntime never increasing
+past the vruntime of other tasks on the CFS' run queue, starving them of
+CPU time.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch changes switched_from_fair() to use !p->on_rq instead of
+!se->on_rq.
+
+I'm able to cause a task with a priority of 120 to starve all other
+tasks with the same priority on an ARM platform running 3.2.51-rt72
+PREEMPT RT by writing one character at time to a serial tty (16550 UART)
+in a tight loop. I'm also able to verify making this change corrects the
+problem on that platform and kernel version.
+
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1392767811-28916-1-git-send-email-george.mccollister@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/resource.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ kernel/sched/fair.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index 3322b47..c2dd598 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -77,18 +77,24 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_MEMORY24:
- 		memory24 = &ares->data.memory24;
-+		if (!memory24->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, memory24->minimum,
- 					 memory24->address_length,
- 					 memory24->write_protect);
- 		break;
- 	case ACPI_RESOURCE_TYPE_MEMORY32:
- 		memory32 = &ares->data.memory32;
-+		if (!memory32->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, memory32->minimum,
- 					 memory32->address_length,
- 					 memory32->write_protect);
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
- 		fixed_memory32 = &ares->data.fixed_memory32;
-+		if (!fixed_memory32->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, fixed_memory32->address,
- 					 fixed_memory32->address_length,
- 					 fixed_memory32->write_protect);
-@@ -144,12 +150,16 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_IO:
- 		io = &ares->data.io;
-+		if (!io->address_length)
-+			return false;
- 		acpi_dev_get_ioresource(res, io->minimum,
- 					io->address_length,
- 					io->io_decode);
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_IO:
- 		fixed_io = &ares->data.fixed_io;
-+		if (!fixed_io->address_length)
-+			return false;
- 		acpi_dev_get_ioresource(res, fixed_io->address,
- 					fixed_io->address_length,
- 					ACPI_DECODE_10);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index b051edd..b758706 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5902,15 +5902,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+ 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+ 	/*
+-	 * Ensure the task's vruntime is normalized, so that when its
++	 * Ensure the task's vruntime is normalized, so that when it's
+ 	 * switched back to the fair class the enqueue_entity(.flags=0) will
+ 	 * do the right thing.
+ 	 *
+-	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
+-	 * have normalized the vruntime, if it was !on_rq, then only when
++	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
++	 * have normalized the vruntime, if it's !on_rq, then only when
+ 	 * the task is sleeping will it still have non-normalized vruntime.
+ 	 */
+-	if (!se->on_rq && p->state != TASK_RUNNING) {
++	if (!p->on_rq && p->state != TASK_RUNNING) {
+ 		/*
+ 		 * Fix up our vruntime so that the current sleep doesn't
+ 		 * cause 'unlimited' sleep bonus.
 -- 
 1.9.1
 
