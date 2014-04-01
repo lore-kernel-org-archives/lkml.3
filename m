@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaDAQao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:30:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34683 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaDAQak (ORCPT
+	id S1752931AbaDAQPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:15:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44577 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669AbaDAQP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:30:40 -0400
-Date: Tue, 1 Apr 2014 09:33:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-Cc: linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
-	<ezequiel@vanguardiasur.com.ar>,
-        Walter Lozano <walter@vanguardiasur.com.ar>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH 1/3] staging: vt6655: fix DBG_PRT and PRINT_K macros
-Message-ID: <20140401163300.GB3842@kroah.com>
-References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
- <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 1 Apr 2014 12:15:29 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 79/86] net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
+Date: Tue,  1 Apr 2014 09:08:32 -0700
+Message-Id: <1396368519-12728-80-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 09:52:11AM -0300, Guido Martínez wrote:
-> Parenthesize both macros so they will not break program logic if used
-> within another 'if'. Also fix a usage of DBG_PRT with a missing
-> semicolon.
-> 
-> Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
-> ---
->  drivers/staging/vt6655/device.h | 4 ++--
->  drivers/staging/vt6655/wpactl.c | 2 +-
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
-> index 062c3a3..483b017 100644
-> --- a/drivers/staging/vt6655/device.h
-> +++ b/drivers/staging/vt6655/device.h
-> @@ -148,8 +148,8 @@
->  
->  /*---------------------  Export Types  ------------------------------*/
->  
-> -#define DBG_PRT(l, p, args...) { if (l <= msglevel) printk(p, ##args); }
-> -#define PRINT_K(p, args...) { if (PRIVATE_Message) printk(p, ##args); }
-> +#define DBG_PRT(l, p, args...) ({ if (l <= msglevel) printk(p, ##args); })
-> +#define PRINT_K(p, args...) ({ if (PRIVATE_Message) printk(p, ##args); })
+3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
 
-I would much rather see these "fixed" by removing them entirely and
-using the in-kernel calls instead (netdev_* and dev_* where applicable.)
+------------------
 
-thanks,
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-greg k-h
+commit a79121d3b57e7ad61f0b5d23eae05214054f3ccd upstream.
+
+Bit 3 of the MVNETA_GMAC_CTRL_2 is actually used to enable the PCS,
+not the PSC: there was a typo in the name of the define, which this
+commit fixes.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 81d57e9..d01ce5f 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -120,7 +120,7 @@
+ #define      MVNETA_GMAC_MAX_RX_SIZE_MASK        0x7ffc
+ #define      MVNETA_GMAC0_PORT_ENABLE            BIT(0)
+ #define MVNETA_GMAC_CTRL_2                       0x2c08
+-#define      MVNETA_GMAC2_PSC_ENABLE             BIT(3)
++#define      MVNETA_GMAC2_PCS_ENABLE             BIT(3)
+ #define      MVNETA_GMAC2_PORT_RGMII             BIT(4)
+ #define      MVNETA_GMAC2_PORT_RESET             BIT(6)
+ #define MVNETA_GMAC_STATUS                       0x2c10
+@@ -656,7 +656,7 @@ static void mvneta_port_sgmii_config(struct mvneta_port *pp)
+ 	u32 val;
+ 
+ 	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-	val |= MVNETA_GMAC2_PSC_ENABLE;
++	val |= MVNETA_GMAC2_PCS_ENABLE;
+ 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+ }
+ 
+-- 
+1.8.3.2
+
