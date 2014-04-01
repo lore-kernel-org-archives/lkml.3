@@ -1,51 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaDAD2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 23:28:05 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:53039 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaDAD2E (ORCPT
+	id S1751277AbaDADdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 23:33:33 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:15846
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750996AbaDADdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 23:28:04 -0400
-Message-ID: <1396322880.5324.37.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 01 Apr 2014 05:28:00 +0200
-In-Reply-To: <CA+55aFwdosGtoh8=krpx9C-fT-H7OHsC0UVyXc8aNE7h=W1RxQ@mail.gmail.com>
-References: <1396164244.28950.15.camel@marge.simpson.net>
-	 <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
-	 <1396239636.5361.57.camel@marge.simpson.net>
-	 <CA+55aFywHpvUfghS4GFc3UC1WGZx3Of+zeKHxmRNcMQMoKoiJQ@mail.gmail.com>
-	 <1396290426.5261.80.camel@marge.simpson.net>
-	 <CA+55aFwdosGtoh8=krpx9C-fT-H7OHsC0UVyXc8aNE7h=W1RxQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 31 Mar 2014 23:33:32 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
+Date: Tue, 1 Apr 2014 11:14:10 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Wang Dongsheng-B40534 <Dongsheng.Wang@freescale.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Xiubo Li-B47053 <Li.Xiubo@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "timur@tabi.org" <timur@tabi.org>
+Subject: Re: [PATCH bisect 2/2] ASoC: fsl_sai: Separately enable interrupts
+ for Tx and Rx streams
+Message-ID: <20140401031409.GA26925@MrMyself>
+References: <1396322227-482-1-git-send-email-Guangyu.Chen@freescale.com>
+ <1396322227-482-3-git-send-email-Guangyu.Chen@freescale.com>
+ <d00e324f09954dcbb509f8c135ad51af@BN1PR03MB188.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <d00e324f09954dcbb509f8c135ad51af@BN1PR03MB188.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 11:37 -0700, Linus Torvalds wrote: 
-> On Mon, Mar 31, 2014 at 11:27 AM, Mike Galbraith
-> <umgwanakikbuti@gmail.com> wrote:
-> >
-> > Oh, I didn't cc you because I wanted it applied instantly as ultra
-> > critical, only because the chain of events might be of interest.
+On Tue, Apr 01, 2014 at 11:25:02AM +0800, Wang Dongsheng-B40534 wrote:
+> > Subject: [PATCH bisect 2/2] ASoC: fsl_sai: Separately enable interrupts for Tx
+> > and Rx streams
+> > 
+> > We only enable one side interrupt for each stream since over/underrun
+> > on the opposite stream would be resulted from what we previously did,
+> > enabling TERE but remaining FRDE disabled, even though the xrun on the
+> > opposite direction will not break the current stream.
+> > 
+> > Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> > Acked-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > ---
+> >  sound/soc/fsl/fsl_sai.c | 8 ++++++--
+> >  sound/soc/fsl/fsl_sai.h | 1 +
+> >  2 files changed, 7 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+> > index bdfd497..d64c33f 100644
+> > --- a/sound/soc/fsl/fsl_sai.c
+> > +++ b/sound/soc/fsl/fsl_sai.c
+> > @@ -397,4 +397,6 @@ static int fsl_sai_trigger(struct snd_pcm_substream
+> > *substream, int cmd,
+> > 
+> >  		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx),
+> > +				   FSL_SAI_CSR_xIE_MASK, FSL_SAI_FLAGS);
+> > +		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx),
+> >  				   FSL_SAI_CSR_FRDE, FSL_SAI_CSR_FRDE);
+> >  		break;
+> > @@ -404,4 +406,6 @@ static int fsl_sai_trigger(struct snd_pcm_substream
+> > *substream, int cmd,
+> >  		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx),
+> >  				   FSL_SAI_CSR_FRDE, 0);
+> > +		regmap_update_bits(sai->regmap, FSL_SAI_xCSR(tx),
+> > +				   FSL_SAI_CSR_xIE_MASK, 0);
+> > 
+> >  		if (!(tcsr & FSL_SAI_CSR_FRDE || rcsr & FSL_SAI_CSR_FRDE)) {
+> > @@ -464,6 +468,6 @@ static int fsl_sai_dai_probe(struct snd_soc_dai *cpu_dai)
+> >  	struct fsl_sai *sai = dev_get_drvdata(cpu_dai->dev);
+> > 
+> > -	regmap_update_bits(sai->regmap, FSL_SAI_TCSR, 0xffffffff, FSL_SAI_FLAGS);
+> > -	regmap_update_bits(sai->regmap, FSL_SAI_RCSR, 0xffffffff, FSL_SAI_FLAGS);
+> > +	regmap_update_bits(sai->regmap, FSL_SAI_TCSR, 0xffffffff, 0x0);
+> > +	regmap_update_bits(sai->regmap, FSL_SAI_RCSR, 0xffffffff, 0x0);
 > 
-> Ok. That was my main worry, since I was in the process or releasing
-> 3.14, and I just couldn't tell if the patch was something I should
-> worry about or not.
-> 
-> And it seems that not applying it was the right thing, which is all
-> that matters by now.
+> Why are you remove this macro? Don't use magic number.
 
-Yes.  Jocular red flag was to Peter and Ingo.  I don't try to bypass
-them, that would be plain rude.  I've been known to help maintainers a
-little, but I don't ever try to call the shots.  They do that well.
+It's pretty clear that the so-called magic number is to clear the settings
+in the registers for driver init as what this driver did at the first place
+-- no offense but I don't think you would ask this if you check the git-log
+of the driver.
 
--Mike
+Thank you,
+Nicolin Chen
 
