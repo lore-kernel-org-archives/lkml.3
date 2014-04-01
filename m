@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611AbaCaXzz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 19:55:55 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:59216 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750966AbaCaXzy (ORCPT
+	id S1751588AbaDAAGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 20:06:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52198 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaDAAGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 19:55:54 -0400
-X-Sasl-enc: 6GfG8x7/WNRvfUHfpXgnLfAigyWCeIXphDZcgvMJ7zla 1396310152
-Date: Mon, 31 Mar 2014 16:58:12 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Jiri Slaby <jslaby@suse.cz>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kernel Fedora <kernel@lists.fedoraproject.org>
-Subject: Re: Feb. Fedora Kernel Patch Report
-Message-ID: <20140331235812.GD20979@kroah.com>
-References: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
- <20140325212417.GA6545@kroah.com>
- <CA+5PVA608SPM1r5tXwo_C+vaEff+XiLQ5AWwH7-i-MMGcXtuHw@mail.gmail.com>
- <5332E977.8010102@suse.cz>
- <20140326211637.GB20108@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140326211637.GB20108@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 31 Mar 2014 20:06:05 -0400
+Date: Mon, 31 Mar 2014 17:05:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+Message-Id: <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+In-Reply-To: <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 02:16:38PM -0700, Michal Hocko wrote:
-> On Wed 26-03-14 15:51:35, Jiri Slaby wrote:
-> > On 03/26/2014 02:44 PM, Josh Boyer wrote:
-> > > On Tue, Mar 25, 2014 at 5:24 PM, Greg KH <greg@kroah.com> wrote:
-> > >> On Fri, Feb 28, 2014 at 10:13:29AM -0500, Josh Boyer wrote:
-> > >>> cgroup-fixes.patch (rhbz 1045755)
-> > >>> - Upstream commits 0ab02ca8f887908152d1a96db5130fc661d36a1e
-> > >>> - There was a 3.12 version of this patch sent to stable list from
-> > >>> Michal Hocko.  I don't remember why it wasn't applied, or why it
-> > >>> wasn't applied for 3.13.y...
-> > >>
-> > >> It didn't apply to 3.13, and I think I was waiting for a backported
-> > >> version, do you have one?
-> > > 
-> > > As far as I know we're using this version:
-> > > 
-> > > http://thread.gmane.org/gmane.linux.kernel.cgroups/10336/focus=1646465
-> > > 
-> > > The commentary on the thread seems to imply that Michal was going to
-> > > send it again for some reason.  Michal, did you send the 3.12/3.13
-> > > backport for this commit directly to stable?
+On Mon, 31 Mar 2014 16:25:32 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+
+> On Mon, 2014-03-31 at 16:13 -0700, Andrew Morton wrote:
+> > On Mon, 31 Mar 2014 15:59:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 > > 
-> > In the meantime, I applied to the stable 3.12 Michal's version from suse
-> > enterprise 12. I believe that it is the same as in the link above.
-> > Please confirm.
+> > > > 
+> > > > - Shouldn't there be a way to alter this namespace's shm_ctlmax?
+> > > 
+> > > Unfortunately this would also add the complexity I previously mentioned.
+> > 
+> > But if the current namespace's shm_ctlmax is too small, you're screwed.
+> > Have to shut down the namespace all the way back to init_ns and start
+> > again.
+> > 
+> > > > - What happens if we just nuke the limit altogether and fall back to
+> > > >   the next check, which presumably is the rlimit bounds?
+> > > 
+> > > afaik we only have rlimit for msgqueues. But in any case, while I like
+> > > that simplicity, it's too late. Too many workloads (specially DBs) rely
+> > > heavily on shmmax. Removing it and relying on something else would thus
+> > > cause a lot of things to break.
+> > 
+> > It would permit larger shm segments - how could that break things?  It
+> > would make most or all of these issues go away?
+> > 
 > 
-> Do not remember why it didn't end up in the stable back then but yes the
-> fix you have queued up seems to be the right one.
+> So sysadmins wouldn't be very happy, per man shmget(2):
+> 
+> EINVAL A new segment was to be created and size < SHMMIN or size >
+> SHMMAX, or no new segment was to be created, a segment with given key
+> existed, but size is greater than the size of that segment.
 
-Thanks, I've picked that one up now.
+So their system will act as if they had set SHMMAX=enormous.  What
+problems could that cause?
 
-greg k-h
+
+Look.  The 32M thing is causing problems.  Arbitrarily increasing the
+arbitrary 32M to an arbitrary 128M won't fix anything - we still have
+the problem.  Think bigger, please: how can we make this problem go
+away for ever?
