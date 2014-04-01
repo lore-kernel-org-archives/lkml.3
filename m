@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaDAEPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:15:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53899 "EHLO
+	id S1752656AbaDAEOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:14:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaDAEPa (ORCPT
+	with ESMTP id S1752175AbaDAEOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:15:30 -0400
+	Tue, 1 Apr 2014 00:14:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Fetishev <artem_fetishev@epam.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 11/22] x86: fix boot on uniprocessor systems
-Date: Mon, 31 Mar 2014 21:08:41 -0700
-Message-Id: <20140401040705.917309357@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.13 04/22] Input: synaptics - add manual min/max quirk
+Date: Mon, 31 Mar 2014 21:08:34 -0700
+Message-Id: <20140401040704.163245826@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -31,47 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Fetishev <artem_fetishev@epam.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 825600c0f20e595daaa7a6dd8970f84fa2a2ee57 upstream.
+commit 421e08c41fda1f0c2ff6af81a67b491389b653a5 upstream.
 
-On x86 uniprocessor systems topology_physical_package_id() returns -1
-which causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized
-which leads to GPF in rapl_pmu_init().
+The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
+However, these new Synaptics devices report bad axis ranges.
+Under Windows, it is not a problem because the Windows driver uses RMI4
+over SMBus to talk to the device. Under Linux, we are using the PS/2
+fallback interface and it occurs the reported ranges are wrong.
 
-See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
+Of course, it would be too easy to have only one range for the whole
+series, each touchpad seems to be calibrated in a different way.
 
-It turns out that physical_package_id and core_id can actually be
-retreived for uniprocessor systems too.  Enabling them also fixes
-rapl_pmu code.
+We can not use SMBus to get the actual range because I suspect the firmware
+will switch into the SMBus mode and stop talking through PS/2 (this is the
+case for hybrid HID over I2C / PS/2 Synaptics touchpads).
 
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+So as a temporary solution (until RMI4 land into upstream), start a new
+list of quirks with the min/max manually set.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/topology.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/input/mouse/synaptics.c |   47 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask
- 
- extern const struct cpumask *cpu_coregroup_mask(int cpu);
- 
--#ifdef ENABLE_TOPO_DEFINES
- #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -265,11 +265,22 @@ static int synaptics_identify(struct psm
+  * Read touchpad resolution and maximum reported coordinates
+  * Resolution is left zero if touchpad does not support the query
+  */
 +
-+#ifdef ENABLE_TOPO_DEFINES
- #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
- #endif
++static const int *quirk_min_max;
++
+ static int synaptics_resolution(struct psmouse *psmouse)
+ {
+ 	struct synaptics_data *priv = psmouse->private;
+ 	unsigned char resp[3];
+ 
++	if (quirk_min_max) {
++		priv->x_min = quirk_min_max[0];
++		priv->x_max = quirk_min_max[1];
++		priv->y_min = quirk_min_max[2];
++		priv->y_max = quirk_min_max[3];
++		return 0;
++	}
++
+ 	if (SYN_ID_MAJOR(priv->identity) < 4)
+ 		return 0;
+ 
+@@ -1485,10 +1496,46 @@ static const struct dmi_system_id olpc_d
+ 	{ }
+ };
+ 
++static const struct dmi_system_id min_max_dmi_table[] __initconst = {
++#if defined(CONFIG_DMI)
++	{
++		/* Lenovo ThinkPad Helix */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
++		},
++		.driver_data = (int []){1024, 5052, 2258, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T440s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T540p */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
++		},
++		.driver_data = (int []){1024, 5056, 2058, 4832},
++	},
++#endif
++	{ }
++};
++
+ void __init synaptics_module_init(void)
+ {
++	const struct dmi_system_id *min_max_dmi;
++
+ 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+ 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
++
++	min_max_dmi = dmi_first_match(min_max_dmi_table);
++	if (min_max_dmi)
++		quirk_min_max = min_max_dmi->driver_data;
+ }
+ 
+ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
 
 
