@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaDAEOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:14:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53874 "EHLO
+	id S1752394AbaDAEOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:14:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53878 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179AbaDAEOD (ORCPT
+	with ESMTP id S1751672AbaDAEOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:14:03 -0400
+	Tue, 1 Apr 2014 00:14:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.13 12/22] make prepend_name() work correctly when called with negative *buflen
-Date: Mon, 31 Mar 2014 21:08:42 -0700
-Message-Id: <20140401040706.285713373@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 13/22] net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
+Date: Mon, 31 Mar 2014 21:08:43 -0700
+Message-Id: <20140401040706.479440303@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -26,36 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit e825196d48d2b89a6ec3a8eff280098d2a78207e upstream.
+commit a79121d3b57e7ad61f0b5d23eae05214054f3ccd upstream.
 
-In all callchains leading to prepend_name(), the value left in *buflen
-is eventually discarded unused if prepend_name() has returned a negative.
-So we are free to do what prepend() does, and subtract from *buflen
-*before* checking for underflow (which turns into checking the sign
-of subtraction result, of course).
+Bit 3 of the MVNETA_GMAC_CTRL_2 is actually used to enable the PCS,
+not the PSC: there was a typo in the name of the define, which this
+commit fixes.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    4 ++--
+ drivers/net/ethernet/marvell/mvneta.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2833,9 +2833,9 @@ static int prepend_name(char **buffer, i
- 	u32 dlen = ACCESS_ONCE(name->len);
- 	char *p;
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -161,7 +161,7 @@
+ #define      MVNETA_GMAC_MAX_RX_SIZE_MASK        0x7ffc
+ #define      MVNETA_GMAC0_PORT_ENABLE            BIT(0)
+ #define MVNETA_GMAC_CTRL_2                       0x2c08
+-#define      MVNETA_GMAC2_PSC_ENABLE             BIT(3)
++#define      MVNETA_GMAC2_PCS_ENABLE             BIT(3)
+ #define      MVNETA_GMAC2_PORT_RGMII             BIT(4)
+ #define      MVNETA_GMAC2_PORT_RESET             BIT(6)
+ #define MVNETA_GMAC_STATUS                       0x2c10
+@@ -729,7 +729,7 @@ static void mvneta_port_sgmii_config(str
+ 	u32 val;
  
--	if (*buflen < dlen + 1)
--		return -ENAMETOOLONG;
- 	*buflen -= dlen + 1;
-+	if (*buflen < 0)
-+		return -ENAMETOOLONG;
- 	p = *buffer -= dlen + 1;
- 	*p++ = '/';
- 	while (dlen--) {
+ 	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-	val |= MVNETA_GMAC2_PSC_ENABLE;
++	val |= MVNETA_GMAC2_PCS_ENABLE;
+ 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+ 
+ 	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
 
 
