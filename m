@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaDAQ2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:28:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44631 "EHLO
+	id S1753337AbaDAQ2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:28:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44632 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974AbaDAQPq (ORCPT
+	with ESMTP id S1752982AbaDAQPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 12:15:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Jan Kara <jack@suse.cz>, Goldwyn Rodrigues <rgoldwyn@suse.de>,
+        Joel Becker <jlbec@evilplan.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 81/86] Input: synaptics - add manual min/max quirk for ThinkPad X240
-Date: Tue,  1 Apr 2014 09:08:34 -0700
-Message-Id: <1396368519-12728-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 43/86] ocfs2: fix quota file corruption
+Date: Tue,  1 Apr 2014 09:07:56 -0700
+Message-Id: <1396368519-12728-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,39 +30,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
+commit 15c34a760630ca2c803848fba90ca0646a9907dd upstream.
 
-This extends Benjamin Tissoires manual min/max quirk table with support for
-the ThinkPad X240.
+Global quota files are accessed from different nodes.  Thus we cannot
+cache offset of quota structure in the quota file after we drop our node
+reference count to it because after that moment quota structure may be
+freed and reallocated elsewhere by a different node resulting in
+corruption of quota file.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Fix the problem by clearing dq_off when we are releasing dquot structure.
+We also remove the DB_READ_B handling because it is useless -
+DQ_ACTIVE_B is set iff DQ_READ_B is set.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Goldwyn Rodrigues <rgoldwyn@suse.de>
+Cc: Joel Becker <jlbec@evilplan.org>
+Reviewed-by: Mark Fasheh <mfasheh@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/mouse/synaptics.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/ocfs2/quota_global.c | 27 +++++++++++++++++----------
+ fs/ocfs2/quota_local.c  |  4 ----
+ 2 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 43146cd..1f683f8 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1481,6 +1481,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 		.driver_data = (int []){1024, 5052, 2258, 4832},
- 	},
- 	{
-+		/* Lenovo ThinkPad X240 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
-+		},
-+		.driver_data = (int []){1232, 5710, 1156, 4696},
-+	},
-+	{
- 		/* Lenovo ThinkPad T440s */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+diff --git a/fs/ocfs2/quota_global.c b/fs/ocfs2/quota_global.c
+index 332a281..e49b4f1 100644
+--- a/fs/ocfs2/quota_global.c
++++ b/fs/ocfs2/quota_global.c
+@@ -717,6 +717,12 @@ static int ocfs2_release_dquot(struct dquot *dquot)
+ 	 */
+ 	if (status < 0)
+ 		mlog_errno(status);
++	/*
++	 * Clear dq_off so that we search for the structure in quota file next
++	 * time we acquire it. The structure might be deleted and reallocated
++	 * elsewhere by another node while our dquot structure is on freelist.
++	 */
++	dquot->dq_off = 0;
+ 	clear_bit(DQ_ACTIVE_B, &dquot->dq_flags);
+ out_trans:
+ 	ocfs2_commit_trans(osb, handle);
+@@ -756,16 +762,17 @@ static int ocfs2_acquire_dquot(struct dquot *dquot)
+ 	status = ocfs2_lock_global_qf(info, 1);
+ 	if (status < 0)
+ 		goto out;
+-	if (!test_bit(DQ_READ_B, &dquot->dq_flags)) {
+-		status = ocfs2_qinfo_lock(info, 0);
+-		if (status < 0)
+-			goto out_dq;
+-		status = qtree_read_dquot(&info->dqi_gi, dquot);
+-		ocfs2_qinfo_unlock(info, 0);
+-		if (status < 0)
+-			goto out_dq;
+-	}
+-	set_bit(DQ_READ_B, &dquot->dq_flags);
++	status = ocfs2_qinfo_lock(info, 0);
++	if (status < 0)
++		goto out_dq;
++	/*
++	 * We always want to read dquot structure from disk because we don't
++	 * know what happened with it while it was on freelist.
++	 */
++	status = qtree_read_dquot(&info->dqi_gi, dquot);
++	ocfs2_qinfo_unlock(info, 0);
++	if (status < 0)
++		goto out_dq;
+ 
+ 	OCFS2_DQUOT(dquot)->dq_use_count++;
+ 	OCFS2_DQUOT(dquot)->dq_origspace = dquot->dq_dqb.dqb_curspace;
+diff --git a/fs/ocfs2/quota_local.c b/fs/ocfs2/quota_local.c
+index 27fe7ee..d0f323d 100644
+--- a/fs/ocfs2/quota_local.c
++++ b/fs/ocfs2/quota_local.c
+@@ -1303,10 +1303,6 @@ int ocfs2_local_release_dquot(handle_t *handle, struct dquot *dquot)
+ 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
+ 
+ out:
+-	/* Clear the read bit so that next time someone uses this
+-	 * dquot he reads fresh info from disk and allocates local
+-	 * dquot structure */
+-	clear_bit(DQ_READ_B, &dquot->dq_flags);
+ 	return status;
+ }
+ 
 -- 
 1.8.3.2
 
