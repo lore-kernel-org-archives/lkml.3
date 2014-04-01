@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaDAKqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 06:46:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32570 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaDAKqn (ORCPT
+	id S1751521AbaDAKqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 06:46:51 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:47088 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaDAKqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 06:46:43 -0400
-Message-ID: <533A990D.2040609@oracle.com>
-Date: Tue, 01 Apr 2014 12:46:37 +0200
-From: Vegard Nossum <vegard.nossum@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 1 Apr 2014 06:46:48 -0400
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: broonie@kernel.org
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] regmap: adds missing braces in regmap_init()
+Date: Tue, 01 Apr 2014 19:46:43 +0900
+Message-ID: <5822859.Za3p9c1V74@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
-Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
-References: <1396346898-8950-1-git-send-email-vegard.nossum@oracle.com> <20140401103020.GG24150@order.stressinduktion.org>
-In-Reply-To: <20140401103020.GG24150@order.stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 12:30 PM, Hannes Frederic Sowa wrote:
-> On Tue, Apr 01, 2014 at 12:08:18PM +0200, Vegard Nossum wrote:
->> Both the in-kernel and BSD strlcpy() require that the source string is
->> NUL terminated. We could use strncpy() + explicitly terminate the result,
->> but this relies on src and dest having the same size, so the safest thing
->> to do seems to explicitly terminate the source string before doing the
->> strlcpy().
->>
->> Fixes: f9a23c84486ed35 ("isdnloop: use strlcpy() instead of strcpy()")
->> Cc: Dan Carpenter <dan.carpenter@oracle.com>
->> Cc: David S. Miller <davem@davemloft.net>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
->> ---
->>   drivers/isdn/isdnloop/isdnloop.c |    8 ++++++++
->>   1 file changed, 8 insertions(+)
->>
->> diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
->> index 02125e6..50cd348 100644
->> --- a/drivers/isdn/isdnloop/isdnloop.c
->> +++ b/drivers/isdn/isdnloop/isdnloop.c
->> @@ -1070,6 +1070,14 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
->>   		return -EBUSY;
->>   	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
->>   		return -EFAULT;
->> +
->> +	/*
->> +	 * Null terminate strings from userspace so we don't have to worry
->> +	 * about this later on.
->> +	 */
->> +	for (i = 0; i < 3; i++)
->> +		sdef.num[i][sizeof(sdef.num[0]) - 1] = '\0';
->> +
->
-> Looking down the problem, it seems the problem is that the strlen in strlcpy
-> could read beyond the input buffer?
->
-> To prevent this problem in other parts of the kernel wouldn't it be better to
-> replace the strlen with strnlen in strlcpy?
 
-Sorry, I should have included the link to the previous thread: 
-https://lkml.org/lkml/2014/3/7/712
+It need to add curly braces because the inner for "if" has
+two statements.
 
-I only resent (adding netdev to Cc) to get this into David Miller's 
-patch queue.
+coccicheck says:
+ drivers/base/regmap/regmap.c:765:2-44:
+code aligned with following code on line 766
 
-As you can see from the previous discussion, we _could_ change the Linux 
-kernel's definition of strlcpy(), but I wouldn't recommend it for the 
-following reasons:
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/base/regmap/regmap.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-1. Both BSD man page and BSD implementation _require_ the source string 
-to be 0-terminated. Changing the semantics of strlcpy() in the Linux 
-kernel would probably be a bad idea and cause even more confusion that 
-what we already have.
-
-2. Even if we changed strlcpy() to use strnlen(), it would still be 
-unsafe if the source string is not 0-terminated and the source buffer is 
-shorter than the destination buffer. That's because the size passed to 
-strlcpy() is conceptually the length of the _destination_ buffer, not 
-the source string.
-
-I'm not against changing strlcpy() per se (changing to strnlen() might 
-be a performance improvement), but we shouldn't use that as an excuse to 
-use the interface incorrectly.
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index d0a0724..63e30ef 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -761,10 +761,11 @@ skip_format_initialization:
+ 	if (ret != 0)
+ 		goto err_range;
+ 
+-	if (dev)
++	if (dev) {
+ 		ret = regmap_attach_dev(dev, map, config);
+ 		if (ret != 0)
+ 			goto err_regcache;
++	}
+ 
+ 	return map;
+ 
+-- 
+1.7.4.4
 
 
-Vegard
