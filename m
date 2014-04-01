@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaDASE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:04:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22583 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868AbaDASEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:04:24 -0400
-Date: Tue, 1 Apr 2014 14:04:14 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401180414.GA12326@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
- <20140401150849.GA14757@redhat.com>
- <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
+	id S1751607AbaDASLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:11:07 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:50361 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaDASLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 14:11:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401175545.GV4284@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+ <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+ <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net> <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+ <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+ <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 1 Apr 2014 14:10:43 -0400
+Message-ID: <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 10:55:45AM -0700, Paul E. McKenney wrote:
- > >  > > so kernel space still works like before, but userspace is locked up.
- > >  > 
- > >  > Interesting.  I suspect that if you reverted the rest of this merge
- > >  > window's RCU patches, you would get the same result.
- 
-Something that occurred to me is that this might be something in the x86 merge
-that's just changing timings enough to expose this problem.
-At some point this evening, I'll try bisecting it if we don't get any closer.
+On Tue, Apr 1, 2014 at 1:01 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> On Mon, 2014-03-31 at 17:05 -0700, Andrew Morton wrote:
+>> On Mon, 31 Mar 2014 16:25:32 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+>>
+>> > On Mon, 2014-03-31 at 16:13 -0700, Andrew Morton wrote:
+>> > > On Mon, 31 Mar 2014 15:59:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+>> > >
+>> > > > >
+>> > > > > - Shouldn't there be a way to alter this namespace's shm_ctlmax?
+>> > > >
+>> > > > Unfortunately this would also add the complexity I previously mentioned.
+>> > >
+>> > > But if the current namespace's shm_ctlmax is too small, you're screwed.
+>> > > Have to shut down the namespace all the way back to init_ns and start
+>> > > again.
+>> > >
+>> > > > > - What happens if we just nuke the limit altogether and fall back to
+>> > > > >   the next check, which presumably is the rlimit bounds?
+>> > > >
+>> > > > afaik we only have rlimit for msgqueues. But in any case, while I like
+>> > > > that simplicity, it's too late. Too many workloads (specially DBs) rely
+>> > > > heavily on shmmax. Removing it and relying on something else would thus
+>> > > > cause a lot of things to break.
+>> > >
+>> > > It would permit larger shm segments - how could that break things?  It
+>> > > would make most or all of these issues go away?
+>> > >
+>> >
+>> > So sysadmins wouldn't be very happy, per man shmget(2):
+>> >
+>> > EINVAL A new segment was to be created and size < SHMMIN or size >
+>> > SHMMAX, or no new segment was to be created, a segment with given key
+>> > existed, but size is greater than the size of that segment.
+>>
+>> So their system will act as if they had set SHMMAX=enormous.  What
+>> problems could that cause?
+>
+> So, just like any sysctl configurable, only privileged users can change
+> this value. If we remove this option, users can theoretically create
+> huge segments, thus ignoring any custom limit previously set. This is
+> what I fear. Think of it kind of like mlock's rlimit. And for that
+> matter, why does sysctl exist at all, the same would go for the rest of
+> the limits.
 
- > > [ 1953.672735] INFO: Stall ended before state dump start, gp_kthread state: 0x2
- > > [ 2148.608132] INFO: rcu_preempt detected stalls on CPUs/tasks:
- > > [ 2148.609140] 	(detected by 0, t=104027 jiffies, g=47728, c=47727, q=0)
- > > etc etc.
- > 
- > Waiting uninterruptibly.  Presumably blocked on mutex_lock().  But
- > you have CONFIG_PROVE_LOCKING(), so any deadlocks should have been
- > reported.
+Hmm. It's hard to agree. AFAIK 32MB is just borrowed from other Unix
+and it doesn't respect any Linux internals. Look, non privileged user
+can user unlimited memory, at least on linux. So I don't find out any
+difference between regular anon and shmem.
 
-Lockdep had reported something a little earlier (timestamped at 1108.xxxxxx)
-but that's a known false-positive in xfs.
-
- > Given that you have CONFIG_RCU_TRACE=y, could you please enable the
- > following trace events and dump the trace before things hang?
- > 
- > 	trace_event=rcu:rcu_grace_period,rcu:rcu_grace_period_init
- > 
- > If it is not feasible to dump the trace before things hang, let me
- > know, and I will work out some other diagnostic regime.
-
-I'll give that a shot when I get back in a few hours.
-
-	Dave
+So, I personally like 0 byte per default.
