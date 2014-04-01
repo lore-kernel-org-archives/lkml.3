@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949AbaDAQUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:20:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44708 "EHLO
+	id S1753290AbaDAQVc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:21:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44691 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140AbaDAQQO (ORCPT
+	with ESMTP id S1753120AbaDAQQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:14 -0400
+	Tue, 1 Apr 2014 12:16:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 40/86] can: flexcan: fix transition from and to low power mode in chip_{en,dis}able
-Date: Tue,  1 Apr 2014 09:07:53 -0700
-Message-Id: <1396368519-12728-41-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 24/86] mac80211: fix AP powersave TX vs. wakeup race
+Date: Tue,  1 Apr 2014 09:07:37 -0700
+Message-Id: <1396368519-12728-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,156 +28,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 9b00b300e7bce032c467c36ca47fe2a776887fc2 upstream.
+commit 1d147bfa64293b2723c4fec50922168658e613ba upstream.
 
-In flexcan_chip_enable() and flexcan_chip_disable() fixed delays are used.
-Experiments have shown that the transition from and to low power mode may take
-several microseconds.
+There is a race between the TX path and the STA wakeup: while
+a station is sleeping, mac80211 buffers frames until it wakes
+up, then the frames are transmitted. However, the RX and TX
+path are concurrent, so the packet indicating wakeup can be
+processed while a packet is being transmitted.
 
-This patch adds a while loop which polls the Low Power Mode ACK bit (LPM_ACK)
-that indicates a successfull mode change. If the function runs into a timeout a
-error value is returned.
+This can lead to a situation where the buffered frames list
+is emptied on the one side, while a frame is being added on
+the other side, as the station is still seen as sleeping in
+the TX path.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[ kamal: backport to 3.8 (context) ]
+As a result, the newly added frame will not be send anytime
+soon. It might be sent much later (and out of order) when the
+station goes to sleep and wakes up the next time.
+
+Additionally, it can lead to the crash below.
+
+Fix all this by synchronising both paths with a new lock.
+Both path are not fastpath since they handle PS situations.
+
+In a later patch we'll remove the extra skb queue locks to
+reduce locking overhead.
+
+BUG: unable to handle kernel
+NULL pointer dereference at 000000b0
+IP: [<ff6f1791>] ieee80211_report_used_skb+0x11/0x3e0 [mac80211]
+*pde = 00000000
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+EIP: 0060:[<ff6f1791>] EFLAGS: 00210282 CPU: 1
+EIP is at ieee80211_report_used_skb+0x11/0x3e0 [mac80211]
+EAX: e5900da0 EBX: 00000000 ECX: 00000001 EDX: 00000000
+ESI: e41d00c0 EDI: e5900da0 EBP: ebe458e4 ESP: ebe458b0
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 000000b0 CR3: 25a78000 CR4: 000407d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process iperf (pid: 3934, ti=ebe44000 task=e757c0b0 task.ti=ebe44000)
+iwlwifi 0000:02:00.0: I iwl_pcie_enqueue_hcmd Sending command LQ_CMD (#4e), seq: 0x0903, 92 bytes at 3[3]:9
+Stack:
+ e403b32c ebe458c4 00200002 00200286 e403b338 ebe458cc c10960bb e5900da0
+ ff76a6ec ebe458d8 00000000 e41d00c0 e5900da0 ebe458f0 ff6f1b75 e403b210
+ ebe4598c ff723dc1 00000000 ff76a6ec e597c978 e403b758 00000002 00000002
+Call Trace:
+ [<ff6f1b75>] ieee80211_free_txskb+0x15/0x20 [mac80211]
+ [<ff723dc1>] invoke_tx_handlers+0x1661/0x1780 [mac80211]
+ [<ff7248a5>] ieee80211_tx+0x75/0x100 [mac80211]
+ [<ff7249bf>] ieee80211_xmit+0x8f/0xc0 [mac80211]
+ [<ff72550e>] ieee80211_subif_start_xmit+0x4fe/0xe20 [mac80211]
+ [<c149ef70>] dev_hard_start_xmit+0x450/0x950
+ [<c14b9aa9>] sch_direct_xmit+0xa9/0x250
+ [<c14b9c9b>] __qdisc_run+0x4b/0x150
+ [<c149f732>] dev_queue_xmit+0x2c2/0xca0
+
+Reported-by: Yaara Rozenblum <yaara.rozenblum@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[reword commit log, use a separate lock]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/can/flexcan.c | 50 +++++++++++++++++++++++++++++++++++------------
- 1 file changed, 38 insertions(+), 12 deletions(-)
+ net/mac80211/sta_info.c |  4 ++++
+ net/mac80211/sta_info.h |  7 +++----
+ net/mac80211/tx.c       | 15 +++++++++++++++
+ 3 files changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index 9771652..275b721 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -144,6 +144,8 @@
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index c8b32a0..b6f24a7 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -332,6 +332,7 @@ struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
+ 		return NULL;
  
- #define FLEXCAN_MB_CODE_MASK		(0xf0ffffff)
+ 	spin_lock_init(&sta->lock);
++	spin_lock_init(&sta->ps_lock);
+ 	INIT_WORK(&sta->drv_unblock_wk, sta_unblock);
+ 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
+ 	mutex_init(&sta->ampdu_mlme.mtx);
+@@ -1038,6 +1039,8 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
  
-+#define FLEXCAN_TIMEOUT_US             (50)
-+
- /*
-  * FLEXCAN hardware feature flags
-  *
-@@ -274,26 +276,42 @@ static inline int flexcan_has_and_handle_berr(const struct flexcan_priv *priv,
- 		(reg_esr & FLEXCAN_ESR_ERR_BUS);
- }
+ 	skb_queue_head_init(&pending);
  
--static inline void flexcan_chip_enable(struct flexcan_priv *priv)
-+static int flexcan_chip_enable(struct flexcan_priv *priv)
- {
- 	struct flexcan_regs __iomem *regs = priv->base;
-+	unsigned int timeout = FLEXCAN_TIMEOUT_US / 10;
- 	u32 reg;
- 
- 	reg = flexcan_read(&regs->mcr);
- 	reg &= ~FLEXCAN_MCR_MDIS;
- 	flexcan_write(reg, &regs->mcr);
- 
--	udelay(10);
-+	while (timeout-- && (flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
-+		usleep_range(10, 20);
-+
-+	if (flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK)
-+		return -ETIMEDOUT;
-+
-+	return 0;
- }
- 
--static inline void flexcan_chip_disable(struct flexcan_priv *priv)
-+static int flexcan_chip_disable(struct flexcan_priv *priv)
- {
- 	struct flexcan_regs __iomem *regs = priv->base;
-+	unsigned int timeout = FLEXCAN_TIMEOUT_US / 10;
- 	u32 reg;
- 
- 	reg = flexcan_read(&regs->mcr);
- 	reg |= FLEXCAN_MCR_MDIS;
- 	flexcan_write(reg, &regs->mcr);
-+
-+	while (timeout-- && !(flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
-+		usleep_range(10, 20);
-+
-+	if (!(flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
-+		return -ETIMEDOUT;
-+
-+	return 0;
- }
- 
- static int flexcan_get_berr_counter(const struct net_device *dev,
-@@ -711,7 +729,9 @@ static int flexcan_chip_start(struct net_device *dev)
- 	u32 reg_mcr, reg_ctrl;
- 
- 	/* enable module */
--	flexcan_chip_enable(priv);
-+	err = flexcan_chip_enable(priv);
-+	if (err)
-+		return err;
- 
- 	/* soft reset */
- 	flexcan_write(FLEXCAN_MCR_SOFTRST, &regs->mcr);
-@@ -930,12 +950,16 @@ static int register_flexcandev(struct net_device *dev)
- 	clk_prepare_enable(priv->clk_per);
- 
- 	/* select "bus clock", chip must be disabled */
--	flexcan_chip_disable(priv);
-+	err = flexcan_chip_disable(priv);
-+	if (err)
-+		goto out_disable_per;
- 	reg = flexcan_read(&regs->ctrl);
- 	reg |= FLEXCAN_CTRL_CLK_SRC;
- 	flexcan_write(reg, &regs->ctrl);
- 
--	flexcan_chip_enable(priv);
-+	err = flexcan_chip_enable(priv);
-+	if (err)
-+		goto out_chip_disable;
- 
- 	/* set freeze, halt and activate FIFO, restrict register access */
- 	reg = flexcan_read(&regs->mcr);
-@@ -952,14 +976,15 @@ static int register_flexcandev(struct net_device *dev)
- 	if (!(reg & FLEXCAN_MCR_FEN)) {
- 		netdev_err(dev, "Could not enable RX FIFO, unsupported core\n");
- 		err = -ENODEV;
--		goto out;
-+		goto out_chip_disable;
++	/* sync with ieee80211_tx_h_unicast_ps_buf */
++	spin_lock(&sta->ps_lock);
+ 	/* Send all buffered frames to the station */
+ 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
+ 		int count = skb_queue_len(&pending), tmp;
+@@ -1057,6 +1060,7 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
  	}
  
- 	err = register_candev(dev);
+ 	ieee80211_add_pending_skbs_fn(local, &pending, clear_sta_ps_flags, sta);
++	spin_unlock(&sta->ps_lock);
  
-- out:
- 	/* disable core and turn off clocks */
-+ out_chip_disable:
- 	flexcan_chip_disable(priv);
-+ out_disable_per:
- 	clk_disable_unprepare(priv->clk_per);
- 	clk_disable_unprepare(priv->clk_ipg);
+ 	local->total_ps_buffered -= buffered;
  
-@@ -1130,8 +1155,11 @@ static int flexcan_suspend(struct platform_device *pdev, pm_message_t state)
- {
- 	struct net_device *dev = platform_get_drvdata(pdev);
- 	struct flexcan_priv *priv = netdev_priv(dev);
-+	int err;
+diff --git a/net/mac80211/sta_info.h b/net/mac80211/sta_info.h
+index 37c1889..cd9f287 100644
+--- a/net/mac80211/sta_info.h
++++ b/net/mac80211/sta_info.h
+@@ -233,6 +233,7 @@ struct sta_ampdu_mlme {
+  * @drv_unblock_wk: used for driver PS unblocking
+  * @listen_interval: listen interval of this station, when we're acting as AP
+  * @_flags: STA flags, see &enum ieee80211_sta_info_flags, do not use directly
++ * @ps_lock: used for powersave (when mac80211 is the AP) related locking
+  * @ps_tx_buf: buffers (per AC) of frames to transmit to this station
+  *	when it leaves power saving state or polls
+  * @tx_filtered: buffers (per AC) of frames we already tried to
+@@ -311,10 +312,8 @@ struct sta_info {
+ 	/* use the accessors defined below */
+ 	unsigned long _flags;
  
--	flexcan_chip_disable(priv);
-+	err = flexcan_chip_disable(priv);
-+	if (err)
-+		return err;
+-	/*
+-	 * STA powersave frame queues, no more than the internal
+-	 * locking required.
+-	 */
++	/* STA powersave lock and frame queues */
++	spinlock_t ps_lock;
+ 	struct sk_buff_head ps_tx_buf[IEEE80211_NUM_ACS];
+ 	struct sk_buff_head tx_filtered[IEEE80211_NUM_ACS];
+ 	unsigned long driver_buffered_tids;
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 754d09a..aca7f97 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -456,6 +456,20 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ 		       sta->sta.addr, sta->sta.aid, ac);
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+ 			purge_old_ps_buffers(tx->local);
++
++		/* sync with ieee80211_sta_ps_deliver_wakeup */
++		spin_lock(&sta->ps_lock);
++		/*
++		 * STA woke up the meantime and all the frames on ps_tx_buf have
++		 * been queued to pending queue. No reordering can happen, go
++		 * ahead and Tx the packet.
++		 */
++		if (!test_sta_flag(sta, WLAN_STA_PS_STA) &&
++		    !test_sta_flag(sta, WLAN_STA_PS_DRIVER)) {
++			spin_unlock(&sta->ps_lock);
++			return TX_CONTINUE;
++		}
++
+ 		if (skb_queue_len(&sta->ps_tx_buf[ac]) >= STA_MAX_TX_BUFFER) {
+ 			struct sk_buff *old = skb_dequeue(&sta->ps_tx_buf[ac]);
+ 			ps_dbg(tx->sdata,
+@@ -469,6 +483,7 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ 		info->control.vif = &tx->sdata->vif;
+ 		info->flags |= IEEE80211_TX_INTFL_NEED_TXPROCESSING;
+ 		skb_queue_tail(&sta->ps_tx_buf[ac], tx->skb);
++		spin_unlock(&sta->ps_lock);
  
- 	if (netif_running(dev)) {
- 		netif_stop_queue(dev);
-@@ -1152,9 +1180,7 @@ static int flexcan_resume(struct platform_device *pdev)
- 		netif_device_attach(dev);
- 		netif_start_queue(dev);
- 	}
--	flexcan_chip_enable(priv);
--
--	return 0;
-+	return flexcan_chip_enable(priv);
- }
- #else
- #define flexcan_suspend NULL
+ 		if (!timer_pending(&local->sta_cleanup))
+ 			mod_timer(&local->sta_cleanup,
 -- 
 1.8.3.2
 
