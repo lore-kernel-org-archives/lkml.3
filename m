@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaDAF26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 01:28:58 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34241 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaDAF25 (ORCPT
+	id S1751943AbaDAF3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 01:29:43 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:42446
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751073AbaDAF3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 01:28:57 -0400
-Date: Tue, 1 Apr 2014 07:28:07 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: tthayer@altera.com
-Cc: dinguyen@altera.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, devicetree@hellion.org.uk, galak@codeaurora.org,
-        rob@landley.net, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/2] dts: socfpga: Add bindings for Altera SoC SDRAM
- controller
-Message-ID: <20140401052807.GN5052@pengutronix.de>
-References: <1396303627-29198-1-git-send-email-tthayer@altera.com>
- <1396303627-29198-2-git-send-email-tthayer@altera.com>
+	Tue, 1 Apr 2014 01:29:41 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zzbb2dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz8275dh1de097h186068hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <linux@roeck-us.net>, <wim@iguana.be>, <shawn.guo@linaro.org>,
+        <linux-watchdog@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv3 0/2] imx2-wdt: Add regmap-mmio support
+Date: Tue, 1 Apr 2014 12:46:36 +0800
+Message-ID: <1396327598-28535-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396303627-29198-2-git-send-email-tthayer@altera.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 07:25:30 up 219 days, 14:56, 49 users,  load average: 0,12, 0,08,
- 0,10
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-On Mon, Mar 31, 2014 at 05:07:06PM -0500, tthayer@altera.com wrote:
-> From: Thor Thayer <tthayer@altera.com>
-> 
-> Addition of the Altera SDRAM controller bindings and device
-> tree changes to the Altera SoC project.
-> 
-> Signed-off-by: Thor Thayer <tthayer@altera.com>
-> To: Rob Herring <rob.herring@calxeda.com>
-> To: Pawel Moll <pawel.moll@arm.com>
-> To: Mark Rutland <mark.rutland@arm.com>
-> To: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> To: Kumar Gala <galak@codeaurora.org>
-> To: Rob Landley <rob@landley.net>
-> To: Russell King <linux@arm.linux.org.uk>
-> To: Dinh Nguyen <dinguyen@altera.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
->  .../bindings/arm/altera/socfpga-sdram.txt          |   14 ++++++++++++++
->  arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
->  2 files changed, 19 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> new file mode 100644
-> index 0000000..351ab7b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> @@ -0,0 +1,14 @@
-> +Altera SOCFPGA SDRAM Controller
-> +
-> +Required properties:
-> +- compatible : "altr,sdr-ctl", "syscon";
-> +                Note that syscon is invoked for this device to support the FPGA
-> +		bridge driver and possibly other devices in the future.  See
-> +		also Documentation/devicetree/bindings/mfd/syscon.txt
+This patches are preparing for Vybird, LS1 and LS2. And on LS1 the IP will
+in BE mode.
 
-This note is really linux specific (and specific to some vendor kernel driver
-for that matter). I think you should remove that.
+And this has been test on Vybird.
 
-> +- reg : Should contain 1 register ranges(address and length)
-> +
-> +Example:
-> +	sdrctl@0xffc25000 {
-> +		compatible = "altr,sdr-ctl", "syscon";
-> +		reg = <0xffc25000 0x1000>;
-> +	};
-> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> index 9e78c1d..3634de7 100644
-> --- a/arch/arm/boot/dts/socfpga.dtsi
-> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> @@ -528,6 +528,11 @@
->  			reg-io-width = <4>;
->  		};
->  
-> +		sdrctl@0xffc25000 {
-> +			compatible = "altr,sdr-ctl", "syscon";
-> +			reg = <0xffc25000 0x1000>;
-> +		};
-> +
->  		rstmgr@ffd05000 {
->  			compatible = "altr,rst-mgr";
->  			reg = <0xffd05000 0x1000>;
+This patch series is based the following regmap patches:
 
-Regards,
-Steffen
+1, https://patchwork.kernel.org/patch/3896321/   ===> <applied>
+   regmap: mmio: add regmap_mmio_{regsize, count}_check. 
+   https://patchwork.kernel.org/patch/3896331/   ===> <applied>
+   regmap: mmio: Add support for 1/2/8 bytes wide register address.
+   https://patchwork.kernel.org/patch/3901021/   ===> <applied>
+   regmap: mmio: Add regmap_mmio_regbits_check.
+
+
+2, The above three and this one are a must.
+   https://patchwork.kernel.org/patch/3912671/   ===> <pending>
+   regmap: mmio: Fix the bug of 'offset' value parsing.
+
+
+3, The following ones are not a must, but will make the IMX2
+   watchdog driver much simplifier and easy to use.
+   https://patchwork.kernel.org/patch/3912401/   ===> <pending>
+   regmap: implement LE formatting/parsing for 16/32-bit values.
+   https://patchwork.kernel.org/patch/3912751/   ===> <pending>
+   regmap: add DT endianness binding support.
+   https://patchwork.kernel.org/patch/3912741/   ===> <pending>
+   regmap: Add the DT binding documentation for endianness
+
+
+The above all regmap patches have been test using SAI(32-bit
+regmap-mmio), SGTL5000(codec 16-bit regmap-i2c) and IMX2 Watchdog
+(16-bit regmap-mmio).
+
+
+Changes in V3:
+- convert to use regmap-mmio API.
+
+Changes in V2:
+- Add the detail information in the commit comment.
+- 'big-endians' --> 'big-endian'.
+
+
+
+Xiubo Li (2):
+  watchdog: imx2_wdt: Sort the header files alphabetically
+  watchdog: imx2_wdt: convert to use regmap API.
+
+ drivers/watchdog/imx2_wdt.c | 62 +++++++++++++++++++++++++++------------------
+ 1 file changed, 38 insertions(+), 24 deletions(-)
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.8.4
+
+
