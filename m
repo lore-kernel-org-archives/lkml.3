@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaDALRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:17:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42432 "EHLO
+	id S1753126AbaDALyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:54:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42439 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309AbaDALRe (ORCPT
+	with ESMTP id S1752314AbaDALRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:34 -0400
+	Tue, 1 Apr 2014 07:17:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
+Cc: Hans Schillstrom <hans@schillstrom.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 069/144] virtio-net: alloc big buffers also when guest can receive UFO
-Date: Tue,  1 Apr 2014 12:14:33 +0100
-Message-Id: <1396350948-29910-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 072/144] ipv6: ipv6_find_hdr restore prev functionality
+Date: Tue,  1 Apr 2014 12:14:36 +0100
+Message-Id: <1396350948-29910-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -30,42 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Hans Schillstrom <hans@schillstrom.com>
 
-commit 0e7ede80d929ff0f830c44a543daa1acd590c749 upstream.
+commit accfe0e356327da5bd53da8852b93fc22de9b5fc upstream.
 
-We should alloc big buffers also when guest can receive UFO
-packets to let the big packets fit into guest rx buffer.
+The commit 9195bb8e381d81d5a315f911904cdf0cfcc919b8 ("ipv6: improve
+ipv6_find_hdr() to skip empty routing headers") broke ipv6_find_hdr().
 
-Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
-(virtio-net: Allow UFO feature to be set and advertised.)
+When a target is specified like IPPROTO_ICMPV6 ipv6_find_hdr()
+returns -ENOENT when it's found, not the header as expected.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+A part of IPVS is broken and possible also nft_exthdr_eval().
+When target is -1 which it is most cases, it works.
+
+This patch exits the do while loop if the specific header is found
+so the nexthdr could be returned as expected.
+
+Reported-by: Art -kwaak- van Breemen <ard@telegraafnet.nl>
+Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+CC:Ansis Atteka <aatteka@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/virtio_net.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv6/exthdrs_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index a0c05e0..2835bfe 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1597,7 +1597,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
- 		vi->big_packets = true;
+diff --git a/net/ipv6/exthdrs_core.c b/net/ipv6/exthdrs_core.c
+index 140748d..8af3eb5 100644
+--- a/net/ipv6/exthdrs_core.c
++++ b/net/ipv6/exthdrs_core.c
+@@ -212,7 +212,7 @@ int ipv6_find_hdr(const struct sk_buff *skb, unsigned int *offset,
+ 		found = (nexthdr == target);
  
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+ 		if ((!ipv6_ext_hdr(nexthdr)) || nexthdr == NEXTHDR_NONE) {
+-			if (target < 0)
++			if (target < 0 || found)
+ 				break;
+ 			return -ENOENT;
+ 		}
 -- 
 1.9.1
 
