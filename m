@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaDAUu1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:50:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38417 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaDAUuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:50:25 -0400
-Date: Tue, 1 Apr 2014 13:50:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Roman Pen <r.peniaev@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [v2 PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of
- WB_SYNC_ALL
-Message-Id: <20140401135023.9ca9e1e4d15bb54981443346@linux-foundation.org>
-In-Reply-To: <1394811268-10731-1-git-send-email-r.peniaev@gmail.com>
-References: <1394811268-10731-1-git-send-email-r.peniaev@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751720AbaDAUv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:51:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:65013 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354AbaDAUv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 16:51:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,775,1389772800"; 
+   d="scan'208";a="512155850"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        stable@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc] mei: ignore client writing state during cb completion
+Date: Tue,  1 Apr 2014 23:50:41 +0300
+Message-Id: <1396385441-10102-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Mar 2014 00:34:28 +0900 Roman Pen <r.peniaev@gmail.com> wrote:
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-> When data integrity operation happens (sync, fsync, fdatasync calls)
-> writeback control is set to WB_SYNC_ALL. In that case all write
-> requests are marked with WRITE_SYNC (WRITE | REQ_SYNC | REQ_NOIDLE)
-> indicating that caller is waiting for completion and block layer or
-> block device should prioritize the IO avoiding any possible delays.
-> 
-> But mpage writeback path ignores marking requests as WRITE_SYNC.
-> 
-> This patch fixes this.
+Ignore client writing state during cb completion to fix a memory
+leak.
 
-Sorry, but it would be unwise to merge this without a good
-understanding of its runtime effects.
+When moving cbs to the completion list we should not look at
+writing_state as this state can be already overwritten by next
+write, the fact that a cb is on the write waiting list means
+that it was already written to the HW and we can safely complete it.
+
+Same pays for wait in poll handler, we do not have to check the state
+wake is done after completion list processing.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/interrupt.c | 3 +--
+ drivers/misc/mei/main.c      | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index c677438..5bba27b 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -428,8 +428,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+ 
+ 		cl->status = 0;
+ 		list_del(&cb->list);
+-		if (MEI_WRITING == cl->writing_state &&
+-		    cb->fop_type == MEI_FOP_WRITE &&
++		if (cb->fop_type == MEI_FOP_WRITE &&
+ 		    cl != &dev->iamthif_cl) {
+ 			cl_dbg(dev, cl, "MEI WRITE COMPLETE\n");
+ 			cl->writing_state = MEI_WRITE_COMPLETE;
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 5424f8f..cfe1789 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -653,8 +653,7 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
+ 		goto out;
+ 	}
+ 
+-	if (MEI_WRITE_COMPLETE == cl->writing_state)
+-		mask |= (POLLIN | POLLRDNORM);
++	mask |= (POLLIN | POLLRDNORM);
+ 
+ out:
+ 	mutex_unlock(&dev->device_lock);
+-- 
+1.9.0
 
