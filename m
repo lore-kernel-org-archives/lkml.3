@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaDAVha (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:37:30 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55960 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627AbaDAVh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:37:28 -0400
-Date: Tue, 01 Apr 2014 17:37:26 -0400 (EDT)
-Message-Id: <20140401.173726.1757895946889652328.davem@davemloft.net>
-To: struan.bartlett@gmail.com
-Cc: mpm@selenic.com, linux-kernel@vger.kernel.org, schwab@linux-m68k.org,
-        netdev@vger.kernel.org, nikolay@redhat.com, andy.shevchenko@gmail.com,
-        gregkh@linuxfoundation.org, jiri@resnulli.us, joe@perches.com,
-        alonid@postram.com
-Subject: Re: [PATCH v2] netconsole: Add tty driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <533B2F03.6060008@gmail.com>
-References: <533B2F03.6060008@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751976AbaDAVhc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:37:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37069 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751635AbaDAVhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 17:37:31 -0400
+Message-ID: <533B313E.5000403@zytor.com>
+Date: Tue, 01 Apr 2014 14:35:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>, John Stultz <john.stultz@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org>
+In-Reply-To: <20140401212102.GM4407@cmpxchg.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 01 Apr 2014 14:37:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Struan Bartlett <struan.bartlett@gmail.com>
-Date: Tue, 01 Apr 2014 23:26:27 +0200
-
-> Adds tty driver to netconsole module. When module is loaded,
-> creates /dev/netcon0 device and enables support for console=netcon0
-> kernel cmdline option, causing /dev/console output to be sent to
-> /dev/netcon0. This allows startup/shutdown script output from
-> headless platforms to be logged over (secure) network.
+On 04/01/2014 02:21 PM, Johannes Weiner wrote:
 > 
-> To: Matt Mackall <mpm@selenic.com>
-> Signed-off-by: Struan Bartlett <struan.bartlett@gmail.com>
-> ---
+> Either way, optimistic volatile pointers are nowhere near as
+> transparent to the application as the above description suggests,
+> which makes this usecase not very interesting, IMO.
 > 
-> Changes since v1:
->  * Fixed whitespace mangled by broken mailer
 
-It's still not submitted cleanly, look at what it looks like
-in patchwork:
+... however, I think you're still derating the value way too much.  The
+case of user space doing elastic memory management is more and more
+common, and for a lot of those applications it is perfectly reasonable
+to either not do system calls or to have to devolatilize first.
 
-http://patchwork.ozlabs.org/patch/336171/
+	-hpa
+
