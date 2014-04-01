@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353AbaDAIJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 04:09:34 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54728 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaDAIJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 04:09:30 -0400
-Message-ID: <533A742F.4090703@pengutronix.de>
-Date: Tue, 01 Apr 2014 10:09:19 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	id S1751380AbaDAIL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 04:11:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750739AbaDAILz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 04:11:55 -0400
+Date: Tue, 1 Apr 2014 10:11:44 +0200
+From: Robin Hack <rhack@redhat.com>
+To: Eunbong Song <eunb.song@samsung.com>
+Cc: ak@linux.intel.com, sasha.levin@oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: tools/liblockdep: Build failure
+Message-ID: <20140401081144.GB10429@bigoook.brq.redhat.com>
+References: <22212997.138341396332274687.JavaMail.weblogic@epml01>
+ <20140401080258.GA10429@bigoook.brq.redhat.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Benedikt Spranger <b.spranger@linutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Subject: Re: [patch 00/12] can: c_can: Fix a series of serious bugs and improve
- the performance
-References: <20140318171007.528610837@linutronix.de> <alpine.DEB.2.02.1403312355280.14882@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1403312355280.14882@ionos.tec.linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="EWCB91vJrpcPbhIxtuuWrBWgXnbRwSOn9"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401080258.GA10429@bigoook.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---EWCB91vJrpcPbhIxtuuWrBWgXnbRwSOn9
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+More investigation reveals this:
 
-On 04/01/2014 12:35 AM, Thomas Gleixner wrote:
-> Dear Maintainers,
->=20
-> On Tue, 18 Mar 2014, Thomas Gleixner wrote:
->> The driver is full of serious bugs:
->>
->>     - Two HW init routines are not spec compliant.
->>
->>     - Completely defective message buffer handling in several ways
->>       That leads to interrupt storms and complete lockups.
->>
->>     - Complete lack of SMP awareness
->>
->> What's amazing is that people "optimize" and "fix" the driver over and=
+(from common.o which is output of gcc -E)
+# 1 "./uinclude/linux/linkage.h" 1
 
->> over, but nobody bothered to understand the manual and repair the code=
+pwd is: linux/tools/lib/lockdep
+$ cat ./uinclude/linux/linkage.h
 
->> for real.
->>
->> The series fixes _ALL_ bugs which I found so far, but I'm sure there
->> are more issues burried in that unreadable mess. I'm just not able to
->> trigger them.
->=20
-> What's the state of this series?
-
-I'll apply your patches today.
-
-regards,
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+/* empty file */
 
 
---EWCB91vJrpcPbhIxtuuWrBWgXnbRwSOn9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlM6dC8ACgkQjTAFq1RaXHOFOACaAtXIoGSUNPBLjRMmEIjNdo81
-lcgAn3Wy6+7nWuvi66RESejTkhVHbgZQ
-=XWTr
------END PGP SIGNATURE-----
-
---EWCB91vJrpcPbhIxtuuWrBWgXnbRwSOn9--
+Have nice day
+Robin Hack
+On Tue, Apr 01, 2014 at 10:02:58AM +0200, Robin Hack wrote:
+> Hi.
+> 
+> I have same issue.
+> 
+> I investigated output of gcc -E and I found that asmlinkage macro isn't
+> expanded as is expected.
+> 
+> $ grep asmlinkage common.o
+> asmlinkage extern void lockdep_sys_exit(void);
+> 
+> On Tue, Apr 01, 2014 at 06:04:35AM +0000, Eunbong Song wrote:
+> > 
+> > There is tools/liblockdep build failure.
+> > I have been trying to find the cause and i found commit id 63f9a7fde715352e0769302527670542a664b981 is the casue.
+> > 
+> > Author: Andi Kleen <ak@linux.intel.com>
+> > Date:   Sat Feb 8 08:52:01 2014 +0100
+> > 
+> >     asmlinkage: Make lockdep_sys_exit asmlinkage
+> > 
+> >     lockdep_sys_exit can be called from assembler code, so make it
+> >     asmlinkage.
+> > 
+> >     Cc: Peter Zijlstra <peterz@infradead.org>
+> >     Cc: Ingo Molnar <mingo@kernel.org>
+> >     Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> >     Link: http://lkml.kernel.org/r/1391845930-28580-5-git-send-email-ak@linux.intel.com
+> >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > 
+> > diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+> > index 92b1bfc..7df9aa6 100644
+> > --- a/include/linux/lockdep.h
+> > +++ b/include/linux/lockdep.h
+> > @@ -265,7 +265,7 @@ extern void lockdep_info(void);
+> >  extern void lockdep_reset(void);
+> >  extern void lockdep_reset_lock(struct lockdep_map *lock);
+> >  extern void lockdep_free_key_range(void *start, unsigned long size);
+> > -extern void lockdep_sys_exit(void);
+> > +extern asmlinkage void lockdep_sys_exit(void);
+> > 
+> >  extern void lockdep_off(void);
+> >  extern void lockdep_on(void);
+> > diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+> > index eb8a547..c8b6753 100644
+> > --- a/kernel/locking/lockdep.c
+> > +++ b/kernel/locking/lockdep.c
+> > @@ -4191,7 +4191,7 @@ void debug_show_held_locks(struct task_struct *task)
+> >  }
+> >  EXPORT_SYMBOL_GPL(debug_show_held_locks);
+> > 
+> > -void lockdep_sys_exit(void)
+> > +asmlinkage void lockdep_sys_exit(void)
+> >  {
+> >         struct task_struct *curr = current;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
