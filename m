@@ -1,235 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625AbaDACBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 22:01:08 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44083 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaDACBG (ORCPT
+	id S1751716AbaDACF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 22:05:57 -0400
+Received: from mail-qg0-f67.google.com ([209.85.192.67]:38491 "EHLO
+	mail-qg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaDACFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 22:01:06 -0400
-Message-ID: <533A1DDA.4080308@hitachi.com>
-Date: Tue, 01 Apr 2014 11:00:58 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 31 Mar 2014 22:05:55 -0400
+X-Greylist: delayed 85923 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Mar 2014 22:05:55 EDT
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] uprobes/x86: Fold prepare_fixups() into arch_uprobe_analyze_insn()
-References: <20140331194359.GA9278@redhat.com>
-In-Reply-To: <20140331194359.GA9278@redhat.com>
+Date: Tue, 1 Apr 2014 10:05:54 +0800
+Message-ID: <CAA0n=K9EApRmHRTWCuTc0BASvhsNnGZR37b0HvS_s2j71OQMeQ@mail.gmail.com>
+Subject: crash dev_hard_start_xmi
+From: javen lee <javenkml@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/01 4:43), Oleg Nesterov wrote:
-> No functional changes, preparation.
-> 
-> Shift the code from prepare_fixups() to arch_uprobe_analyze_insn()
-> with the following modifications:
-> 
-> 	- Do not call insn_get_opcode() again, it was already called
-> 	  by validate_insn_bits().
-> 
-> 	- Move "case 0xea" up. This way "case 0xff" can fall through
-> 	  to default case.
-> 
-> 	- change "case 0xff" to use the nested "switch (MODRM_REG)",
-> 	  this way the code looks a bit simpler.
-> 
-> 	- Make the comments look consistent.
+Kernel version: linux 3.0.35
+Platform:         Freescale IMX6Q
 
-Interesting. Similar cleanup should be applied to kprobes too. :)
+/ # cat /proc/cpuinfo
+Processor : ARMv7 Processor rev 10 (v7l)
+processor : 0
+BogoMIPS : 1988.29
 
-> 
-> While at it, kill the initialization of rip_rela_target_address and
-> ->fixups, we can rely on kzalloc(). We will add the new members into
-> arch_uprobe, it would be better to assume that everything is zero by
-> default.
-> 
-> TODO: cleanup/fix the mess in validate_insn_bits() paths:
-> 
-> 	- validate_insn_64bits() and validate_insn_32bits() should be
-> 	  unified.
-> 
-> 	- "ifdef" is not used consistently; if good_insns_64 depends
-> 	  on CONFIG_X86_64, then probably good_insns_32 should depend
-> 	  on CONFIG_X86_32/EMULATION
-> 
-> 	- the usage of mm->context.ia32_compat looks wrong if the task
-> 	  is TIF_X32.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+processor : 1
+BogoMIPS : 1988.29
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+processor : 2
+BogoMIPS : 1988.29
 
-> ---
->  arch/x86/kernel/uprobes.c |  110 +++++++++++++++++++--------------------------
->  1 files changed, 47 insertions(+), 63 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index 2ed8459..098e56e 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -53,7 +53,7 @@
->  #define OPCODE1(insn)		((insn)->opcode.bytes[0])
->  #define OPCODE2(insn)		((insn)->opcode.bytes[1])
->  #define OPCODE3(insn)		((insn)->opcode.bytes[2])
-> -#define MODRM_REG(insn)		X86_MODRM_REG(insn->modrm.value)
-> +#define MODRM_REG(insn)		X86_MODRM_REG((insn)->modrm.value)
->  
->  #define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
->  	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
-> @@ -229,63 +229,6 @@ static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
->  	return -ENOTSUPP;
->  }
->  
-> -/*
-> - * Figure out which fixups arch_uprobe_post_xol() will need to perform, and
-> - * annotate arch_uprobe->fixups accordingly.  To start with,
-> - * arch_uprobe->fixups is either zero or it reflects rip-related fixups.
-> - */
-> -static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
-> -{
-> -	bool fix_ip = true, fix_call = false;	/* defaults */
-> -	int reg;
-> -
-> -	insn_get_opcode(insn);	/* should be a nop */
-> -
-> -	switch (OPCODE1(insn)) {
-> -	case 0x9d:
-> -		/* popf */
-> -		auprobe->fixups |= UPROBE_FIX_SETF;
-> -		break;
-> -	case 0xc3:		/* ret/lret */
-> -	case 0xcb:
-> -	case 0xc2:
-> -	case 0xca:
-> -		/* ip is correct */
-> -		fix_ip = false;
-> -		break;
-> -	case 0xe8:		/* call relative - Fix return addr */
-> -		fix_call = true;
-> -		break;
-> -	case 0x9a:		/* call absolute - Fix return addr, not ip */
-> -		fix_call = true;
-> -		fix_ip = false;
-> -		break;
-> -	case 0xff:
-> -		insn_get_modrm(insn);
-> -		reg = MODRM_REG(insn);
-> -		if (reg == 2 || reg == 3) {
-> -			/* call or lcall, indirect */
-> -			/* Fix return addr; ip is correct. */
-> -			fix_call = true;
-> -			fix_ip = false;
-> -		} else if (reg == 4 || reg == 5) {
-> -			/* jmp or ljmp, indirect */
-> -			/* ip is correct. */
-> -			fix_ip = false;
-> -		}
-> -		break;
-> -	case 0xea:		/* jmp absolute -- ip is correct */
-> -		fix_ip = false;
-> -		break;
-> -	default:
-> -		break;
-> -	}
-> -	if (fix_ip)
-> -		auprobe->fixups |= UPROBE_FIX_IP;
-> -	if (fix_call)
-> -		auprobe->fixups |= UPROBE_FIX_CALL;
-> -}
-> -
->  #ifdef CONFIG_X86_64
->  /*
->   * If arch_uprobe->insn doesn't use rip-relative addressing, return
-> @@ -318,7 +261,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct ins
->  	if (mm->context.ia32_compat)
->  		return;
->  
-> -	auprobe->rip_rela_target_address = 0x0;
->  	if (!insn_rip_relative(insn))
->  		return;
->  
-> @@ -421,16 +363,58 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
->   */
->  int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
->  {
-> -	int ret;
->  	struct insn insn;
-> +	bool fix_ip = true, fix_call = false;
-> +	int ret;
->  
-> -	auprobe->fixups = 0;
->  	ret = validate_insn_bits(auprobe, mm, &insn);
-> -	if (ret != 0)
-> +	if (ret)
->  		return ret;
->  
-> +	/*
-> +	 * Figure out which fixups arch_uprobe_post_xol() will need to perform,
-> +	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
-> +	 * is either zero or it reflects rip-related fixups.
-> +	 */
->  	handle_riprel_insn(auprobe, mm, &insn);
-> -	prepare_fixups(auprobe, &insn);
-> +
-> +	switch (OPCODE1(&insn)) {
-> +	case 0x9d:		/* popf */
-> +		auprobe->fixups |= UPROBE_FIX_SETF;
-> +		break;
-> +	case 0xc3:		/* ret or lret -- ip is correct */
-> +	case 0xcb:
-> +	case 0xc2:
-> +	case 0xca:
-> +		fix_ip = false;
-> +		break;
-> +	case 0xe8:		/* call relative - Fix return addr */
-> +		fix_call = true;
-> +		break;
-> +	case 0x9a:		/* call absolute - Fix return addr, not ip */
-> +		fix_call = true;
-> +		fix_ip = false;
-> +		break;
-> +	case 0xea:		/* jmp absolute -- ip is correct */
-> +		fix_ip = false;
-> +		break;
-> +	case 0xff:
-> +		insn_get_modrm(&insn);
-> +		switch (MODRM_REG(&insn)) {
-> +		case 2: case 3:			/* call or lcall, indirect */
-> +			fix_call = true;
-> +		case 4: case 5:			/* jmp or ljmp, indirect */
-> +			fix_ip = false;
-> +		}
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	if (fix_ip)
-> +		auprobe->fixups |= UPROBE_FIX_IP;
-> +	if (fix_call)
-> +		auprobe->fixups |= UPROBE_FIX_CALL;
->  
->  	return 0;
->  }
-> 
+processor : 3
+BogoMIPS : 1988.29
 
+Features : swp half thumb fastmult vfp edsp neon vfpv3
+CPU implementer : 0x41
+CPU architecture: 7
+CPU variant : 0x2
+CPU part : 0xc09
+CPU revision : 10
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Hardware : Freescale i.MX 6Quad/DualLite/Solo based Board
+Revision : 63012
+Serial : 011399d4dbc90e67
+[37372.766715] Unable to handle kernel NULL pointer dereference at
+virtual address 000000ac
+[37372.774825] pgd = e280c000
+[37372.777539] [000000ac] *pgd=34636831, *pte=00000000, *ppte=00000000
+[37372.783859] Internal error: Oops: 80000007 [#1] PREEMPT SMP
+[37372.789435] Modules linked in: gPRI gFXS gFXO gTDM
+dahdi_echocan_oslec dahdi_transcode dahdi ipt_MASQUERADE iptable_nat
+nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_filter
+ip_tables x_tables drv_svip drv_tapi drv_event_logger drv_ifxos
+[37372.811974] CPU: 3    Not tainted  (3.0.35 #207)
+[37372.816599] PC is at 0xac
+[37372.819236] LR is at __wake_up_common+0x50/0x90
+[37372.823772] pc : [<000000ac>]    lr : [<c0057910>]    psr: 20000093
+[37372.823776] sp : e2e73b70  ip : e3c69ca0  fp : e2e73b9c
+[37372.835266] r10: 00000001  r9 : 00000304  r8 : 00000001
+[37372.840494] r7 : e5298c68  r6 : e3c69d8c  r5 : 000000ac  r4 : c032bce8
+[37372.847023] r3 : 00000304  r2 : 00000001  r1 : 00000001  r0 : e3c69ca0
+[37372.853555] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM
+Segment user
+[37372.860782] Control: 10c53c7d  Table: 3280c04a  DAC: 00000015
+[37372.866532] Process asterisk (pid: 6129, stack limit = 0xe2e722f0)
+[37372.872715] Stack: (0xe2e73b70 to 0xe2e74000)
+[37372.877077] 3b60:                                     00000002
+00000001 000000c8 e5298c60
+[37372.885260] 3b80: 00000304 a0000013 00000001 00000001 c03c2c90
+e9d8f4e0 e2e73bc4 c0057de8
+[37372.893443] 3ba0: 00000304 00000000 e9dfe000 e3369dc0 e3369e60
+e9dfe000 e354ee60 c04e61fc
+[37372.901625] 3bc0: c053caa4 c02ef01c e3369dc0 c02f01dc c02f0168
+c04e61dc e4d6b240 c02ff2bc
+[37372.909808] 3be0: ab983665 135ff08b e9d8f4e0 c04e61fc c02952d4
+e4252200 e9dfe000 e425225c
+[37372.917991] 3c00: e4d6b240 e9d8f4e0 00000000 00000003 e2ac3214
+c031a65c e9d8f4e0 e4252200
+[37372.926174] 3c20: c04d2080 e2e72000 00389177 c053d300 e4d6b240
+c031a834 e425225c c031a5fc
+[37372.934356] 3c40: e9d8f4e0 e4252200 e4a44a60 e9dfe000 e9d8f4e0
+e425225c 00000000 c02ff8e4
+[37372.942539] 3c60: e425225c e2e72000 6afd4fd8 00000026 e4a44a60
+0000000e e42c30c0 0000000e
+[37372.950721] 3c80: e42c30f4 000000ac 00000000 c032b900 00000000
+e4a44a60 e3523024 e2ac3040
+[37372.958904] 3ca0: e2e73d8c 000000b4 000000ac c032bcf4 e4a44a60
+c032cfd8 00000000 000000b4
+[37372.967086] 3cc0: 00000000 e4a44a60 e3523024 c034b61c e2e73ccc
+00000000 000000ac e2ac3040
+[37372.975270] 3ce0: e4a44a60 e2e73f5c 00000000 067aa8c0 000000ac
+000000b4 e2ac3214 c034d0c4
+[37372.983453] 3d00: 000000b4 00000008 e2e73dac e2e73dbc 00000040
+e2977c00 000000ac e2e73d8c
+[37372.991636] 3d20: 00000000 e2e73dac c032a024 00003823 00000000
+067aa8c0 00000004 00000000
+[37372.999818] 3d40: 00000000 00009243 000000b4 000000ac 000000ac
+e2ac3940 e2ac3970 c03a1568
+[37373.008001] 3d60: e2ac3940 c02efe98 e2e72000 e4a44a60 e4a44a60
+e2e73f5c e4a44a60 e2e73f5c
+[37373.016183] 3d80: e2ac3940 c034bf88 e2e73d98 00000000 00000000
+00000000 04110000 00000000
+[37373.024366] 3da0: 067aa8c0 a97aa8c0 92433823 067aa8c0 00000000
+00000000 00000000 00000000
+[37373.032548] 3dc0: 483ff0f4 e2ac3040 000000ac e2e73f5c e2e73e00
+00000000 00000000 00000010
+[37373.040731] 3de0: 483fed84 c0354b24 000000ac 000000ac e2e73f5c
+c03c72c0 e3744b60 c02ec178
+[37373.048913] 3e00: 00000000 00000003 00000000 00000001 ffffffff
+00000000 00000000 00000000
+[37373.057095] 3e20: 00000000 00000000 e3744b60 cc020e80 00000000
+00000000 00000003 e2e72000
+[37373.065278] 3e40: e2e73e78 c005b868 cc021320 e344ab80 00000000
+e2e72000 00000000 00000008
+[37373.073460] 3e60: 00000000 c00ea788 00000b6d 00000003 00000b6e
+00000003 00000b6f e2e73f40
+[37373.081642] 3e80: 00000040 000000ac e63c2520 00000000 00000000
+e2e73f5c 00000b68 00000010
+[37373.089824] 3ea0: e2e73edc 47815554 00000000 47815554 e63c2520
+483fed84 00000000 000000ac
+[37373.098008] 3ec0: 47815554 e63c2520 483fed84 00000040 e2e72000
+c02edc48 ffffffff 38230002
+[37373.106190] 3ee0: 067aa8c0 00000000 00000000 00000000 e3744b60
+c04e5cd0 00000000 00000000
+[37373.114372] 3f00: 00000000 00000000 e2e73f3c c005ab04 00000004
+cc020e80 00000004 e3744b60
+[37373.122556] 3f20: cc020e80 00000000 00000000 00000003 e2e72000
+00000000 e2e73f4c c005b2f4
+[37373.130738] 3f40: 483ff30c 00000004 e4efd8c0 00000004 483ff30c
+e2e73f80 00000004 e2e73edc
+[37373.138920] 3f60: 00000010 e2e73f78 00000001 00000000 00000000
+00000040 47815554 000000ac
+[37373.147103] 3f80: 00000000 00000001 00000000 483fed84 00000010
+00e24f40 00000122 c0035144
+[37373.155285] 3fa0: 00000000 c0034fc0 483fed84 00000010 00000b6a
+47815554 000000ac 00000000
+[37373.163468] 3fc0: 483fed84 00000010 00e24f40 00000122 47815554
+00e26258 478154b0 483fed84
+[37373.171651] 3fe0: 00000000 483fed48 403a41f4 40399184 60000010
+00000b6a 00000000 00000000
+[37373.179849] [<c0057910>] (__wake_up_common+0x50/0x90) from
+[<c0057de8>] (__wake_up_sync_key+0x44/0x60)
+[37373.189176] [<c0057de8>] (__wake_up_sync_key+0x44/0x60) from
+[<c02ef01c>] (sock_def_write_space+0x4c/0x88)
+[37373.198843] [<c02ef01c>] (sock_def_write_space+0x4c/0x88) from
+[<c02f01dc>] (sock_wfree+0x74/0x7c)
+[37373.207822] [<c02f01dc>] (sock_wfree+0x74/0x7c) from [<c02ff2bc>]
+(dev_hard_start_xmit+0x16c/0x59c)
+[37373.216884] [<c02ff2bc>] (dev_hard_start_xmit+0x16c/0x59c) from
+[<c031a65c>] (sch_direct_xmit+0xb0/0x1dc)
+[37373.226459] [<c031a65c>] (sch_direct_xmit+0xb0/0x1dc) from
+[<c031a834>] (__qdisc_run+0xac/0x130)
+[37373.235257] [<c031a834>] (__qdisc_run+0xac/0x130) from [<c02ff8e4>]
+(dev_queue_xmit+0x1f8/0x60c)
+[37373.244054] [<c02ff8e4>] (dev_queue_xmit+0x1f8/0x60c) from
+[<c032b900>] (ip_finish_output+0x134/0x39c)
+[37373.253370] [<c032b900>] (ip_finish_output+0x134/0x39c) from
+[<c032bcf4>] (ip_local_out+0x28/0x2c)
+[37373.262338] [<c032bcf4>] (ip_local_out+0x28/0x2c) from [<c032cfd8>]
+(ip_send_skb+0xc/0xd8)
+[37373.270615] [<c032cfd8>] (ip_send_skb+0xc/0xd8) from [<c034b61c>]
+(udp_send_skb+0xf0/0x3c8)
+[37373.278979] [<c034b61c>] (udp_send_skb+0xf0/0x3c8) from
+[<c034d0c4>] (udp_sendmsg+0x254/0x7f8)
+[37373.287607] [<c034d0c4>] (udp_sendmsg+0x254/0x7f8) from
+[<c0354b24>] (inet_sendmsg+0x94/0xb8)
+[37373.296141] [<c0354b24>] (inet_sendmsg+0x94/0xb8) from [<c02ec178>]
+(sock_sendmsg+0x94/0xb4)
+[37373.304589] [<c02ec178>] (sock_sendmsg+0x94/0xb4) from [<c02edc48>]
+(sys_sendto+0xb4/0xd8)
+[37373.312863] [<c02edc48>] (sys_sendto+0xb4/0xd8) from [<c0034fc0>]
+(ret_fast_syscall+0x0/0x30)
