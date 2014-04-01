@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaDALuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:50:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42482 "EHLO
+	id S1752809AbaDALt7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:49:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42487 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436AbaDALRr (ORCPT
+	with ESMTP id S1752438AbaDALRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 07:17:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>, "David S. Miller" <davem@davemloft.net>,
+Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 080/144] net: unix socket code abuses csum_partial
-Date: Tue,  1 Apr 2014 12:14:44 +0100
-Message-Id: <1396350948-29910-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 079/144] mwifiex: save and copy AP's VHT capability info correctly
+Date: Tue,  1 Apr 2014 12:14:43 +0100
+Message-Id: <1396350948-29910-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,85 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
+commit d51246481c7f28bbfa1f814ded2da65e531cd4b2 upstream.
 
-The unix socket code is using the result of csum_partial to
-hash into a lookup table:
+While preparing association request, intersection of device's
+VHT capability information and corresponding field advertised
+by AP is used.
 
-	unix_hash_fold(csum_partial(sunaddr, len, 0));
+This patch fixes a couple errors while saving and copying vht_cap
+and vht_oper fields from AP's beacon.
 
-csum_partial is only guaranteed to produce something that can be
-folded into a checksum, as its prototype explains:
-
- * returns a 32-bit number suitable for feeding into itself
- * or csum_tcpudp_magic
-
-The 32bit value should not be used directly.
-
-Depending on the alignment, the ppc64 csum_partial will return
-different 32bit partial checksums that will fold into the same
-16bit checksum.
-
-This difference causes the following testcase (courtesy of
-Gustavo) to sometimes fail:
-
-#include <sys/socket.h>
-#include <stdio.h>
-
-int main()
-{
-	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	int i = 1;
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
-
-	struct sockaddr addr;
-	addr.sa_family = AF_LOCAL;
-	bind(fd, &addr, 2);
-
-	listen(fd, 128);
-
-	struct sockaddr_storage ss;
-	socklen_t sslen = (socklen_t)sizeof(ss);
-	getsockname(fd, (struct sockaddr*)&ss, &sslen);
-
-	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
-		perror(NULL);
-		return 1;
-	}
-	printf("OK\n");
-	return 0;
-}
-
-As suggested by davem, fix this by using csum_fold to fold the
-partial 32bit checksum into a 16bit checksum before using it.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/unix/af_unix.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/11ac.c | 3 +--
+ drivers/net/wireless/mwifiex/scan.c | 8 ++++----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index f246812..2ea3310 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -161,9 +161,8 @@ static inline void unix_set_secdata(struct scm_cookie *scm, struct sk_buff *skb)
+diff --git a/drivers/net/wireless/mwifiex/11ac.c b/drivers/net/wireless/mwifiex/11ac.c
+index 5e0eec4..5d9a808 100644
+--- a/drivers/net/wireless/mwifiex/11ac.c
++++ b/drivers/net/wireless/mwifiex/11ac.c
+@@ -189,8 +189,7 @@ int mwifiex_cmd_append_11ac_tlv(struct mwifiex_private *priv,
+ 		vht_cap->header.len  =
+ 				cpu_to_le16(sizeof(struct ieee80211_vht_cap));
+ 		memcpy((u8 *)vht_cap + sizeof(struct mwifiex_ie_types_header),
+-		       (u8 *)bss_desc->bcn_vht_cap +
+-		       sizeof(struct ieee_types_header),
++		       (u8 *)bss_desc->bcn_vht_cap,
+ 		       le16_to_cpu(vht_cap->header.len));
  
- static inline unsigned int unix_hash_fold(__wsum n)
- {
--	unsigned int hash = (__force unsigned int)n;
-+	unsigned int hash = (__force unsigned int)csum_fold(n);
+ 		mwifiex_fill_vht_cap_tlv(priv, vht_cap, bss_desc->bss_band);
+diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+index 41f72c6..6f79bac 100644
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -2072,12 +2072,12 @@ mwifiex_save_curr_bcn(struct mwifiex_private *priv)
+ 			 curr_bss->ht_info_offset);
  
--	hash ^= hash>>16;
- 	hash ^= hash>>8;
- 	return hash&(UNIX_HASH_SIZE-1);
- }
+ 	if (curr_bss->bcn_vht_cap)
+-		curr_bss->bcn_ht_cap = (void *)(curr_bss->beacon_buf +
+-						curr_bss->vht_cap_offset);
++		curr_bss->bcn_vht_cap = (void *)(curr_bss->beacon_buf +
++						 curr_bss->vht_cap_offset);
+ 
+ 	if (curr_bss->bcn_vht_oper)
+-		curr_bss->bcn_ht_oper = (void *)(curr_bss->beacon_buf +
+-						 curr_bss->vht_info_offset);
++		curr_bss->bcn_vht_oper = (void *)(curr_bss->beacon_buf +
++						  curr_bss->vht_info_offset);
+ 
+ 	if (curr_bss->bcn_bss_co_2040)
+ 		curr_bss->bcn_bss_co_2040 =
 -- 
 1.9.1
 
