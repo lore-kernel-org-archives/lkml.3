@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaDAWpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 18:45:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27657 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371AbaDAWpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 18:45:02 -0400
-Message-ID: <1396392298.476.226.camel@ul30vt.home>
-Subject: Re: [PATCH v2] PCI: rework new_id interface for known vendor/device
- values
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bandan Das <bsd@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 01 Apr 2014 16:44:58 -0600
-In-Reply-To: <jpgr45gk8wn.fsf@nelium.bos.redhat.com>
-References: <jpgeh1gpwwo.fsf@nelium.bos.redhat.com>
-	 <1396388707.476.188.camel@ul30vt.home>
-	 <jpgr45gk8wn.fsf@nelium.bos.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751889AbaDAWpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 18:45:30 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51432 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751743AbaDAWp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 18:45:26 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 0/3] sched/idle : find the idlest cpu with cpuidle info
+Date: Wed, 02 Apr 2014 01:01:11 +0200
+Message-ID: <22904760.5rGZuP5nsx@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 18:00 -0400, Bandan Das wrote:
-> Alex Williamson <alex.williamson@redhat.com> writes:
+On Friday, March 28, 2014 01:29:53 PM Daniel Lezcano wrote:
+> The following patchset provides an interaction between cpuidle and the scheduler.
 > 
-> > On Tue, 2014-04-01 at 17:22 -0400, Bandan Das wrote:
-> >> While using the new_id interface, the user can unintentionally feed
-> >> incorrect values if the driver static table has a matching entry.
-> >> This is possible since only the device and vendor fields are
-> >> mandatory and the rest are optional. As a result, store_new_id
-> >> will fill in default values that are then passed on to the driver
-> >> and can have unintended consequences.
-> >> 
-> >> As an example, consider the ixgbe driver and the 82599EB network card :
-> >> echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
-> >> 
-> >> This will pass a driver_data value of 0 to the driver whereas
-> >> the index 0 in ixgbe actually points to a different set of card
-> >> operations.
-> >> 
-> >> This change returns an error if the user attempts to add a dynid for
-> >> a vendor/device combination for which a static entry already exists.
-> >> However, if the user intentionally wants a different set of values,
-> >> she must provide all the 7 fields and that will be accepted.
-> >> 
-> >> In KVM/device assignment scenario, the user might want 
-> >> to bind a device back to the host driver by writing to new_id
-> >> and trip on a possible null pointer dereference.
-> >> 
-> >> Signed-off-by: Bandan Das <bsd@redhat.com>
-> >> ---
-> >> v2:
-> >> 1. Return error if there is a matching static entry
-> >> and change commit message to reflect this behavior
-> >> 3. Fill in a pdev and call pci_match_id instead of creating
-> >> a new matching function
-> >> 4. Change commit message to reflect that libvirt does not
-> >> depend on this behavior
-> >> 
-> >>  drivers/pci/pci-driver.c | 23 ++++++++++++++++++++++-
-> >>  1 file changed, 22 insertions(+), 1 deletion(-)
-> >> 
-> >> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> >> index 25f0bc6..493514e 100644
-> >> --- a/drivers/pci/pci-driver.c
-> >> +++ b/drivers/pci/pci-driver.c
-> >> @@ -103,11 +103,12 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
-> >>  {
-> >>  	struct pci_driver *pdrv = to_pci_driver(driver);
-> >>  	const struct pci_device_id *ids = pdrv->id_table;
-> >> +	struct pci_dev *pdev;
-> >>  	__u32 vendor, device, subvendor=PCI_ANY_ID,
-> >>  		subdevice=PCI_ANY_ID, class=0, class_mask=0;
-> >>  	unsigned long driver_data=0;
-> >>  	int fields=0;
-> >> -	int retval;
-> >> +	int retval = 0;
-> >>  
-> >>  	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
-> >>  			&vendor, &device, &subvendor, &subdevice,
-> >> @@ -115,6 +116,26 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
-> >>  	if (fields < 2)
-> >>  		return -EINVAL;
-> >>  
-> >> +	if (fields != 7) {
-> >
-> > nit, pdev could be declared within this scope.
+> The first patch encapsulate the needed information for the scheduler in a
+> separate cpuidle structure. The second one stores the pointer to this structure
+> when entering idle. The third one, use this information to take the decision to
+> find the idlest cpu.
 > 
-> Ok, will spin a new one.
+> After some basic testing with hackbench, it appears there is an improvement for
+> the performances (small) and for the duration of the idle states (which provides
+> a better power saving).
 > 
-> >> +		pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
-> >> +		if (!pdev)
-> >> +			return -ENOMEM;
-> >> +
-> >> +		pdev->vendor = vendor;
-> >> +		pdev->device = device;
-> >> +		pdev->subsystem_vendor = subvendor;
-> >> +		pdev->subsystem_device = subdevice;
-> >> +		pdev->class = class;
-> >
-> > Why not class_mask?
-> pdev->class_mask isn't used anywhere.
+> The measurement has been done with the 'idlestat' tool previously posted in this
+> mailing list.
+> 
+> So the benefit is good for both sides performance and power saving.
+> 
+> The select_idle_sibling could be also improved in the same way.
 
-Ah, you're right.  Ok.  Thanks,
+Well, quite frankly, I don't really like this series.  Not the idea itself, but
+the way it has been implemented.
 
-Alex
+First off, if the scheduler is to access idle state data stored in struct
+cpuidle_state, I'm not sure why we need a separate new structure for that?
+Couldn't there be a pointer to a whole struct cpuidle_state from struct rq
+instead?  [->exit_latency is the only field that find_idlest_cpu() in your
+third patch seems to be using anyway.]
 
-> >> +
-> >> +		if (pci_match_id(pdrv->id_table, pdev))
-> >> +			retval = -EEXIST;
-> >> +
-> >> +		kfree(pdev);
-> >> +
-> >> +		if (retval)
-> >> +			return retval;
-> >> +	}
-> >> +
-> >>  	/* Only accept driver_data values that match an existing id_table
-> >>  	   entry */
-> >>  	if (ids) {
+Second, is accessing the idle state information for all CPUs from find_idlest_cpu()
+guaranteed to be non-racy?  I mean, what if a CPU changes its state from idle to
+non-idle while another one is executing find_idlest_cpu()?  In other words,
+where's the read memory barrier corresponding to the write ones in the modified
+cpu_idle_call()?  And is the memory barrier actually sufficient?  After all,
+you need to guarantee that the CPU is still idle after you have evaluated
+idle_cpu() on it.
 
+Finally, is really the heuristics used by find_idlest_cpu() to select the "idlest"
+CPU the best one?  What about deeper vs shallower idle states, for example?
 
+Rafael
 
