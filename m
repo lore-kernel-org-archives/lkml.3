@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaDAQQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:16:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44752 "EHLO
+	id S1753221AbaDAQQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:16:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44742 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaDAQQh (ORCPT
+	with ESMTP id S1753147AbaDAQQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:37 -0400
+	Tue, 1 Apr 2014 12:16:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 32/86] mac80211: fix association to 20/40 MHz VHT networks
-Date: Tue,  1 Apr 2014 09:07:45 -0700
-Message-Id: <1396368519-12728-33-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 27/86] ath9k: Fix ETSI compliance for AR9462 2.0
+Date: Tue,  1 Apr 2014 09:07:40 -0700
+Message-Id: <1396368519-12728-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,39 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit cb664981607a6b5b3d670ad57bbda893b2528d96 upstream.
+commit b3050248c167871ca52cfdb2ce78aa2460249346 upstream.
 
-When a VHT network uses 20 or 40 MHz as per the HT operation
-information, the channel center frequency segment 0 field in
-the VHT operation information is reserved, so ignore it.
+The minimum CCA power threshold values have to be adjusted
+for existing cards to be in compliance with new regulations.
+Newer cards will make use of the values obtained from EEPROM,
+support for this was added earlier. To make sure that cards
+that are already in use and don't have proper values in EEPROM,
+do not violate regulations, use the initvals instead.
 
-This fixes association with such networks when the AP puts 0
-into the field, previously we'd disconnect due to an invalid
-channel with the message
-wlan0: AP VHT information is invalid, disable VHT
-
-Fixes: f2d9d270c15ae ("mac80211: support VHT association")
-Reported-by: Tim Nelson <tim.l.nelson@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Jeang Daniel <dyjeong@qca.qualcomm.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/mlme.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index a67fe0f..e586c89 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -3359,6 +3359,7 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_data *sdata,
- 	switch (vht_oper->chan_width) {
- 	case IEEE80211_VHT_CHANWIDTH_USE_HT:
- 		vht_chandef.width = chandef->width;
-+		vht_chandef.center_freq1 = chandef->center_freq1;
- 		break;
- 	case IEEE80211_VHT_CHANWIDTH_80MHZ:
- 		vht_chandef.width = NL80211_CHAN_WIDTH_80;
+diff --git a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
+index ccc42a7..fbe42e1 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
+@@ -56,7 +56,7 @@ static const u32 ar9462_2p0_baseband_postamble[][5] = {
+ 	{0x00009e14, 0x37b95d5e, 0x37b9605e, 0x3376605e, 0x32395d5e},
+ 	{0x00009e18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x00009e1c, 0x0001cf9c, 0x0001cf9c, 0x00021f9c, 0x00021f9c},
+-	{0x00009e20, 0x000003b5, 0x000003b5, 0x000003ce, 0x000003ce},
++	{0x00009e20, 0x000003a5, 0x000003a5, 0x000003a5, 0x000003a5},
+ 	{0x00009e2c, 0x0000001c, 0x0000001c, 0x00000021, 0x00000021},
+ 	{0x00009e3c, 0xcf946222, 0xcf946222, 0xcfd5c782, 0xcfd5c282},
+ 	{0x00009e44, 0x62321e27, 0x62321e27, 0xfe291e27, 0xfe291e27},
+@@ -95,7 +95,7 @@ static const u32 ar9462_2p0_baseband_postamble[][5] = {
+ 	{0x0000ae04, 0x001c0000, 0x001c0000, 0x001c0000, 0x00100000},
+ 	{0x0000ae18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x0000ae1c, 0x0000019c, 0x0000019c, 0x0000019c, 0x0000019c},
+-	{0x0000ae20, 0x000001b5, 0x000001b5, 0x000001ce, 0x000001ce},
++	{0x0000ae20, 0x000001a6, 0x000001a6, 0x000001aa, 0x000001aa},
+ 	{0x0000b284, 0x00000000, 0x00000000, 0x00000550, 0x00000550},
+ };
+ 
 -- 
 1.8.3.2
 
