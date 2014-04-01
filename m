@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaDALSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42558 "EHLO
+	id S1752649AbaDALSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:18:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42554 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623AbaDALSG (ORCPT
+	with ESMTP id S1752473AbaDALSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:06 -0400
+	Tue, 1 Apr 2014 07:18:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Rob Clark <rclark@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 095/144] drm/radeon/cik: properly set sdma ring status on disable
-Date: Tue,  1 Apr 2014 12:14:59 +0100
-Message-Id: <1396350948-29910-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 094/144] drm/ttm: don't oops if no invalidate_caches()
+Date: Tue,  1 Apr 2014 12:14:58 +0100
+Message-Id: <1396350948-29910-95-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Rob Clark <rclark@redhat.com>
 
-commit 7b1bbe883b3ed962ca2be4daf321f318f5091340 upstream.
+commit 9ef7506f7eff3fc42724269f62e30164c141661f upstream.
 
-When we disable the rings, set the status properly.  If
-not other code pathes may try and use the rings which are
-not functional at this point.
+A few of the simpler TTM drivers (cirrus, ast, mgag200) do not implement
+this function.  Yet can end up somehow with an evicted bo:
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.11:
-  - cik_sdma_gfx_stop() is defined in file cik.c ]
+  BUG: unable to handle kernel NULL pointer dereference at           (null)
+  IP: [<          (null)>]           (null)
+  PGD 16e761067 PUD 16e6cf067 PMD 0
+  Oops: 0010 [#1] SMP
+  Modules linked in: bnep bluetooth rfkill fuse ip6t_rpfilter ip6t_REJECT ipt_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg btrfs zlib_deflate raid6_pq xor dm_queue_length iTCO_wdt iTCO_vendor_support coretemp kvm dcdbas dm_service_time microcode serio_raw pcspkr lpc_ich mfd_core i7core_edac edac_core ses enclosure ipmi_si ipmi_msghandler shpchp acpi_power_meter mperf nfsd auth_rpcgss nfs_acl lockd uinput sunrpc dm_multipath xfs libcrc32c ata_generic pata_acpi sr_mod cdrom
+   sd_mod usb_storage mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit lpfc drm_kms_helper ttm crc32c_intel ata_piix bfa drm ixgbe libata i2c_core mdio crc_t10dif ptp crct10dif_common pps_core scsi_transport_fc dca scsi_tgt megaraid_sas bnx2 dm_mirror dm_region_hash dm_log dm_mod
+  CPU: 16 PID: 2572 Comm: X Not tainted 3.10.0-86.el7.x86_64 #1
+  Hardware name: Dell Inc. PowerEdge R810/0H235N, BIOS 0.3.0 11/14/2009
+  task: ffff8801799dabc0 ti: ffff88016c884000 task.ti: ffff88016c884000
+  RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
+  RSP: 0018:ffff88016c885ad8  EFLAGS: 00010202
+  RAX: ffffffffa04e94c0 RBX: ffff880178937a20 RCX: 0000000000000000
+  RDX: 0000000000000000 RSI: 0000000000240004 RDI: ffff880178937a00
+  RBP: ffff88016c885b60 R08: 00000000000171a0 R09: ffff88007cf171a0
+  R10: ffffea0005842540 R11: ffffffff810487b9 R12: ffff880178937b30
+  R13: ffff880178937a00 R14: ffff88016c885b78 R15: ffff880179929400
+  FS:  00007f81ba2ef980(0000) GS:ffff88007cf00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 0000000000000000 CR3: 000000016e763000 CR4: 00000000000007e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Stack:
+   ffffffffa0306fae ffff8801799295c0 0000000000260004 0000000000000001
+   ffff88016c885b60 ffffffffa0307669 00ff88007cf17738 ffff88017cf17700
+   ffff880178937a00 ffff880100000000 ffff880100000000 0000000079929400
+  Call Trace:
+   [<ffffffffa0306fae>] ? ttm_bo_handle_move_mem+0x54e/0x5b0 [ttm]
+   [<ffffffffa0307669>] ? ttm_bo_mem_space+0x169/0x340 [ttm]
+   [<ffffffffa0307bd7>] ttm_bo_move_buffer+0x117/0x130 [ttm]
+   [<ffffffff81130001>] ? perf_event_init_context+0x141/0x220
+   [<ffffffffa0307cb1>] ttm_bo_validate+0xc1/0x130 [ttm]
+   [<ffffffffa04e7377>] mgag200_bo_pin+0x87/0xc0 [mgag200]
+   [<ffffffffa04e56c4>] mga_crtc_cursor_set+0x474/0xbb0 [mgag200]
+   [<ffffffff811971d2>] ? __mem_cgroup_commit_charge+0x152/0x3b0
+   [<ffffffff815c4182>] ? mutex_lock+0x12/0x2f
+   [<ffffffffa0201433>] drm_mode_cursor_common+0x123/0x170 [drm]
+   [<ffffffffa0205231>] drm_mode_cursor_ioctl+0x41/0x50 [drm]
+   [<ffffffffa01f5ca2>] drm_ioctl+0x502/0x630 [drm]
+   [<ffffffff815cbab4>] ? __do_page_fault+0x1f4/0x510
+   [<ffffffff8101cb68>] ? __restore_xstate_sig+0x218/0x4f0
+   [<ffffffff811b4445>] do_vfs_ioctl+0x2e5/0x4d0
+   [<ffffffff8124488e>] ? file_has_perm+0x8e/0xa0
+   [<ffffffff811b46b1>] SyS_ioctl+0x81/0xa0
+   [<ffffffff815d05d9>] system_call_fastpath+0x16/0x1b
+  Code:  Bad RIP value.
+  RIP  [<          (null)>]           (null)
+   RSP <ffff88016c885ad8>
+  CR2: 0000000000000000
+
+Signed-off-by: Rob Clark <rclark@redhat.com>
+Reviewed-by: Jérôme Glisse <jglisse@redhat.com>
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/cik.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/ttm/ttm_bo.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 8748a86..405bf0c 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -3349,6 +3349,8 @@ static void cik_sdma_gfx_stop(struct radeon_device *rdev)
- 		WREG32(SDMA0_GFX_RB_CNTL + reg_offset, rb_cntl);
- 		WREG32(SDMA0_GFX_IB_CNTL + reg_offset, 0);
- 	}
-+	rdev->ring[R600_RING_TYPE_DMA_INDEX].ready = false;
-+	rdev->ring[CAYMAN_RING_TYPE_DMA1_INDEX].ready = false;
- }
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index eb96c21..08dccdd 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -352,9 +352,11 @@ static int ttm_bo_handle_move_mem(struct ttm_buffer_object *bo,
  
- /**
+ moved:
+ 	if (bo->evicted) {
+-		ret = bdev->driver->invalidate_caches(bdev, bo->mem.placement);
+-		if (ret)
+-			pr_err("Can not flush read caches\n");
++		if (bdev->driver->invalidate_caches) {
++			ret = bdev->driver->invalidate_caches(bdev, bo->mem.placement);
++			if (ret)
++				pr_err("Can not flush read caches\n");
++		}
+ 		bo->evicted = false;
+ 	}
+ 
 -- 
 1.9.1
 
