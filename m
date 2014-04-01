@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaDALt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:49:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42487 "EHLO
+	id S1752429AbaDALRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:17:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42467 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaDALRr (ORCPT
+	with ESMTP id S1752384AbaDALRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:47 -0400
+	Tue, 1 Apr 2014 07:17:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>, Jens Axboe <axboe@kernel.dk>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <christian@borntraeger.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 079/144] mwifiex: save and copy AP's VHT capability info correctly
-Date: Tue,  1 Apr 2014 12:14:43 +0100
-Message-Id: <1396350948-29910-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 075/144] s390/dasd: hold request queue sysfs lock when calling elevator_init()
+Date: Tue,  1 Apr 2014 12:14:39 +0100
+Message-Id: <1396350948-29910-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit d51246481c7f28bbfa1f814ded2da65e531cd4b2 upstream.
+commit ef0899410ff630b2e75306da49996dbbfa318165 upstream.
 
-While preparing association request, intersection of device's
-VHT capability information and corresponding field advertised
-by AP is used.
+"elevator: Fix a race in elevator switching and md device initialization"
+changed the semantics of elevator_init() in a way that now enforces to hold
+the corresponding request queue's sysfs_lock when calling elevator_init()
+to fix a race.
+The patch did not convert the s390 dasd device driver which is the only
+device driver which also calls elevator_init(). So add the missing locking.
 
-This patch fixes a couple errors while saving and copying vht_cap
-and vht_oper fields from AP's beacon.
-
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Christian Borntraeger <christian@borntraeger.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/11ac.c | 3 +--
- drivers/net/wireless/mwifiex/scan.c | 8 ++++----
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/s390/block/dasd.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/11ac.c b/drivers/net/wireless/mwifiex/11ac.c
-index 5e0eec4..5d9a808 100644
---- a/drivers/net/wireless/mwifiex/11ac.c
-+++ b/drivers/net/wireless/mwifiex/11ac.c
-@@ -189,8 +189,7 @@ int mwifiex_cmd_append_11ac_tlv(struct mwifiex_private *priv,
- 		vht_cap->header.len  =
- 				cpu_to_le16(sizeof(struct ieee80211_vht_cap));
- 		memcpy((u8 *)vht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *)bss_desc->bcn_vht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_vht_cap,
- 		       le16_to_cpu(vht_cap->header.len));
+diff --git a/drivers/s390/block/dasd.c b/drivers/s390/block/dasd.c
+index 451bf99..846d5c6 100644
+--- a/drivers/s390/block/dasd.c
++++ b/drivers/s390/block/dasd.c
+@@ -2978,12 +2978,12 @@ static int dasd_alloc_queue(struct dasd_block *block)
  
- 		mwifiex_fill_vht_cap_tlv(priv, vht_cap, bss_desc->bss_band);
-diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
-index 41f72c6..6f79bac 100644
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -2072,12 +2072,12 @@ mwifiex_save_curr_bcn(struct mwifiex_private *priv)
- 			 curr_bss->ht_info_offset);
+ 	elevator_exit(block->request_queue->elevator);
+ 	block->request_queue->elevator = NULL;
++	mutex_lock(&block->request_queue->sysfs_lock);
+ 	rc = elevator_init(block->request_queue, "deadline");
+-	if (rc) {
++	if (rc)
+ 		blk_cleanup_queue(block->request_queue);
+-		return rc;
+-	}
+-	return 0;
++	mutex_unlock(&block->request_queue->sysfs_lock);
++	return rc;
+ }
  
- 	if (curr_bss->bcn_vht_cap)
--		curr_bss->bcn_ht_cap = (void *)(curr_bss->beacon_buf +
--						curr_bss->vht_cap_offset);
-+		curr_bss->bcn_vht_cap = (void *)(curr_bss->beacon_buf +
-+						 curr_bss->vht_cap_offset);
- 
- 	if (curr_bss->bcn_vht_oper)
--		curr_bss->bcn_ht_oper = (void *)(curr_bss->beacon_buf +
--						 curr_bss->vht_info_offset);
-+		curr_bss->bcn_vht_oper = (void *)(curr_bss->beacon_buf +
-+						  curr_bss->vht_info_offset);
- 
- 	if (curr_bss->bcn_bss_co_2040)
- 		curr_bss->bcn_bss_co_2040 =
+ /*
 -- 
 1.9.1
 
