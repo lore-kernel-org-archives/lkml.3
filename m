@@ -1,64 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaDAOKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 10:10:00 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:38224 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaDAOJ6 (ORCPT
+	id S1751631AbaDAON0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:13:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18182 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaDAONY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 10:09:58 -0400
+	Tue, 1 Apr 2014 10:13:24 -0400
+Date: Tue, 1 Apr 2014 17:13:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
+Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
+	<ezequiel@vanguardiasur.com.ar>,
+        Walter Lozano <walter@vanguardiasur.com.ar>,
+        Forest Bond <forest@alittletooquiet.net>
+Subject: Re: [PATCH 3/3] staging: vt6655: fix checkpatch bracing issues
+Message-ID: <20140401141302.GT6991@mwanda>
+References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
+ <1396356733-5344-4-git-send-email-guido@vanguardiasur.com.ar>
 MIME-Version: 1.0
-In-Reply-To: <20140401135242.GC7972@stefanha-thinkpad.redhat.com>
-References: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
- <20140327064158.GA17563@redhat.com> <87y4zwt7mu.fsf@blackfin.pond.sub.org>
- <20140327081040.GA21756@redhat.com> <20140327085347.GB9580@stefanha-thinkpad.redhat.com>
- <CAMrG31wx5WLrFMmGg-uasugS+S=e8T156ZPuEofRJeVB-4fVeQ@mail.gmail.com>
- <53351E2C.3070508@msgid.tls.msk.ru> <20140328084749.GA11688@stefanha-thinkpad.redhat.com>
- <CAMrG31ykbYAChLhF5qoUUCFU-tpdxNd5mcWyVOW7DuV-USEHrg@mail.gmail.com> <20140401135242.GC7972@stefanha-thinkpad.redhat.com>
-From: Alejandro Comisario <alejandro.comisario@mercadolibre.com>
-Date: Tue, 1 Apr 2014 11:09:37 -0300
-Message-ID: <CAMrG31zp5Sq4j7O+1AsaVNLpyc2QpfRU5FEFDmS7hyOSELS50Q@mail.gmail.com>
-Subject: Re: [Qemu-devel] Massive read only kvm guests when backing file was missing
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>, qemu-devel@nongnu.org,
-        kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        ghammer@redhat.com, Jason Wang <jasowang@redhat.com>,
-        linux-kernel@vger.kernel.org, Markus Armbruster <armbru@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1396356733-5344-4-git-send-email-guido@vanguardiasur.com.ar>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The conclusion is that the backing file stored on NFS that is the same
-for all 950 hosts / 10500 guests was deleted and immediatelly raised a
-read-only filesystem on the guest, seems that there's no way to avoid
-that.
+On Tue, Apr 01, 2014 at 09:52:13AM -0300, Guido Martínez wrote:
+> @@ -624,13 +622,10 @@ device_receive_frame(
+>  
+>  // Data frame Handle
+>  
+> -	if (pDevice->bEnablePSMode) {
+> -		if (!IS_FC_MOREDATA((skb->data+4))) {
+> +	if (pDevice->bEnablePSMode)
+> +		if (!IS_FC_MOREDATA((skb->data+4)))
+>  			if (pDevice->pMgmt->bInTIMWake == true)
+>  				pDevice->pMgmt->bInTIMWake = false;
+> -			}
+> -		}
+> -	}
 
-We developed a script to recover from that scenario if the same happens.
-Basically doing:
+Use braces for multi-line indents for readability.
 
-* virsh stop
-* qemu-ndb connect
-* fsck
-* qemu-ndb disconnect
-* virsh start
+> @@ -1502,26 +1501,26 @@ int iwctl_siwauth(struct net_device *dev,
+>  		break;
+>  	case IW_AUTH_CIPHER_PAIRWISE:
+>  		pairwise = wrq->value;
+> -		if (pairwise == IW_AUTH_CIPHER_CCMP) {
+> +		if (pairwise == IW_AUTH_CIPHER_CCMP)
+>  			pDevice->eEncryptionStatus = Ndis802_11Encryption3Enabled;
+> -		} else if (pairwise == IW_AUTH_CIPHER_TKIP) {
+> +		else if (pairwise == IW_AUTH_CIPHER_TKIP)
+>  			pDevice->eEncryptionStatus = Ndis802_11Encryption2Enabled;
+> -		} else if (pairwise == IW_AUTH_CIPHER_WEP40 || pairwise == IW_AUTH_CIPHER_WEP104) {
+> +		else if (pairwise == IW_AUTH_CIPHER_WEP40 || pairwise == IW_AUTH_CIPHER_WEP104)
+>  			pDevice->eEncryptionStatus = Ndis802_11Encryption1Enabled;
+> -		} else if (pairwise == IW_AUTH_CIPHER_NONE) {
+> -			//do nothing,einsn liu
+> -		} else pDevice->eEncryptionStatus = Ndis802_11EncryptionDisabled;
+> +		else if (pairwise == IW_AUTH_CIPHER_NONE)
+> +			; //do nothing,einsn liu
+> +		else
+> +		pDevice->eEncryptionStatus = Ndis802_11EncryptionDisabled;
+>  
 
-best regards.
+The indenting is messed up on the last else statement.
+
+> @@ -276,24 +276,20 @@ PSbSendNullPacket(
+>  	PSMgmtObject        pMgmt = pDevice->pMgmt;
+>  	unsigned int uIdx;
+>  
+> -	if (!pDevice->bLinkPass) {
+> +	if (!pDevice->bLinkPass)
+>  		return false;
+> -	}
+> +
+>  #ifdef TxInSleep
+> -	if (!pDevice->bEnablePSMode && !pDevice->fTxDataInSleep) {
+> +	if (!pDevice->bEnablePSMode && !pDevice->fTxDataInSleep)
+>  		return false;
+> -	}
+>  #else
+> -	if (!pDevice->bEnablePSMode) {
+> +	if (!pDevice->bEnablePSMode)
+>  		return false;
+> -	}
+>  #endif
+> -	if (pDevice->bEnablePSMode) {
+> -		for (uIdx = 0; uIdx < TYPE_MAXTD; uIdx++) {
+> +	if (pDevice->bEnablePSMode)
+> +		for (uIdx = 0; uIdx < TYPE_MAXTD; uIdx++)
+>  			if (pDevice->iTDUsed[uIdx] != 0)
+>  				return false;
+> -		}
+> -	}
 
 
-Alejandro Comisario
-MercadoLibre Cloud Services
-Arias 3751, Piso 7 (C1430CRG)
-Ciudad de Buenos Aires - Argentina
-Cel: +549(11) 15-3770-1857
-Tel : +54(11) 4640-8443
+Multi-line indent.
 
 
-On Tue, Apr 1, 2014 at 10:52 AM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
-> On Mon, Mar 31, 2014 at 09:51:23PM -0300, Alejandro Comisario wrote:
->> Again, thanks to everyone.
->
-> Did you reach a conclusion or is there still a problem that might be a
-> bug in KVM?
->
-> Stefan
+> @@ -4285,14 +4252,9 @@ vMgrRxManagePacket(
+>  
+>  	case WLAN_FSTYPE_BEACON:
+>  		// Frame Clase = 0
+> -<<<<<<< HEAD
+> -		//DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "rx beacon\n");
+> -		if (pMgmt->eScanState != WMAC_NO_SCANNING) {
+> -=======
+>  		if (pMgmt->eScanState != WMAC_NO_SCANNING)
+> ->>>>>>> f3c59ed... staging: vt6655: remove dead code
+>  			bInScan = true;
+> -		}
+> +
+>  		s_vMgrRxBeacon(pDevice, pMgmt, pRxPacket, bInScan);
+>  		break;
+>  
+> @@ -4357,16 +4319,11 @@ bMgrPrepareBeaconToSend(
+>  	PSDevice            pDevice = (PSDevice)hDeviceContext;
+>  	PSTxMgmtPacket      pTxPacket;
+>  
+> -<<<<<<< HEAD
+> -//    pDevice->bBeaconBufReady = false;
+> -	if (pDevice->bEncryptionEnable || pDevice->bEnable8021x) {
+> -=======
+>  	if (pDevice->bEncryptionEnable || pDevice->bEnable8021x)
+> ->>>>>>> f3c59ed... staging: vt6655: remove dead code
+>  		pMgmt->wCurrCapInfo |= WLAN_SET_CAP_INFO_PRIVACY(1);
+> -	} else {
+> +	else
+>  		pMgmt->wCurrCapInfo &= ~WLAN_SET_CAP_INFO_PRIVACY(1);
+> -	}
+> +
+
+Wat?
+
+regards,
+dan carpenter
+
