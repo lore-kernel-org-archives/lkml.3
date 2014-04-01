@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaDAQNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:13:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44528 "EHLO
+	id S1752834AbaDAQN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:13:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44537 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaDAQNP (ORCPT
+	with ESMTP id S1751472AbaDAQNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:13:15 -0400
+	Tue, 1 Apr 2014 12:13:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Scott Wood <scottwood@freescale.com>, Wolfram Sang <wsa@the-dreams.de>,
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 78/86] i2c: cpm: Fix build by adding of_address.h and of_irq.h
-Date: Tue,  1 Apr 2014 09:08:31 -0700
-Message-Id: <1396368519-12728-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 83/86] Input: mousedev - fix race when creating mixed device
+Date: Tue,  1 Apr 2014 09:08:36 -0700
+Message-Id: <1396368519-12728-84-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -27,42 +27,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Wood <scottwood@freescale.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit 5f12c5eca6e6b7aeb4b2028d579f614b4fe7a81f upstream.
+commit e4dbedc7eac7da9db363a36f2bd4366962eeefcc upstream.
 
-Fixes a build break due to the undeclared use of irq_of_parse_and_map()
-and of_iomap().  This build break was apparently introduced while the
-driver was unbuildable due to the bug fixed by
-62c19c9d29e65086e5ae76df371ed2e6b23f00cd ("i2c: Remove usage of
-orphaned symbol OF_I2C").  When 62c19c was added in v3.14-rc7,
-the driver was enabled again, breaking the powerpc mpc85xx_defconfig
-and mpc85xx_smp_defconfig.
+We should not be using static variable mousedev_mix in methods that can be
+called before that singleton gets assigned. While at it let's add open and
+close methods to mousedev structure so that we do not need to test if we
+are dealing with multiplexor or normal device and simply call appropriate
+method directly.
 
-62c19c is marked for stable, so this should go there as well.
+This fixes: https://bugzilla.kernel.org/show_bug.cgi?id=71551
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Reported-by: GiulioDP <depasquale.giulio@gmail.com>
+Tested-by: GiulioDP <depasquale.giulio@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-cpm.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/input/mousedev.c | 73 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 42 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
-index 2e79c10..209bf1f 100644
---- a/drivers/i2c/busses/i2c-cpm.c
-+++ b/drivers/i2c/busses/i2c-cpm.c
-@@ -40,7 +40,9 @@
- #include <linux/i2c.h>
- #include <linux/io.h>
- #include <linux/dma-mapping.h>
-+#include <linux/of_address.h>
- #include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/of_i2c.h>
- #include <sysdev/fsl_soc.h>
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index 4c842c3..b604564 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -67,7 +67,6 @@ struct mousedev {
+ 	struct device dev;
+ 	struct cdev cdev;
+ 	bool exist;
+-	bool is_mixdev;
+ 
+ 	struct list_head mixdev_node;
+ 	bool opened_by_mixdev;
+@@ -77,6 +76,9 @@ struct mousedev {
+ 	int old_x[4], old_y[4];
+ 	int frac_dx, frac_dy;
+ 	unsigned long touch;
++
++	int (*open_device)(struct mousedev *mousedev);
++	void (*close_device)(struct mousedev *mousedev);
+ };
+ 
+ enum mousedev_emul {
+@@ -116,9 +118,6 @@ static unsigned char mousedev_imex_seq[] = { 0xf3, 200, 0xf3, 200, 0xf3, 80 };
+ static struct mousedev *mousedev_mix;
+ static LIST_HEAD(mousedev_mix_list);
+ 
+-static void mixdev_open_devices(void);
+-static void mixdev_close_devices(void);
+-
+ #define fx(i)  (mousedev->old_x[(mousedev->pkt_count - (i)) & 03])
+ #define fy(i)  (mousedev->old_y[(mousedev->pkt_count - (i)) & 03])
+ 
+@@ -428,9 +427,7 @@ static int mousedev_open_device(struct mousedev *mousedev)
+ 	if (retval)
+ 		return retval;
+ 
+-	if (mousedev->is_mixdev)
+-		mixdev_open_devices();
+-	else if (!mousedev->exist)
++	if (!mousedev->exist)
+ 		retval = -ENODEV;
+ 	else if (!mousedev->open++) {
+ 		retval = input_open_device(&mousedev->handle);
+@@ -446,9 +443,7 @@ static void mousedev_close_device(struct mousedev *mousedev)
+ {
+ 	mutex_lock(&mousedev->mutex);
+ 
+-	if (mousedev->is_mixdev)
+-		mixdev_close_devices();
+-	else if (mousedev->exist && !--mousedev->open)
++	if (mousedev->exist && !--mousedev->open)
+ 		input_close_device(&mousedev->handle);
+ 
+ 	mutex_unlock(&mousedev->mutex);
+@@ -459,21 +454,29 @@ static void mousedev_close_device(struct mousedev *mousedev)
+  * stream. Note that this function is called with mousedev_mix->mutex
+  * held.
+  */
+-static void mixdev_open_devices(void)
++static int mixdev_open_devices(struct mousedev *mixdev)
+ {
+-	struct mousedev *mousedev;
++	int error;
++
++	error = mutex_lock_interruptible(&mixdev->mutex);
++	if (error)
++		return error;
+ 
+-	if (mousedev_mix->open++)
+-		return;
++	if (!mixdev->open++) {
++		struct mousedev *mousedev;
+ 
+-	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
+-		if (!mousedev->opened_by_mixdev) {
+-			if (mousedev_open_device(mousedev))
+-				continue;
++		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
++			if (!mousedev->opened_by_mixdev) {
++				if (mousedev_open_device(mousedev))
++					continue;
+ 
+-			mousedev->opened_by_mixdev = true;
++				mousedev->opened_by_mixdev = true;
++			}
+ 		}
+ 	}
++
++	mutex_unlock(&mixdev->mutex);
++	return 0;
+ }
+ 
+ /*
+@@ -481,19 +484,22 @@ static void mixdev_open_devices(void)
+  * device. Note that this function is called with mousedev_mix->mutex
+  * held.
+  */
+-static void mixdev_close_devices(void)
++static void mixdev_close_devices(struct mousedev *mixdev)
+ {
+-	struct mousedev *mousedev;
++	mutex_lock(&mixdev->mutex);
+ 
+-	if (--mousedev_mix->open)
+-		return;
++	if (!--mixdev->open) {
++		struct mousedev *mousedev;
+ 
+-	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
+-		if (mousedev->opened_by_mixdev) {
+-			mousedev->opened_by_mixdev = false;
+-			mousedev_close_device(mousedev);
++		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
++			if (mousedev->opened_by_mixdev) {
++				mousedev->opened_by_mixdev = false;
++				mousedev_close_device(mousedev);
++			}
+ 		}
+ 	}
++
++	mutex_unlock(&mixdev->mutex);
+ }
+ 
+ 
+@@ -522,7 +528,7 @@ static int mousedev_release(struct inode *inode, struct file *file)
+ 	mousedev_detach_client(mousedev, client);
+ 	kfree(client);
+ 
+-	mousedev_close_device(mousedev);
++	mousedev->close_device(mousedev);
+ 
+ 	return 0;
+ }
+@@ -550,7 +556,7 @@ static int mousedev_open(struct inode *inode, struct file *file)
+ 	client->mousedev = mousedev;
+ 	mousedev_attach_client(mousedev, client);
+ 
+-	error = mousedev_open_device(mousedev);
++	error = mousedev->open_device(mousedev);
+ 	if (error)
+ 		goto err_free_client;
+ 
+@@ -861,16 +867,21 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
+ 
+ 	if (mixdev) {
+ 		dev_set_name(&mousedev->dev, "mice");
++
++		mousedev->open_device = mixdev_open_devices;
++		mousedev->close_device = mixdev_close_devices;
+ 	} else {
+ 		int dev_no = minor;
+ 		/* Normalize device number if it falls into legacy range */
+ 		if (dev_no < MOUSEDEV_MINOR_BASE + MOUSEDEV_MINORS)
+ 			dev_no -= MOUSEDEV_MINOR_BASE;
+ 		dev_set_name(&mousedev->dev, "mouse%d", dev_no);
++
++		mousedev->open_device = mousedev_open_device;
++		mousedev->close_device = mousedev_close_device;
+ 	}
+ 
+ 	mousedev->exist = true;
+-	mousedev->is_mixdev = mixdev;
+ 	mousedev->handle.dev = input_get_device(dev);
+ 	mousedev->handle.name = dev_name(&mousedev->dev);
+ 	mousedev->handle.handler = handler;
+@@ -919,7 +930,7 @@ static void mousedev_destroy(struct mousedev *mousedev)
+ 	device_del(&mousedev->dev);
+ 	mousedev_cleanup(mousedev);
+ 	input_free_minor(MINOR(mousedev->dev.devt));
+-	if (!mousedev->is_mixdev)
++	if (mousedev != mousedev_mix)
+ 		input_unregister_handle(&mousedev->handle);
+ 	put_device(&mousedev->dev);
+ }
 -- 
 1.8.3.2
 
