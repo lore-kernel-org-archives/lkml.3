@@ -1,131 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaDAEHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:07:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53774 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaDAEHJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:07:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 3/9] Input: synaptics - add manual min/max quirk
-Date: Mon, 31 Mar 2014 21:08:17 -0700
-Message-Id: <20140401040755.502886537@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140401040754.479538406@linuxfoundation.org>
-References: <20140401040754.479538406@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1752207AbaDAEHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:07:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:41548 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750739AbaDAEH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 00:07:28 -0400
+Date: Tue, 1 Apr 2014 15:07:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: linux-next: manual merge of the audit tree with Linus' tree
+Message-Id: <20140401150721.1e9d4e6c36660d5411c10f37@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Apr_2014_15_07_21_+1100_kdychD2_Oo/1=j4r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Tue__1_Apr_2014_15_07_21_+1100_kdychD2_Oo/1=j4r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Eric,
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Today's linux-next merge of the audit tree got a conflict in
+kernel/audit.c between commit aa4af831bb4f ("AUDIT: Allow login in
+non-init namespaces") from Linus' tree and commit 5a3cb3b6c3a0 ("audit:
+allow user processes to log from another PID namespace") from the audit
+tree.
 
-commit 421e08c41fda1f0c2ff6af81a67b491389b653a5 upstream.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
-However, these new Synaptics devices report bad axis ranges.
-Under Windows, it is not a problem because the Windows driver uses RMI4
-over SMBus to talk to the device. Under Linux, we are using the PS/2
-fallback interface and it occurs the reported ranges are wrong.
+[Eric: that audit tree commit has no Signed-off-by from you even though
+you committed it ... there are a few like that]
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Of course, it would be too easy to have only one range for the whole
-series, each touchpad seems to be calibrated in a different way.
+diff --cc kernel/audit.c
+index 95a20f3f52f1,ad77d1e80895..000000000000
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@@ -607,20 -607,9 +607,19 @@@ static int audit_netlink_ok(struct sk_b
+  {
+  	int err =3D 0;
+ =20
+- 	/* Only support the initial namespaces for now. */
++ 	/* Only support initial user namespace for now. */
+ +	/*
+ +	 * We return ECONNREFUSED because it tricks userspace into thinking
+ +	 * that audit was not configured into the kernel.  Lots of users
+ +	 * configure their PAM stack (because that's what the distro does)
+ +	 * to reject login if unable to send messages to audit.  If we return
+ +	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
+ +	 * configured in and will let login proceed.  If we return EPERM
+ +	 * userspace will reject all logins.  This should be removed when we
+ +	 * support non init namespaces!!
+ +	 */
+- 	if ((current_user_ns() !=3D &init_user_ns) ||
+- 	    (task_active_pid_ns(current) !=3D &init_pid_ns))
++ 	if ((current_user_ns() !=3D &init_user_ns))
+ -		return -EPERM;
+ +		return -ECONNREFUSED;
+ =20
+  	switch (msg_type) {
+  	case AUDIT_LIST:
 
-We can not use SMBus to get the actual range because I suspect the firmware
-will switch into the SMBus mode and stop talking through PS/2 (this is the
-case for hybrid HID over I2C / PS/2 Synaptics touchpads).
+--Signature=_Tue__1_Apr_2014_15_07_21_+1100_kdychD2_Oo/1=j4r
+Content-Type: application/pgp-signature
 
-So as a temporary solution (until RMI4 land into upstream), start a new
-list of quirks with the min/max manually set.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+iQIcBAEBCAAGBQJTOjt9AAoJEMDTa8Ir7ZwV+AQP/R4KgK/7Cf9pFmizqhOlyCU1
+3Bjs19TEWNKIWWSvoWub9F4iZ+4DkqQOz+gsfRsTOpply0OZMeKNCKHNxvh74KgO
+XhCx9UsGf9H11K/RZqctCsZHYzhy+6qa3IffRnQ44LYWNfLOrjKEu/k4mum4BaBi
+MJ1CGO/TmnNPcZlrnPWCRaix6bmgDmXrQnARTPBtfkrH7QmOLjvrt0OalOYxttBm
+KhUiV5FKfYspRP+gmEYRuoDjXU+nEZ2k87bXK0NNmDp/VewsDlfTBk9NLOEZoM8m
+ADjJ9ExbUWb2vVL1SVtLS4CZ8wUHNMqJQASfs0o/RPRzrhZ6RT4ln2nd1Gw7S5YW
+Q8zn6SKsuDShAHx8iI/ZXBAIiPiXUuQZnwOwhzsCWszizWsms/CuOC+hn00LSAor
+5ptGRnD01VH8IzL1fySOjccl+PagrMTve68ClfpwRW8Hp8wh/3bV+IqEFc6SLOck
+Aiozsv/z1vdWzixACDqXZclXivRvsq7phy8T8pxrFu3lDFV5IzjDHOqgzCB+Qp+P
+L9ac4MNXB1VYk53AwMZGzE6CpIJnj/PR2qj+7GMhB701lsztFszbiiXLvRRDFFbb
+BJwuK48LLXDJKCSoamk5U2y9FfmZ/1S5/rdnX98b3ewwp13SECV2RQc4/0H4moQC
+ygT4YS5+hXyD+JTJcIO/
+=QolZ
+-----END PGP SIGNATURE-----
 
----
- drivers/input/mouse/synaptics.c |   47 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
-
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -265,11 +265,22 @@ static int synaptics_identify(struct psm
-  * Read touchpad resolution and maximum reported coordinates
-  * Resolution is left zero if touchpad does not support the query
-  */
-+
-+static const int *quirk_min_max;
-+
- static int synaptics_resolution(struct psmouse *psmouse)
- {
- 	struct synaptics_data *priv = psmouse->private;
- 	unsigned char resp[3];
- 
-+	if (quirk_min_max) {
-+		priv->x_min = quirk_min_max[0];
-+		priv->x_max = quirk_min_max[1];
-+		priv->y_min = quirk_min_max[2];
-+		priv->y_max = quirk_min_max[3];
-+		return 0;
-+	}
-+
- 	if (SYN_ID_MAJOR(priv->identity) < 4)
- 		return 0;
- 
-@@ -1485,10 +1496,46 @@ static const struct dmi_system_id __init
- 	{ }
- };
- 
-+static const struct dmi_system_id min_max_dmi_table[] __initconst = {
-+#if defined(CONFIG_DMI)
-+	{
-+		/* Lenovo ThinkPad Helix */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
-+		},
-+		.driver_data = (int []){1024, 5052, 2258, 4832},
-+	},
-+	{
-+		/* Lenovo ThinkPad T440s */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
-+		/* Lenovo ThinkPad T540p */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
-+		},
-+		.driver_data = (int []){1024, 5056, 2058, 4832},
-+	},
-+#endif
-+	{ }
-+};
-+
- void __init synaptics_module_init(void)
- {
-+	const struct dmi_system_id *min_max_dmi;
-+
- 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
- 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
-+
-+	min_max_dmi = dmi_first_match(min_max_dmi_table);
-+	if (min_max_dmi)
-+		quirk_min_max = min_max_dmi->driver_data;
- }
- 
- static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
-
-
+--Signature=_Tue__1_Apr_2014_15_07_21_+1100_kdychD2_Oo/1=j4r--
