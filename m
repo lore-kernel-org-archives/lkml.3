@@ -1,80 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaDALTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:19:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42781 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaDALTH (ORCPT
+	id S1753194AbaDALUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:20:46 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:59029 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150AbaDALUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:19:07 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Artem Fetishev <artem_fetishev@epam.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/144] x86: fix boot on uniprocessor systems
-Date: Tue,  1 Apr 2014 12:15:29 +0100
-Message-Id: <1396350948-29910-126-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 1 Apr 2014 07:20:37 -0400
+Message-ID: <533AA0F7.2080304@monstr.eu>
+Date: Tue, 01 Apr 2014 13:20:23 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Harini Katakam <harinik@xilinx.com>, grant.likely@linaro.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        michals@xilinx.com, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/2] watchdog: Add Cadence WDT driver
+References: <1396002720-7105-1-git-send-email-harinik@xilinx.com> <533A0937.9030505@roeck-us.net>
+In-Reply-To: <533A0937.9030505@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Guenter,
 
-From: Artem Fetishev <artem_fetishev@epam.com>
+>> +/**
+>> + * struct cdns_wdt - Watchdog device structure
+>> + * @regs: baseaddress of device
+>> + * @rst: reset flag
+>> + * @clk: struct clk * of a clock source
+>> + * @prescaler: for saving prescaler value
+>> + * @ctrl_clksel: counter clock prescaler selection
+>> + * @io_lock: spinlock for IO register access
+>> + * @cdns_wdt_device: watchdog device structure
+>> + * @cdns_wdt_notifier: notifier structure
+>> + *
+>> + * Structure containing parameters specific to cadence watchdog.
+>> + */
+>> +struct cdns_wdt {
+>> +    void __iomem        *regs;
+>> +    u32            rst;
+>> +    struct clk        *clk;
+>> +    u32            prescaler;
+>> +    u32            ctrl_clksel;
+>> +    spinlock_t        io_lock;
+>> +    struct watchdog_device    cdns_wdt_device;
+>> +    struct notifier_block    cdns_wdt_notifier;
+>> +};
+>> +
+>> +/* Write access to Registers */
+>> +static inline void cdns_wdt_writereg(void __iomem *offset, u32 val)
+>> +{
+>> +    writel_relaxed(val, offset);
+>> +}
+>> +
+>=20
+> Not really sure if this function provides any value.
 
-commit 825600c0f20e595daaa7a6dd8970f84fa2a2ee57 upstream.
+I can't see any problem to use this helper IO function
+but maybe we could do it a little bit differently.
+Currently implementation is just passing values to writel_relaxed()
 
-On x86 uniprocessor systems topology_physical_package_id() returns -1
-which causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized
-which leads to GPF in rapl_pmu_init().
+What about to do it like this?
 
-See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
+static inline void cdns_wdt_writereg(struct cdns_wdt *wdt, u32 offset, u3=
+2 val)
+{
+    writel_relaxed(val, wdt->regs + offset);
+}
 
-It turns out that physical_package_id and core_id can actually be
-retreived for uniprocessor systems too.  Enabling them also fixes
-rapl_pmu code.
+This solution was suggested by Mark here too.
+https://lkml.org/lkml/2014/3/17/234
 
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/x86/include/asm/topology.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+The reason for having one IO helper function is
+1. Simper debugging when you add printks to one location and
+you get full list for accesses
+2. This driver can be also used by BE Linux on Microblaze in PL
+that's why there could be a need to autodetect endianess directly
+on the IP itself. Then using helper function is necessary.
+3. We have met with secure monitor implementation where all these
+io accesses should be done via smc calls and having
+IO helper function is easier for change.
 
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index 095b215..60bd274 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
- 
- extern const struct cpumask *cpu_coregroup_mask(int cpu);
- 
--#ifdef ENABLE_TOPO_DEFINES
- #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
-+
-+#ifdef ENABLE_TOPO_DEFINES
- #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
- 
--- 
-1.9.1
+Thanks,
+Michal
 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlM6oPcACgkQykllyylKDCGltwCfark82XZsx3xg6RW1TJZq48xk
+tpkAn0em/Tpp9YxxOa5d8fVlcD7JOtJN
+=ihri
+-----END PGP SIGNATURE-----
+
+--1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS--
