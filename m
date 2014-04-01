@@ -1,104 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaDAEF7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:05:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53729 "EHLO
+	id S1751996AbaDAEGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:06:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaDAEF5 (ORCPT
+	with ESMTP id S1750739AbaDAEGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:05:57 -0400
+	Tue, 1 Apr 2014 00:06:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.4 0/6] 3.4.86-stable review
-Date: Mon, 31 Mar 2014 21:07:50 -0700
-Message-Id: <20140401032815.814334997@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.4 3/6] Input: synaptics - add manual min/max quirk
+Date: Mon, 31 Mar 2014 21:07:53 -0700
+Message-Id: <20140401032816.304064074@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140401032815.814334997@linuxfoundation.org>
+References: <20140401032815.814334997@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.86 release.
-There are 6 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Apr  3 03:28:04 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.86-rc1.gz
-and the diffstat can be found below.
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-thanks,
+commit 421e08c41fda1f0c2ff6af81a67b491389b653a5 upstream.
 
-greg k-h
+The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
+However, these new Synaptics devices report bad axis ranges.
+Under Windows, it is not a problem because the Windows driver uses RMI4
+over SMBus to talk to the device. Under Linux, we are using the PS/2
+fallback interface and it occurs the reported ranges are wrong.
 
--------------
-Pseudo-Shortlog of commits:
+Of course, it would be too easy to have only one range for the whole
+series, each touchpad seems to be calibrated in a different way.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.86-rc1
+We can not use SMBus to get the actual range because I suspect the firmware
+will switch into the SMBus mode and stop talking through PS/2 (this is the
+case for hybrid HID over I2C / PS/2 Synaptics touchpads).
 
-Daniel Borkmann <dborkman@redhat.com>
-    netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+So as a temporary solution (until RMI4 land into upstream), start a new
+list of quirks with the min/max manually set.
 
-Artem Fetishev <artem_fetishev@epam.com>
-    x86: fix boot on uniprocessor systems
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Hans de Goede <hdegoede@redhat.com>
-    Input: synaptics - add manual min/max quirk for ThinkPad X240
+---
+ drivers/input/mouse/synaptics.c |   47 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-Benjamin Tissoires <benjamin.tissoires@redhat.com>
-    Input: synaptics - add manual min/max quirk
-
-Theodore Ts'o <tytso@mit.edu>
-    ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-
-Samuel Thibault <samuel.thibault@ens-lyon.org>
-    staging: speakup: Prefix externally-visible symbols
-
-
--------------
-
-Diffstat:
-
- Makefile                                 |   4 +-
- arch/x86/include/asm/topology.h          |   3 +-
- drivers/input/mouse/synaptics.c          |  55 +++++
- drivers/staging/speakup/i18n.c           |  12 +-
- drivers/staging/speakup/i18n.h           |  12 +-
- drivers/staging/speakup/keyhelp.c        |  36 +--
- drivers/staging/speakup/kobjects.c       |  80 +++----
- drivers/staging/speakup/main.c           | 366 +++++++++++++++----------------
- drivers/staging/speakup/selection.c      |  14 +-
- drivers/staging/speakup/serialio.c       |   6 +-
- drivers/staging/speakup/speakup.h        |  72 +++---
- drivers/staging/speakup/speakup_acntpc.c |   6 +-
- drivers/staging/speakup/speakup_acntsa.c |   2 +-
- drivers/staging/speakup/speakup_apollo.c |   8 +-
- drivers/staging/speakup/speakup_audptr.c |   2 +-
- drivers/staging/speakup/speakup_bns.c    |   2 +-
- drivers/staging/speakup/speakup_decext.c |   6 +-
- drivers/staging/speakup/speakup_decpc.c  |   4 +-
- drivers/staging/speakup/speakup_dectlk.c |   6 +-
- drivers/staging/speakup/speakup_dtlk.c   |   4 +-
- drivers/staging/speakup/speakup_dummy.c  |   2 +-
- drivers/staging/speakup/speakup_keypc.c  |   6 +-
- drivers/staging/speakup/speakup_ltlk.c   |   2 +-
- drivers/staging/speakup/speakup_spkout.c |   2 +-
- drivers/staging/speakup/speakup_txprt.c  |   2 +-
- drivers/staging/speakup/spk_priv.h       |   8 +-
- drivers/staging/speakup/synth.c          |  38 ++--
- drivers/staging/speakup/thread.c         |   4 +-
- drivers/staging/speakup/varhandlers.c    |  66 +++---
- fs/ext4/inode.c                          |  15 +-
- include/linux/bitops.h                   |  15 ++
- net/netfilter/nf_conntrack_proto_dccp.c  |   6 +-
- 32 files changed, 470 insertions(+), 396 deletions(-)
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -232,11 +232,22 @@ static int synaptics_identify(struct psm
+  * Read touchpad resolution and maximum reported coordinates
+  * Resolution is left zero if touchpad does not support the query
+  */
++
++static const int *quirk_min_max;
++
+ static int synaptics_resolution(struct psmouse *psmouse)
+ {
+ 	struct synaptics_data *priv = psmouse->private;
+ 	unsigned char resp[3];
+ 
++	if (quirk_min_max) {
++		priv->x_min = quirk_min_max[0];
++		priv->x_max = quirk_min_max[1];
++		priv->y_min = quirk_min_max[2];
++		priv->y_max = quirk_min_max[3];
++		return 0;
++	}
++
+ 	if (SYN_ID_MAJOR(priv->identity) < 4)
+ 		return 0;
+ 
+@@ -1412,10 +1423,46 @@ static const struct dmi_system_id __init
+ 	{ }
+ };
+ 
++static const struct dmi_system_id min_max_dmi_table[] __initconst = {
++#if defined(CONFIG_DMI)
++	{
++		/* Lenovo ThinkPad Helix */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
++		},
++		.driver_data = (int []){1024, 5052, 2258, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T440s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
++		/* Lenovo ThinkPad T540p */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
++		},
++		.driver_data = (int []){1024, 5056, 2058, 4832},
++	},
++#endif
++	{ }
++};
++
+ void __init synaptics_module_init(void)
+ {
++	const struct dmi_system_id *min_max_dmi;
++
+ 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+ 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
++
++	min_max_dmi = dmi_first_match(min_max_dmi_table);
++	if (min_max_dmi)
++		quirk_min_max = min_max_dmi->driver_data;
+ }
+ 
+ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
 
 
