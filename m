@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaDALLd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:11:33 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63741 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaDALLc (ORCPT
+	id S1751375AbaDALP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:15:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42061 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaDALPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:11:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <533A97EF.7030900@linux.vnet.ibm.com>
-References: <1396013246-6577-1-git-send-email-vincent.guittot@linaro.org> <533A97EF.7030900@linux.vnet.ibm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 1 Apr 2014 13:11:11 +0200
-Message-ID: <CAKfTPtAwLz7wkH9A1QFdjFb52iovF_PifphjM__ZHnm+tCuzTQ@mail.gmail.com>
-Subject: Re: [RFC 4/4] sched: add per group cpu_power_orig
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Apr 2014 07:15:54 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 001/144] ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
+Date: Tue,  1 Apr 2014 12:13:25 +0100
+Message-Id: <1396350948-29910-2-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 April 2014 12:41, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> Hi Vincent,
->
-> On 03/28/2014 06:57 PM, Vincent Guittot wrote:
->> This new field cpu_power_orig reflects the available capacity of a CPUs unlike
->> the cpu_power which reflects the current capacity that can be altered by
->> frequency and rt tasks.
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->
-> Should not the subject be "add per rq cpu_power_orig"?
+3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
 
-yes you're right :-)
-I don't know how i came to that subject... a quick and dirty
-copy/paste of something else
+------------------
 
-thanks
-Vincent
+From: Roman Volkov <v1ron@mail.ru>
 
->
-> Regards
-> Preeti U Murthy
->> ---
->>  kernel/sched/core.c  | 2 +-
->>  kernel/sched/fair.c  | 1 +
->>  kernel/sched/sched.h | 1 +
->>  3 files changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 5b20b27..8513f83 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -6911,7 +6911,7 @@ void __init sched_init(void)
->>  #ifdef CONFIG_SMP
->>               rq->sd = NULL;
->>               rq->rd = NULL;
->> -             rq->cpu_power = SCHED_POWER_SCALE;
->> +             rq->cpu_power = rq->cpu_power_orig = SCHED_POWER_SCALE;
->>               rq->post_schedule = 0;
->>               rq->active_balance = 0;
->>               rq->next_balance = jiffies;
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 7387c05..f1e4db6 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5611,6 +5611,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
->>
->>       power >>= SCHED_POWER_SHIFT;
->>
->> +     cpu_rq(cpu)->cpu_power_orig = power;
->>       sdg->sgp->power_orig = power;
->>
->>       if (sched_feat(ARCH_POWER))
->> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
->> index 46c3784..2abdf5c 100644
->> --- a/kernel/sched/sched.h
->> +++ b/kernel/sched/sched.h
->> @@ -578,6 +578,7 @@ struct rq {
->>       struct sched_domain *sd;
->>
->>       unsigned long cpu_power;
->> +     unsigned long cpu_power_orig;
->>
->>       unsigned char idle_balance;
->>       /* For active balancing */
->>
->
+commit 3dd77654fb1d7f68b9739f3039bad8dbbc0739f8 upstream.
+
+Actually CS4245 connected to the I2S channel 1 for
+capture, not channel 2. Otherwise capturing and
+playback does not work for CS4245.
+
+Signed-off-by: Roman Volkov <v1ron@mail.ru>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+[ luis: backported to 3.11:
+  - model_xonar_dg is defined in xonar_dg.c in 3.5 kernel ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ sound/pci/oxygen/xonar_dg.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/pci/oxygen/xonar_dg.c b/sound/pci/oxygen/xonar_dg.c
+index 77acd79..5519b8f 100644
+--- a/sound/pci/oxygen/xonar_dg.c
++++ b/sound/pci/oxygen/xonar_dg.c
+@@ -596,7 +596,7 @@ struct oxygen_model model_xonar_dg = {
+ 	.model_data_size = sizeof(struct dg),
+ 	.device_config = PLAYBACK_0_TO_I2S |
+ 			 PLAYBACK_1_TO_SPDIF |
+-			 CAPTURE_0_FROM_I2S_2 |
++			 CAPTURE_0_FROM_I2S_1 |
+ 			 CAPTURE_1_FROM_SPDIF,
+ 	.dac_channels_pcm = 6,
+ 	.dac_channels_mixer = 0,
+-- 
+1.9.1
+
