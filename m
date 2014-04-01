@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaDAMFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:05:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42303 "EHLO
+	id S1752058AbaDALQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:16:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42257 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961AbaDALRA (ORCPT
+	with ESMTP id S1751961AbaDALQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:00 -0400
+	Tue, 1 Apr 2014 07:16:51 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Jan Kara <jack@suse.cz>, Goldwyn Rodrigues <rgoldwyn@suse.de>,
+        Joel Becker <jlbec@evilplan.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 047/144] ALSA: hda - Add missing loopback merge path for AD1884/1984 codecs
-Date: Tue,  1 Apr 2014 12:14:11 +0100
-Message-Id: <1396350948-29910-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 040/144] ocfs2: fix quota file corruption
+Date: Tue,  1 Apr 2014 12:14:04 +0100
+Message-Id: <1396350948-29910-41-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,31 +30,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jan Kara <jack@suse.cz>
 
-commit c5eda4c1bf6214332c46fb2f4e7c42a85e5e5643 upstream.
+commit 15c34a760630ca2c803848fba90ca0646a9907dd upstream.
 
-The mixer widget (NID 0x20) of AD1884 and AD1984 codecs isn't
-connected directly to the actual I/O paths but only via another mixer
-widget (NID 0x21).  We need a similar fix as we did for AD1882.
+Global quota files are accessed from different nodes.  Thus we cannot
+cache offset of quota structure in the quota file after we drop our node
+reference count to it because after that moment quota structure may be
+freed and reallocated elsewhere by a different node resulting in
+corruption of quota file.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix the problem by clearing dq_off when we are releasing dquot structure.
+We also remove the DB_READ_B handling because it is useless -
+DQ_ACTIVE_B is set iff DQ_READ_B is set.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Goldwyn Rodrigues <rgoldwyn@suse.de>
+Cc: Joel Becker <jlbec@evilplan.org>
+Reviewed-by: Mark Fasheh <mfasheh@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_analog.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/quota_global.c | 27 +++++++++++++++++----------
+ fs/ocfs2/quota_local.c  |  4 ----
+ 2 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index 3d8e567..570bce0 100644
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -3697,6 +3697,7 @@ static int ad1884_parse_auto_config(struct hda_codec *codec)
- 	spec = codec->spec;
+diff --git a/fs/ocfs2/quota_global.c b/fs/ocfs2/quota_global.c
+index 332a281..e49b4f1 100644
+--- a/fs/ocfs2/quota_global.c
++++ b/fs/ocfs2/quota_global.c
+@@ -717,6 +717,12 @@ static int ocfs2_release_dquot(struct dquot *dquot)
+ 	 */
+ 	if (status < 0)
+ 		mlog_errno(status);
++	/*
++	 * Clear dq_off so that we search for the structure in quota file next
++	 * time we acquire it. The structure might be deleted and reallocated
++	 * elsewhere by another node while our dquot structure is on freelist.
++	 */
++	dquot->dq_off = 0;
+ 	clear_bit(DQ_ACTIVE_B, &dquot->dq_flags);
+ out_trans:
+ 	ocfs2_commit_trans(osb, handle);
+@@ -756,16 +762,17 @@ static int ocfs2_acquire_dquot(struct dquot *dquot)
+ 	status = ocfs2_lock_global_qf(info, 1);
+ 	if (status < 0)
+ 		goto out;
+-	if (!test_bit(DQ_READ_B, &dquot->dq_flags)) {
+-		status = ocfs2_qinfo_lock(info, 0);
+-		if (status < 0)
+-			goto out_dq;
+-		status = qtree_read_dquot(&info->dqi_gi, dquot);
+-		ocfs2_qinfo_unlock(info, 0);
+-		if (status < 0)
+-			goto out_dq;
+-	}
+-	set_bit(DQ_READ_B, &dquot->dq_flags);
++	status = ocfs2_qinfo_lock(info, 0);
++	if (status < 0)
++		goto out_dq;
++	/*
++	 * We always want to read dquot structure from disk because we don't
++	 * know what happened with it while it was on freelist.
++	 */
++	status = qtree_read_dquot(&info->dqi_gi, dquot);
++	ocfs2_qinfo_unlock(info, 0);
++	if (status < 0)
++		goto out_dq;
  
- 	spec->gen.mixer_nid = 0x20;
-+	spec->gen.mixer_merge_nid = 0x21;
- 	spec->gen.beep_nid = 0x10;
- 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
+ 	OCFS2_DQUOT(dquot)->dq_use_count++;
+ 	OCFS2_DQUOT(dquot)->dq_origspace = dquot->dq_dqb.dqb_curspace;
+diff --git a/fs/ocfs2/quota_local.c b/fs/ocfs2/quota_local.c
+index 27fe7ee..d0f323d 100644
+--- a/fs/ocfs2/quota_local.c
++++ b/fs/ocfs2/quota_local.c
+@@ -1303,10 +1303,6 @@ int ocfs2_local_release_dquot(handle_t *handle, struct dquot *dquot)
+ 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
+ 
+ out:
+-	/* Clear the read bit so that next time someone uses this
+-	 * dquot he reads fresh info from disk and allocates local
+-	 * dquot structure */
+-	clear_bit(DQ_READ_B, &dquot->dq_flags);
+ 	return status;
+ }
  
 -- 
 1.9.1
