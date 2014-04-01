@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbaDAQJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:09:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44360 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaDAQJF (ORCPT
+	id S1752745AbaDAQoz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:44:55 -0400
+Received: from ns3094689.ip-91-121-202.eu ([91.121.202.112]:50809 "EHLO
+	ns3094689.ip-91-121-202.eu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751729AbaDAQot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:05 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hans Schillstrom <hans@schillstrom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 20/86] ipv6: ipv6_find_hdr restore prev functionality
-Date: Tue,  1 Apr 2014 09:07:33 -0700
-Message-Id: <1396368519-12728-21-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 1 Apr 2014 12:44:49 -0400
+From: Denis Pithon <denis.pithon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: khoroshilov@ispras.ru, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 3/3] staging/wlan-ng: fix small coding style issues
+Date: Tue,  1 Apr 2014 18:43:19 +0200
+Message-Id: <1396370599-27618-3-git-send-email-denis.pithon@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1396370599-27618-1-git-send-email-denis.pithon@gmail.com>
+References: <20140331213431.GA31288@kroah.com>
+ <1396370599-27618-1-git-send-email-denis.pithon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
+Delete some unneeded blank lines and add few ones to make checkpatch.pl
+happy.
 
-------------------
-
-From: Hans Schillstrom <hans@schillstrom.com>
-
-[ Upstream commit accfe0e356327da5bd53da8852b93fc22de9b5fc ]
-
-The commit 9195bb8e381d81d5a315f911904cdf0cfcc919b8 ("ipv6: improve
-ipv6_find_hdr() to skip empty routing headers") broke ipv6_find_hdr().
-
-When a target is specified like IPPROTO_ICMPV6 ipv6_find_hdr()
-returns -ENOENT when it's found, not the header as expected.
-
-A part of IPVS is broken and possible also nft_exthdr_eval().
-When target is -1 which it is most cases, it works.
-
-This patch exits the do while loop if the specific header is found
-so the nexthdr could be returned as expected.
-
-Reported-by: Art -kwaak- van Breemen <ard@telegraafnet.nl>
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-CC:Ansis Atteka <aatteka@nicira.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Denis Pithon <denis.pithon@gmail.com>
 ---
- net/ipv6/exthdrs_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/wlan-ng/prism2usb.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/exthdrs_core.c b/net/ipv6/exthdrs_core.c
-index c5e83fa..51af9d0 100644
---- a/net/ipv6/exthdrs_core.c
-+++ b/net/ipv6/exthdrs_core.c
-@@ -212,7 +212,7 @@ int ipv6_find_hdr(const struct sk_buff *skb, unsigned int *offset,
- 		found = (nexthdr == target);
- 
- 		if ((!ipv6_ext_hdr(nexthdr)) || nexthdr == NEXTHDR_NONE) {
--			if (target < 0)
-+			if (target < 0 || found)
- 				break;
- 			return -ENOENT;
+diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
+index 613c312..e92bbc1 100644
+--- a/drivers/staging/wlan-ng/prism2usb.c
++++ b/drivers/staging/wlan-ng/prism2usb.c
+@@ -96,7 +96,8 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
+ 					   prism2_reset_settletime, 0);
+ 		if (result != 0) {
+ 			result = -EIO;
+-			dev_err(&interface->dev, "hfa384x_corereset() failed.\n");
++			dev_err(&interface->dev,
++				"hfa384x_corereset() failed.\n");
+ 			goto failed_reset;
  		}
+ 	}
+@@ -136,7 +137,6 @@ static void prism2sta_disconnect_usb(struct usb_interface *interface)
+ 	wlandevice_t *wlandev;
+ 
+ 	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
+-
+ 	if (wlandev != NULL) {
+ 		LIST_HEAD(cleanlist);
+ 		struct list_head *entry;
+@@ -228,6 +228,7 @@ static int prism2sta_suspend(struct usb_interface *interface,
+ {
+ 	hfa384x_t *hw = NULL;
+ 	wlandevice_t *wlandev;
++
+ 	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
+ 	if (!wlandev)
+ 		return -ENODEV;
+@@ -250,6 +251,7 @@ static int prism2sta_resume(struct usb_interface *interface)
+ 	int result = 0;
+ 	hfa384x_t *hw = NULL;
+ 	wlandevice_t *wlandev;
++
+ 	wlandev = (wlandevice_t *) usb_get_intfdata(interface);
+ 	if (!wlandev)
+ 		return -ENODEV;
 -- 
-1.8.3.2
+1.9.0
 
