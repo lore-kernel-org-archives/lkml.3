@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048AbaDALdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:33:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42673 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaDALSg (ORCPT
+	id S1752924AbaDALeE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:34:04 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:46471
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751816AbaDALd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:36 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 116/144] ALSA: compress: Pass through return value of open ops callback
-Date: Tue,  1 Apr 2014 12:15:20 +0100
-Message-Id: <1396350948-29910-117-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 1 Apr 2014 07:33:57 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zcb8kzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
+        <Li.Xiubo@freescale.com>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
+Subject: [PATCH] ASoC: fsl_sai: Add imx6sx platform support
+Date: Tue, 1 Apr 2014 19:34:09 +0800
+Message-ID: <1396352049-23554-1-git-send-email-Guangyu.Chen@freescale.com>
+X-Mailer: git-send-email 1.8.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
+The next coming i.MX6 Solo X SoC also contains SAI module while we use
+imp_pcm_init() for i.MX platform.
 
-------------------
+So this patch adds one compatible route for imx6sx and updates the DT
+doc accordingly.
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-
-commit 749d32237bf39e6576dd95bfdf24e4378e51716c upstream.
-
-The snd_compr_open function would always return 0 even if the compressed
-ops open function failed, obviously this is incorrect. Looks like this
-was introduced by a small typo in:
-
-commit a0830dbd4e42b38aefdf3fb61ba5019a1a99ea85
-ALSA: Add a reference counter to card instance
-
-This patch returns the value from the compressed op as it should.
-
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
 ---
- sound/core/compress_offload.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/devicetree/bindings/sound/fsl-sai.txt |  2 +-
+ sound/soc/fsl/fsl_sai.c                             | 12 ++++++++++--
+ sound/soc/fsl/fsl_sai.h                             |  1 +
+ 3 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
-index 1979993..3fdf998 100644
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -133,7 +133,7 @@ static int snd_compr_open(struct inode *inode, struct file *f)
- 		kfree(data);
- 	}
- 	snd_card_unref(compr->card);
--	return 0;
-+	return ret;
+diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+index 98611a6..35c09fe 100644
+--- a/Documentation/devicetree/bindings/sound/fsl-sai.txt
++++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+@@ -7,7 +7,7 @@ codec/DSP interfaces.
+ 
+ 
+ Required properties:
+-- compatible: Compatible list, contains "fsl,vf610-sai".
++- compatible: Compatible list, contains "fsl,vf610-sai" or "fsl,imx6sx-sai".
+ - reg: Offset and length of the register set for the device.
+ - clocks: Must contain an entry for each entry in clock-names.
+ - clock-names : Must include the "sai" entry.
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index d64c33f..9ed6795 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -22,6 +22,7 @@
+ #include <sound/pcm_params.h>
+ 
+ #include "fsl_sai.h"
++#include "imx-pcm.h"
+ 
+ #define FSL_SAI_FLAGS (FSL_SAI_CSR_SEIE |\
+ 		       FSL_SAI_CSR_FEIE)
+@@ -592,6 +593,9 @@ static int fsl_sai_probe(struct platform_device *pdev)
+ 
+ 	sai->pdev = pdev;
+ 
++	if (of_device_is_compatible(pdev->dev.of_node, "fsl,imx6sx-sai"))
++		sai->sai_on_imx = true;
++
+ 	sai->big_endian_regs = of_property_read_bool(np, "big-endian-regs");
+ 	if (sai->big_endian_regs)
+ 		fsl_sai_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
+@@ -634,12 +638,16 @@ static int fsl_sai_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	return devm_snd_dmaengine_pcm_register(&pdev->dev, NULL,
+-			SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
++	if (sai->sai_on_imx)
++		return imx_pcm_dma_init(pdev);
++	else
++		return devm_snd_dmaengine_pcm_register(&pdev->dev, NULL,
++				SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
  }
  
- static int snd_compr_free(struct inode *inode, struct file *f)
+ static const struct of_device_id fsl_sai_ids[] = {
+ 	{ .compatible = "fsl,vf610-sai", },
++	{ .compatible = "fsl,imx6sx-sai", },
+ 	{ /* sentinel */ }
+ };
+ 
+diff --git a/sound/soc/fsl/fsl_sai.h b/sound/soc/fsl/fsl_sai.h
+index be26d46..677670d 100644
+--- a/sound/soc/fsl/fsl_sai.h
++++ b/sound/soc/fsl/fsl_sai.h
+@@ -130,6 +130,7 @@ struct fsl_sai {
+ 	bool big_endian_regs;
+ 	bool big_endian_data;
+ 	bool is_dsp_mode;
++	bool sai_on_imx;
+ 
+ 	struct snd_dmaengine_dai_dma_data dma_params_rx;
+ 	struct snd_dmaengine_dai_dma_data dma_params_tx;
 -- 
-1.9.1
+1.8.4
+
 
