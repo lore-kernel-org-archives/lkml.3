@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaDAQWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:22:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44687 "EHLO
+	id S1753311AbaDAQXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:23:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44682 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118AbaDAQQL (ORCPT
+	with ESMTP id S1751569AbaDAQQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 12:16:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 35/86] ACPI / resources: ignore invalid ACPI device resources
-Date: Tue,  1 Apr 2014 09:07:48 -0700
-Message-Id: <1396368519-12728-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 28/86] iwlwifi: fix TX status for aggregated packets
+Date: Tue,  1 Apr 2014 09:07:41 -0700
+Message-Id: <1396368519-12728-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,73 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit b355cee88e3b1a193f0e9a81db810f6f83ad728b upstream.
+commit 143582c6847cb285b361804c613127c25de60ca4 upstream.
 
-ACPI table may export resource entry with 0 length.
-But the current code interprets this kind of resource in a wrong way.
-It will create a resource structure with
-res->end = acpi_resource->start + acpi_resource->len - 1;
+Only the first packet is currently handled correctly, but then
+all others are assumed to have failed which is problematic. Fix
+this, marking them all successful instead (since if they're not
+then the firmware will have transmitted them as single frames.)
 
-This patch fixes a problem on my machine that a platform device fails
-to be created because one of its ACPI IO resource entry (start = 0,
-end = 0, length = 0) is translated into a generic resource with
-start = 0, end = 0xffffffff.
+This fixes the lost packet reporting.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Also do a tiny variable scoping cleanup.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[Add the dvm part]
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+[ kamal: backport to 3.8 (only the dvm part) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/resource.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/tx.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index a3868f6..a6f1307 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -77,18 +77,24 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_MEMORY24:
- 		memory24 = &ares->data.memory24;
-+		if (!memory24->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, memory24->minimum,
- 					 memory24->address_length,
- 					 memory24->write_protect);
- 		break;
- 	case ACPI_RESOURCE_TYPE_MEMORY32:
- 		memory32 = &ares->data.memory32;
-+		if (!memory32->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, memory32->minimum,
- 					 memory32->address_length,
- 					 memory32->write_protect);
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
- 		fixed_memory32 = &ares->data.fixed_memory32;
-+		if (!fixed_memory32->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, fixed_memory32->address,
- 					 fixed_memory32->address_length,
- 					 fixed_memory32->write_protect);
-@@ -144,12 +150,16 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_IO:
- 		io = &ares->data.io;
-+		if (!io->address_length)
-+			return false;
- 		acpi_dev_get_ioresource(res, io->minimum,
- 					io->address_length,
- 					io->io_decode);
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_IO:
- 		fixed_io = &ares->data.fixed_io;
-+		if (!fixed_io->address_length)
-+			return false;
- 		acpi_dev_get_ioresource(res, fixed_io->address,
- 					fixed_io->address_length,
- 					ACPI_DECODE_10);
+diff --git a/drivers/net/wireless/iwlwifi/dvm/tx.c b/drivers/net/wireless/iwlwifi/dvm/tx.c
+index 2797964..855def9 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
+@@ -1253,8 +1253,6 @@ int iwlagn_rx_reply_compressed_ba(struct iwl_priv *priv,
+ 	struct iwl_compressed_ba_resp *ba_resp = (void *)pkt->data;
+ 	struct iwl_ht_agg *agg;
+ 	struct sk_buff_head reclaimed_skbs;
+-	struct ieee80211_tx_info *info;
+-	struct ieee80211_hdr *hdr;
+ 	struct sk_buff *skb;
+ 	int sta_id;
+ 	int tid;
+@@ -1341,22 +1339,28 @@ int iwlagn_rx_reply_compressed_ba(struct iwl_priv *priv,
+ 	freed = 0;
+ 
+ 	skb_queue_walk(&reclaimed_skbs, skb) {
+-		hdr = (struct ieee80211_hdr *)skb->data;
++		struct ieee80211_hdr *hdr = (void *)skb->data;
++		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+ 
+ 		if (ieee80211_is_data_qos(hdr->frame_control))
+ 			freed++;
+ 		else
+ 			WARN_ON_ONCE(1);
+ 
+-		info = IEEE80211_SKB_CB(skb);
+ 		iwl_trans_free_tx_cmd(priv->trans, info->driver_data[1]);
+ 
++		memset(&info->status, 0, sizeof(info->status));
++		/* Packet was transmitted successfully, failures come as single
++		 * frames because before failing a frame the firmware transmits
++		 * it without aggregation at least once.
++		 */
++		info->flags |= IEEE80211_TX_STAT_ACK;
++
+ 		if (freed == 1) {
+ 			/* this is the first skb we deliver in this batch */
+ 			/* put the rate scaling data there */
+ 			info = IEEE80211_SKB_CB(skb);
+ 			memset(&info->status, 0, sizeof(info->status));
+-			info->flags |= IEEE80211_TX_STAT_ACK;
+ 			info->flags |= IEEE80211_TX_STAT_AMPDU;
+ 			info->status.ampdu_ack_len = ba_resp->txed_2_done;
+ 			info->status.ampdu_len = ba_resp->txed;
 -- 
 1.8.3.2
 
