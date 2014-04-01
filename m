@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaDAPaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:30:15 -0400
-Received: from mail-bn1hn0247.outbound.protection.outlook.com ([157.56.110.247]:55284
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751511AbaDAPaN convert rfc822-to-8bit (ORCPT
+	id S1752042AbaDAPak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:30:40 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56186 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaDAPai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:30:13 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	Tue, 1 Apr 2014 11:30:38 -0400
+Date: Tue, 1 Apr 2014 08:30:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_prempt stalls / lockup
+Message-ID: <20140401153032.GT4284@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140331230241.GA30019@redhat.com>
+ <20140331232220.GP4284@linux.vnet.ibm.com>
+ <20140331233552.GB30019@redhat.com>
+ <20140401004801.GQ4284@linux.vnet.ibm.com>
+ <20140401150849.GA14757@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Admin Help Desk 2014 (c)
-Date: Tue, 1 Apr 2014 11:25:19 -0400
-Message-ID: <9AB5E2FD917FBE4594E18A91797F373101436FA6@EXCHANGE00.rockdale.k12.ga.us>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Admin Help Desk 2014 (c)
-Thread-Index: Ac9Nty/e1EiW24eeQ5WOaQUp/+e4/AAB2dPk
-References: <9AB5E2FD917FBE4594E18A91797F373101436ED1@EXCHANGE00.rockdale.k12.ga.us>
-From: Robert Bankston - RCHS <rbankston@rockdale.k12.ga.us>
-To: Robert Bankston - RCHS <rbankston@rockdale.k12.ga.us>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: =?iso-8859-1?Q?CIP:168.9.40.205;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(1001?=
- =?iso-8859-1?Q?9001)(6039001)(6009001)(448001)(479174003)(377454003)(1890?=
- =?iso-8859-1?Q?02)(199002)(20776003)(47776003)(63696002)(47976001)(779820?=
- =?iso-8859-1?Q?01)(59766001)(81342001)(509001)(49866001)(83072002)(791020?=
- =?iso-8859-1?Q?01)(81542001)(56816005)(97336001)(23756003)(50986001)(6922?=
- =?iso-8859-1?Q?6001)(76796001)(97186001)(77096001)(47736001)(55846006)(90?=
- =?iso-8859-1?Q?146001)(85326001)(72046001)(62236002)(86372001)(46102001)(?=
- =?iso-8859-1?Q?15202345003)(74706001)(80022001)(50466002)(76786001)(93136?=
- =?iso-8859-1?Q?001)(85852003)(2656002)(83322001)(4396001)(93516002)(92726?=
- =?iso-8859-1?Q?001)(19580395003)(31966008)(95666003)(47446002)(81686001)(?=
- =?iso-8859-1?Q?94946001)(74502001)(92566001)(80976001)(44976005)(56617400?=
- =?iso-8859-1?Q?2)(15975445006)(74662001)(51856001)(33656001)(86362001)(95?=
- =?iso-8859-1?Q?416001)(85306002)(25786004)(53806001)(575854001)(54316002)?=
- =?iso-8859-1?Q?(74482001)(98676001)(87266001)(94316002)(56776001)(7487600?=
- =?iso-8859-1?Q?1)(65816001)(87936001)(99396001)(54356001)(74366001)(52403?=
- =?iso-8859-1?Q?4004);DIR:OUT;SFP:1501;SCL:6;SRVR:BY2PR01MB393;H:EXCHANGE0?=
- =?iso-8859-1?Q?0.rockdale.k12.ga.us;FPR:A872FA6C.EA31499.39F743B7.562C723?=
- =?iso-8859-1?Q?D.2015C;MLV:ovr;PTR:exchange00.rockdale.k12.ga.us,webmail.?=
- =?iso-8859-1?Q?rockdale.k12.ga.us,co-owa01.rockdale.k12.ga.us,co-owa02.ro?=
- =?iso-8859-1?Q?ckdale.k12.ga.us;MX:1;A:1;UriScan:(73634157001);LANG:en;?=
-X-Forefront-PRVS: 016885DD9B
-X-OriginatorOrg: rockdale.k12.ga.us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401150849.GA14757@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040115-1344-0000-0000-000000A2E181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Tue, Apr 01, 2014 at 11:08:49AM -0400, Dave Jones wrote:
+> On Mon, Mar 31, 2014 at 05:48:01PM -0700, Paul E. McKenney wrote:
+> 
+>  > Alternatively, I suppose a wakeup could be getting lost.  The main change
+>  > related to that this merge window was ffa83fb565fb, which eliminated
+>  > idle wakeups from RCU in the CONFIG_RCU_NOCB_CPU_ALL=y case.
+>  > 
+>  > So, could you please try reverting ffa83fb565fb?
+> 
+> Did a run overnight with that reverted, no luck..
+> 
+> [11869.580161] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [11869.581245]  (detected by 0, t=6502 jiffies, g=449892, c=449891, q=0)
+> [11869.582047] INFO: Stall ended before state dump start
+> [12064.517461] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [12064.518539]  (detected by 0, t=26007 jiffies, g=449892, c=449891, q=0)
+> [12064.519347] INFO: Stall ended before state dump start
+> [12259.454767] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [12259.455818]  (detected by 0, t=45512 jiffies, g=449892, c=449891, q=0)
+> [12259.456602] INFO: Stall ended before state dump start
+> [12454.392112] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [12454.393131]  (detected by 0, t=65017 jiffies, g=449892, c=449891, q=0)
+> [12454.393942] INFO: Stall ended before state dump start
+> [12649.329446] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [12649.330446]  (detected by 0, t=84522 jiffies, g=449892, c=449891, q=0)
+> [12649.331267] INFO: Stall ended before state dump start
+> [12844.266776] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [12844.267695]  (detected by 0, t=104027 jiffies, g=449892, c=449891, q=0)
+> [12844.268571] INFO: Stall ended before state dump start
+> [13039.204102] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [13039.205119]  (detected by 0, t=123532 jiffies, g=449892, c=449891, q=0)
+> [13039.205871] INFO: Stall ended before state dump start
+> [13234.141424] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [13234.141424] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [13234.142448]  (detected by 0, t=143037 jiffies, g=449892, c=449891, q=0)
+> [13234.143339] INFO: Stall ended before state dump start
+> [13429.078730] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [13429.079771]  (detected by 0, t=162542 jiffies, g=449892, c=449891, q=0)
+> [13429.080591] INFO: Stall ended before state dump start
+> [13624.016058] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [13624.017116]  (detected by 0, t=182047 jiffies, g=449892, c=449891, q=0)
+> [13624.018033] INFO: Stall ended before state dump start
+> [13818.953370] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [13818.954437]  (detected by 0, t=201552 jiffies, g=449892, c=449891, q=0)
+> [13818.955334] INFO: Stall ended before state dump start
+> [14013.890682] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [14013.891761]  (detected by 0, t=221057 jiffies, g=449892, c=449891, q=0)
+> [14013.892691] INFO: Stall ended before state dump start
+> [14208.827993] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [14208.829088]  (detected by 0, t=240562 jiffies, g=449892, c=449891, q=0)
+> [14208.829977] INFO: Stall ended before state dump start
+> [14403.765300] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [14403.766405]  (detected by 0, t=260067 jiffies, g=449892, c=449891, q=0)
+> and on and on..
+> 
+> so kernel space still works like before, but userspace is locked up.
 
-________________________________
+Interesting.  I suspect that if you reverted the rest of this merge
+window's RCU patches, you would get the same result.
 
-From: Robert Bankston - RCHS
-Sent: Tue 4/1/2014 10:32 AM
-To: Robert Bankston - RCHS
-Subject: Admin Help Desk 2014 (c)
+>  > If that doesn't work, I will need to put together some diagnostic patches.
+>  > Starting with the one below.
+> 
+> bugger, I forgot to apply this last night. I'll do it on the next run.
 
+But let's see what this shows first.
 
-This Message is From the Admin Help Desk. Due to our latest IP Security upgrades we have reason to believe that your E-mail account was accessed by a third party.
+							Thanx, Paul
 
-Protecting the security of your E-mail account is our primary concern; we have limited access to sensitive E-mail account features.
-
-To resolve this issue you have to Re-validate your e-mail account. Failure to Re-validate your E-mail account as soon as you see this message will cause the deactivation of your E-mail account be warned.
-
-Help Desk requires you to validated your email account by clicking http://helpdeskrequiresyoutovalidation.tripod.com/ 
-
-Thank you for your cooperation.
-Admin Help Desk 2014 ©
