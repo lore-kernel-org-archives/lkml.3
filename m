@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaDAQQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:16:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44710 "EHLO
+	id S1752719AbaDAQSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:18:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44724 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147AbaDAQQP (ORCPT
+	with ESMTP id S1753180AbaDAQQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:15 -0400
+	Tue, 1 Apr 2014 12:16:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George McCollister <george.mccollister@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Chuansheng Liu <chuansheng.liu@intel.com>,
+        Xiaoming Wang <xiaoming.wang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 30/86] sched: Fix double normalization of vruntime
-Date: Tue,  1 Apr 2014 09:07:43 -0700
-Message-Id: <1396368519-12728-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 29/86] genirq: Remove racy waitqueue_active check
+Date: Tue,  1 Apr 2014 09:07:42 -0700
+Message-Id: <1396368519-12728-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,62 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit 791c9e0292671a3bfa95286bb5c08129d8605618 upstream.
+commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
 
-dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
-which appears to guarentee that the !se->on_rq condition is met.
-If the task has done set_current_state(TASK_INTERRUPTIBLE) without
-schedule() the second condition will be met and vruntime will be
-incorrectly adjusted twice.
+We hit one rare case below:
 
-In certain cases this can result in the task's vruntime never increasing
-past the vruntime of other tasks on the CFS' run queue, starving them of
-CPU time.
+T1 calling disable_irq(), but hanging at synchronize_irq()
+always;
+The corresponding irq thread is in sleeping state;
+And all CPUs are in idle state;
 
-This patch changes switched_from_fair() to use !p->on_rq instead of
-!se->on_rq.
+After analysis, we found there is one possible scenerio which
+causes T1 is waiting there forever:
+CPU0                                       CPU1
+ synchronize_irq()
+  wait_event()
+    spin_lock()
+                                           atomic_dec_and_test(&threads_active)
+      insert the __wait into queue
+    spin_unlock()
+                                           if(waitqueue_active)
+    atomic_read(&threads_active)
+                                             wake_up()
 
-I'm able to cause a task with a priority of 120 to starve all other
-tasks with the same priority on an ARM platform running 3.2.51-rt72
-PREEMPT RT by writing one character at time to a serial tty (16550 UART)
-in a tight loop. I'm also able to verify making this change corrects the
-problem on that platform and kernel version.
+Here after inserted the __wait into queue on CPU0, and before
+test if queue is empty on CPU1, there is no barrier, it maybe
+cause it is not visible for CPU1 immediately, although CPU0 has
+updated the queue list.
+It is similar for CPU0 atomic_read() threads_active also.
 
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1392767811-28916-1-git-send-email-george.mccollister@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+So we'd need one smp_mb() before waitqueue_active.that, but removing
+the waitqueue_active() check solves it as wel l and it makes
+things simple and clear.
+
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: Xiaoming Wang <xiaoming.wang@intel.com>
+Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sched/fair.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/irq/manage.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 843ab0b..8b5346f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5822,15 +5822,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index a9302d0..f3feefc 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -801,8 +801,7 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
  
- 	/*
--	 * Ensure the task's vruntime is normalized, so that when its
-+	 * Ensure the task's vruntime is normalized, so that when it's
- 	 * switched back to the fair class the enqueue_entity(.flags=0) will
- 	 * do the right thing.
- 	 *
--	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
--	 * have normalized the vruntime, if it was !on_rq, then only when
-+	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
-+	 * have normalized the vruntime, if it's !on_rq, then only when
- 	 * the task is sleeping will it still have non-normalized vruntime.
- 	 */
--	if (!se->on_rq && p->state != TASK_RUNNING) {
-+	if (!p->on_rq && p->state != TASK_RUNNING) {
- 		/*
- 		 * Fix up our vruntime so that the current sleep doesn't
- 		 * cause 'unlimited' sleep bonus.
+ static void wake_threads_waitq(struct irq_desc *desc)
+ {
+-	if (atomic_dec_and_test(&desc->threads_active) &&
+-	    waitqueue_active(&desc->wait_for_threads))
++	if (atomic_dec_and_test(&desc->threads_active))
+ 		wake_up(&desc->wait_for_threads);
+ }
+ 
 -- 
 1.8.3.2
 
