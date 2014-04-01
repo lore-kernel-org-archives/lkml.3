@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaDALSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42575 "EHLO
+	id S1752951AbaDALkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:40:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42602 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaDALSM (ORCPT
+	with ESMTP id S1752673AbaDALST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:12 -0400
+	Tue, 1 Apr 2014 07:18:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 099/144] ACPI / sleep: Add extra checks for HW Reduced ACPI mode sleep states
-Date: Tue,  1 Apr 2014 12:15:03 +0100
-Message-Id: <1396350948-29910-100-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 104/144] iwlwifi: disable TX AMPDU by default for iwldvm
+Date: Tue,  1 Apr 2014 12:15:08 +0100
+Message-Id: <1396350948-29910-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,112 +27,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit a4e90bed511220ff601d064c9e5d583e91308f65 upstream.
+commit 205e2210daa975d92ace485a65a31ccc4077fe1a upstream.
 
-If the HW Reduced ACPI mode bit is set in the FADT, ACPICA uses
-the optional sleep control and sleep status registers for making
-the system enter sleep states (including S5), so it is not possible
-to use system sleep states or power it off using ACPI if the HW
-Reduced ACPI mode bit is set and those registers are not available.
+NICs supported by iwldvm don't handle well TX AMPDU.
+Disable it by default, still leave the possibility to
+the user to force enable it with a debug parameter.
 
-For this reason, add a new function, acpi_sleep_state_supported(),
-checking if the HW Reduced ACPI mode bit is set and whether or not
-system sleep states are usable in that case in addition to checking
-the return value of acpi_get_sleep_type_data() and make the ACPI
-sleep setup routines use that function to check the availability of
-system sleep states.
+NICs supported by iwlmvm don't suffer from the same issue,
+leave TX AMPDU enabled by default for these.
 
-Among other things, this prevents the kernel from attempting to
-use ACPI for powering off HW Reduced ACPI systems without the sleep
-control and sleep status registers, because ACPI power off doesn't
-have a chance to work on them.  That allows alternative power off
-mechanisms that may actually work to be used on those systems.  The
-affected machines include Dell Venue 8 Pro, Asus T100TA, Haswell
-Desktop SDP and Ivy Bridge EP Demo depot.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=70931
-Reported-by: Adam Williamson <awilliam@redhat.com>
-Tested-by: Aubrey Li <aubrey.li@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/sleep.c | 32 +++++++++++++++-----------------
- 1 file changed, 15 insertions(+), 17 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c  | 22 ++++++++++++++++++++--
+ drivers/net/wireless/iwlwifi/iwl-drv.c       |  2 +-
+ drivers/net/wireless/iwlwifi/iwl-modparams.h | 11 +++++++----
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c  | 22 ++++++++++++++++++++--
+ 4 files changed, 48 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index 187ab61..025effa 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -78,6 +78,17 @@ static int acpi_sleep_prepare(u32 acpi_state)
- 	return 0;
+diff --git a/drivers/net/wireless/iwlwifi/dvm/mac80211.c b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+index 3193872..63c67bb 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+@@ -748,6 +748,24 @@ static int iwlagn_mac_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 	return ret;
  }
  
-+static bool acpi_sleep_state_supported(u8 sleep_state)
++static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
 +{
-+	acpi_status status;
-+	u8 type_a, type_b;
-+
-+	status = acpi_get_sleep_type_data(sleep_state, &type_a, &type_b);
-+	return ACPI_SUCCESS(status) && (!acpi_gbl_reduced_hardware
-+		|| (acpi_gbl_FADT.sleep_control.address
-+			&& acpi_gbl_FADT.sleep_status.address));
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		return false;
++	return true;
 +}
 +
- #ifdef CONFIG_ACPI_SLEEP
- static u32 acpi_target_sleep_state = ACPI_STATE_S0;
++static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		return false;
++	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
++		return true;
++
++	/* disabled by default */
++	return false;
++}
++
+ static int iwlagn_mac_ampdu_action(struct ieee80211_hw *hw,
+ 				   struct ieee80211_vif *vif,
+ 				   enum ieee80211_ampdu_mlme_action action,
+@@ -769,7 +787,7 @@ static int iwlagn_mac_ampdu_action(struct ieee80211_hw *hw,
  
-@@ -602,15 +613,9 @@ static void acpi_sleep_suspend_setup(void)
- {
- 	int i;
+ 	switch (action) {
+ 	case IEEE80211_AMPDU_RX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		if (!iwl_enable_rx_ampdu(priv->cfg))
+ 			break;
+ 		IWL_DEBUG_HT(priv, "start Rx\n");
+ 		ret = iwl_sta_rx_agg_start(priv, sta, tid, *ssn);
+@@ -781,7 +799,7 @@ static int iwlagn_mac_ampdu_action(struct ieee80211_hw *hw,
+ 	case IEEE80211_AMPDU_TX_START:
+ 		if (!priv->trans->ops->txq_enable)
+ 			break;
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		if (!iwl_enable_tx_ampdu(priv->cfg))
+ 			break;
+ 		IWL_DEBUG_HT(priv, "start Tx\n");
+ 		ret = iwlagn_tx_agg_start(priv, vif, sta, tid, ssn);
+diff --git a/drivers/net/wireless/iwlwifi/iwl-drv.c b/drivers/net/wireless/iwlwifi/iwl-drv.c
+index d0162d4..b2a7552 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-drv.c
++++ b/drivers/net/wireless/iwlwifi/iwl-drv.c
+@@ -1208,7 +1208,7 @@ module_param_named(swcrypto, iwlwifi_mod_params.sw_crypto, int, S_IRUGO);
+ MODULE_PARM_DESC(swcrypto, "using crypto in software (default 0 [hardware])");
+ module_param_named(11n_disable, iwlwifi_mod_params.disable_11n, uint, S_IRUGO);
+ MODULE_PARM_DESC(11n_disable,
+-	"disable 11n functionality, bitmap: 1: full, 2: agg TX, 4: agg RX");
++	"disable 11n functionality, bitmap: 1: full, 2: disable agg TX, 4: disable agg RX, 8 enable agg TX");
+ module_param_named(amsdu_size_8K, iwlwifi_mod_params.amsdu_size_8K,
+ 		   int, S_IRUGO);
+ MODULE_PARM_DESC(amsdu_size_8K, "enable 8K amsdu size (default 0)");
+diff --git a/drivers/net/wireless/iwlwifi/iwl-modparams.h b/drivers/net/wireless/iwlwifi/iwl-modparams.h
+index a1f580c..4c6cff4 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-modparams.h
++++ b/drivers/net/wireless/iwlwifi/iwl-modparams.h
+@@ -79,9 +79,12 @@ enum iwl_power_level {
+ 	IWL_POWER_NUM
+ };
  
--	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++) {
--		acpi_status status;
--		u8 type_a, type_b;
--
--		status = acpi_get_sleep_type_data(i, &type_a, &type_b);
--		if (ACPI_SUCCESS(status)) {
-+	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++)
-+		if (acpi_sleep_state_supported(i))
- 			sleep_states[i] = 1;
--		}
--	}
+-#define IWL_DISABLE_HT_ALL	BIT(0)
+-#define IWL_DISABLE_HT_TXAGG	BIT(1)
+-#define IWL_DISABLE_HT_RXAGG	BIT(2)
++enum iwl_disable_11n {
++	IWL_DISABLE_HT_ALL	 = BIT(0),
++	IWL_DISABLE_HT_TXAGG	 = BIT(1),
++	IWL_DISABLE_HT_RXAGG	 = BIT(2),
++	IWL_ENABLE_HT_TXAGG	 = BIT(3),
++};
  
- 	suspend_set_ops(old_suspend_ordering ?
- 		&acpi_suspend_ops_old : &acpi_suspend_ops);
-@@ -741,11 +746,7 @@ static const struct platform_hibernation_ops acpi_hibernation_ops_old = {
+ /**
+  * struct iwl_mod_params
+@@ -90,7 +93,7 @@ enum iwl_power_level {
+  *
+  * @sw_crypto: using hardware encryption, default = 0
+  * @disable_11n: disable 11n capabilities, default = 0,
+- *	use IWL_DISABLE_HT_* constants
++ *	use IWL_[DIS,EN]ABLE_HT_* constants
+  * @amsdu_size_8K: enable 8K amsdu size, default = 0
+  * @restart_fw: restart firmware, default = 1
+  * @wd_disable: enable stuck queue check, default = 0
+diff --git a/drivers/net/wireless/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+index f19baf0..ae9a593 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -292,6 +292,24 @@ static void iwl_mvm_mac_tx(struct ieee80211_hw *hw,
+ 	ieee80211_free_txskb(hw, skb);
+ }
  
- static void acpi_sleep_hibernate_setup(void)
- {
--	acpi_status status;
--	u8 type_a, type_b;
--
--	status = acpi_get_sleep_type_data(ACPI_STATE_S4, &type_a, &type_b);
--	if (ACPI_FAILURE(status))
-+	if (!acpi_sleep_state_supported(ACPI_STATE_S4))
- 		return;
++static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		return false;
++	return true;
++}
++
++static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		return false;
++	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
++		return true;
++
++	/* enabled by default */
++	return true;
++}
++
+ static int iwl_mvm_mac_ampdu_action(struct ieee80211_hw *hw,
+ 				    struct ieee80211_vif *vif,
+ 				    enum ieee80211_ampdu_mlme_action action,
+@@ -311,7 +329,7 @@ static int iwl_mvm_mac_ampdu_action(struct ieee80211_hw *hw,
  
- 	hibernation_set_ops(old_suspend_ordering ?
-@@ -794,8 +795,6 @@ static void acpi_power_off(void)
- 
- int __init acpi_sleep_init(void)
- {
--	acpi_status status;
--	u8 type_a, type_b;
- 	char supported[ACPI_S_STATE_COUNT * 3 + 1];
- 	char *pos = supported;
- 	int i;
-@@ -810,8 +809,7 @@ int __init acpi_sleep_init(void)
- 	acpi_sleep_suspend_setup();
- 	acpi_sleep_hibernate_setup();
- 
--	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
--	if (ACPI_SUCCESS(status)) {
-+	if (acpi_sleep_state_supported(ACPI_STATE_S5)) {
- 		sleep_states[ACPI_STATE_S5] = 1;
- 		pm_power_off_prepare = acpi_power_off_prepare;
- 		pm_power_off = acpi_power_off;
+ 	switch (action) {
+ 	case IEEE80211_AMPDU_RX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG) {
++		if (!iwl_enable_rx_ampdu(mvm->cfg)) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
+@@ -321,7 +339,7 @@ static int iwl_mvm_mac_ampdu_action(struct ieee80211_hw *hw,
+ 		ret = iwl_mvm_sta_rx_agg(mvm, sta, tid, 0, false);
+ 		break;
+ 	case IEEE80211_AMPDU_TX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG) {
++		if (!iwl_enable_tx_ampdu(mvm->cfg)) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
 -- 
 1.9.1
 
