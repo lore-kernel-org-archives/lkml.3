@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783AbaDAC4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 22:56:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46000 "EHLO mx1.redhat.com"
+	id S1751833AbaDAC4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 22:56:23 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48086 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024AbaDAC4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 22:56:13 -0400
-Date: Mon, 31 Mar 2014 22:55:35 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, fowles@inreach.com, peterz@infradead.org,
-        eranian@google.com, andi.kleen@intel.com
-Subject: Re: [PATCH 06/15 V3] perf, c2c: Add in new options to configure
- latency and stores
-Message-ID: <20140401025535.GT25953@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
- <1395689826-215033-7-git-send-email-dzickus@redhat.com>
- <20140329171138.GF2022@krava.redhat.com>
+	id S1751787AbaDAC4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 22:56:18 -0400
+Date: Mon, 31 Mar 2014 22:56:10 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Conrad Meyer <cse.cem@gmail.com>
+Cc: Andreas Dilger <adilger@dilger.ca>, Conrad Meyer <cemeyer@uw.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs: ext4: Sign-extend tv_sec after ORing in epoch bits
+Message-ID: <20140401025610.GG4911@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Conrad Meyer <cse.cem@gmail.com>,
+	Andreas Dilger <adilger@dilger.ca>, Conrad Meyer <cemeyer@uw.edu>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1396191514-19081-1-git-send-email-cse.cem@gmail.com>
+ <38140D27-E451-4BF1-9445-D319652E1BCF@dilger.ca>
+ <CAG6CVpX57PFG7wUofHW4BPR_FY-ewv8+7P5baXgF9jd-gMOwmQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140329171138.GF2022@krava.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAG6CVpX57PFG7wUofHW4BPR_FY-ewv8+7P5baXgF9jd-gMOwmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 06:11:38PM +0100, Jiri Olsa wrote:
-> On Mon, Mar 24, 2014 at 03:36:57PM -0400, Don Zickus wrote:
-> > Modified the code to allow latency settings to be tweaked on the command line
-> > and also the ability to dynamically profile stores (or disable using stores).
-> > 
-> > This allows the tool to be used on older Intel platforms like Westmere.
-> > 
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > ---
-> 
-> SNIP
-> 
-> > @@ -316,6 +369,12 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
-> >  	};
-> >  	const struct option c2c_options[] = {
-> >  	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
-> > +	OPT_INTEGER('l', "latency-level", &lat_level,
-> > +		 "specify the latency threshold for loads [default=30]"),
-> > +	OPT_INTEGER('p', "precision-level", &prec_level,
-> > +		 "specify the precision level of events (0,1,2,3) [default=1]"),
-> 
-> could we get also option for user space modifier?
+On Mon, Mar 31, 2014 at 08:42:06AM -0700, Conrad Meyer wrote:
+> The problem exists in mainline (v3.14) and linux-next (20140328), so
+> it looks like it didn't land. Unless it's queued in an ext4 tree and
+> didn't get selected for Linus for some reason?
 
-You mean the 'u' modifier, ie cpu/mem-loads/u ?  If so, then I can do that
-but will that work with the -a option (which is hardcoded in the c2c
-tool [system-wide mode])?
+There were some proposals for a different encoding that would be
+better, that would have required some e2fsprogs changes.  Since this
+is a long range problem (that doesn't hit until 2038) it's not been
+high priority to deal with, but I haven't forgotten it.  I've just had
+higher priority items on my todo list.
 
-> I needed to hack it in for my tests ;-)
-> 
-> thanks,
-> jirka
+The huge long thread can be found here:
+
+    http://thread.gmane.org/gmane.comp.file-systems.ext4/40978
+
+What this is blocked on is I wanted to have some better ways of
+setting times using the old and the proposed new encoding convention,
+so we could have proper regression tests for the changes in e2fsck.
+That way we can make sure the right thing really happens with 32-bit
+kernels, 64-bit kernels, 32-bit e2fsprogs, 64-bit e2fsprogs, etc.,
+with file systems using both the old and the newer encoding.
+
+(Yes, I'm paranoid that way.  Regression tests are _important_.)
+
+      	  	   	      		       	   - Ted
