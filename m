@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaDALt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:49:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42489 "EHLO
+	id S1752897AbaDALuC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:50:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42482 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452AbaDALRs (ORCPT
+	with ESMTP id S1752436AbaDALRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:48 -0400
+	Tue, 1 Apr 2014 07:17:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Anton Blanchard <anton@samba.org>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 081/144] ibmveth: Fix endian issues with MAC addresses
-Date: Tue,  1 Apr 2014 12:14:45 +0100
-Message-Id: <1396350948-29910-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 080/144] net: unix socket code abuses csum_partial
+Date: Tue,  1 Apr 2014 12:14:44 +0100
+Message-Id: <1396350948-29910-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -29,106 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Blanchard <anton@samba.org>
 
-commit d746ca9561440685edb62614d1bcbbc27ff50e66 upstream.
+commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
 
-The code to load a MAC address into a u64 for passing to the
-hypervisor via a register is broken on little endian.
+The unix socket code is using the result of csum_partial to
+hash into a lookup table:
 
-Create a helper function called ibmveth_encode_mac_addr
-which does the right thing in both big and little endian.
+	unix_hash_fold(csum_partial(sunaddr, len, 0));
 
-We were storing the MAC address in a long in struct ibmveth_adapter.
-It's never used so remove it - we don't need another place in the
-driver where we create endian issues with MAC addresses.
+csum_partial is only guaranteed to produce something that can be
+folded into a checksum, as its prototype explains:
+
+ * returns a 32-bit number suitable for feeding into itself
+ * or csum_tcpudp_magic
+
+The 32bit value should not be used directly.
+
+Depending on the alignment, the ppc64 csum_partial will return
+different 32bit partial checksums that will fold into the same
+16bit checksum.
+
+This difference causes the following testcase (courtesy of
+Gustavo) to sometimes fail:
+
+#include <sys/socket.h>
+#include <stdio.h>
+
+int main()
+{
+	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	int i = 1;
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
+
+	struct sockaddr addr;
+	addr.sa_family = AF_LOCAL;
+	bind(fd, &addr, 2);
+
+	listen(fd, 128);
+
+	struct sockaddr_storage ss;
+	socklen_t sslen = (socklen_t)sizeof(ss);
+	getsockname(fd, (struct sockaddr*)&ss, &sslen);
+
+	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
+		perror(NULL);
+		return 1;
+	}
+	printf("OK\n");
+	return 0;
+}
+
+As suggested by davem, fix this by using csum_fold to fold the
+partial 32bit checksum into a 16bit checksum before using it.
 
 Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/ibm/ibmveth.c | 25 ++++++++++++++++---------
- drivers/net/ethernet/ibm/ibmveth.h |  1 -
- 2 files changed, 16 insertions(+), 10 deletions(-)
+ net/unix/af_unix.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/ibm/ibmveth.c b/drivers/net/ethernet/ibm/ibmveth.c
-index 70fd559..2b3aada 100644
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -523,10 +523,21 @@ retry:
- 	return rc;
- }
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index f246812..2ea3310 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -161,9 +161,8 @@ static inline void unix_set_secdata(struct scm_cookie *scm, struct sk_buff *skb)
  
-+static u64 ibmveth_encode_mac_addr(u8 *mac)
-+{
-+	int i;
-+	u64 encoded = 0;
-+
-+	for (i = 0; i < ETH_ALEN; i++)
-+		encoded = (encoded << 8) | mac[i];
-+
-+	return encoded;
-+}
-+
- static int ibmveth_open(struct net_device *netdev)
+ static inline unsigned int unix_hash_fold(__wsum n)
  {
- 	struct ibmveth_adapter *adapter = netdev_priv(netdev);
--	u64 mac_address = 0;
-+	u64 mac_address;
- 	int rxq_entries = 1;
- 	unsigned long lpar_rc;
- 	int rc;
-@@ -580,8 +591,7 @@ static int ibmveth_open(struct net_device *netdev)
- 	adapter->rx_queue.num_slots = rxq_entries;
- 	adapter->rx_queue.toggle = 1;
+-	unsigned int hash = (__force unsigned int)n;
++	unsigned int hash = (__force unsigned int)csum_fold(n);
  
--	memcpy(&mac_address, netdev->dev_addr, netdev->addr_len);
--	mac_address = mac_address >> 16;
-+	mac_address = ibmveth_encode_mac_addr(netdev->dev_addr);
- 
- 	rxq_desc.fields.flags_len = IBMVETH_BUF_VALID |
- 					adapter->rx_queue.queue_len;
-@@ -1184,8 +1194,8 @@ static void ibmveth_set_multicast_list(struct net_device *netdev)
- 		/* add the addresses to the filter table */
- 		netdev_for_each_mc_addr(ha, netdev) {
- 			/* add the multicast address to the filter table */
--			unsigned long mcast_addr = 0;
--			memcpy(((char *)&mcast_addr)+2, ha->addr, 6);
-+			u64 mcast_addr;
-+			mcast_addr = ibmveth_encode_mac_addr(ha->addr);
- 			lpar_rc = h_multicast_ctrl(adapter->vdev->unit_address,
- 						   IbmVethMcastAddFilter,
- 						   mcast_addr);
-@@ -1369,9 +1379,6 @@ static int ibmveth_probe(struct vio_dev *dev, const struct vio_device_id *id)
- 
- 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
- 
--	adapter->mac_addr = 0;
--	memcpy(&adapter->mac_addr, mac_addr_p, 6);
--
- 	netdev->irq = dev->irq;
- 	netdev->netdev_ops = &ibmveth_netdev_ops;
- 	netdev->ethtool_ops = &netdev_ethtool_ops;
-@@ -1380,7 +1387,7 @@ static int ibmveth_probe(struct vio_dev *dev, const struct vio_device_id *id)
- 		NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
- 	netdev->features |= netdev->hw_features;
- 
--	memcpy(netdev->dev_addr, &adapter->mac_addr, netdev->addr_len);
-+	memcpy(netdev->dev_addr, mac_addr_p, ETH_ALEN);
- 
- 	for (i = 0; i < IBMVETH_NUM_BUFF_POOLS; i++) {
- 		struct kobject *kobj = &adapter->rx_buff_pool[i].kobj;
-diff --git a/drivers/net/ethernet/ibm/ibmveth.h b/drivers/net/ethernet/ibm/ibmveth.h
-index 43a794f..48639ba 100644
---- a/drivers/net/ethernet/ibm/ibmveth.h
-+++ b/drivers/net/ethernet/ibm/ibmveth.h
-@@ -139,7 +139,6 @@ struct ibmveth_adapter {
-     struct napi_struct napi;
-     struct net_device_stats stats;
-     unsigned int mcastFilterSize;
--    unsigned long mac_addr;
-     void * buffer_list_addr;
-     void * filter_list_addr;
-     dma_addr_t buffer_list_dma;
+-	hash ^= hash>>16;
+ 	hash ^= hash>>8;
+ 	return hash&(UNIX_HASH_SIZE-1);
+ }
 -- 
 1.9.1
 
