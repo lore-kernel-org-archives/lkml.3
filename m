@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaDAENi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:13:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53853 "EHLO
+	id S1752644AbaDAENn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:13:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53867 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaDAENg (ORCPT
+	with ESMTP id S1752617AbaDAENi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:13:36 -0400
+	Tue, 1 Apr 2014 00:13:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.13 08/22] Revert "xen: properly account for _PAGE_NUMA during xen pte translations"
-Date: Mon, 31 Mar 2014 21:08:38 -0700
-Message-Id: <20140401040705.152847420@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.13 10/22] drm/i915: Undo gtt scratch pte unmapping again
+Date: Mon, 31 Mar 2014 21:08:40 -0700
+Message-Id: <20140401040705.540077828@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -27,85 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 5926f87fdaad4be3ed10cec563bf357915e55a86 upstream.
+commit 8ee661b505613ef2747b350ca2871a31b3781bee upstream.
 
-This reverts commit a9c8e4beeeb64c22b84c803747487857fe424b68.
+It apparently blows up on some machines. This functionally reverts
 
-PTEs in Xen PV guests must contain machine addresses if _PAGE_PRESENT
-is set and pseudo-physical addresses is _PAGE_PRESENT is clear.
+commit 828c79087cec61eaf4c76bb32c222fbe35ac3930
+Author: Ben Widawsky <benjamin.widawsky@intel.com>
+Date:   Wed Oct 16 09:21:30 2013 -0700
 
-This is because during a domain save/restore (migration) the page
-table entries are "canonicalised" and uncanonicalised". i.e., MFNs are
-converted to PFNs during domain save so that on a restore the page
-table entries may be rewritten with the new MFNs on the destination.
-This canonicalisation is only done for PTEs that are present.
+    drm/i915: Disable GGTT PTEs on GEN6+ suspend
 
-This change resulted in writing PTEs with MFNs if _PAGE_PROTNONE (or
-_PAGE_NUMA) was set but _PAGE_PRESENT was clear.  These PTEs would be
-migrated as-is which would result in unexpected behaviour in the
-destination domain.  Either a) the MFN would be translated to the
-wrong PFN/page; b) setting the _PAGE_PRESENT bit would clear the PTE
-because the MFN is no longer owned by the domain; or c) the present
-bit would not get set.
-
-Symptoms include "Bad page" reports when munmapping after migrating a
-domain.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64841
+Reported-and-Tested-by: Brad  Jackson <bjackson0971@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Cc: Todd Previte <tprevite@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/pgtable.h |   14 ++------------
- arch/x86/xen/mmu.c             |    4 ++--
- 2 files changed, 4 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_gtt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -445,20 +445,10 @@ static inline int pte_same(pte_t a, pte_
- 	return a.pte == b.pte;
+--- a/drivers/gpu/drm/i915/i915_gem_gtt.c
++++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
+@@ -828,7 +828,7 @@ void i915_gem_suspend_gtt_mappings(struc
+ 	dev_priv->gtt.base.clear_range(&dev_priv->gtt.base,
+ 				       dev_priv->gtt.base.start / PAGE_SIZE,
+ 				       dev_priv->gtt.base.total / PAGE_SIZE,
+-				       false);
++				       true);
  }
  
--static inline int pteval_present(pteval_t pteval)
--{
--	/*
--	 * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
--	 * way clearly states that the intent is that protnone and numa
--	 * hinting ptes are considered present for the purposes of
--	 * pagetable operations like zapping, protection changes, gup etc.
--	 */
--	return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
--}
--
- static inline int pte_present(pte_t a)
- {
--	return pteval_present(pte_flags(a));
-+	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
-+			       _PAGE_NUMA);
- }
- 
- #define pte_accessible pte_accessible
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct
- /* Assume pteval_t is equivalent to all the other *val_t types. */
- static pteval_t pte_mfn_to_pfn(pteval_t val)
- {
--	if (pteval_present(val)) {
-+	if (val & _PAGE_PRESENT) {
- 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
- 		unsigned long pfn = mfn_to_pfn(mfn);
- 
-@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t
- 
- static pteval_t pte_pfn_to_mfn(pteval_t val)
- {
--	if (pteval_present(val)) {
-+	if (val & _PAGE_PRESENT) {
- 		unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
- 		pteval_t flags = val & PTE_FLAGS_MASK;
- 		unsigned long mfn;
+ void i915_gem_restore_gtt_mappings(struct drm_device *dev)
 
 
