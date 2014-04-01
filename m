@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaDALSV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:18:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42592 "EHLO
+	id S1753000AbaDALjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:39:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaDALSR (ORCPT
+	with ESMTP id S1752751AbaDALSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:17 -0400
+	Tue, 1 Apr 2014 07:18:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel J Blueman <daniel@numascale.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, Wang Nan <wangnan0@huawei.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 101/144] x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
-Date: Tue,  1 Apr 2014 12:15:05 +0100
-Message-Id: <1396350948-29910-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 106/144] ARM: ignore memory below PHYS_OFFSET
+Date: Tue,  1 Apr 2014 12:15:10 +0100
+Message-Id: <1396350948-29910-107-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel J Blueman <daniel@numascale.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 847d7970defb45540735b3fb4e88471c27cacd85 upstream.
+commit 571b14375019c3a66ef70d4d4a7083f4238aca30 upstream.
 
-For systems with multiple servers and routed fabric, all
-northbridges get assigned to the first server. Fix this by also
-using the node reported from the PCI bus. For single-fabric
-systems, the northbriges are on PCI bus 0 by definition, which
-are on NUMA node 0 by definition, so this is invarient on most
-systems.
+If the kernel is loaded higher in physical memory than normal, and we
+calculate PHYS_OFFSET higher than the start of RAM, this leads to
+boot problems as we attempt to map part of this RAM into userspace.
+Rather than struggle with this, just truncate the mapping.
 
-Tested on fam10h and fam15h single and multi-fabric systems and
-candidate for stable.
-
-Signed-off-by: Daniel J Blueman <daniel@numascale.com>
-Acked-by: Steffen Persvold <sp@numascale.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1394710981-3596-1-git-send-email-daniel@numascale.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/quirks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/setup.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 04ee1e2..52dbf1e 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -529,7 +529,7 @@ static void quirk_amd_nb_node(struct pci_dev *dev)
- 		return;
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index f58f646..37ea994 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -656,6 +656,20 @@ int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
+ 	}
+ #endif
  
- 	pci_read_config_dword(nb_ht, 0x60, &val);
--	node = val & 7;
-+	node = pcibus_to_node(dev->bus) | (val & 7);
- 	/*
- 	 * Some hardware may return an invalid node ID,
- 	 * so check it first:
++	if (aligned_start < PHYS_OFFSET) {
++		if (aligned_start + size <= PHYS_OFFSET) {
++			pr_info("Ignoring memory below PHYS_OFFSET: 0x%08llx-0x%08llx\n",
++				aligned_start, aligned_start + size);
++			return -EINVAL;
++		}
++
++		pr_info("Ignoring memory below PHYS_OFFSET: 0x%08llx-0x%08llx\n",
++			aligned_start, (u64)PHYS_OFFSET);
++
++		size -= PHYS_OFFSET - aligned_start;
++		aligned_start = PHYS_OFFSET;
++	}
++
+ 	bank->start = aligned_start;
+ 	bank->size = size & ~(phys_addr_t)(PAGE_SIZE - 1);
+ 
 -- 
 1.9.1
 
