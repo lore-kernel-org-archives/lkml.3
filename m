@@ -1,273 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaDAS0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:26:32 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:4120 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaDAS0b convert rfc822-to-8bit (ORCPT
+	id S1751596AbaDASb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:31:26 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:5508 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287AbaDASbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:26:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 01 Apr 2014 11:22:04 -0700
-From: Arun Shamanna Lakshmi <aruns@nvidia.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Songhee Baek <sbaek@nvidia.com>
-Date: Tue, 1 Apr 2014 11:26:30 -0700
-Subject: RE: [PATCH] ASoC: DAPM: Add support for multi register mux
-Thread-Topic: [PATCH] ASoC: DAPM: Add support for multi register mux
-Thread-Index: Ac9NfqaUeS2HmY4dRnC0ftc6uLxCFgAV1unwAAAKJmA=
-Message-ID: <781A12BB53C15A4BB37291FDE08C03F3A05CDCD659@HQMAIL02.nvidia.com>
-References: <1396333288-19113-1-git-send-email-aruns@nvidia.com>
- <533A6F4A.2060702@metafoo.de>
- <781A12BB53C15A4BB37291FDE08C03F3A05CDCD63B@HQMAIL02.nvidia.com>
-In-Reply-To: <781A12BB53C15A4BB37291FDE08C03F3A05CDCD63B@HQMAIL02.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Apr 2014 14:31:25 -0400
+Message-ID: <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 01 Apr 2014 11:31:23 -0700
+In-Reply-To: <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-04-01 at 14:10 -0400, KOSAKI Motohiro wrote:
+> On Tue, Apr 1, 2014 at 1:01 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > On Mon, 2014-03-31 at 17:05 -0700, Andrew Morton wrote:
+> >> On Mon, 31 Mar 2014 16:25:32 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >>
+> >> > On Mon, 2014-03-31 at 16:13 -0700, Andrew Morton wrote:
+> >> > > On Mon, 31 Mar 2014 15:59:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >> > >
+> >> > > > >
+> >> > > > > - Shouldn't there be a way to alter this namespace's shm_ctlmax?
+> >> > > >
+> >> > > > Unfortunately this would also add the complexity I previously mentioned.
+> >> > >
+> >> > > But if the current namespace's shm_ctlmax is too small, you're screwed.
+> >> > > Have to shut down the namespace all the way back to init_ns and start
+> >> > > again.
+> >> > >
+> >> > > > > - What happens if we just nuke the limit altogether and fall back to
+> >> > > > >   the next check, which presumably is the rlimit bounds?
+> >> > > >
+> >> > > > afaik we only have rlimit for msgqueues. But in any case, while I like
+> >> > > > that simplicity, it's too late. Too many workloads (specially DBs) rely
+> >> > > > heavily on shmmax. Removing it and relying on something else would thus
+> >> > > > cause a lot of things to break.
+> >> > >
+> >> > > It would permit larger shm segments - how could that break things?  It
+> >> > > would make most or all of these issues go away?
+> >> > >
+> >> >
+> >> > So sysadmins wouldn't be very happy, per man shmget(2):
+> >> >
+> >> > EINVAL A new segment was to be created and size < SHMMIN or size >
+> >> > SHMMAX, or no new segment was to be created, a segment with given key
+> >> > existed, but size is greater than the size of that segment.
+> >>
+> >> So their system will act as if they had set SHMMAX=enormous.  What
+> >> problems could that cause?
+> >
+> > So, just like any sysctl configurable, only privileged users can change
+> > this value. If we remove this option, users can theoretically create
+> > huge segments, thus ignoring any custom limit previously set. This is
+> > what I fear. Think of it kind of like mlock's rlimit. And for that
+> > matter, why does sysctl exist at all, the same would go for the rest of
+> > the limits.
+> 
+> Hmm. It's hard to agree. AFAIK 32MB is just borrowed from other Unix
+> and it doesn't respect any Linux internals. 
 
-> -----Original Message-----
-> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> Sent: Tuesday, April 01, 2014 12:48 AM
-> To: Arun Shamanna Lakshmi
-> Cc: lgirdwood@gmail.com; broonie@kernel.org;
-swarren@wwwdotorg.org;
-> perex@perex.cz; tiwai@suse.de; alsa- devel@alsa-project.org;
-> linux-kernel@vger.kernel.org; Songhee Baek
-> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
->
-> On 04/01/2014 08:21 AM, Arun Shamanna Lakshmi wrote:
-> > Modify soc_enum struct to handle pointers for reg and mask. Add
-dapm
-> > get and put APIs for multi register mux with one hot encoding.
-> >
-> > Signed-off-by: Arun Shamanna Lakshmi <aruns@nvidia.com>
-> > Signed-off-by: Songhee Baek <sbaek@nvidia.com>
->
-> Looks in my opinion much better than the previous version :) Just a
-> few minor issues, comments inline
->
-> > ---
-> >   include/sound/soc-dapm.h |   10 ++++
-> >   include/sound/soc.h      |   22 +++++--
-> >   sound/soc/soc-core.c     |   12 ++--
-> >   sound/soc/soc-dapm.c     |  143
-> +++++++++++++++++++++++++++++++++++++++++-----
-> >   4 files changed, 162 insertions(+), 25 deletions(-)
-> >
-> > diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
-> index
-> > ef78f56..983b0ab 100644
-> > --- a/include/sound/soc-dapm.h
-> > +++ b/include/sound/soc-dapm.h
-> > @@ -305,6 +305,12 @@ struct device;
-> >    	.get = snd_soc_dapm_get_enum_double, \
-> >    	.put = snd_soc_dapm_put_enum_double, \
-> >     	.private_value = (unsigned long)&xenum }
-> > +#define SOC_DAPM_ENUM_WIDE(xname, xenum) \
->
-> maybe just call it ENUM_ONEHOT, since it doesn't actually have to be
-> more than one register.
->
-> [...]
-> > diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c index
-> > cd52d52..aba0094 100644
-> > --- a/sound/soc/soc-core.c
-> > +++ b/sound/soc/soc-core.c
-> > @@ -2601,12 +2601,12 @@ int snd_soc_get_enum_double(struct
-> snd_kcontrol *kcontrol,
-> >   	unsigned int val, item;
-> >   	unsigned int reg_val;
-> >
-> > -	reg_val = snd_soc_read(codec, e->reg);
-> > -	val = (reg_val >> e->shift_l) & e->mask;
-> > +	reg_val = snd_soc_read(codec, e->reg[0]);
-> > +	val = (reg_val >> e->shift_l) & e->mask[0];
-> >   	item = snd_soc_enum_val_to_item(e, val);
-> >   	ucontrol->value.enumerated.item[0] = item;
-> >   	if (e->shift_l != e->shift_r) {
-> > -		val = (reg_val >> e->shift_l) & e->mask;
-> > +		val = (reg_val >> e->shift_l) & e->mask[0];
-> >   		item = snd_soc_enum_val_to_item(e, val);
-> >   		ucontrol->value.enumerated.item[1] = item;
-> >   	}
-> > @@ -2636,15 +2636,15 @@ int snd_soc_put_enum_double(struct
-> snd_kcontrol *kcontrol,
-> >   	if (item[0] >= e->items)
-> >   		return -EINVAL;
-> >   	val = snd_soc_enum_item_to_val(e, item[0]) << e->shift_l;
-> > -	mask = e->mask << e->shift_l;
-> > +	mask = e->mask[0] << e->shift_l;
-> >   	if (e->shift_l != e->shift_r) {
-> >   		if (item[1] >= e->items)
-> >   			return -EINVAL;
-> >   		val |= snd_soc_enum_item_to_val(e, item[1]) << e-
-shift_r;
-> > -		mask |= e->mask << e->shift_r;
-> > +		mask |= e->mask[0] << e->shift_r;
-> >   	}
-> >
-> > -	return snd_soc_update_bits_locked(codec, e->reg, mask, val);
-> > +	return snd_soc_update_bits_locked(codec, e->reg[0], mask, val);
-> >   }
-> >   EXPORT_SYMBOL_GPL(snd_soc_put_enum_double);
-> >
-> > diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c index
-> > c8a780d..4d2b35c 100644
-> > --- a/sound/soc/soc-dapm.c
-> > +++ b/sound/soc/soc-dapm.c
-> > @@ -514,9 +514,9 @@ static int dapm_connect_mux(struct
-> snd_soc_dapm_context *dapm,
-> >   	unsigned int val, item;
-> >   	int i;
-> >
-> > -	if (e->reg != SND_SOC_NOPM) {
-> > -		soc_widget_read(dest, e->reg, &val);
-> > -		val = (val >> e->shift_l) & e->mask;
-> > +	if (e->reg[0] != SND_SOC_NOPM) {
-> > +		soc_widget_read(dest, e->reg[0], &val);
-> > +		val = (val >> e->shift_l) & e->mask[0];
-> >   		item = snd_soc_enum_val_to_item(e, val);
->
-> This probably should handle the new enum type as well. You'll probably
-> need some kind of flag in the struct to distinguish between the two
-> enum types.
+Agreed, it's stupid, but it's what Linux chose to use since forever.
 
-Any suggestion on the flag name ?
+> Look, non privileged user
+> can user unlimited memory, at least on linux. So I don't find out any
+> difference between regular anon and shmem.
 
->
-> >   	} else {
-> >   		/* since a virtual mux has no backing registers to
-> [...]
-> >   /**
-> > + * snd_soc_dapm_get_enum_wide - dapm semi enumerated multiple
-> > + registers
->
-> What's a semi-enumerated register?
->
-> > + *					mixer get callback
-> > + * @kcontrol: mixer control
-> > + * @ucontrol: control element information
-> > + *
-> > + * Callback to get the value of a dapm semi enumerated multiple
-> > +register mixer
-> > + * control.
-> > + *
-> > + * semi enumerated multiple registers mixer:
-> > + * the mixer has multiple registers to set the enumerated items.
-> > +The enumerated
-> > + * items are referred as values.
-> > + * Can be used for handling bit field coded enumeration for example.
-> > + *
-> > + * Returns 0 for success.
-> > + */
-> > +int snd_soc_dapm_get_enum_wide(struct snd_kcontrol *kcontrol,
-> > +			struct snd_ctl_elem_value *ucontrol) {
-> > +	struct snd_soc_codec *codec =
-> snd_soc_dapm_kcontrol_codec(kcontrol);
-> > +	struct soc_enum *e = (struct soc_enum *)kcontrol-
-> >private_value;
-> > +	unsigned int reg_val, val, bit_pos = 0, reg_idx;
-> > +
-> > +	for (reg_idx = 0; reg_idx < e->num_regs; reg_idx++) {
-> > +		reg_val = snd_soc_read(codec, e->reg[reg_idx]);
-> > +		val = reg_val & e->mask[reg_idx];
-> > +		if (val != 0) {
-> > +			bit_pos = ffs(val) + (e->reg_width * reg_idx);
->
-> Should be __ffs. __ffs returns the bits zero-indexed and ffs one-indexed.
-> That will work better for cases where there is not additional value
-> table necessary, since it means bit 1 maps to value 0.
->
-> > +			break;
-> > +		}
-> > +	}
-> > +
-> > +	ucontrol->value.enumerated.item[0] =
-> > +			snd_soc_enum_val_to_item(e, bit_pos);
-> > +
-> > +	return 0;
-> > +}
-> [...]
-> > +int snd_soc_dapm_put_enum_wide(struct snd_kcontrol *kcontrol,
-> > +			struct snd_ctl_elem_value *ucontrol) {
-> > +	struct snd_soc_codec *codec =
-> snd_soc_dapm_kcontrol_codec(kcontrol);
-> > +	struct snd_soc_card *card = codec->card;
-> > +	struct soc_enum *e = (struct soc_enum *)kcontrol-
-> >private_value;
-> > +	unsigned int *item = ucontrol->value.enumerated.item;
-> > +	unsigned int change = 0, reg_idx = 0, value, bit_pos;
-> > +	struct snd_soc_dapm_update update;
-> > +	int ret = 0, reg_val = 0, i;
-> > +
-> > +	if (item[0] >= e->items)
-> > +		return -EINVAL;
-> > +
-> > +	value = snd_soc_enum_item_to_val(e, item[0]);
-> > +
-> > +	if (value) {
-> > +		/* get the register index and value to set */
-> > +		reg_idx = (value - 1) / e->reg_width;
-> > +		bit_pos = (value - 1) % e->reg_width;
->
-> Changing the ffs to __ffs also means you can drop the ' - 1' here.
->
-> Also e->reg_width should be (codec->val_bytes * 8) and reg_width field
-> should be dropped from the enum struct.
->
-> > +		reg_val = BIT(bit_pos);
-> > +	}
-> > +
-> > +	for (i = 0; i < e->num_regs; i++) {
-> > +		if (i == reg_idx) {
-> > +			change = snd_soc_test_bits(codec, e->reg[i],
-> > +							e->mask[i],
-> reg_val);
-> > +
-> > +		} else {
-> > +			/* accumulate the change to update the DAPM
-> path
-> > +			    when none is selected */
-> > +			change += snd_soc_test_bits(codec, e->reg[i],
-> > +							e->mask[i], 0);
->
-> change |=
->
-> > +
-> > +			/* clear the register when not selected */
-> > +			snd_soc_write(codec, e->reg[i], 0);
->
-> I think this should happen as part of the DAPM update sequence like
-> you had earlier. Some special care should probably be take to make
-> sure that you de-select the previous mux input before selecting the
-> new one if the new one is in a different register than the previous one.
+Fine, let's try it, if users complain we can revert.
 
-I am not sure I follow this part. We are clearing the 'not selected'
-registers before we set the one we want. Do you want us to loop the
-logic of soc_dapm_mux_update_power for each register ? or do you
-want to change the dapm_update structure so that it takes all the regs,
-masks, and values together ?
->
-> > +		}
-> > +	}
-> > +
-> > +	mutex_lock_nested(&card->dapm_mutex,
-> SND_SOC_DAPM_CLASS_RUNTIME);
-> > +
-> [...]
+> 
+> So, I personally like 0 byte per default.
+
+If by this you mean 0 bytes == unlimited, then I agree. It's less harsh
+then removing it entirely. So instead of removing the limit we can just
+set it by default to 0, and in newseg() if shm_ctlmax == 0 then we don't
+return EINVAL if the passed size is great (obviously), otherwise, if the
+user _explicitly_ set it via sysctl then we respect that. Andrew, do you
+agree with this? If so I'll send a patch.
+
+Thanks,
+Davidlohr
 
