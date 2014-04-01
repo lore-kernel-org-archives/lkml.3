@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaDALpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:45:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42542 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586AbaDALSB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752593AbaDALSB (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 1 Apr 2014 07:18:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42508 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476AbaDALRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 07:17:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 091/144] KVM: SVM: fix cr8 intercept window
-Date: Tue,  1 Apr 2014 12:14:55 +0100
-Message-Id: <1396350948-29910-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 084/144] [SCSI] qla2xxx: Poll during initialization for ISP25xx and ISP83xx
+Date: Tue,  1 Apr 2014 12:14:48 +0100
+Message-Id: <1396350948-29910-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,51 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+From: Giridhar Malavali <giridhar.malavali@qlogic.com>
 
-commit 596f3142d2b7be307a1652d59e7b93adab918437 upstream.
+commit b77ed25c9f8402e8b3e49e220edb4ef09ecfbb53 upstream.
 
-We always disable cr8 intercept in its handler, but only re-enable it
-if handling KVM_REQ_EVENT, so there can be a window where we do not
-intercept cr8 writes, which allows an interrupt to disrupt a higher
-priority task.
-
-Fix this by disabling intercepts in the same function that re-enables
-them when needed. This fixes BSOD in Windows 2008.
-
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/svm.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/qla2xxx/qla_def.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index c0bc803..612c717 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -2993,10 +2993,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
- 	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
- 	/* instruction emulation calls kvm_set_cr8() */
- 	r = cr_interception(svm);
--	if (irqchip_in_kernel(svm->vcpu.kvm)) {
--		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-+	if (irqchip_in_kernel(svm->vcpu.kvm))
- 		return r;
--	}
- 	if (cr8_prev <= kvm_get_cr8(&svm->vcpu))
- 		return r;
- 	kvm_run->exit_reason = KVM_EXIT_SET_TPR;
-@@ -3558,6 +3556,8 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
- 	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
- 		return;
- 
-+	clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-+
- 	if (irr == -1)
- 		return;
- 
+diff --git a/drivers/scsi/qla2xxx/qla_def.h b/drivers/scsi/qla2xxx/qla_def.h
+index 95ca32a..197bc15 100644
+--- a/drivers/scsi/qla2xxx/qla_def.h
++++ b/drivers/scsi/qla2xxx/qla_def.h
+@@ -2980,8 +2980,7 @@ struct qla_hw_data {
+ 				IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
+ 				IS_QLA82XX(ha) || IS_QLA83XX(ha))
+ #define IS_MSIX_NACK_CAPABLE(ha) (IS_QLA81XX(ha) || IS_QLA83XX(ha))
+-#define IS_NOPOLLING_TYPE(ha)	((IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
+-			IS_QLA83XX(ha)) && (ha)->flags.msix_enabled)
++#define IS_NOPOLLING_TYPE(ha)	(IS_QLA81XX(ha) && (ha)->flags.msix_enabled)
+ #define IS_FAC_REQUIRED(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
+ #define IS_NOCACHE_VPD_TYPE(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
+ #define IS_ALOGIO_CAPABLE(ha)	(IS_QLA23XX(ha) || IS_FWI2_CAPABLE(ha))
 -- 
 1.9.1
 
