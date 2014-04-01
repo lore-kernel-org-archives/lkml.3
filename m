@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaDAQJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:09:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44357 "EHLO
+	id S1752052AbaDAQJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:09:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44358 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823AbaDAQJF (ORCPT
+	with ESMTP id S1751829AbaDAQJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 12:09:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Duan Jiong <duanj.fnst@cn.fujitsu.com>,
+Cc: Edward Cree <ecree@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 10/86] ipv4: fix counter in_slow_tot
-Date: Tue,  1 Apr 2014 09:07:23 -0700
-Message-Id: <1396368519-12728-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 19/86] sfc: check for NULL efx->ptp_data in efx_ptp_event
+Date: Tue,  1 Apr 2014 09:07:32 -0700
+Message-Id: <1396368519-12728-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,53 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+From: Edward Cree <ecree@solarflare.com>
 
-[ Upstream commit a6254864c08109c66a194612585afc0439005286 ]
+[ Upstream commit 8f355e5cee63c2c0c145d8206c4245d0189f47ff ]
 
-since commit 89aef8921bf("ipv4: Delete routing cache."), the counter
-in_slow_tot can't work correctly.
+If we receive a PTP event from the NIC when we haven't set up PTP state
+in the driver, we attempt to read through a NULL pointer efx->ptp_data,
+triggering a panic.
 
-The counter in_slow_tot increase by one when fib_lookup() return successfully
-in ip_route_input_slow(), but actually the dst struct maybe not be created and
-cached, so we can increase in_slow_tot after the dst struct is created.
-
-Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Signed-off-by: Edward Cree <ecree@solarflare.com>
+Acked-by: Shradha Shah <sshah@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/route.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/ptp.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index c219f8b..fde4930 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1548,6 +1548,7 @@ static int __mkroute_input(struct sk_buff *skb,
- 	rth->rt_gateway	= 0;
- 	rth->rt_uses_gateway = 0;
- 	INIT_LIST_HEAD(&rth->rt_uncached);
-+	RT_CACHE_STAT_INC(in_slow_tot);
+diff --git a/drivers/net/ethernet/sfc/ptp.c b/drivers/net/ethernet/sfc/ptp.c
+index 3f93624..53fd765 100644
+--- a/drivers/net/ethernet/sfc/ptp.c
++++ b/drivers/net/ethernet/sfc/ptp.c
+@@ -1311,6 +1311,13 @@ void efx_ptp_event(struct efx_nic *efx, efx_qword_t *ev)
+ 	struct efx_ptp_data *ptp = efx->ptp_data;
+ 	int code = EFX_QWORD_FIELD(*ev, MCDI_EVENT_CODE);
  
- 	rth->dst.input = ip_forward;
- 	rth->dst.output = ip_output;
-@@ -1649,8 +1650,6 @@ static int ip_route_input_slow(struct sk_buff *skb, __be32 daddr, __be32 saddr,
- 	if (err != 0)
- 		goto no_route;
++	if (!ptp) {
++		if (net_ratelimit())
++			netif_warn(efx, drv, efx->net_dev,
++				   "Received PTP event but PTP not set up\n");
++		return;
++	}
++
+ 	if (!ptp->enabled)
+ 		return;
  
--	RT_CACHE_STAT_INC(in_slow_tot);
--
- 	if (res.type == RTN_BROADCAST)
- 		goto brd_input;
- 
-@@ -1719,6 +1718,7 @@ local_input:
- 	rth->rt_gateway	= 0;
- 	rth->rt_uses_gateway = 0;
- 	INIT_LIST_HEAD(&rth->rt_uncached);
-+	RT_CACHE_STAT_INC(in_slow_tot);
- 	if (res.type == RTN_UNREACHABLE) {
- 		rth->dst.input= ip_error;
- 		rth->dst.error= -err;
 -- 
 1.8.3.2
 
