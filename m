@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaDANH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 09:07:29 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54519 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751955AbaDANHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 09:07:21 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <nsekhar@ti.com>
-CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <joelf@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>
-Subject: [PATCH v2 13/14] dma: edma: Add channel number to debug prints
-Date: Tue, 1 Apr 2014 16:06:14 +0300
-Message-ID: <1396357575-30585-14-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1751584AbaDANIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 09:08:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37788 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaDANIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 09:08:18 -0400
+Message-ID: <533ABA32.9080602@oracle.com>
+Date: Tue, 01 Apr 2014 09:08:02 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Greg KH <greg@kroah.com>, Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: kernfs: trying to register non-static key in kernfs_iop_listxattr
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It helps to identify issues if we have some information regarding to the
-channel which the event is associated.
+Hi all,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/dma/edma.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+While fuzzing with trinity inside a KVM tools guest running latest -next
+kernel I've stumbled on the following:
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 7feb6231276e..2413237840f8 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -185,7 +185,8 @@ static void edma_execute(struct edma_chan *echan)
- 	edma_resume(echan->ch_num);
- 
- 	if (edesc->processed <= MAX_NR_SG) {
--		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
-+		dev_dbg(dev, "first transfer starting on channel %d\n",
-+			echan->ch_num);
- 		edma_start(echan->ch_num);
- 	}
- 
-@@ -195,7 +196,7 @@ static void edma_execute(struct edma_chan *echan)
- 	 * MAX_NR_SG
- 	 */
- 	if (echan->missed) {
--		dev_dbg(dev, "missed event in execute detected\n");
-+		dev_dbg(dev, "missed event on channel %d\n", echan->ch_num);
- 		edma_clean_channel(echan->ch_num);
- 		edma_stop(echan->ch_num);
- 		edma_start(echan->ch_num);
-@@ -736,7 +737,7 @@ static int edma_alloc_chan_resources(struct dma_chan *chan)
- 	echan->alloced = true;
- 	echan->slot[0] = echan->ch_num;
- 
--	dev_dbg(dev, "allocated channel for %u:%u\n",
-+	dev_dbg(dev, "allocated channel %d for %u:%u\n", echan->ch_num,
- 		EDMA_CTLR(echan->ch_num), EDMA_CHAN_SLOT(echan->ch_num));
- 
- 	return 0;
--- 
-1.9.1
+[ 1316.776480] INFO: trying to register non-static key.
+[ 1316.778981] the code is fine but needs lockdep annotation.
+[ 1316.780364] turning off the locking correctness validator.
+[ 1316.780364] CPU: 25 PID: 29352 Comm: trinity-c162 Not tainted 3.14.0-rc8-next-20140331-sasha-00013-g7a8780f #351
+[ 1316.780364]  0000000000000000 ffff8805898cbc98 ffffffffbb4bc9a3 0000000000000000
+[ 1316.780364]  ffffffffbf375390 ffff8805898cbd98 ffffffffb81c3942 ffff8806ac800a70
+[ 1316.780364]  0000000000000000 0000000100000001[child40:30166] Chose rand_syscalls. ffff880600000000 ffffffffb8330371
+[ 1316.780364] Call Trace:
+[ 1316.780364] dump_stack (lib/dump_stack.c:52)
+[ 1316.780364] __lock_acquire (kernel/locking/lockdep.c:743 kernel/locking/lockdep.c:3078)
+[ 1316.780364] ? listxattr (fs/xattr.c:550)
+[ 1316.792691] ? listxattr (fs/xattr.c:550)
+[ 1316.792691] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+[ 1316.792691] ? __slab_alloc (mm/slub.c:2385 (discriminator 2))
+[ 1316.792691] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 1316.792691] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+[ 1316.792691] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 1316.792691] ? simple_xattr_list (fs/xattr.c:982)
+[ 1316.797929] ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[ 1316.797929] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+[ 1316.797929] ? simple_xattr_list (fs/xattr.c:982)
+[ 1316.797929] simple_xattr_list (fs/xattr.c:982)
+[ 1316.797929] kernfs_iop_listxattr (fs/kernfs/inode.c:239)
+[ 1316.797929] vfs_listxattr (fs/xattr.c:276)
+[ 1316.797929] listxattr (fs/xattr.c:559)
+[ 1316.797929] SyS_flistxattr (include/linux/file.h:38 fs/xattr.c:621 fs/xattr.c:612)
+[ 1316.797929] ? tracesys (arch/x86/kernel/entry_64.S:738)
+[ 1316.797929] tracesys (arch/x86/kernel/entry_64.S:749)
 
+
+Thanks,
+Sasha
