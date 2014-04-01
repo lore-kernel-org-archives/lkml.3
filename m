@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaDAMZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:25:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42071 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaDALP4 (ORCPT
+	id S1751674AbaDAM1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:27:14 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:65255 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaDAM1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:15:56 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 002/144] ARM: highbank: avoid L2 cache smc calls when PL310 is not present
-Date: Tue,  1 Apr 2014 12:13:26 +0100
-Message-Id: <1396350948-29910-3-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 1 Apr 2014 08:27:11 -0400
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org
+Cc: lars@metafoo.de, andriy.shevchenko@linux.intel.com,
+        jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH v2 1/2] dma: Add Xilinx AXI DMA DT Binding Documentation
+Date: Tue,  1 Apr 2014 17:57:03 +0530
+Message-Id: <1396355224-20863-1-git-send-email-sthokal@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
+Device-tree binding documentation of Xilinx DMA Engine
 
-------------------
-
-From: Rob Herring <rob.herring@calxeda.com>
-
-commit a56a5cf1f2ec895599eace0ac6eba1e4a489e4bf upstream.
-
-While Midway firmware handles L2 smc calls as nops, the custom smc calls
-present a problem when running virtualized Midway guest. They aren't
-needed so just avoid calling them.
-
-In the process, cleanup the L2X0 ifdefs and use IS_ENABLED instead.
-
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
 ---
- arch/arm/mach-highbank/highbank.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+Changes in v2:
+None
+---
+ .../devicetree/bindings/dma/xilinx/xilinx_dma.txt  |   65 ++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt
 
-diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
-index 4a929a2..f283f1c 100644
---- a/arch/arm/mach-highbank/highbank.c
-+++ b/arch/arm/mach-highbank/highbank.c
-@@ -68,14 +68,12 @@ void highbank_set_cpu_jump(int cpu, void *jump_addr)
- 			  HB_JUMP_TABLE_PHYS(cpu) + 15);
- }
- 
--#ifdef CONFIG_CACHE_L2X0
- static void highbank_l2x0_disable(void)
- {
- 	outer_flush_all();
- 	/* Disable PL310 L2 Cache controller */
- 	highbank_smc1(0x102, 0x0);
- }
--#endif
- 
- static void __init highbank_init_irq(void)
- {
-@@ -84,12 +82,13 @@ static void __init highbank_init_irq(void)
- 	if (of_find_compatible_node(NULL, NULL, "arm,cortex-a9"))
- 		highbank_scu_map_io();
- 
--#ifdef CONFIG_CACHE_L2X0
- 	/* Enable PL310 L2 Cache controller */
--	highbank_smc1(0x102, 0x1);
--	l2x0_of_init(0, ~0UL);
--	outer_cache.disable = highbank_l2x0_disable;
--#endif
-+	if (IS_ENABLED(CONFIG_CACHE_L2X0) &&
-+	    of_find_compatible_node(NULL, NULL, "arm,pl310-cache")) {
-+		highbank_smc1(0x102, 0x1);
-+		l2x0_of_init(0, ~0UL);
-+		outer_cache.disable = highbank_l2x0_disable;
-+	}
- }
- 
- static void __init highbank_timer_init(void)
+diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt
+new file mode 100644
+index 0000000..18e8bcc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt
+@@ -0,0 +1,65 @@
++Xilinx AXI DMA engine, it does transfers between memory and AXI4 stream
++target devices. It can be configured to have one channel or two channels.
++If configured as two channels, one is to transmit to the device and another
++is to receive from the device.
++
++Required properties:
++- compatible: Should be "xlnx,axi-dma-1.00.a"
++- #dma-cells: Should be <1>, see "dmas" property below
++- reg: Should contain DMA registers location and length.
++- dma-channel child node: Should have atleast one channel and can have upto
++	two channels per device. This node specifies the properties of each
++	DMA channel (see child node properties below).
++
++Optional properties:
++- xlnx,include-sg: Tells whether configured for Scatter-mode in
++	the hardware.
++
++Required child node properties:
++- compatible: It should be either "xlnx,axi-dma-mm2s-channel" or
++	"xlnx,axi-dma-s2mm-channel".
++- interrupts: Should contain per channel DMA interrupts.
++- xlnx,data-width: Should contain the stream data width, take values
++	{32,64...1024}.
++
++Option child node properties:
++- xlnx,include-dre: Tells whether hardware is configured for Data
++	Realignment Engine.
++
++Example:
++++++++++
++
++axi_dma_0: axidma@40400000 {
++	compatible = "xlnx,axi-dma-1.00.a";
++	#dma_cells = <1>;
++	reg = < 0x40400000 0x10000 >;
++	dma-channel@40400000 {
++		compatible = "xlnx,axi-dma-mm2s-channel";
++		interrupts = < 0 59 4 >;
++		xlnx,datawidth = <0x40>;
++	} ;
++	dma-channel@40400030 {
++		compatible = "xlnx,axi-dma-s2mm-channel";
++		interrupts = < 0 58 4 >;
++		xlnx,datawidth = <0x40>;
++	} ;
++} ;
++
++
++* DMA client
++
++Required properties:
++- dmas: a list of <[DMA device phandle] [Channel ID]> pairs,
++	where Channel ID is '0' for write/tx and '1' for read/rx
++	channel.
++- dma-names: a list of DMA channel names, one per "dmas" entry
++
++Example:
++++++++++
++
++dmatest_0: dmatest@0 {
++	compatible ="xlnx,axi-dma-test-1.00.a";
++	dmas = <&axi_dma_0 0
++		&axi_dma_0 1>;
++	dma-names = "dma0", "dma1";
++} ;
 -- 
-1.9.1
+1.7.9.5
 
