@@ -1,187 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730AbaDAV0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:26:34 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:46106 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbaDAV0d (ORCPT
+	id S1751873AbaDAV3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:29:43 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:61698 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610AbaDAV3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:26:33 -0400
-Message-ID: <533B2F03.6060008@gmail.com>
-Date: Tue, 01 Apr 2014 23:26:27 +0200
-From: Struan Bartlett <struan.bartlett@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 1 Apr 2014 17:29:40 -0400
 MIME-Version: 1.0
-To: Matt Mackall <mpm@selenic.com>
-CC: linux-kernel@vger.kernel.org, Andreas Schwab <schwab@linux-m68k.org>,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
+In-Reply-To: <20140331212522.GB8979@xanatos>
+References: <1395772963-14127-1-git-send-email-jwerner@chromium.org>
+	<20140331212522.GB8979@xanatos>
+Date: Tue, 1 Apr 2014 14:29:40 -0700
+X-Google-Sender-Auth: Uy3yUwJNVqaiwgCiHQ5o9cD2IYE
+Message-ID: <CAODwPW9i-pwgzE-OELwwkw2M_Vnhtsq4p=_5ppO7R6xXpzu==w@mail.gmail.com>
+Subject: Re: [PATCH] usb: xhci: Correct last context entry calculation for
+ Configure Endpoint
+From: Julius Werner <jwerner@chromium.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Pirko <jiri@resnulli.us>, Joe Perches <joe@perches.com>,
-        Dan Aloni <alonid@postram.com>
-Subject: [PATCH v2] netconsole: Add tty driver
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>, Jim Lin <jilin@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds tty driver to netconsole module. When module is loaded,
-creates /dev/netcon0 device and enables support for console=netcon0
-kernel cmdline option, causing /dev/console output to be sent to
-/dev/netcon0. This allows startup/shutdown script output from
-headless platforms to be logged over (secure) network.
+> http://marc.info/?l=linux-usb&m=137158978503741&w=2
+>
+> There's an xHCI spec ambiguity:  Does the last valid context entry refer
+> to the last valid endpoint context in the *input* device context or the
+> *output* device context?
+>
+> The code currently assumes it refers to the input device context, namely
+> the endpoints we're adding or changing.  If hardware needs the last
+> valid endpoint context for the re-calculated *output* device context,
+> then yes, this needs to be changed.  However, based on spec errata, I
+> believe that's not the intent of the spec authors:
+>
+> http://marc.info/?l=linux-kernel&m=137208958411696&w=2
 
-To: Matt Mackall <mpm@selenic.com>
-Signed-off-by: Struan Bartlett <struan.bartlett@gmail.com>
----
+Oh, okay, it didn't even occur to me to interpret it that way. It
+seems very odd since then Context Entries is essentially redundant
+with the information already provided by the Add Context flags.
 
-Changes since v1:
-  * Fixed whitespace mangled by broken mailer
+> What is the impact if we calculate the valid last valid endpoint context
+> for the input context?  Do you have evidence of hardware misbehaving?
+> If so, which hardware?
 
---- a/drivers/net/netconsole.c	2014-03-31 04:40:15.000000000 +0100
-+++ b/drivers/net/netconsole.c	2014-04-01 11:58:50.000000000 +0100
-@@ -15,6 +15,7 @@
-   *               generic card hooks
-   *               works non-modular
-   * 2003-09-07    rewritten with netpoll api
-+ * 2014-03-31    tty driver by Struan Bartlett
-   */
+I haven't actually seen a problem from this, it just seemed like the
+right thing to do for me when looking at it. The only real error we
+had was when the command fails due to Context Entries being 0.
 
-  /****************************************************************
-@@ -47,6 +48,7 @@
-  #include <linux/netpoll.h>
-  #include <linux/inet.h>
-  #include <linux/configfs.h>
-+#include <linux/tty.h>
-
-  MODULE_AUTHOR("Maintainer: Matt Mackall <mpm@selenic.com>");
-  MODULE_DESCRIPTION("Console driver for network interfaces");
-@@ -728,7 +730,7 @@ static struct notifier_block netconsole_
-  	.notifier_call  = netconsole_netdev_event,
-  };
-
--static void write_msg(struct console *con, const char *msg, unsigned 
-int len)
-+static void _write_msg(const char *msg, unsigned int len)
-  {
-  	int frag, left;
-  	unsigned long flags;
-@@ -764,10 +766,63 @@ static void write_msg(struct console *co
-  	spin_unlock_irqrestore(&target_list_lock, flags);
-  }
-
-+static void write_msg(struct console *con, const char *msg, unsigned 
-int len)
-+{
-+	_write_msg(msg, len);
-+}
-+
-+static int netconsole_tty_open(struct tty_struct *tty, struct file *filp)
-+{
-+	return 0;
-+}
-+
-+static void netconsole_tty_close(struct tty_struct *tty, struct file *filp)
-+{
-+}
-+
-+static int netconsole_tty_write(struct tty_struct *tty,
-+				const unsigned char *buf, int count)
-+{
-+	_write_msg(buf, count);
-+	return count;
-+}
-+
-+static int netconsole_tty_put_char(struct tty_struct *tty, unsigned 
-char ch)
-+{
-+	char temp[2] = { ch, 0 };
-+	_write_msg(temp, 1);
-+	return 1;
-+}
-+
-+static int netconsole_tty_write_room(struct tty_struct *tty)
-+{
-+	return MAX_PRINT_CHUNK;
-+}
-+
-+static const struct tty_operations netconsole_tty_ops = {
-+	.open		= netconsole_tty_open,
-+	.close		= netconsole_tty_close,
-+	.write		= netconsole_tty_write,
-+	.put_char	= netconsole_tty_put_char,
-+	.write_room	= netconsole_tty_write_room,
-+};
-+
-+static struct tty_port netconsole_tty_port;
-+static struct tty_driver *netconsole_tty_driver;
-+
-+static struct tty_driver *netconsole_device(struct console *co, int *index)
-+{
-+	if (!(co->flags & CON_ENABLED))
-+		return NULL;
-+	*index = co->index;
-+	return netconsole_tty_driver;
-+}
-+
-  static struct console netconsole = {
-  	.name	= "netcon",
-  	.flags	= CON_ENABLED,
-  	.write	= write_msg,
-+	.device = netconsole_device
-  };
-
-  static int __init init_netconsole(void)
-@@ -802,11 +857,39 @@ static int __init init_netconsole(void)
-  	if (err)
-  		goto undonotifier;
-
-+	netconsole_tty_driver = alloc_tty_driver(1);
-+	if (!netconsole_tty_driver) {
-+		err = -ENOMEM;
-+		goto undonotifier;
-+	}
-+
-+	tty_port_init(&netconsole_tty_port);
-+
-+	netconsole_tty_driver->driver_name = "netcon";
-+	netconsole_tty_driver->name = "netcon";
-+	netconsole_tty_driver->type = TTY_DRIVER_TYPE_SYSTEM;
-+	netconsole_tty_driver->subtype = SYSTEM_TYPE_TTY;
-+	netconsole_tty_driver->init_termios = tty_std_termios;
-+	netconsole_tty_driver->init_termios.c_iflag = 0;
-+	netconsole_tty_driver->init_termios.c_oflag = 0;
-+	netconsole_tty_driver->flags = TTY_DRIVER_REAL_RAW;
-+
-+	tty_set_operations(netconsole_tty_driver, &netconsole_tty_ops);
-+	tty_port_link_device(&netconsole_tty_port, netconsole_tty_driver, 0);
-+
-+	err = tty_register_driver(netconsole_tty_driver);
-+	if (err)
-+		goto undotty;
-+
-  	register_console(&netconsole);
-  	pr_info("network logging started\n");
-
-  	return err;
-
-+undotty:
-+	put_tty_driver(netconsole_tty_driver);
-+	tty_port_destroy(&netconsole_tty_port);
-+
-  undonotifier:
-  	unregister_netdevice_notifier(&netconsole_netdev_notifier);
-
-@@ -830,6 +913,10 @@ static void __exit cleanup_netconsole(vo
-  {
-  	struct netconsole_target *nt, *tmp;
-
-+	tty_unregister_driver(netconsole_tty_driver);
-+	put_tty_driver(netconsole_tty_driver);
-+	tty_port_destroy(&netconsole_tty_port);
-+
-  	unregister_console(&netconsole);
-  	dynamic_netconsole_exit();
-  	unregister_netdevice_notifier(&netconsole_netdev_notifier);
+However, the question remains: What is the right value for Context
+Entries when we have no Add Context flags, or only the SLOT_FLAG? It
+should be perfectly legal to just drop a bunch of endpoints without
+adding/changing anything else, such as when you switch a UVC interface
+back to alternate setting 0 (which has no endpoints). Then the Input
+Context really ends at the Slot Context (DCI = 0), but Context Entries
+= 0 is very clearly forbidden in the spec. I guess we could just force
+it to 1 there and it would probably work, but that would technically
+be incorrect since the EP0 context is not updated and not part of the
+Add Context flags.
