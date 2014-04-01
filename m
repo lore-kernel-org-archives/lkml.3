@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaDAXBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 19:01:45 -0400
-Received: from www.sr71.net ([198.145.64.142]:50645 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844AbaDAXBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 19:01:43 -0400
-Message-ID: <533B4555.3000608@sr71.net>
-Date: Tue, 01 Apr 2014 16:01:41 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751919AbaDAXE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 19:04:26 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:59734 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaDAXEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 19:04:24 -0400
+Date: Tue, 1 Apr 2014 16:04:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] RCU changes for v3.15
+Message-ID: <20140401230419.GA22622@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140331081724.GA3193@gmail.com>
+ <1396384291.23763.22.camel@x220>
+ <20140401205219.GX4284@linux.vnet.ibm.com>
+ <1396385946.23763.34.camel@x220>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org> <533B313E.5000403@zytor.com>
-In-Reply-To: <533B313E.5000403@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396385946.23763.34.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040123-3532-0000-0000-000000B9D8E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 02:35 PM, H. Peter Anvin wrote:
-> On 04/01/2014 02:21 PM, Johannes Weiner wrote:
->> Either way, optimistic volatile pointers are nowhere near as
->> transparent to the application as the above description suggests,
->> which makes this usecase not very interesting, IMO.
+On Tue, Apr 01, 2014 at 10:59:06PM +0200, Paul Bolle wrote:
+> On Tue, 2014-04-01 at 13:52 -0700, Paul E. McKenney wrote:
+> > I don't believe that this is particularly urgent, so unless someone
+> > tells me otherwise, I will queue the fix for 3.16.
 > 
-> ... however, I think you're still derating the value way too much.  The
-> case of user space doing elastic memory management is more and more
-> common, and for a lot of those applications it is perfectly reasonable
-> to either not do system calls or to have to devolatilize first.
+> Few people share my OCD for Kconfig symbols. So most people will not
+> think this is urgent. On the other hand, why wait three to four months
+> when this can be cleaned up in a few weeks?
 
-The SIGBUS is only in cases where the memory is set as volatile and
-_then_ accessed, right?
+Because I need to decide whether the right fix is to add the
+LOCK_TORTURE_RUNNABLE or to remove the RCU_TORTURE_RUNNABLE.  ;-)
 
-John, this was something that the Mozilla guys asked for, right?  Any
-idea why this isn't ever a problem for them?
+My kneejerk reaction was the former, but I am leaning towards the latter.
+Shrinks the code a bit, gets rid of a Kconfig parameter and only requires
+changes in scripts for a few people using rcutorture...
+
+							Thanx, Paul
+
