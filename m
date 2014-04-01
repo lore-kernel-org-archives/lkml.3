@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075AbaDALks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:40:48 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:42555 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600AbaDALkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:40:42 -0400
-X-IronPort-AV: E=Sophos;i="4.97,772,1389744000"; 
-   d="scan'208";a="116884336"
-Message-ID: <1396352440.8667.117.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next v2 2/2] xen-netback: Grant copy the header
- instead of map and memcpy
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Date: Tue, 1 Apr 2014 12:40:40 +0100
-In-Reply-To: <1396278539-27639-2-git-send-email-zoltan.kiss@citrix.com>
-References: <1396278539-27639-1-git-send-email-zoltan.kiss@citrix.com>
-	 <1396278539-27639-2-git-send-email-zoltan.kiss@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+	id S1752695AbaDALSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:18:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42550 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaDALSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 07:18:04 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Heinz Mauelshagen <heinzm@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 093/144] dm cache: fix access beyond end of origin device
+Date: Tue,  1 Apr 2014 12:14:57 +0100
+Message-Id: <1396350948-29910-94-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 16:08 +0100, Zoltan Kiss wrote:
->  
->  check_frags:
-> -	for (i = start; i < nr_frags; i++) {
-> +	for (i = 0; i < nr_frags; i++, gop_map++) {
->  		int j, newerr;
->  
->  		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
-> -		tx_info = &vif->pending_tx_info[pending_idx];
->  
->  		/* Check error status: if okay then remember grant handle. */
-> -		newerr = (++gop_map)->status;
-> +		newerr = (gop_map)->status;
+3.11.10.7 -stable review patch.  If anyone has any objections, please let me know.
 
-You've reworked the handling of gop_map and when and where it is
-incremented, which might be a legit cleanup but does it relate to the
-bulk of this change somehow that I'm missing?
+------------------
 
->  [...] 
->  		__skb_put(skb, data_len);
-> +		vif->tx_copy_ops[*copy_ops].source.u.ref = txreq.gref;
-> +		vif->tx_copy_ops[*copy_ops].source.domid = vif->domid;
-> +		vif->tx_copy_ops[*copy_ops].source.offset = txreq.offset;
-> +
-> +		vif->tx_copy_ops[*copy_ops].dest.u.gmfn =
-> +			virt_to_mfn(skb->data);
-> +		vif->tx_copy_ops[*copy_ops].dest.domid = DOMID_SELF;
-> +		vif->tx_copy_ops[*copy_ops].dest.offset =
-> +			offset_in_page(skb->data);
-> +
-> +		vif->tx_copy_ops[*copy_ops].len = data_len;
-> +		vif->tx_copy_ops[*copy_ops].flags = GNTCOPY_source_gref;
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-We have gnttab_set_map_op. Should we have gnttap_set_copy_op too?
+commit e893fba90c09f9b57fb97daae204ea9cc2c52fa5 upstream.
 
-> -	BUG_ON(ret);
-> +	else {
-> +		gnttab_batch_copy(vif->tx_copy_ops, nr_cops);
-> +		if (nr_mops != 0) {
+In order to avoid wasting cache space a partial block at the end of the
+origin device is not cached.  Unfortunately, the check for such a
+partial block at the end of the origin device was flawed.
 
+Fix accesses beyond the end of the origin device that occured due to
+attempted promotion of an undetected partial block by:
 
-if (nr_mops) would do.
+- initializing the per bio data struct to allow cache_end_io to work properly
+- recognizing access to the partial block at the end of the origin device
+- avoiding out of bounds access to the discard bitset
 
-> +			ret = gnttab_map_refs(vif->tx_map_ops,
+Otherwise, users can experience errors like the following:
 
-So we use gnttab_batch_copy and gnttab_map_refs.
+ attempt to access beyond end of device
+ dm-5: rw=0, want=20971520, limit=20971456
+ ...
+ device-mapper: cache: promotion failed; couldn't copy block
 
-Shouldn't we either use gnttab_batch_copy and gnttab_batch_map or
-gnttab_copy gnttab_map_refs. (where gnttab_copy might be a bare
-GNTTABOP_copy or might be a helper wrapper).
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/md/dm-cache-target.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-The point of the batch interface is to handle page unsharing etc, but
-doing it only for copies seems like a waste one way or another.
-
-#include <paul's-comments>
-
-Ian.
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index e36beca..a2d7e04 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -2179,20 +2179,18 @@ static int cache_map(struct dm_target *ti, struct bio *bio)
+ 	bool discarded_block;
+ 	struct dm_bio_prison_cell *cell;
+ 	struct policy_result lookup_result;
+-	struct per_bio_data *pb;
++	struct per_bio_data *pb = init_per_bio_data(bio, pb_data_size);
+ 
+-	if (from_oblock(block) > from_oblock(cache->origin_blocks)) {
++	if (unlikely(from_oblock(block) >= from_oblock(cache->origin_blocks))) {
+ 		/*
+ 		 * This can only occur if the io goes to a partial block at
+ 		 * the end of the origin device.  We don't cache these.
+ 		 * Just remap to the origin and carry on.
+ 		 */
+-		remap_to_origin_clear_discard(cache, bio, block);
++		remap_to_origin(cache, bio);
+ 		return DM_MAPIO_REMAPPED;
+ 	}
+ 
+-	pb = init_per_bio_data(bio, pb_data_size);
+-
+ 	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA | REQ_DISCARD)) {
+ 		defer_bio(cache, bio);
+ 		return DM_MAPIO_SUBMITTED;
+-- 
+1.9.1
 
