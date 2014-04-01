@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaDAQtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:49:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44373 "EHLO
+	id S1751848AbaDAQs6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:48:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44333 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844AbaDAQJF (ORCPT
+	with ESMTP id S1751812AbaDAQJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:09:05 -0400
+	Tue, 1 Apr 2014 12:09:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 05/86] net: qmi_wwan: add Netgear Aircard 340U
-Date: Tue,  1 Apr 2014 09:07:18 -0700
-Message-Id: <1396368519-12728-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 18/86] ipv6: reuse ip6_frag_id from ip6_ufo_append_data
+Date: Tue,  1 Apr 2014 09:07:31 -0700
+Message-Id: <1396368519-12728-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,37 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit fbd3a77d813f211060f86cc7a2f8416caf0e03b1 ]
+[ Upstream commit 916e4cf46d0204806c062c8c6c4d1f633852c5b6 ]
 
-This device was mentioned in an OpenWRT forum.  Seems to have a "standard"
-Sierra Wireless ifnumber to function layout:
- 0: qcdm
- 2: nmea
- 3: modem
- 8: qmi
- 9: storage
+Currently we generate a new fragmentation id on UFO segmentation. It
+is pretty hairy to identify the correct net namespace and dst there.
+Especially tunnels use IFF_XMIT_DST_RELEASE and thus have no skb_dst
+available at all.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+This causes unreliable or very predictable ipv6 fragmentation id
+generation while segmentation.
+
+Luckily we already have pregenerated the ip6_frag_id in
+ip6_ufo_append_data and can use it here.
+
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/usb/qmi_wwan.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/ipv6/udp_offload.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 36cb456..f0353ed 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -570,6 +570,7 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x1199, 0x68a2, 8)},	/* Sierra Wireless MC7710 in QMI mode */
- 	{QMI_FIXED_INTF(0x1199, 0x68a2, 19)},	/* Sierra Wireless MC7710 in QMI mode */
- 	{QMI_FIXED_INTF(0x1199, 0x901c, 8)},    /* Sierra Wireless EM7700 */
-+	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
- 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+diff --git a/net/ipv6/udp_offload.c b/net/ipv6/udp_offload.c
+index 0c8934a..38bfafd 100644
+--- a/net/ipv6/udp_offload.c
++++ b/net/ipv6/udp_offload.c
+@@ -97,7 +97,7 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_buff *skb,
+ 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
+ 	fptr->nexthdr = nexthdr;
+ 	fptr->reserved = 0;
+-	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
++	fptr->identification = skb_shinfo(skb)->ip6_frag_id;
+ 
+ 	/* Fragment the skb. ipv6 header and the remaining fields of the
+ 	 * fragment header are updated in ipv6_gso_segment()
 -- 
 1.8.3.2
 
