@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaDANYY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 09:24:24 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35652 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaDANYW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 09:24:22 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <arnd@arndb.de>,
-        <olof@lixom.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v4 0/5] drivers: bus: omap_l3: Conversion to devm_*
-Date: Tue, 1 Apr 2014 16:23:45 +0300
-Message-ID: <1396358630-32340-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751945AbaDAN0b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 09:26:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46738 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435AbaDAN01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 09:26:27 -0400
+Message-ID: <533ABE71.9090507@redhat.com>
+Date: Tue, 01 Apr 2014 09:26:09 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, shli@kernel.org,
+        akpm@linux-foundation.org, hughd@google.com, mgorman@suse.de,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86,mm: delay TLB flush after clearing accessed bit
+References: <20140331113442.0d628362@annuminas.surriel.com> <20140401105318.GA2823@gmail.com> <533AB741.5080508@redhat.com> <20140401132037.GB7024@gmail.com>
+In-Reply-To: <20140401132037.GB7024@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/01/2014 09:20 AM, Ingo Molnar wrote:
+> 
+> * Rik van Riel <riel@redhat.com> wrote:
+> 
+>>>>  int ptep_clear_flush_young(struct vm_area_struct *vma,
+>>>>  			   unsigned long address, pte_t *ptep)
+>>>>  {
+>>>> -	int young;
+>>>> +	int young, cpu;
+>>>>  
+>>>>  	young = ptep_test_and_clear_young(vma, address, ptep);
+>>>> -	if (young)
+>>>> -		flush_tlb_page(vma, address);
+>>>> +	if (young) {
+>>>> +		for_each_cpu(cpu, vma->vm_mm->cpu_vm_mask_var)
+>>>> +			tlb_set_force_flush(cpu);
+>>>
+>>> Hm, just to play the devil's advocate - what happens when we have 
+>>> a va that is used on a few dozen, a few hundred or a few thousand 
+>>> CPUs? Will the savings be dwarved by the O(nr_cpus_used) loop 
+>>> overhead?
+>>>
+>>> Especially as this is touching cachelines on other CPUs and likely 
+>>> creating the worst kind of cachemisses. That can really kill 
+>>> performance.
+>>
+>> flush_tlb_page does the same O(nr_cpus_used) loop, but it sends an 
+>> IPI to each CPU every time, instead of dirtying a cache line once 
+>> per pageout run (or until the next context switch).
+>>
+>> Does that address your concern?
+> 
+> That depends on the platform - which could implement flush_tlb_page() 
+> as a broadcast IPI - but yes, it was bad before as well, now it became 
+> more visible and I noticed it :)
+> 
+> Wouldn't it be more scalable to use a generation count as a timestamp, 
+> and set that in the mm? mm that last flushed before that timestamp 
+> need to flush, or so. That gets rid of the mask logic and the loop, 
+> AFAICS.
 
-Changes since v3:
-- Tony's ack added
+More scalable in the page eviction code, sure.
 
-Changes since v2:
-Comments from Alexander Shiyan addressed:
-- Do not check the return of platform_get_resource() - no need to do that
-- Use devm_ioremap_resource() instead devm_request_and_ioremap()
-
-Changes since v1:
-- Fixed Santosh's email address in the commit messages.
-
-Cleanup of platform probe and remove (removing the remove function at the end)
-with converting the driver to use the devm_* versions kzalloc, ioremap and
-request_irq. 
-
-This is a resend of an old series which I found when doing some spring cleanup
-on my HDD:
-http://www.spinics.net/lists/linux-omap/msg90531.html
-
-Regards,
-Peter
----
-Peter Ujfalusi (5):
-  drivers: bus: omap_l3: Convert to use devm_kzalloc
-  drivers: bus: omap_l3: Convert to use devm_ioremap_resource()
-  drivers: bus: omap_l3: Convert to use devm_request_irq()
-  drivers: bus: omap_l3: Remove the platform driver's remove function
-  drivers: bus: omap_l3: Change pr_crit() to dev_err() when IRQ request
-    fails
-
- drivers/bus/omap_l3_noc.c | 102 +++++++++-------------------------------------
- 1 file changed, 20 insertions(+), 82 deletions(-)
+However, that would cause the context switch code to load an
+additional cache line, so I am not convinced that is a good
+tradeoff...
 
 -- 
-1.9.1
-
+All rights reversed
