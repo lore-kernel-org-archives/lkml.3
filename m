@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbaDAEQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:16:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53931 "EHLO
+	id S1752676AbaDAEQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:16:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260AbaDAEP5 (ORCPT
+	with ESMTP id S1752238AbaDAEP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:15:57 -0400
+	Tue, 1 Apr 2014 00:15:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.13 17/22] keep shadowed vfsmounts together
-Date: Mon, 31 Mar 2014 21:08:47 -0700
-Message-Id: <20140401040707.502416673@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.13 22/22] netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+Date: Mon, 31 Mar 2014 21:08:52 -0700
+Message-Id: <20140401040708.636622468@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -26,92 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 1d6a32acd70ab18499829c0a9a5dbe2bace72a13 upstream.
+commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
 
-preparation to switching mnt_hash to hlist
+Some occurences in the netfilter tree use skb_header_pointer() in
+the following way ...
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+  struct dccp_hdr _dh, *dh;
+  ...
+  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
+
+... where dh itself is a pointer that is being passed as the copy
+buffer. Instead, we need to use &_dh as the forth argument so that
+we're copying the data into an actual buffer that sits on the stack.
+
+Currently, we probably could overwrite memory on the stack (e.g.
+with a possibly mal-formed DCCP packet), but unintentionally, as
+we only want the buffer to be placed into _dh variable.
+
+Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c |   32 +++++++++++++++++++++++---------
- 1 file changed, 23 insertions(+), 9 deletions(-)
+ net/netfilter/nf_conntrack_proto_dccp.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -621,12 +621,20 @@ struct mount *__lookup_mnt(struct vfsmou
- struct mount *__lookup_mnt_last(struct vfsmount *mnt, struct dentry *dentry)
- {
- 	struct list_head *head = m_hash(mnt, dentry);
--	struct mount *p;
-+	struct mount *p, *res = NULL;
+--- a/net/netfilter/nf_conntrack_proto_dccp.c
++++ b/net/netfilter/nf_conntrack_proto_dccp.c
+@@ -428,7 +428,7 @@ static bool dccp_new(struct nf_conn *ct,
+ 	const char *msg;
+ 	u_int8_t state;
  
--	list_for_each_entry_reverse(p, head, mnt_hash)
-+	list_for_each_entry(p, head, mnt_hash)
- 		if (&p->mnt_parent->mnt == mnt && p->mnt_mountpoint == dentry)
--			return p;
--	return NULL;
-+			goto found;
-+	return res;
-+found:
-+	res = p;
-+	list_for_each_entry_continue(p, head, mnt_hash) {
-+		if (&p->mnt_parent->mnt != mnt || p->mnt_mountpoint != dentry)
-+			break;
-+		res = p;
-+	}
-+	return res;
- }
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
  
- /*
-@@ -769,14 +777,14 @@ static void attach_mnt(struct mount *mnt
- 			struct mountpoint *mp)
- {
- 	mnt_set_mountpoint(parent, mp, mnt);
--	list_add_tail(&mnt->mnt_hash, m_hash(&parent->mnt, mp->m_dentry));
-+	list_add(&mnt->mnt_hash, m_hash(&parent->mnt, mp->m_dentry));
- 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
- }
+ 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
+@@ -486,7 +486,7 @@ static int dccp_packet(struct nf_conn *c
+ 	u_int8_t type, old_state, new_state;
+ 	enum ct_dccp_roles role;
  
- /*
-  * vfsmount lock must be held for write
-  */
--static void commit_tree(struct mount *mnt)
-+static void commit_tree(struct mount *mnt, struct mount *shadows)
- {
- 	struct mount *parent = mnt->mnt_parent;
- 	struct mount *m;
-@@ -791,7 +799,10 @@ static void commit_tree(struct mount *mn
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
+ 	type = dh->dccph_type;
  
- 	list_splice(&head, n->list.prev);
+@@ -577,7 +577,7 @@ static int dccp_error(struct net *net, s
+ 	unsigned int cscov;
+ 	const char *msg;
  
--	list_add_tail(&mnt->mnt_hash,
-+	if (shadows)
-+		list_add(&mnt->mnt_hash, &shadows->mnt_hash);
-+	else
-+		list_add(&mnt->mnt_hash,
- 				m_hash(&parent->mnt, mnt->mnt_mountpoint));
- 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
- 	touch_mnt_namespace(n);
-@@ -1659,12 +1670,15 @@ static int attach_recursive_mnt(struct m
- 		touch_mnt_namespace(source_mnt->mnt_ns);
- 	} else {
- 		mnt_set_mountpoint(dest_mnt, dest_mp, source_mnt);
--		commit_tree(source_mnt);
-+		commit_tree(source_mnt, NULL);
- 	}
- 
- 	list_for_each_entry_safe(child, p, &tree_list, mnt_hash) {
-+		struct mount *q;
- 		list_del_init(&child->mnt_hash);
--		commit_tree(child);
-+		q = __lookup_mnt_last(&child->mnt_parent->mnt,
-+				      child->mnt_mountpoint);
-+		commit_tree(child, q);
- 	}
- 	unlock_mount_hash();
- 
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	if (dh == NULL) {
+ 		msg = "nf_ct_dccp: short packet ";
+ 		goto out_invalid;
 
 
