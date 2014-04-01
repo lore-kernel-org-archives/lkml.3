@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaDAAsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 20:48:07 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:34741 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaDAAsE (ORCPT
+	id S1751709AbaDAAuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 20:50:16 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:46382 "HELO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751095AbaDAAuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 20:48:04 -0400
-Date: Mon, 31 Mar 2014 17:48:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401004801.GQ4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
+	Mon, 31 Mar 2014 20:50:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140331233552.GB30019@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040100-0928-0000-0000-000000CFDD67
+In-Reply-To: <4fd27e6c.c96a.14512e82018.Coremail.asuka.com@163.com>
+References: <1395957398-24546-1-git-send-email-asuka.com@163.com>
+ <CAEP_g=_qJ1uHKZmZdkUrT+NUkzbRgaHfShZoMbnnCb+LwjOneQ@mail.gmail.com> <4fd27e6c.c96a.14512e82018.Coremail.asuka.com@163.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Mon, 31 Mar 2014 17:49:53 -0700
+Message-ID: <CAEP_g=_84HXCZLOzQ0JdLBF5WVhqwTJeEAY-xjqDD8YCv8yrRg@mail.gmail.com>
+Subject: Re: [PATCH] openvswitch: supply a dummy err_handler of
+ gre_cisco_protocol to prevent kernel crash
+To: wei zhang <asuka.com@163.com>
+Cc: David Miller <davem@davemloft.net>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 07:35:52PM -0400, Dave Jones wrote:
-> On Mon, Mar 31, 2014 at 04:22:21PM -0700, Paul E. McKenney wrote:
->  > On Mon, Mar 31, 2014 at 07:02:41PM -0400, Dave Jones wrote:
->  > > You can tell the merge window is open, because I'm back to breaking RCU.
->  > > 
->  > > ... 
->  > > [ 3558.120739] INFO: Stall ended before state dump start
->  > > 
->  > > at that point, userspace stopped responding. cursor on console was blinking,
->  > > but I couldn't even switch tty's, or sysrq dump.
+On Sun, Mar 30, 2014 at 5:12 AM, wei zhang <asuka.com@163.com> wrote:
+> At 2014-03-29 06:02:25,"Jesse Gross" <jesse@nicira.com> wrote:
+>
+>>I'm not sure that rejecting all ICMP packets is the correct thing do
+>>here since it means that we could pass them onto a later caller even
+>>though they are intended for us. We should probably use the same logic
+>>as for receiving packets and just discard them here.
+>
+> Thank you very much for your advice, did you mean this logic?
 
-Hmmm...  I am having a very hard time imagining any of this merge
-window's RCU changes preventing a sysrq dump.  On the other hand,
-having a single grace period persist without anything blocking it
-is pretty strange as well.
+Yes, that's what I was thinking.
 
-I would hope that the sysrq path does not allocate memory, but who knows?
-After all, one possible reason for the eventual hang is memory exhaustion.
-So one thing to try is to do sysrq earlier in the process.  (Yeah,
-I know, tough to do if you have lots of scripted systems.)
+[...]
 
->  > > rc8 was fine, so this is todays rcu changes.
->  > 
->  > New one on me!  Any chance of a .config file?
-> 
-> http://paste.fedoraproject.org/90449/30888213/raw/
+> Maybe I misunderstand something? I think if we discard all packet pass to us
+> when we use gre vport, new gre_cisco_protocol which has lower priority could
+> not see the packet intended to it.
 
-Given that you have CONFIG_RCU_NOCB_CPU_ALL=y, all the grace-period
-activity is being driven by the grace-period kthreads ("rcu_preempt"
-in this case).  This leads me to wonder if your workload if preventing
-RCU's grace-period kthreads from running.  These kthreads are SCHED_OTHER,
-so could potentially be preempted for a long time.  But I would expect
-a softlockup message in that case.
+That's true but in this case it would also not see any data packets,
+so I don't think that situation would work well anyways.
 
-Alternatively, I suppose a wakeup could be getting lost.  The main change
-related to that this merge window was ffa83fb565fb, which eliminated
-idle wakeups from RCU in the CONFIG_RCU_NOCB_CPU_ALL=y case.
+> I checked the implementation of the ipgre_err(), which has be called before
+> the err_handler of gre vport. It use the the (local address, remote address, key)
+> to distinguish the packet which is realy intended to it, although it could not
+> always get the key from the icmp packet. Should we do as the same as it?
+> I'm not sure this is feasible, any advice is appreciate.
 
-So, could you please try reverting ffa83fb565fb?
-
-If that doesn't work, I will need to put together some diagnostic patches.
-Starting with the one below.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 0c47e300210a..c5a163378710 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -936,7 +936,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 	       smp_processor_id(), (long)(jiffies - rsp->gp_start),
- 	       rsp->gpnum, rsp->completed, totqlen);
- 	if (ndetected == 0)
--		pr_err("INFO: Stall ended before state dump start\n");
-+		pr_err("INFO: Stall ended before state dump start, gp_kthread state: %#lx\n", rsp->gp_kthread->state);
- 	else if (!trigger_all_cpu_backtrace())
- 		rcu_dump_cpu_stacks(rsp);
- 
-
+OVS does flow based matching rather than using a static set of
+configuration parameters, so everything "matches" in some way
+(although the result might be to drop). This generally means that OVS
+is the receiver of last resort and nothing currently has a lower
+priority. That actually means the difference between the patches is
+somewhat academic but it seems more robust for the logic to be
+consistent.
