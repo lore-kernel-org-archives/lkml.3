@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaDAEPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:15:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53920 "EHLO
+	id S1752756AbaDAEQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:16:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53922 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaDAEPk (ORCPT
+	with ESMTP id S1751641AbaDAEPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:15:40 -0400
+	Tue, 1 Apr 2014 00:15:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Holger Kiehl <Holger.Kiehl@dwd.de>, Christoph Lameter <cl@linux.com>,
-        Rafael Aquini <aquini@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 20/22] mm: close PageTail race
-Date: Mon, 31 Mar 2014 21:08:50 -0700
-Message-Id: <20140401040708.038012110@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.13 21/22] cgroup: protect modifications to cgroup_idr with cgroup_mutex
+Date: Mon, 31 Mar 2014 21:08:51 -0700
+Message-Id: <20140401040708.267451128@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -33,222 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 668f9abbd4334e6c29fa8acd71635c4f9101caa7 upstream.
+commit 0ab02ca8f887908152d1a96db5130fc661d36a1e upstream.
 
-Commit bf6bddf1924e ("mm: introduce compaction and migration for
-ballooned pages") introduces page_count(page) into memory compaction
-which dereferences page->first_page if PageTail(page).
+Setup cgroupfs like this:
+  # mount -t cgroup -o cpuacct xxx /cgroup
+  # mkdir /cgroup/sub1
+  # mkdir /cgroup/sub2
 
-This results in a very rare NULL pointer dereference on the
-aforementioned page_count(page).  Indeed, anything that does
-compound_head(), including page_count() is susceptible to racing with
-prep_compound_page() and seeing a NULL or dangling page->first_page
-pointer.
+Then run these two commands:
+  # for ((; ;)) { mkdir /cgroup/sub1/tmp && rmdir /mnt/sub1/tmp; } &
+  # for ((; ;)) { mkdir /cgroup/sub2/tmp && rmdir /mnt/sub2/tmp; } &
 
-This patch uses Andrea's implementation of compound_trans_head() that
-deals with such a race and makes it the default compound_head()
-implementation.  This includes a read memory barrier that ensures that
-if PageTail(head) is true that we return a head page that is neither
-NULL nor dangling.  The patch then adds a store memory barrier to
-prep_compound_page() to ensure page->first_page is set.
+After seconds you may see this warning:
 
-This is the safest way to ensure we see the head page that we are
-expecting, PageTail(page) is already in the unlikely() path and the
-memory barriers are unfortunately required.
+------------[ cut here ]------------
+WARNING: CPU: 1 PID: 25243 at lib/idr.c:527 sub_remove+0x87/0x1b0()
+idr_remove called for id=6 which is not allocated.
+...
+Call Trace:
+ [<ffffffff8156063c>] dump_stack+0x7a/0x96
+ [<ffffffff810591ac>] warn_slowpath_common+0x8c/0xc0
+ [<ffffffff81059296>] warn_slowpath_fmt+0x46/0x50
+ [<ffffffff81300aa7>] sub_remove+0x87/0x1b0
+ [<ffffffff810f3f02>] ? css_killed_work_fn+0x32/0x1b0
+ [<ffffffff81300bf5>] idr_remove+0x25/0xd0
+ [<ffffffff810f2bab>] cgroup_destroy_css_killed+0x5b/0xc0
+ [<ffffffff810f4000>] css_killed_work_fn+0x130/0x1b0
+ [<ffffffff8107cdbc>] process_one_work+0x26c/0x550
+ [<ffffffff8107eefe>] worker_thread+0x12e/0x3b0
+ [<ffffffff81085f96>] kthread+0xe6/0xf0
+ [<ffffffff81570bac>] ret_from_fork+0x7c/0xb0
+---[ end trace 2d1577ec10cf80d0 ]---
 
-Hugetlbfs is the exception, we don't enforce a store memory barrier
-during init since no race is possible.
+It's because allocating/removing cgroup ID is not properly synchronized.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rafael Aquini <aquini@redhat.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The bug was introduced when we converted cgroup_ida to cgroup_idr.
+While synchronization is already done inside ida_simple_{get,remove}(),
+users are responsible for concurrent calls to idr_{alloc,remove}().
+
+tj: Refreshed on top of b58c89986a77 ("cgroup: fix error return from
+cgroup_create()").
+
+[mhocko@suse.cz: ported to 3.12]
+Fixes: 4e96ee8e981b ("cgroup: convert cgroup_ida to cgroup_idr")
+Cc: <stable@vger.kernel.org> #3.12+
+Reported-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/block/aoe/aoecmd.c      |    4 ++--
- drivers/vfio/vfio_iommu_type1.c |    4 ++--
- fs/proc/page.c                  |    2 +-
- include/linux/huge_mm.h         |   18 ------------------
- include/linux/mm.h              |   14 ++++++++++++--
- mm/ksm.c                        |    2 +-
- mm/memory-failure.c             |    2 +-
- mm/page_alloc.c                 |    4 +++-
- mm/swap.c                       |    4 ++--
- 9 files changed, 24 insertions(+), 30 deletions(-)
+ include/linux/cgroup.h |    2 ++
+ kernel/cgroup.c        |   26 +++++++++++++-------------
+ 2 files changed, 15 insertions(+), 13 deletions(-)
 
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -905,7 +905,7 @@ bio_pageinc(struct bio *bio)
- 		/* Non-zero page count for non-head members of
- 		 * compound pages is no longer allowed by the kernel.
- 		 */
--		page = compound_trans_head(bv->bv_page);
-+		page = compound_head(bv->bv_page);
- 		atomic_inc(&page->_count);
- 	}
- }
-@@ -918,7 +918,7 @@ bio_pagedec(struct bio *bio)
- 	int i;
- 
- 	bio_for_each_segment(bv, bio, i) {
--		page = compound_trans_head(bv->bv_page);
-+		page = compound_head(bv->bv_page);
- 		atomic_dec(&page->_count);
- 	}
- }
---- a/drivers/vfio/vfio_iommu_type1.c
-+++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -186,12 +186,12 @@ static bool is_invalid_reserved_pfn(unsi
- 	if (pfn_valid(pfn)) {
- 		bool reserved;
- 		struct page *tail = pfn_to_page(pfn);
--		struct page *head = compound_trans_head(tail);
-+		struct page *head = compound_head(tail);
- 		reserved = !!(PageReserved(head));
- 		if (head != tail) {
- 			/*
- 			 * "head" is not a dangling pointer
--			 * (compound_trans_head takes care of that)
-+			 * (compound_head takes care of that)
- 			 * but the hugepage may have been split
- 			 * from under us (and we may not hold a
- 			 * reference count on the head page so it can
---- a/fs/proc/page.c
-+++ b/fs/proc/page.c
-@@ -121,7 +121,7 @@ u64 stable_page_flags(struct page *page)
- 	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
- 	 * sure a given page is a thp, not a non-huge compound page.
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -169,6 +169,8 @@ struct cgroup {
+ 	 *
+ 	 * The ID of the root cgroup is always 0, and a new cgroup
+ 	 * will be assigned with a smallest available ID.
++	 *
++	 * Allocating/Removing ID must be protected by cgroup_mutex.
  	 */
--	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
-+	else if (PageTransCompound(page) && PageLRU(compound_head(page)))
- 		u |= 1 << KPF_THP;
+ 	int id;
+ 
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4363,16 +4363,6 @@ static long cgroup_create(struct cgroup
+ 	rcu_assign_pointer(cgrp->name, name);
  
  	/*
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -157,23 +157,6 @@ static inline int hpage_nr_pages(struct
- 		return HPAGE_PMD_NR;
- 	return 1;
- }
--static inline struct page *compound_trans_head(struct page *page)
--{
--	if (PageTail(page)) {
--		struct page *head;
--		head = page->first_page;
--		smp_rmb();
--		/*
--		 * head may be a dangling pointer.
--		 * __split_huge_page_refcount clears PageTail before
--		 * overwriting first_page, so if PageTail is still
--		 * there it means the head pointer isn't dangling.
--		 */
--		if (PageTail(page))
--			return head;
+-	 * Temporarily set the pointer to NULL, so idr_find() won't return
+-	 * a half-baked cgroup.
+-	 */
+-	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
+-	if (cgrp->id < 0) {
+-		err = -ENOMEM;
+-		goto err_free_name;
 -	}
--	return page;
--}
- 
- extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
-@@ -203,7 +186,6 @@ static inline int split_huge_page(struct
- 	do { } while (0)
- #define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
- 	do { } while (0)
--#define compound_trans_head(page) compound_head(page)
- static inline int hugepage_madvise(struct vm_area_struct *vma,
- 				   unsigned long *vm_flags, int advice)
- {
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -389,8 +389,18 @@ static inline void compound_unlock_irqre
- 
- static inline struct page *compound_head(struct page *page)
- {
--	if (unlikely(PageTail(page)))
--		return page->first_page;
-+	if (unlikely(PageTail(page))) {
-+		struct page *head = page->first_page;
-+
-+		/*
-+		 * page->first_page may be a dangling pointer to an old
-+		 * compound page, so recheck that it is still a tail
-+		 * page before returning.
-+		 */
-+		smp_rmb();
-+		if (likely(PageTail(page)))
-+			return head;
-+	}
- 	return page;
- }
- 
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -444,7 +444,7 @@ static void break_cow(struct rmap_item *
- static struct page *page_trans_compound_anon(struct page *page)
- {
- 	if (PageTransCompound(page)) {
--		struct page *head = compound_trans_head(page);
-+		struct page *head = compound_head(page);
- 		/*
- 		 * head may actually be splitted and freed from under
- 		 * us but it's ok here.
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1645,7 +1645,7 @@ int soft_offline_page(struct page *page,
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
--	struct page *hpage = compound_trans_head(page);
-+	struct page *hpage = compound_head(page);
- 
- 	if (PageHWPoison(page)) {
- 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -369,9 +369,11 @@ void prep_compound_page(struct page *pag
- 	__SetPageHead(page);
- 	for (i = 1; i < nr_pages; i++) {
- 		struct page *p = page + i;
--		__SetPageTail(p);
- 		set_page_count(p, 0);
- 		p->first_page = page;
-+		/* Make sure p->first_page is always valid for PageTail() */
-+		smp_wmb();
-+		__SetPageTail(p);
- 	}
- }
- 
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -84,7 +84,7 @@ static void put_compound_page(struct pag
- {
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
--		struct page *page_head = compound_trans_head(page);
-+		struct page *page_head = compound_head(page);
- 
- 		if (likely(page != page_head &&
- 			   get_page_unless_zero(page_head))) {
-@@ -222,7 +222,7 @@ bool __get_page_tail(struct page *page)
+-
+-	/*
+ 	 * Only live parents can have children.  Note that the liveliness
+ 	 * check isn't strictly necessary because cgroup_mkdir() and
+ 	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
+@@ -4381,7 +4371,7 @@ static long cgroup_create(struct cgroup
  	 */
- 	unsigned long flags;
- 	bool got = false;
--	struct page *page_head = compound_trans_head(page);
-+	struct page *page_head = compound_head(page);
+ 	if (!cgroup_lock_live_group(parent)) {
+ 		err = -ENODEV;
+-		goto err_free_id;
++		goto err_free_name;
+ 	}
  
- 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
- 		/* Ref to put_compound_page() comment. */
+ 	/* Grab a reference on the superblock so the hierarchy doesn't
+@@ -4391,6 +4381,16 @@ static long cgroup_create(struct cgroup
+ 	 * fs */
+ 	atomic_inc(&sb->s_active);
+ 
++	/*
++	 * Temporarily set the pointer to NULL, so idr_find() won't return
++	 * a half-baked cgroup.
++	 */
++	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
++	if (cgrp->id < 0) {
++		err = -ENOMEM;
++		goto err_unlock;
++ 	}
++
+ 	init_cgroup_housekeeping(cgrp);
+ 
+ 	dentry->d_fsdata = cgrp;
+@@ -4491,11 +4491,11 @@ err_free_all:
+ 			ss->css_free(css);
+ 		}
+ 	}
++	idr_remove(&root->cgroup_idr, cgrp->id);
++err_unlock:
+ 	mutex_unlock(&cgroup_mutex);
+ 	/* Release the reference count that we took on the superblock */
+ 	deactivate_super(sb);
+-err_free_id:
+-	idr_remove(&root->cgroup_idr, cgrp->id);
+ err_free_name:
+ 	kfree(rcu_dereference_raw(cgrp->name));
+ err_free_cgrp:
 
 
