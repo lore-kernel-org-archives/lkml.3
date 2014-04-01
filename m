@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaDAMCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:02:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42339 "EHLO
+	id S1752119AbaDALRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:17:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42317 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132AbaDALRJ (ORCPT
+	with ESMTP id S1752097AbaDALRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:17:09 -0400
+	Tue, 1 Apr 2014 07:17:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 054/144] drm/radeon/dpm: fix typo in EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters
-Date: Tue,  1 Apr 2014 12:14:18 +0100
-Message-Id: <1396350948-29910-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 049/144] NFSv4: nfs4_stateid_is_current should return 'true' for an invalid stateid
+Date: Tue,  1 Apr 2014 12:14:13 +0100
+Message-Id: <1396350948-29910-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 13714323f83ffa5a772fe0d8b74e0fa32ee08819 upstream.
+commit e1253be0ece1a95a02c7f5843194877471af8179 upstream.
 
-Should be at 0x8 rather than 0.
+When nfs4_set_rw_stateid() can fails by returning EIO to indicate that
+the stateid is completely invalid, then it makes no sense to have it
+trigger a retry of the READ or WRITE operation. Instead, we should just
+have it fall through and attempt a recovery.
 
-fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60523
+This fixes an infinite loop in which the client keeps replaying the same
+bad stateid back to the server.
 
-Noticed by ArtForz on #radeon
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Andy Adamson <andros@netapp.com>
+Link: http://lkml.kernel.org/r/1393954269-3974-1-git-send-email-andros@netapp.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen_smc.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen_smc.h b/drivers/gpu/drm/radeon/evergreen_smc.h
-index 76ada8c..3a03ba3 100644
---- a/drivers/gpu/drm/radeon/evergreen_smc.h
-+++ b/drivers/gpu/drm/radeon/evergreen_smc.h
-@@ -57,7 +57,7 @@ typedef struct SMC_Evergreen_MCRegisters SMC_Evergreen_MCRegisters;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 64dd7c6..7690917 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3825,8 +3825,9 @@ static bool nfs4_stateid_is_current(nfs4_stateid *stateid,
+ {
+ 	nfs4_stateid current_stateid;
  
- #define EVERGREEN_SMC_FIRMWARE_HEADER_LOCATION 0x100
- 
--#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x0
-+#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x8
- #define EVERGREEN_SMC_FIRMWARE_HEADER_stateTable      0xC
- #define EVERGREEN_SMC_FIRMWARE_HEADER_mcRegisterTable 0x20
+-	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode))
+-		return false;
++	/* If the current stateid represents a lost lock, then exit */
++	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode) == -EIO)
++		return true;
+ 	return nfs4_stateid_match(stateid, &current_stateid);
+ }
  
 -- 
 1.9.1
