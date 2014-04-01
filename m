@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904AbaDAC1c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 22:27:32 -0400
-Received: from imap.thunk.org ([74.207.234.97]:48070 "EHLO imap.thunk.org"
+	id S1751367AbaDACju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 22:39:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64821 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaDAC1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 22:27:30 -0400
-Date: Mon, 31 Mar 2014 22:27:08 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Venkatesh Srinivas <venkateshs@google.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-blk: make the queue depth the max supportable by
- the hypervisor
-Message-ID: <20140401022708.GD4911@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Venkatesh Srinivas <venkateshs@google.com>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	"Michael S. Tsirkin" <mst@redhat.com>,
-	virtualization@lists.linux-foundation.org
-References: <1394841445-16142-1-git-send-email-venkateshs@google.com>
- <1394854471-25700-1-git-send-email-tytso@mit.edu>
- <87siqhu048.fsf@rustcorp.com.au>
- <20140317054053.GF14162@thunk.org>
- <871txysnw2.fsf@rustcorp.com.au>
- <CAHdzE-_cAndCNhBM1N0RpjQDhoh3Snas-eza4rYN33Rf69PXyw@mail.gmail.com>
- <CAHdzE--CvgsPOFQ5OFRoe7L+kkJ0J3eRWR0JQv34i4AmNDBJug@mail.gmail.com>
- <87ha6fowh9.fsf@rustcorp.com.au>
+	id S1750946AbaDACjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 22:39:49 -0400
+Date: Mon, 31 Mar 2014 22:39:44 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com
+Subject: Re: [PATCH 1/4] perf: Allow ability to map cpus to nodes easily
+Message-ID: <20140401023944.GQ25953@redhat.com>
+References: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
+ <1395689577-214654-2-git-send-email-dzickus@redhat.com>
+ <20140329171033.GB2022@krava.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ha6fowh9.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20140329171033.GB2022@krava.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 02:22:50PM +1030, Rusty Russell wrote:
+On Sat, Mar 29, 2014 at 06:10:33PM +0100, Jiri Olsa wrote:
+> > +/* Determine highest possible node in the system for sparse allocation */
+> > +static void set_max_node_num(void)
+> > +{
+> > +	FILE *fp;
+> > +	int ret = -1;
+> > +
+> > +	/* set up default */
+> > +	max_node_num = 8;
+> > +
+> > +	/* get the highest possible cpu number for a sparse allocation */
+> > +	fp = fopen("/sys/devices/system/node/possible", "r");
+> > +	if (!fp)
+> > +		goto out;
 > 
-> It's head of my virtio-next tree.
+> any reason why not put fopen/fclose into __set_max_num ?
 
-Hey Rusty,
+I either had to pass in a path string pointer or a file pointer, I just
+chose a file pointer.  Thought it fit with the rest of perf passing FPs
+around. :-D  It doesn't matter to me either way.
 
-While we have your attention --- what's your opinion about adding TRIM
-support to virtio-blk.  I understand that you're starting an OASIS
-standardization process for virtio --- what does that mean vis-a-vis a
-patch to plumb discard support through virtio-blk?
+> 
+> also looks like 'get_max_num' would fit better for __set_max_num ;-)
 
-Thanks!
+Yeah, I split it out based on your suggestion and didn't realize the
+details kinda changed.
 
-						- Ted
+Cheers,
+Don
+
