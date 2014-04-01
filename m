@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaDAUwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:52:25 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:50918 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaDAUwY (ORCPT
+	id S1751543AbaDAVBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:01:09 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:14717 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451AbaDAVBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:52:24 -0400
-Date: Tue, 1 Apr 2014 13:52:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] RCU changes for v3.15
-Message-ID: <20140401205219.GX4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140331081724.GA3193@gmail.com>
- <1396384291.23763.22.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396384291.23763.22.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040120-6688-0000-0000-000000C7C67A
+	Tue, 1 Apr 2014 17:01:07 -0400
+Message-ID: <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 01 Apr 2014 14:01:02 -0700
+In-Reply-To: <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 10:31:31PM +0200, Paul Bolle wrote:
-> > Paul E. McKenney (70):
-> >      [...]
-> >       locktorture: Add a lock-torture kernel module
+On Tue, 2014-04-01 at 15:51 -0400, KOSAKI Motohiro wrote:
+> >> So, I personally like 0 byte per default.
+> >
+> > If by this you mean 0 bytes == unlimited, then I agree. It's less harsh
+> > then removing it entirely. So instead of removing the limit we can just
+> > set it by default to 0, and in newseg() if shm_ctlmax == 0 then we don't
+> > return EINVAL if the passed size is great (obviously), otherwise, if the
+> > user _explicitly_ set it via sysctl then we respect that. Andrew, do you
+> > agree with this? If so I'll send a patch.
 > 
-> This commit added a check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. But I
-> can't find a Kconfig symbol LOCK_TORTURE_TEST_RUNNABLE nor a
-> preprocessor define for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. (I only
-> checked master of Linus's tree and linux-next.)
-> 
-> Is this check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE needed?
+> Yes, my 0 bytes mean unlimited. I totally agree we shouldn't remove the knob
+> entirely.
 
-My bad.  My current tests use the boot parameter rather than relying on
-the Kconfig parameter, so I missed this bug.  I will of course fix it.
-I don't believe that this is particularly urgent, so unless someone
-tells me otherwise, I will queue the fix for 3.16.
+Hmmm so 0 won't really work because it could be weirdly used to disable
+shm altogether... we cannot go to some negative value either since we're
+dealing with unsigned, and cutting the range in half could also hurt
+users that set the limit above that. So I was thinking of simply setting
+SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
+if they want a smaller value. 
 
-							Thanx, Paul
+Makes sense?
 
