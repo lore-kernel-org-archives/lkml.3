@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaDAEJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:09:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53801 "EHLO
+	id S1752419AbaDAEJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:09:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53806 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349AbaDAEJA (ORCPT
+	with ESMTP id S1752391AbaDAEJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:09:00 -0400
+	Tue, 1 Apr 2014 00:09:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Sullivan <jsrhbz@kanargh.force9.co.uk>,
-        "Theodore Tso" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 1/9] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-Date: Mon, 31 Mar 2014 21:08:15 -0700
-Message-Id: <20140401040754.940984895@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.10 9/9] netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+Date: Mon, 31 Mar 2014 21:08:23 -0700
+Message-Id: <20140401040757.103446812@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040754.479538406@linuxfoundation.org>
 References: <20140401040754.479538406@linuxfoundation.org>
@@ -28,86 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
+commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
 
-Use cmpxchg() to atomically set i_flags instead of clearing out the
-S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
-EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
-where an immutable file has the immutable flag cleared for a brief
-window of time.
+Some occurences in the netfilter tree use skb_header_pointer() in
+the following way ...
 
-Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+  struct dccp_hdr _dh, *dh;
+  ...
+  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
+
+... where dh itself is a pointer that is being passed as the copy
+buffer. Instead, we need to use &_dh as the forth argument so that
+we're copying the data into an actual buffer that sits on the stack.
+
+Currently, we probably could overwrite memory on the stack (e.g.
+with a possibly mal-formed DCCP packet), but unintentionally, as
+we only want the buffer to be placed into _dh variable.
+
+Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c        |   15 +++++++++------
- include/linux/bitops.h |   15 +++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
+ net/netfilter/nf_conntrack_proto_dccp.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -38,6 +38,7 @@
- #include <linux/slab.h>
- #include <linux/ratelimit.h>
- #include <linux/aio.h>
-+#include <linux/bitops.h>
+--- a/net/netfilter/nf_conntrack_proto_dccp.c
++++ b/net/netfilter/nf_conntrack_proto_dccp.c
+@@ -428,7 +428,7 @@ static bool dccp_new(struct nf_conn *ct,
+ 	const char *msg;
+ 	u_int8_t state;
  
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -4044,18 +4045,20 @@ int ext4_get_inode_loc(struct inode *ino
- void ext4_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT4_I(inode)->i_flags;
-+	unsigned int new_fl = 0;
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
  
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
- 	if (flags & EXT4_SYNC_FL)
--		inode->i_flags |= S_SYNC;
-+		new_fl |= S_SYNC;
- 	if (flags & EXT4_APPEND_FL)
--		inode->i_flags |= S_APPEND;
-+		new_fl |= S_APPEND;
- 	if (flags & EXT4_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
-+		new_fl |= S_IMMUTABLE;
- 	if (flags & EXT4_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
-+		new_fl |= S_NOATIME;
- 	if (flags & EXT4_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+		new_fl |= S_DIRSYNC;
-+	set_mask_bits(&inode->i_flags,
-+		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
- }
+ 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
+@@ -486,7 +486,7 @@ static int dccp_packet(struct nf_conn *c
+ 	u_int8_t type, old_state, new_state;
+ 	enum ct_dccp_roles role;
  
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
+ 	type = dh->dccph_type;
  
- #ifdef __KERNEL__
+@@ -577,7 +577,7 @@ static int dccp_error(struct net *net, s
+ 	unsigned int cscov;
+ 	const char *msg;
  
-+#ifndef set_mask_bits
-+#define set_mask_bits(ptr, _mask, _bits)	\
-+({								\
-+	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
-+	typeof(*ptr) old, new;					\
-+								\
-+	do {							\
-+		old = ACCESS_ONCE(*ptr);			\
-+		new = (old & ~mask) | bits;			\
-+	} while (cmpxchg(ptr, old, new) != old);		\
-+								\
-+	new;							\
-+})
-+#endif
-+
- #ifndef find_last_bit
- /**
-  * find_last_bit - find the last set bit in a memory region
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	if (dh == NULL) {
+ 		msg = "nf_ct_dccp: short packet ";
+ 		goto out_invalid;
 
 
