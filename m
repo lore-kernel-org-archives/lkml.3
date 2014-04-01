@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaDATPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 15:15:11 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37480 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaDATPJ (ORCPT
+	id S1751600AbaDATQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 15:16:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41644 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534AbaDATP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 15:15:09 -0400
+	Tue, 1 Apr 2014 15:15:59 -0400
+Message-ID: <533B106B.8090408@infradead.org>
+Date: Tue, 01 Apr 2014 12:15:55 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <533B0B5F.2040907@linux.intel.com>
-References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
-	<CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>
-	<20140331230347.GH32556@tassilo.jf.intel.com>
-	<CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>
-	<CA+55aFxCCOASxhgRfGmNRPgHwZQJ2Q0Oa9-vwpMdmTqx99m26g@mail.gmail.com>
-	<533B0B5F.2040907@linux.intel.com>
-Date: Tue, 1 Apr 2014 12:15:05 -0700
-X-Google-Sender-Auth: ZcGm9ojTIKHrI1K69Ws3qWc3JQ0
-Message-ID: <CA+55aFzb0a2j9r3sFmczquDU8CBp4y8HhfJ7BwL57rpJ2fNwPA@mail.gmail.com>
-Subject: Re: [GIT PULL] x86 LTO changes for v3.15
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Peter Anvin <hpa@zytor.com>, Jan Hubicka <hubicka@ucw.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Subject: Re: linux-next: Tree for Apr 1 (drivers/gpu/drm/i915)
+References: <20140401183907.a5127cadbe7116261096beaa@canb.auug.org.au>
+In-Reply-To: <20140401183907.a5127cadbe7116261096beaa@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 11:54 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> Pretty much.  If nothing else, it breaks tracing.
+On 04/01/2014 12:39 AM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Please do not add material intended for v3.16 to your linux-next included
+> branches until after v3.15-rc1 is released.
+> 
+> This tree still fails (more than usual) the powerpc allyesconfig build.
+> 
+> Changes since 20140331:
+> 
 
-Good point. And those [rt_]sigreturn() system calls might actually be
-something you want to see in traces.
+for linux-next 0401 and 0331:
 
-Although clearly nobody has noticed the lack so far, so nobody must
-have cared all _that_ deeply about them so far ;)
+drivers/gpu/drm/i915/i915_cmd_parser.c:405:4: warning: format '%td' expects argument of type 'ptrdiff_t', but argument 5 has type 'long unsigned int' [-Wformat]
 
-              Linus
+
+Just use %td without the (unsigned long) cast.
+
+
+-- 
+~Randy
