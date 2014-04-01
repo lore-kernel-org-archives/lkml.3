@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaDAUv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:51:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65013 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354AbaDAUv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:51:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,775,1389772800"; 
-   d="scan'208";a="512155850"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        stable@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc] mei: ignore client writing state during cb completion
-Date: Tue,  1 Apr 2014 23:50:41 +0300
-Message-Id: <1396385441-10102-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.0
+	id S1751832AbaDAUwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:52:25 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:50918 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaDAUwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 16:52:24 -0400
+Date: Tue, 1 Apr 2014 13:52:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] RCU changes for v3.15
+Message-ID: <20140401205219.GX4284@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140331081724.GA3193@gmail.com>
+ <1396384291.23763.22.camel@x220>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396384291.23763.22.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040120-6688-0000-0000-000000C7C67A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+On Tue, Apr 01, 2014 at 10:31:31PM +0200, Paul Bolle wrote:
+> > Paul E. McKenney (70):
+> >      [...]
+> >       locktorture: Add a lock-torture kernel module
+> 
+> This commit added a check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. But I
+> can't find a Kconfig symbol LOCK_TORTURE_TEST_RUNNABLE nor a
+> preprocessor define for CONFIG_LOCK_TORTURE_TEST_RUNNABLE. (I only
+> checked master of Linus's tree and linux-next.)
+> 
+> Is this check for CONFIG_LOCK_TORTURE_TEST_RUNNABLE needed?
 
-Ignore client writing state during cb completion to fix a memory
-leak.
+My bad.  My current tests use the boot parameter rather than relying on
+the Kconfig parameter, so I missed this bug.  I will of course fix it.
+I don't believe that this is particularly urgent, so unless someone
+tells me otherwise, I will queue the fix for 3.16.
 
-When moving cbs to the completion list we should not look at
-writing_state as this state can be already overwritten by next
-write, the fact that a cb is on the write waiting list means
-that it was already written to the HW and we can safely complete it.
-
-Same pays for wait in poll handler, we do not have to check the state
-wake is done after completion list processing.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/interrupt.c | 3 +--
- drivers/misc/mei/main.c      | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index c677438..5bba27b 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -428,8 +428,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 
- 		cl->status = 0;
- 		list_del(&cb->list);
--		if (MEI_WRITING == cl->writing_state &&
--		    cb->fop_type == MEI_FOP_WRITE &&
-+		if (cb->fop_type == MEI_FOP_WRITE &&
- 		    cl != &dev->iamthif_cl) {
- 			cl_dbg(dev, cl, "MEI WRITE COMPLETE\n");
- 			cl->writing_state = MEI_WRITE_COMPLETE;
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 5424f8f..cfe1789 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -653,8 +653,7 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
- 		goto out;
- 	}
- 
--	if (MEI_WRITE_COMPLETE == cl->writing_state)
--		mask |= (POLLIN | POLLRDNORM);
-+	mask |= (POLLIN | POLLRDNORM);
- 
- out:
- 	mutex_unlock(&dev->device_lock);
--- 
-1.9.0
+							Thanx, Paul
 
