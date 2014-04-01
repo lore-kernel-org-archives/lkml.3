@@ -1,69 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaDAWS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 18:18:26 -0400
-Received: from ausc60pc101.us.dell.com ([143.166.85.206]:16348 "EHLO
-	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaDAWSY (ORCPT
+	id S1751972AbaDAWTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 18:19:40 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33654 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaDAWTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 18:18:24 -0400
-X-LoopCount0: from 10.208.46.70
-X-IronPort-AV: E=Sophos;i="4.97,775,1389765600"; 
-   d="scan'208";a="585657735"
-Message-ID: <533B3B18.1030000@dell.com>
-Date: Tue, 01 Apr 2014 17:18:00 -0500
-From: Mario Limonciello <mario_limonciello@dell.com>
-Organization: Dell Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 1 Apr 2014 18:19:36 -0400
+Date: Wed, 2 Apr 2014 00:19:13 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Thor Thayer - Sendmail <tthayer@altera.com>
+Cc: mark.rutland@arm.com, devicetree@vger.kernel.org, linux@arm.linux.org.uk,
+        pawel.moll@arm.com, linux-doc@vger.kernel.org,
+        devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+        rob@landley.net, galak@codeaurora.org, dinguyen@altera.com
+Subject: Re: [PATCH 1/2] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+Message-ID: <20140401221913.GR5052@pengutronix.de>
+References: <1396303627-29198-1-git-send-email-tthayer@altera.com>
+ <1396303627-29198-2-git-send-email-tthayer@altera.com>
+ <20140401052807.GN5052@pengutronix.de>
+ <1396383101.20336.6.camel@dinh-ubuntu>
 MIME-Version: 1.0
-To: "matthew.garrett@nebula.com" <matthew.garrett@nebula.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH v5 0/1] Add WMI driver to control AlienFX features
-References: <1395842248-27868-1-git-send-email-mario_limonciello@dell.com>
-In-Reply-To: <1395842248-27868-1-git-send-email-mario_limonciello@dell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396383101.20336.6.camel@dinh-ubuntu>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 00:04:28 up 220 days,  7:35, 42 users,  load average: 0,14, 0,09,
+ 0,11
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 08:57 AM, Limonciello, Mario wrote:
-> This is a driver for the Alienware X51, X51 R2 and some future HW.
->   - For the X51 / X51 R2 it allows control of the color and brightness
->     of each zone via a sysfs interface for the color and a LED interface
->     for the brightness
->   - For the future HW it allows control of color and brightness as well
->     as an HDMI mux that's included in the HW.
->
-> Changes from v4 to v5:
->   - Make zone control more like the thingm RGB LED in the kernel.  Brightness
->     control is independent of the RGB adjustment.  RGB adjustment takes a 24-bit
->     hexadecimal triplet.
->   - Introduced a new WMAX method for platforms that use HDMI as well as a new
->     lighting control interface.  This removes the present necessity of having
->     to do a DMI match on HDMI for now.
->   - Dynamically create number of sysfs zone nodes based on DMI data. Present
->     platforms have 3 nodes, but some future ones will have anywhere from 2
->     to 32 nodes.
->   - Make lighting control state and HDMI more readable and usable for
->     interacting. Rather than having to know numbers, cat'ing the nodes will
->     output the available options and the presently selected option (in a
->     single line)
->
-> Mario Limonciello (1):
->    Add WMI driver for controlling AlienFX features on some Alienware
->      products
->
->   drivers/platform/x86/Kconfig         |  12 +
->   drivers/platform/x86/Makefile        |   2 +
->   drivers/platform/x86/alienware-wmi.c | 557 +++++++++++++++++++++++++++++++++++
->   3 files changed, 571 insertions(+)
->   create mode 100644 drivers/platform/x86/alienware-wmi.c
->
-Matthew,
+Hi!
 
-Any feedback to apply on this?
+On Tue, Apr 01, 2014 at 03:11:41PM -0500, Thor Thayer - Sendmail wrote:
+> On Tue, 2014-04-01 at 07:28 +0200, Steffen Trumtrar wrote:
+> > Hi!
+> > 
+> > On Mon, Mar 31, 2014 at 05:07:06PM -0500, tthayer@altera.com wrote:
+> > > From: Thor Thayer <tthayer@altera.com>
+> > > 
+> > > Addition of the Altera SDRAM controller bindings and device
+> > > tree changes to the Altera SoC project.
+> > >
+> 
+> <snip>
+> 
+> > > diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> > > new file mode 100644
+> > > index 0000000..351ab7b
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> > > @@ -0,0 +1,14 @@
+> > > +Altera SOCFPGA SDRAM Controller
+> > > +
+> > > +Required properties:
+> > > +- compatible : "altr,sdr-ctl", "syscon";
+> > > +                Note that syscon is invoked for this device to support the FPGA
+> > > +		bridge driver and possibly other devices in the future.  See
+> > > +		also Documentation/devicetree/bindings/mfd/syscon.txt
+> > 
+> > This note is really linux specific (and specific to some vendor kernel driver
+> > for that matter). I think you should remove that.
+> 
+> Hi Steffen. Are you asking for the path to syscon.txt to be removed or
+> the entire note? 
+> The note is explaining why the "syscon" tag is used for this Altera IP
+> block (registers shared between multiple drivers).
+> Thanks for the clarification.
+> 
 
-Thanks,
+I was referring to the note. I don't know what the current guideline is for
+this type of "devices", but I think referring to the syscon documentation
+is okay.
+The first part however describes a DT binding with things that might or might
+not happen in the future. What I want to say is, I would rather have this
+reworded, to have it just describe the SDRAM controller node as simple as it may
+be.
+
+> > 
+> > > +- reg : Should contain 1 register ranges(address and length)
+> > > +
+> > > +Example:
+> > > +	sdrctl@0xffc25000 {
+> > > +		compatible = "altr,sdr-ctl", "syscon";
+> > > +		reg = <0xffc25000 0x1000>;
+> > > +	};
+> > > diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> > > index 9e78c1d..3634de7 100644
+> > > --- a/arch/arm/boot/dts/socfpga.dtsi
+> > > +++ b/arch/arm/boot/dts/socfpga.dtsi
+> > > @@ -528,6 +528,11 @@
+> > >  			reg-io-width = <4>;
+> > >  		};
+> > >  
+> > > +		sdrctl@0xffc25000 {
+                       ^^
+Oh, and Dinh just mentioned in my patch, that the 0x shall be removed here.
+But I'm not so sure about that. Just FYI.
+
+> > > +			compatible = "altr,sdr-ctl", "syscon";
+> > > +			reg = <0xffc25000 0x1000>;
+> > > +		};
+> > > +
+> > >  		rstmgr@ffd05000 {
+> > >  			compatible = "altr,rst-mgr";
+> > >  			reg = <0xffd05000 0x1000>;
+
+Regards,
+Steffen
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
