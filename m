@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaDAEUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:20:47 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:33109 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaDAEUo (ORCPT
+	id S1752026AbaDAEGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:06:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739AbaDAEGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:20:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <7093981.6c4k98qyGh@amdc1032>
-References: <7093981.6c4k98qyGh@amdc1032>
-Date: Tue, 1 Apr 2014 09:50:42 +0530
-X-Google-Sender-Auth: OsTRezQmblXPUmr9oD69nTTeMc8
-Message-ID: <CAOh2x=n8PGuykczfpi0T1-WwVmakURyX+RuuOQiFVhpYPmrS6A@mail.gmail.com>
-Subject: Re: [PATCH] pata_arasan_cf: fix ata_host_activate() failure handling
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tejun Heo <tj@kernel.org>, Shiraz Hashim <shiraz.hashim@st.com>,
-        "...)" <linux-ide@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Apr 2014 00:06:21 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.4 4/6] Input: synaptics - add manual min/max quirk for ThinkPad X240
+Date: Mon, 31 Mar 2014 21:07:54 -0700
+Message-Id: <20140401032816.442917442@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140401032815.814334997@linuxfoundation.org>
+References: <20140401032815.814334997@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 11:19 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> Add missing cf_exit() and clk_put() calls to ata_host_activate()
-> failure path.
->
-> Cc: Viresh Kumar <viresh.linux@gmail.com>
-> Cc: Shiraz Hashim <shiraz.hashim@st.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
->  drivers/ata/pata_arasan_cf.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
->
-> Index: b/drivers/ata/pata_arasan_cf.c
-> ===================================================================
-> --- a/drivers/ata/pata_arasan_cf.c      2014-03-31 16:57:47.443727785 +0200
-> +++ b/drivers/ata/pata_arasan_cf.c      2014-03-31 17:09:48.171715498 +0200
-> @@ -898,9 +898,15 @@ static int arasan_cf_probe(struct platfo
->
->         cf_card_detect(acdev, 0);
->
-> -       return ata_host_activate(host, acdev->irq, irq_handler, 0,
-> -                       &arasan_cf_sht);
-> +       ret = ata_host_activate(host, acdev->irq, irq_handler, 0,
-> +                               &arasan_cf_sht);
-> +       if (ret)
-> +               goto exit_cf;
->
-> +       return 0;
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Probably this would be better:
+------------------
 
-if (!ret)
-    return 0
+From: Hans de Goede <hdegoede@redhat.com>
 
-and then no need of a goto..
+commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
 
-> +
-> +exit_cf:
-> +       cf_exit(acdev);
->  free_clk:
->         clk_put(acdev->clk);
->         return ret;
->
+This extends Benjamin Tissoires manual min/max quirk table with support for
+the ThinkPad X240.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/input/mouse/synaptics.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1434,6 +1434,14 @@ static const struct dmi_system_id min_ma
+ 		.driver_data = (int []){1024, 5052, 2258, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad X240 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+
+
