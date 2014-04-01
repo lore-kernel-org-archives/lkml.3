@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaDAEOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:14:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53878 "EHLO
+	id S1752109AbaDAEOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:14:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672AbaDAEOO (ORCPT
+	with ESMTP id S1752366AbaDAEOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:14:14 -0400
+	Tue, 1 Apr 2014 00:14:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steve McIntyre <steve@einval.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 13/22] net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
-Date: Mon, 31 Mar 2014 21:08:43 -0700
-Message-Id: <20140401040706.479440303@linuxfoundation.org>
+Subject: [PATCH 3.13 14/22] net: mvneta: fix usage as a module on RGMII configurations
+Date: Mon, 31 Mar 2014 21:08:44 -0700
+Message-Id: <20140401040706.609448088@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040703.045139933@linuxfoundation.org>
 References: <20140401040703.045139933@linuxfoundation.org>
@@ -29,39 +30,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit a79121d3b57e7ad61f0b5d23eae05214054f3ccd upstream.
+commit e3a8786c10e75903f1269474e21fe8cb49c3a670 upstream.
 
-Bit 3 of the MVNETA_GMAC_CTRL_2 is actually used to enable the PCS,
-not the PSC: there was a typo in the name of the define, which this
-commit fixes.
+Commit 5445eaf309ff ('mvneta: Try to fix mvneta when compiled as
+module') fixed the mvneta driver to make it work properly when loaded
+as a module in SGMII configuration, which was tested successful by the
+author on the Armada XP OpenBlocks AX3, which uses SGMII.
 
+However, it turns out that the Armada XP GP, which uses RGMII, is
+affected by a similar problem: its SERDES configuration is lost when
+mvneta is loaded as a module, because this configuration is set by the
+bootloader, and then lost because the clock is gated by the clock
+framework until the mvneta driver is loaded again and the clock is
+re-enabled.
+
+However, it turns out that for the RGMII case, setting the SERDES
+configuration is not sufficient: the PCS enable bit in the
+MVNETA_GMAC_CTRL_2 register must also be set, like in the SGMII
+configuration.
+
+Therefore, this commit reworks the SGMII/RGMII initialization: the
+only difference between the two now is a different SERDES
+configuration, all the rest is identical.
+
+In detail, to achieve this, the commit:
+
+ * Renames MVNETA_SGMII_SERDES_CFG to MVNETA_SERDES_CFG because it is
+   not specific to SGMII, but also used on RGMII configurations.
+
+ * Adds a MVNETA_RGMII_SERDES_PROTO definition, that must be used as
+   the MVNETA_SERDES_CFG value in RGMII configurations.
+
+ * Removes the mvneta_gmac_rgmii_set() and mvneta_port_sgmii_config()
+   functions, and instead directly do the SGMII/RGMII configuration in
+   mvneta_port_up(), from where those functions where called. It is
+   worth mentioning that mvneta_gmac_rgmii_set() had an 'enable'
+   parameter that was always passed as '1', so it was pretty useless.
+
+ * Reworks the mvneta_port_up() function to set the MVNETA_SERDES_CFG
+   register to the appropriate value depending on the RGMII vs. SGMII
+   configuration. It also unconditionally set the PCS_ENABLE bit (was
+   already done for SGMII, but is now also needed for RGMII), and sets
+   the PORT_RGMII bit (which was already done for both SGMII and
+   RGMII).
+
+This commit was successfully tested with mvneta compiled as a module,
+on both the OpenBlocks AX3 (SGMII configuration) and the Armada XP GP
+(RGMII configuration).
+
+Reported-by: Steve McIntyre <steve@einval.com>
 Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/marvell/mvneta.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |   41 ++++++----------------------------
+ 1 file changed, 8 insertions(+), 33 deletions(-)
 
 --- a/drivers/net/ethernet/marvell/mvneta.c
 +++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -161,7 +161,7 @@
- #define      MVNETA_GMAC_MAX_RX_SIZE_MASK        0x7ffc
- #define      MVNETA_GMAC0_PORT_ENABLE            BIT(0)
- #define MVNETA_GMAC_CTRL_2                       0x2c08
--#define      MVNETA_GMAC2_PSC_ENABLE             BIT(3)
-+#define      MVNETA_GMAC2_PCS_ENABLE             BIT(3)
- #define      MVNETA_GMAC2_PORT_RGMII             BIT(4)
- #define      MVNETA_GMAC2_PORT_RESET             BIT(6)
- #define MVNETA_GMAC_STATUS                       0x2c10
-@@ -729,7 +729,7 @@ static void mvneta_port_sgmii_config(str
- 	u32 val;
+@@ -88,8 +88,9 @@
+ #define      MVNETA_TX_IN_PRGRS                  BIT(1)
+ #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
+ #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
+-#define MVNETA_SGMII_SERDES_CFG			 0x24A0
++#define MVNETA_SERDES_CFG			 0x24A0
+ #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
++#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
+ #define MVNETA_TYPE_PRIO                         0x24bc
+ #define      MVNETA_FORCE_UNI                    BIT(21)
+ #define MVNETA_TXQ_CMD_1                         0x24e4
+@@ -706,35 +707,6 @@ static void mvneta_rxq_bm_disable(struct
+ 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
+ }
  
- 	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--	val |= MVNETA_GMAC2_PSC_ENABLE;
-+	val |= MVNETA_GMAC2_PCS_ENABLE;
+-
+-
+-/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
+-static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
+-{
+-	u32  val;
+-
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-
+-	if (enable)
+-		val |= MVNETA_GMAC2_PORT_RGMII;
+-	else
+-		val &= ~MVNETA_GMAC2_PORT_RGMII;
+-
+-	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+-}
+-
+-/* Config SGMII port */
+-static void mvneta_port_sgmii_config(struct mvneta_port *pp)
+-{
+-	u32 val;
+-
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+-	val |= MVNETA_GMAC2_PCS_ENABLE;
+-	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+-
+-	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
+-}
+-
+ /* Start the Ethernet port RX and TX activity */
+ static void mvneta_port_up(struct mvneta_port *pp)
+ {
+@@ -2729,12 +2701,15 @@ static void mvneta_port_power_up(struct
+ 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
+ 
+ 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
+-		mvneta_port_sgmii_config(pp);
++		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
++	else
++		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
+ 
+-	mvneta_gmac_rgmii_set(pp, 1);
++	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
++
++	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
+ 
+ 	/* Cancel Port Reset */
+-	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
+ 	val &= ~MVNETA_GMAC2_PORT_RESET;
  	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
  
- 	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
 
 
