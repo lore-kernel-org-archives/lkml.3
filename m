@@ -1,89 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaDAO3e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 10:29:34 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44832 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaDAO3c (ORCPT
+	id S1751740AbaDAObZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:31:25 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:55913 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbaDAObX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 10:29:32 -0400
-X-Originating-IP: 50.43.32.211
-Date: Tue, 1 Apr 2014 07:28:53 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sparse Mailing-list <linux-sparse@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Christopher Li <sparse@chrisli.org>
-Subject: Re: [PATCH] Fix _IOC_TYPECHECK sparse error
-Message-ID: <20140401142852.GA22576@leaf>
-References: <533A64EC.2090106@xs4all.nl>
+	Tue, 1 Apr 2014 10:31:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533A64EC.2090106@xs4all.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1396360701-27197-1-git-send-email-prarit@redhat.com>
+References: <1396360701-27197-1-git-send-email-prarit@redhat.com>
+Date: Tue, 1 Apr 2014 16:31:22 +0200
+Message-ID: <CAFLxGvwMpNRfmJAGJ-961J5-mOy=X0QHZWzyHfQi3J8Gu7o7OQ@mail.gmail.com>
+Subject: Re: [PATCH] Add initcall_blacklist kernel parameter [v3]
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 09:04:12AM +0200, Hans Verkuil wrote:
-> When running sparse over drivers/media/v4l2-core/v4l2-ioctl.c I get these
-> errors:
-> 
-> drivers/media/v4l2-core/v4l2-ioctl.c:2043:9: error: bad integer constant expression
-> drivers/media/v4l2-core/v4l2-ioctl.c:2044:9: error: bad integer constant expression
-> drivers/media/v4l2-core/v4l2-ioctl.c:2045:9: error: bad integer constant expression
-> drivers/media/v4l2-core/v4l2-ioctl.c:2046:9: error: bad integer constant expression
-> 
-> etc.
-> 
-> The root cause of that turns out to be in include/asm-generic/ioctl.h:
-> 
-> #include <uapi/asm-generic/ioctl.h>
-> 
-> /* provoke compile error for invalid uses of size argument */
-> extern unsigned int __invalid_size_argument_for_IOC;
-> #define _IOC_TYPECHECK(t) \
->         ((sizeof(t) == sizeof(t[1]) && \
->           sizeof(t) < (1 << _IOC_SIZEBITS)) ? \
->           sizeof(t) : __invalid_size_argument_for_IOC)
-> 
-> If it is defined as this (as is already done if __KERNEL__ is not defined):
-> 
-> #define _IOC_TYPECHECK(t) (sizeof(t))
-> 
-> then all is well with the world.
-> 
-> This patch allows sparse to work correctly.
-> 
-> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-> diff --git a/include/asm-generic/ioctl.h b/include/asm-generic/ioctl.h
-> index d17295b..297fb0d 100644
-> --- a/include/asm-generic/ioctl.h
-> +++ b/include/asm-generic/ioctl.h
-> @@ -3,10 +3,15 @@
->  
->  #include <uapi/asm-generic/ioctl.h>
->  
-> +#ifdef __CHECKER__
-> +#define _IOC_TYPECHECK(t) (sizeof(t))
-> +#else
->  /* provoke compile error for invalid uses of size argument */
->  extern unsigned int __invalid_size_argument_for_IOC;
->  #define _IOC_TYPECHECK(t) \
->  	((sizeof(t) == sizeof(t[1]) && \
->  	  sizeof(t) < (1 << _IOC_SIZEBITS)) ? \
->  	  sizeof(t) : __invalid_size_argument_for_IOC)
-> +#endif
+On Tue, Apr 1, 2014 at 3:58 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+> When a module is built into the kernel the module_init() function becomes
+> an initcall.  Sometimes debugging through dynamic debug can help,
+> however, debugging built in kernel modules is typically done by changing
+> the .config, recompiling, and booting the new kernel in an effort to
+> determine exactly which module caused a problem.
+>
+> This patchset can be useful stand-alone or combined with initcall_debug.
+> There are cases where some initcalls can hang the machine before the
+> console can be flushed, which can make initcall_debug output
+> inaccurate.  Having the ability to skip initcalls can help further
+> debugging of these scenarios.
+>
+> Usage: initcall_blacklist=<list of comma separated initcalls>
+>
+> ex) added "initcall_blacklist=sgi_uv_sysfs_init" as a kernel parameter and
+> the log contains:
+>
+>         blacklisted initcall sgi_uv_sysfs_init
+>         ...
+>         ...
+>         function sgi_uv_sysfs_init returning without executing
+>
+> ex) added "initcall_blacklist=foo_bar,sgi_uv_sysfs_init" as a kernel parameter
+> and the log contains:
+>
+>         initcall blacklisted foo_bar
+>         initcall blacklisted sgi_uv_sysfs_init
+>         ...
+>         ...
+>         function sgi_uv_sysfs_init returning without executing
+>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Josh Boyer <jwboyer@fedoraproject.org>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: linux-doc@vger.kernel.org
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>
+> [v2]: A few people recommended that I add code to allow for a list of
+> initcalls as there maybe dependencies between initcalls such that one cannot
+> be made without the other.  I also updated the patch description.
+> [v3]: Drop memory cleanup, suggested by Andi Kleen.
+> ---
+>  Documentation/kernel-parameters.txt |    4 ++++
+>  init/main.c                         |   42 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 46 insertions(+)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 67755ea..ebeb8a5 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1275,6 +1275,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>                         for working out where the kernel is dying during
+>                         startup.
+>
+> +       initcall_blacklist=  [KNL] Do not execute a comma-separated list of
+> +                       initcall functions.  Useful for debugging built-in
+> +                       modules and initcalls.
 > +
->  #endif /* _ASM_GENERIC_IOCTL_H */
-> 
+>         initrd=         [BOOT] Specify the location of the initial ramdisk
+>
+>         inport.irq=     [HW] Inport (ATI XL and Microsoft) busmouse driver
+> diff --git a/init/main.c b/init/main.c
+> index 9c7fd4c..64a3b8b 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -77,6 +77,7 @@
+>  #include <linux/sched_clock.h>
+>  #include <linux/context_tracking.h>
+>  #include <linux/random.h>
+> +#include <linux/list.h>
+>
+>  #include <asm/io.h>
+>  #include <asm/bugs.h>
+> @@ -666,6 +667,34 @@ static void __init do_ctors(void)
+>  bool initcall_debug;
+>  core_param(initcall_debug, initcall_debug, bool, 0644);
+>
+> +struct blacklist_entry {
+> +       struct list_head next;
+> +       char *buf;
+> +};
+> +
+> +static __initdata_or_module LIST_HEAD(blacklisted_initcalls);
+> +
+> +static int __init initcall_blacklist(char *str)
+> +{
+> +       char *str_entry;
+> +       struct blacklist_entry *entry;
+> +
+> +       /* str argument is a comma-separated list of functions */
+> +       do {
+> +               str_entry = strsep(&str, ",");
+> +               if (str_entry) {
+> +                       pr_debug("initcall blacklisted %s \n", str_entry);
+> +                       entry = alloc_bootmem(sizeof(*entry));
+> +                       entry->buf = alloc_bootmem(strlen(str_entry));
+> +                       strncpy(entry->buf, str_entry, strlen(str_entry));
+> +                       list_add(&entry->next, &blacklisted_initcalls);
+> +               }
+> +       } while (str_entry);
+> +
+> +       return 0;
+> +}
+> +__setup("initcall_blacklist=", initcall_blacklist);
+
+Wouldn't it make sense to make this feature depend on CONFIG_KALLSYMS?
+I.e. Making it a nop plus a warning if one uses initcall_blacklist and
+has CONFIG_KALLSYMS=n.
+
+>  static int __init_or_module do_one_initcall_debug(initcall_t fn)
+>  {
+>         ktime_t calltime, delta, rettime;
+> @@ -689,6 +718,19 @@ int __init_or_module do_one_initcall(initcall_t fn)
+>         int count = preempt_count();
+>         int ret;
+>         char msgbuf[64];
+> +       char fn_name[128] = "\0";
+> +       struct list_head *tmp;
+> +       struct blacklist_entry *entry;
+> +
+> +       snprintf(fn_name, 128, "%pf", fn);
+> +       list_for_each(tmp, &blacklisted_initcalls) {
+> +               entry = list_entry(tmp, struct blacklist_entry, next);
+> +               if (!strcmp(fn_name, entry->buf)) {
+> +                       pr_debug("initcall %pf returning without executing\n",
+> +                                fn);
+> +                       return -EPERM;
+> +               }
+> +       }
+>
+>         if (initcall_debug)
+>                 ret = do_one_initcall_debug(fn);
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-sparse" in
+> 1.7.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Thanks,
+//richard
