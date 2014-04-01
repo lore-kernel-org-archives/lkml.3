@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251AbaDAGFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 02:05:08 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:31298 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaDAGFF (ORCPT
+	id S1751888AbaDAGIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 02:08:45 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:16525 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaDAGIo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 02:05:05 -0400
-X-AuditID: cbfee68e-b7f566d000002344-10-533a56f34fc8
-Date: Tue, 01 Apr 2014 06:04:35 +0000 (GMT)
-From: Eunbong Song <eunb.song@samsung.com>
-Subject: tools/liblockdep: Build failure
-To: ak@linux.intel.com, sasha.levin@oracle.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20140401060131636@eunb.song
-Msgkey: 20140401060131636@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140401060131636@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: EV
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <22212997.138341396332274687.JavaMail.weblogic@epml01>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJsWRmVeSWpSXmKPExsVy+t8zLd3PYVbBBgd3W1hc3jWHzYHR4/Mm
-	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
-	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
-	c5UUyhJzSoFGKOknTGXM+Piuk7lgnmDFndcGDYwPBLoYOTmEBFQkWv5/ZwSxJQRMJJ6/2sIK
-	YYtJXLi3nq2LkQuoZhmjxMcHu9hhis7+m88MkZjPKLF0zW6wBAvQpA0T21hAbDYBbYkfB64y
-	g9jCAhoS286dBouLCFhJ7H7xD2wDs4CjxKPLd5ghrpCXmHz6MtgcXgFBiZMzn7BALFOS6Fz5
-	mhUiriwxbf8bqEslJGZNvwB1Ka/EjPanUPVyEtO+rmGGsKUlzs/awAjzzeLvj6Hi/BLHbu9g
-	6mLkAOt9cj8YZszuzV/YIGwBialnDjJClKhLHPjuAhHmk1iz8C3UJkGJ09e6mWFa72+ZywTx
-	laLElO6H7BC2lsSXH/vY0H3FK+AksXvRV9YJjMqzkKRmIWmfhaQdWc0CRpZVjKKpBckFxUnp
-	RUbIcb2JEZIE+3Yw3jxgfYhxPyMwSiYyS4km5wPTaF5JvKGxmZGFqYmpsZG5pRmFwiamFhYm
-	RlQRVhLnXfQwKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDI/dV3hjBcAbGnL2bxW4xGx17
-	NKvwwJzH1x/J84df3G0W//T7VO15iRN4Zikd1fWQaksxnbriy4tNzYGn7Xbdj33A6vDQRqT6
-	sdmyWulwp81ljzTXrpRuKd7w3c5d9yynxJltER8095YGs/00OuP+3D4gLpXNi7F+8cqWeLd3
-	vqVO7E7p1ulCSizFGYmGWsxFxYkAhYjGz/UDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2DN3PYVbBBud+m1hc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jI/vOpkL5glW3Hlt0MD4QKCLkZNDSEBFouX/d0YQW0LAROLsv/nMELaYxIV769m6GLmAauYz
-	Sixds5sdJMEC1LBhYhsLiM0moC3x48BVsAZhAQ2JbedOg8VFBKwkdr/4xwpiMws4Sjy6fIcZ
-	Ypm8xOTTl8Hm8AoISpyc+YQFYpmSROfK16wQcWWJafvfQB0kITFr+gVWCJtXYkb7U6h6OYlp
-	X9dAHSotcX7WBkaYoxd/fwwV55c4dnsHUxcjB1jvk/vBMGN2b/7CBmELSEw9c5ARokRd4sB3
-	F4gwn8SahW+hNglKnL7WzQzTen/LXCaIrxQlpnQ/ZIewtSS+/NjHhu4rXgEnid2LvrJOYJSb
-	hSQ1C0n7LCTtyGoWMLKsYhRNLUguKE5KrzDSK07MLS7NS9dLzs/dxAhOT88W7WD8d976EKMA
-	B6MSD69FuWWwEGtiWXFl7iFGCQ5mJRHeI++BQrwpiZVVqUX58UWlOanFhxiTgfE3kVlKNDkf
-	mDrzSuINjQ2MDQ0tzQ1MDY0sSBNWEueVv5UUJCSQnliSmp2aWpBaBLOFiYNTqoHxhIahae8j
-	pTdrpDTjajTcu49JL+x8dqkm/CNboLZUndYMefslP6ZMFXm7nn3rve1znpkXyV+58eS4k1vp
-	Y9d1LabuWuzCN3rcL38/GnffXNiA/2dR2+q1b57fdnbSrvDyLf5RkpzvWjJBQS7ohvCxX7ui
-	HNvW/lrT8XL9/dTS6hUWUtFxV2cqsRRnJBpqMRcVJwIAeWHjn5MDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Tue, 1 Apr 2014 02:08:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 31 Mar 2014 23:04:19 -0700
+From: Arun Shamanna Lakshmi <aruns@nvidia.com>
+To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+CC: Songhee Baek <sbaek@nvidia.com>,
+        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        "'swarren@wwwdotorg.org'" <swarren@wwwdotorg.org>,
+        "'tiwai@suse.de'" <tiwai@suse.de>,
+        "'lgirdwood@gmail.com'" <lgirdwood@gmail.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Mon, 31 Mar 2014 23:08:42 -0700
+Subject: RE: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Topic: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Index: Ac9M2eSQS4irsZZ7TfW4X9xEk1m+pQAlsgPQ
+Message-ID: <781A12BB53C15A4BB37291FDE08C03F3A05CDCD520@HQMAIL02.nvidia.com>
+References: <1395792156-4178-1-git-send-email-aruns@nvidia.com>
+ <53332CC7.6060800@metafoo.de>
+ <D6C615D3E4730340AE82D5BD856631C0A26CB319B2@HQMAIL02.nvidia.com>
+ <5333ED3A.7040908@metafoo.de>
+ <5571431004A69147BCABABE4E097D66BA3EFF70CFC@HQMAIL02.nvidia.com>
+ <D6C615D3E4730340AE82D5BD856631C0A26CB31F48@HQMAIL02.nvidia.com>
+ <5336A619.5030007@metafoo.de>
+ <781A12BB53C15A4BB37291FDE08C03F3A05CC6A11A@HQMAIL02.nvidia.com>
+ <20140331112140.GO2269@sirena.org.uk> <533957C8.2030105@metafoo.de>
+ <20140331120748.GS2269@sirena.org.uk>
+In-Reply-To: <20140331120748.GS2269@sirena.org.uk>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s31663q3032480
 
 
-There is tools/liblockdep build failure.
-I have been trying to find the cause and i found commit id 63f9a7fde715352e0769302527670542a664b981 is the casue.
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Monday, March 31, 2014 5:08 AM
+> To: Lars-Peter Clausen
+> Cc: Arun Shamanna Lakshmi; Songhee Baek; 'alsa-devel@alsa-project.org';
+> 'swarren@wwwdotorg.org'; 'tiwai@suse.de'; 'lgirdwood@gmail.com'; 'linux-
+> kernel@vger.kernel.org'
+> Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+> 
+> * PGP Signed by an unknown key
+> 
+> On Mon, Mar 31, 2014 at 01:55:52PM +0200, Lars-Peter Clausen wrote:
+> > On 03/31/2014 01:21 PM, Mark Brown wrote:
+> 
+> > >The above is a bit confusing...  partly this is because of a lack of
+> > >context (what is MULTI_MUX_INPUT_OFFSET?) and partly because it isn't
+> > >entirely obvious that stopping as soon as we see any value set is the
+> > >right choice, especially given the addition to rather than setting of
+> > >val.
+> 
+> > I think the idea is that since we know that for one-hot encodings only
+> > powers of two are valid values the other bits are used to encode the
+> > register number. E.g 0x4 means bit 3 in register 0, 0x5 means bit 3 in
+> > register 1, 0x6 means bit 3 in register 2 and so on. I guess it is
+> > possible to make it work. But this seems to be quite hack-ish to me.
+> > You'd have to be careful that MULTI_MUX_INPUT_OFFSET(reg_idx) never
+> > evaluates to a power of two and there are probably some more pitfalls.
+> 
+> Ugh, right.  The fact that I couldn't tell that this was what the code was trying to
+> do from looking at it is not a good sign here.
 
-Author: Andi Kleen <ak@linux.intel.com>
-Date:   Sat Feb 8 08:52:01 2014 +0100
+I will work on this and submit another patch. Thanks for all your feedback.
 
-    asmlinkage: Make lockdep_sys_exit asmlinkage
-
-    lockdep_sys_exit can be called from assembler code, so make it
-    asmlinkage.
-
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Ingo Molnar <mingo@kernel.org>
-    Signed-off-by: Andi Kleen <ak@linux.intel.com>
-    Link: http://lkml.kernel.org/r/1391845930-28580-5-git-send-email-ak@linux.intel.com
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index 92b1bfc..7df9aa6 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -265,7 +265,7 @@ extern void lockdep_info(void);
- extern void lockdep_reset(void);
- extern void lockdep_reset_lock(struct lockdep_map *lock);
- extern void lockdep_free_key_range(void *start, unsigned long size);
--extern void lockdep_sys_exit(void);
-+extern asmlinkage void lockdep_sys_exit(void);
-
- extern void lockdep_off(void);
- extern void lockdep_on(void);
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index eb8a547..c8b6753 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -4191,7 +4191,7 @@ void debug_show_held_locks(struct task_struct *task)
- }
- EXPORT_SYMBOL_GPL(debug_show_held_locks);
-
--void lockdep_sys_exit(void)
-+asmlinkage void lockdep_sys_exit(void)
- {
-        struct task_struct *curr = current;
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 
+> * Unknown Key
+> * 0x7EA229BD
