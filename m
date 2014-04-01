@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaDAQPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:15:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44577 "EHLO
+	id S1753285AbaDAQb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:31:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44597 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669AbaDAQP3 (ORCPT
+	with ESMTP id S1752939AbaDAQPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:15:29 -0400
+	Tue, 1 Apr 2014 12:15:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 79/86] net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
-Date: Tue,  1 Apr 2014 09:08:32 -0700
-Message-Id: <1396368519-12728-80-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 49/86] powerpc: Align p_dyn, p_rela and p_st symbols
+Date: Tue,  1 Apr 2014 09:08:02 -0700
+Message-Id: <1396368519-12728-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,43 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit a79121d3b57e7ad61f0b5d23eae05214054f3ccd upstream.
+commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
 
-Bit 3 of the MVNETA_GMAC_CTRL_2 is actually used to enable the PCS,
-not the PSC: there was a typo in the name of the define, which this
-commit fixes.
+The 64bit relocation code places a few symbols in the text segment.
+These symbols are only 4 byte aligned where they need to be 8 byte
+aligned. Add an explicit alignment.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/marvell/mvneta.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/reloc_64.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index 81d57e9..d01ce5f 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -120,7 +120,7 @@
- #define      MVNETA_GMAC_MAX_RX_SIZE_MASK        0x7ffc
- #define      MVNETA_GMAC0_PORT_ENABLE            BIT(0)
- #define MVNETA_GMAC_CTRL_2                       0x2c08
--#define      MVNETA_GMAC2_PSC_ENABLE             BIT(3)
-+#define      MVNETA_GMAC2_PCS_ENABLE             BIT(3)
- #define      MVNETA_GMAC2_PORT_RGMII             BIT(4)
- #define      MVNETA_GMAC2_PORT_RESET             BIT(6)
- #define MVNETA_GMAC_STATUS                       0x2c10
-@@ -656,7 +656,7 @@ static void mvneta_port_sgmii_config(struct mvneta_port *pp)
- 	u32 val;
+diff --git a/arch/powerpc/kernel/reloc_64.S b/arch/powerpc/kernel/reloc_64.S
+index b47a0e1..c712ece 100644
+--- a/arch/powerpc/kernel/reloc_64.S
++++ b/arch/powerpc/kernel/reloc_64.S
+@@ -81,6 +81,7 @@ _GLOBAL(relocate)
  
- 	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--	val |= MVNETA_GMAC2_PSC_ENABLE;
-+	val |= MVNETA_GMAC2_PCS_ENABLE;
- 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
- }
+ 6:	blr
  
++.balign 8
+ p_dyn:	.llong	__dynamic_start - 0b
+ p_rela:	.llong	__rela_dyn_start - 0b
+ p_st:	.llong	_stext - 0b
 -- 
 1.8.3.2
 
