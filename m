@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaDAUrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:47:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43756 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaDAUrk (ORCPT
+	id S1751753AbaDAUty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:49:54 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:57801 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751435AbaDAUtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:47:40 -0400
-Message-ID: <533B25E8.8040201@wwwdotorg.org>
-Date: Tue, 01 Apr 2014 14:47:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: stefan@agner.ch, chris@printf.net, linux-mmc@vger.kernel.org
-CC: linux-tegra@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/2] mmc: use SD/MMC host ID for block device name ID
-References: <cover.1396384101.git.stefan@agner.ch> <2f6ac51155f9d34791b274b5102d15a997ff8b99.1396384101.git.stefan@agner.ch>
-In-Reply-To: <2f6ac51155f9d34791b274b5102d15a997ff8b99.1396384101.git.stefan@agner.ch>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Apr 2014 16:49:53 -0400
+Message-ID: <1396385391.23763.30.camel@x220>
+Subject: Re: [GIT PULL] x86 LTO changes for v3.15
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, ak@linux.intel.com,
+        gleb@redhat.com, hpa@zytor.com, hubicka@ucw.cz,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, pbonzini@redhat.com,
+        perex@perex.cz, peterz@infradead.org, rostedt@goodmis.org,
+        rusty@rustcorp.com.au, tglx@linutronix.de
+Date: Tue, 01 Apr 2014 22:49:51 +0200
+In-Reply-To: <201403312105.s2VL5AqX010173@terminus.zytor.com>
+References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Apr 2014 20:49:52.0253 (UTC) FILETIME=[EDFDF2D0:01CF4DEB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 02:35 PM, stefan@agner.ch wrote:
-> From: Stefan Agner <stefan@agner.ch>
-> 
-> By using the SD/MMC host device ID as a starting point for block
-> device numbering, one can reliably predict the first block device
-> name (at least for the first controller).
+On Mon, 2014-03-31 at 14:05 -0700, H. Peter Anvin wrote:
+> --- a/include/linux/init.h
+> +++ b/include/linux/init.h
+> @@ -163,6 +163,23 @@ extern bool initcall_debug;
+>  
+>  #ifndef __ASSEMBLY__
+>  
+> +#ifdef CONFIG_LTO
 
-That's not true. There's no guarantee that a device name/ID gets
-released as soon as the SD card is removed; something might still have
-it mounted for example.
+I can't find a Kconfig symbol LTO nor a preprocessor define for
+CONFIG_LTO. (I only checked master of Linus's tree and linux-next.)
 
-The correct solution here is to use filesystem or partition UUIDs to
-identify the device/partition, not to attempt to assign static device IDs.
+Why is this check for CONFIG_LTO needed?
+
+> +/* Work around a LTO gcc problem: when there is no reference to a variable
+> + * in a module it will be moved to the end of the program. This causes
+> + * reordering of initcalls which the kernel does not like.
+> + * Add a dummy reference function to avoid this. The function is
+> + * deleted by the linker.
+> + */
+> +#define LTO_REFERENCE_INITCALL(x) \
+> +	; /* yes this is needed */			\
+> +	static __used __exit void *reference_##x(void)	\
+> +	{						\
+> +		return &x;				\
+> +	}
+> +#else
+> +#define LTO_REFERENCE_INITCALL(x)
+> +#endif
+
+
+Paul Bolle
+
