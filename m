@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaDAKco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 06:32:44 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48610 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751089AbaDAKcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 06:32:42 -0400
-Message-ID: <533A95C3.5030103@hurleysoftware.com>
-Date: Tue, 01 Apr 2014 06:32:35 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751332AbaDAKeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 06:34:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15139 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089AbaDAKeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 06:34:07 -0400
+Date: Tue, 1 Apr 2014 12:34:01 +0200
+From: Robin Hack <rhack@redhat.com>
+To: ak@linux.intel.com, sasha.levin@oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Re: tools/liblockdep: Build failure
+Message-ID: <20140401103401.GE10429@bigoook.brq.redhat.com>
+References: <22212997.138341396332274687.JavaMail.weblogic@epml01>
+ <20140401080258.GA10429@bigoook.brq.redhat.com>
+ <20140401081144.GB10429@bigoook.brq.redhat.com>
+ <20140401102159.GC10429@bigoook.brq.redhat.com>
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: Greg KH <greg@kroah.com>, jslaby@suse.cz, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: tty: hang on ldisc_sem
-References: <53344CE4.4070609@oracle.com> <5334520D.8060602@hurleysoftware.com> <53377259.3050205@oracle.com> <533A3549.5050707@oracle.com>
-In-Reply-To: <533A3549.5050707@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401102159.GC10429@bigoook.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 11:40 PM, Sasha Levin wrote:
-> On 03/29/2014 09:24 PM, Sasha Levin wrote:
->> On 03/27/2014 12:30 PM, Peter Hurley wrote:
->>> Hi Sasha,
->>>
->>> On 03/27/2014 12:08 PM, Sasha Levin wrote:
->>>>
->>>> Hi all,
->>>>
->>>> While fuzzing with trinity inside a KVM tools guest running latest -next
->>>> kernel, I've encountered a lockup on ldisc_sem.
->>>
->>> Can you send me the whole system log, preferably with the sysrq
->>> show-task-states and held locks output in it (attachment is fine)?
->>
->> Attached whole system log which contains all of the above.
->
-> Peter,
->
-> Could you confirm you got the log file? Oddly enough I see it as sent here
-> but don't see it on lkml (Oracle servers tend to make mess out of mails).
-
-Yep, thanks, I got it.
-
-Regards,
-Peter Hurley
+Patch is wrong.
+On Tue, Apr 01, 2014 at 12:21:59PM +0200, Robin Hack wrote:
+> From: Robin Hack <rhack@redhat.com>
+> Copy asmlinkage macro to lockdep/uinclude/linux/linkage.h.
+> 
+> diff --git a/tools/lib/lockdep/uinclude/linux/linkage.h b/tools/lib/lockdep/uinclude/linux/linkage.h
+> index fab00ff..6799a5b 100644
+> --- a/tools/lib/lockdep/uinclude/linux/linkage.h
+> +++ b/tools/lib/lockdep/uinclude/linux/linkage.h
+> @@ -1,3 +1,19 @@
+> +#ifndef _LOCKDEP_ULINKAGE_H
+> +#define _LOCKDEP_ULINKAGE_H
+>  
+> -/* empty file */
+> +#if GCC_VERSION >= 40600
+> +/*
+> + * Tell the optimizer that something else uses this function or variable.
+> + */
+> +#define __visible __attribute__((externally_visible))
+> +#else
+> +#define __visible
+> +#endif
+>  
+> +#define CPP_ASMLINKAGE __visible
+> +
+> +#ifndef asmlinkage
+> +#define asmlinkage CPP_ASMLINKAGE
+> +#endif
+> +
+> +#endif
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
