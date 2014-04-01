@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaDAMjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:39:54 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:45693 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaDAMju (ORCPT
+	id S1751625AbaDAMkM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:40:12 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:42253 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579AbaDAMkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 08:39:50 -0400
+	Tue, 1 Apr 2014 08:40:08 -0400
 From: jon@ringle.org
 To: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
 Cc: tomi.valkeinen@ti.com, plagnioj@jcrosoft.com,
         Jon Ringle <jringle@gridpoint.com>
-Subject: [PATCH v3 2/2] video: da8xx-fb: Fix casting of info->pseudo_palette
-Date: Tue,  1 Apr 2014 08:39:34 -0400
-Message-Id: <1396355974-2257-2-git-send-email-jon@ringle.org>
+Subject: [PATCH v2 2/2] video: da8xx-fb: Fix casting of info->pseudo_palette
+Date: Tue,  1 Apr 2014 08:33:05 -0400
+Message-Id: <1396355585-458-2-git-send-email-jon@ringle.org>
 X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1396355974-2257-1-git-send-email-jon@ringle.org>
-References: <1396355974-2257-1-git-send-email-jon@ringle.org>
+In-Reply-To: <1396355585-458-1-git-send-email-jon@ringle.org>
+References: <1396355585-458-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,7 +32,7 @@ Signed-off-by: Jon Ringle <jringle@gridpoint.com>
  1 file changed, 1 insertion(+), 9 deletions(-)
 
 diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 233f65f..c17f901 100644
+index d042624..83c43b2 100644
 --- a/drivers/video/da8xx-fb.c
 +++ b/drivers/video/da8xx-fb.c
 @@ -678,15 +678,7 @@ static int fb_setcolreg(unsigned regno, unsigned red, unsigned green,
