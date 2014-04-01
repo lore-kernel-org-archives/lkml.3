@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaDAEJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:09:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53806 "EHLO
+	id S1752446AbaDAEJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:09:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53814 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391AbaDAEJQ (ORCPT
+	with ESMTP id S1752422AbaDAEJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:09:16 -0400
+	Tue, 1 Apr 2014 00:09:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.10 9/9] netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
-Date: Mon, 31 Mar 2014 21:08:23 -0700
-Message-Id: <20140401040757.103446812@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Holger Kiehl <Holger.Kiehl@dwd.de>, Christoph Lameter <cl@linux.com>,
+        Rafael Aquini <aquini@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 8/9] mm: close PageTail race
+Date: Mon, 31 Mar 2014 21:08:22 -0700
+Message-Id: <20140401040756.844867699@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140401040754.479538406@linuxfoundation.org>
 References: <20140401040754.479538406@linuxfoundation.org>
@@ -27,62 +33,232 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: David Rientjes <rientjes@google.com>
 
-commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
+commit 668f9abbd4334e6c29fa8acd71635c4f9101caa7 upstream.
 
-Some occurences in the netfilter tree use skb_header_pointer() in
-the following way ...
+Commit bf6bddf1924e ("mm: introduce compaction and migration for
+ballooned pages") introduces page_count(page) into memory compaction
+which dereferences page->first_page if PageTail(page).
 
-  struct dccp_hdr _dh, *dh;
-  ...
-  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
+This results in a very rare NULL pointer dereference on the
+aforementioned page_count(page).  Indeed, anything that does
+compound_head(), including page_count() is susceptible to racing with
+prep_compound_page() and seeing a NULL or dangling page->first_page
+pointer.
 
-... where dh itself is a pointer that is being passed as the copy
-buffer. Instead, we need to use &_dh as the forth argument so that
-we're copying the data into an actual buffer that sits on the stack.
+This patch uses Andrea's implementation of compound_trans_head() that
+deals with such a race and makes it the default compound_head()
+implementation.  This includes a read memory barrier that ensures that
+if PageTail(head) is true that we return a head page that is neither
+NULL nor dangling.  The patch then adds a store memory barrier to
+prep_compound_page() to ensure page->first_page is set.
 
-Currently, we probably could overwrite memory on the stack (e.g.
-with a possibly mal-formed DCCP packet), but unintentionally, as
-we only want the buffer to be placed into _dh variable.
+This is the safest way to ensure we see the head page that we are
+expecting, PageTail(page) is already in the unlikely() path and the
+memory barriers are unfortunately required.
 
-Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Hugetlbfs is the exception, we don't enforce a store memory barrier
+during init since no race is possible.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rafael Aquini <aquini@redhat.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- net/netfilter/nf_conntrack_proto_dccp.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/netfilter/nf_conntrack_proto_dccp.c
-+++ b/net/netfilter/nf_conntrack_proto_dccp.c
-@@ -428,7 +428,7 @@ static bool dccp_new(struct nf_conn *ct,
- 	const char *msg;
- 	u_int8_t state;
+
+---
+ drivers/block/aoe/aoecmd.c      |    2 +-
+ drivers/vfio/vfio_iommu_type1.c |    4 ++--
+ fs/proc/page.c                  |    2 +-
+ include/linux/huge_mm.h         |   18 ------------------
+ include/linux/mm.h              |   14 ++++++++++++--
+ mm/ksm.c                        |    2 +-
+ mm/memory-failure.c             |    2 +-
+ mm/page_alloc.c                 |    4 +++-
+ mm/swap.c                       |    4 ++--
+ virt/kvm/kvm_main.c             |    4 ++--
+ 10 files changed, 25 insertions(+), 31 deletions(-)
+
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -899,7 +899,7 @@ bio_pageinc(struct bio *bio)
+ 		 * but this has never been seen here.
+ 		 */
+ 		if (unlikely(PageCompound(page)))
+-			if (compound_trans_head(page) != page) {
++			if (compound_head(page) != page) {
+ 				pr_crit("page tail used for block I/O\n");
+ 				BUG();
+ 			}
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -138,12 +138,12 @@ static bool is_invalid_reserved_pfn(unsi
+ 	if (pfn_valid(pfn)) {
+ 		bool reserved;
+ 		struct page *tail = pfn_to_page(pfn);
+-		struct page *head = compound_trans_head(tail);
++		struct page *head = compound_head(tail);
+ 		reserved = !!(PageReserved(head));
+ 		if (head != tail) {
+ 			/*
+ 			 * "head" is not a dangling pointer
+-			 * (compound_trans_head takes care of that)
++			 * (compound_head takes care of that)
+ 			 * but the hugepage may have been split
+ 			 * from under us (and we may not hold a
+ 			 * reference count on the head page so it can
+--- a/fs/proc/page.c
++++ b/fs/proc/page.c
+@@ -121,7 +121,7 @@ u64 stable_page_flags(struct page *page)
+ 	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
+ 	 * sure a given page is a thp, not a non-huge compound page.
+ 	 */
+-	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
++	else if (PageTransCompound(page) && PageLRU(compound_head(page)))
+ 		u |= 1 << KPF_THP;
  
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
+ 	/*
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -159,23 +159,6 @@ static inline int hpage_nr_pages(struct
+ 		return HPAGE_PMD_NR;
+ 	return 1;
+ }
+-static inline struct page *compound_trans_head(struct page *page)
+-{
+-	if (PageTail(page)) {
+-		struct page *head;
+-		head = page->first_page;
+-		smp_rmb();
+-		/*
+-		 * head may be a dangling pointer.
+-		 * __split_huge_page_refcount clears PageTail before
+-		 * overwriting first_page, so if PageTail is still
+-		 * there it means the head pointer isn't dangling.
+-		 */
+-		if (PageTail(page))
+-			return head;
+-	}
+-	return page;
+-}
  
- 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
-@@ -486,7 +486,7 @@ static int dccp_packet(struct nf_conn *c
- 	u_int8_t type, old_state, new_state;
- 	enum ct_dccp_roles role;
+ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
+@@ -205,7 +188,6 @@ static inline int split_huge_page(struct
+ 	do { } while (0)
+ #define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
+ 	do { } while (0)
+-#define compound_trans_head(page) compound_head(page)
+ static inline int hugepage_madvise(struct vm_area_struct *vma,
+ 				   unsigned long *vm_flags, int advice)
+ {
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -361,8 +361,18 @@ static inline void compound_unlock_irqre
  
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
- 	type = dh->dccph_type;
+ static inline struct page *compound_head(struct page *page)
+ {
+-	if (unlikely(PageTail(page)))
+-		return page->first_page;
++	if (unlikely(PageTail(page))) {
++		struct page *head = page->first_page;
++
++		/*
++		 * page->first_page may be a dangling pointer to an old
++		 * compound page, so recheck that it is still a tail
++		 * page before returning.
++		 */
++		smp_rmb();
++		if (likely(PageTail(page)))
++			return head;
++	}
+ 	return page;
+ }
  
-@@ -577,7 +577,7 @@ static int dccp_error(struct net *net, s
- 	unsigned int cscov;
- 	const char *msg;
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -444,7 +444,7 @@ static void break_cow(struct rmap_item *
+ static struct page *page_trans_compound_anon(struct page *page)
+ {
+ 	if (PageTransCompound(page)) {
+-		struct page *head = compound_trans_head(page);
++		struct page *head = compound_head(page);
+ 		/*
+ 		 * head may actually be splitted and freed from under
+ 		 * us but it's ok here.
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1544,7 +1544,7 @@ int soft_offline_page(struct page *page,
+ {
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
+-	struct page *hpage = compound_trans_head(page);
++	struct page *hpage = compound_head(page);
  
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	if (dh == NULL) {
- 		msg = "nf_ct_dccp: short packet ";
- 		goto out_invalid;
+ 	if (PageHWPoison(page)) {
+ 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -360,9 +360,11 @@ void prep_compound_page(struct page *pag
+ 	__SetPageHead(page);
+ 	for (i = 1; i < nr_pages; i++) {
+ 		struct page *p = page + i;
+-		__SetPageTail(p);
+ 		set_page_count(p, 0);
+ 		p->first_page = page;
++		/* Make sure p->first_page is always valid for PageTail() */
++		smp_wmb();
++		__SetPageTail(p);
+ 	}
+ }
+ 
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -81,7 +81,7 @@ static void put_compound_page(struct pag
+ {
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+-		struct page *page_head = compound_trans_head(page);
++		struct page *page_head = compound_head(page);
+ 
+ 		if (likely(page != page_head &&
+ 			   get_page_unless_zero(page_head))) {
+@@ -219,7 +219,7 @@ bool __get_page_tail(struct page *page)
+ 	 */
+ 	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head = compound_trans_head(page);
++	struct page *page_head = compound_head(page);
+ 
+ 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
+ 		/* Ref to put_compound_page() comment. */
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -105,12 +105,12 @@ bool kvm_is_mmio_pfn(pfn_t pfn)
+ 	if (pfn_valid(pfn)) {
+ 		int reserved;
+ 		struct page *tail = pfn_to_page(pfn);
+-		struct page *head = compound_trans_head(tail);
++		struct page *head = compound_head(tail);
+ 		reserved = PageReserved(head);
+ 		if (head != tail) {
+ 			/*
+ 			 * "head" is not a dangling pointer
+-			 * (compound_trans_head takes care of that)
++			 * (compound_head takes care of that)
+ 			 * but the hugepage may have been splitted
+ 			 * from under us (and we may not hold a
+ 			 * reference count on the head page so it can
 
 
