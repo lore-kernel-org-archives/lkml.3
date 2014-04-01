@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaDABwD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 21:52:03 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:38714 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaDABwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 21:52:00 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-bc-533a1bbec1bc
-From: Jungseok Lee <jays.lee@samsung.com>
-To: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org
-Cc: sungjinn.chung@samsung.com,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: [PATCH] swiotlb: Correct kernel command line handler
-Date: Tue, 01 Apr 2014 10:51:58 +0900
-Message-id: <011801cf4d4c$f7ba51f0$e72ef5d0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9NTBtBoMCSDAt8QEisIzQrZOmupg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zA9190lbBBs/2GlssW/yU0eLyrjls
-	FjPO72Oy+DBjJaMDi8fHp7dYPPq2rGL0+LxJLoA5issmJTUnsyy1SN8ugStj/odDTAVHeCsO
-	tbcxNjB+4+pi5OSQEDCROPx6MyOELSZx4d56ti5GLg4hgWWMEheePGaDKWrYdYgZIrGIUWLd
-	5jWMEM4fRolbrduYQarYBDQlHt3tYQexRQQsJFatnwZmMwuES+x6eoIJxBYWsJW4+28/mM0i
-	oCqxa3M/2AZeAUuJz0/fsULYghI/Jt9jgejVkli/8zgThC0vsXnNW2aIixQkdpx9zQixS09i
-	7/kPULtEJPa9eAd2nITAMnaJm5c2s0MsE5D4NvkQ0FAOoISsxKYDUHMkJQ6uuMEygVFsFpLV
-	s5CsnoVk9SwkKxYwsqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECImv3h2Mtw9YH2JMBlo/
-	kVlKNDkfGJ95JfGGxmZGFqYmpsZG5pZmpAkrifMmPUwKEhJITyxJzU5NLUgtii8qzUktPsTI
-	xMEp1cDosXq2SZoEo0BQGMNa04jrnU1/jHx/HxNs/VFxQS+ktE5Cc+fmKOkbeXV1oU3+oVua
-	Vhnw71lw49rCxJLbOyQPtu6WCStYxqD871654cnS7uA7k0XDpnGycsd7f62qePtp6ts1769o
-	pDd9L/0yyfhP/qGJt+4t3sqao7wwc4t1vVqv65xTqexKLMUZiYZazEXFiQComRH6xQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgO4+aatgg7379C2WLX7KaHF51xw2
-	ixnn9zFZfJixktGBxePj01ssHn1bVjF6fN4kF8Ac1cBok5GamJJapJCal5yfkpmXbqvkHRzv
-	HG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0TkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Su
-	b0gQXI+RARpIWMeYMf/DIaaCI7wVh9rbGBsYv3F1MXJySAiYSDTsOsQMYYtJXLi3nq2LkYtD
-	SGARo8S6zWsYIZw/jBK3WreBVbEJaEo8utvDDmKLCFhIrFo/DcxmFgiX2PX0BBOILSxgK3H3
-	334wm0VAVWLX5n42EJtXwFLi89N3rBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zFuoiBYkdZ18z
-	QuzSk9h7/gPULhGJfS/eMU5gFJiFZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6blGesWJucWl
-	eel6yfm5mxjB0ftMegfjqgaLQ4wCHIxKPLwW5ZbBQqyJZcWVuYcYJTiYlUR4j7wHCvGmJFZW
-	pRblxxeV5qQWH2JMBvp0IrOUaHI+MLHklcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEk
-	NTs1tSC1CGYLEwenVANjuf9Dr2SON1HeXsWtvunzIree+3yyrLlR8vQpib+T8j2tdt59to9H
-	Il1Ri9HhWceudV2iwRuvLbf9J3BgeeyWZj150c0XRPOVnVYsuXz3/trIvDzpN++jl//W4v/L
-	dPbf+TseRv5nhJT//Vt8IaV/8nWLZ6wlO6bOPHgs45zfNIUX/IlWBZcVlFiKMxINtZiLihMB
-	1VtvmCIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751439AbaDAB5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 21:57:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51422 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751032AbaDAB5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 21:57:04 -0400
+Message-ID: <533A1CB8.1060401@zytor.com>
+Date: Mon, 31 Mar 2014 18:56:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build warning after merge of the tip tree
+References: <20140224151732.7461213fabef4fc1bbca8213@canb.auug.org.au>	<20140306150010.e873f440ac5a22d8812268a4@canb.auug.org.au>	<20140328165238.7d9e0804a2781eaaa88a4fa5@canb.auug.org.au>	<alpine.DEB.2.02.1403311140180.14882@ionos.tec.linutronix.de>	<20140331215743.a357aa685a63c06ea303dbba@canb.auug.org.au> <20140401112637.454be94f789d5fd9db729dcd@canb.auug.org.au>
+In-Reply-To: <20140401112637.454be94f789d5fd9db729dcd@canb.auug.org.au>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects kernel command line handler when io_tlb_nslabs
-is set to 0.
+On 03/31/2014 05:26 PM, Stephen Rothwell wrote:
+> 
+> And today from Linus' tree I get these:
+> 
+> x86_64_allmodconfig:
+> 
+> arch/x86/crypto/sha1_ssse3_glue.c:43:1: warning:
+> 'externally_visible' attribute have effect only on public objects
+> [-Wattributes] static asmlinkage void (*sha1_transform_asm)(u32 *,
+> const char *, unsigned int); ^ 
+> arch/x86/crypto/sha256_ssse3_glue.c:56:1: warning:
+> 'externally_visible' attribute have effect only on public objects
+> [-Wattributes] static asmlinkage void (*sha256_transform_asm)(const
+> char *, u32 *, u64); ^ arch/x86/crypto/sha512_ssse3_glue.c:55:1:
+> warning: 'externally_visible' attribute have effect only on public
+> objects [-Wattributes] static asmlinkage void
+> (*sha512_transform_asm)(const char *, u64 *, u64); ^
+> 
+> arm_multi_v7_defconfig:
+> 
+> drivers/irqchip/irq-sun4i.c:39:70: warning: 'externally_visible'
+> attribute have effect only on public objects [-Wattributes] 
+> drivers/irqchip/irq-sun4i.c:140:1: warning: 'externally_visible'
+> attribute have effect only on public objects [-Wattributes] 
+> drivers/irqchip/irq-armada-370-xp.c:357:1: warning:
+> 'externally_visible' attribute have effect only on public objects
+> [-Wattributes] drivers/irqchip/irq-gic.c:283:1: warning:
+> 'externally_visible' attribute have effect only on public objects
+> [-Wattributes] drivers/irqchip/irq-sirfsoc.c:51:1: warning:
+> 'externally_visible' attribute have effect only on public objects
+> [-Wattributes] drivers/irqchip/irq-vt8500.c:183:1: warning:
+> 'externally_visible' attribute have effect only on public objects
+> [-Wattributes]
+> 
 
-A current implementation allocates default size memory (64MB) when
-0 is given to io_tlb_nslabs ("swiotlb=0") by kernel command line.
-In other words, memory is allocated unintentionally.
+Please see the tree "[GIT PULL] x86 LTO changes for v3.15".
 
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-Signed-off-by: Sungjinn Chung <sungjinn.chung@samsung.com>
----
- lib/swiotlb.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index b604b83..9fe9f71 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -55,6 +55,8 @@
- 
- int swiotlb_force;
- 
-+static int swiotlb_no_use;
-+
- /*
-  * Used to do a quick range check in swiotlb_tbl_unmap_single and
-  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
-@@ -102,6 +104,8 @@ setup_io_tlb_npages(char *str)
- 		io_tlb_nslabs = simple_strtoul(str, &str, 0);
- 		/* avoid tail segment of size < IO_TLB_SEGSIZE */
- 		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+		if (!io_tlb_nslabs)
-+			swiotlb_no_use = 1;
- 	}
- 	if (*str == ',')
- 		++str;
-@@ -212,7 +216,7 @@ swiotlb_init(int verbose)
- 	unsigned char *vstart;
- 	unsigned long bytes;
- 
--	if (!io_tlb_nslabs) {
-+	if (!swiotlb_no_use && !io_tlb_nslabs) {
- 		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
- 		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
- 	}
-@@ -244,7 +248,7 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 	unsigned int order;
- 	int rc = 0;
- 
--	if (!io_tlb_nslabs) {
-+	if (!swiotlb_no_use && !io_tlb_nslabs) {
- 		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
- 		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
- 	}
--- 
-1.7.10.4
-
+	-hpa
 
