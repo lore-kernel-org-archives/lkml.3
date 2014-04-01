@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaDALoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:44:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42562 "EHLO
+	id S1752619AbaDALSE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:18:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42516 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaDALSI (ORCPT
+	with ESMTP id S1752473AbaDALR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:18:08 -0400
+	Tue, 1 Apr 2014 07:17:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Artem Fetishev <artem_fetishev@epam.com>,
+        Aleksandr Terekhov <aleksandr_terekhov@epam.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 096/144] drm/radeon/cik: stop the sdma engines in the enable() function
-Date: Tue,  1 Apr 2014 12:15:00 +0100
-Message-Id: <1396350948-29910-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 087/144] fs/proc/base.c: fix GPF in /proc/$PID/map_files
+Date: Tue,  1 Apr 2014 12:14:51 +0100
+Message-Id: <1396350948-29910-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
@@ -27,61 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Artem Fetishev <artem_fetishev@epam.com>
 
-commit 07ae78c9798b79bad3d3adf983c94ba23fde54d4 upstream.
+commit 70335abb2689c8cd5df91bf2d95a65649addf50b upstream.
 
-We always stop the rings when disabling the engines so just
-call the stop functions directly from the sdma enable function.
-This way the rings' status is set correctly on suspend so
-there are no problems on resume.  Fixes resume failures that
-result in acceleration getting disabled.
+The expected logic of proc_map_files_get_link() is either to return 0
+and initialize 'path' or return an error and leave 'path' uninitialized.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.11:
-  - affected code is in file cik.c ]
+By the time dname_to_vma_addr() returns 0 the corresponding vma may have
+already be gone.  In this case the path is not initialized but the
+return value is still 0.  This results in 'general protection fault'
+inside d_path().
+
+Steps to reproduce:
+
+  CONFIG_CHECKPOINT_RESTORE=y
+
+    fd = open(...);
+    while (1) {
+        mmap(fd, ...);
+        munmap(fd, ...);
+    }
+
+  ls -la /proc/$PID/map_files
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=68991
+
+Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+Signed-off-by: Aleksandr Terekhov <aleksandr_terekhov@epam.com>
+Reported-by: <wiebittewas@gmail.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/cik.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ fs/proc/base.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 405bf0c..403aecb 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -3378,6 +3378,11 @@ static void cik_sdma_enable(struct radeon_device *rdev, bool enable)
- 	u32 me_cntl, reg_offset;
- 	int i;
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 1485e38..c35eaa4 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1813,6 +1813,7 @@ static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
+ 	if (rc)
+ 		goto out_mmput;
  
-+	if (enable == false) {
-+		cik_sdma_gfx_stop(rdev);
-+		cik_sdma_rlc_stop(rdev);
-+	}
-+
- 	for (i = 0; i < 2; i++) {
- 		if (i == 0)
- 			reg_offset = SDMA0_REGISTER_OFFSET;
-@@ -3505,10 +3510,6 @@ static int cik_sdma_load_microcode(struct radeon_device *rdev)
- 	if (!rdev->sdma_fw)
- 		return -EINVAL;
- 
--	/* stop the gfx rings and rlc compute queues */
--	cik_sdma_gfx_stop(rdev);
--	cik_sdma_rlc_stop(rdev);
--
- 	/* halt the MEs */
- 	cik_sdma_enable(rdev, false);
- 
-@@ -3577,9 +3578,6 @@ static int cik_sdma_resume(struct radeon_device *rdev)
-  */
- static void cik_sdma_fini(struct radeon_device *rdev)
- {
--	/* stop the gfx rings and rlc compute queues */
--	cik_sdma_gfx_stop(rdev);
--	cik_sdma_rlc_stop(rdev);
- 	/* halt the MEs */
- 	cik_sdma_enable(rdev, false);
- 	radeon_ring_fini(rdev, &rdev->ring[R600_RING_TYPE_DMA_INDEX]);
++	rc = -ENOENT;
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_exact_vma(mm, vm_start, vm_end);
+ 	if (vma && vma->vm_file) {
 -- 
 1.9.1
 
