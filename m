@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaDAVBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:01:09 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:14717 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaDAVBH (ORCPT
+	id S1751645AbaDAVBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:01:42 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:54683 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751597AbaDAVB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:01:07 -0400
-Message-ID: <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Tue, 01 Apr 2014 14:01:02 -0700
-In-Reply-To: <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
-	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
-	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
-	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
-	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
-	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
-	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+	Tue, 1 Apr 2014 17:01:26 -0400
+Message-ID: <1396385946.23763.34.camel@x220>
+Subject: Re: [GIT PULL] RCU changes for v3.15
+From: Paul Bolle <pebolle@tiscali.nl>
+To: paulmck@linux.vnet.ibm.com
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 01 Apr 2014 22:59:06 +0200
+In-Reply-To: <20140401205219.GX4284@linux.vnet.ibm.com>
+References: <20140331081724.GA3193@gmail.com>
+	 <1396384291.23763.22.camel@x220> <20140401205219.GX4284@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Apr 2014 20:59:06.0475 (UTC) FILETIME=[385583B0:01CF4DED]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 15:51 -0400, KOSAKI Motohiro wrote:
-> >> So, I personally like 0 byte per default.
-> >
-> > If by this you mean 0 bytes == unlimited, then I agree. It's less harsh
-> > then removing it entirely. So instead of removing the limit we can just
-> > set it by default to 0, and in newseg() if shm_ctlmax == 0 then we don't
-> > return EINVAL if the passed size is great (obviously), otherwise, if the
-> > user _explicitly_ set it via sysctl then we respect that. Andrew, do you
-> > agree with this? If so I'll send a patch.
-> 
-> Yes, my 0 bytes mean unlimited. I totally agree we shouldn't remove the knob
-> entirely.
+On Tue, 2014-04-01 at 13:52 -0700, Paul E. McKenney wrote:
+> I don't believe that this is particularly urgent, so unless someone
+> tells me otherwise, I will queue the fix for 3.16.
 
-Hmmm so 0 won't really work because it could be weirdly used to disable
-shm altogether... we cannot go to some negative value either since we're
-dealing with unsigned, and cutting the range in half could also hurt
-users that set the limit above that. So I was thinking of simply setting
-SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
-if they want a smaller value. 
+Few people share my OCD for Kconfig symbols. So most people will not
+think this is urgent. On the other hand, why wait three to four months
+when this can be cleaned up in a few weeks?
 
-Makes sense?
+Thanks,
+
+
+Paul Bolle
 
