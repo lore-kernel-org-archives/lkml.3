@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaDAHWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 03:22:08 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:60586 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbaDAHWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 03:22:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <533A4839.60406@hitachi.com>
-References: <1396327677-3657-1-git-send-email-namhyung@kernel.org> <533A4839.60406@hitachi.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 1 Apr 2014 07:21:44 +0000
-X-Google-Sender-Auth: 7tNJTNczNH0-T2NT-JMk7t6iipI
-Message-ID: <CAM9d7cgtuh5BBi34WaZWxfJnNjnazZD+Aas37SsEad1pZxe_kg@mail.gmail.com>
-Subject: Re: [PATCH] perf probe: Fix --line option behavior
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751494AbaDAHX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 03:23:57 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:60828 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaDAHX4 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Tue, 1 Apr 2014 03:23:56 -0400
+Message-Id: <533A85A70200007800003F59@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Tue, 01 Apr 2014 08:23:51 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daeseok Youn" <daeseok.youn@gmail.com>, <konrad.wilk@oracle.com>
+Cc: <david.vrabel@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <joe@perches.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: fix memory leak in
+ __xen_pcibk_add_pci_dev()
+References: <2186395.ZOncrV6nFS@daeseok-laptop.cloud.net>
+In-Reply-To: <2186395.ZOncrV6nFS@daeseok-laptop.cloud.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+>>> On 31.03.14 at 12:08, <daeseok.youn@gmail.com> wrote:
 
-(Also adding Jiri in CC and changing email of acme)
+> It need to free dev_entry when it failed to assign to a new
+> slot on the virtual PCI bus.
+> 
+> smatch says:
+>  drivers/xen/xen-pciback/vpci.c:142 __xen_pcibk_add_pci_dev() warn:
+> possible memory leak of 'dev_entry'
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 
-On Tue, Apr 1, 2014 at 5:01 AM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2014/04/01 13:47), Namhyung Kim wrote:
->> The commit 5a62257a3ddd1 ("perf probe: Replace line_list with
->> intlist") replaced line_list to intlist but it has a problem that if a
->> same line was added again, it'd return -EEXIST rather than 1.
->
-> Ah, right! that's a different behavior.
->
->> Since line_range_walk_cb() only checks the result being negative, it
->> resulted in failure or segfault sometimes.
->
-> Could you give me an example input of the segfault? I'd like to trace
-> it down.
+Reviewed-by: Jan Beulich <jbeulich@suse.com>
 
-Just used current acme/perf/core.
+albeit the solution is not ideal:
 
-$ git log -1
-commit 28b5724a61cc9d84f2cbef6675e8a85ae4b1bc57
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Thu Mar 27 17:36:14 2014 -0300
+> --- a/drivers/xen/xen-pciback/vpci.c
+> +++ b/drivers/xen/xen-pciback/vpci.c
+> @@ -130,6 +130,7 @@ static int __xen_pcibk_add_pci_dev(struct 
+> xen_pcibk_device *pdev,
+>  	err = -ENOMEM;
+>  	xenbus_dev_fatal(pdev->xdev, err,
+>  			 "No more space on root virtual PCI bus");
+> +	kfree(dev_entry);
+>  
+>  unlock:
+>  	mutex_unlock(&vpci_dev->lock);
 
-    MAINTAINERS: Change e-mail to kernel.org one
+The kfree() invocation would better be placed outside the locked
+region (e.g. in an else to the "if (!err)" a little further down).
 
-    Leaving ghostprotocols.net for old networking stuff.
+Jan
 
-...
-
-$ perf --version
-perf version 3.14.rc6.g28b572
-
-$ perf probe -x ./perf -v -L map__load
-Open Debuginfo file: /home/namhyung/project/linux/tools/perf/perf
-fname: util/map.c, lineno:153
-New line range: 153 to 2147483647
-path: (null)
-Segmentation fault (core dumped)
-
-
-It seems like find_line_range_by_line() called for multiple times,
-line_range_walk_cb returns 0 at first but as line_range_add_line()
-returns -EEXIST, it freed lr->path and __show_line_range() ended up
-accessing to NULL path.
-
-
-(gdb) bt
-#0  get_real_path (new_path=0x839ff8 <params+9272>,
-    comp_dir=0x1f994f0 "/home/namhyung/project/linux/tools/perf",
-    raw_path=0x0) at util/probe-event.c:518
-#1  __show_line_range (module=<optimized out>, lr=0x839fd8 <params+9240>)
-    at util/probe-event.c:641
-#2  show_line_range (lr=lr@entry=0x839fd8 <params+9240>,
-    module=<optimized out>) at util/probe-event.c:699
-#3  0x000000000044667b in __cmd_probe (argc=<optimized out>,
-    argv=argv@entry=0x7fff7a770ba0, prefix=<optimized out>)
-    at builtin-probe.c:465
-#4  0x00000000004469f4 in cmd_probe (argc=<optimized out>,
-    argv=0x7fff7a770ba0, prefix=<optimized out>) at builtin-probe.c:520
-#5  0x00000000004241b5 in run_builtin (p=p@entry=0x7ebde0 <commands+384>,
-    argc=argc@entry=6, argv=argv@entry=0x7fff7a770ba0) at perf.c:319
-#6  0x0000000000423a29 in handle_internal_command (argv=0x7fff7a770ba0,
-    argc=6) at perf.c:376
-#7  run_argv (argv=0x7fff7a7709a0, argcp=0x7fff7a7709ac) at perf.c:420
-#8  main (argc=6, argv=0x7fff7a770ba0) at perf.c:529
-
-
-Thanks,
-Namhyung
