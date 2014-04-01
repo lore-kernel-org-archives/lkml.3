@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaDAQQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:16:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44675 "EHLO
+	id S1753238AbaDAQUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:20:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44704 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115AbaDAQQI (ORCPT
+	with ESMTP id S1753137AbaDAQQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:16:08 -0400
+	Tue, 1 Apr 2014 12:16:14 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 34/86] mwifiex: do not advertise usb autosuspend support
-Date: Tue,  1 Apr 2014 09:07:47 -0700
-Message-Id: <1396368519-12728-35-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 25/86] iwlwifi: dvm: clear IWL_STA_UCODE_INPROGRESS when assoc fails
+Date: Tue,  1 Apr 2014 09:07:38 -0700
+Message-Id: <1396368519-12728-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -28,62 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit adb07df1e039e9fe43e66aeea8b4771f83659dbb upstream.
+commit ec6f678c74dbdb06a6a775bbb00f1d26c17c404b upstream.
 
-As many Surface Pro I & II users have found out, the mwifiex_usb
-doesn't support usb autosuspend, and it has caused some system
-stability issues.
+We set IWL_STA_UCODE_INPROGRESS flag when we add a station
+and clear it when we send the LQ command for it. But the LQ
+command is sent only when the association succeeds.
+If the association doesn't succeed, we would leave this flag
+set and that wouldn't indicate the station entry as vacant.
 
-Bug 69661 - mwifiex_usb on MS Surface Pro 1 is unstable
-Bug 60815 - Interface hangs in mwifiex_usb
-Bug 64111 - mwifiex_usb USB8797 crash failed to get signal
- 	    information
+This probably fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=1065663
 
-USB autosuspend get triggered when Surface Pro's AC power is
-removed or powertop enables power saving on USB8797 device.
-Driver's suspend handler is called here, but resume handler
-won't be called until the AC power is put back on or powertop
-disables power saving for USB8797.
-
-We need to refactor the suspend/resume handlers to support
-usb autosuspend properly. For now let's just remove it.
-
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/mwifiex/usb.c | 8 --------
- 1 file changed, 8 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/sta.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/mwifiex/usb.c b/drivers/net/wireless/mwifiex/usb.c
-index b96472c..6478366 100644
---- a/drivers/net/wireless/mwifiex/usb.c
-+++ b/drivers/net/wireless/mwifiex/usb.c
-@@ -511,13 +511,6 @@ static int mwifiex_usb_resume(struct usb_interface *intf)
- 						   MWIFIEX_BSS_ROLE_ANY),
- 				  MWIFIEX_ASYNC_CMD);
+diff --git a/drivers/net/wireless/iwlwifi/dvm/sta.c b/drivers/net/wireless/iwlwifi/dvm/sta.c
+index 181d14c..e270c84 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/sta.c
++++ b/drivers/net/wireless/iwlwifi/dvm/sta.c
+@@ -602,6 +602,7 @@ void iwl_deactivate_station(struct iwl_priv *priv, const u8 sta_id,
+ 			sizeof(priv->tid_data[sta_id][tid]));
  
--#ifdef CONFIG_PM
--	/* Resume handler may be called due to remote wakeup,
--	 * force to exit suspend anyway
--	 */
--	usb_disable_autosuspend(card->udev);
--#endif /* CONFIG_PM */
--
- 	return 0;
- }
+ 	priv->stations[sta_id].used &= ~IWL_STA_DRIVER_ACTIVE;
++	priv->stations[sta_id].used &= ~IWL_STA_UCODE_INPROGRESS;
  
-@@ -576,7 +569,6 @@ static struct usb_driver mwifiex_usb_driver = {
- 	.id_table = mwifiex_usb_table,
- 	.suspend = mwifiex_usb_suspend,
- 	.resume = mwifiex_usb_resume,
--	.supports_autosuspend = 1,
- };
+ 	priv->num_stations--;
  
- static int mwifiex_usb_tx_init(struct mwifiex_adapter *adapter)
 -- 
 1.8.3.2
 
