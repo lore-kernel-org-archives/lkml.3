@@ -1,55 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaDASbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:31:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63887 "EHLO mx1.redhat.com"
+	id S1751784AbaDAScP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:32:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12361 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751627AbaDASbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:31:44 -0400
-Message-ID: <533B0603.7040301@redhat.com>
-Date: Tue, 01 Apr 2014 14:31:31 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751753AbaDAScM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 14:32:12 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: rework new_id interface for known vendor/device values
+References: <jpgsipz3sbs.fsf@nelium.bos.redhat.com>
+	<1396371204.476.156.camel@ul30vt.home>
+Date: Tue, 01 Apr 2014 14:32:09 -0400
+In-Reply-To: <1396371204.476.156.camel@ul30vt.home> (Alex Williamson's message
+	of "Tue, 01 Apr 2014 10:53:24 -0600")
+Message-ID: <jpg7g78hpee.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, shli@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] x86,mm: delay TLB flush after clearing accessed bit
-References: <20140331113442.0d628362@annuminas.surriel.com>	<CA+55aFzG=B3t_YaoCY_H1jmEgs+cYd--ZHz7XhGeforMRvNfEQ@mail.gmail.com>	<533AE518.1090705@redhat.com> <CA+55aFx9KYTV_N3qjV6S9uu6iTiVZimXhZtUa9UYRkNR9P-7RQ@mail.gmail.com>
-In-Reply-To: <CA+55aFx9KYTV_N3qjV6S9uu6iTiVZimXhZtUa9UYRkNR9P-7RQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 12:21 PM, Linus Torvalds wrote:
-> On Tue, Apr 1, 2014 at 9:11 AM, Rik van Riel <riel@redhat.com> wrote:
->>
->> Memory pressure is not necessarily caused by the same process
->> whose accessed bit we just cleared. Memory pressure may not
->> even be caused by any process's virtual memory at all, but it
->> could be caused by the page cache.
-> 
-> If we have that much memory pressure on the page cache without having
-> any memory pressure on the actual VM space, then the swap-out activity
-> will never be an issue anyway.
-> 
-> IOW, I think all these scenarios are made-up. I'd much rather go for
-> simpler implementation, and make things more complex only in the
-> presence of numbers. Of which we have none.
+Alex Williamson <alex.williamson@redhat.com> writes:
 
-We've been bitten by the lack of a properly tracked accessed
-bit before, but admittedly that was with the KVM code and EPT.
+> On Mon, 2014-03-31 at 00:28 -0400, Bandan Das wrote:
+>> While using the new_id interface, the user can unintentionally feed
+>> incorrect values if the driver static table has a matching entry.
+>> This is possible since only the device and vendor fields are
+>> mandatory and the rest are optional. As a result, store_new_id
+>> will fill in default values that are then passed on to the driver
+>> and can have unintended consequences.
+>> 
+>> As an example, consider the ixgbe driver and the 82599EB network card :
+>> echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
+>> 
+>> This will pass a driver_data value of 0 to the driver whereas
+>> the index 0 in ixgbe actually points to a different set of card
+>> operations.
+>> 
+>> This change automatically selects the matching static entry if there
+>> is one for the newly created dynid. However, if the user intentionally
+>> wants a different set of values, she must provide all the 7 fields
+>> and the static entry will be ignored.
+>> 
+>> In most cases, this use case seems unnecessary, however, this
+>> is a common libvirt/KVM/device assignment scenario where the
+>> user might want to bind a device back to the host driver.
+>> 
+>> Signed-off-by: Bandan Das <bsd@redhat.com>
+>> ---
+>>  drivers/pci/pci-driver.c | 42 ++++++++++++++++++++++++++++++++++++++----
+>>  1 file changed, 38 insertions(+), 4 deletions(-)
+>> 
+>> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+>> index 25f0bc6..187e572 100644
+>> --- a/drivers/pci/pci-driver.c
+>> +++ b/drivers/pci/pci-driver.c
+>> @@ -90,6 +90,24 @@ static void pci_free_dynids(struct pci_driver *drv)
+>>  	spin_unlock(&drv->dynids.lock);
+>>  }
+>>  
+>> +static const struct
+>> +pci_device_id *match_id_table_entry(struct device_driver *driver,
+>> +				    __u32 vendor, __u32 device)
+>> +{
+>> +	struct pci_driver *pdrv = to_pci_driver(driver);
+>> +	const struct pci_device_id *ids = pdrv->id_table;
+>> +
+>> +	if (ids) {
+>> +		while (ids->vendor || ids->subvendor || ids->class_mask) {
+>> +			if ((ids->vendor == vendor) && (ids->device == device))
+>> +				return ids;
+>> +			ids++;
+>> +		}
+>> +	}
+>> +
+>> +	return NULL;
+>> +}
+>> +
+>>  /**
+>>   * store_new_id - sysfs frontend to pci_add_dynid()
+>>   * @driver: target device driver
+>> @@ -102,7 +120,8 @@ static ssize_t
+>>  store_new_id(struct device_driver *driver, const char *buf, size_t count)
+>>  {
+>>  	struct pci_driver *pdrv = to_pci_driver(driver);
+>> -	const struct pci_device_id *ids = pdrv->id_table;
+>> +	const struct pci_device_id *ids = pdrv->id_table,
+>> +		*tids = NULL;
+>>  	__u32 vendor, device, subvendor=PCI_ANY_ID,
+>>  		subdevice=PCI_ANY_ID, class=0, class_mask=0;
+>>  	unsigned long driver_data=0;
+>> @@ -115,9 +134,24 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+>>  	if (fields < 2)
+>>  		return -EINVAL;
+>>  
+>> -	/* Only accept driver_data values that match an existing id_table
+>> -	   entry */
+>> -	if (ids) {
+>> +	tids = match_id_table_entry(driver, vendor, device);
+>> +
+>
+> Would it make more sense to construct a pci_dev, ex:
+>
+> if (fields != 7) {
+> 	struct pci_dev dev = { .subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID };
+>
+> 	dev.vendor = vendor;
+> 	dev.device = device;
+> 	if (fields > 2)
+> 		dev.subvendor = subvendor;
+> 	if (fields > 3)
+> 		dev.subdevice = subdevice;
+> 	...
+>
+> 	if (pci_match_id(drv->id_table, &dev))
+> 		return -EEXIST;
+> }
 
-I'll add my Acked-by: to Shaohua's original patch then, and
-will keep my eyes open for any problems that may or may not
-materialize...
+I initially went ahead this way, but the compilation warns about frame size 
+being larger, possibly because of a kernel config option that's set in my config
 
-Shaohua?
+drivers/pci/pci-driver.c:193:1: warning: the frame size of 
+2264 bytes is larger than 2048 bytes [-Wframe-larger-than=]
 
--- 
-All rights reversed
+Do you know if it is safe to ignore this ? This seems to be coming up 
+if I add the struct pdev. 
+
+>
+>> +	if (tids && (fields != 7)) {
+>> +
+>> +		subvendor = tids->subvendor;
+>> +		subdevice = tids->subdevice;
+>> +		class = tids->class;
+>> +		class_mask = tids->class_mask;
+>> +		driver_data = tids->driver_data;
+>
+> This doesn't look right.  First, we're potentially overwriting user
+> stored data for fields >2 but <7.  Second, we only matched on vendor &
+> device and could be filling the rest with data that isn't the best match
+> (and is guaranteed to just be a duplicate of a static table ID).
+>
+>> +
+>> +		pr_warn("pci: Using driver (%s) static DeviceID table entry for vendor 0x%04x and device 0x%04x",
+>> +			driver->name, vendor, device);
+>
+> I think we should be error'ing rather than inventing a duplicate ID to
+> insert.  How would a user ever know how to use remove_id to clean out
+> this new_id?  Thanks,
+
+Ok, makes sense to just error out. Good point about remove_id, 
+didn't think about that.
+
+Thanks,
+Bandan
+
+> Alex
+>
+>> +
+>> +	} else if (ids) {
+>> +
+>> +		/* Only accept driver_data values that match an existing
+>> +		   id_table entry */
+>> +
+>>  		retval = -EINVAL;
+>>  		while (ids->vendor || ids->subvendor || ids->class_mask) {
+>>  			if (driver_data == ids->driver_data) {
