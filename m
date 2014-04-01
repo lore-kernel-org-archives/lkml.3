@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaDAREW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 13:04:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35209 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaDAREV (ORCPT
+	id S1751508AbaDARJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 13:09:31 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:44701 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336AbaDARJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 13:04:21 -0400
-Date: Tue, 1 Apr 2014 10:06:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-Cc: Walter Lozano <walter@vanguardiasur.com.ar>,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        Forest Bond <forest@alittletooquiet.net>,
-        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
-	<ezequiel@vanguardiasur.com.ar>
-Subject: Re: [PATCH 1/3] staging: vt6655: fix DBG_PRT and PRINT_K macros
-Message-ID: <20140401170641.GA5353@kroah.com>
-References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
- <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
- <20140401163300.GB3842@kroah.com>
- <20140401165602.GB8929@solid>
+	Tue, 1 Apr 2014 13:09:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140401165602.GB8929@solid>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140401082757.GA23451@gmail.com>
+References: <20140401082757.GA23451@gmail.com>
+Date: Tue, 1 Apr 2014 10:09:28 -0700
+X-Google-Sender-Auth: v4NiBRu46a1h0s6pJIpcOeVIRfU
+Message-ID: <CA+55aFzKCVnqYussDpt8Fkoi28SthKRd3oKnSW4GnED+s6QdVQ@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/platforms for v3.15
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 01:56:02PM -0300, Guido Martínez wrote:
-> On Tue, Apr 01, 2014 at 09:33:00AM -0700, Greg KH wrote:
-> > On Tue, Apr 01, 2014 at 09:52:11AM -0300, Guido Martínez wrote:
-> > > Parenthesize both macros so they will not break program logic if used
-> > > within another 'if'. Also fix a usage of DBG_PRT with a missing
-> > > semicolon.
-> > > 
-> > > Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
-> > > ---
-> > >  drivers/staging/vt6655/device.h | 4 ++--
-> > >  drivers/staging/vt6655/wpactl.c | 2 +-
-> > >  2 files changed, 3 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
-> > > index 062c3a3..483b017 100644
-> > > --- a/drivers/staging/vt6655/device.h
-> > > +++ b/drivers/staging/vt6655/device.h
-> > > @@ -148,8 +148,8 @@
-> > >  
-> > >  /*---------------------  Export Types  ------------------------------*/
-> > >  
-> > > -#define DBG_PRT(l, p, args...) { if (l <= msglevel) printk(p, ##args); }
-> > > -#define PRINT_K(p, args...) { if (PRIVATE_Message) printk(p, ##args); }
-> > > +#define DBG_PRT(l, p, args...) ({ if (l <= msglevel) printk(p, ##args); })
-> > > +#define PRINT_K(p, args...) ({ if (PRIVATE_Message) printk(p, ##args); })
-> > 
-> > I would much rather see these "fixed" by removing them entirely and
-> > using the in-kernel calls instead (netdev_* and dev_* where applicable.)
-> 
-> Sounds OK. Is it ok to do that in another patch?  I made this change on a
-> need-to basis because otherwise it was not possible to fix the bracing
-> style.
+On Tue, Apr 1, 2014 at 1:27 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> David E. Box (2):
+>       x86, iosf: Change IOSF_MBI Kconfig to default y
 
-Yes, that would be fine.
+Why? This change looks completely and utterly bogus.
 
-thanks,
+That IOSF_MBI Kconfig value shouldn't be exposed at all, since it is
+supposed to be selected by modules that need it. And if it is exposed,
+why the f*ck should it be on by default? With no help messages about
+why you should enable it (quite the reverse)?
 
-greg k-h
+Guys, this is crap. It looks like another example of a developer who
+thinks that *his* particular meaningless code is _so_ so special that
+it needs to be enabled for everybody.  That's utter bullshit, guys.
+
+This is a Kconfig entry for a piece of hardware that
+
+ (a) people don't know about, so asking people about it is f*cking
+retarded to begin with
+
+ (b) only exists on some Atom-based SoC chips, so it's not like we
+expect *any* normal kernel developer to enable it unless they have
+special hardware
+
+ (c) if they have the hardware, they need to enable the drivers that
+use this for the doorbell driver to be useful to begin with, so why
+the hell would you ask about this?
+
+ (d) the entry has no real documentation for what it is, and the docs
+it *does* have explicitly state that the sane thing is for drivers
+(that people may actually be *aware* of and thus validly answer
+questions about) to select it.
+
+Notice? Exposing it at all is a disgrace. making it "default y" is
+doubly so. Tell me _one_ reason for why it should have a question to
+begin with, and why it should default to "y".
+
+And no, reasons like "I wrote this code and I love it so much that I
+want to force it on others" is not a valid reason.
+
+Neither is "I hate all my users, and I want to terminally confuse them
+and discourage people from compiling their own kernels, so I'll ask
+annoying and idiotic questions at configure time".
+
+Any _real_ reason?
+
+In the absence of real reasons, I'm not pulling crap like this. Get
+your act together. Why the heck should _I_ be the one that notices
+that this commit is insane and stupid?
+
+Yes, this is a pet peeve of mine. Our configuration phase is
+absolutely *the* single worst part of the kernel, and it's not because
+our Kconfig language is complex. It's because it scares people away
+from building their own kernels and testing, because we make it
+insanely hard to answer the questions, and we seem to actively
+encourage people to enable features that are pointless and just bloat
+things and make the build process slower and harder.
+
+Christ, even *I* find our configuration process tedious. I can only
+imagine how many casual users we scare away.
+
+This cavalier attitude about asking people idiotic questions MUST
+STOP. Seriously. This is not some "small harmless bug". This mindset
+of crazy questions is a major issue!
+
+              Linus
