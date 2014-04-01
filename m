@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaDAMCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 08:02:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42335 "EHLO
+	id S1752689AbaDAMCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 08:02:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42339 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127AbaDALRJ (ORCPT
+	with ESMTP id S1752132AbaDALRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Apr 2014 07:17:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lauri Kasanen <cand@gmx.com>, Alex Deucher <alexander.deucher@amd.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 053/144] drm/radeon: TTM must be init with cpu-visible VRAM, v2
-Date: Tue,  1 Apr 2014 12:14:17 +0100
-Message-Id: <1396350948-29910-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 054/144] drm/radeon/dpm: fix typo in EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters
+Date: Tue,  1 Apr 2014 12:14:18 +0100
+Message-Id: <1396350948-29910-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
 References: <1396350948-29910-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,45 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lauri Kasanen <cand@gmx.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 14eedc32a3c0ec9dd70448a73763ee21feae3111 upstream.
+commit 13714323f83ffa5a772fe0d8b74e0fa32ee08819 upstream.
 
-Without this, a bo may get created in the cpu-inaccessible vram.
-Before the CP engines get setup, all copies are done via cpu memcpy.
+Should be at 0x8 rather than 0.
 
-This means that the cpu tries to read from inaccessible memory, fails,
-and the radeon module proceeds to disable acceleration.
+fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60523
 
-Doing this has no downsides, as the real VRAM size gets set as soon as the
-CP engines get init.
+Noticed by ArtForz on #radeon
 
-This is a candidate for 3.14 fixes.
-
-v2: Add comment on why the function is used
-
-Signed-off-by: Lauri Kasanen <cand@gmx.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_ttm.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/evergreen_smc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
-index 6c0ce89..d644f60 100644
---- a/drivers/gpu/drm/radeon/radeon_ttm.c
-+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -710,6 +710,9 @@ int radeon_ttm_init(struct radeon_device *rdev)
- 		DRM_ERROR("Failed initializing VRAM heap.\n");
- 		return r;
- 	}
-+	/* Change the size here instead of the init above so only lpfn is affected */
-+	radeon_ttm_set_active_vram_size(rdev, rdev->mc.visible_vram_size);
-+
- 	r = radeon_bo_create(rdev, 256 * 1024, PAGE_SIZE, true,
- 			     RADEON_GEM_DOMAIN_VRAM,
- 			     NULL, &rdev->stollen_vga_memory);
+diff --git a/drivers/gpu/drm/radeon/evergreen_smc.h b/drivers/gpu/drm/radeon/evergreen_smc.h
+index 76ada8c..3a03ba3 100644
+--- a/drivers/gpu/drm/radeon/evergreen_smc.h
++++ b/drivers/gpu/drm/radeon/evergreen_smc.h
+@@ -57,7 +57,7 @@ typedef struct SMC_Evergreen_MCRegisters SMC_Evergreen_MCRegisters;
+ 
+ #define EVERGREEN_SMC_FIRMWARE_HEADER_LOCATION 0x100
+ 
+-#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x0
++#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x8
+ #define EVERGREEN_SMC_FIRMWARE_HEADER_stateTable      0xC
+ #define EVERGREEN_SMC_FIRMWARE_HEADER_mcRegisterTable 0x20
+ 
 -- 
 1.9.1
 
