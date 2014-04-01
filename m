@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaDASDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:03:40 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40505 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaDASDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:03:39 -0400
-Message-ID: <533AFF77.5030106@codeaurora.org>
-Date: Tue, 01 Apr 2014 11:03:35 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751953AbaDASE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:04:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22583 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868AbaDASEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 14:04:24 -0400
+Date: Tue, 1 Apr 2014 14:04:14 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_prempt stalls / lockup
+Message-ID: <20140401180414.GA12326@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20140331230241.GA30019@redhat.com>
+ <20140331232220.GP4284@linux.vnet.ibm.com>
+ <20140331233552.GB30019@redhat.com>
+ <20140401004801.GQ4284@linux.vnet.ibm.com>
+ <20140401150849.GA14757@redhat.com>
+ <20140401153032.GT4284@linux.vnet.ibm.com>
+ <20140401172244.GA10363@redhat.com>
+ <20140401175545.GV4284@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>,
-        linux-arm-kernel@lists.infradead.org
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] arm: don't allow CONFIG_DEBUG_SET_MODULE_RONX if CONFIG_JUMP_LABEL
- is enabled
-References: <1396346657-7166-1-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1396346657-7166-1-git-send-email-holler@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401175545.GV4284@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/1/2014 3:04 AM, Alexander Holler wrote:
-> CONFIG_DEBUG_SET_MODULE_RONX sounds like a nice security feature, but
-> things might fail late (and unexpected) if module code is set to read-only
-> while CONFIG_JUMP_LABEL is enabled (e.g. modprobe bridge).
-> 
-> Avoid this.
-> 
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> ---
->  arch/arm/Kconfig.debug | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 0531da8..6627b9e 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -1197,7 +1197,7 @@ config PID_IN_CONTEXTIDR
->  
->  config DEBUG_SET_MODULE_RONX
->  	bool "Set loadable kernel module data as NX and text as RO"
-> -	depends on MODULES
-> +	depends on MODULES && !JUMP_LABEL
->  	---help---
->  	  This option helps catch unintended modifications to loadable
->  	  kernel module's text and read-only data. It also prevents execution
-> 
+On Tue, Apr 01, 2014 at 10:55:45AM -0700, Paul E. McKenney wrote:
+ > >  > > so kernel space still works like before, but userspace is locked up.
+ > >  > 
+ > >  > Interesting.  I suspect that if you reverted the rest of this merge
+ > >  > window's RCU patches, you would get the same result.
+ 
+Something that occurred to me is that this might be something in the x86 merge
+that's just changing timings enough to expose this problem.
+At some point this evening, I'll try bisecting it if we don't get any closer.
 
-Kees Cook has something similar[1] for not-module space as well, we probably want
-this there as well. A shame we keep finding reasons these features will be turned
-off. Looks good to me otherwise. 
+ > > [ 1953.672735] INFO: Stall ended before state dump start, gp_kthread state: 0x2
+ > > [ 2148.608132] INFO: rcu_preempt detected stalls on CPUs/tasks:
+ > > [ 2148.609140] 	(detected by 0, t=104027 jiffies, g=47728, c=47727, q=0)
+ > > etc etc.
+ > 
+ > Waiting uninterruptibly.  Presumably blocked on mutex_lock().  But
+ > you have CONFIG_PROVE_LOCKING(), so any deadlocks should have been
+ > reported.
 
-Laura
+Lockdep had reported something a little earlier (timestamped at 1108.xxxxxx)
+but that's a known false-positive in xfs.
 
-[1]http://lists.infradead.org/pipermail/linux-arm-kernel/2014-February/232644.html
+ > Given that you have CONFIG_RCU_TRACE=y, could you please enable the
+ > following trace events and dump the trace before things hang?
+ > 
+ > 	trace_event=rcu:rcu_grace_period,rcu:rcu_grace_period_init
+ > 
+ > If it is not feasible to dump the trace before things hang, let me
+ > know, and I will work out some other diagnostic regime.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I'll give that a shot when I get back in a few hours.
+
+	Dave
