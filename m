@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270AbaDAAYc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 20:24:32 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65064 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaDAAY3 (ORCPT
+	id S1751340AbaDAAZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 20:25:34 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:37746 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaDAAZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 20:24:29 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <533A073A.6060807@roeck-us.net>
-Date: Mon, 31 Mar 2014 17:24:26 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 31 Mar 2014 20:25:33 -0400
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Harini Katakam <harinik@xilinx.com>
-CC: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, michals@xilinx.com,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/2] watchdog: Add Cadence WDT driver
-References: <1396002720-7105-1-git-send-email-harinik@xilinx.com> <20140331113020.03be6894@alan.etchedpixels.co.uk>
-In-Reply-To: <20140331113020.03be6894@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140331145625.GA10791@infradead.org>
+References: <1396277611-10759-1-git-send-email-linkinjeon@gmail.com>
+	<20140331145625.GA10791@infradead.org>
+Date: Tue, 1 Apr 2014 09:19:12 +0900
+Message-ID: <CAKYAXd8adbqepWeDADDtbzk7bTrhXK0CccgewNDsqu0u+HnC4g@mail.gmail.com>
+Subject: Re: [PATCH 0/3] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        Jan Kara <jack@suse.cz>,
+        =?UTF-8?B?THVrw6HFoSBDemVybmVy?= <lczerner@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 03:30 AM, One Thousand Gnomes wrote:
+2014-03-31 23:56 GMT+09:00 Christoph Hellwig <hch@infradead.org>:
+> On Mon, Mar 31, 2014 at 11:53:31PM +0900, Namjae Jeon wrote:
+>> This flag will work opposite to the newly added FALLOC_FL_COLLAPSE_RANGE flag.
+>> As such, specifying FALLOC_FL_INSERT_RANGE flag will insert zeroed-out space
+>> in between the file within the range specified by offset and len. User can
+>> write new data in this space. e.g. ads.
+>> Like collapse range, currently we have the limitation that offset and len
+>> should be block size aligned for both XFS and Ext4.
 >
->> +	wdt->cdns_wdt_notifier.notifier_call = &cdns_wdt_notify_sys;
->> +	/* Register the reboot notifier */
->> +	ret = register_reboot_notifier(&wdt->cdns_wdt_notifier);
->> +	if (ret != 0) {
->> +		dev_err(&pdev->dev, "cannot register reboot notifier err=%d)\n",
->> +			ret);
->> +		return ret;
+> Btw, I remember Samsung also had an ioctl for XFS to split a file into
+> two without moving the data, do you plan to submit that one as well?
 >
-> Your ordering is wrong. If the box reboots between here and the spin lock
-> in it further down it'll crash in your notifier.
->
-Not only that, the callback also ends up using watchdog_get_drvdata()
-which is only set after registering the notifier.
+Hi Christoph.
+Sure, I'm planning to introduce FS_IOC_MOVE_DATA ioctl that can split
+file as well as merging for xfs and ext4.
+I already started to implement it. and will post it soon.
 
-Guenter
-
-> As
->
->> +	spin_lock_init(&wdt->io_lock);
->
-> is needed before the code your notifier calls will work.
->
->> +	dev_info(&pdev->dev, "Xilinx Watchdog Timer at %p with timeout %ds%s\n",
->> +		 wdt->regs, cdns_wdt_device->timeout,
->> +		 nowayout ? ", nowayout" : "");
->
-> dev_dbg
->
-> if every driver felt the need to announce itself on boot you'd have pages
-> and pages of junk.
->
-> Alan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
-
+Thanks.
