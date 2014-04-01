@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaDAGIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 02:08:45 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16525 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaDAGIo convert rfc822-to-8bit (ORCPT
+	id S1751918AbaDAGMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 02:12:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54374 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaDAGMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 02:08:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 31 Mar 2014 23:04:19 -0700
-From: Arun Shamanna Lakshmi <aruns@nvidia.com>
-To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
-CC: Songhee Baek <sbaek@nvidia.com>,
-        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "'swarren@wwwdotorg.org'" <swarren@wwwdotorg.org>,
-        "'tiwai@suse.de'" <tiwai@suse.de>,
-        "'lgirdwood@gmail.com'" <lgirdwood@gmail.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 31 Mar 2014 23:08:42 -0700
-Subject: RE: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
-Thread-Topic: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
-Thread-Index: Ac9M2eSQS4irsZZ7TfW4X9xEk1m+pQAlsgPQ
-Message-ID: <781A12BB53C15A4BB37291FDE08C03F3A05CDCD520@HQMAIL02.nvidia.com>
-References: <1395792156-4178-1-git-send-email-aruns@nvidia.com>
- <53332CC7.6060800@metafoo.de>
- <D6C615D3E4730340AE82D5BD856631C0A26CB319B2@HQMAIL02.nvidia.com>
- <5333ED3A.7040908@metafoo.de>
- <5571431004A69147BCABABE4E097D66BA3EFF70CFC@HQMAIL02.nvidia.com>
- <D6C615D3E4730340AE82D5BD856631C0A26CB31F48@HQMAIL02.nvidia.com>
- <5336A619.5030007@metafoo.de>
- <781A12BB53C15A4BB37291FDE08C03F3A05CC6A11A@HQMAIL02.nvidia.com>
- <20140331112140.GO2269@sirena.org.uk> <533957C8.2030105@metafoo.de>
- <20140331120748.GS2269@sirena.org.uk>
-In-Reply-To: <20140331120748.GS2269@sirena.org.uk>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Tue, 1 Apr 2014 02:12:19 -0400
+Date: Tue, 1 Apr 2014 08:12:16 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, christoffer.dall@linaro.org,
+        linux-kernel@vger.kernel.org, olof@lixom.net, benh@kernel.crashing.org,
+        rob.herring@linaro.org
+Subject: Re: [RFC 0/5] of: Automatic console registration cleanups
+Message-ID: <20140401061216.GQ17250@pengutronix.de>
+References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
+ <20140331071014.GN17250@pengutronix.de>
+ <20140331094124.6DEF3C408E1@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140331094124.6DEF3C408E1@trevor.secretlab.ca>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:10:17 up 219 days, 15:41, 43 users,  load average: 0.13, 0.09,
+ 0.12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 31, 2014 at 10:41:24AM +0100, Grant Likely wrote:
+> On Mon, 31 Mar 2014 09:10:15 +0200, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Fri, Mar 28, 2014 at 09:08:00AM -0700, Grant Likely wrote:
+> > > Hi all,
+> > > 
+> > > This is a series that I've been playing with over the last few days to
+> > > clean up the selection of default console devices when using the device
+> > > tree. The device tree defines a way of specifying the console by using a
+> > > "stdout-path" property in the /chosen node, but very few drivers
+> > > actually attempt to use that data, and so for most platforms there needs
+> > > to be a "console=" line in the command line if a serial port is intended
+> > > to be used as the console.
+> > > 
+> > > With this series, if there is a /chosen/stdout-path property, and if
+> > > that property points to a serial port node, then when the serial driver
+> > > registers the port, the core uart_add_one_port() function will notice
+> > > and if no console= argument was provided then add it as a preferred
+> > > console.
+> > > 
+> > > I've not tested this very extensively yet, but I want to get some
+> > > feedback before I go further.
+> > 
+> > I gave it a test on i.MX. It works as expected with both
+> > linux,stdout-path and stdout-path. Specifying a console on the
+> > commandline still works and overrides the devicetree setting.
+> > 
+> > Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
+> 
+> Brilliant! Thanks Sascha.
+> 
+> Can you supply a patch to add stdout to the imx dts files?
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Monday, March 31, 2014 5:08 AM
-> To: Lars-Peter Clausen
-> Cc: Arun Shamanna Lakshmi; Songhee Baek; 'alsa-devel@alsa-project.org';
-> 'swarren@wwwdotorg.org'; 'tiwai@suse.de'; 'lgirdwood@gmail.com'; 'linux-
-> kernel@vger.kernel.org'
-> Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
-> 
-> * PGP Signed by an unknown key
-> 
-> On Mon, Mar 31, 2014 at 01:55:52PM +0200, Lars-Peter Clausen wrote:
-> > On 03/31/2014 01:21 PM, Mark Brown wrote:
-> 
-> > >The above is a bit confusing...  partly this is because of a lack of
-> > >context (what is MULTI_MUX_INPUT_OFFSET?) and partly because it isn't
-> > >entirely obvious that stopping as soon as we see any value set is the
-> > >right choice, especially given the addition to rather than setting of
-> > >val.
-> 
-> > I think the idea is that since we know that for one-hot encodings only
-> > powers of two are valid values the other bits are used to encode the
-> > register number. E.g 0x4 means bit 3 in register 0, 0x5 means bit 3 in
-> > register 1, 0x6 means bit 3 in register 2 and so on. I guess it is
-> > possible to make it work. But this seems to be quite hack-ish to me.
-> > You'd have to be careful that MULTI_MUX_INPUT_OFFSET(reg_idx) never
-> > evaluates to a power of two and there are probably some more pitfalls.
-> 
-> Ugh, right.  The fact that I couldn't tell that this was what the code was trying to
-> do from looking at it is not a good sign here.
+The information which console is used on each board is not in the
+kernel. I can create a patch adding stdout for a handful of boards I
+know, but I won't catch all.
 
-I will work on this and submit another patch. Thanks for all your feedback.
+Sascha
 
-> 
-> * Unknown Key
-> * 0x7EA229BD
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
