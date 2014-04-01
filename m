@@ -1,59 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaDADq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 23:46:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaDADqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 23:46:08 -0400
-Date: Mon, 31 Mar 2014 18:30:32 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Zhanghailiang <zhang.zhanghailiang@huawei.com>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
-        zhang yanying <zhuangyanying@huawei.com>
-Subject: Re: VDSO pvclock may increase host cpu consumption, is this a
- problem?
-Message-ID: <20140331213032.GA5866@amt.cnet>
-References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
- <5339AB59.4050906@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5339AB59.4050906@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751899AbaDADqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 23:46:46 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:44176 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaDADqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 23:46:44 -0400
+Message-ID: <1396323999.15053.2.camel@phoenix>
+Subject: [PATCH 2/2] bus: omap_l3_smx: Use devm_* managed allocators
+From: Axel Lin <axel.lin@ingics.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, linux-kernel@vger.kernel.org
+Date: Tue, 01 Apr 2014 11:46:39 +0800
+In-Reply-To: <1396323961.15053.1.camel@phoenix>
+References: <1396323961.15053.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
-> On 03/29/2014 01:47 AM, Zhanghailiang wrote:
-> > Hi,
-> > I found when Guest is idle, VDSO pvclock may increase host consumption.
-> > We can calcutate as follow, Correct me if I am wrong.
-> >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
-> > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
-> > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call. 
-> > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
-> > Both Host and Guest is linux-3.13.6.
-> > So, whether the host cpu consumption is a problem?
-> 
-> Does pvclock serve any real purpose on systems with fully-functional
-> TSCs?  The x86 guest implementation is awful, so it's about 2x slower
-> than TSC.  It could be improved a lot, but I'm not sure I understand why
-> it exists in the first place.
+This simplifies error and cleanup code paths.
 
-VM migration.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/bus/omap_l3_smx.c | 53 +++++++++++------------------------------------
+ 1 file changed, 12 insertions(+), 41 deletions(-)
 
-Can you explain why you consider it so bad ? How you think it could be
-improved ?
+diff --git a/drivers/bus/omap_l3_smx.c b/drivers/bus/omap_l3_smx.c
+index acc2164..90840cf 100644
+--- a/drivers/bus/omap_l3_smx.c
++++ b/drivers/bus/omap_l3_smx.c
+@@ -217,68 +217,39 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int ret;
+ 
+-	l3 = kzalloc(sizeof(*l3), GFP_KERNEL);
++	l3 = devm_kzalloc(&pdev->dev, sizeof(*l3), GFP_KERNEL);
+ 	if (!l3)
+ 		return -ENOMEM;
+ 
+ 	platform_set_drvdata(pdev, l3);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "couldn't find resource\n");
+-		ret = -ENODEV;
+-		goto err0;
+-	}
+-	l3->rt = ioremap(res->start, resource_size(res));
+-	if (!l3->rt) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err0;
+-	}
++	l3->rt = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(l3->rt))
++		return PTR_ERR(l3->rt);
+ 
+ 	l3->debug_irq = platform_get_irq(pdev, 0);
+-	ret = request_irq(l3->debug_irq, omap3_l3_app_irq,
+-		IRQF_DISABLED | IRQF_TRIGGER_RISING,
+-		"l3-debug-irq", l3);
++	ret = devm_request_irq(&pdev->dev, l3->debug_irq, omap3_l3_app_irq,
++			       IRQF_DISABLED | IRQF_TRIGGER_RISING,
++			       "l3-debug-irq", l3);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "couldn't request debug irq\n");
+-		goto err1;
++		return ret;
+ 	}
+ 
+ 	l3->app_irq = platform_get_irq(pdev, 1);
+-	ret = request_irq(l3->app_irq, omap3_l3_app_irq,
+-		IRQF_DISABLED | IRQF_TRIGGER_RISING,
+-		"l3-app-irq", l3);
++	ret = devm_request_irq(&pdev->dev, l3->app_irq, omap3_l3_app_irq,
++			       IRQF_DISABLED | IRQF_TRIGGER_RISING,
++			       "l3-app-irq", l3);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "couldn't request app irq\n");
+-		goto err2;
++		return ret;
+ 	}
+ 
+ 	return 0;
+-
+-err2:
+-	free_irq(l3->debug_irq, l3);
+-err1:
+-	iounmap(l3->rt);
+-err0:
+-	kfree(l3);
+-	return ret;
+-}
+-
+-static int __exit omap3_l3_remove(struct platform_device *pdev)
+-{
+-	struct omap3_l3         *l3 = platform_get_drvdata(pdev);
+-
+-	free_irq(l3->app_irq, l3);
+-	free_irq(l3->debug_irq, l3);
+-	iounmap(l3->rt);
+-	kfree(l3);
+-
+-	return 0;
+ }
+ 
+ static struct platform_driver omap3_l3_driver = {
+-	.remove         = __exit_p(omap3_l3_remove),
+ 	.driver         = {
+ 	.name   = "omap_l3_smx",
+ 	},
+-- 
+1.8.3.2
 
-> I certainly understand the goal of keeping the guest CLOCK_REALTIME is
-> sync with the host, but pvclock seems like overkill for that.
 
-VM migration.
 
