@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaDAQfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:35:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44479 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775AbaDAQKT (ORCPT
+	id S1753005AbaDAQfa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:35:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34709 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535AbaDAQfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:10:19 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 51/86] usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
-Date: Tue,  1 Apr 2014 09:08:04 -0700
-Message-Id: <1396368519-12728-52-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 1 Apr 2014 12:35:25 -0400
+Date: Tue, 1 Apr 2014 09:37:44 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
+        grant.likely@linaro.org, mark.rutland@arm.com, galak@codeaurora.org,
+        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
+        m.szyprowski@samsung.com, t.figa@samsung.com,
+        laurent.pinchart@ideasonboard.com, s.hauer@pengutronix.de
+Subject: Re: [PATCH RFC v4 2/2] clk: Add handling of clk parent and rate
+ assigned from DT
+Message-ID: <20140401163744.GE3842@kroah.com>
+References: <1396284116-19178-1-git-send-email-s.nawrocki@samsung.com>
+ <1396284116-19178-3-git-send-email-s.nawrocki@samsung.com>
+ <20140331200620.GA13881@kroah.com>
+ <533ABCEC.8040701@codethink.co.uk>
+ <533ACBD0.8030209@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533ACBD0.8030209@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 01, 2014 at 04:23:12PM +0200, Sylwester Nawrocki wrote:
+> On 01/04/14 15:19, Ben Dooks wrote:
+> > On 31/03/14 21:06, Greg KH wrote:
+> >> > On Mon, Mar 31, 2014 at 06:41:56PM +0200, Sylwester Nawrocki wrote:
+> [...]
+> >> > I don't understand why you need the driver core to initialize this one
+> >> > type of thing?  That should be in a driver, or in a class, or at worse
+> >> > case, the platform code.
+> >> >
+> >> > What makes clocks so "unique" here?
+> 
+> The reason I put it in the driver core was mainly to avoid having many
+> drivers doing same call to this initialization function.
+> I was considering moving it to the bus code, still there are several
+> buses for which it would need to be repeated.
 
-------------------
+"several" is how many?  2?  3?  10?
 
-From: Julius Werner <jwerner@chromium.org>
+Please fix it "correctly" and don't put it in the driver core just
+because it seems easier that way.
 
-commit e0429362ab15c46ea4d64c3f8c9e0933e48a143a upstream.
+> Maybe really_probe() is not a best place to put this, nonetheless
+> the requirements I could list were:
+> 
+>  1. not involving individual drivers,
 
-We've encountered a rare issue when enumerating two Logitech webcams
-after a reboot that doesn't power cycle the USB ports. They are spewing
-random data (possibly some leftover UVC buffers) on the second
-(full-sized) Get Configuration request of the enumeration phase. Since
-the data is random this can potentially cause all kinds of odd behavior,
-and since it occasionally happens multiple times (after the kernel
-issues another reset due to the garbled configuration descriptor), it is
-not always recoverable. Set the USB_DELAY_INIT quirk that seems to work
-around the issue.
+Why not?
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/core/quirks.c | 4 ++++
- 1 file changed, 4 insertions(+)
+>  2. have such an initialization call done for all devices, irrespective
+>     of Linux bus or class type,
 
-diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index 002c8a0..894ac69 100644
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -46,6 +46,10 @@ static const struct usb_device_id usb_quirk_list[] = {
- 	/* Microsoft LifeCam-VX700 v2.0 */
- 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* Logitech HD Pro Webcams C920 and C930e */
-+	{ USB_DEVICE(0x046d, 0x082d), .driver_info = USB_QUIRK_DELAY_INIT },
-+	{ USB_DEVICE(0x046d, 0x0843), .driver_info = USB_QUIRK_DELAY_INIT },
-+
- 	/* Logitech Quickcam Fusion */
- 	{ USB_DEVICE(0x046d, 0x08c1), .driver_info = USB_QUIRK_RESET_RESUME },
- 
--- 
-1.8.3.2
+Why?  Do _all_ devices that Linux supports have this issue to be
+resolved?
 
+>  3. Handle errors properly, e.g. defer driver probing if a clock for
+>    a device is not yet available.
+
+Then do it in the bus that controls that device, as it knows to defer
+probing at that point in time.
+
+> One advantage I could see from making the call from within a device
+> driver is that a device could keep using the common DT bindings and
+> replace the common initialization function with a private one, if
+> there is a need for some quirks handled for a device. With approach
+> as in this patch it's difficult to override the default behaviour.
+> However then there is a question whether we strive for the clocks
+> management to be possibly kept away from device drivers.
+> 
+> > I suppose the issue here is that a lot of drivers currently use
+> > clocks and a number of systems have badly setup default clock trees
+> > at start time.
+> > 
+> > Mark Brown and others have argued that the management of clocks which
+> > is common to all devices should not live in the driver.
+> 
+> True, motivation behind this patch series was also replacing custom
+> code in multiple drivers doing similar clock rate or parent setting
+> by a common code, using standardized DT binding.
+
+Then put it in the bus that controls these broken devices / platforms.
+
+greg k-h
