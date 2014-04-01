@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaDAScw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 14:32:52 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41393 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbaDAScu (ORCPT
+	id S1751833AbaDASdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:33:46 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:51148 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaDASdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 14:32:50 -0400
-Date: Tue, 1 Apr 2014 11:32:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401183245.GA12473@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
- <20140401150849.GA14757@redhat.com>
- <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
- <20140401180414.GA12326@redhat.com>
+	Tue, 1 Apr 2014 14:33:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401180414.GA12326@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040118-8236-0000-0000-00000137496D
+In-Reply-To: <1396373557-3387-3-git-send-email-andi@firstfloor.org>
+References: <1396373557-3387-1-git-send-email-andi@firstfloor.org>
+	<1396373557-3387-3-git-send-email-andi@firstfloor.org>
+Date: Tue, 1 Apr 2014 11:33:43 -0700
+X-Google-Sender-Auth: VAwmkGxZjX6AlsNjsqLgC_yUZzg
+Message-ID: <CA+55aFwA=vBbtWT=Zt-pi1caNf6L-m6nDHFnsJeX0wgTBnHhFg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] asmlinkage, x86: Add explicit __visible to arch/x86/*
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 02:04:14PM -0400, Dave Jones wrote:
-> On Tue, Apr 01, 2014 at 10:55:45AM -0700, Paul E. McKenney wrote:
->  > >  > > so kernel space still works like before, but userspace is locked up.
->  > >  > 
->  > >  > Interesting.  I suspect that if you reverted the rest of this merge
->  > >  > window's RCU patches, you would get the same result.
-> 
-> Something that occurred to me is that this might be something in the x86 merge
-> that's just changing timings enough to expose this problem.
-> At some point this evening, I'll try bisecting it if we don't get any closer.
+This still has these kinds of pointless changes. Why?
 
-OK.  ;-)
+In the declaration of the function, the __visible is just noise. It's
+not interesting to the caller, and doesn't add anything. In fact, I'd
+argue that these kinds of declarations are not just noise, they are
+*stupid* noise, because if the function is ever used by C code than
+that "__visible" is pointless.
 
->  > > [ 1953.672735] INFO: Stall ended before state dump start, gp_kthread state: 0x2
->  > > [ 2148.608132] INFO: rcu_preempt detected stalls on CPUs/tasks:
->  > > [ 2148.609140] 	(detected by 0, t=104027 jiffies, g=47728, c=47727, q=0)
->  > > etc etc.
->  > 
->  > Waiting uninterruptibly.  Presumably blocked on mutex_lock().  But
->  > you have CONFIG_PROVE_LOCKING(), so any deadlocks should have been
->  > reported.
-> 
-> Lockdep had reported something a little earlier (timestamped at 1108.xxxxxx)
-> but that's a known false-positive in xfs.
+So get rid of the __visible. It's just more of the same confusion
+where you think __visible and asmlinkage go together. They damn well
+don't.
 
-Yep, I would be very surprised if that was related to the grace-period hang.
+                  Linus
 
->  > Given that you have CONFIG_RCU_TRACE=y, could you please enable the
->  > following trace events and dump the trace before things hang?
->  > 
->  > 	trace_event=rcu:rcu_grace_period,rcu:rcu_grace_period_init
->  > 
->  > If it is not feasible to dump the trace before things hang, let me
->  > know, and I will work out some other diagnostic regime.
-> 
-> I'll give that a shot when I get back in a few hours.
-
-Cool!
-
-							Thanx, Paul
-
+On Tue, Apr 1, 2014 at 10:32 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>  #include <asm/sections.h>
+>
+>  /* Interrupt handlers registered during init_IRQ */
+> -extern asmlinkage void apic_timer_interrupt(void);
+> -extern asmlinkage void x86_platform_ipi(void);
+> -extern asmlinkage void kvm_posted_intr_ipi(void);
+> -extern asmlinkage void error_interrupt(void);
+> -extern asmlinkage void irq_work_interrupt(void);
+...
+> +extern asmlinkage __visible void apic_timer_interrupt(void);
+> +extern asmlinkage __visible void x86_platform_ipi(void);
+> +extern asmlinkage __visible void kvm_posted_intr_ipi(void);
+> +extern asmlinkage __visible void error_interrupt(void);
+> +extern asmlinkage __visible void irq_work_interrupt(void);
