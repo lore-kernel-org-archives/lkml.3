@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455AbaDAK4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 06:56:16 -0400
-Received: from plane.gmane.org ([80.91.229.3]:54134 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162AbaDAK4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 06:56:15 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Duncan <1i5t5.duncan@cox.net>
-Subject: Re: [PATCH v2] lib: add size unit t/p/e to memparse
-Date: Tue, 1 Apr 2014 10:55:59 +0000 (UTC)
-Message-ID: <pan$8fddd$cc4f106$67b55dbb$abaf55ec@cox.net>
-References: <1396346251-2506-1-git-send-email-guihc.fnst@cn.fujitsu.com>
+	id S1751391AbaDALC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:02:59 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:44048 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaDALC5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 07:02:57 -0400
+Date: Tue, 1 Apr 2014 13:02:55 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Vegard Nossum <vegard.nossum@oracle.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+Subject: Re: [PATCH] isdnloop: NUL-terminate strings from userspace
+Message-ID: <20140401110255.GH24150@order.stressinduktion.org>
+Mail-Followup-To: Vegard Nossum <vegard.nossum@oracle.com>,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Dan Carpenter <dan.carpenter@oracle.com>,
+	"David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+References: <1396346898-8950-1-git-send-email-vegard.nossum@oracle.com> <20140401103020.GG24150@order.stressinduktion.org> <533A990D.2040609@oracle.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip68-231-22-224.ph.ph.cox.net
-User-Agent: Pan/0.140 (Chocolate Salty Balls; GIT 2ae6aff
- /usr/src/portage/src/egit-src/pan2)
-Cc: linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <533A990D.2040609@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gui Hecheng posted on Tue, 01 Apr 2014 17:57:31 +0800 as excerpted:
+On Tue, Apr 01, 2014 at 12:46:37PM +0200, Vegard Nossum wrote:
+> On 04/01/2014 12:30 PM, Hannes Frederic Sowa wrote:
+> >Looking down the problem, it seems the problem is that the strlen in 
+> >strlcpy
+> >could read beyond the input buffer?
+> >
+> >To prevent this problem in other parts of the kernel wouldn't it be better 
+> >to
+> >replace the strlen with strnlen in strlcpy?
+> 
+> Sorry, I should have included the link to the previous thread: 
+> https://lkml.org/lkml/2014/3/7/712
+> 
+> I only resent (adding netdev to Cc) to get this into David Miller's 
+> patch queue.
 
-> + *	potentially suffixed with 
-> + *	%K (for kibibytes, or 1024 bytes),
-> + *	%M (for mebibytes, or 1048576 bytes),
-> + *	%G (for gibibytes, or 1073741824),
-> + *	%T (for tebibytes, or 1099511627776),
-> + *	%P (for pebibytes, or 1125899906842624 bytes),
-> + *	%E (for exbibytes, or 1152921504606846976 bytes).
+Ah ok, sorry I don't follow lkml as closely as netdev@.
 
-Why do the first two and the last two end in bytes, but the the middle 
-two don't?  I'd suggest either only specifying bytes on the first one
-(a reasonably common pattern in English, with the carry down to the 
-others implied) or on all of them.
+> As you can see from the previous discussion, we _could_ change the Linux 
+> kernel's definition of strlcpy(), but I wouldn't recommend it for the 
+> following reasons:
+> 
+> 1. Both BSD man page and BSD implementation _require_ the source string 
+> to be 0-terminated. Changing the semantics of strlcpy() in the Linux 
+> kernel would probably be a bad idea and cause even more confusion that 
+> what we already have.
 
--- 
-Duncan - List replies preferred.   No HTML msgs.
-"Every nonfree program has a lord, a master --
-and if you use the program, he is your master."  Richard Stallman
+Sure, we shouldn't change the documented semantics. If at all it would
+be an additional safety net. Your patch would still be needed.
+
+> 2. Even if we changed strlcpy() to use strnlen(), it would still be 
+> unsafe if the source string is not 0-terminated and the source buffer is 
+> shorter than the destination buffer. That's because the size passed to 
+> strlcpy() is conceptually the length of the _destination_ buffer, not 
+> the source string.
+
+Ack.
+
+> I'm not against changing strlcpy() per se (changing to strnlen() might 
+> be a performance improvement), but we shouldn't use that as an excuse to 
+> use the interface incorrectly.
+
+I am totally with you there.
+
+Actually in some cases it could hinder finding such bugs as we're more
+unlikely to hit a RED_ZONE which should crash the kernel (I actually
+think crashes to find such bugs are good). But I guess the propability
+is pretty high to hit another NUL byte before that and if at that point a
+RED_ZONE is mapped.
+
+Thanks,
+
+  Hannes
 
