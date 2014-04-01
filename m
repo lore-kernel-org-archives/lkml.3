@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaDAODX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 10:03:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43777 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaDAODW (ORCPT
+	id S1751552AbaDAODp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:03:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46630 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaDAODn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 10:03:22 -0400
-Date: Tue, 1 Apr 2014 17:02:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org,
-        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
-	<ezequiel@vanguardiasur.com.ar>,
-        Walter Lozano <walter@vanguardiasur.com.ar>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH 1/3] staging: vt6655: fix DBG_PRT and PRINT_K macros
-Message-ID: <20140401140254.GS6991@mwanda>
-References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
- <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
+	Tue, 1 Apr 2014 10:03:43 -0400
+Date: Tue, 1 Apr 2014 10:03:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, JBeulich@suse.com,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH 3/4] xen/manage: Guard against user-space initiated
+ poweroff and XenBus.
+Message-ID: <20140401140319.GA8207@phenom.dumpdata.com>
+References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
+ <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
+ <533ABC8A.5080405@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1396356733-5344-2-git-send-email-guido@vanguardiasur.com.ar>
+In-Reply-To: <533ABC8A.5080405@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 09:52:11AM -0300, Guido Martínez wrote:
-> Parenthesize both macros so they will not break program logic if used
-> within another 'if'. Also fix a usage of DBG_PRT with a missing
-> semicolon.
+On Tue, Apr 01, 2014 at 02:18:02PM +0100, David Vrabel wrote:
+> On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
+> > There is a race case where the user does 'poweroff'
+> > and at the same time the system admin does 'xl shutdown'.
+> > 
+> > Depending on the race, the system_state will be SYSTEM_RUNNING or
+> > SYSTEM_POWER_OFF. If SYSTEM_RUNNING we just end up making
+> > a duplicate call to 'poweroff' (while it is running).
+> > 
+> > That will fail or execute (And if executed then it will be
+> > stuck in the reboot_mutex mutex). But nobody will care b/c the
+> > machine is in poweroff sequence.
 > 
-> Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
-> ---
->  drivers/staging/vt6655/device.h | 4 ++--
->  drivers/staging/vt6655/wpactl.c | 2 +-
->  2 files changed, 3 insertions(+), 3 deletions(-)
+> If this race isn't a problem...
 > 
-> diff --git a/drivers/staging/vt6655/device.h b/drivers/staging/vt6655/device.h
-> index 062c3a3..483b017 100644
-> --- a/drivers/staging/vt6655/device.h
-> +++ b/drivers/staging/vt6655/device.h
-> @@ -148,8 +148,8 @@
->  
->  /*---------------------  Export Types  ------------------------------*/
->  
-> -#define DBG_PRT(l, p, args...) { if (l <= msglevel) printk(p, ##args); }
-> -#define PRINT_K(p, args...) { if (PRIVATE_Message) printk(p, ##args); }
-> +#define DBG_PRT(l, p, args...) ({ if (l <= msglevel) printk(p, ##args); })
-> +#define PRINT_K(p, args...) ({ if (PRIVATE_Message) printk(p, ##args); })
+> > If the system_state is SYSTEM_POWER_OFF then we end up making
+> > a duplicate call to kernel_power_off. There is no locking
+> > there so we walk in the same steps as what 'poweroff'
+> > has been doing.
+> 
+> ... and this one doesn't happen because do_power_off() calls
+> orderly_poweroff(false) so does not call kernel_power_off().
+> 
+> Then isn't the patch unnecessary?
 
-Use a do { } while(0) for this.
+Yup :-)
 
-regards,
-dan carpenter
-
-
+I realized that once I wrote up the race condition.
+> 
+> David
