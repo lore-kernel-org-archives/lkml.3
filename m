@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaDAG33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 02:29:29 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35008 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaDAG31 (ORCPT
+	id S1752088AbaDAG35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 02:29:57 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:62868 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaDAG34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 02:29:27 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <533A5CB1.1@jp.fujitsu.com>
-Date: Tue, 01 Apr 2014 15:29:05 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>
-CC: Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
-        chenhanxiao <chenhanxiao@cn.fujitsu.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org>
-In-Reply-To: <20140331170546.3b3e72f0.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Apr 2014 02:29:56 -0400
+From: Anders Darander <anders.darander@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Anders Darander <anders.darander@gmail.com>
+Subject: [PATCH] Staging: ft1000-usb: wrap macros in do while
+Date: Tue,  1 Apr 2014 08:29:39 +0200
+Message-Id: <1396333780-10228-1-git-send-email-anders.darander@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/01 9:05), Andrew Morton wrote:
-> On Mon, 31 Mar 2014 16:25:32 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
->
->> On Mon, 2014-03-31 at 16:13 -0700, Andrew Morton wrote:
->>> On Mon, 31 Mar 2014 15:59:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
->>>
->>>>>
->>>>> - Shouldn't there be a way to alter this namespace's shm_ctlmax?
->>>>
->>>> Unfortunately this would also add the complexity I previously mentioned.
->>>
->>> But if the current namespace's shm_ctlmax is too small, you're screwed.
->>> Have to shut down the namespace all the way back to init_ns and start
->>> again.
->>>
->>>>> - What happens if we just nuke the limit altogether and fall back to
->>>>>    the next check, which presumably is the rlimit bounds?
->>>>
->>>> afaik we only have rlimit for msgqueues. But in any case, while I like
->>>> that simplicity, it's too late. Too many workloads (specially DBs) rely
->>>> heavily on shmmax. Removing it and relying on something else would thus
->>>> cause a lot of things to break.
->>>
->>> It would permit larger shm segments - how could that break things?  It
->>> would make most or all of these issues go away?
->>>
->>
->> So sysadmins wouldn't be very happy, per man shmget(2):
->>
->> EINVAL A new segment was to be created and size < SHMMIN or size >
->> SHMMAX, or no new segment was to be created, a segment with given key
->> existed, but size is greater than the size of that segment.
->
-> So their system will act as if they had set SHMMAX=enormous.  What
-> problems could that cause?
->
->
-> Look.  The 32M thing is causing problems.  Arbitrarily increasing the
-> arbitrary 32M to an arbitrary 128M won't fix anything - we still have
-> the problem.  Think bigger, please: how can we make this problem go
-> away for ever?
->
+Fix coding style issue by wrapping the macro in a do {} while (0).
 
-Our middleware engineers has been complaining about this sysctl limit.
-System administrator need to calculate required sysctl value by making sum
-of all planned middlewares, and middleware provider needs to write "please
-calculate systcl param by....." in their installation manuals.
+Signed-off-by: Anders Darander <anders.darander@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_proc.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-Now, I think containers will be the base application platform. In the container,
-the memory is limited by "memory cgroup" and the admin of container should be able
-to overwrite the limit in the container to the value arbitrarily.
-
-Because of these, I vote for
-
-  1. remove the limit
-     (but removing this may cause applications corrupted...)
-  or
-
-  2. A container admin should set the value considering memcg's limit.
-
-  BTW, if /proc/sys is bind-mounted as read-only by lxc runtime,
-  it seems difficult for admin to modify it. I have no idea whether it's lack
-  of kernel feature or it's userland's problem.
-
-Thanks,
--Kame
-
-
-
-
-
-
-  
-
-
-
-
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c b/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
+index 2575d0d..28f07a7 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
+@@ -32,17 +32,20 @@
+ 
+ 
+ #define seq_putx(m, message, size, var) \
+-	seq_printf(m, message);	\
+-	for (i = 0; i < (size - 1); i++) \
+-		seq_printf(m, "%02x:", var[i]); \
+-	seq_printf(m, "%02x\n", var[i])
++	do { \
++		seq_printf(m, message);	\
++		for (i = 0; i < (size - 1); i++) \
++			seq_printf(m, "%02x:", var[i]); \
++		seq_printf(m, "%02x\n", var[i]);	\
++	} while (0)
+ 
+ #define seq_putd(m, message, size, var) \
+-	seq_printf(m, message); \
+-	for (i = 0; i < (size - 1); i++) \
+-		seq_printf(m, "%d.", var[i]); \
+-	seq_printf(m, "%d\n", var[i])
+-
++	do { \
++		seq_printf(m, message); \
++		for (i = 0; i < (size - 1); i++) \
++			seq_printf(m, "%d.", var[i]); \
++		seq_printf(m, "%d\n", var[i]);	      \
++	} while (0)
+ 
+ #define FTNET_PROC init_net.proc_net
+ 
+-- 
+1.9.1
 
