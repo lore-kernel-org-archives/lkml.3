@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751707AbaDAUPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:15:36 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:40872 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaDAUPe (ORCPT
+	id S1751676AbaDAUSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:18:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40017 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579AbaDAUSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:15:34 -0400
+	Tue, 1 Apr 2014 16:18:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140401121920.50d1dd96c2145acc81561b82@linux-foundation.org>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
- <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
- <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net> <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
- <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org>
- <533A5CB1.1@jp.fujitsu.com> <20140401121920.50d1dd96c2145acc81561b82@linux-foundation.org>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 1 Apr 2014 16:15:14 -0400
-X-Google-Sender-Auth: VIFFC1amVq3JKJHg5EmeXfV3RtQ
-Message-ID: <CAHGf_=r03QWxw3Jg7BE3z37k4omgo_HRE9qCGw80ngtUD_iEeA@mail.gmail.com>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
-        chenhanxiao <chenhanxiao@cn.fujitsu.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
+X-Originating-IP: [79.136.121.101]
+Date: Tue, 1 Apr 2014 22:18:13 +0200
+Message-ID: <CABt9es_uq1ixwcyHcL8ptYi2fXQjVFHvaOp71uu2epoQk_ToPw@mail.gmail.com>
+Subject: Crash in rbd, need advice
+From: Hannes Landeholm <hannes@jumpstarter.io>
+To: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org, sage@inktank.com,
+        Sage Weil <sage@newdream.net>, Alex Elder <elder@inktank.com>,
+        Yehuda Sadeh <yehuda@hq.newdream.net>
+Cc: Thorwald Lundqvist <thorwald@jumpstarter.io>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Our middleware engineers has been complaining about this sysctl limit.
->> System administrator need to calculate required sysctl value by making sum
->> of all planned middlewares, and middleware provider needs to write "please
->> calculate systcl param by....." in their installation manuals.
->
-> Why aren't people just setting the sysctl to a petabyte?  What problems
-> would that lead to?
+Hello,
 
-I don't have much Fujitsu middleware knowledges. But I'd like to explain
-very funny bug I saw.
+We're running a couple of Arch Linux servers of version 3.13.5-1 in
+production and suddenly one of them had a strange problem after
+running for a few days. One process (pid 319) was running with a few
+threads, one of those threads (pid 322) was eating 100% cpu. I assumed
+it was stuck in an infinite loop (this was our own software so I
+assumed we had a bug) so I sent a SIGKILL to 319 which caused all
+other threads to exit and it turning into a zombie, but thread 322 was
+still running. After trying to stop some other services and failing I
+realized that sending any signals to any process now didn't work at
+all in the system.
 
-1. middleware-A suggest to set SHMMAX to very large value (maybe
-LONG_MAX, but my memory was flushed)
-2. middleware-B suggest to set SHMMAX to increase some dozen mega byte.
+This was the process stack output:
 
-Finally, it was overflow and didn't work at all.
+$ cat /proc/319/stack
+[<ffffffff810642fa>] do_exit+0x73a/0xa80
+[<ffffffff810646bf>] do_group_exit+0x3f/0xa0
+[<ffffffff81073295>] get_signal_to_deliver+0x295/0x5f0
+[<ffffffff810144a8>] do_signal+0x48/0x950
+[<ffffffff81014e18>] do_notify_resume+0x68/0xa0
+[<ffffffff8152326a>] int_signal+0x12/0x17
+[<ffffffffffffffff>] 0xffffffffffffffff
+$ cat /proc/319/task/322/stack
+[<ffffffff8151c11a>] error_exit+0x2a/0x60
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-Let's demonstrate.
+We're using ceph + rbd and this happened right after doing a rbd
+mapping (mounting it) or during the mapping itself, so we suspected
+rbd.
 
-# echo 18446744073709551615 > /proc/sys/kernel/shmmax
-# cat /proc/sys/kernel/shmmax
-18446744073709551615
-# echo 18446744073709551616 > /proc/sys/kernel/shmmax
-# cat /proc/sys/kernel/shmmax
-0
+A few days later (today) we had a server crash in another server, same
+version+distro and it had also just been running a few days as well.
+After starting it again we found the following in the system log:
 
-That's why many open source software continue the silly game. But
-again, I don't have knowledge about Fujitsu middleware. I'm waiting
-kamezawa-san's answer.
+hostname kernel: BUG: unable to handle kernel paging request at ffff87fff75ad450
+hostname kernel: IP: [<ffffffffa018c196>] rbd_img_request_fill+0x126/0x930 [rbd]
+
+We compile the kernel ourselves but is only using standard arch
+patches. We're also doing a lot of automatic rbd mappings and
+unmappings, probably 1000s every day on each server. The machines in
+question have 4 cores and we're using a ceph cluster with 6 OSDs
+currently.
+
+This problem seem to be correlated with an upgrade we did last week
+from running 3.12.9 and 1 core to 3.13.5 and running 4 cores.
+
+Unfortunately we have not had time or ability to reproduce the
+problem, but I would appreciate any advice on how to proceed in any
+way that allows us to contribute so the problem can be fixed as it
+will inevitably happen again. Right now we're considering building the
+kernel with debug support and configuring it so it can do a kernel
+dump. It would also be interesting to hear any speculation from a
+person with more knowledge of the kernel and/or rbd.
+
+Thank you for your time,
+--
+Hannes Landeholm
+Co-founder & CTO
+Jumpstarter - www.jumpstarter.io
+
+☎ +46 72 301 35 62
