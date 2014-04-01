@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaDAPr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:47:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50391 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaDAPr1 (ORCPT
+	id S1751900AbaDAPr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:47:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:31342 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751709AbaDAPry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:47:27 -0400
-Message-ID: <533ADF86.1080209@oracle.com>
-Date: Tue, 01 Apr 2014 11:47:18 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 1 Apr 2014 11:47:54 -0400
+Date: Tue, 1 Apr 2014 11:47:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Boaz Harrosh <openosd@gmail.com>, Chris Mason <clm@fb.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] New Linux Patch Review Group
+Message-ID: <20140401154750.GE19658@home.goodmis.org>
+References: <533AD000.307@fb.com>
+ <533AD837.8010109@gmail.com>
+ <CA+5PVA4UxJV5m+AqY3MxVstTc1KLnVjkyaCf3mRrY=p44t1enQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>, Robin Hack <rhack@redhat.com>
-CC: Eunbong Song <eunb.song@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Re: tools/liblockdep: Build failure
-References: <22212997.138341396332274687.JavaMail.weblogic@epml01> <20140401080258.GA10429@bigoook.brq.redhat.com> <20140401081144.GB10429@bigoook.brq.redhat.com> <20140401102159.GC10429@bigoook.brq.redhat.com> <20140401153453.GK32556@tassilo.jf.intel.com>
-In-Reply-To: <20140401153453.GK32556@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA4UxJV5m+AqY3MxVstTc1KLnVjkyaCf3mRrY=p44t1enQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 11:34 AM, Andi Kleen wrote:
-> On Tue, Apr 01, 2014 at 12:21:59PM +0200, Robin Hack wrote:
->> From: Robin Hack <rhack@redhat.com>
->> Copy asmlinkage macro to lockdep/uinclude/linux/linkage.h.
->
-> You can just do
->
-> #define asmlinkage
-> #define __visible
+On Tue, Apr 01, 2014 at 11:24:43AM -0400, Josh Boyer wrote:
+> 
+> So for those that don't use Facebook, we're also setting up a twitter
+> account that tweets patches 140 characters at a time.  This should
+> help with review by automatically splitting up patches into manageable
+> 140 character chunks.
 
-Thanks Andi,
+What a great way to up our commit count for the LWN statistics too!
 
-I've queued it up along with another fix for Ingo.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-
-Thanks,
-Sasha
+-- Steve
 
