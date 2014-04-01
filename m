@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaDAOEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 10:04:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48374 "EHLO mga02.intel.com"
+	id S1751996AbaDAOFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:05:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36395 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842AbaDAOE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 10:04:27 -0400
+	id S1751472AbaDAOFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 10:05:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,772,1389772800"; 
-   d="scan'208";a="504351144"
+   d="scan'208";a="504351252"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Johannes Berg <johannes@sipsolutions.net>
 Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
@@ -19,9 +19,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-tegra@vger.kernel.org
-Subject: [PATCHv3 4/5] net: rfkill: gpio: add ACPI IDs for a Broadcom bluetooth chip
-Date: Tue,  1 Apr 2014 17:02:55 +0300
-Message-Id: <1396360976-28657-5-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv3 5/5] net: rfkill: gpio: hard-code the gpio names
+Date: Tue,  1 Apr 2014 17:02:56 +0300
+Message-Id: <1396360976-28657-6-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -29,36 +29,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds ACPI IDs for Broadcom bluetooth chip BCM43241 used
-on various Baytrail based boards such as Lenovo Miix 2 and
-Asus Transformer Book T100TA.
+There is no need to dynamically generate the names. This
+will fix a static checker warning..
 
+net/rfkill/rfkill-gpio.c:144 rfkill_gpio_probe()
+    warn: variable dereferenced before check 'rfkill->name'
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- net/rfkill/rfkill-gpio.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ net/rfkill/rfkill-gpio.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
 diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index fec3dbf..436bffb 100644
+index 436bffb..9c4a5eb 100644
 --- a/net/rfkill/rfkill-gpio.c
 +++ b/net/rfkill/rfkill-gpio.c
-@@ -171,11 +171,16 @@ static int rfkill_gpio_remove(struct platform_device *pdev)
- 	return 0;
- }
+@@ -36,8 +36,6 @@ struct rfkill_gpio_data {
+ 	struct gpio_desc	*shutdown_gpio;
  
-+#ifdef CONFIG_ACPI
- static const struct acpi_device_id rfkill_acpi_match[] = {
-+	{ "BCM2E1A", RFKILL_TYPE_BLUETOOTH },
-+	{ "BCM2E39", RFKILL_TYPE_BLUETOOTH },
-+	{ "BCM2E3D", RFKILL_TYPE_BLUETOOTH },
- 	{ "BCM4752", RFKILL_TYPE_GPS },
- 	{ "LNV4752", RFKILL_TYPE_GPS },
- 	{ },
- };
-+#endif
+ 	struct rfkill		*rfkill_dev;
+-	char			*reset_name;
+-	char			*shutdown_name;
+ 	struct clk		*clk;
  
- static struct platform_driver rfkill_gpio_driver = {
- 	.probe = rfkill_gpio_probe,
+ 	bool			clk_enabled;
+@@ -89,7 +87,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 	struct rfkill_gpio_data *rfkill;
+ 	struct gpio_desc *gpio;
+ 	int ret;
+-	int len;
+ 
+ 	rfkill = devm_kzalloc(&pdev->dev, sizeof(*rfkill), GFP_KERNEL);
+ 	if (!rfkill)
+@@ -106,21 +103,9 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	len = strlen(rfkill->name);
+-	rfkill->reset_name = devm_kzalloc(&pdev->dev, len + 7, GFP_KERNEL);
+-	if (!rfkill->reset_name)
+-		return -ENOMEM;
+-
+-	rfkill->shutdown_name = devm_kzalloc(&pdev->dev, len + 10, GFP_KERNEL);
+-	if (!rfkill->shutdown_name)
+-		return -ENOMEM;
+-
+-	snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
+-	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
+-
+ 	rfkill->clk = devm_clk_get(&pdev->dev, NULL);
+ 
+-	gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
++	gpio = devm_gpiod_get_index(&pdev->dev, "reset", 0);
+ 	if (!IS_ERR(gpio)) {
+ 		ret = gpiod_direction_output(gpio, 0);
+ 		if (ret)
+@@ -128,7 +113,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 		rfkill->reset_gpio = gpio;
+ 	}
+ 
+-	gpio = devm_gpiod_get_index(&pdev->dev, rfkill->shutdown_name, 1);
++	gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 1);
+ 	if (!IS_ERR(gpio)) {
+ 		ret = gpiod_direction_output(gpio, 0);
+ 		if (ret)
 -- 
 1.9.1
 
