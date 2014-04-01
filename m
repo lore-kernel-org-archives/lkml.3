@@ -1,48 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaDAOUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 10:20:16 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20361 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaDAOUO (ORCPT
+	id S1752071AbaDAOU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 10:20:59 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:37165 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaDAOU5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 10:20:14 -0400
-Date: Tue, 1 Apr 2014 17:19:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org,
-        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
-	<ezequiel@vanguardiasur.com.ar>,
-        Walter Lozano <walter@vanguardiasur.com.ar>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH 2/3] staging: vt6655: remove dead code
-Message-ID: <20140401141951.GU6991@mwanda>
-References: <1396356733-5344-1-git-send-email-guido@vanguardiasur.com.ar>
- <1396356733-5344-3-git-send-email-guido@vanguardiasur.com.ar>
+	Tue, 1 Apr 2014 10:20:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX194vECF1y3prff+CS4akgkoFp42PH9qMzg=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 9847454F247
+Date: Tue, 1 Apr 2014 10:20:51 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Levente Kurusa <levex@linux.com>
+Cc: Teodora =?utf-8?B?QsSDbHXFo8SD?= <teobaluta@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [RFC] QR encoding for Oops messages
+Message-ID: <20140401142051.GO28304@titan.lakedaemon.net>
+References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
+ <20140319201838.GA11403@redhat.com>
+ <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
+ <20140321132816.GW15608@titan.lakedaemon.net>
+ <532DC3D3.9060008@linux.com>
+ <CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
+ <20140323193839.GY15608@titan.lakedaemon.net>
+ <CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1396356733-5344-3-git-send-email-guido@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 09:52:12AM -0300, Guido Mart�nez wrote:
-> @@ -2205,11 +2203,8 @@ bool BBbVT3253Init(PSDevice pDevice)
->  		//}}
->  		bResult &= BBbWriteEmbedded(dwIoBase, 0xb0, 0x58);
->  
-> -		for (ii = 0; ii < CB_VT3253B0_AGC; ii++) {
-> +		for (ii = 0; ii < CB_VT3253B0_AGC; ii++)
->  			bResult &= BBbWriteEmbedded(dwIoBase, byVT3253B0_AGC[ii][0], byVT3253B0_AGC[ii][1]);
-> -		}
+On Sun, Mar 30, 2014 at 12:17:17PM +0200, Levente Kurusa wrote:
+> Hi all,
+> 
+> (sorry for the late reply, looks like this mail has ran away from my clients)
+> 
+> 2014-03-23 20:38 GMT+01:00 Jason Cooper <jason@lakedaemon.net>:
+> > All,
+> >
+> > On Sat, Mar 22, 2014 at 08:20:01PM +0200, Teodora Băluţă wrote:
+> >> On Sat, Mar 22, 2014 at 7:09 PM, Levente Kurusa <levex@linux.com> wrote:
+> >> > On 03/21/2014 02:28 PM, Jason Cooper wrote:
+> > ...
+> >> >> I would definitely like to see the QR output incorporated into a
+> >> >> kernel.org url.  That would remove the need for installing another app,
+> >> >> and would ease bug reporting.
+> >> >
+> >> > I still struggle to understand how could that be done. We can encode the
+> >> > QR code as ASCII. Okay, that's fine, however it is very long. Encoding
+> >> > 'Unable to handle kernel paging request at 0000000f' gave a 449 character
+> >> > long sequence with very strange characters [0]. We should try to shorten
+> >> > it, imho. Not sure how to do that though.
+> >
+> > The man page for qrencode says you can have up to 4000 characters in a
+> > qrcode.  However, I've seen readers have trouble with a 2048bit ascii
+> > armored PGP public key (3929 characters).
+> >
+> > I grabbed a random oops from oops.kernel.org, it weighed in at 1544
+> > bytes, not too bad.  I then did:
+> >
+> > $ echo "https://oops.kernel.org/?qr=`cat oops.txt | gzip -9 | base64 -wrap=0`" | wc -c
+> > 993
+> 
+> I did the same with another OOPS and it had 1953 characters. That's quite a big
+> a big difference! :-)
+> 
+> I created a QR image from the URL then, and it was 147x147, which is
+> pretty small.
+> It took me quite a long time to make my phone recognize it, but it
+> worked nicely.
+> 
+> Result of work is in this directory:
+> 
+> http://levex.fedorapeople.org/kernel/qr/
 
-This isn't "deleting dead code".  Do it in a separate patch.
+nice!
 
-regards,
-dan carpenter
+> > The benefit of a url is that any QR reader can automagically report an
+> > oops.  While a specific app could parse the URL/oops locally if the
+> > user desires.
+> >
+> >> it misses the point of having a QR code in the first place. The way I
+> >> see it, having a QR decoder app installed that can do an offline
+> >> decoding is a less greater effort than popping out a browser on the
+> >> machine you're working on.
+> >
+> > I think you're selling the advantage of the QR code short.  Automated
+> > reporting (via the url) is a _huge_ plus.  The app you conceive of could
+> > still parse it in place if the user desires.
+> >
+> > My point for the URL isn't to use the internet/server to automate oops
+> > parsing for the user.  Rather it's to make it easy to report oopses to
+> > developers.  While still preserving the ability of your app to parse it
+> > for the user.
+> 
+> Ah I see now. oops.kernel.org/?qr=<QR> would simply parse the
+> base64'd+gzip'd oops message and then report it.
 
+If you mean the server behind oops.k.o would parse it, then yes.  No
+special app should be required other than a QR code scanner for the
+usecase of reporting oopses to developers.
+
+> Now I guess we need to think how to make it work without a
+> framebuffer. I already suggested using the ASCII characters,
+> but seeing the resolution of this QR code for example (147x147),
+> made me realize that we can't shuffle that into a 80x25 textmode
+> display. Any ideas how to fix that or should we just simply depend
+> on a framebuffer being present?
+
+I think depending on the framebuffer being present (via kconfig) is
+sane.  Folks running old systems know what they're in for, like missing
+shiny new features. ;-)
+
+thx,
+
+Jason.
