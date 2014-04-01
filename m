@@ -1,70 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaDAVH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:07:27 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:12913 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaDAVHY (ORCPT
+	id S1751785AbaDAVHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:07:49 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:58665 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755AbaDAVHr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:07:24 -0400
-X-AuditID: cbfec37d-b7f616d0000059df-5a-533b2a8bb9aa
-Message-id: <533B2A88.2010604@samsung.com>
-Date: Tue, 01 Apr 2014 15:07:20 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.10 0/9] 3.10.36-stable review
-References: <20140401040754.479538406@linuxfoundation.org>
-In-reply-to: <20140401040754.479538406@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.4]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9hP91uLetgg49r5SzmrF/DZtG8eD2b
-	xeVdc9gsniw8w2Qx9dQEFosFGx8xWjzqe8vuwO6xc9Zddo8TM36zeOyfuwbI/d7A7vF5k1wA
-	axSXTUpqTmZZapG+XQJXxtsd/5kKTrFV9H/5wtLAOIe1i5GTQ0LARGLCnf9QtpjEhXvr2boY
-	uTiEBJYxSnzoXwrl9DJJLNvxE8rZwChx/FwXWAuvgJbEzeYHzCA2i4CqxOPuF2BxNgF1ic+v
-	d7CD2EICchJNS1aD1YgKREi8OjuRBaJXUOLH5HtgtohAsMTarwsZQRYwC6xilLh+eTkbSEJY
-	wFji6Y2vUIOsJE6+PQhmcwpYS7S1rwJrZgayV07axghhy0tsXvOWGaJeWeLP5VNMEL8pSKy4
-	8YZlAqPILCS7ZyFpn4WkfQEj8ypGsdLi5ILipPTUChO94sTc4tK8dL3k/NxNjJBoqt3BeP+r
-	zSFGAQ5GJR7eA+etgoVYE8uKK3MPMUpwMCuJ8G5jsg4W4k1JrKxKLcqPLyrNSS0+xMjEwSnV
-	wCguds1EJ3mHR8WTcN3XFm2f8hSWpDK6LxJ7fr34hNuVQz59tpfv81k8kMzu9LA3uLnb+C9X
-	hD+TSv4EvqfnE7XXp+fGfzFy1GYw2q30skGVZ7JOYXpd3+WNGxMK5l1T/sby6dOTnpl/Cm3X
-	3yq8x6W1bMaMjQ/4l8l6qQcuu/ZAxzbPY8GTMCWW4oxEQy3mouJEAPjsSDiEAgAA
+	Tue, 1 Apr 2014 17:07:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140401142051.GO28304@titan.lakedaemon.net>
+References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
+	<20140319201838.GA11403@redhat.com>
+	<CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
+	<20140321132816.GW15608@titan.lakedaemon.net>
+	<532DC3D3.9060008@linux.com>
+	<CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
+	<20140323193839.GY15608@titan.lakedaemon.net>
+	<CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
+	<20140401142051.GO28304@titan.lakedaemon.net>
+Date: Wed, 2 Apr 2014 00:07:46 +0300
+Message-ID: <CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com>
+Subject: Re: [RFC] QR encoding for Oops messages
+From: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Levente Kurusa <levex@linux.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 10:08 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.36 release.
-> There are 9 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Apr  3 04:07:29 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.36-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Tue, Apr 1, 2014 at 5:20 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Sun, Mar 30, 2014 at 12:17:17PM +0200, Levente Kurusa wrote:
+>> Hi all,
+>>
+>> (sorry for the late reply, looks like this mail has ran away from my clients)
 
-Compiled, booted on all my test systems. No regressions in dmesg.
+same here.
 
--- Shuah
+>>
+>> 2014-03-23 20:38 GMT+01:00 Jason Cooper <jason@lakedaemon.net>:
+>> > All,
+>> >
+>> > On Sat, Mar 22, 2014 at 08:20:01PM +0200, Teodora Băluţă wrote:
+>> >> On Sat, Mar 22, 2014 at 7:09 PM, Levente Kurusa <levex@linux.com> wrote:
+>> >> > On 03/21/2014 02:28 PM, Jason Cooper wrote:
+>> > ...
+>> >> >> I would definitely like to see the QR output incorporated into a
+>> >> >> kernel.org url.  That would remove the need for installing another app,
+>> >> >> and would ease bug reporting.
+>> >> >
+>> >> > I still struggle to understand how could that be done. We can encode the
+>> >> > QR code as ASCII. Okay, that's fine, however it is very long. Encoding
+>> >> > 'Unable to handle kernel paging request at 0000000f' gave a 449 character
+>> >> > long sequence with very strange characters [0]. We should try to shorten
+>> >> > it, imho. Not sure how to do that though.
+>> >
+>> > The man page for qrencode says you can have up to 4000 characters in a
+>> > qrcode.  However, I've seen readers have trouble with a 2048bit ascii
+>> > armored PGP public key (3929 characters).
+>> >
+>> > I grabbed a random oops from oops.kernel.org, it weighed in at 1544
+>> > bytes, not too bad.  I then did:
+>> >
+>> > $ echo "https://oops.kernel.org/?qr=`cat oops.txt | gzip -9 | base64 -wrap=0`" | wc -c
+>> > 993
+>>
+>> I did the same with another OOPS and it had 1953 characters. That's quite a big
+>> a big difference! :-)
+>>
+>> I created a QR image from the URL then, and it was 147x147, which is
+>> pretty small.
+>> It took me quite a long time to make my phone recognize it, but it
+>> worked nicely.
+>>
+>> Result of work is in this directory:
+>>
+>> http://levex.fedorapeople.org/kernel/qr/
+>
+> nice!
+>
+>> > The benefit of a url is that any QR reader can automagically report an
+>> > oops.  While a specific app could parse the URL/oops locally if the
+>> > user desires.
+>> >
+>> >> it misses the point of having a QR code in the first place. The way I
+>> >> see it, having a QR decoder app installed that can do an offline
+>> >> decoding is a less greater effort than popping out a browser on the
+>> >> machine you're working on.
+>> >
+>> > I think you're selling the advantage of the QR code short.  Automated
+>> > reporting (via the url) is a _huge_ plus.  The app you conceive of could
+>> > still parse it in place if the user desires.
+>> >
+>> > My point for the URL isn't to use the internet/server to automate oops
+>> > parsing for the user.  Rather it's to make it easy to report oopses to
+>> > developers.  While still preserving the ability of your app to parse it
+>> > for the user.
+>>
+>> Ah I see now. oops.kernel.org/?qr=<QR> would simply parse the
+>> base64'd+gzip'd oops message and then report it.
+>
+> If you mean the server behind oops.k.o would parse it, then yes.  No
+> special app should be required other than a QR code scanner for the
+> usecase of reporting oopses to developers.
+>
+>> Now I guess we need to think how to make it work without a
+>> framebuffer. I already suggested using the ASCII characters,
+>> but seeing the resolution of this QR code for example (147x147),
+>> made me realize that we can't shuffle that into a 80x25 textmode
+>> display. Any ideas how to fix that or should we just simply depend
+>> on a framebuffer being present?
+>
+> I think depending on the framebuffer being present (via kconfig) is
+> sane.  Folks running old systems know what they're in for, like missing
+> shiny new features. ;-)
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Ok, this may work. I agree that doing this with the help of the frame
+buffer is more natural.
+
+Thanks,
+--
+Teodora
+
+>
+> thx,
+>
+> Jason.
