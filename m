@@ -1,68 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaDAVVg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 17:21:36 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58002 "EHLO zene.cmpxchg.org"
+	id S1751772AbaDAVWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 17:22:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59097 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419AbaDAVVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 17:21:35 -0400
-Date: Tue, 1 Apr 2014 17:21:02 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Message-ID: <20140401212102.GM4407@cmpxchg.org>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+	id S1751495AbaDAVWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 17:22:51 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] PCI: rework new_id interface for known vendor/device values
+Date: Tue, 01 Apr 2014 17:22:47 -0400
+Message-ID: <jpgeh1gpwwo.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ I tried to bring this up during LSFMM but it got drowned out.
-  Trying again :) ]
 
-On Fri, Mar 21, 2014 at 02:17:30PM -0700, John Stultz wrote:
-> Optimistic method:
-> 1) Userland marks a large range of data as volatile
-> 2) Userland continues to access the data as it needs.
-> 3) If userland accesses a page that has been purged, the kernel will
-> send a SIGBUS
-> 4) Userspace can trap the SIGBUS, mark the affected pages as
-> non-volatile, and refill the data as needed before continuing on
+While using the new_id interface, the user can unintentionally feed
+incorrect values if the driver static table has a matching entry.
+This is possible since only the device and vendor fields are
+mandatory and the rest are optional. As a result, store_new_id
+will fill in default values that are then passed on to the driver
+and can have unintended consequences.
 
-As far as I understand, if a pointer to volatile memory makes it into
-a syscall and the fault is trapped in kernel space, there won't be a
-SIGBUS, the syscall will just return -EFAULT.
+As an example, consider the ixgbe driver and the 82599EB network card :
+echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
 
-Handling this would mean annotating every syscall invocation to check
-for -EFAULT, refill the data, and then restart the syscall.  This is
-complicated even before taking external libraries into account, which
-may not propagate syscall returns properly or may not be reentrant at
-the necessary granularity.
+This will pass a driver_data value of 0 to the driver whereas
+the index 0 in ixgbe actually points to a different set of card
+operations.
 
-Another option is to never pass volatile memory pointers into the
-kernel, but that too means that knowledge of volatility has to travel
-alongside the pointers, which will either result in more complexity
-throughout the application or severely limited scope of volatile
-memory usage.
+This change returns an error if the user attempts to add a dynid for
+a vendor/device combination for which a static entry already exists.
+However, if the user intentionally wants a different set of values,
+she must provide all the 7 fields and that will be accepted.
 
-Either way, optimistic volatile pointers are nowhere near as
-transparent to the application as the above description suggests,
-which makes this usecase not very interesting, IMO.  If we can support
-it at little cost, why not, but I don't think we should complicate the
-common usecases to support this one.
+In KVM/device assignment scenario, the user might want 
+to bind a device back to the host driver by writing to new_id
+and trip on a possible null pointer dereference.
+
+Signed-off-by: Bandan Das <bsd@redhat.com>
+---
+v2:
+1. Return error if there is a matching static entry
+and change commit message to reflect this behavior
+3. Fill in a pdev and call pci_match_id instead of creating
+a new matching function
+4. Change commit message to reflect that libvirt does not
+depend on this behavior
+
+ drivers/pci/pci-driver.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 25f0bc6..493514e 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -103,11 +103,12 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+ {
+ 	struct pci_driver *pdrv = to_pci_driver(driver);
+ 	const struct pci_device_id *ids = pdrv->id_table;
++	struct pci_dev *pdev;
+ 	__u32 vendor, device, subvendor=PCI_ANY_ID,
+ 		subdevice=PCI_ANY_ID, class=0, class_mask=0;
+ 	unsigned long driver_data=0;
+ 	int fields=0;
+-	int retval;
++	int retval = 0;
+ 
+ 	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
+ 			&vendor, &device, &subvendor, &subdevice,
+@@ -115,6 +116,26 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+ 	if (fields < 2)
+ 		return -EINVAL;
+ 
++	if (fields != 7) {
++		pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
++		if (!pdev)
++			return -ENOMEM;
++
++		pdev->vendor = vendor;
++		pdev->device = device;
++		pdev->subsystem_vendor = subvendor;
++		pdev->subsystem_device = subdevice;
++		pdev->class = class;
++
++		if (pci_match_id(pdrv->id_table, pdev))
++			retval = -EEXIST;
++
++		kfree(pdev);
++
++		if (retval)
++			return retval;
++	}
++
+ 	/* Only accept driver_data values that match an existing id_table
+ 	   entry */
+ 	if (ids) {
+-- 
+1.8.3.1
+
