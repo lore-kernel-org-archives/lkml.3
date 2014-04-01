@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaDAPJA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 11:09:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20837 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaDAPI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 11:08:58 -0400
-Date: Tue, 1 Apr 2014 11:08:49 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140401150849.GA14757@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140331230241.GA30019@redhat.com>
- <20140331232220.GP4284@linux.vnet.ibm.com>
- <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
+	id S1751498AbaDAPNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 11:13:34 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:37666 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaDAPNc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 11:13:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401004801.GQ4284@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140331113442.0d628362@annuminas.surriel.com>
+References: <20140331113442.0d628362@annuminas.surriel.com>
+Date: Tue, 1 Apr 2014 08:13:31 -0700
+X-Google-Sender-Auth: IF_YAs4zYe_LuQaa0l1JgAH4-lo
+Message-ID: <CA+55aFzG=B3t_YaoCY_H1jmEgs+cYd--ZHz7XhGeforMRvNfEQ@mail.gmail.com>
+Subject: Re: [PATCH] x86,mm: delay TLB flush after clearing accessed bit
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, shli@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 05:48:01PM -0700, Paul E. McKenney wrote:
- 
- > Alternatively, I suppose a wakeup could be getting lost.  The main change
- > related to that this merge window was ffa83fb565fb, which eliminated
- > idle wakeups from RCU in the CONFIG_RCU_NOCB_CPU_ALL=y case.
- > 
- > So, could you please try reverting ffa83fb565fb?
+On Mon, Mar 31, 2014 at 8:34 AM, Rik van Riel <riel@redhat.com> wrote:
+>
+> However, clearing the accessed bit does not lead to any
+> consistency issues, there is no reason to flush the TLB
+> immediately. The TLB flush can be deferred until some
+> later point in time.
 
-Did a run overnight with that reverted, no luck..
+Ugh. I absolutely detest this patch.
 
-[11869.580161] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[11869.581245]  (detected by 0, t=6502 jiffies, g=449892, c=449891, q=0)
-[11869.582047] INFO: Stall ended before state dump start
-[12064.517461] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[12064.518539]  (detected by 0, t=26007 jiffies, g=449892, c=449891, q=0)
-[12064.519347] INFO: Stall ended before state dump start
-[12259.454767] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[12259.455818]  (detected by 0, t=45512 jiffies, g=449892, c=449891, q=0)
-[12259.456602] INFO: Stall ended before state dump start
-[12454.392112] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[12454.393131]  (detected by 0, t=65017 jiffies, g=449892, c=449891, q=0)
-[12454.393942] INFO: Stall ended before state dump start
-[12649.329446] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[12649.330446]  (detected by 0, t=84522 jiffies, g=449892, c=449891, q=0)
-[12649.331267] INFO: Stall ended before state dump start
-[12844.266776] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[12844.267695]  (detected by 0, t=104027 jiffies, g=449892, c=449891, q=0)
-[12844.268571] INFO: Stall ended before state dump start
-[13039.204102] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[13039.205119]  (detected by 0, t=123532 jiffies, g=449892, c=449891, q=0)
-[13039.205871] INFO: Stall ended before state dump start
-[13234.141424] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[13234.141424] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[13234.142448]  (detected by 0, t=143037 jiffies, g=449892, c=449891, q=0)
-[13234.143339] INFO: Stall ended before state dump start
-[13429.078730] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[13429.079771]  (detected by 0, t=162542 jiffies, g=449892, c=449891, q=0)
-[13429.080591] INFO: Stall ended before state dump start
-[13624.016058] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[13624.017116]  (detected by 0, t=182047 jiffies, g=449892, c=449891, q=0)
-[13624.018033] INFO: Stall ended before state dump start
-[13818.953370] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[13818.954437]  (detected by 0, t=201552 jiffies, g=449892, c=449891, q=0)
-[13818.955334] INFO: Stall ended before state dump start
-[14013.890682] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[14013.891761]  (detected by 0, t=221057 jiffies, g=449892, c=449891, q=0)
-[14013.892691] INFO: Stall ended before state dump start
-[14208.827993] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[14208.829088]  (detected by 0, t=240562 jiffies, g=449892, c=449891, q=0)
-[14208.829977] INFO: Stall ended before state dump start
-[14403.765300] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[14403.766405]  (detected by 0, t=260067 jiffies, g=449892, c=449891, q=0)
-and on and on..
+If we're going to leave the TLB dirty, then dammit, leave it dirty.
+Don't play some half-way games.
 
-so kernel space still works like before, but userspace is locked up.
+Here's the patch you should just try:
 
- > If that doesn't work, I will need to put together some diagnostic patches.
- > Starting with the one below.
+ int ptep_clear_flush_young(struct vm_area_struct *vma,
+        unsigned long address, pte_t *ptep)
+ {
+     return ptep_test_and_clear_young(vma, address, ptep);
+ }
 
-bugger, I forgot to apply this last night. I'll do it on the next run.
+instead of complicating things.
 
-	Dave
+Rationale: if the working set is so big that we start paging things
+out, we sure as hell don't need to worry about TLB flushing. It will
+flush itself.
 
+And conversely - if it doesn't flush itself, and something stays
+marked as "accessed" in the TLB for a long time even though we've
+cleared it in the page tables, we don't care, because clearly there
+isn't enough memory pressure for the accessed bit to matter.
+
+                  Linus
