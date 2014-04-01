@@ -1,125 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaDALUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 07:20:46 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59029 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaDALUh (ORCPT
+	id S1753174AbaDALUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 07:20:43 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:55501 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778AbaDALUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 07:20:37 -0400
-Message-ID: <533AA0F7.2080304@monstr.eu>
-Date: Tue, 01 Apr 2014 13:20:23 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 1 Apr 2014 07:20:38 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Harini Katakam <harinik@xilinx.com>, grant.likely@linaro.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        michals@xilinx.com, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/2] watchdog: Add Cadence WDT driver
-References: <1396002720-7105-1-git-send-email-harinik@xilinx.com> <533A0937.9030505@roeck-us.net>
-In-Reply-To: <533A0937.9030505@roeck-us.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS"
+In-Reply-To: <533A9768.6060006@linux.vnet.ibm.com>
+References: <1396012949-6227-1-git-send-email-vincent.guittot@linaro.org>
+ <1396012949-6227-2-git-send-email-vincent.guittot@linaro.org> <533A9768.6060006@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 1 Apr 2014 13:20:17 +0200
+Message-ID: <CAKfTPtD7Qp4yUoZ+3jV-Me2Xn53zbi8cHRrWyO7X+COzwcy3Tg@mail.gmail.com>
+Subject: Re: [RFC 1/4] sched: extend the usage of cpu_power_orig
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 1 April 2014 12:39, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> Hi Vincent,
+>
+> On 03/28/2014 06:52 PM, Vincent Guittot wrote:
+>> cpu_power_orig is only changed for SMT system in order to reflect the lower
+>> capacity of CPUs. Heterogenous system also have to reflect an original
+>> capacity that is different from the default value.
+>
+> There is no parameter 'cpu_power_orig' till your fourth patch right?
+> Why is this term being used in this patch?
 
-Hi Guenter,
+It looks like that i have mixed power_orig and cpu_power_orig in my
+commit messages
 
->> +/**
->> + * struct cdns_wdt - Watchdog device structure
->> + * @regs: baseaddress of device
->> + * @rst: reset flag
->> + * @clk: struct clk * of a clock source
->> + * @prescaler: for saving prescaler value
->> + * @ctrl_clksel: counter clock prescaler selection
->> + * @io_lock: spinlock for IO register access
->> + * @cdns_wdt_device: watchdog device structure
->> + * @cdns_wdt_notifier: notifier structure
->> + *
->> + * Structure containing parameters specific to cadence watchdog.
->> + */
->> +struct cdns_wdt {
->> +    void __iomem        *regs;
->> +    u32            rst;
->> +    struct clk        *clk;
->> +    u32            prescaler;
->> +    u32            ctrl_clksel;
->> +    spinlock_t        io_lock;
->> +    struct watchdog_device    cdns_wdt_device;
->> +    struct notifier_block    cdns_wdt_notifier;
->> +};
->> +
->> +/* Write access to Registers */
->> +static inline void cdns_wdt_writereg(void __iomem *offset, u32 val)
+>
+> Besides, both parameters power and power_orig are changed for SMT
+> systems to reflect the lower capacity of the CPUs.Why is there a mention
+> of only power_orig?
+
+Only SMT system is able to change power_orig from default value
+whereas all systems can already change power field with
+arch_scale_freq_power function. The goal of this patch is to change
+the function name that is used to set power_orig value to a more
+generic one and to extend the possibility of setting power_orig for
+any kind of system. The behavior of the power field is not changed
+with this patchset.
+
+>
+> IMO, the subject of the patch is not clearly reflecting the main
+> intention of the patch. There is nothing done to change the way
+> cpu_power is used; rather you are changing the way the cpu_power is
+> being set to be flexible, thus allowing for the right power value to be
+> set on heterogeneous systems.
+>
+> 'Allow archs to set the cpu_power instead of falling to default value'
+> or something similar would be more appropriate. What do you think?
+
+I can change with : "Allow all archs to set the power_orig"
+
+Thanks
+
+>
+> Regards
+> Preeti U Murthy
+>>
+>> Create a more generic function arch_scale_cpu_power that can be also used by
+>> non SMT platform to set cpu_power_orig.
+>>
+>> The weak behavior of arch_scale_cpu_power is the previous SMT one in order to
+>> keep backward compatibility in the use of cpu_power_orig.
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/sched/fair.c | 24 ++++++++++++++++--------
+>>  1 file changed, 16 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 7e9bd0b..ed42061 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5559,6 +5559,20 @@ unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
+>>       return default_scale_smt_power(sd, cpu);
+>>  }
+>>
+>> +unsigned long __weak arch_scale_cpu_power(struct sched_domain *sd, int cpu)
 >> +{
->> +    writel_relaxed(val, offset);
+>> +     unsigned long weight = sd->span_weight;
+>> +
+>> +     if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
+>> +             if (sched_feat(ARCH_POWER))
+>> +                     return arch_scale_smt_power(sd, cpu);
+>> +             else
+>> +                     return default_scale_smt_power(sd, cpu);
+>> +     }
+>> +
+>> +     return SCHED_POWER_SCALE;
 >> +}
 >> +
->=20
-> Not really sure if this function provides any value.
-
-I can't see any problem to use this helper IO function
-but maybe we could do it a little bit differently.
-Currently implementation is just passing values to writel_relaxed()
-
-What about to do it like this?
-
-static inline void cdns_wdt_writereg(struct cdns_wdt *wdt, u32 offset, u3=
-2 val)
-{
-    writel_relaxed(val, wdt->regs + offset);
-}
-
-This solution was suggested by Mark here too.
-https://lkml.org/lkml/2014/3/17/234
-
-The reason for having one IO helper function is
-1. Simper debugging when you add printks to one location and
-you get full list for accesses
-2. This driver can be also used by BE Linux on Microblaze in PL
-that's why there could be a need to autodetect endianess directly
-on the IP itself. Then using helper function is necessary.
-3. We have met with secure monitor implementation where all these
-io accesses should be done via smc calls and having
-IO helper function is easier for change.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlM6oPcACgkQykllyylKDCGltwCfark82XZsx3xg6RW1TJZq48xk
-tpkAn0em/Tpp9YxxOa5d8fVlcD7JOtJN
-=ihri
------END PGP SIGNATURE-----
-
---1UdlIJ8W0cQa8K6g1X9WRF86iF9EJRsnS--
+>>  static unsigned long scale_rt_power(int cpu)
+>>  {
+>>       struct rq *rq = cpu_rq(cpu);
+>> @@ -5590,18 +5604,12 @@ static unsigned long scale_rt_power(int cpu)
+>>
+>>  static void update_cpu_power(struct sched_domain *sd, int cpu)
+>>  {
+>> -     unsigned long weight = sd->span_weight;
+>>       unsigned long power = SCHED_POWER_SCALE;
+>>       struct sched_group *sdg = sd->groups;
+>>
+>> -     if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
+>> -             if (sched_feat(ARCH_POWER))
+>> -                     power *= arch_scale_smt_power(sd, cpu);
+>> -             else
+>> -                     power *= default_scale_smt_power(sd, cpu);
+>> +     power *= arch_scale_cpu_power(sd, cpu);
+>>
+>> -             power >>= SCHED_POWER_SHIFT;
+>> -     }
+>> +     power >>= SCHED_POWER_SHIFT;
+>>
+>>       sdg->sgp->power_orig = power;
+>>
+>
