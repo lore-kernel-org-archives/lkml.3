@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaDAQgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:36:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44468 "EHLO
+	id S1752526AbaDAQJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:09:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44450 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765AbaDAQKJ (ORCPT
+	with ESMTP id S1752446AbaDAQJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:10:09 -0400
+	Tue, 1 Apr 2014 12:09:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lukasz Dorau <lukasz.dorau@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Laura Abbott <lauraa@codeaurora.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 63/86] [SCSI] isci: correct erroneous for_each_isci_host macro
-Date: Tue,  1 Apr 2014 09:08:16 -0700
-Message-Id: <1396368519-12728-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 66/86] mm/compaction: break out of loop on !PageBuddy in isolate_freepages_block
+Date: Tue,  1 Apr 2014 09:08:19 -0700
+Message-Id: <1396368519-12728-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
 References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
@@ -29,77 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukasz Dorau <lukasz.dorau@intel.com>
+From: Laura Abbott <lauraa@codeaurora.org>
 
-commit c59053a23d586675c25d789a7494adfdc02fba57 upstream.
+commit 2af120bc040c5ebcda156df6be6a66610ab6957f upstream.
 
-In the first place, the loop 'for' in the macro 'for_each_isci_host'
-(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
-the 3rd element of 2 element array. After the 2nd iteration it executes
-the instruction:
-        ihost = to_pci_info(pdev)->hosts[2]
-(while the size of the 'hosts' array equals 2) and reads an
-out of range element.
+We received several reports of bad page state when freeing CMA pages
+previously allocated with alloc_contig_range:
 
-In the second place, this loop is incorrectly optimized by GCC v4.8
-(see http://marc.info/?l=linux-kernel&m=138998871911336&w=2).
-As a result, on platforms with two SCU controllers,
-the loop is executed more times than it can be (for i=0,1 and 2).
-It causes kernel panic during entering the S3 state
-and the following oops after 'rmmod isci':
+    BUG: Bad page state in process Binder_A  pfn:63202
+    page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+    page flags: 0x40080068(uptodate|lru|active|swapbacked)
 
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Oops: 0000 [#1] SMP
-RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Call Trace:
-  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
-  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
-  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
-  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
-  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
-  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
-  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
-  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
-  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
-  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
-  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
-  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
-  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
-  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
-  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
-  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
+Based on the page state, it looks like the page was still in use.  The
+page flags do not make sense for the use case though.  Further debugging
+showed that despite alloc_contig_range returning success, at least one
+page in the range still remained in the buddy allocator.
 
-The loop has been corrected.
-This patch fixes kernel panic during entering the S3 state
-and the above oops.
+There is an issue with isolate_freepages_block.  In strict mode (which
+CMA uses), if any pages in the range cannot be isolated,
+isolate_freepages_block should return failure 0.  The current check
+keeps track of the total number of isolated pages and compares against
+the size of the range:
 
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+        if (strict && nr_strict_required > total_isolated)
+                total_isolated = 0;
+
+After taking the zone lock, if one of the pages in the range is not in
+the buddy allocator, we continue through the loop and do not increment
+total_isolated.  If in the last iteration of the loop we isolate more
+than one page (e.g.  last page needed is a higher order page), the check
+for total_isolated may pass and we fail to detect that a page was
+skipped.  The fix is to bail out if the loop immediately if we are in
+strict mode.  There's no benfit to continuing anyway since we need all
+pages to be isolated.  Additionally, drop the error checking based on
+nr_strict_required and just check the pfn ranges.  This matches with
+what isolate_freepages_range does.
+
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/isci/host.h | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ mm/compaction.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
-index 4911310..22a9bb1 100644
---- a/drivers/scsi/isci/host.h
-+++ b/drivers/scsi/isci/host.h
-@@ -311,9 +311,8 @@ static inline struct Scsi_Host *to_shost(struct isci_host *ihost)
- }
- 
- #define for_each_isci_host(id, ihost, pdev) \
--	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
--	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
--	     ihost = to_pci_info(pdev)->hosts[++id])
-+	for (id = 0; id < SCI_MAX_CONTROLLERS && \
-+	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
- 
- static inline void wait_for_start(struct isci_host *ihost)
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 2a17e96..3ddb08b 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -248,7 +248,6 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
  {
+ 	int nr_scanned = 0, total_isolated = 0;
+ 	struct page *cursor, *valid_page = NULL;
+-	unsigned long nr_strict_required = end_pfn - blockpfn;
+ 	unsigned long flags;
+ 	bool locked = false;
+ 
+@@ -261,11 +260,12 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 
+ 		nr_scanned++;
+ 		if (!pfn_valid_within(blockpfn))
+-			continue;
++			goto isolate_fail;
++
+ 		if (!valid_page)
+ 			valid_page = page;
+ 		if (!PageBuddy(page))
+-			continue;
++			goto isolate_fail;
+ 
+ 		/*
+ 		 * The zone lock must be held to isolate freepages.
+@@ -286,12 +286,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 
+ 		/* Recheck this is a buddy page under lock */
+ 		if (!PageBuddy(page))
+-			continue;
++			goto isolate_fail;
+ 
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+-		if (!isolated && strict)
+-			break;
+ 		total_isolated += isolated;
+ 		for (i = 0; i < isolated; i++) {
+ 			list_add(&page->lru, freelist);
+@@ -302,7 +300,15 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		if (isolated) {
+ 			blockpfn += isolated - 1;
+ 			cursor += isolated - 1;
++			continue;
+ 		}
++
++isolate_fail:
++		if (strict)
++			break;
++		else
++			continue;
++
+ 	}
+ 
+ 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+@@ -312,7 +318,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	 * pages requested were isolated. If there were any failures, 0 is
+ 	 * returned and CMA will fail.
+ 	 */
+-	if (strict && nr_strict_required > total_isolated)
++	if (strict && blockpfn < end_pfn)
+ 		total_isolated = 0;
+ 
+ 	if (locked)
 -- 
 1.8.3.2
 
