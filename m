@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaDANPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 09:15:52 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:38409 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaDANPu (ORCPT
+	id S1752138AbaDANQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 09:16:00 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:43407 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899AbaDANP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 09:15:50 -0400
-Date: Tue, 1 Apr 2014 08:15:45 -0500
-From: Clark Williams <clark.williams@gmail.com>
-To: RT <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Kacur <jkacur@gmail.com>
-Subject: rt-tests 0.89 released
-Message-ID: <20140401081545.2d33d2ed@sluggy>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Tue, 1 Apr 2014 09:15:56 -0400
+Date: Tue, 1 Apr 2014 15:15:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
+Subject: Re: [GIT PULL] RAS - fix CMCI storm code
+Message-ID: <20140401131546.GA7024@gmail.com>
+References: <5339fcbc25587e4b8d@agluck-desk.sc.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/PtX_F.BIBD.CxsGslZQ7LBH"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5339fcbc25587e4b8d@agluck-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PtX_F.BIBD.CxsGslZQ7LBH
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Verion 0.89 of rt-tests has been pushed to the git repository on
-kernel.org:
+* Luck, Tony <tony.luck@intel.com> wrote:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/clrkwllms/rt-tests.git
+> The following changes since commit b098d6726bbfb94c06d6e1097466187afddae61f:
+> 
+>   Linux 3.14-rc8 (2014-03-24 19:31:17 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-cmci-storm
+> 
+> for you to fetch changes up to 27f6c573e0f77f7d1cc907c1494c99a61e48b7d8:
+> 
+>   x86, CMCI: Add proper detection of end of CMCI storms (2014-03-28 13:40:16 -0700)
+> 
+> ----------------------------------------------------------------
+> Fix the code to tell when a CMCI storm ends by actually
+> looking at the machine check banks when we poll while
+> interrupts are disabled.
+> 
+> ----------------------------------------------------------------
+> Chen, Gong (1):
+>       x86, CMCI: Add proper detection of end of CMCI storms
+> 
+>  arch/x86/kernel/cpu/mcheck/mce.c       | 18 +++++++++++++++++-
+>  arch/x86/kernel/cpu/mcheck/mce_intel.c | 19 ++++++++++++++++++-
+>  2 files changed, 35 insertions(+), 2 deletions(-)
 
-tag: v0.89
+Pulled, thanks Tony!
 
-This version fixes a problem with hwlatdetect on distros
-where /usr/bin/python is linked to python3.=20
-
-In addition it cleans up a leftover debugging comment from 0.88.=20
-
-Clark
-
---Sig_/PtX_F.BIBD.CxsGslZQ7LBH
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTOrwBAAoJEEersVlSw9NzyFoP/0DmFOqLVn8cZTZXgNvRIrjt
-Uy9i/y95t1ByEUv9chXRJJqGbfbc2rflOgzMhFqFNKLHji0wmuoF203M/xNlxIhf
-GQw1YI/P2SoMFYArszmWNn0fiRR0qImq67RS4MhcZBjqKnqw9bWD75Adf/h08yLO
-/JxQHiE/gwoj6NzB7XnhMFoh8PWUtd6uNM7xkPoM0xNrz2yoAhkSpVDuAGJoihGj
-OTQziIx2wWPzK1BgvxgnxA/6ThaH9YNlYNlTpezhwoiZUl8y4jc2KCjNDrmFYr1K
-0+JsQCgHrwgpbZ9G8W416nxwXxAm9PCc83fgzZOefofR3v7HrUEK8tHFJcetbv+M
-ln42axgdphU2s7fMIa6NY7Wten2djUBYdRphn7DVb2WHcOcBwtqX785tt66KtP4Z
-N4HCSSlAuk7woyEhc2NNYXhidzyz6ktrJPsq5zBtVM52r+FNvGUSawLHGm7vPlTB
-aXe8nfM9boQKWY0PIdc7I98bwqkzYmoY4fXWhqGjMMES+qe19ywU/oaRk+i+6vqU
-8uVBGMweGpOTM2MTDePxQdsZz2q28IDvKCvibmZlxAiOpvOOBXn7v59F4Oa5NJ59
-lFkyWPA6XyaY8gB5mLonwiA1AIcicaCunYSufar4jafqZwehOYVmDDyrmYzMYfaB
-30BWPPXxqP35PFWAUuHZ
-=UZo/
------END PGP SIGNATURE-----
-
---Sig_/PtX_F.BIBD.CxsGslZQ7LBH--
+	Ingo
