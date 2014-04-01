@@ -1,88 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091AbaDAEGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 00:06:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53762 "EHLO
+	id S1752107AbaDAEGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 00:06:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53767 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaDAEGb (ORCPT
+	with ESMTP id S1750739AbaDAEGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 00:06:31 -0400
+	Tue, 1 Apr 2014 00:06:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.4 6/6] netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
-Date: Mon, 31 Mar 2014 21:07:56 -0700
-Message-Id: <20140401032816.718964845@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.10 0/9] 3.10.36-stable review
+Date: Mon, 31 Mar 2014 21:08:14 -0700
+Message-Id: <20140401040754.479538406@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140401032815.814334997@linuxfoundation.org>
-References: <20140401032815.814334997@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.10.36 release.
+There are 9 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Apr  3 04:07:29 UTC 2014.
+Anything received after that time might be too late.
 
-From: Daniel Borkmann <dborkman@redhat.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.36-rc1.gz
+and the diffstat can be found below.
 
-commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
+thanks,
 
-Some occurences in the netfilter tree use skb_header_pointer() in
-the following way ...
+greg k-h
 
-  struct dccp_hdr _dh, *dh;
-  ...
-  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
+-------------
+Pseudo-Shortlog of commits:
 
-... where dh itself is a pointer that is being passed as the copy
-buffer. Instead, we need to use &_dh as the forth argument so that
-we're copying the data into an actual buffer that sits on the stack.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.36-rc1
 
-Currently, we probably could overwrite memory on the stack (e.g.
-with a possibly mal-formed DCCP packet), but unintentionally, as
-we only want the buffer to be placed into _dh variable.
+Daniel Borkmann <dborkman@redhat.com>
+    netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
 
-Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+David Rientjes <rientjes@google.com>
+    mm: close PageTail race
 
----
- net/netfilter/nf_conntrack_proto_dccp.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+    net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
 
---- a/net/netfilter/nf_conntrack_proto_dccp.c
-+++ b/net/netfilter/nf_conntrack_proto_dccp.c
-@@ -431,7 +431,7 @@ static bool dccp_new(struct nf_conn *ct,
- 	const char *msg;
- 	u_int8_t state;
- 
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
- 
- 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
-@@ -488,7 +488,7 @@ static int dccp_packet(struct nf_conn *c
- 	u_int8_t type, old_state, new_state;
- 	enum ct_dccp_roles role;
- 
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
- 	type = dh->dccph_type;
- 
-@@ -579,7 +579,7 @@ static int dccp_error(struct net *net, s
- 	unsigned int cscov;
- 	const char *msg;
- 
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	if (dh == NULL) {
- 		msg = "nf_ct_dccp: short packet ";
- 		goto out_invalid;
+Artem Fetishev <artem_fetishev@epam.com>
+    x86: fix boot on uniprocessor systems
+
+Hans de Goede <hdegoede@redhat.com>
+    Input: cypress_ps2 - don't report as a button pads
+
+Hans de Goede <hdegoede@redhat.com>
+    Input: synaptics - add manual min/max quirk for ThinkPad X240
+
+Benjamin Tissoires <benjamin.tissoires@redhat.com>
+    Input: synaptics - add manual min/max quirk
+
+Dmitry Torokhov <dmitry.torokhov@gmail.com>
+    Input: mousedev - fix race when creating mixed device
+
+Theodore Ts'o <tytso@mit.edu>
+    ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                |  4 +-
+ arch/x86/include/asm/topology.h         |  3 +-
+ drivers/block/aoe/aoecmd.c              |  2 +-
+ drivers/input/mouse/cypress_ps2.c       |  1 -
+ drivers/input/mouse/synaptics.c         | 55 +++++++++++++++++++++++++
+ drivers/input/mousedev.c                | 73 +++++++++++++++++++--------------
+ drivers/net/ethernet/marvell/mvneta.c   |  4 +-
+ drivers/vfio/vfio_iommu_type1.c         |  4 +-
+ fs/ext4/inode.c                         | 15 ++++---
+ fs/proc/page.c                          |  2 +-
+ include/linux/bitops.h                  | 15 +++++++
+ include/linux/huge_mm.h                 | 18 --------
+ include/linux/mm.h                      | 14 ++++++-
+ mm/ksm.c                                |  2 +-
+ mm/memory-failure.c                     |  2 +-
+ mm/page_alloc.c                         |  4 +-
+ mm/swap.c                               |  4 +-
+ net/netfilter/nf_conntrack_proto_dccp.c |  6 +--
+ virt/kvm/kvm_main.c                     |  4 +-
+ 19 files changed, 155 insertions(+), 77 deletions(-)
 
 
