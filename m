@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaDAUXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 16:23:32 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57339 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397AbaDAUX1 (ORCPT
+	id S1751525AbaDAU0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 16:26:36 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:13058 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaDAU0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 16:23:27 -0400
-Date: Tue, 1 Apr 2014 21:22:35 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jim Lieb <jlieb@panasas.com>, Jeff Layton <jlayton@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>, bfields@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: Thoughts on credential switching
-Message-ID: <20140401212235.770843a0@alan.etchedpixels.co.uk>
-In-Reply-To: <CALCETrX7mxsWTsvcZJ=i0GOPvUp7TRvbrgNCq3Ajk8YK7FFnaA@mail.gmail.com>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
-	<20140331114459.4b3638f8@alan.etchedpixels.co.uk>
-	<CALCETrX7mxsWTsvcZJ=i0GOPvUp7TRvbrgNCq3Ajk8YK7FFnaA@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Tue, 1 Apr 2014 16:26:35 -0400
+Message-ID: <1396383989.25314.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
+        chenhanxiao <chenhanxiao@cn.fujitsu.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Date: Tue, 01 Apr 2014 13:26:29 -0700
+In-Reply-To: <CAHGf_=r03QWxw3Jg7BE3z37k4omgo_HRE9qCGw80ngtUD_iEeA@mail.gmail.com>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	 <533A5CB1.1@jp.fujitsu.com>
+	 <20140401121920.50d1dd96c2145acc81561b82@linux-foundation.org>
+	 <CAHGf_=r03QWxw3Jg7BE3z37k4omgo_HRE9qCGw80ngtUD_iEeA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Do we include credfd fds sitting in Unix sockets?
+On Tue, 2014-04-01 at 16:15 -0400, KOSAKI Motohiro wrote:
+> >> Our middleware engineers has been complaining about this sysctl limit.
+> >> System administrator need to calculate required sysctl value by making sum
+> >> of all planned middlewares, and middleware provider needs to write "please
+> >> calculate systcl param by....." in their installation manuals.
+> >
+> > Why aren't people just setting the sysctl to a petabyte?  What problems
+> > would that lead to?
+> 
+> I don't have much Fujitsu middleware knowledges. But I'd like to explain
+> very funny bug I saw.
+> 
+> 1. middleware-A suggest to set SHMMAX to very large value (maybe
+> LONG_MAX, but my memory was flushed)
+> 2. middleware-B suggest to set SHMMAX to increase some dozen mega byte.
+> 
+> Finally, it was overflow and didn't work at all.
+> 
+> Let's demonstrate.
+> 
+> # echo 18446744073709551615 > /proc/sys/kernel/shmmax
+> # cat /proc/sys/kernel/shmmax
+> 18446744073709551615
+> # echo 18446744073709551616 > /proc/sys/kernel/shmmax
+> # cat /proc/sys/kernel/shmmax
+> 0
 
-Ouch
+hehe, what a nasty little tunable this is. Reminds me of this:
+https://access.redhat.com/site/solutions/16333
 
-> Hmm.  What if we had initial_creds and creds, and initial_creds never
-> changed unless explicitly requested.  There wouldn't be any way to
-> revert to initial_creds, but may_ptrace would check initial_creds
-> *and* creds.  This is a little hacky, and it might break Android (I'm
-> not really sure how the zygote thing works), but it could do the
-> trick.
-
-That mirros setfsuid and seteuid type behaviour so seems sensible enough.
