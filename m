@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaDAR4C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 13:56:02 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:36740 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaDARz7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 13:55:59 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Anton Leontiev <bunder@t-25.ru>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] uvcvideo: Fix marking buffer erroneous in case of FID toggling
-Date: Tue, 01 Apr 2014 17:24:14 +0200
-Message-ID: <10422468.Ah80osK73i@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <533659E2.4010001@t-25.ru>
-References: <1395722457-28080-1-git-send-email-bunder@t-25.ru> <1459346.J1YUbuH55p@avalon> <533659E2.4010001@t-25.ru>
+	id S1751633AbaDASCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 14:02:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204AbaDASCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 14:02:14 -0400
+Date: Tue, 1 Apr 2014 15:01:34 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhang yanying <zhuangyanying@huawei.com>,
+        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        Zhanghailiang <zhang.zhanghailiang@huawei.com>
+Subject: Re: VDSO pvclock may increase host cpu consumption, is this a
+ problem?
+Message-ID: <20140401180134.GA17963@amt.cnet>
+References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
+ <5339AB59.4050906@mit.edu>
+ <20140331213032.GA5866@amt.cnet>
+ <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
-
-On Saturday 29 March 2014 09:28:02 Anton Leontiev wrote:
-> 28.03.2014 20:12, Laurent Pinchart пишет:
-> >>>> + * Set error flag for incomplete buffer.
-> >>>> + */
-> >>>> +static void uvc_buffer_check_bytesused(const struct uvc_streaming
-> >>>> *const stream,
-> > 
-> > No need for the second const keyword here.
-> > 
-> > I would have used "uvc_video_" as a prefix, to be in sync with the
-> > surrounding functions. What would you think of
-> > uvc_video_validate_buffer() ?
-> > 
-> >>>> +	struct uvc_buffer *const buf)
-> > 
-> > And no need for const at all here.
-> > 
-> >>>> +{
-> >>>> +	if (buf->length != buf->bytesused &&
-> >>>> +			!(stream->cur_format->flags & UVC_FMT_FLAG_COMPRESSED))
-> > 
-> > The indentation is wrong here, the ! on the second line should be aligned
-> > to the first 'buf' of the first line.
-> > 
-> > If you agree with these changes I can perform them while applying, there's
-> > no need to resubmit the patch.
+On Mon, Mar 31, 2014 at 10:33:41PM -0700, Andy Lutomirski wrote:
+> On Mar 31, 2014 8:45 PM, "Marcelo Tosatti" <mtosatti@redhat.com> wrote:
+> >
+> > On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
+> > > On 03/29/2014 01:47 AM, Zhanghailiang wrote:
+> > > > Hi,
+> > > > I found when Guest is idle, VDSO pvclock may increase host consumption.
+> > > > We can calcutate as follow, Correct me if I am wrong.
+> > > >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
+> > > > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
+> > > > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call.
+> > > > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
+> > > > Both Host and Guest is linux-3.13.6.
+> > > > So, whether the host cpu consumption is a problem?
+> > >
+> > > Does pvclock serve any real purpose on systems with fully-functional
+> > > TSCs?  The x86 guest implementation is awful, so it's about 2x slower
+> > > than TSC.  It could be improved a lot, but I'm not sure I understand why
+> > > it exists in the first place.
+> >
+> > VM migration.
 > 
-> Thank you for reviewing my first patch to Linux kernel.
+> Why does that need percpu stuff?  Wouldn't it be sufficient to
+> interrupt all CPUs (or at least all cpus running in userspace) on
+> migration and update the normal timing data structures?
 
-Thank you for submitting it :-)
+Are you suggesting to allow interruption of the timekeeping code 
+at any time to update frequency information ?
 
-> I completely agree with your changes.
+Do you want to that as a special tsc clocksource driver ? 
+
+> Even better: have the VM offer to invalidate the physical page
+> containing the kernel's clock data on migration and interrupt one CPU.
+>  If another CPU races, it'll fault and wait for the guest kernel to
+> update its timing.
+
+Perhaps that is a good idea.
+
+> Does the current kvmclock stuff track CLOCK_MONOTONIC and
+> CLOCK_REALTIME separately?
+
+No. kvmclock counting is interrupted on vm pause (the "hw" clock does not
+count during vm pause).
+
+> > Can you explain why you consider it so bad ? How you think it could be
+> > improved ?
 > 
-> Just want to ask why there is no need for the second 'const' after pointer
-> character '*'? I thought it marks pointer itself as constant for type-
-> checking opposite to first 'const', which marks memory it points to as
-> constant for type-checking.
-
-Your understanding is correct (as far as I know).
-
-> I understand that the function is simple enough to verify it by hand but
-> it's better to add more information for automatic checking.
+> The second rdtsc_barrier looks unnecessary.  Even better, if rdtscp is
+> available, then rdtscp can replace rdtsc_barrier, rdtsc, and the
+> getcpu call.
 >
-> Is there any guidelines on 'const' keyword usage in Linux kernel code?
+> It would also be nice to avoid having two sets of rescalings of the timing data.
 
-Marking the memory pointed to by the pointer as const ensures that the 
-function won't modify memory that the caller thought wouldn't be modified. It 
-thus serves as a contract between the caller and the callee, enforced by the 
-compiler.
-
-Marking the pointer as const, on the other hand, only affects the function 
-implementation, without influencing its call contract. Its only use in this 
-case would be to prevent the function from modifying a pointer that the 
-function itself thought it shouldn't modify. While not useless in all cases, 
-this compile-time checked if usually not performed in the kernel, especially 
-for simple functions. I'm not aware of any explicit rule regarding const usage 
-though.
-
--- 
-Regards,
-
-Laurent Pinchart
+Yep, probably good improvements, patches are welcome :-)
 
