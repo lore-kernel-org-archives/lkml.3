@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaDAJzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 05:55:48 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:26981 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaDAJz2 (ORCPT
+	id S1751349AbaDAJ73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 05:59:29 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:48782 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaDAJ71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:55:28 -0400
-X-AuditID: cbfee690-b7f266d00000287c-1e-533a8d0a51fd
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: return -EIO when node id is not matched
-Date: Tue, 01 Apr 2014 18:53:28 +0900
-Message-id: <1396346008-12753-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zfV2uXqtgg2vnTS2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgytjY/YitoJm9YtHX
-	Y4wNjJdYuxg5OSQETCQWHl4CZYtJXLi3nq2LkYtDSGAZo8TsBR/YYIoeHtnLCpFYxChx5+Nd
-	Zgink0ni2PTVjF2MHBxsAtoSm/cbgDSICDBLLJh6nhGkhllgAqPE/0XvWUASwgJ2EtNbb4PZ
-	LAKqEqveNbKD2LwC7hLfzk5mgtimLbHt+USwZgmBx2wSJ/Z2skM0CEh8m3yIBWSZhICsxKYD
-	zBD1khIHV9xgmcAouICRYRWjaGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGSBBO2MF474D1IcZk
-	oHETmaVEk/OBQZxXEm9obGZkYWpiamxkbmlGmrCSOK/ao6QgIYH0xJLU7NTUgtSi+KLSnNTi
-	Q4xMHJxSDYwuBm9XpZzsC1g/x3P318rym2ciV5Uavq25+d21r+eu2bHbW+YrG2iXtc26JJNr
-	v/69A/Pqx+nv9RfcnjM3UzrdYmFj9+/KN4dOzJo/b8PJ1+84cpRU3Zkqtj49JMsY8F6sJN7p
-	0L4m+bp3nevi/lhFJqb9mWvkd1t+o8jxe6r/3DS7cr523TmkxFKckWioxVxUnAgAf5oicFgC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jAV2uXqtgg57/hhbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
-	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWZs7H7EVtDMXrHo6zHGBsZLrF2MnBwSAiYSD4/shbLFJC7cW8/WxcjFISSw
-	iFHizse7zBBOJ5PEsemrGbsYOTjYBLQlNu83AGkQEWCWWDD1PCNIDbPABEaJ/4ves4AkhAXs
-	JKa33gazWQRUJVa9a2QHsXkF3CW+nZ3MBLFNW2Lb84mMExi5FzAyrGIUTS1ILihOSs810itO
-	zC0uzUvXS87P3cQIDvFn0jsYVzVYHGIU4GBU4uG1KLcMFmJNLCuuzD3EKMHBrCTCK9JjFSzE
-	m5JYWZValB9fVJqTWnyIMRlo+0RmKdHkfGD85ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBI
-	ID2xJDU7NbUgtQhmCxMHp1QDo/hblxvJPO+33F/nwuUgcXor70uD42r72o/PD/l03dqa23e3
-	eJzSpVaPdSor7Jw/n966Y8+Fn5+9LH4snJXzuX1G5rl/RoyK3C++CiZ/EpBkWPbn/gbDbSmr
-	s3Sk31zfP1FdsXhzxJ/YZQ1xL3k3nH8ZNtXpXtkB0YkuFZKv7ENTn2Uvq7r4vkWJpTgj0VCL
-	uag4EQDz2Lz8tQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 1 Apr 2014 05:59:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAM6oVw2v9ptr0c08uPiB_3z3e41VO+Vp3OhoHXiBxagAOfPBZA@mail.gmail.com>
+References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com>
+ <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com>
+ <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
+ <5331E5EB.5000304@biereigel-wb.de> <5331E9E4.4050201@gmail.com>
+ <5332099B.8090305@gmail.com> <5332AF10.90109@biereigel.de>
+ <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com> <CAM6oVw2v9ptr0c08uPiB_3z3e41VO+Vp3OhoHXiBxagAOfPBZA@mail.gmail.com>
+From: Kieran Clancy <clancy.kieran@gmail.com>
+Date: Tue, 1 Apr 2014 20:23:03 +1030
+Message-ID: <CAGf84QLcXnmjRQFsb7z09xMrKXG0DiO7gT_10QZqGMN0CJYnLA@mail.gmail.com>
+Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
+ suspend to RAM.
+To: "D. G. Jansen" <d.g.jansen@gmail.com>
+Cc: Stefan Biereigel <stefan@biereigel.de>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Stefan Biereigel <security@biereigel-wb.de>,
+        Lan Tianyu <lantianyu1986@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        San Zamoyski <san@plusnet.pl>, "D. Jansen" <dennis.jansen@web.de>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the cleaing of node segments, F2FS can get errored node blocks due to
-data race between node page lock and its valid bitmap operations.
-In that case, it needs to return an error to skip such the obsolete block copy.
+On Sat, Mar 29, 2014 at 1:51 AM, D. G. Jansen <d.g.jansen@gmail.com> wrote:
+>
+> This patch (processing events) works for me on Samsung 535.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/node.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Hi Dennis and others,
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index eced8d7..065cd99 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -958,7 +958,7 @@ repeat:
- 		goto got_it;
- 
- 	lock_page(page);
--	if (unlikely(!PageUptodate(page))) {
-+	if (unlikely(!PageUptodate(page) || nid != nid_of_node(page))) {
- 		f2fs_put_page(page, 1);
- 		return ERR_PTR(-EIO);
- 	}
-@@ -967,7 +967,6 @@ repeat:
- 		goto repeat;
- 	}
- got_it:
--	f2fs_bug_on(nid != nid_of_node(page));
- 	mark_page_accessed(page);
- 	return page;
- }
--- 
-1.8.4.474.g128a96c
+Thank you for testing. I have also been testing this patch for a
+couple of days, and have not encountered any problems.
 
+I have now submitted a request for testing on the kernel bugzilla
+entry for the bug fixed by the earlier patch in question:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
+
+The CC list has 62 users, so hopefully we will get some more testers.
+The comment I posted is repeated below:
+
+--------------
+
+Created attachment 131151 [details]
+process rather than discard events in acpi_ec_clear
+
+Hi all,
+
+If you have a machine that was (previously) affected by this bug,
+could you please take the time to try a new patch for this issue?
+
+A user with an older Samsung machine found that the earlier patch
+introduced some issues for them, so this is a new patch designed to be
+a better solution to the problem.
+
+Currently the new patch has only been tested on 2 affected machines
+(to my knowledge), so I would be very grateful if anyone else can test
+this patch (especially users with Samsung series 5 or 7 machines).
+
+You will need to use a recent kernel source like 3. (one which
+includes the earlier acpi_ec_clear patch), or otherwise apply the
+previous patch first:
+
+https://github.com/torvalds/linux/commit/ad332c8a45330d170bb38b95209de449b31cd1b4.patch
+
+Then apply the attachment ec_process_stale_events.patch
+
+Please test to see if your lid closing / suspending / etc. still work
+as intended with this patch.
+
+This new patch also provides some debug information after every
+resume/boot which will show up in dmesg something like:
+
+[ 1192.208056] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.217844] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.218844] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.222835] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.223834] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.224833] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.227833] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.228834] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.229832] ACPI : EC: acpi_ec_clear: EC_SC 0x28
+[ 1192.230828] ACPI : EC: 8 stale EC events cleared
+
+Please report if you get any EC_SC bytes here _other than_ 0x28. I
+only get 0x28 on my machine but I am very interested to know if other
+affected machines produce something else.
+
+If you test it, please also report your system's product code, e.g.:
+
+# dmidecode -s system-product-name
+900X3F
+# dmidecode -s baseboard-product-name
+NP900X3F-K01AU
+
+Many thanks,
+Kieran
