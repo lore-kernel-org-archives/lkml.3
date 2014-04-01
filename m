@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaDAQcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 12:32:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44582 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918AbaDAQPb (ORCPT
+	id S1753264AbaDAQcm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 12:32:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34696 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056AbaDAQck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 12:15:31 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 76/86] drm/i915: Disable stolen memory when DMAR is active
-Date: Tue,  1 Apr 2014 09:08:29 -0700
-Message-Id: <1396368519-12728-77-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 1 Apr 2014 12:32:40 -0400
+Date: Tue, 1 Apr 2014 09:35:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
+        grant.likely@linaro.org, mark.rutland@arm.com, galak@codeaurora.org,
+        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
+        m.szyprowski@samsung.com, t.figa@samsung.com,
+        laurent.pinchart@ideasonboard.com, s.hauer@pengutronix.de
+Subject: Re: [PATCH RFC v4 2/2] clk: Add handling of clk parent and rate
+ assigned from DT
+Message-ID: <20140401163500.GD3842@kroah.com>
+References: <1396284116-19178-1-git-send-email-s.nawrocki@samsung.com>
+ <1396284116-19178-3-git-send-email-s.nawrocki@samsung.com>
+ <20140331200620.GA13881@kroah.com>
+ <533ABCEC.8040701@codethink.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533ABCEC.8040701@codethink.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 01, 2014 at 02:19:40PM +0100, Ben Dooks wrote:
+> On 31/03/14 21:06, Greg KH wrote:
+> >On Mon, Mar 31, 2014 at 06:41:56PM +0200, Sylwester Nawrocki wrote:
+> >>This function adds a helper function to configure clock parents and rates
+> >>as specified in clock-parents, clock-rates DT properties for a consumer
+> >>device and a call to it before driver is bound to a device.
+> >>
+> >>Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> 
+> [snip]
+> 
+> >
+> >I don't understand why you need the driver core to initialize this one
+> >type of thing?  That should be in a driver, or in a class, or at worse
+> >case, the platform code.
+> >
+> >What makes clocks so "unique" here?
+> 
+> I suppose the issue here is that a lot of drivers currently use
+> clocks and a number of systems have badly setup default clock trees
+> at start time.
 
-------------------
+Then they should be fixed, why should _all_ Linux devices care about
+such broken devices/systems?
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+> Mark Brown and others have argued that the management of clocks which
+> is common to all devices should not live in the driver.
 
-commit 0f4706d2740f2a221cd502922b22e522009041d9 upstream.
+Then put it in the bus that initializes the devices / drivers.
 
-We have reports of heavy screen corruption if we try to use the stolen
-memory reserved by the BIOS whilst the DMA-Remapper is active. This
-quirk may be only specific to a few machines or BIOSes, but first lets
-apply the big hammer and always disable use of stolen memory when DMAR
-is active.
+thanks,
 
-v2 by Jani: Rebase on -fixes, only look at intel_iommu_gfx_mapped.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=68535
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/i915/i915_gem_stolen.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
-index be24312..af92fea 100644
---- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-+++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-@@ -174,6 +174,13 @@ int i915_gem_init_stolen(struct drm_device *dev)
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	unsigned long prealloc_size = dev_priv->mm.gtt->stolen_size;
- 
-+#ifdef CONFIG_INTEL_IOMMU
-+	if (intel_iommu_gfx_mapped) {
-+		DRM_INFO("DMAR active, disabling use of stolen memory\n");
-+		return 0;
-+	}
-+#endif
-+
- 	dev_priv->mm.stolen_base = i915_stolen_to_physical(dev);
- 	if (dev_priv->mm.stolen_base == 0)
- 		return 0;
--- 
-1.8.3.2
-
+greg k-h
