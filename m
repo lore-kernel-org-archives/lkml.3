@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaDAWBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 18:01:14 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:35578 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751450AbaDAWBM (ORCPT
+	id S1751868AbaDAWCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 18:02:40 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:24301 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaDAWCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 18:01:12 -0400
-Date: Tue, 1 Apr 2014 18:01:11 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Julius Werner <jwerner@chromium.org>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	Tue, 1 Apr 2014 18:02:38 -0400
+Message-ID: <1396389751.25314.26.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
         LKML <linux-kernel@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>, Jim Lin <jilin@nvidia.com>
-Subject: Re: [PATCH] usb: xhci: Correct last context entry calculation for
- Configure Endpoint
-In-Reply-To: <CAODwPW9i-pwgzE-OELwwkw2M_Vnhtsq4p=_5ppO7R6xXpzu==w@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1404011753420.8643-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 01 Apr 2014 15:02:31 -0700
+In-Reply-To: <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+	 <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+	 <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+	 <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+	 <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014, Julius Werner wrote:
+On Tue, 2014-04-01 at 14:48 -0700, Andrew Morton wrote:
+> On Tue, 1 Apr 2014 17:41:54 -0400 KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+> 
+> > >> > Hmmm so 0 won't really work because it could be weirdly used to disable
+> > >> > shm altogether... we cannot go to some negative value either since we're
+> > >> > dealing with unsigned, and cutting the range in half could also hurt
+> > >> > users that set the limit above that. So I was thinking of simply setting
+> > >> > SHMMAX to ULONG_MAX and be done with it. Users can then set it manually
+> > >> > if they want a smaller value.
+> > >> >
+> > >> > Makes sense?
+> > >>
+> > >> I don't think people use 0 for disabling. but ULONG_MAX make sense to me too.
+> > >
+> > > Distros could have set it to [U]LONG_MAX in initscripts ten years ago
+> > > - less phone calls, happier customers.  And they could do so today.
+> > >
+> > > But they haven't.   What are the risks of doing this?
+> > 
+> > I have no idea really. But at least I'm sure current default is much worse.
+> > 
+> > 1. Solaris changed the default to total-memory/4 since Solaris 10 for DB.
+> >  http://www.postgresql.org/docs/9.1/static/kernel-resources.html
+> > 
+> > 2. RHEL changed the default to very big size since RHEL5 (now it is
+> > 64GB). Even tough many box don't have 64GB memory at that time.
+> 
+> Ah-hah, that's interesting info.
+> 
+> Let's make the default 64GB?
 
-> > http://marc.info/?l=linux-usb&m=137158978503741&w=2
-> >
-> > There's an xHCI spec ambiguity:  Does the last valid context entry refer
-> > to the last valid endpoint context in the *input* device context or the
-> > *output* device context?
-
-It's not ambiguous at all.  6.2.2.2 clearly states:
-
-	A 'valid' Input Slot Context for a Configure Endpoint Command
-	requires the Context Entries field to be initialized to the
-	index of the last valid Endpoint Context that is defined by the
-	_target configuration_.
-
-(my emphasis).
-
-Thus, if the current config has ep0, ep1, and ep2 and the command drops
-ep1, the Context Entries field should be set to the index of ep2 since
-that is the last valid Endpoint Context in the target config (which
-has only ep0 and ep2).
-
-Alan Stern
+But again, yet another arbitrary value...
 
