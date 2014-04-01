@@ -1,206 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaDAFgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 01:36:24 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37897 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaDAFgW (ORCPT
+	id S1751251AbaDAGFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 02:05:08 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31298 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaDAGFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 01:36:22 -0400
-Message-ID: <533A4F64.4080609@linux.vnet.ibm.com>
-Date: Tue, 01 Apr 2014 11:02:20 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        peterz@infradead.org, rjw@rjwysocki.net, paulmck@linux.vnet.ibm.com,
-        davem@davemloft.net
-Subject: Re: [PATCH] tick, broadcast: Prevent false alarm when force mask
- contains offline cpus
-References: <20140326035648.21736.85740.stgit@preeti.in.ibm.com> <5332B833.2030701@linux.vnet.ibm.com> <533394C7.1000702@linux.vnet.ibm.com> <5333C521.10901@linux.vnet.ibm.com> <5333FA02.3090402@linux.vnet.ibm.com> <53353723.2040000@linux.vnet.ibm.com>
-In-Reply-To: <53353723.2040000@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040105-9332-0000-0000-0000004DB3DA
+	Tue, 1 Apr 2014 02:05:05 -0400
+X-AuditID: cbfee68e-b7f566d000002344-10-533a56f34fc8
+Date: Tue, 01 Apr 2014 06:04:35 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: tools/liblockdep: Build failure
+To: ak@linux.intel.com, sasha.levin@oracle.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20140401060131636@eunb.song
+Msgkey: 20140401060131636@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140401060131636@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <22212997.138341396332274687.JavaMail.weblogic@epml01>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJsWRmVeSWpSXmKPExsVy+t8zLd3PYVbBBgd3W1hc3jWHzYHR4/Mm
+	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
+	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
+	c5UUyhJzSoFGKOknTGXM+Piuk7lgnmDFndcGDYwPBLoYOTmEBFQkWv5/ZwSxJQRMJJ6/2sIK
+	YYtJXLi3nq2LkQuoZhmjxMcHu9hhis7+m88MkZjPKLF0zW6wBAvQpA0T21hAbDYBbYkfB64y
+	g9jCAhoS286dBouLCFhJ7H7xD2wDs4CjxKPLd5ghrpCXmHz6MtgcXgFBiZMzn7BALFOS6Fz5
+	mhUiriwxbf8bqEslJGZNvwB1Ka/EjPanUPVyEtO+rmGGsKUlzs/awAjzzeLvj6Hi/BLHbu9g
+	6mLkAOt9cj8YZszuzV/YIGwBialnDjJClKhLHPjuAhHmk1iz8C3UJkGJ09e6mWFa72+ZywTx
+	laLElO6H7BC2lsSXH/vY0H3FK+AksXvRV9YJjMqzkKRmIWmfhaQdWc0CRpZVjKKpBckFxUnp
+	RUbIcb2JEZIE+3Yw3jxgfYhxPyMwSiYyS4km5wPTaF5JvKGxmZGFqYmpsZG5pRmFwiamFhYm
+	RlQRVhLnXfQwKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDI/dV3hjBcAbGnL2bxW4xGx17
+	NKvwwJzH1x/J84df3G0W//T7VO15iRN4Zikd1fWQaksxnbriy4tNzYGn7Xbdj33A6vDQRqT6
+	sdmyWulwp81ljzTXrpRuKd7w3c5d9yynxJltER8095YGs/00OuP+3D4gLpXNi7F+8cqWeLd3
+	vqVO7E7p1ulCSizFGYmGWsxFxYkAhYjGz/UDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2DN3PYVbBBud+m1hc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
+	jI/vOpkL5glW3Hlt0MD4QKCLkZNDSEBFouX/d0YQW0LAROLsv/nMELaYxIV769m6GLmAauYz
+	Sixds5sdJMEC1LBhYhsLiM0moC3x48BVsAZhAQ2JbedOg8VFBKwkdr/4xwpiMws4Sjy6fIcZ
+	Ypm8xOTTl8Hm8AoISpyc+YQFYpmSROfK16wQcWWJafvfQB0kITFr+gVWCJtXYkb7U6h6OYlp
+	X9dAHSotcX7WBkaYoxd/fwwV55c4dnsHUxcjB1jvk/vBMGN2b/7CBmELSEw9c5ARokRd4sB3
+	F4gwn8SahW+hNglKnL7WzQzTen/LXCaIrxQlpnQ/ZIewtSS+/NjHhu4rXgEnid2LvrJOYJSb
+	hSQ1C0n7LCTtyGoWMLKsYhRNLUguKE5KrzDSK07MLS7NS9dLzs/dxAhOT88W7WD8d976EKMA
+	B6MSD69FuWWwEGtiWXFl7iFGCQ5mJRHeI++BQrwpiZVVqUX58UWlOanFhxiTgfE3kVlKNDkf
+	mDrzSuINjQ2MDQ0tzQ1MDY0sSBNWEueVv5UUJCSQnliSmp2aWpBaBLOFiYNTqoHxhIahae8j
+	pTdrpDTjajTcu49JL+x8dqkm/CNboLZUndYMefslP6ZMFXm7nn3rve1znpkXyV+58eS4k1vp
+	Y9d1LabuWuzCN3rcL38/GnffXNiA/2dR2+q1b57fdnbSrvDyLf5RkpzvWjJBQS7ohvCxX7ui
+	HNvW/lrT8XL9/dTS6hUWUtFxV2cqsRRnJBpqMRcVJwIAeWHjn5MDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s31663q3032480
 
-On 03/28/2014 02:17 PM, Srivatsa S. Bhat wrote:
-> On 03/27/2014 03:44 PM, Preeti U Murthy wrote:
->> On 03/27/2014 11:58 AM, Srivatsa S. Bhat wrote:
->>>
->>> Actually, my suggestion was to remove the dying CPU from the force_mask alone,
->>> in the CPU_DYING notifier. The rest of the cleanup (removing it from the other
->>> masks, moving the broadcast duty to someone else etc can still be done at
->>> the CPU_DEAD stage). Also, note that the CPU which is set in force_mask is
->>> definitely not the one doing the broadcast.
->>>
->>> Basically, my reasoning was this:
->>>
->>> If we look at how the 3 broadcast masks (oneshot, pending and force) are
->>> set and cleared during idle entry/exit, we see this pattern:
->>>
->>> oneshot_mask: This is set at BROADCAST_ENTER and cleared at EXIT.
->>> pending_mask: This is set at tick_handle_oneshot_broadcast and cleared at
->>>               EXIT.
->>> force_mask:   This is set at EXIT and cleared at the next call to
->>>               tick_handle_oneshot_broadcast. (Also, if the CPU is set in this
->>>               mask, the CPU doesn't enter deep idle states in subsequent
->>>               idle durations, and keeps polling instead, until it gets the
->>>               broadcast interrupt).
->>>
->>> What we can derive from this is that force_mask is the only mask that can
->>> remain set across an idle ENTER/EXIT sequence. Both of the other 2 masks
->>> can never remain set across a full idle ENTER/EXIT sequence. And a CPU going
->>> offline certainly goes through EXIT if it had gone through ENTER, before
->>> entering stop_machine().
->>>
->>> That means, force_mask is the only odd one out here, which can remain set
->>> when entering stop_machine() for CPU offline. So that's the only mask that
->>> needs to be cleared separately. The other 2 masks take care of themselves
->>> automatically. So, we can have a CPU_DYING callback which just clears the
->>> dying CPU from the force_mask (and does nothing more). That should work, no?
->>
->> Yep I think this will work. Find the modified patch below:
->>
->> Thanks.
->>
->> Regards
->> Preeti U Murthy
->>
->>
->> tick,broadcast:Clear hotplugged cpu in broadcast masks during CPU_DYING notification
->>
->> From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->>
->> Its possible that the tick_broadcast_force_mask contains cpus which are not
->> in cpu_online_mask when a broadcast tick occurs. This could happen under the
->> following circumstance assuming CPU1 is among the CPUs waiting for broadcast.
->>
->> CPU0					CPU1
->>
->> Run CPU_DOWN_PREPARE notifiers
->>
->> Start stop_machine			Gets woken up by IPI to run
->> 					stop_machine, sets itself in
->> 					tick_broadcast_force_mask if the
->> 					time of broadcast interrupt is around
->> 					the same time as this IPI.
->>
->> 					Start stop_machine
->> 					  set_cpu_online(cpu1, false)
->> End stop_machine			End stop_machine
->>
->> Broadcast interrupt
->>   Finds that cpu1 in
->>   tick_broadcast_force_mask is offline
->>   and triggers the WARN_ON in
->>   tick_handle_oneshot_broadcast()
->>
->> Clears all broadcast masks
->> in CPU_DEAD stage.
->>
->> While the hotplugged cpu clears its bit in the tick_broadcast_oneshot_mask
->> and tick_broadcast_pending mask during BROADCAST_EXIT, it *sets* its bit
->> in the tick_broadcast_force_mask if the broadcast interrupt is found to be
->> around the same time as the present time. Today we clear all the broadcast
->> masks and shutdown tick devices in the CPU_DEAD stage. But as shown above
->> the broadcast interrupt could occur before this stage is reached and the
->> WARN_ON() gets triggered when it is found that the tick_broadcast_force_mask
->> contains an offline cpu.
->>
->> This WARN_ON was added to capture scenarios where the broadcast mask, be it
->> oneshot/pending/force_mask contain offline cpus whose tick devices have been
->> removed. But here is a case where we trigger the WARN_ON() when the tick
->> device of the hotplugged cpu is still around but we are delaying the clearing
->> of the broadcast masks. This has not been a problem for
->> tick_broadcastoneshot_mask and tick_broadcast_pending_mask since they get
->> cleared on exit from broadcast.
->>    But since the force_mask gets set at the same time on certain occasions
->> it is necessary to move the clearing of masks to a stage during cpu hotplug
->> before the hotplugged cpu clears itself in the online_mask.
->>
-> 
-> That last sentence is not entirely accurate. During stop-machine in the CPU
-> offline path, the CPU removes itself from the cpu_online_mask at the very
-> beginning, in the __cpu_disable() call. Only after that the CPU_DYING notifiers
-> are invoked. But the advantage of clearing the CPU from the force_mask at
-> the CPU_DYING stage is that no other CPU is "noticing" this event, since
-> everybody is busy spinning in stop-machine. So, by the time stop-machine
-> completes and the CPU is officially offline, it would have "magically" cleared
-> itself from the force_mask as well, making things look very consistent for
-> the rest of the CPUs (i.e., an offline CPU will never remain set in the
-> force_mask).
 
-Hmm right. Besides this,like we discussed offline, this WARN_ON() is
-unlikely to be hit in the scenario described in the change log because
-the force_mask will be set only when the broadcast interrupt is expected
-to be delivered anytime now. There is time before the hotplugged CPU
-clears its bit in the cpu_online_mask for the broadcast interrupt to
-arrive and see that the force_mask is still a subset of the cpu_online_mask.
+There is tools/liblockdep build failure.
+I have been trying to find the cause and i found commit id 63f9a7fde715352e0769302527670542a664b981 is the casue.
 
-But I still think that this patch would be required for the reason
-mentioned in the changelog in the last paragraph.
-> 
->> Hence move the clearing of broadcast masks to the CPU_DYING notification stage
->> so that they remain consistent with the cpu_online_mask at the time of
->> broadcast delivery at all times.
+Author: Andi Kleen <ak@linux.intel.com>
+Date:   Sat Feb 8 08:52:01 2014 +0100
 
-   ^^^ this is the reason why we will need to move the clearing of mask
-from CPU_DEAD to CPU_DYING stage so as to avoid hitting the WARN_ON()
-unnecessarily in some valid scenario in the future.
+    asmlinkage: Make lockdep_sys_exit asmlinkage
 
-I can send out a V2 patch with the modified changelog with just the last
-paragraph. What do you think?
+    lockdep_sys_exit can be called from assembler code, so make it
+    asmlinkage.
 
-Thomas, do you think this patch will make sense for the reason mentioned
-above?
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Ingo Molnar <mingo@kernel.org>
+    Signed-off-by: Andi Kleen <ak@linux.intel.com>
+    Link: http://lkml.kernel.org/r/1391845930-28580-5-git-send-email-ak@linux.intel.com
+    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 
-Thanks
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 92b1bfc..7df9aa6 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -265,7 +265,7 @@ extern void lockdep_info(void);
+ extern void lockdep_reset(void);
+ extern void lockdep_reset_lock(struct lockdep_map *lock);
+ extern void lockdep_free_key_range(void *start, unsigned long size);
+-extern void lockdep_sys_exit(void);
++extern asmlinkage void lockdep_sys_exit(void);
 
-Regards
-Preeti U Murthy
->>
-> 
-> This last paragraph sums it up perfectly.
-> 
->> Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> 
-> You might want to alter the changelog a bit as mentioned above. Other than
-> that, everything looks fine to me. (But see one minor whitespace nitpick
-> below).
-> 
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> 
->> ---
->>  kernel/time/clockevents.c    |    1 +
->>  kernel/time/tick-broadcast.c |   20 +++++++++++++++-----
->>  kernel/time/tick-internal.h  |    3 +++
->>  3 files changed, 19 insertions(+), 5 deletions(-)
->>
-> [...]
->> @@ -912,11 +925,8 @@ void tick_shutdown_broadcast_oneshot(unsigned int *cpup)
->>  	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
->>  	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
->>
->> -	broadcast_move_bc(cpu);
->> -
->>  	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
->>  }
->> -
-> 
-> I guess you removed that newline by mistake. Please add it back, it improves
-> readability.
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
->>  /*
->>   * Check, whether the broadcast device is in one shot mode
->>   */
+ extern void lockdep_off(void);
+ extern void lockdep_on(void);
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index eb8a547..c8b6753 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -4191,7 +4191,7 @@ void debug_show_held_locks(struct task_struct *task)
+ }
+ EXPORT_SYMBOL_GPL(debug_show_held_locks);
 
+-void lockdep_sys_exit(void)
++asmlinkage void lockdep_sys_exit(void)
+ {
+        struct task_struct *curr = current;
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
