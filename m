@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030697AbaDBWjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:39:31 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:54089 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488AbaDBWj3 convert rfc822-to-8bit (ORCPT
+	id S933511AbaDBWmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:42:43 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:57799 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933358AbaDBWmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:39:29 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <533C8F3C.6090306@archlinux.org>
-Date: Wed, 2 Apr 2014 15:39:25 -0700
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
-References: <533C8F3C.6090306@archlinux.org>
-To: =?windows-1252?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-X-Mailer: Apple Mail (2.1874)
+	Wed, 2 Apr 2014 18:42:33 -0400
+X-IronPort-AV: E=Sophos;i="4.97,783,1389772800"; 
+   d="scan'208";a="22903788"
+From: Sherman Yin <syin@broadcom.com>
+To: Mark Brown <broonie@kernel.org>,
+        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, "Christian Daudt" <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>, Olof Johansson <olof@lixom.net>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sherman Yin <syin@broadcom.com>
+Subject: [PATCH v3 0/3] pinctrl: Rename Broadcom Capri pinctrl driver
+Date: Wed, 2 Apr 2014 15:40:36 -0700
+Message-ID: <1396478439-16586-1-git-send-email-syin@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1390509887-19278-1-git-send-email-syin@broadcom.com>
+References: <1390509887-19278-1-git-send-email-syin@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
+driver and its related CONFIG option are renamed to bcm281xx.
 
-> I am having trouble due to the following commit, which landed in 3.14:
-> 
-> commit d2bee8fb6e18f6116aada39851918473761f7ab1
-> Author: Tedd Ho-Jeong An <tedd.an@intel.com>
-> Date:   Tue Nov 12 13:16:41 2013 -0800
-> 
->    Bluetooth: Enable autosuspend for Intel Bluetooth device
-> 
-> I have an Intel bluetooth dongle (8087:07dc) built into a Thinkpad. I
-> primarily use it with my bluetooth mouse. Whenever I stop using the
-> mouse for a few seconds, the mouse stops working. When I turn it off,
-> the bluetooth applet on my desktop shows it as connected indefinitely. I
-> can fix this situation by either of these actions:
-> * restart bluetooth.service
-> * disable+reenable bluetooth in the bluetooth applet
-> * modprobe -r btusb && modprobe btusb
-> The mouse then works again until I stop moving it for a short while.
-> 
-> The culprit is USB autosuspend. When I explicitly disable it (echo 'on'
->> power/control), the mouse works fine again. However, due to the
-> aforementioned commit, I need to do this manually after every boot and
-> every resume, because btusb keeps setting it back to 'auto'. I have
-> found no way of overriding this behaviour.
+Devicetree compatible string and binding documentation use
+"brcm,bcm11351-pinctrl" to match the machine binding here:
+Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
 
-what USB controller do you have your Bluetooth controller attached to. I had the same issue, but it went away when some of the xHCI host controller fixes got merged. Some other reported issues with some USB 2 controllers.
+This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
+and BCM28155 SoCs.
 
-You can easily check by running the "Inquiry (LIAC)” test from tools/hci-tester. Problem is that some of the HCI events are not making it to the host. They get delivered as soon as the device wakes up again. In this test case it is the Inquiry Complete event. If you poke the controller and send a new command, the even will be magically dequeued.
+Signed-off-by: Sherman Yin <syin@broadcom.com>
+Reviewed-by: Matt Porter <mporter@linaro.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+v3: removed the device tree/compatible string portion of changes which
+    were already accepted in 3.14-rc6.  Fixed typo in documentation.
+v2: split single patch into 4 patches
 
-Regards
+Sherman Yin (3):
+  pinctrl: Rename Broadcom Capri pinctrl driver
+  Update bcm_defconfig with new pinctrl CONFIG
+  pinctrl: fix typo in bindings documentation
 
-Marcel
+ .../bindings/pinctrl/brcm,bcm11351-pinctrl.txt     |    2 +-
+ arch/arm/configs/bcm_defconfig                     |    2 +-
+ drivers/pinctrl/Kconfig                            |    8 +-
+ drivers/pinctrl/Makefile                           |    2 +-
+ .../{pinctrl-capri.c => pinctrl-bcm281xx.c}        | 1519 ++++++++++----------
+ 5 files changed, 770 insertions(+), 763 deletions(-)
+ rename drivers/pinctrl/{pinctrl-capri.c => pinctrl-bcm281xx.c} (25%)
+
+-- 
+1.7.9.5
 
