@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832AbaDBSYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:24:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48967 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932624AbaDBSYF (ORCPT
+	id S932843AbaDBS1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:27:48 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:48354 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932652AbaDBS1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:24:05 -0400
-Date: Wed, 2 Apr 2014 11:26:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: balbi@ti.com, Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH][next] phy: core: make NULL a valid phy reference if
- !CONFIG_GENERIC_PHY
-Message-ID: <20140402182626.GA24594@kroah.com>
-References: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
- <20140313152024.GF4599@saruman.home>
- <20140313214450.GG27355@saruman.home>
- <533C4E8F.20306@ti.com>
- <20140402181655.GB23998@kroah.com>
- <533C542F.4020608@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533C542F.4020608@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 2 Apr 2014 14:27:46 -0400
+Message-ID: <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH] integrity: get comm using lock to avoid race in string
+ printing
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Steve Grubb <sgrubb@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        linux-ima-user <linux-ima-user@lists.sourceforge.net>
+Date: Wed, 02 Apr 2014 14:27:40 -0400
+In-Reply-To: <1396462716.2608.1.camel@localhost>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+	 <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <6292885.20TorKeRiK@x2>
+	 <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <1396462716.2608.1.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040218-9332-0000-0000-000000524FDA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 02:17:19PM -0400, Santosh Shilimkar wrote:
-> On Wednesday 02 April 2014 02:16 PM, Greg KH wrote:
-> > On Wed, Apr 02, 2014 at 01:53:19PM -0400, Santosh Shilimkar wrote:
-> >> On Thursday 13 March 2014 05:44 PM, Felipe Balbi wrote:
-> >>> Hi,
-> >>>
-> >>> On Thu, Mar 13, 2014 at 10:20:24AM -0500, Felipe Balbi wrote:
-> >>>> On Thu, Mar 13, 2014 at 01:11:13PM +0200, Grygorii Strashko wrote:
-> >>>>> This fixes a regression on Keystone 2 platforms caused by patch
-> >>>>> 57303488cd37da58263e842de134dc65f7c626d5
-> >>>>> "usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
-> >>>>> optional support of generic phy in DWC3 core.
-> >>>>>
-> >>>>> On Keystone 2 platforms the USB is not working now because
-> >>>>> CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
-> >>>>> return -ENOSYS always. The log shows:
-> >>>>>  dwc3 2690000.dwc3: failed to initialize core
-> >>>>>  dwc3: probe of 2690000.dwc3 failed with error -38
-> >>>>>
-> >>>>> Hence, fix it by making NULL a valid phy reference in Generic PHY
-> >>>>> APIs stubs in the same way as it was done by the patch
-> >>>>> 04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
-> >>>>> a valid phy reference".
-> >>>>>
-> >>>>> CC: Kishon Vijay Abraham I <kishon@ti.com>
-> >>>>> CC: Felipe Balbi <balbi@ti.com>
-> >>>>> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> >>>>
-> >>>> nice :-)
-> >>>>
-> >>>> Acked-by: Felipe Balbi <balbi@ti.com>
-> >>>
-> >>> Greg, if your tree isn't closed yet, could you consider this patch still
-> >>> for v3.15 merge window ? Grygorii found a regression on Keystone
-> >>> platforms which this patch fixes. Let me know if you need the original
-> >>> patch and myself or Kishon can send it to you.
-> >>>
-> >> Just checking whether the fix was picked up for the 3.14 merge window ?
+On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote: 
+> On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
+> > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote: 
+> > > Hello Mimi,
+> > > 
+> > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
+> > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
+> > > > Pass commname via get_task_comm()".
+> > > 
+> > > While I was looking at Richard's patch, I noticed a few places where cause and 
+> > > op are logged and the string isn't tied together with a _ or -. These are in 
+> > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are 
+> > > these fixed upstream? Or should a patch be made?
 > > 
-> > 3.14 is long released, the merge window for that was months ago.
-> > 
-> Sorry for the typo. I mean for upcoming v3.15 merge window.
+> > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
+> > making the changes in integrity_audit.c: integrity_audit_msg().
+> 
+> The question is actually, do you know of anyone who is expecting the
+> space, instead of a more 'audit standard' - or _ ?  If not, we'll change
+> it.  If so, we'll discuss more   :)
 
-My trees are now "empty" now, with everything I had for the 3.15-rc1
-merge window already in Linus's tree.  So I suggest looking there to see
-if this made it in or not.
+CC'ing linux-ima-user as well.
 
-If not, be sure to resend it.
+Mimi
 
-thanks,
-
-greg k-h
