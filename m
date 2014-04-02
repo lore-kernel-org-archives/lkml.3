@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871AbaDBTEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:04:00 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:55785 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785AbaDBTD6 (ORCPT
+	id S933014AbaDBTEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:04:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49461 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758785AbaDBTEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:03:58 -0400
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Ralf Baechle <ralf@linux-mips.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, stable@vger.kernel.org
-Subject: [PATCH] MIPS/loongson2_cpufreq: fix CPU clock rate setting
-Date: Wed,  2 Apr 2014 22:07:04 +0300
-Message-Id: <1396465624-21661-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.9.0
+	Wed, 2 Apr 2014 15:04:41 -0400
+Date: Wed, 2 Apr 2014 12:04:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-Id: <20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org>
+In-Reply-To: <20140402144219.4cafbe37@gandalf.local.home>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Loongson2 has been using (incorrectly) kHz for cpu_clk rate. This has
-been unnoticed, as loongson2_cpufreq was the only place where the rate
-was set/get. After commit 652ed95d5fa6074b3c4ea245deb0691f1acb6656
-(cpufreq: introduce cpufreq_generic_get() routine) things however broke,
-and now loops_per_jiffy adjustments are incorrect (1000 times too long).
-The patch fixes this by changing cpu_clk rate to Hz.
+On Wed, 2 Apr 2014 14:42:19 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: stable@vger.kernel.org
----
- arch/mips/loongson/lemote-2f/clock.c | 7 +++++--
- drivers/cpufreq/loongson2_cpufreq.c  | 4 ++--
- 2 files changed, 7 insertions(+), 4 deletions(-)
+> It has come to our attention that a system running a specific user
+> space init program will not boot if you add "debug" to the kernel
+> command line. What happens is that the user space tool parses the
+> kernel command line, and if it sees "debug" it will spit out so much
+> information that the system fails to boot. This basically renders the
+> "debug" option for the kernel useless.
+> 
+> This bug has been reported to the developers of said tool
+> here:
+> 
+>   https://bugs.freedesktop.org/show_bug.cgi?id=76935
+> 
+> The response is:
+> 
+> "Generic terms are generic, not the first user owns them."
+> 
+> That is, the "debug" statement on the *kernel* command line is not
+> owned by the kernel just because it was the first user of it, and
+> they refuse to fix their bug.
+> 
+> Well, my response is, we OWN the kernel command line, and as such, we
+> can keep the users from seeing stuff on it if we so choose. And with
+> that, I propose this patch, which hides "debug" from /proc/cmdline,
+> such that we don't have to worry about tools parsing for it and causing
+> hardship for those trying to debug the kernel.
+> 
 
-diff --git a/arch/mips/loongson/lemote-2f/clock.c b/arch/mips/loongson/lemote-2f/clock.c
-index aed32b8..699f388 100644
---- a/arch/mips/loongson/lemote-2f/clock.c
-+++ b/arch/mips/loongson/lemote-2f/clock.c
-@@ -91,6 +91,7 @@ EXPORT_SYMBOL(clk_put);
+I had to check the date on this but surprisingly, it's all post
+April 1.
+
+--- a/fs/read_write.c~a
++++ a/fs/read_write.c
+@@ -513,6 +513,8 @@ SYSCALL_DEFINE3(read, unsigned int, fd,
+ 	struct fd f = fdget_pos(fd);
+ 	ssize_t ret = -EBADF;
  
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
-+	unsigned int rate_khz;
- 	int ret = 0;
- 	int regval;
- 	int i;
-@@ -106,15 +107,17 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	if (unlikely(clk->flags & CLK_RATE_PROPAGATES))
- 		propagate_rate(clk);
- 
-+	rate_khz = rate / 1000;
++	BUG_ON(!strcmp(current->comm, "systemd"));
 +
- 	for (i = 0; loongson2_clockmod_table[i].frequency != CPUFREQ_TABLE_END;
- 	     i++) {
- 		if (loongson2_clockmod_table[i].frequency ==
- 		    CPUFREQ_ENTRY_INVALID)
- 			continue;
--		if (rate == loongson2_clockmod_table[i].frequency)
-+		if (rate_khz == loongson2_clockmod_table[i].frequency)
- 			break;
- 	}
--	if (rate != loongson2_clockmod_table[i].frequency)
-+	if (rate_khz != loongson2_clockmod_table[i].frequency)
- 		return -ENOTSUPP;
- 
- 	clk->rate = rate;
-diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
-index b6581ab..807d006 100644
---- a/drivers/cpufreq/loongson2_cpufreq.c
-+++ b/drivers/cpufreq/loongson2_cpufreq.c
-@@ -62,7 +62,7 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
- 	set_cpus_allowed_ptr(current, &cpus_allowed);
- 
- 	/* setting the cpu frequency */
--	clk_set_rate(policy->clk, freq);
-+	clk_set_rate(policy->clk, freq * 1000);
- 
- 	return 0;
- }
-@@ -92,7 +92,7 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	     i++)
- 		loongson2_clockmod_table[i].frequency = (rate * i) / 8;
- 
--	ret = clk_set_rate(cpuclk, rate);
-+	ret = clk_set_rate(cpuclk, rate * 1000);
- 	if (ret) {
- 		clk_put(cpuclk);
- 		return ret;
--- 
-1.9.0
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+ 		ret = vfs_read(f.file, buf, count, &pos);
+_
 
