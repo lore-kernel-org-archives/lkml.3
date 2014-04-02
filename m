@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259AbaDBJlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 05:41:16 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47733 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758042AbaDBJlM (ORCPT
+	id S932074AbaDBJlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:41:25 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:53493 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758042AbaDBJlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 05:41:12 -0400
-Date: Wed, 2 Apr 2014 10:40:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Bug(?) in patch "arm64: Implement coherent DMA API based on
-	swiotlb" (was Re: [GIT PULL] arm64 patches for 3.15)
-Message-ID: <20140402094045.GH7528@n2100.arm.linux.org.uk>
-References: <20140331175230.GA7480@arm.com> <1396368657.3681.17.camel@linaro1.home> <20140401172939.GG20061@arm.com> <1396428722.3554.20.camel@linaro1.home> <20140402092032.GB31892@arm.com>
+	Wed, 2 Apr 2014 05:41:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402092032.GB31892@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140402091334.GV6991@mwanda>
+References: <1671118.MbmRfxWPeo@daeseok-laptop.cloud.net>
+	<20140402091334.GV6991@mwanda>
+Date: Wed, 2 Apr 2014 18:41:20 +0900
+Message-ID: <CAHb8M2AN5Hx4Mn9uTnge2MQzyT7BD1XxM2edZyPdeCt-V91J5g@mail.gmail.com>
+Subject: Re: [PATCH] staging: lirc: fix NULL pointer dereference
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: m.chehab@samsung.com, devel <devel@driverdev.osuosl.org>,
+        Andreea Bernat <bernat.ada@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>, jarod@wilsonet.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Martina Trompouki <mtrompou@gmail.com>, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 10:20:32AM +0100, Catalin Marinas wrote:
-> You are right. I think having unaligned DMA buffers for inbound
-> transfers is pointless. We can avoid losing data written by another CPU
-> in the same cache line but, depending on the stage of the DMA transfer,
-> it can corrupt the DMA data.
-> 
-> I wonder whether it's easier to define the cache_line_size() macro to
-> read CWG and assume that the DMA buffers are always aligned, ignoring
-> the invalidation of the unaligned boundaries. This wouldn't be much
-> different from your scenario where the shared cache line is written
-> (just less likely to trigger but still a bug, so I would rather notice
-> this early).
-> 
-> The ARMv7 code has a similar issue, it performs clean&invalidate on the
-> unaligned start but it doesn't move r0, so it goes into the main loop
-> invalidating the same cache line again. If it was written by something
-> else, the information would be lost.
+You are right. remove whole thing and send it again.
 
-You can't make that a requirement.  People have shared stuff across a
-cache line for years in Linux, and people have brought it up and tried
-to fix it, but there's much resistance against it.  In particular is
-SCSI, which submits the sense buffer as part of a larger structure (the
-host.)  SCSI sort-of guarantees that the surrounding struct members
-won't be touched, but their data has to be preserved.
+Thanks.
+Daeseok Youn
 
-In any case, remember that there are strict rules about ownership of the
-DMA memory vs calls to the DMA API.  It is invalid to call the DMA
-streaming API functions while a DMA transfer is active.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+2014-04-02 18:13 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Wed, Apr 02, 2014 at 05:18:39PM +0900, Daeseok Youn wrote:
+>>
+>> coccicheck says:
+>>  drivers/staging/media/lirc/lirc_igorplugusb.c:226:15-21:
+>> ERROR: ir is NULL but dereferenced.
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>>  drivers/staging/media/lirc/lirc_igorplugusb.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/staging/media/lirc/lirc_igorplugusb.c b/drivers/staging/media/lirc/lirc_igorplugusb.c
+>> index f508a13..0ef393b 100644
+>> --- a/drivers/staging/media/lirc/lirc_igorplugusb.c
+>> +++ b/drivers/staging/media/lirc/lirc_igorplugusb.c
+>> @@ -223,8 +223,8 @@ static int unregister_from_lirc(struct igorplug *ir)
+>>       int devnum;
+>>
+>>       if (!ir) {
+>> -             dev_err(&ir->usbdev->dev,
+>> -                     "%s: called with NULL device struct!\n", __func__);
+>> +             printk(DRIVER_NAME "%s: called with NULL device struct!\n",
+>> +                    __func__);
+>
+>
+> It should be pr_err() or something.  But actually "ir" can't be NULL so
+> just delete the whole condition.
+>
+>
+>>               return -EINVAL;
+>>       }
+>
+> regards,
+> dan carpenter
+>
