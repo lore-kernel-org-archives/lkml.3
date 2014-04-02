@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883AbaDBS2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:28:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50395 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652AbaDBS2E (ORCPT
+	id S932914AbaDBSa0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:30:26 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:40276 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932487AbaDBSaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:28:04 -0400
-Date: Wed, 2 Apr 2014 19:27:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: gregkh@linuxfoundation.org, linux@roeck-us.net,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140402182747.GC14763@sirena.org.uk>
-References: <1396405217-12658-1-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 2 Apr 2014 14:30:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
-Content-Disposition: inline
-In-Reply-To: <1396405217-12658-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH resend] regmap: mmio: Fix the bug of 'offset' value
- parsing.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140402180513.GQ4284@linux.vnet.ibm.com>
+References: <1396455966-21128-1-git-send-email-fweisbec@gmail.com>
+	<1396455966-21128-2-git-send-email-fweisbec@gmail.com>
+	<20140402180513.GQ4284@linux.vnet.ibm.com>
+Date: Wed, 2 Apr 2014 20:30:23 +0200
+Message-ID: <CAFTL4hyUC7JO6+H4kiLCLOxO7WzyC+MUKxE-jrmanZMM4dXSrg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] smp: Non busy-waiting IPI queue
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jens.axboe@oracle.com>, Kevin Hilman <khilman@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-04-02 20:05 GMT+02:00 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> On Wed, Apr 02, 2014 at 06:26:05PM +0200, Frederic Weisbecker wrote:
+>> diff --git a/kernel/smp.c b/kernel/smp.c
+>> index 06d574e..bfe7b36 100644
+>> --- a/kernel/smp.c
+>> +++ b/kernel/smp.c
+>> @@ -265,6 +265,50 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd)
+>>  }
+>>  EXPORT_SYMBOL_GPL(smp_call_function_single_async);
+>>
+>> +void generic_smp_queue_function_single_interrupt(void *info)
+>> +{
+>> +     struct queue_single_data *qsd = info;
+>> +
+>> +     WARN_ON_ONCE(xchg(&qsd->pending, 0) != 1);
+>
+> I am probably missing something here, but shouldn't this function copy
+> *qsd to a local on-stack variable before doing the above xchg()?  What
+> prevents the following from happening?
+>
+> o       CPU 0 does smp_queue_function_single(), which sets ->pending
+>         and fills in ->func and ->data.
+>
+> o       CPU 1 takes IPI, invoking generic_smp_queue_function_single_interrupt().
+>
+> o       CPU 1 does xchg(), so that ->pending is now zero.
+>
+> o       An attempt to reuse the queue_single_data sees ->pending equal
+>         to zero, so the ->func and ->data is overwritten.
+>
+> o       CPU 1 calls the new ->func with the new ->data (or any of the other
+>         two possible unexpected outcomes), which might not be helpful to
+>         the kernel's actuarial statistics.
+>
+> So what am I missing?
 
---ncSAzJYg3Aa9+CRW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ah, I forgot to precise that the function must remain the same for all
+calls on a single qsd. And the data is always the qsd so this one can
+only stay stable. So that shouldn't be a problem.
 
-On Wed, Apr 02, 2014 at 10:20:17AM +0800, Xiubo Li wrote:
-> 'offset = *(u32 *)reg;'
-> This will be okey for 32/64-bits register device, but for 8/16-bits
-> register ones, the 'offset' value will overflow, for example:
+But you're right. The fact that we pass the function as an argument of
+smp_queue_function_single() suggests that we can pass a different
+function across various calls on a same qsd. So that's confusing.
+Perhaps changing smp_queue_function_single() such that it only takes
+the qsd as an argument would make that clearer? Then it's up to the
+caller to initialize the qsd with the constant function. I could
+define smp_queue_function_init() for that purpose. Or
+DEFINE_QUEUE_FUNCTION_DATA() for static initializers.
 
-Applied, thanks.
-
---ncSAzJYg3Aa9+CRW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPFagAAoJELSic+t+oim9SNoP/0DF6q86Kn1+mC83UPzHT53N
-A2M4FV1KfqA5XIIliRId8yCW2NPMfximWxu9VTpgGdeWvknuhPQ/iGGzC1BPWpRE
-bgWo1ZNrO1w9YeP3A6vi7sLMKdVG9Q8vrypt4azP7MP2jctRJorKlJH/GXAwIEuo
-k7vOJL8L9L+itRFlRpf8v6Ileo2JLdlzvVBFTVIsM7UXtJQK0UB7RqzgcRlk8bgR
-qb+wSGvsPJUrqX/bG25ZvZ8zQyoPizknskO8eCruXqLvf+julTKlyF+VeGrOmre6
-dqvukkD0Cspt17xDTp28sHtJseFtK2lRzOOTmhejf5nmW6A356sf6uIK3WIuH6+t
-AoGZ3F7HUILY1chuzgcXXKiolx7lBpNqC7xU51pfJyZl9hB1xqYYQcBhQBf9sbOV
-oFVbaMUjKiPFRRRLAb5ZLlW9HmsUJVyw9cJEPYH4nPVfR4tS9lesDO2pX4k1iaXE
-ivk5KHmk+6ycuKrSCgPydCJQuVOgdKq9YGpoDueEPt/I2G+EPx1jOn8ZDxO5OSyo
-Oypx257yRKdIYi18gTRgja9eupVppI8C++MjCVRfql6YHLCqpDSAb1GCRdJ9jA3F
-/cbizLWmV93nTzv/ZPUD8ABpQTZA0ZrnTOn/mLTikGs7OEZg7HbFANUqBTIjhe58
-lSl49ZBeFHnF2TXK8ySB
-=cr9H
------END PGP SIGNATURE-----
-
---ncSAzJYg3Aa9+CRW--
+How does that sound?
