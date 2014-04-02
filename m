@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269AbaDBJN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 05:13:57 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39816 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758147AbaDBJNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 05:13:54 -0400
-Date: Wed, 2 Apr 2014 12:13:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: m.chehab@samsung.com, devel@driverdev.osuosl.org, bernat.ada@gmail.com,
-        gregkh@linuxfoundation.org, jarod@wilsonet.com,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        mtrompou@gmail.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH] staging: lirc: fix NULL pointer dereference
-Message-ID: <20140402091334.GV6991@mwanda>
-References: <1671118.MbmRfxWPeo@daeseok-laptop.cloud.net>
+	id S1758289AbaDBJPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:15:15 -0400
+Received: from mail4.gandi.net ([217.70.183.210]:35124 "EHLO mail4.gandi.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758147AbaDBJPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 05:15:12 -0400
+X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Apr 2014 05:15:12 EDT
+Date: Wed, 2 Apr 2014 11:06:24 +0200
+From: William Dauchy <william@gandi.net>
+To: Borislav Petkov <bp@alien8.de>
+Cc: William Dauchy <wdauchy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        "tglx@linutronix.de" <tglx@linutronix.de>, Tony <tony.luck@intel.com>,
+        Gong <gong.chen@linux.intel.com>, linux-tip-commits@vger.kernel.org,
+        William Dauchy <william@gandi.net>
+Subject: Re: [tip:x86/urgent] x86, CMCI: Add proper detection of end of CMCI
+ storms
+Message-ID: <20140402090624.GT22251@gandi.net>
+References: <tip-27f6c573e0f77f7d1cc907c1494c99a61e48b7d8@git.kernel.org>
+ <CAJ75kXZbvs2mGRQod0df5Xs_AcodsQ=n+030tYawQDrFW01Y2Q@mail.gmail.com>
+ <20140402090132.GA16033@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7WENQHN97/U9vH7R"
 Content-Disposition: inline
-In-Reply-To: <1671118.MbmRfxWPeo@daeseok-laptop.cloud.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20140402090132.GA16033@pd.tnic>
+Reply_to: William Dauchy <william@gandi.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 05:18:39PM +0900, Daeseok Youn wrote:
-> 
-> coccicheck says:
->  drivers/staging/media/lirc/lirc_igorplugusb.c:226:15-21:
-> ERROR: ir is NULL but dereferenced.
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
->  drivers/staging/media/lirc/lirc_igorplugusb.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/media/lirc/lirc_igorplugusb.c b/drivers/staging/media/lirc/lirc_igorplugusb.c
-> index f508a13..0ef393b 100644
-> --- a/drivers/staging/media/lirc/lirc_igorplugusb.c
-> +++ b/drivers/staging/media/lirc/lirc_igorplugusb.c
-> @@ -223,8 +223,8 @@ static int unregister_from_lirc(struct igorplug *ir)
->  	int devnum;
->  
->  	if (!ir) {
-> -		dev_err(&ir->usbdev->dev,
-> -			"%s: called with NULL device struct!\n", __func__);
-> +		printk(DRIVER_NAME "%s: called with NULL device struct!\n",
-> +		       __func__);
 
+--7WENQHN97/U9vH7R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It should be pr_err() or something.  But actually "ir" can't be NULL so
-just delete the whole condition.
+On Apr02 11:01, Borislav Petkov wrote:
+> It is too late for that now as the patch is in -tip already... Unless
+> Ingo can still amend it, that is.
+>=20
+> But, we're working on a real solution for the storm issue and there
+> we'll be asking you to test stuff anyway so we'll make sure to use this
+> mail address then, ok?
 
+ack
+--=20
+William
 
->  		return -EINVAL;
->  	}
+--7WENQHN97/U9vH7R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-regards,
-dan carpenter
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iEYEARECAAYFAlM70xAACgkQ1I6eqOUidQEyVACfVvF/39MCKkYuNCMaSDVdplEY
+zWwAn3iU1OwjDgs1YrEJHHD2GWh+4fCn
+=r4Y9
+-----END PGP SIGNATURE-----
+
+--7WENQHN97/U9vH7R--
