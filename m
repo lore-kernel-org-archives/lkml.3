@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134AbaDBIT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 04:19:27 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:43392 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038AbaDBISn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 04:18:43 -0400
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: m.chehab@samsung.com
-Cc: gregkh@linuxfoundation.org, jarod@wilsonet.com, dan.carpenter@oracle.com,
-        paulmck@linux.vnet.ibm.com, mtrompou@gmail.com, bernat.ada@gmail.com,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: lirc: fix NULL pointer dereference
-Date: Wed, 02 Apr 2014 17:18:39 +0900
-Message-ID: <1671118.MbmRfxWPeo@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1758111AbaDBITX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 04:19:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35282 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757307AbaDBISP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 04:18:15 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, linux-ide@vger.kernel.org
+Subject: [PATCH 1/2] ahci: Ensure "MSI Revert to Single Message" mode is not enforced
+Date: Wed,  2 Apr 2014 10:19:56 +0200
+Message-Id: <fe4097ff2b486092108663532c015a40984bc5f9.1396426390.git.agordeev@redhat.com>
+In-Reply-To: <cover.1396426390.git.agordeev@redhat.com>
+References: <cover.1396426390.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Do not rely on successful initialization of multiple MSIs mode
+alone and always check if "MSI Revert to Single Message" mode
+was enforced by the controller. Fall back to the single MSI
+mode in case it did. Not doing so might screw up the interrupt
+handling.
 
-coccicheck says:
- drivers/staging/media/lirc/lirc_igorplugusb.c:226:15-21:
-ERROR: ir is NULL but dereferenced.
-
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-ide@vger.kernel.org
 ---
- drivers/staging/media/lirc/lirc_igorplugusb.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/ahci.c |   17 +++++++++++++++++
+ drivers/ata/ahci.h |    1 +
+ 2 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/media/lirc/lirc_igorplugusb.c b/drivers/staging/media/lirc/lirc_igorplugusb.c
-index f508a13..0ef393b 100644
---- a/drivers/staging/media/lirc/lirc_igorplugusb.c
-+++ b/drivers/staging/media/lirc/lirc_igorplugusb.c
-@@ -223,8 +223,8 @@ static int unregister_from_lirc(struct igorplug *ir)
- 	int devnum;
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 5a0bf8e..838d97e 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1163,6 +1163,14 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
+ {}
+ #endif
  
- 	if (!ir) {
--		dev_err(&ir->usbdev->dev,
--			"%s: called with NULL device struct!\n", __func__);
-+		printk(DRIVER_NAME "%s: called with NULL device struct!\n",
-+		       __func__);
- 		return -EINVAL;
- 	}
++static int ahci_is_mrsm(struct ahci_host_priv *hpriv)
++{
++	void __iomem *mmio = hpriv->mmio;
++	u32 ctl = readl(mmio + HOST_CTL);
++
++	return ctl & HOST_MRSM;
++}
++
+ static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
+ 			 struct ahci_host_priv *hpriv)
+ {
+@@ -1189,6 +1197,15 @@ static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
+ 	else if (nvec < 0)
+ 		goto intx;
  
++	/*
++	 * Fallback to single MSI mode if the controller enforced MRSM mode 
++	 */
++	if (ahci_is_mrsm(hpriv)) {
++		pci_disable_msi(pdev);
++		printk(KERN_INFO "ahci: MRSM is on, fallback to single MSI\n");
++		goto single_msi;
++	}
++
+ 	return nvec;
+ 
+ single_msi:
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 51af275..b5eb886 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -94,6 +94,7 @@ enum {
+ 	/* HOST_CTL bits */
+ 	HOST_RESET		= (1 << 0),  /* reset controller; self-clear */
+ 	HOST_IRQ_EN		= (1 << 1),  /* global IRQ enable */
++	HOST_MRSM		= (1 << 2),  /* MSI Revert to Single Message */
+ 	HOST_AHCI_EN		= (1 << 31), /* AHCI enabled */
+ 
+ 	/* HOST_CAP bits */
 -- 
-1.7.4.4
-
+1.7.7.6
 
