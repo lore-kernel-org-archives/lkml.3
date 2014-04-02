@@ -1,208 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854AbaDBP2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 11:28:44 -0400
-Received: from smtp-out-051.synserver.de ([212.40.185.51]:1052 "EHLO
-	smtp-out-019.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758431AbaDBP2n (ORCPT
+	id S932335AbaDBPbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 11:31:15 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39395 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932247AbaDBPbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 11:28:43 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29935
-Message-ID: <533C2CDD.8030100@metafoo.de>
-Date: Wed, 02 Apr 2014 17:29:33 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 2 Apr 2014 11:31:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Ul5SwHrxKVs2hbiV06Edp
+Date: Wed, 2 Apr 2014 08:31:04 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: Patch Tracking <patches@linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Victor Kamensky <victor.kamensky@linaro.org>
+Subject: Re: [PATCH 0/4] ARM: OMAP: raw read and write endian fix
+Message-ID: <20140402153104.GA12234@atomide.com>
+References: <1387822234-11167-1-git-send-email-taras.kondratiuk@linaro.org>
+ <CAArO44vC4WKGHSqHX3+Mo5+jcNuyJLkh94+SPd4H+aZYAroYzw@mail.gmail.com>
+ <20140108003927.GJ5074@atomide.com>
+ <5332AD89.8030802@linaro.org>
+ <533BE311.7050900@linaro.org>
 MIME-Version: 1.0
-To: Songhee Baek <sbaek@nvidia.com>
-CC: Arun Shamanna Lakshmi <aruns@nvidia.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
-References: <1396333288-19113-1-git-send-email-aruns@nvidia.com> <533A6F4A.2060702@metafoo.de> <781A12BB53C15A4BB37291FDE08C03F3A05CDCD63B@HQMAIL02.nvidia.com> <781A12BB53C15A4BB37291FDE08C03F3A05CDCD659@HQMAIL02.nvidia.com> <533BA779.9010005@metafoo.de> <D6C615D3E4730340AE82D5BD856631C0A26CB3252F@HQMAIL02.nvidia.com> <533BB26B.3020503@metafoo.de> <D6C615D3E4730340AE82D5BD856631C0A26CB32541@HQMAIL02.nvidia.com> <533BB5E6.7050004@metafoo.de> <D6C615D3E4730340AE82D5BD856631C0A26CB3259B@HQMAIL02.nvidia.com>
-In-Reply-To: <D6C615D3E4730340AE82D5BD856631C0A26CB3259B@HQMAIL02.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533BE311.7050900@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 05:26 PM, Songhee Baek wrote:
->> -----Original Message-----
->> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
->> Sent: Wednesday, April 02, 2014 12:02 AM
->> To: Songhee Baek
->> Cc: Arun Shamanna Lakshmi; lgirdwood@gmail.com; broonie@kernel.org;
->> swarren@wwwdotorg.org; perex@perex.cz; tiwai@suse.de; alsa-
->> devel@alsa-project.org; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
->>
->> On 04/02/2014 08:56 AM, Songhee Baek wrote:
->>>
->>>
->>>> -----Original Message-----
->>>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
->>>> Sent: Tuesday, April 01, 2014 11:47 PM
->>>> To: Songhee Baek
->>>> Cc: Arun Shamanna Lakshmi; lgirdwood@gmail.com; broonie@kernel.org;
->>>> swarren@wwwdotorg.org; perex@perex.cz; tiwai@suse.de; alsa-
->>>> devel@alsa-project.org; linux-kernel@vger.kernel.org
->>>> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
->>>>
->>>> On 04/02/2014 08:17 AM, Songhee Baek wrote:
->>>>>> -----Original Message-----
->>>>>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
->>>>>> Sent: Tuesday, April 01, 2014 11:00 PM
->>>>>> To: Arun Shamanna Lakshmi
->>>>>> Cc: lgirdwood@gmail.com; broonie@kernel.org;
->>>> swarren@wwwdotorg.org;
->>>>>> perex@perex.cz; tiwai@suse.de; alsa-devel@alsa-project.org; linux-
->>>>>> kernel@vger.kernel.org; Songhee Baek
->>>>>> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
->>>>>>
->>>>>> On 04/01/2014 08:26 PM, Arun Shamanna Lakshmi wrote:
->>>>>> [...]
->>>>>>>>> diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c index
->>>>>>>>> c8a780d..4d2b35c 100644
->>>>>>>>> --- a/sound/soc/soc-dapm.c
->>>>>>>>> +++ b/sound/soc/soc-dapm.c
->>>>>>>>> @@ -514,9 +514,9 @@ static int dapm_connect_mux(struct
->>>>>>>> snd_soc_dapm_context *dapm,
->>>>>>>>>       	unsigned int val, item;
->>>>>>>>>       	int i;
->>>>>>>>>
->>>>>>>>> -	if (e->reg != SND_SOC_NOPM) {
->>>>>>>>> -		soc_widget_read(dest, e->reg, &val);
->>>>>>>>> -		val = (val >> e->shift_l) & e->mask;
->>>>>>>>> +	if (e->reg[0] != SND_SOC_NOPM) {
->>>>>>>>> +		soc_widget_read(dest, e->reg[0], &val);
->>>>>>>>> +		val = (val >> e->shift_l) & e->mask[0];
->>>>>>>>>       		item = snd_soc_enum_val_to_item(e, val);
->>>>>>>>
->>>>>>>> This probably should handle the new enum type as well. You'll
->>>>>>>> probably need some kind of flag in the struct to distinguish
->>>>>>>> between the two enum types.
->>>>>>>
->>>>>>> Any suggestion on the flag name ?
->>>>>>>
->>>>>>
->>>>>> How about 'onehot'?
->>>>>>
->>>>>> [...]
->>>>>>>>> +		reg_val = BIT(bit_pos);
->>>>>>>>> +	}
->>>>>>>>> +
->>>>>>>>> +	for (i = 0; i < e->num_regs; i++) {
->>>>>>>>> +		if (i == reg_idx) {
->>>>>>>>> +			change = snd_soc_test_bits(codec, e->reg[i],
->>>>>>>>> +							e->mask[i],
->>>>>>>> reg_val);
->>>>>>>>> +
->>>>>>>>> +		} else {
->>>>>>>>> +			/* accumulate the change to update the
->>>> DAPM
->>>>>>>> path
->>>>>>>>> +			    when none is selected */
->>>>>>>>> +			change += snd_soc_test_bits(codec, e-
->>>>> reg[i],
->>>>>>>>> +							e->mask[i], 0);
->>>>>>>>
->>>>>>>> change |=
->>>>>>>>
->>>>>>>>> +
->>>>>>>>> +			/* clear the register when not selected */
->>>>>>>>> +			snd_soc_write(codec, e->reg[i], 0);
->>>>>>>>
->>>>>>>> I think this should happen as part of the DAPM update sequence
->>>>>>>> like you had earlier. Some special care should probably be take
->>>>>>>> to make sure that you de-select the previous mux input before
->>>>>>>> selecting the new one if the new one is in a different register than
->> the previous one.
->>>>>>>
->>>>>>> I am not sure I follow this part. We are clearing the 'not selected'
->>>>>>> registers before we set the one we want. Do you want us to loop
->>>>>>> the logic of soc_dapm_mux_update_power for each register ? or do
->>>>>>> you want to change the dapm_update structure so that it takes all
->>>>>>> the regs, masks, and values together ?
->>>>>>
->>>>>> The idea with the dapm_update struct is that the register updates
->>>>>> are done in the middle of the power-down and power-up sequence.
->> So
->>>>>> yes, change the dapm_update struct to be able to hold all register
->>>>>> updates and do all register updates in dapm_widget_update. I think
->>>>>> an earlier version of your patch already had this.
->>>>>
->>>>> Is the change similar to as shown below?
->>>>>
->>>>> for (reg_idx = 0; reg_idx < e->num_regs; reg_idx++) {
->>>>> 	val = e->values[item * e->num_regs + reg_idx];
->>>>> 	ret = snd_soc_update_bits_locked(codec, e->reg[reg_idx],
->>>>> 				e->mask[reg_idx], val);
->>>>> 	if (ret)
->>>>> 	return ret;
->>>>> }
->>>>>
->>>>> During updating of the register's value, the above change can create
->>>>> non-zero value in two different registers (very short transition) as
->>>>> Mark mentioned for that change so we need to clear register first
->>>>> before writing the desired value in the register.
->>>>>
->>>>> Should we add the clearing all registers and write the mux value in
->>>>> desired register in the update function?
->>>>>
->>>>
->>>> In dapm_update_widget() you have this line:
->>>>
->>>>     ret = soc_widget_update_bits(w, update->reg, update->mask, update-
->>>>> val);
->>>>
->>>> That needs to be done for every register update. When you setup the
->>>> update struct you need to make sure that the register clears come
->>>> before the register set.
->>>>
->>>> E.g. if you have register 0x3, 0x4, 0x5 and you select a bit in
->>>> register 0x4 it should look like this.
->>>>
->>>> update->reg[0] = 0x3;
->>>> update->val[0] = 0x0;
->>>> update->reg[1] = 0x5;
->>>> update->val[1] = 0x0;
->>>> update->reg[2] = 0x4;
->>>> update->val[2] = 0x8;
->>>>
->>>> When you set a bit in register 0x3 it should look like this:
->>>>
->>>> update->reg[0] = 0x4;
->>>> update->val[0] = 0x0;
->>>> update->reg[1] = 0x5;
->>>> update->val[1] = 0x0;
->>>> update->reg[2] = 0x3;
->>>> update->val[2] = 0x1;
->>>>
->>>> So basically the write operation goes into update->reg[e->num_regs-1]
->>>> the clear operations go into the other slots before that.
->>>
->>> Does update reg/val array have the writing sequence, is it correct?
->>> And can I assume that update struct has reg/val/mask arrays not pointers?
->>
->> Right now the update struct does not have support for multiple register
->> writes. That's up to you to implement this. I guess making it an array for now
->> should be fine. But you need to add some safety checks to make sure that
->> num_regs is not larger or equal to the array size.
->
-> I think that the dapm update struct needs to have reg[2]/val[2]/mask[2].
-> Because the mux is one-hot coded, only one register has a non-zero value.
-> So reg[0] will contain the register to be clear and reg[2] has selected register
-> to be set.
-> How about your opinion for this?
+* Taras Kondratiuk <taras.kondratiuk@linaro.org> [140402 03:18]:
+> On 03/26/2014 12:35 PM, Taras Kondratiuk wrote:
+> > On 01/08/2014 02:39 AM, Tony Lindgren wrote:
+> >> * Taras Kondratiuk <taras.kondratiuk@linaro.org> [131223 10:20]:
+> >>> On 23 December 2013 20:10, Taras Kondratiuk <taras.kondratiuk@linaro.org> wrote:
+> >>>> This series does trivial replacement of __raw_xxx functions with xxx_relaxed
+> >>>> endian-neutral variants in 'mach-omap2' and 'plat-omap' directories.
+> >>>> Some code here most probably won't be used in BE mode (like debug-leds for
+> >>>> OMAP1 boards), but changes are made anyway to remove __raw_xxx() functions
+> >>>> completely and simplify future grep'ing for new __raw_xxx() entries.
+> >>
+> >> Sorry for the delay on these, applying into omap-for-v3.14/be.
+> >> These are trivial, and it's actually nice that you left out the
+> >> assembly related changes as those should be acked by the PM
+> >> people in case there are some issues dealing with the ROM code
+> >> etc.
+> > 
+> > Hi Tony,
+> > 
+> > It seems omap-for-v3.14/be didn't get into 3.14-rc8.
+> > Is there any issue with them?
+> 
+> This series conflicts now with clock changes which got into 3.14.
+> Resolution is trivial - just skip conflicting changes.
+> omap2_clk_{real,writel} already uses {readl,writel}_relaxed inside.
+> Do I need to push an updated series?
 
-Should work (in theory).
+Sorry looks like I forgot to merge this branch. I think my plan
+was to wait for the clock changes to get merged first..
 
-- Lars
+So yeah, it's probably best that you repost the series after -rc1
+is out so we have the conflicting parts cleared. That way the
+changes are tested to work for your BE series :)
 
+Regards,
 
+Tony
