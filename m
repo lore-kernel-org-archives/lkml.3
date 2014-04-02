@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758474AbaDBKqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 06:46:19 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:45245 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137AbaDBKqR (ORCPT
+	id S1758528AbaDBKrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 06:47:47 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61062 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758086AbaDBKrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 06:46:17 -0400
-Date: Wed, 2 Apr 2014 12:46:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: William Dauchy <wdauchy@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        hpa@zytor.com, "tglx@linutronix.de" <tglx@linutronix.de>,
-        Tony <tony.luck@intel.com>, Gong <gong.chen@linux.intel.com>,
-        linux-tip-commits@vger.kernel.org, William Dauchy <william@gandi.net>
-Subject: Re: [tip:x86/urgent] x86, CMCI: Add proper detection of end of CMCI
- storms
-Message-ID: <20140402104612.GA26844@gmail.com>
-References: <tip-27f6c573e0f77f7d1cc907c1494c99a61e48b7d8@git.kernel.org>
- <CAJ75kXZbvs2mGRQod0df5Xs_AcodsQ=n+030tYawQDrFW01Y2Q@mail.gmail.com>
- <20140402090132.GA16033@pd.tnic>
+	Wed, 2 Apr 2014 06:47:46 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linuxppc-dev@ozlabs.org,
+        Linux PM list <linux-pm@vger.kernel.org>, svaidy@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, Anton Blanchard <anton@samba.org>,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH REPOST v5 1/3] powernv, cpufreq: Select CPUFreq related Kconfig options for powernv
+Date: Wed, 02 Apr 2014 13:03:35 +0200
+Message-ID: <1621325.cz1O3Ng49e@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1396412608.1394.15.camel@pasglop>
+References: <CAKohpo=jvswNPmUPEbS79bSp9ZWC1e3DjaEUX=O4CWMXfufHrw@mail.gmail.com> <1506880.SKUfks4BOU@vostro.rjw.lan> <1396412608.1394.15.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402090132.GA16033@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@alien8.de> wrote:
-
-> On Wed, Apr 02, 2014 at 10:51:49AM +0200, William Dauchy wrote:
-> > Could you use the following address instead?
-> > Reported-by: William Dauchy <william@gandi.net>
+On Wednesday, April 02, 2014 03:23:28 PM Benjamin Herrenschmidt wrote:
+> On Wed, 2014-04-02 at 00:03 +0200, Rafael J. Wysocki wrote:
+> > > Rafael, are you going to take these or should I send them to Linus ?
+> > > 
+> > > (I'd rather you take them :-)
+> > 
+> > I can do that, but the timing is pretty bad.  How urgent are they?
 > 
-> It is too late for that now as the patch is in -tip already... Unless
-> Ingo can still amend it, that is.
+> To be honest pretty urgent. It's a new drop-in driver so it shouldn't
+> be a huge deal.
+> 
+> We have distros really waiting for this to hit upstream... But I'll
+> leave that decision to you :-)
 
-There are already patches on top of it, so it's not possible - but 
-even if it was the last one, since it got committed by Tony I cannot 
-rebase or amend it.
+Well, I've already sent a second pull request for this merge window
+and I'm not going to send the next one before it is merged.
 
-Thanks,
+So, I can push them next week realistically.
 
-	Ingo
+Rafael
+
