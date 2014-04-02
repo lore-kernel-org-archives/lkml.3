@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433AbaDBW31 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:29:27 -0400
-Received: from gerolde.archlinux.org ([66.211.214.132]:41457 "EHLO
-	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158AbaDBW30 (ORCPT
+	id S1161047AbaDBWaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:30:23 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:55436 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030634AbaDBWaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:29:26 -0400
-Message-ID: <533C8F3C.6090306@archlinux.org>
-Date: Thu, 03 Apr 2014 00:29:16 +0200
-From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+	Wed, 2 Apr 2014 18:30:20 -0400
+Message-ID: <533C8F79.2030707@gmail.com>
+Date: Thu, 03 Apr 2014 00:30:17 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
+To: Alexander Holler <holler@ahsoftware.de>,
+        Florian Fainelli <f.fainelli@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
+ for Marvel 88E1116R PHYs
+References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de>
+In-Reply-To: <533BD3CD.1010905@ahsoftware.de>
 X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On 04/02/2014 11:09 AM, Alexander Holler wrote:
+> Am 02.04.2014 02:57, schrieb Florian Fainelli:
+>> Could you verify the following two things before your patch gets merged:
+>>
+>> - how long does it take for your PHY to clear the BMCR_RESET bit, is
+>> it more than the allowed time out in
+>> drivers/net/phy/phy_device.c::phy_poll_reset
+>> - is your PHY powered down (check BMCR_PWRDOWN), if that is the case,
+>> we might be hitting some corner case where toggling BMCR_RESET will
+>> power it on, but at the expense of waiting longer
+> 
+> I've  done two tests with pr_info before and after the two resets in
+> m88e1116r_config_init:
+> 
 
-I am having trouble due to the following commit, which landed in 3.14:
+[...]
 
-commit d2bee8fb6e18f6116aada39851918473761f7ab1
-Author: Tedd Ho-Jeong An <tedd.an@intel.com>
-Date:   Tue Nov 12 13:16:41 2013 -0800
+> with mdelay (the value after reset is what contains MII_BMCR):
+> 
+> -----------------------
+> dmesg | grep -A1 -B1  AHO
+> [    1.090072] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version
+> 1.4
+> [    1.175888] AHO: before first reset
+> [    1.678806] AHO: after first reset 0x0
+> [    1.683281] AHO: before second reset
+> [    2.186288] AHO: after second reset 0x0
+> [    2.191010] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC
+> address xx
+> -- 
+> [    2.426349] netpoll: netconsole: device eth0 not up yet, forcing it
+> [    2.505917] AHO: before first reset
+> [    2.605824] usb 1-1: new high-speed USB device number 2 using orion-ehci
+> -- 
+> [    2.829987] hub 1-1:1.0: 4 ports detected
+> [    3.044502] AHO: after first reset 0x0
 
-    Bluetooth: Enable autosuspend for Intel Bluetooth device
+If the above hex at the end is BMCR..
 
-I have an Intel bluetooth dongle (8087:07dc) built into a Thinkpad. I
-primarily use it with my bluetooth mouse. Whenever I stop using the
-mouse for a few seconds, the mouse stops working. When I turn it off,
-the bluetooth applet on my desktop shows it as connected indefinitely. I
-can fix this situation by either of these actions:
-* restart bluetooth.service
-* disable+reenable bluetooth in the bluetooth applet
-* modprobe -r btusb && modprobe btusb
-The mouse then works again until I stop moving it for a short while.
+> [    3.049133] AHO: before second reset
+> [    3.126110] usb 1-1.1: new high-speed USB device number 3 using
+> orion-ehci
+> -- 
+> [    3.526107] usb 1-1.3: device descriptor read/64, error -32
+> [    3.614264] AHO: after second reset 0x0
+> [    3.618708] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+> -- 
+> [   21.335730] Adding 2996116k swap on /dev/sda3.  Priority:-1 extents:1
+> across:2996116k
+> [   28.195942] AHO: before first reset
+> [   28.696270] AHO: after first reset 0x800
 
-The culprit is USB autosuspend. When I explicitly disable it (echo 'on'
-> power/control), the mouse works fine again. However, due to the
-aforementioned commit, I need to do this manually after every boot and
-every resume, because btusb keeps setting it back to 'auto'. I have
-found no way of overriding this behaviour.
+.. have you noticed that your PHY enters POWERDOWN here?
 
-Any advice or help is appreciated.
-Regards
-Thomas B=E4chler
+Sebastian
 
+> [   28.696958] AHO: before second reset
+> [   29.197354] AHO: after second reset 0x800
+> [  111.612263] RPC: Registered named UNIX socket transport module.
+> -----------------------
 
---5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTPI9CAAoJEChPw0yOSxolpaYP/inQQjMzH7jHukByOE0sFS97
-qXAyN4e4R+uPeWtfIrmgJUNYqlNSSnGEG2TJSxpdD4ZxjotJZQjkXGl9Y218L0N0
-dSIJLrNWLFnCIbeVJP/Eefovn/hnqIeS35h12ocqn8aUBL7HLu+JmrbgpIfCkmTr
-gkOnmIntdpdRZWJqNpyfEH6uFMpe+hPjpXx02e6LZrulMVVQvQvI+1IdCeAVChya
-SXNSdHD3PfpljPV4fziNldZRtBDINC8LTvBs1g66xH2BjSLeBFYbUXVWn8WTg1tO
-l93esE8tZpT7HYog+AjnH9p89BhMwqAEXsMRkpCHQfdY5fjT/X+NpfZDne/upYZm
-s59m3+DDu6Dav7rniiYzp2k3jNUp/xi7dl4wghyef5Jwd7u8yjyhiIQHysz0TO//
-tMUMg37/57jUJTDsnX55dw9P1SbDo7hzxb9ZG7vqM7PY69phCaQqSVNtQBAXHjm4
-ejyBuVfRfYZ9c6Q10VQFpcUacA5xN8nkXcdHMJxXpP7lJg7nLL4TmESjO1ay2JZb
-YdPRJLYXRRJd9IEC4k26wJZhCERcoifV9jknaRAYRF/dbQCq8vR/v/+iZmUojBd0
-GnvS6gZmCJra3OXC3bD5Kwt2EAtnT2GNkKrg4VBI6FppsoG731QRDIOiYWw1YORt
-8KHm1HKNWgdnSerYPG3B
-=bELs
------END PGP SIGNATURE-----
-
---5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9--
