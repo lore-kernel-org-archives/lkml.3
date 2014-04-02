@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636AbaDBQpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:45:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44077 "EHLO mx1.redhat.com"
+	id S932667AbaDBQrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:47:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46276 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932339AbaDBQpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:45:51 -0400
-Date: Wed, 2 Apr 2014 17:45:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matthew Dempsky <mdempsky@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] pid_namespace: pidns_get() should check
-	task_active_pid_ns() != NULL
-Message-ID: <20140402154505.GB29857@redhat.com>
-References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com> <1396391358-22367-1-git-send-email-mdempsky@chromium.org> <20140402145850.GB7332@redhat.com> <20140402154447.GA29857@redhat.com>
+	id S932648AbaDBQrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 12:47:10 -0400
+Date: Wed, 2 Apr 2014 18:47:09 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Chris Mason <clm@fb.com>, jbacik@fb.com,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: Btrfs lockdep with 3.15 merge window v3.14-751-g683b6c6f82a6
+Message-ID: <20140402164709.GI29256@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Josh Boyer <jwboyer@fedoraproject.org>,
+	Chris Mason <clm@fb.com>, jbacik@fb.com,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	"Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+References: <CA+5PVA787+k0TVFUuo6PxNWMwffWDKixmt2C+E4_9szUJatYkw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140402154447.GA29857@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+5PVA787+k0TVFUuo6PxNWMwffWDKixmt2C+E4_9szUJatYkw@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pidns_get()->get_pid_ns() can hit ns == NULL. This task_struct can't
-go away, but task_active_pid_ns(task) is NULL if release_task(task)
-was already called. Alternatively we could change get_pid_ns(ns) to
-check ns != NULL, but it seems that other callers are fine.
+On Tue, Apr 01, 2014 at 06:23:11PM -0400, Josh Boyer wrote:
+> Below is a lockdep spew I have on a local VM running Linus' tree as of
+> this afternoon.  The specific git commit is v3.14-751-g683b6c6f82a6.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> [  295.349016]        CPU0                    CPU1
+> [  295.349016]        ----                    ----
+> [  295.349016]   lock(&found->groups_sem);
+> [  295.349016]                                local_irq_disable();
+> [  295.349016]                                lock(&delayed_node->mutex);
+> [  295.349016]                                lock(&found->groups_sem);
+> [  295.349016]   <Interrupt>
+> [  295.349016]     lock(&delayed_node->mutex);
 
---- x/kernel/pid_namespace.c
-+++ x/kernel/pid_namespace.c
-@@ -318,7 +318,9 @@ static void *pidns_get(struct task_struct *task)
- 	struct pid_namespace *ns;
- 
- 	rcu_read_lock();
--	ns = get_pid_ns(task_active_pid_ns(task));
-+	ns = task_active_pid_ns(task);
-+	if (ns)
-+		get_pid_ns(ns);
- 	rcu_read_unlock();
- 
- 	return ns;
-
+Fixed by https://patchwork.kernel.org/patch/3894781/
