@@ -1,201 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300AbaDBUgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:36:51 -0400
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:49773 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933131AbaDBUfa (ORCPT
+	id S1030233AbaDBUjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:39:12 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:19140 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933194AbaDBUjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:35:30 -0400
-From: Yu Zhao <yuzhao@google.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        jamieliu@google.com, suleiman@google.com, hannes@cmpxchg.org,
-        Yu Zhao <yuzhao@google.com>
-Subject: [PATCH v2 2/3] swap: do not store private swap files on swap_list
-Date: Wed,  2 Apr 2014 13:34:08 -0700
-Message-Id: <1396470849-26154-3-git-send-email-yuzhao@google.com>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1396470849-26154-1-git-send-email-yuzhao@google.com>
-References: <1396470849-26154-1-git-send-email-yuzhao@google.com>
+	Wed, 2 Apr 2014 16:39:10 -0400
+Message-ID: <533C7557.60908@hp.com>
+Date: Wed, 02 Apr 2014 16:38:47 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v8 10/10] pvqspinlock, x86: Enable qspinlock PV support
+ for XEN
+References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <1396445259-27670-11-git-send-email-Waiman.Long@hp.com> <20140402143932.GA13097@phenom.dumpdata.com>
+In-Reply-To: <20140402143932.GA13097@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jamie Liu <jamieliu@google.com>
+On 04/02/2014 10:39 AM, Konrad Rzeszutek Wilk wrote:
+>> diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+>> index a70fdeb..451e392 100644
+>> --- a/kernel/Kconfig.locks
+>> +++ b/kernel/Kconfig.locks
+>> @@ -229,4 +229,4 @@ config ARCH_USE_QUEUE_SPINLOCK
+>>
+>>   config QUEUE_SPINLOCK
+>>   	def_bool y if ARCH_USE_QUEUE_SPINLOCK
+>> -	depends on SMP&&  (!PARAVIRT_SPINLOCKS || !XEN)
+>> +	depends on SMP
+> If I read this correctly that means you cannot select any more the old
+> ticketlocks? As in, if you select CONFIG_PARAVIRT on X86 it will automatically
+> select ARCH_USE_QUEUE_SPINLOCK which will then enable this by default?
+>
+> Should the 'def_bool' be selectable?
 
-swap_list is used by get_swap_page() to find public swap files to swap
-to; in the case that there are many private swap files and few public
-swap files, get_swap_page() may waste time iterating through private
-swap files it can't swap to. Change _enable_swap_info() to not insert
-private swap files onto swap_list; this improves the performance of
-get_swap_page() in such cases, at the cost of making
-swap_store_swap_device() and swapoff() minutely slower (both of which
-are non-critical).
+My initial qspinlock patch allows it to be selectable, but there was 
+comment that doing so would increase the testing matrix and so made it 
+less desirable. That was why I made it the default for 64-bit code which 
+are more likely to be used in large machines which benefit the most from 
+this patch. 32-bit kernel will still use the ticket lock.
 
-Signed-off-by: Jamie Liu <jamieliu@google.com>
-Signed-off-by: Yu Zhao <yuzhao@google.com>
----
- mm/swapfile.c | 84 +++++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 47 insertions(+), 37 deletions(-)
-
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 18a8eee..27e147b 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -712,14 +712,14 @@ int swap_store_swap_device(const char *buf, int *_type)
- 
- 	mapping = victim->f_mapping;
- 	spin_lock(&swap_lock);
--	for (type = swap_list.head; type >= 0; type = swap_info[type]->next) {
-+	for (type = 0; type < nr_swapfiles; type++) {
- 		si = swap_info[type];
- 		if ((si->flags & SWP_WRITEOK) == SWP_WRITEOK) {
- 			if (si->swap_file->f_mapping == mapping)
- 				break;
- 		}
- 	}
--	if (type < 0) {
-+	if (type == nr_swapfiles) {
- 		err = -EINVAL;
- 	} else {
- 		err = 0;
-@@ -803,10 +803,7 @@ swp_entry_t get_swap_page(struct page *page)
- 			spin_unlock(&si->lock);
- 			continue;
- 		}
--		if (si->flags & SWP_PRIVATE) {
--			spin_unlock(&si->lock);
--			continue;
--		}
-+		BUG_ON(si->flags & SWP_PRIVATE);
- 
- 		swap_list.next = next;
- 
-@@ -957,11 +954,12 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
- 			p->lowest_bit = offset;
- 		if (offset > p->highest_bit)
- 			p->highest_bit = offset;
--		set_highest_priority_index(p->type);
- 		if (p->flags & SWP_PRIVATE)
- 			atomic_long_inc(&nr_private_swap_pages);
--		else
-+		else {
- 			atomic_long_inc(&nr_public_swap_pages);
-+			set_highest_priority_index(p->type);
-+		}
- 		p->inuse_pages--;
- 		frontswap_invalidate_page(p->type, offset);
- 		if (p->flags & SWP_BLKDEV) {
-@@ -1899,6 +1897,8 @@ static void _enable_swap_info(struct swap_info_struct *p, int prio,
- 
- 	if (prio >= 0)
- 		p->prio = prio;
-+	else if (p->flags & SWP_PRIVATE)
-+		p->prio = 0;
- 	else
- 		p->prio = --least_priority;
- 	p->swap_map = swap_map;
-@@ -1910,19 +1910,19 @@ static void _enable_swap_info(struct swap_info_struct *p, int prio,
- 	} else {
- 		atomic_long_add(p->pages, &nr_public_swap_pages);
- 		total_public_swap_pages += p->pages;
-+		/* insert swap space into swap_list: */
-+		prev = -1;
-+		for (i = swap_list.head; i >= 0; i = swap_info[i]->next) {
-+			if (p->prio >= swap_info[i]->prio)
-+				break;
-+			prev = i;
-+		}
-+		p->next = i;
-+		if (prev < 0)
-+			swap_list.head = swap_list.next = p->type;
-+		else
-+			swap_info[prev]->next = p->type;
- 	}
--	/* insert swap space into swap_list: */
--	prev = -1;
--	for (i = swap_list.head; i >= 0; i = swap_info[i]->next) {
--		if (p->prio >= swap_info[i]->prio)
--			break;
--		prev = i;
--	}
--	p->next = i;
--	if (prev < 0)
--		swap_list.head = swap_list.next = p->type;
--	else
--		swap_info[prev]->next = p->type;
- }
- 
- static void enable_swap_info(struct swap_info_struct *p, int prio,
-@@ -1978,15 +1978,25 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	mapping = victim->f_mapping;
- 	prev = -1;
- 	spin_lock(&swap_lock);
--	for (type = swap_list.head; type >= 0; type = swap_info[type]->next) {
-+	for (type = 0; type < nr_swapfiles; type++) {
- 		p = swap_info[type];
- 		if (p->flags & SWP_WRITEOK) {
--			if (p->swap_file->f_mapping == mapping)
-+			if (p->swap_file->f_mapping == mapping) {
-+				/* Private swapfiles aren't in swap_list */
-+				if (p->flags & SWP_PRIVATE)
-+					break;
-+				/* Find type's predecessor in swap_list */
-+				for (i = swap_list.head; i >= 0;
-+				     i = swap_info[i]->next) {
-+					if (type == i)
-+						break;
-+					prev = i;
-+				}
- 				break;
-+			}
- 		}
--		prev = type;
- 	}
--	if (type < 0) {
-+	if (type == nr_swapfiles) {
- 		err = -EINVAL;
- 		spin_unlock(&swap_lock);
- 		goto out_dput;
-@@ -1998,24 +2008,24 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 		spin_unlock(&swap_lock);
- 		goto out_dput;
- 	}
--	if (prev < 0)
--		swap_list.head = p->next;
--	else
--		swap_info[prev]->next = p->next;
--	if (type == swap_list.next) {
--		/* just pick something that's safe... */
--		swap_list.next = swap_list.head;
--	}
- 	spin_lock(&p->lock);
--	if (p->prio < 0) {
--		for (i = p->next; i >= 0; i = swap_info[i]->next)
--			swap_info[i]->prio = p->prio--;
--		least_priority++;
--	}
- 	if (p->flags & SWP_PRIVATE) {
- 		atomic_long_sub(p->pages, &nr_private_swap_pages);
- 		total_private_swap_pages -= p->pages;
- 	} else {
-+		if (prev < 0)
-+			swap_list.head = p->next;
-+		else
-+			swap_info[prev]->next = p->next;
-+		if (type == swap_list.next) {
-+			/* just pick something that's safe... */
-+			swap_list.next = swap_list.head;
-+		}
-+		if (p->prio < 0) {
-+			for (i = p->next; i >= 0; i = swap_info[i]->next)
-+				swap_info[i]->prio = p->prio--;
-+			least_priority++;
-+		}
- 		atomic_long_sub(p->pages, &nr_public_swap_pages);
- 		total_public_swap_pages -= p->pages;
- 	}
--- 
-1.9.1.423.g4596e3a
-
+-Longman
