@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341AbaDBBmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 21:42:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959AbaDBBmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 21:42:00 -0400
-Message-ID: <1396402918.476.231.camel@ul30vt.home>
-Subject: Re: [PATCH v3] PCI: rework new_id interface for known vendor/device
- values
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bandan Das <bsd@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 01 Apr 2014 19:41:58 -0600
-In-Reply-To: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
-References: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757349AbaDBBug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 21:50:36 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:60542 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaDBBuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 21:50:35 -0400
+X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Apr 2014 21:50:35 EDT
+MIME-Version: 1.0
+In-Reply-To: <20140331131353.GH22728@two.firstfloor.org>
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+	<1396014469-5937-16-git-send-email-jovi.zhangwei@gmail.com>
+	<87d2h6nomj.fsf@tassilo.jf.intel.com>
+	<CAGdX0WHEB7r0t_Bu6ME+gS=HxjFY9dnfn6azwyXe4U6sV7r0eQ@mail.gmail.com>
+	<20140330005809.GY22728@two.firstfloor.org>
+	<CAGdX0WFyuQu9bXBy-=9m=MiLBorNKr0MH9hhTvNNFYtWLg6d-g@mail.gmail.com>
+	<20140331131353.GH22728@two.firstfloor.org>
+Date: Wed, 2 Apr 2014 09:44:06 +0800
+Message-ID: <CAGdX0WH0NVqL37Qe43WE1Lfxc5VR_7C4oA-Z0VkaKSdZazd7tQ@mail.gmail.com>
+Subject: Re: [PATCH 15/28] ktap: add built-in functions and library (runtime/lib_*.c)
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Geoff Levand <geoff@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 21:32 -0400, Bandan Das wrote:
-> While using the new_id interface, the user can unintentionally feed
-> incorrect values if the driver static table has a matching entry.
-> This is possible since only the device and vendor fields are
-> mandatory and the rest are optional. As a result, store_new_id
-> will fill in default values that are then passed on to the driver
-> and can have unintended consequences.
-> 
-> As an example, consider the ixgbe driver and the 82599EB network card :
-> echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
-> 
-> This will pass a driver_data value of 0 to the driver whereas
-> the index 0 in ixgbe actually points to a different set of card
-> operations.
-> 
-> This change returns an error if the user attempts to add a dynid for
-> a vendor/device combination for which a static entry already exists.
-> However, if the user intentionally wants a different set of values,
-> she must provide all the 7 fields and that will be accepted.
-> 
-> In KVM/device assignment scenario, the user might want 
-> to bind a device back to the host driver by writing to new_id
-> and trip on a possible null pointer dereference.
-> 
-> Signed-off-by: Bandan Das <bsd@redhat.com>
+On Mon, Mar 31, 2014 at 9:13 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> On Mon, Mar 31, 2014 at 10:01:04AM +0800, Jovi Zhangwei wrote:
+>> On Sun, Mar 30, 2014 at 8:58 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> >> Maybe in future, after ktap support "include" or "require" to
+>> >> import user defined library in userspace.
+>> >
+>> > Can't you just have some hardcoded standard script for now that is
+>> > always appeneded and provides these functions?
+>> >
+>> Maybe it's fine to hardcoded just for now.
+>>
+>> Since we are agreed on review userspace part in another schedule,
+>> so I will remove this ansi library from kernel part in next version.
+>>
+>> Thanks for this suggestion.
+>
+> Please do the following for the next version:
+>
+> - Don't repost with all the TODOs regarding changing other
+> kernel parts. Just fix them.
+>
+Sure.
 
-Looks ok to me
+> - As others pointed out elsewhere it's too big and full featured right
+> now. Please find ways to define a useful "core ktap" for now with less
+> features. This could be dropping library parts or dropping some of the
+> probe types or some parts of the language. These can then be later phased
+> in over time. For the library it may make sense to add some module
+> interface and keep parts of it external for now?
+>
+I will remove some library and raw tracing interface(designed for benchmark)
 
-Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+> - Please run as much test content as you have with all the kernel debug
+> options to automatically find bugs. I would at least two runs one with
+> lockdep/lock debugging/preempt debugging/slab/page debugging etc.
+> and another with kmemleak (that is exclusive with some other options)
+> Some of these checks may have false positives, but the messages
+> should be all analyzed at least, and false positives commented.
+>
+ktap runs fine in lockdep/lock debugging/preempt debugging, but not
+try to run in slab/page debugging and kmemleak. I will do that.
 
-> ---
-> v3:
-> relocate pdev decl
-> v2:
-> 1. Return error if there is a matching static entry
-> and change commit message to reflect this behavior
-> 3. Fill in a pdev and call pci_match_id instead of creating
-> a new matching function
-> 4. Change commit message to reflect that libvirt does not
-> depend on this behavior
-> 
->  drivers/pci/pci-driver.c | 22 +++++++++++++++++++++-
->  1 file changed, 21 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 25f0bc6..a65a014 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -107,7 +107,7 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
->  		subdevice=PCI_ANY_ID, class=0, class_mask=0;
->  	unsigned long driver_data=0;
->  	int fields=0;
-> -	int retval;
-> +	int retval = 0;
->  
->  	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
->  			&vendor, &device, &subvendor, &subdevice,
-> @@ -115,6 +115,26 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
->  	if (fields < 2)
->  		return -EINVAL;
->  
-> +	if (fields != 7) {
-> +		struct pci_dev *pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
-> +		if (!pdev)
-> +			return -ENOMEM;
-> +
-> +		pdev->vendor = vendor;
-> +		pdev->device = device;
-> +		pdev->subsystem_vendor = subvendor;
-> +		pdev->subsystem_device = subdevice;
-> +		pdev->class = class;
-> +
-> +		if (pci_match_id(pdrv->id_table, pdev))
-> +			retval = -EEXIST;
-> +
-> +		kfree(pdev);
-> +
-> +		if (retval)
-> +			return retval;
-> +	}
-> +
->  	/* Only accept driver_data values that match an existing id_table
->  	   entry */
->  	if (ids) {
+> - Do similar with the static compile time checks: checkpatch,
+> sparse, coccinelle. There will be likely a lot more false positives
+> here, so it may not be feasible to check all, but should at least
+> eyeball the output to see if there are some obvious problems.
+> For sparse it would be also good to annotate the user ioctl
+> parts with __user and carefully look at the warnings there,
+> as that is a common problem area.
+>
+Sure.
 
+I will send out new version once we make agreement on ktap
+upstream which discussing in another thread.
 
+Thanks for these comments.
 
+Jovi
