@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345AbaDBQ0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:26:21 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:64252 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264AbaDBQ0S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932295AbaDBQ0S (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 2 Apr 2014 12:26:18 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:48988 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758776AbaDBQ0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 12:26:16 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Jens Axboe <jens.axboe@oracle.com>, Kevin Hilman <khilman@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/2] nohz: Move full nohz kick to its own IPI
-Date: Wed,  2 Apr 2014 18:26:06 +0200
-Message-Id: <1396455966-21128-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/2] smp: Non busy-waiting IPI queue
+Date: Wed,  2 Apr 2014 18:26:05 +0200
+Message-Id: <1396455966-21128-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1396455966-21128-1-git-send-email-fweisbec@gmail.com>
 References: <1396455966-21128-1-git-send-email-fweisbec@gmail.com>
@@ -25,13 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have smp_queue_function_single() which can be used to
-safely queue IPIs when interrupts are disabled and without worrying
-about concurrent callers, lets use it for the full dynticks kick to
-notify a CPU that it's exiting single task mode.
+Some IPI users, such as the nohz subsystem, need to be able to send
+an async IPI (async = non waiting for any other IPI completion) on
+contexts with disabled interrupts. And we want the IPI subsystem to handle
+concurrent calls by itself.
 
-This unbloats a bit the scheduler IPI that the nohz code was abusing
-for its cool "callable anywhere/anytime" properties.
+Currently the nohz machinery uses the scheduler IPI for this purpose
+because it can be triggered from any context and doesn't need any
+serialization from the caller. But this is an abuse of a scheduler
+fast path. We are bloating it with a job that should use its own IPI.
+
+The current set of IPI functions can't be called when interrupts are
+disabled otherwise we risk a deadlock when two CPUs wait for each
+other's IPI completion.
+
+OTOH smp_call_function_single_async() can be called when interrupts
+are disabled. But then it's up to the caller to serialize the given
+IPI. This can't be called concurrently without special care.
+
+So we need a version of the async IPI that takes care of concurrent
+calls.
+
+The proposed solution is to synchronize the IPI with a specific flag
+that prevents the IPI from being sent if it is already pending but not
+yet executed. Ordering is maintained such that, if the IPI is not sent
+because it's already pending, we guarantee it will see the new state of
+the data we expect it to when it will execute.
+
+This model is close to the irq_work design. It's also partly inspired by
+suggestions from Peter Zijlstra.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -42,99 +64,88 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/tick.h     |  2 ++
- kernel/sched/core.c      |  5 +----
- kernel/sched/sched.h     |  2 +-
- kernel/time/tick-sched.c | 20 ++++++++++++++++++++
- 4 files changed, 24 insertions(+), 5 deletions(-)
+ include/linux/smp.h | 12 ++++++++++++
+ kernel/smp.c        | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b84773c..9d3fcc2 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -182,6 +182,7 @@ static inline bool tick_nohz_full_cpu(int cpu)
- extern void tick_nohz_init(void);
- extern void __tick_nohz_full_check(void);
- extern void tick_nohz_full_kick(void);
-+extern void tick_nohz_full_kick_cpu(int cpu);
- extern void tick_nohz_full_kick_all(void);
- extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
-@@ -190,6 +191,7 @@ static inline bool tick_nohz_full_enabled(void) { return false; }
- static inline bool tick_nohz_full_cpu(int cpu) { return false; }
- static inline void __tick_nohz_full_check(void) { }
- static inline void tick_nohz_full_kick(void) { }
-+static inline void tick_nohz_full_kick_cpu(int cpu) { }
- static inline void tick_nohz_full_kick_all(void) { }
- static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
- #endif
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9cae286..e4b344e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1499,9 +1499,7 @@ void scheduler_ipi(void)
- 	 */
- 	preempt_fold_need_resched();
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 633f5ed..155dc86 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -29,6 +29,18 @@ extern unsigned int total_cpus;
+ int smp_call_function_single(int cpuid, smp_call_func_t func, void *info,
+ 			     int wait);
  
--	if (llist_empty(&this_rq()->wake_list)
--			&& !tick_nohz_full_cpu(smp_processor_id())
--			&& !got_nohz_idle_kick())
-+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
- 		return;
- 
- 	/*
-@@ -1518,7 +1516,6 @@ void scheduler_ipi(void)
- 	 * somewhat pessimize the simple resched case.
- 	 */
- 	irq_enter();
--	tick_nohz_full_check();
- 	sched_ttwu_pending();
- 
- 	/*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c9007f2..4771063 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1225,7 +1225,7 @@ static inline void inc_nr_running(struct rq *rq)
- 		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
--			smp_send_reschedule(rq->cpu);
-+			tick_nohz_full_kick_cpu(rq->cpu);
- 		}
-        }
- #endif
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 9f8af69..33a0043 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -230,6 +230,26 @@ void tick_nohz_full_kick(void)
- 		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
++struct queue_single_data;
++typedef void (*smp_queue_func_t)(struct queue_single_data *qsd);
++
++struct queue_single_data {
++	struct call_single_data data;
++	smp_queue_func_t func;
++	int pending;
++};
++
++int smp_queue_function_single(int cpuid, smp_queue_func_t func,
++			      struct queue_single_data *qsd);
++
+ /*
+  * Call a function on all processors
+  */
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 06d574e..bfe7b36 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -265,6 +265,50 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd)
  }
+ EXPORT_SYMBOL_GPL(smp_call_function_single_async);
  
-+static DEFINE_PER_CPU(struct queue_single_data, nohz_full_kick_qsd);
-+
-+static void nohz_full_kick_queue(struct queue_single_data *qsd)
++void generic_smp_queue_function_single_interrupt(void *info)
 +{
-+	__tick_nohz_full_check();
++	struct queue_single_data *qsd = info;
++
++	WARN_ON_ONCE(xchg(&qsd->pending, 0) != 1);
++	qsd->func(qsd);
 +}
 +
-+void tick_nohz_full_kick_cpu(int cpu)
++/**
++ * smp_queue_function_single - Queue an asynchronous function to run on a
++ * 				specific CPU unless it's already pending.
++ * @func: The function to run. This must be fast and non-blocking.
++ * @qsd: The data contained in the interested object if any
++ *
++ * Like smp_call_function_single_async() but the call to @func is serialized
++ * and won't be queued if it is already pending. In the latter case, ordering
++ * is still guaranteed such that the pending call will sees the new data we
++ * expect it to.
++ *
++ * This must not be called on offline CPUs.
++ *
++ * Returns 0 when @func is successfully queued or already pending, else a negative
++ * status code.
++ */
++int smp_queue_function_single(int cpu, smp_queue_func_t func, struct queue_single_data *qsd)
 +{
-+	if (!tick_nohz_full_cpu(cpu))
-+		return;
++	int err;
 +
-+	if (cpu == smp_processor_id()) {
-+		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+	} else {
-+		smp_queue_function_single(cpu, nohz_full_kick_queue,
-+					  &per_cpu(nohz_full_kick_qsd, cpu));
-+	}
++	if (cmpxchg(&qsd->pending, 0, 1))
++		return 0;
++
++	qsd->func = func;
++
++	preempt_disable();
++	err = generic_exec_single(cpu, &qsd->data, generic_smp_queue_function_single_interrupt, qsd, 0);
++	preempt_enable();
++
++	/* Reset is case of error. This must not be called on offline CPUs */
++	if (err)
++		qsd->pending = 0;
++
++	return err;
 +}
 +
- static void nohz_full_kick_ipi(void *info)
- {
- 	__tick_nohz_full_check();
+ /*
+  * smp_call_function_any - Run a function on any of the given cpus
+  * @mask: The mask of cpus it can run on.
 -- 
 1.8.3.1
 
