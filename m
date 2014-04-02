@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758987AbaDBUST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:18:19 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42852 "EHLO
+	id S1758958AbaDBUSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:18:18 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42854 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758917AbaDBUNa (ORCPT
+	by vger.kernel.org with ESMTP id S1758921AbaDBUNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Takashi Iwai <tiwai@suse.de>, Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Todd Previte <tprevite@gmail.com>, Dave Airlie <airlied@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 34/40] drm/i915: Undo gtt scratch pte unmapping again
-Date: Wed,  2 Apr 2014 22:13:20 +0200
-Message-Id: <f90bec2a0b2107c1c841621d1deacc84bb6c92f3.1396469191.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 14/40] nfs: defer inode_dio_done call until size update is done
+Date: Wed,  2 Apr 2014 22:13:00 +0200
+Message-Id: <cebe8f0ce211feb8c404d789950809fd20bac709.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -25,47 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Christoph Hellwig <hch@infradead.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8ee661b505613ef2747b350ca2871a31b3781bee upstream.
+commit 2a009ec98cce440c0992fc9a2353e96cdb0b048b upstream.
 
-It apparently blows up on some machines. This functionally reverts
+We need to have the I/O fully finished before telling the truncate code
+that we are done.
 
-commit 828c79087cec61eaf4c76bb32c222fbe35ac3930
-Author: Ben Widawsky <benjamin.widawsky@intel.com>
-Date:   Wed Oct 16 09:21:30 2013 -0700
-
-    drm/i915: Disable GGTT PTEs on GEN6+ suspend
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64841
-Reported-and-Tested-by: Brad  Jackson <bjackson0971@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Cc: Todd Previte <tprevite@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/i915/i915_gem_gtt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/direct.c | 32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_gtt.c b/drivers/gpu/drm/i915/i915_gem_gtt.c
-index 1f7b4caefb6e..c7fa2e420d49 100644
---- a/drivers/gpu/drm/i915/i915_gem_gtt.c
-+++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
-@@ -536,7 +536,7 @@ void i915_gem_suspend_gtt_mappings(struct drm_device *dev)
- 	dev_priv->gtt.base.clear_range(&dev_priv->gtt.base,
- 				       dev_priv->gtt.base.start / PAGE_SIZE,
- 				       dev_priv->gtt.base.total / PAGE_SIZE,
--				       false);
-+				       true);
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index df06e6b1952e..2adc0094cde8 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -227,21 +227,27 @@ static void nfs_direct_complete(struct nfs_direct_req *dreq, bool write)
+ {
+ 	struct inode *inode = dreq->inode;
+ 
+-	if (dreq->iocb) {
++	if (dreq->iocb && write) {
+ 		loff_t pos = dreq->iocb->ki_pos + dreq->count;
++
++		spin_lock(&inode->i_lock);
++		if (i_size_read(inode) < pos)
++			i_size_write(inode, pos);
++		spin_unlock(&inode->i_lock);
++	}
++
++	if (write) {
++		nfs_zap_mapping(inode, inode->i_mapping);
++		inode_dio_done(inode);
++	}
++
++	if (dreq->iocb) {
+ 		long res = (long) dreq->error;
+ 		if (!res)
+ 			res = (long) dreq->count;
+-
+-		if (write) {
+-			spin_lock(&inode->i_lock);
+-			if (i_size_read(inode) < pos)
+-				i_size_write(inode, pos);
+-			spin_unlock(&inode->i_lock);
+-		}
+-
+ 		aio_complete(dreq->iocb, res, 0);
+ 	}
++
+ 	complete_all(&dreq->completion);
+ 
+ 	nfs_direct_req_release(dreq);
+@@ -484,12 +490,6 @@ out:
+ 	return result;
  }
  
- void i915_gem_restore_gtt_mappings(struct drm_device *dev)
+-static void nfs_inode_dio_write_done(struct inode *inode)
+-{
+-	nfs_zap_mapping(inode, inode->i_mapping);
+-	inode_dio_done(inode);
+-}
+-
+ #if IS_ENABLED(CONFIG_NFS_V3) || IS_ENABLED(CONFIG_NFS_V4)
+ static void nfs_direct_write_reschedule(struct nfs_direct_req *dreq)
+ {
+@@ -605,7 +605,6 @@ static void nfs_direct_write_schedule_work(struct work_struct *work)
+ 			nfs_direct_write_reschedule(dreq);
+ 			break;
+ 		default:
+-			nfs_inode_dio_write_done(dreq->inode);
+ 			nfs_direct_complete(dreq, true);
+ 	}
+ }
+@@ -622,7 +621,6 @@ static void nfs_direct_write_schedule_work(struct work_struct *work)
+ 
+ static void nfs_direct_write_complete(struct nfs_direct_req *dreq, struct inode *inode)
+ {
+-	nfs_inode_dio_write_done(inode);
+ 	nfs_direct_complete(dreq, true);
+ }
+ #endif
 -- 
 1.9.1
 
