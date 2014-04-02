@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801AbaDBAMw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:12:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756660AbaDBAMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:12:50 -0400
-Date: Tue, 1 Apr 2014 21:12:13 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        zhang yanying <zhuangyanying@huawei.com>,
-        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        Zhanghailiang <zhang.zhanghailiang@huawei.com>
-Subject: Re: VDSO pvclock may increase host cpu consumption, is this a
- problem?
-Message-ID: <20140402001213.GB29864@amt.cnet>
-References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
- <5339AB59.4050906@mit.edu>
- <20140331213032.GA5866@amt.cnet>
- <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
- <20140401180134.GA17963@amt.cnet>
- <CALCETrVFv4dHH1_D1KR43-UsVCPcXDXhwAuUWNUF5_Wgm+kw1g@mail.gmail.com>
+	id S1756795AbaDBAMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:12:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56340 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777AbaDBAMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 20:12:34 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <533B55AE.9090906@jp.fujitsu.com>
+Date: Wed, 02 Apr 2014 09:11:26 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVFv4dHH1_D1KR43-UsVCPcXDXhwAuUWNUF5_Wgm+kw1g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
+        chenhanxiao <chenhanxiao@cn.fujitsu.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net> <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org> <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net> <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org> <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org> <533A5CB1.1@jp.fujitsu.com> <20140401121920.50d1dd96c2145acc81561b82@linux-foundation.org> <CAHGf_=r03QWxw3Jg7BE3z37k4omgo_HRE9qCGw80ngtUD_iEeA@mail.gmail.com>
+In-Reply-To: <CAHGf_=r03QWxw3Jg7BE3z37k4omgo_HRE9qCGw80ngtUD_iEeA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 12:17:16PM -0700, Andy Lutomirski wrote:
-> On Tue, Apr 1, 2014 at 11:01 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > On Mon, Mar 31, 2014 at 10:33:41PM -0700, Andy Lutomirski wrote:
-> >> On Mar 31, 2014 8:45 PM, "Marcelo Tosatti" <mtosatti@redhat.com> wrote:
-> >> >
-> >> > On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
-> >> > > On 03/29/2014 01:47 AM, Zhanghailiang wrote:
-> >> > > > Hi,
-> >> > > > I found when Guest is idle, VDSO pvclock may increase host consumption.
-> >> > > > We can calcutate as follow, Correct me if I am wrong.
-> >> > > >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
-> >> > > > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
-> >> > > > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call.
-> >> > > > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
-> >> > > > Both Host and Guest is linux-3.13.6.
-> >> > > > So, whether the host cpu consumption is a problem?
-> >> > >
-> >> > > Does pvclock serve any real purpose on systems with fully-functional
-> >> > > TSCs?  The x86 guest implementation is awful, so it's about 2x slower
-> >> > > than TSC.  It could be improved a lot, but I'm not sure I understand why
-> >> > > it exists in the first place.
-> >> >
-> >> > VM migration.
-> >>
-> >> Why does that need percpu stuff?  Wouldn't it be sufficient to
-> >> interrupt all CPUs (or at least all cpus running in userspace) on
-> >> migration and update the normal timing data structures?
-> >
-> > Are you suggesting to allow interruption of the timekeeping code
-> > at any time to update frequency information ?
-> 
-> I'm not sure what you mean by "interruption of the timekeeping code".
-> I'm suggesting sending an interrupt to the guest (via a virtio device,
-> presumably) to tell it that it has been paused and resumed.
+(2014/04/02 5:15), KOSAKI Motohiro wrote:
+>>> Our middleware engineers has been complaining about this sysctl limit.
+>>> System administrator need to calculate required sysctl value by making sum
+>>> of all planned middlewares, and middleware provider needs to write "please
+>>> calculate systcl param by....." in their installation manuals.
+>>
+>> Why aren't people just setting the sysctl to a petabyte?  What problems
+>> would that lead to?
+>
+> I don't have much Fujitsu middleware knowledges. But I'd like to explain
+> very funny bug I saw.
+>
+> 1. middleware-A suggest to set SHMMAX to very large value (maybe
+> LONG_MAX, but my memory was flushed)
+> 2. middleware-B suggest to set SHMMAX to increase some dozen mega byte.
+>
+> Finally, it was overflow and didn't work at all.
+>
+> Let's demonstrate.
+>
+> # echo 18446744073709551615 > /proc/sys/kernel/shmmax
+> # cat /proc/sys/kernel/shmmax
+> 18446744073709551615
+> # echo 18446744073709551616 > /proc/sys/kernel/shmmax
+> # cat /proc/sys/kernel/shmmax
+> 0
+>
+> That's why many open source software continue the silly game. But
+> again, I don't have knowledge about Fujitsu middleware. I'm waiting
+> kamezawa-san's answer.
+>
 
-code:
+Nowadays, Middleware/application are required to be installed automatically without
+any admin's operations. But the shmmax tends to be a value which admin needs to modify
+by hand after installation. This is not the last one problem, but it is.
 
-1) disable interrupts
-2) A = RDTSC
-3) B = SCALE(A, TSC.FREQ)
+I says MW engineers "you, middleware/application, can modify it automatically
+as you needed, there will be no pain".
 
-If migration happens between 2 and 3, you've got an incorrect value.
+But they tend not to do it. (in my guess) in application writer's way on thinking..
+   - If there is a limit by OS, it should have some meaning.
+     There may be an unknown, os internal reason which the system admin need to check it.
+     For example, os will consume more resource when shmmax is enlarged.
+   - If there is a limit by OS, it should be modified by admin.
+
+I guess customer thinks so, too. There is no official information "increasing shmmax
+will not cunsume any resource and will not cause any problem in the kernel inside."
+
+Then, admins need to set it. Middleware needs to write "please modify the sysctl
+value based on this calculation....." in their manual.
+
+I think the worst problem about this "limit" is that it's hard to explain "why this limit
+exists". I need to answer "I guess it's just legacy, hehe...."
+
+Thanks,
+-Kame
 
