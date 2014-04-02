@@ -1,211 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978AbaDBUNe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:13:34 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42799 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758799AbaDBUN1 (ORCPT
+	id S1759006AbaDBUNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:13:44 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:60712 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758984AbaDBUNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:13:27 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 01/40] ALSA: hda - Fix inconsistent Mic mute LED
-Date: Wed,  2 Apr 2014 22:12:47 +0200
-Message-Id: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1396469191.git.jslaby@suse.cz>
-References: <cover.1396469191.git.jslaby@suse.cz>
+	Wed, 2 Apr 2014 16:13:38 -0400
+Message-ID: <533C6F6E.4080601@linaro.org>
+Date: Wed, 02 Apr 2014 13:13:34 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org> <533B313E.5000403@zytor.com> <533B4555.3000608@sr71.net> <533B8E3C.3090606@linaro.org> <20140402163638.GQ14688@cmpxchg.org> <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com> <20140402175852.GS14688@cmpxchg.org> <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com> <20140402194708.GV14688@cmpxchg.org>
+In-Reply-To: <20140402194708.GV14688@cmpxchg.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+On 04/02/2014 12:47 PM, Johannes Weiner wrote:
+> On Wed, Apr 02, 2014 at 12:01:00PM -0700, John Stultz wrote:
+>> On Wed, Apr 2, 2014 at 10:58 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>>> On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
+>>>> That point beside, I think the other problem with the page-cleaning
+>>>> volatility approach is that there are other awkward side effects. For
+>>>> example: Say an application marks a range as volatile. One page in the
+>>>> range is then purged. The application, due to a bug or otherwise,
+>>>> reads the volatile range. This causes the page to be zero-filled in,
+>>>> and the application silently uses the corrupted data (which isn't
+>>>> great). More problematic though, is that by faulting the page in,
+>>>> they've in effect lost the purge state for that page. When the
+>>>> application then goes to mark the range as non-volatile, all pages are
+>>>> present, so we'd return that no pages were purged.  From an
+>>>> application perspective this is pretty ugly.
+>>>>
+>>>> Johannes: Any thoughts on this potential issue with your proposal? Am
+>>>> I missing something else?
+>>> No, this is accurate.  However, I don't really see how this is
+>>> different than any other use-after-free bug.  If you access malloc
+>>> memory after free(), you might receive a SIGSEGV, you might see random
+>>> data, you might corrupt somebody else's data.  This certainly isn't
+>>> nice, but it's not exactly new behavior, is it?
+>> The part that troubles me is that I see the purged state as kernel
+>> data being corrupted by userland in this case. The kernel will tell
+>> userspace that no pages were purged, even though they were. Only
+>> because userspace made an errant read of a page, and got garbage data
+>> back.
+> That sounds overly dramatic to me.  First of all, this data still
+> reflects accurately the actions of userspace in this situation.  And
+> secondly, the kernel does not rely on this data to be meaningful from
+> a userspace perspective to function correctly.
+<insert dramatic-chipmunk video w/ text overlay "errant read corrupted
+volatile page purge state!!!!1">
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Maybe you're right, but I feel this is the sort of thing application
+developers would be surprised and annoyed by.
 
-===============
 
-commit 7fe307117db5bd7ec6efb93c563dcf44577b6d2b upstream.
+> It's really nothing but a use-after-free bug that has consequences for
+> no-one but the faulty application.  The thing that IS new is that even
+> a read is enough to corrupt your data in this case.
+>
+> MADV_REVIVE could return 0 if all pages in the specified range were
+> present, -Esomething if otherwise.  That would be semantically sound
+> even if userspace messes up.
 
-The current code for controlling mic mute LED in patch_sigmatel.c
-blindly assumes that there is a single capture switch.  But, there can
-be multiple multiple ones, and each of them flips the state, ended up
-in an inconsistent state.
+So its semantically more of just a combined mincore+dirty operation..
+and nothing more?
 
-For fixing this problem, this patch adds kcontrol to be passed to the
-hook function so that the callee can check which switch is being
-accessed.  In stac_capture_led_hook(), the state is checked as a
-bitmask, and turns on the LED when all capture switches are off.
+What are other folks thinking about this? Although I don't particularly
+like it, I probably could go along with Johannes' approach, forgoing
+SIGBUS for zero-fill and adapting the semantics that are in my mind a
+bit stranger. This would allow for ashmem-like style behavior w/ the
+additional  write-clears-volatile-state and read-clears-purged-state
+constraints (which I don't think would be problematic for Android, but
+am not totally sure).
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- sound/pci/hda/hda_generic.c    |  8 ++++----
- sound/pci/hda/hda_generic.h    |  1 +
- sound/pci/hda/patch_conexant.c |  3 ++-
- sound/pci/hda/patch_realtek.c  |  9 ++++++---
- sound/pci/hda/patch_sigmatel.c | 27 +++++++++++++++++----------
- 5 files changed, 30 insertions(+), 18 deletions(-)
+But I do worry that these semantics are easier for kernel-mm-developers
+to grasp, but are much much harder for application developers to
+understand.
 
-diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
-index 7d4ccfa48008..31da88bf6c1c 100644
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -3264,7 +3264,7 @@ static int cap_put_caller(struct snd_kcontrol *kcontrol,
- 	mutex_unlock(&codec->control_mutex);
- 	snd_hda_codec_flush_cache(codec); /* flush the updates */
- 	if (err >= 0 && spec->cap_sync_hook)
--		spec->cap_sync_hook(codec, ucontrol);
-+		spec->cap_sync_hook(codec, kcontrol, ucontrol);
- 	return err;
- }
- 
-@@ -3385,7 +3385,7 @@ static int cap_single_sw_put(struct snd_kcontrol *kcontrol,
- 		return ret;
- 
- 	if (spec->cap_sync_hook)
--		spec->cap_sync_hook(codec, ucontrol);
-+		spec->cap_sync_hook(codec, kcontrol, ucontrol);
- 
- 	return ret;
- }
-@@ -3790,7 +3790,7 @@ static int mux_select(struct hda_codec *codec, unsigned int adc_idx,
- 		return 0;
- 	snd_hda_activate_path(codec, path, true, false);
- 	if (spec->cap_sync_hook)
--		spec->cap_sync_hook(codec, NULL);
-+		spec->cap_sync_hook(codec, NULL, NULL);
- 	path_power_down_sync(codec, old_path);
- 	return 1;
- }
-@@ -5233,7 +5233,7 @@ static void init_input_src(struct hda_codec *codec)
- 	}
- 
- 	if (spec->cap_sync_hook)
--		spec->cap_sync_hook(codec, NULL);
-+		spec->cap_sync_hook(codec, NULL, NULL);
- }
- 
- /* set right pin controls for digital I/O */
-diff --git a/sound/pci/hda/hda_generic.h b/sound/pci/hda/hda_generic.h
-index 0929a06df812..a1095de808c8 100644
---- a/sound/pci/hda/hda_generic.h
-+++ b/sound/pci/hda/hda_generic.h
-@@ -274,6 +274,7 @@ struct hda_gen_spec {
- 	void (*init_hook)(struct hda_codec *codec);
- 	void (*automute_hook)(struct hda_codec *codec);
- 	void (*cap_sync_hook)(struct hda_codec *codec,
-+			      struct snd_kcontrol *kcontrol,
- 			      struct snd_ctl_elem_value *ucontrol);
- 
- 	/* PCM hooks */
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 96f07ce56603..fde381d02afd 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3282,7 +3282,8 @@ static void cxt_update_headset_mode(struct hda_codec *codec)
- }
- 
- static void cxt_update_headset_mode_hook(struct hda_codec *codec,
--			     struct snd_ctl_elem_value *ucontrol)
-+					 struct snd_kcontrol *kcontrol,
-+					 struct snd_ctl_elem_value *ucontrol)
- {
- 	cxt_update_headset_mode(codec);
- }
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index deddee9c1565..6a32c857f704 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -695,7 +695,8 @@ static void alc_inv_dmic_sync(struct hda_codec *codec, bool force)
- }
- 
- static void alc_inv_dmic_hook(struct hda_codec *codec,
--			     struct snd_ctl_elem_value *ucontrol)
-+			      struct snd_kcontrol *kcontrol,
-+			      struct snd_ctl_elem_value *ucontrol)
- {
- 	alc_inv_dmic_sync(codec, false);
- }
-@@ -3141,7 +3142,8 @@ static void alc269_fixup_hp_gpio_mute_hook(void *private_data, int enabled)
- 
- /* turn on/off mic-mute LED per capture hook */
- static void alc269_fixup_hp_gpio_mic_mute_hook(struct hda_codec *codec,
--			       struct snd_ctl_elem_value *ucontrol)
-+					       struct snd_kcontrol *kcontrol,
-+					       struct snd_ctl_elem_value *ucontrol)
- {
- 	struct alc_spec *spec = codec->spec;
- 	unsigned int oldval = spec->gpio_led;
-@@ -3403,7 +3405,8 @@ static void alc_update_headset_mode(struct hda_codec *codec)
- }
- 
- static void alc_update_headset_mode_hook(struct hda_codec *codec,
--			     struct snd_ctl_elem_value *ucontrol)
-+					 struct snd_kcontrol *kcontrol,
-+					 struct snd_ctl_elem_value *ucontrol)
- {
- 	alc_update_headset_mode(codec);
- }
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 6133423821d1..d761c0b879c9 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -195,7 +195,7 @@ struct sigmatel_spec {
- 	int default_polarity;
- 
- 	unsigned int mic_mute_led_gpio; /* capture mute LED GPIO */
--	bool mic_mute_led_on; /* current mic mute state */
-+	unsigned int mic_enabled; /* current mic mute state (bitmask) */
- 
- 	/* stream */
- 	unsigned int stream_delay;
-@@ -325,19 +325,26 @@ static void stac_gpio_set(struct hda_codec *codec, unsigned int mask,
- 
- /* hook for controlling mic-mute LED GPIO */
- static void stac_capture_led_hook(struct hda_codec *codec,
--			       struct snd_ctl_elem_value *ucontrol)
-+				  struct snd_kcontrol *kcontrol,
-+				  struct snd_ctl_elem_value *ucontrol)
- {
- 	struct sigmatel_spec *spec = codec->spec;
--	bool mute;
-+	unsigned int mask;
-+	bool cur_mute, prev_mute;
- 
--	if (!ucontrol)
-+	if (!kcontrol || !ucontrol)
- 		return;
- 
--	mute = !(ucontrol->value.integer.value[0] ||
--		 ucontrol->value.integer.value[1]);
--	if (spec->mic_mute_led_on != mute) {
--		spec->mic_mute_led_on = mute;
--		if (mute)
-+	mask = 1U << snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
-+	prev_mute = !spec->mic_enabled;
-+	if (ucontrol->value.integer.value[0] ||
-+	    ucontrol->value.integer.value[1])
-+		spec->mic_enabled |= mask;
-+	else
-+		spec->mic_enabled &= ~mask;
-+	cur_mute = !spec->mic_enabled;
-+	if (cur_mute != prev_mute) {
-+		if (cur_mute)
- 			spec->gpio_data |= spec->mic_mute_led_gpio;
- 		else
- 			spec->gpio_data &= ~spec->mic_mute_led_gpio;
-@@ -3974,7 +3981,7 @@ static void stac_setup_gpio(struct hda_codec *codec)
- 	if (spec->mic_mute_led_gpio) {
- 		spec->gpio_mask |= spec->mic_mute_led_gpio;
- 		spec->gpio_dir |= spec->mic_mute_led_gpio;
--		spec->mic_mute_led_on = true;
-+		spec->mic_enabled = 0;
- 		spec->gpio_data |= spec->mic_mute_led_gpio;
- 
- 		spec->gen.cap_sync_hook = stac_capture_led_hook;
--- 
-1.9.1
+Additionally unless we could really leave access-after-volatile as a
+total undefined behavior, this would lock us into O(page) behavior and
+would remove the possibility of O(log(ranges)) behavior Minchan and I
+were able to get (admittedly with more complicated code - but something
+I was hoping we'd be able to get back to after the base semantics and
+interface behavior was understood and merged). I since applications will
+have bugs and will access after volatile, we won't be able to get away
+with that sort of behavioral flexibility.
 
+thanks
+-john
