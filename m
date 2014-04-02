@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933156AbaDBTul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:50:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50462 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932669AbaDBTug (ORCPT
+	id S933170AbaDBTve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:51:34 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:55825 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933057AbaDBTva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:50:36 -0400
-Date: Wed, 2 Apr 2014 20:50:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140402195023.GL14763@sirena.org.uk>
-References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
- <1396433349-31470-4-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 2 Apr 2014 15:51:30 -0400
+Message-ID: <533C69A9.8090804@hp.com>
+Date: Wed, 02 Apr 2014 13:48:57 -0600
+From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8SdtHY/0P4yzaavF"
-Content-Disposition: inline
-In-Reply-To: <1396433349-31470-4-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 3/3] regmap: add DT endianness binding support.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Jan Kara <jack@suse.cz>, T Makphaibulchoke <tmac@hp.com>
+CC: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aswin@hp.com
+Subject: Re: [PATCH v2] fs/ext4: increase parallelism in updating ext4 orphan
+ list
+References: <1380728283-61038-1-git-send-email-tmac@hp.com> <1396456148-20455-1-git-send-email-tmac@hp.com> <20140402174109.GD8657@quack.suse.cz>
+In-Reply-To: <20140402174109.GD8657@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/02/2014 11:41 AM, Jan Kara wrote:
+>   Thanks for the patches and measurements! So I agree we contend a lot on
+> orphan list changes in ext4. But what you do seems to be unnecessarily
+> complicated and somewhat hiding the real substance of the patch. If I
+> understand your patch correctly, all it does is that it does the
+> preliminary work (ext4_reserve_inode_write(),
+> ext4_journal_get_write_access()) without the global orphan mutex (under the
+> hashed mutex).
+> 
 
---8SdtHY/0P4yzaavF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks Jan for the comments.  Yes, doing some of the preliminary work with grabbing the global mutex is part of the patch's strategy.
 
-On Wed, Apr 02, 2014 at 06:09:09PM +0800, Xiubo Li wrote:
+> However orphan operations on a single inode are already serialized by
+> i_mutex so there's no need to introduce any new hashed lock. Just add
+> assertion mutex_locked(&inode->i_mutex) to ext4_orphan_add() and
+> ext4_orphan_del() - you might need to lock i_mutex around the code in
+> fs/ext4/migrate.c and in ext4_tmpfile() but that should be fine.
+> 
 
-> +	ret = of_regmap_get_endian(dev, bus, config, "reg_endian", &reg_endian);
-> +	if (ret)
-> +		return ERR_PTR(ret);
-> +
-> +	ret = of_regmap_get_endian(dev, bus, config, "val_endian", &val_endian);
-> +	if (ret)
-> +		return ERR_PTR(ret);
+As you pointed out, sounds like there may still be some code path that did not acquire the i_mutex.  It probably would be better to acquire the i_mutex if it is not already acquired.
 
-Actually, if we're going to be doing this for all devices then we
-probably need to namespace the properties too.  Not sure what to do for
-a prefix though.  One for the DT folks.
+> Also I'm somewhat failing to see what the spinlock s_orphan_lock brings us.
+> I'd guess that the mutex could still protect also the in-memory list and we
+> have to grab it in all the relevant cases anyway (in some rare cases we
+> could avoid taking the mutex and spinlock would be enough but these
+> shouldn't be performance relevant). Please correct me if I'm wrong here, I
+> didn't look at the code for that long.
+> 
 
---8SdtHY/0P4yzaavF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yes, you are correct.  In the error or previous error case, we only need to update the in memory orphan list, which spinlock seems to be a better mechanism for serialization. Using a separate spinlock would also allow simultanoue operations of both the error and non-error cases.  As you said, if this is a very rare case, it should not make much different.  I'll rerun and ompare the benchmark results using a single mutex.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> Finally (and I somewhat miss this in your patch), I'd think we might need
+> to use list_empty_careful() when checking inode's orphan list without
+> global orphan list lock.
+> 
+> 								Honza
+> 
 
-iQIcBAEBAgAGBQJTPGn8AAoJELSic+t+oim9HIEP/0iAkrdBpw7BNOfrEvJNztgG
-ZVjT9USb1BItvIwS8GZla64Awx5GCQxUTI2RKlENYnPo8RfscA8nTfYj7lllc0p/
-AHUtJPKL06+KIHItS9ffQMh6X7vATt8q1l+QV4s5dXnqCnBv4wJgoZ3/h3kfpTSh
-OgrTPkWQs7emc5KdXYgJdzjcFU36ZHUgXwTf+pH9B3X1I+gi77KUPW8QIuIueMhK
-7dhzolIlIrVry9ZboBq361cxQpbZ456NCqcDPV3SHtvRUb8YxTEFxOFtsTwDrfRr
-/wXOkx3sw5shoojxcQQwWlZn6n36/w0LyDWu5u/ZI4ZOIqedcJGeGWDuCPsrgQDa
-RTo4ATyf8AY3MYXIow868BCiUb3OgBy/l4NjZMrhZk8Kz+ykNRCpFSAx7qHgWIFY
-X9oYxsbthOZH86tnH/45rmL/nHCNX+D9fZhi6dcbXTd1qX1JNKd4oIgjFU29VOkJ
-L82oAHyPvML3SuQPzZkRg8Yg94TmiMYR2djeXyZsBJxqVGaL22NoxQhtCKdFW9Bt
-kzfBYZsnXQXd8IyCEkH1SdAUtILskY5VZOdOdJn0QNpP156AwalILTV9sMbuS2gs
-Vna7osxCe1wEdw+1leyt7WK+sRbpYKEqHIpoH8n+jiOqjFe++z+pfu7o8FiXE6jy
-G5uR5DoFlQ3p4q9tOwUJ
-=4ciz
------END PGP SIGNATURE-----
+Since we already serialize orphan operation with a single inode, the only race condition is an orphan operation on other inodes moving the inode within the orphan list.  In this case head->next should not equal head.  But yes, it is probably safer to use the list_empty_careful().
 
---8SdtHY/0P4yzaavF--
+Thanks,
+Mak.
+
