@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961AbaDBSOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:14:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47851 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932517AbaDBSN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:13:57 -0400
-Date: Wed, 2 Apr 2014 20:13:54 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: axboe@kernel.dk, hch@lst.de, jack@suse.cz, viro@zeniv.linux.org.uk,
-        kmo@daterainc.com, namjae.jeon@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blkdev: use an efficient way to check merge flags
-Message-ID: <20140402181354.GB13479@quack.suse.cz>
-References: <1396451946-13924-1-git-send-email-nasa4836@gmail.com>
+	id S932973AbaDBSOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:14:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48939 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932858AbaDBSOe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:14:34 -0400
+Date: Wed, 2 Apr 2014 11:16:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: balbi@ti.com, Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH][next] phy: core: make NULL a valid phy reference if
+ !CONFIG_GENERIC_PHY
+Message-ID: <20140402181655.GB23998@kroah.com>
+References: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
+ <20140313152024.GF4599@saruman.home>
+ <20140313214450.GG27355@saruman.home>
+ <533C4E8F.20306@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396451946-13924-1-git-send-email-nasa4836@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <533C4E8F.20306@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 02-04-14 23:19:06, Jianyu Zhan wrote:
-> A bitwise flag comparison could be done using a more efficient bit-ops way.
-  OK, but have you checked the generated code is actually any better? This
-is something I'd expect a compiler might be able to optimize anyway. And the
-original code looks more readable to me.
+On Wed, Apr 02, 2014 at 01:53:19PM -0400, Santosh Shilimkar wrote:
+> On Thursday 13 March 2014 05:44 PM, Felipe Balbi wrote:
+> > Hi,
+> > 
+> > On Thu, Mar 13, 2014 at 10:20:24AM -0500, Felipe Balbi wrote:
+> >> On Thu, Mar 13, 2014 at 01:11:13PM +0200, Grygorii Strashko wrote:
+> >>> This fixes a regression on Keystone 2 platforms caused by patch
+> >>> 57303488cd37da58263e842de134dc65f7c626d5
+> >>> "usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
+> >>> optional support of generic phy in DWC3 core.
+> >>>
+> >>> On Keystone 2 platforms the USB is not working now because
+> >>> CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
+> >>> return -ENOSYS always. The log shows:
+> >>>  dwc3 2690000.dwc3: failed to initialize core
+> >>>  dwc3: probe of 2690000.dwc3 failed with error -38
+> >>>
+> >>> Hence, fix it by making NULL a valid phy reference in Generic PHY
+> >>> APIs stubs in the same way as it was done by the patch
+> >>> 04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
+> >>> a valid phy reference".
+> >>>
+> >>> CC: Kishon Vijay Abraham I <kishon@ti.com>
+> >>> CC: Felipe Balbi <balbi@ti.com>
+> >>> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> >>
+> >> nice :-)
+> >>
+> >> Acked-by: Felipe Balbi <balbi@ti.com>
+> > 
+> > Greg, if your tree isn't closed yet, could you consider this patch still
+> > for v3.15 merge window ? Grygorii found a regression on Keystone
+> > platforms which this patch fixes. Let me know if you need the original
+> > patch and myself or Kishon can send it to you.
+> > 
+> Just checking whether the fix was picked up for the 3.14 merge window ?
 
-								Honza
+3.14 is long released, the merge window for that was months ago.
 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  include/linux/blkdev.h | 13 +++----------
->  1 file changed, 3 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 1e1fa3f..adfa40a 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -655,16 +655,9 @@ static inline bool rq_mergeable(struct request *rq)
->  static inline bool blk_check_merge_flags(unsigned int flags1,
->  					 unsigned int flags2)
->  {
-> -	if ((flags1 & REQ_DISCARD) != (flags2 & REQ_DISCARD))
-> -		return false;
-> -
-> -	if ((flags1 & REQ_SECURE) != (flags2 & REQ_SECURE))
-> -		return false;
-> -
-> -	if ((flags1 & REQ_WRITE_SAME) != (flags2 & REQ_WRITE_SAME))
-> -		return false;
-> -
-> -	return true;
-> +	return (flags1 & (REQ_DISCARD | REQ_SECURE | REQ_WRITE_SAME)) ^
-> +	       (flags2 & (REQ_DISCARD | REQ_SECURE | REQ_WRITE_SAME))
-> +		== 0;
->  }
->  
->  static inline bool blk_write_same_mergeable(struct bio *a, struct bio *b)
-> -- 
-> 1.9.0.GIT
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+greg k-h
