@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161027AbaDBWh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:37:57 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:54283 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030655AbaDBWhz (ORCPT
+	id S1030697AbaDBWjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:39:31 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:54089 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932488AbaDBWj3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:37:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAF52+S6vqK_D7bAz9o65ATSZsg4MfqJgo+Qji8+4=OQJDSEJ7A@mail.gmail.com>
-References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com>
- <1396391358-22367-1-git-send-email-mdempsky@chromium.org> <20140402145850.GB7332@redhat.com>
- <CAF52+S6vqK_D7bAz9o65ATSZsg4MfqJgo+Qji8+4=OQJDSEJ7A@mail.gmail.com>
-From: Matthew Dempsky <mdempsky@chromium.org>
-Date: Wed, 2 Apr 2014 15:37:33 -0700
-X-Google-Sender-Auth: _hmdykTf5jUWzGCUPR2WLDVfeeU
-Message-ID: <CAF52+S4hs2oM_qw9Zo-6qiOp_-Cyt3ZpL+zU2_MUv=d7UKPqEA@mail.gmail.com>
-Subject: Re: [PATCH v3] ptrace: Fix fork event messages across pid namespaces
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 2 Apr 2014 18:39:29 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <533C8F3C.6090306@archlinux.org>
+Date: Wed, 2 Apr 2014 15:39:25 -0700
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
+References: <533C8F3C.6090306@archlinux.org>
+To: =?windows-1252?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 2:58 PM, Matthew Dempsky <mdempsky@google.com> wrote:
-> Otherwise, it looks like (e.g.) the attempts to get the parent's pid
-> in fill_prstatus() and tomoyo_sys_getppid() are also theoretical races
-> of the same kind?
+Hi Thomas,
 
-Doh, nevermind, those functions would potentially be use null "struct
-pid" pointers, not "struct pid_namespace" pointers; and pid_nr_ns()
-guards against pid being null.
+> I am having trouble due to the following commit, which landed in 3.14:
+> 
+> commit d2bee8fb6e18f6116aada39851918473761f7ab1
+> Author: Tedd Ho-Jeong An <tedd.an@intel.com>
+> Date:   Tue Nov 12 13:16:41 2013 -0800
+> 
+>    Bluetooth: Enable autosuspend for Intel Bluetooth device
+> 
+> I have an Intel bluetooth dongle (8087:07dc) built into a Thinkpad. I
+> primarily use it with my bluetooth mouse. Whenever I stop using the
+> mouse for a few seconds, the mouse stops working. When I turn it off,
+> the bluetooth applet on my desktop shows it as connected indefinitely. I
+> can fix this situation by either of these actions:
+> * restart bluetooth.service
+> * disable+reenable bluetooth in the bluetooth applet
+> * modprobe -r btusb && modprobe btusb
+> The mouse then works again until I stop moving it for a short while.
+> 
+> The culprit is USB autosuspend. When I explicitly disable it (echo 'on'
+>> power/control), the mouse works fine again. However, due to the
+> aforementioned commit, I need to do this manually after every boot and
+> every resume, because btusb keeps setting it back to 'auto'. I have
+> found no way of overriding this behaviour.
 
-Okay, I think I understand now why guarding against the
-task_parent_pid_ns() here is consistent with other RCU code.  I'll
-send a revised patch that does that.
+what USB controller do you have your Bluetooth controller attached to. I had the same issue, but it went away when some of the xHCI host controller fixes got merged. Some other reported issues with some USB 2 controllers.
 
-Also, it looks like "0" is the conventional value for unrepresentable
-pid_t values, so I'll change to do that too.
+You can easily check by running the "Inquiry (LIAC)” test from tools/hci-tester. Problem is that some of the HCI events are not making it to the host. They get delivered as soon as the device wakes up again. In this test case it is the Inquiry Complete event. If you poke the controller and send a new command, the even will be magically dequeued.
+
+Regards
+
+Marcel
+
