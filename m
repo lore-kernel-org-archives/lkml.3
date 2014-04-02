@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268AbaDBUZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:25:55 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42824 "EHLO
+	id S933250AbaDBUZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:25:53 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42830 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758888AbaDBUN2 (ORCPT
+	by vger.kernel.org with ESMTP id S1758889AbaDBUN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 19/40] nfs: add memory barriers around NFS_INO_INVALID_DATA and NFS_INO_INVALIDATING
-Date: Wed,  2 Apr 2014 22:13:05 +0200
-Message-Id: <2d0270ca61c101531d9663fcb1d1b93d0cc9a05b.1396469191.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 40/40] netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+Date: Wed,  2 Apr 2014 22:13:26 +0200
+Message-Id: <0463e61841ed39a41eee1dc682b45067d74ac6ac.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -24,85 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4db72b40fdbc706f8957e9773ae73b1574b8c694 upstream.
+commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
 
-If the setting of NFS_INO_INVALIDATING gets reordered to before the
-clearing of NFS_INO_INVALID_DATA, then another task may hit a race
-window where both appear to be clear, even though the inode's pages are
-still in need of invalidation. Fix this by adding the appropriate memory
-barriers.
+Some occurences in the netfilter tree use skb_header_pointer() in
+the following way ...
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+  struct dccp_hdr _dh, *dh;
+  ...
+  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
+
+... where dh itself is a pointer that is being passed as the copy
+buffer. Instead, we need to use &_dh as the forth argument so that
+we're copying the data into an actual buffer that sits on the stack.
+
+Currently, we probably could overwrite memory on the stack (e.g.
+with a possibly mal-formed DCCP packet), but unintentionally, as
+we only want the buffer to be placed into _dh variable.
+
+Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfs/dir.c   | 14 +++++++++++---
- fs/nfs/inode.c |  1 +
- fs/nfs/write.c |  1 +
- 3 files changed, 13 insertions(+), 3 deletions(-)
+ net/netfilter/nf_conntrack_proto_dccp.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 4d9f098614bc..140280623348 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -276,6 +276,15 @@ out_eof:
- 	return -EBADCOOKIE;
- }
+diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
+index a99b6c3427b0..59359bec328a 100644
+--- a/net/netfilter/nf_conntrack_proto_dccp.c
++++ b/net/netfilter/nf_conntrack_proto_dccp.c
+@@ -428,7 +428,7 @@ static bool dccp_new(struct nf_conn *ct, const struct sk_buff *skb,
+ 	const char *msg;
+ 	u_int8_t state;
  
-+static bool
-+nfs_readdir_inode_mapping_valid(struct nfs_inode *nfsi)
-+{
-+	if (nfsi->cache_validity & (NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA))
-+		return false;
-+	smp_rmb();
-+	return !test_bit(NFS_INO_INVALIDATING, &nfsi->flags);
-+}
-+
- static
- int nfs_readdir_search_for_cookie(struct nfs_cache_array *array, nfs_readdir_descriptor_t *desc)
- {
-@@ -289,9 +298,8 @@ int nfs_readdir_search_for_cookie(struct nfs_cache_array *array, nfs_readdir_des
- 			struct nfs_open_dir_context *ctx = desc->file->private_data;
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
  
- 			new_pos = desc->current_index + i;
--			if (ctx->attr_gencount != nfsi->attr_gencount
--			    || (nfsi->cache_validity & (NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA))
--			    || test_bit(NFS_INO_INVALIDATING, &nfsi->flags)) {
-+			if (ctx->attr_gencount != nfsi->attr_gencount ||
-+			    !nfs_readdir_inode_mapping_valid(nfsi)) {
- 				ctx->duped = 0;
- 				ctx->attr_gencount = nfsi->attr_gencount;
- 			} else if (new_pos < desc->ctx->pos) {
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 12c0fa8ae004..fdeeb28f287b 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1060,6 +1060,7 @@ int nfs_revalidate_mapping(struct inode *inode, struct address_space *mapping)
- 	}
+ 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
+@@ -486,7 +486,7 @@ static int dccp_packet(struct nf_conn *ct, const struct sk_buff *skb,
+ 	u_int8_t type, old_state, new_state;
+ 	enum ct_dccp_roles role;
  
- 	set_bit(NFS_INO_INVALIDATING, bitlock);
-+	smp_wmb();
- 	nfsi->cache_validity &= ~NFS_INO_INVALID_DATA;
- 	spin_unlock(&inode->i_lock);
- 	trace_nfs_invalidate_mapping_enter(inode);
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index d69e789f1908..c6aa89f92558 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -915,6 +915,7 @@ static bool nfs_write_pageuptodate(struct page *page, struct inode *inode)
- 		goto out;
- 	if (nfsi->cache_validity & (NFS_INO_INVALID_DATA|NFS_INO_REVAL_PAGECACHE))
- 		return false;
-+	smp_rmb();
- 	if (test_bit(NFS_INO_INVALIDATING, &nfsi->flags))
- 		return false;
- out:
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
+ 	type = dh->dccph_type;
+ 
+@@ -577,7 +577,7 @@ static int dccp_error(struct net *net, struct nf_conn *tmpl,
+ 	unsigned int cscov;
+ 	const char *msg;
+ 
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	if (dh == NULL) {
+ 		msg = "nf_ct_dccp: short packet ";
+ 		goto out_invalid;
 -- 
 1.9.1
 
