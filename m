@@ -1,74 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014AbaDBTEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:04:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49461 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785AbaDBTEl (ORCPT
+	id S933025AbaDBTF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:05:28 -0400
+Received: from coen-mx.newsnow.co.uk ([213.146.191.129]:45355 "EHLO
+	coen-mx.newsnow.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932850AbaDBTF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:04:41 -0400
-Date: Wed, 2 Apr 2014 12:04:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-Id: <20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org>
-In-Reply-To: <20140402144219.4cafbe37@gandalf.local.home>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Apr 2014 15:05:26 -0400
+X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Apr 2014 15:05:25 EDT
+Date: Wed, 2 Apr 2014 19:59:04 +0100
+From: Struan Bartlett <struan.bartlett@gmail.com>
+To: Matt Mackall <mpm@selenic.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Schwab <schwab@linux-m68k.org>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Pirko <jiri@resnulli.us>, Joe Perches <joe@perches.com>,
+        Dan Aloni <alonid@postram.com>
+Subject: [PATCH v3] netconsole: Add tty driver
+Message-ID: <20140402185904.GD11734@NewsNow.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Apr 2014 14:42:19 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
+Adds tty driver to netconsole module. When module is loaded,
+creates /dev/netcon0 device and enables support for console=netcon0
+kernel cmdline option, causing /dev/console output to be sent to
+/dev/netcon0. This allows startup/shutdown script output from
+headless platforms to be logged over (secure) network (subject to
+availability of specified network device).
 
-> It has come to our attention that a system running a specific user
-> space init program will not boot if you add "debug" to the kernel
-> command line. What happens is that the user space tool parses the
-> kernel command line, and if it sees "debug" it will spit out so much
-> information that the system fails to boot. This basically renders the
-> "debug" option for the kernel useless.
-> 
-> This bug has been reported to the developers of said tool
-> here:
-> 
->   https://bugs.freedesktop.org/show_bug.cgi?id=76935
-> 
-> The response is:
-> 
-> "Generic terms are generic, not the first user owns them."
-> 
-> That is, the "debug" statement on the *kernel* command line is not
-> owned by the kernel just because it was the first user of it, and
-> they refuse to fix their bug.
-> 
-> Well, my response is, we OWN the kernel command line, and as such, we
-> can keep the users from seeing stuff on it if we so choose. And with
-> that, I propose this patch, which hides "debug" from /proc/cmdline,
-> such that we don't have to worry about tools parsing for it and causing
-> hardship for those trying to debug the kernel.
-> 
+To: Matt Mackall <mpm@selenic.com>
+Signed-off-by: Struan Bartlett <struan.bartlett@gmail.com>
+---
 
-I had to check the date on this but surprisingly, it's all post
-April 1.
+Changes since v1:
+ * Fixed whitespace mangled by broken mailer
 
---- a/fs/read_write.c~a
-+++ a/fs/read_write.c
-@@ -513,6 +513,8 @@ SYSCALL_DEFINE3(read, unsigned int, fd,
- 	struct fd f = fdget_pos(fd);
- 	ssize_t ret = -EBADF;
+Changes since v2:
+ * Fixed general mangling by email client (hopefully)
+
+--- a/drivers/net/netconsole.c	2014-03-31 04:40:15.000000000 +0100
++++ b/drivers/net/netconsole.c	2014-04-01 11:58:50.000000000 +0100
+@@ -15,6 +15,7 @@
+  *               generic card hooks
+  *               works non-modular
+  * 2003-09-07    rewritten with netpoll api
++ * 2014-03-31    tty driver by Struan Bartlett
+  */
  
-+	BUG_ON(!strcmp(current->comm, "systemd"));
+ /****************************************************************
+@@ -47,6 +48,7 @@
+ #include <linux/netpoll.h>
+ #include <linux/inet.h>
+ #include <linux/configfs.h>
++#include <linux/tty.h>
+ 
+ MODULE_AUTHOR("Maintainer: Matt Mackall <mpm@selenic.com>");
+ MODULE_DESCRIPTION("Console driver for network interfaces");
+@@ -728,7 +730,7 @@ static struct notifier_block netconsole_
+ 	.notifier_call  = netconsole_netdev_event,
+ };
+ 
+-static void write_msg(struct console *con, const char *msg, unsigned int len)
++static void _write_msg(const char *msg, unsigned int len)
+ {
+ 	int frag, left;
+ 	unsigned long flags;
+@@ -764,10 +766,63 @@ static void write_msg(struct console *co
+ 	spin_unlock_irqrestore(&target_list_lock, flags);
+ }
+ 
++static void write_msg(struct console *con, const char *msg, unsigned int len)
++{
++	_write_msg(msg, len);
++}
 +
- 	if (f.file) {
- 		loff_t pos = file_pos_read(f.file);
- 		ret = vfs_read(f.file, buf, count, &pos);
-_
-
++static int netconsole_tty_open(struct tty_struct *tty, struct file *filp)
++{
++	return 0;
++}
++
++static void netconsole_tty_close(struct tty_struct *tty, struct file *filp)
++{
++}
++
++static int netconsole_tty_write(struct tty_struct *tty,
++				const unsigned char *buf, int count)
++{
++	_write_msg(buf, count);
++	return count;
++}
++
++static int netconsole_tty_put_char(struct tty_struct *tty, unsigned char ch)
++{
++	char temp[2] = { ch, 0 };
++	_write_msg(temp, 1);
++	return 1;
++}
++
++static int netconsole_tty_write_room(struct tty_struct *tty)
++{
++	return MAX_PRINT_CHUNK;
++}
++
++static const struct tty_operations netconsole_tty_ops = {
++	.open		= netconsole_tty_open,
++	.close		= netconsole_tty_close,
++	.write		= netconsole_tty_write,
++	.put_char	= netconsole_tty_put_char,
++	.write_room	= netconsole_tty_write_room,
++};
++
++static struct tty_port netconsole_tty_port;
++static struct tty_driver *netconsole_tty_driver;
++
++static struct tty_driver *netconsole_device(struct console *co, int *index)
++{
++	if (!(co->flags & CON_ENABLED))
++		return NULL;
++	*index = co->index;
++	return netconsole_tty_driver;
++}
++
+ static struct console netconsole = {
+ 	.name	= "netcon",
+ 	.flags	= CON_ENABLED,
+ 	.write	= write_msg,
++	.device = netconsole_device
+ };
+ 
+ static int __init init_netconsole(void)
+@@ -802,11 +857,39 @@ static int __init init_netconsole(void)
+ 	if (err)
+ 		goto undonotifier;
+ 
++	netconsole_tty_driver = alloc_tty_driver(1);
++	if (!netconsole_tty_driver) {
++		err = -ENOMEM;
++		goto undonotifier;
++	}
++
++	tty_port_init(&netconsole_tty_port);
++
++	netconsole_tty_driver->driver_name = "netcon";
++	netconsole_tty_driver->name = "netcon";
++	netconsole_tty_driver->type = TTY_DRIVER_TYPE_SYSTEM;
++	netconsole_tty_driver->subtype = SYSTEM_TYPE_TTY;
++	netconsole_tty_driver->init_termios = tty_std_termios;
++	netconsole_tty_driver->init_termios.c_iflag = 0;
++	netconsole_tty_driver->init_termios.c_oflag = 0;
++	netconsole_tty_driver->flags = TTY_DRIVER_REAL_RAW;
++
++	tty_set_operations(netconsole_tty_driver, &netconsole_tty_ops);
++	tty_port_link_device(&netconsole_tty_port, netconsole_tty_driver, 0);
++
++	err = tty_register_driver(netconsole_tty_driver);
++	if (err)
++		goto undotty;
++
+ 	register_console(&netconsole);
+ 	pr_info("network logging started\n");
+ 
+ 	return err;
+ 
++undotty:
++	put_tty_driver(netconsole_tty_driver);
++	tty_port_destroy(&netconsole_tty_port);
++
+ undonotifier:
+ 	unregister_netdevice_notifier(&netconsole_netdev_notifier);
+ 
+@@ -830,6 +913,10 @@ static void __exit cleanup_netconsole(vo
+ {
+ 	struct netconsole_target *nt, *tmp;
+ 
++	tty_unregister_driver(netconsole_tty_driver);
++	put_tty_driver(netconsole_tty_driver);
++	tty_port_destroy(&netconsole_tty_port);
++
+ 	unregister_console(&netconsole);
+ 	dynamic_netconsole_exit();
+ 	unregister_netdevice_notifier(&netconsole_netdev_notifier);
