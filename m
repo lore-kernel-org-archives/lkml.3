@@ -1,88 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030486AbaDBWCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:02:03 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:40638 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030439AbaDBWCA (ORCPT
+	id S1030644AbaDBWGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:06:44 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:48884 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030526AbaDBWGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:02:00 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Matthew Dempsky <mdempsky@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com>
-	<1396391358-22367-1-git-send-email-mdempsky@chromium.org>
-	<20140402145850.GB7332@redhat.com> <20140402154447.GA29857@redhat.com>
-	<20140402154505.GB29857@redhat.com>
-	<87eh1fisfm.fsf@x220.int.ebiederm.org>
-	<20140402155850.GA30570@redhat.com>
-Date: Wed, 02 Apr 2014 15:01:37 -0700
-In-Reply-To: <20140402155850.GA30570@redhat.com> (Oleg Nesterov's message of
-	"Wed, 2 Apr 2014 17:58:50 +0200")
-Message-ID: <87a9c3ie66.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/ncNojVE1k5B6Qzkf218NT1/YCXAjhpgk=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4980]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_05 8+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/1] pid_namespace: pidns_get() should check task_active_pid_ns() != NULL
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 2 Apr 2014 18:06:41 -0400
+Date: Wed, 2 Apr 2014 17:06:38 -0500
+From: Kim Phillips <kim.phillips@linaro.org>
+To: gregkh@linuxfoundation.org
+Cc: alex.williamson@redhat.com, stuart.yoder@freescale.com,
+        kvm@vger.kernel.org, jan.kiszka@siemens.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, bhelgaas@google.com,
+        Varun.Sethi@freescale.com, kvmarm@lists.cs.columbia.edu,
+        rafael.j.wysocki@intel.com, agraf@suse.de, linux-pci@vger.kernel.org,
+        linux@roeck-us.net, konrad.wilk@oracle.com, d.kasatkin@samsung.com,
+        tj@kernel.org, scottwood@freescale.com,
+        a.motakis@virtualopensystems.com, tech@virtualopensystems.com,
+        Bharat.Bhushan@freescale.com, toshi.kani@hp.com,
+        a.rigo@virtualopensystems.com, iommu@lists.linux-foundation.org,
+        joe@perches.com, christoffer.dall@linaro.org,
+        kim.phillips@freescale.com
+Subject: Re: [RFC PATCH] PCI: Introduce new device binding path using
+ pci_dev.driver_override
+Message-Id: <20140402170638.51745f5c231a7632422e4cc5@linaro.org>
+In-Reply-To: <20140402002324.GA2662@kroah.com>
+References: <20140401161851.18815.31108.stgit@bling.home>
+	<20140401185212.7229f2c114c7e95089f00e90@linaro.org>
+	<20140402002324.GA2662@kroah.com>
+X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+On Tue, 1 Apr 2014 17:23:24 -0700
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-2> On 04/02, Eric W. Biederman wrote:
->>
->> Oleg Nesterov <oleg@redhat.com> writes:
->>
->> > pidns_get()->get_pid_ns() can hit ns == NULL. This task_struct can't
->> > go away, but task_active_pid_ns(task) is NULL if release_task(task)
->> > was already called. Alternatively we could change get_pid_ns(ns) to
->> > check ns != NULL, but it seems that other callers are fine.
->>
->> get_pid_ns already has a ns == NULL check, so no code changes should be
->> needed.
->
-> Hmm...
->
-> 	static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
-> 	{
-> 		if (ns != &init_pid_ns)
-> 			kref_get(&ns->kref);
-> 		return ns;
-> 	}
->
-> ?
+> On Tue, Apr 01, 2014 at 06:52:12PM -0500, Kim Phillips wrote:
+> > On Tue, 01 Apr 2014 10:28:54 -0600
+> > Alex Williamson <alex.williamson@redhat.com> wrote:
+> > 
+> > > The driver_override field allows us to specify the driver for a device
+> > > rather than relying on the driver to provide a positive match of the
+> > > device.  This shortcuts the existing process of looking up the vendor
+> > > and device ID, adding them to the driver new_id, binding the device,
+> > > then removing the ID, but it also provides a couple advantages.
+> > > 
+> > > First, the above process allows the driver to bind to any device
+> > > matching the new_id for the window where it's enabled.  This is often
+> > > not desired, such as the case of trying to bind a single device to a
+> > > meta driver like pci-stub or vfio-pci.  Using driver_override we can
+> > > do this deterministically using:
+> > > 
+> > > echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
+> > > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
+> > > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
+> > > 
+> > > Previously we could not invoke drivers_probe after adding a device
+> > > to new_id for a driver as we get non-deterministic behavior whether
+> > > the driver we intend or the standard driver will claim the device.
+> > > Now it becomes a deterministic process, only the driver matching
+> > > driver_override will probe the device.
+> > > 
+> > > To return the device to the standard driver, we simply clear the
+> > > driver_override and reprobe the device, ex:
+> > > 
+> > > echo > /sys/bus/pci/devices/0000:03:00.0/preferred_driver
+> > > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
+> > > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
+> > > 
+> > > Another advantage to this approach is that we can specify a driver
+> > > override to force a specific binding or prevent any binding.  For
+> > > instance when an IOMMU group is exposed to userspace through VFIO
+> > > we require that all devices within that group are owned by VFIO.
+> > > However, devices can be hot-added into an IOMMU group, in which case
+> > > we want to prevent the device from binding to any driver (preferred
+> > > driver = "none") or perhaps have it automatically bind to vfio-pci.
+> > > With driver_override it's a simple matter for this field to be set
+> > > internally when the device is first discovered to prevent driver
+> > > matches.
+> > > 
+> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > ---
+> > > 
+> > > Apologies for the exceptionally long cc list, this is a follow-up to
+> > > Stuart's "Subject: mechanism to allow a driver to bind to any device"
+> > > thread.  This is effectively a v2 of the proof-of-concept patch I
+> > > posted in that thread.  This version changes to use a dummy id struct
+> > > to return on an "override" match, which removes the collateral damage
+> > > and greatly simplifies the patch.  This feels fairly well baked for
+> > > PCI and I would expect that platform drivers could do a similar
+> > > implementation.  From there perhaps we can discuss whether there's
+> > > any advantage to placing driver_override on struct device.  The logic
+> > > for incorporating it into the match still needs to happen per bus
+> > > driver, so it might only contribute to consistency of the show/store
+> > > sysfs attributes to move it up to struct device.  Please comment.
+> > 
+> > Sounds like Greg likes this approach more than {drv,dev}_sysfs_only.
+> 
+> I have made no such judgement, I only pointed out that if you
 
-Apparently I could not read this morning, and somehow thought
-ns != &init_pid_ns was ns != NULL.
+ok.  If no-one chimes in in favour of one or the other, driver_override
+works for platform devices.
 
+> modify/add/remove a sysfs file, it needs to have documentation for it.
 
-Eric
+ok, so the platform device implementation should add a new
+Documentation/ABI/testing/sysfs-bus-platform...
+
+> > The diff below is the result of duplicating and converting this patch
+> > for platform devices, and, indeed, binding a device to the
+> > vfio-platform driver succeeds with:
+> > 
+> > echo vfio-platform > /sys/bus/platform/devices/fff51000.ethernet/driver_override
+> > echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
+> > echo fff51000.ethernet > /sys/bus/platform/drivers_probe
+> > 
+> > However, it's almost pure duplication modulo the bus match code.  The
+> > only other place I can see where to put the common bus check is
+> > drivers/base/base.h:driver_match_device(), which I'm guessing is
+> > off-limits?  So should we leave this as per-bus code, and somehow
+> > refactor driver_override_{show,store}?
+> 
+> If you can provide a way for this to be done in a bus-independant way,
+> like we did for new_id and the like, I'd be open to reviewing it.
+
+I may be blind, but I don't see any new_id-related code shared
+between drivers/pci/pci-driver.c and, e.g., drivers/usb/serial/bus.c,
+nor do I see anything new_id related in drivers/base/.
+
+So if we are to follow the current model, the PCI and platform device
+implementations should be maintained separately.
+
+Kim
