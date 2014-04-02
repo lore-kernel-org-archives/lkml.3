@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829AbaDBSG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:06:59 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:7423 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932514AbaDBSG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:06:58 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuMNANxQPFNbtAq4/2dsb2JhbABZDoJ4xHUCAoEgF3SCJQEBAQMBJxMcIwULCAMYLjkeBhOHcQwBzy8XjnAHhDgBA4x6i1sBh0yDEodbgnBCOw
-Date: Wed, 2 Apr 2014 20:08:44 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>, jfs-discussion@lists.sourceforge.net,
-        "Dave.Kleikamp" <dave.kleikamp@oracle.com>
-Subject: Re: [PATCH 1/1] fs/jfs/jfs_inode.c: atomically set inode->i_flags
-Message-Id: <20140402200844.bf9c94540921b7647c75e580@skynet.be>
-In-Reply-To: <20140402174707.GK6901@thunk.org>
-References: <20140402192950.82812a331cb154bbc0a4183c@skynet.be>
-	<20140402174707.GK6901@thunk.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932869AbaDBSHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:07:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58126 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932514AbaDBSHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:07:17 -0400
+Date: Wed, 2 Apr 2014 14:07:07 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+Message-ID: <20140402180707.GT14688@cmpxchg.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+ <20140401212102.GM4407@cmpxchg.org>
+ <533B8C2D.9010108@linaro.org>
+ <20140402163013.GP14688@cmpxchg.org>
+ <533C3BB4.8020904@zytor.com>
+ <533C3CDD.9090400@zytor.com>
+ <20140402171812.GR14688@cmpxchg.org>
+ <533C4B7E.6030807@sr71.net>
+ <CALAqxLUR4ucQ_zOp5i3Y0+WpCWiwm2oR6Dp7aeD2XN1pjiELEQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALAqxLUR4ucQ_zOp5i3Y0+WpCWiwm2oR6Dp7aeD2XN1pjiELEQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Apr 2014 13:47:07 -0400
-Theodore Ts'o <tytso@mit.edu> wrote:
+On Wed, Apr 02, 2014 at 10:48:03AM -0700, John Stultz wrote:
+> On Wed, Apr 2, 2014 at 10:40 AM, Dave Hansen <dave@sr71.net> wrote:
+> > On 04/02/2014 10:18 AM, Johannes Weiner wrote:
+> >> Hence my follow-up question in the other mail about how large we
+> >> expect such code caches to become in practice in relationship to
+> >> overall system memory.  Are code caches interesting reclaim candidates
+> >> to begin with?  Are they big enough to make the machine thrash/swap
+> >> otherwise?
+> >
+> > A big chunk of the use cases here are for swapless systems anyway, so
+> > this is the *only* way for them to reclaim anonymous memory.  Their
+> > choices are either to be constantly throwing away and rebuilding these
+> > objects, or to leave them in memory effectively pinned.
+> >
+> > In practice I did see ashmem (the Android thing that we're trying to
+> > replace) get used a lot by the Android web browser when I was playing
+> > with it.  John said that it got used for storing decompressed copies of
+> > images.
+> 
+> Although images are a simpler case where its easier to not touch
+> volatile pages. I think Johannes is mostly concerned about cases where
+> volatile pages are being accessed while they are volatile, which the
+> Mozilla folks are so far the only viable case (in my mind... folks may
+> have others) where they intentionally want to access pages while
+> they're volatile and thus require SIGBUS semantics.
 
-> On Wed, Apr 02, 2014 at 07:29:50PM +0200, Fabian Frederick wrote:
-> > +	set_mask_bits(&inode->i_flags, S_IMMUTABLE | S_APPEND | S_NOATIME |
-> > +				       S_DIRSYNC | S_SYNC, new_fl);
-> 
-> Warning --- per discussion with Linus over the weekend, he decided he
-> really didn't like the set_mask_bits() interface, because it was too
-> prone to abuse.  Unfortuantely, Linus had already included an earlier
-> version of my patch that used set_mask_bits() in 3.14 without letting
-> me know.  This is what I have in my ext4 tree for the merge window,
-> which is undergoing final testing at the moment.  This will cause a
-> patch conflict, and it's likely (given Linus's dislike of the
-> set_mask_bits interface) that set_mask_bits() will end up getting
-> removed from the tree, if not when he fixes up the merge conflict, but
-> subsequent to -rc1.
-> 
-> 							- Ted
-> 
-> 
+Yes, absolutely, that is my only concern.  Compressed images as in
+Android can easily be marked non-volatile before they are accessed
+again.
 
-Thanks a lot Ted, I'll wait your inode patch to got mainline before updating this one.
-Of course I don't wanna step on your toes if you prefer releasing patches for all FS :)
+Code caches are harder because control is handed off to the CPU, but
+I'm not entirely sure yet whether these are in fact interesting
+reclaim candidates.
 
-Fabian
+> I suspect handling the SIGBUS and patching up the purged page you
+> trapped on is likely much to complicated for most use cases. But I do
+> think SIGBUS is preferable to zero-fill on purged page access, just
+> because its likely to be easier to debug applications.
+
+Fully agreed, but it seems a bit overkill to add a separate syscall, a
+range-tree on top of shmem address_spaces, and an essentially new
+programming model based on SIGBUS userspace fault handling (incl. all
+the complexities and confusion this inevitably will bring when people
+DO end up passing these pointers into kernel space) just to be a bit
+nicer about use-after-free bugs in applications.
