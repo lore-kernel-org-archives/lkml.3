@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540AbaDBQjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:39:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50631 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932331AbaDBQjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:39:08 -0400
-Message-ID: <533C3CDD.9090400@zytor.com>
-Date: Wed, 02 Apr 2014 09:37:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>, John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
+	id S932497AbaDBQmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:42:05 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:35900 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335AbaDBQmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 12:42:03 -0400
+Date: Wed, 2 Apr 2014 12:41:59 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Loc Ho <lho@apm.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org> <533B8C2D.9010108@linaro.org> <20140402163013.GP14688@cmpxchg.org> <533C3BB4.8020904@zytor.com>
-In-Reply-To: <533C3BB4.8020904@zytor.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: [PATCH libata/for-3.15-fixes] libata: make AHCI_XGENE depend on
+ PHY_XGENE
+Message-ID: <20140402164159.GE16631@htj.dyndns.org>
+References: <20140401184916.GA21938@kroah.com>
+ <CA+55aFwf6e-hkF+4ND0DaAKDmLX8P8+xWCgs5BRnARdSsq9tpw@mail.gmail.com>
+ <20140402022858.GA4901@kroah.com>
+ <CAPw-ZTnb4Ugjo_63HG0DmGaqki6riPk1S13Nx8xF_9gdNu17wA@mail.gmail.com>
+ <533C0B45.4050909@ti.com>
+ <CAPw-ZTn3_oEMFFNua1zoDibOBJOLC92k7zdc8Do+hk3Ai-BSaw@mail.gmail.com>
+ <20140402155357.GA16631@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140402155357.GA16631@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 09:32 AM, H. Peter Anvin wrote:
-> On 04/02/2014 09:30 AM, Johannes Weiner wrote:
->>
->> So between zero-fill and SIGBUS, I'd prefer the one which results in
->> the simpler user interface / fewer system calls.
->>
-> 
-> The use cases are different; I believe this should be a user space option.
-> 
+AHCI_XGENE is only applicable on ARM64 but it can also be enabled for
+compile testing; however, AHCI_XGENE selects PHY_XGENE which has other
+arch specific dependencies.  This leads to the following warning when
+enabling it on other archs for compile testing.
 
-Case in point, for example: imagine a JIT.  You *really* don't want to
-zero-fill memory behind the back of your JIT, as all zero memory may not
-be a trapping instruction (it isn't on x86, for example, and if you are
-unlucky you may be modifying *part* of an instruction.)
+  warning: (AHCI_XGENE) selects PHY_XGENE which has unmet direct
+  dependencies (HAS_IOMEM && OF && (ARM64 || COMPILE_TEST))
 
-Thus, SIGBUS is the only safe option.
+Selecting a config option which itself has dependencies can easily
+lead to broken configurations.  For now, let's just make AHCI_XGENE
+depend on PHY_XGENE which has all the necessary dependencies already.
 
-	-hpa
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Loc Ho <lho@apm.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/ata/Kconfig |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index 20e03a7..2e4da3b 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -134,8 +134,7 @@ config AHCI_SUNXI
+ 
+ config AHCI_XGENE
+ 	tristate "APM X-Gene 6.0Gbps AHCI SATA host controller support"
+-	depends on ARM64 || COMPILE_TEST
+-	select PHY_XGENE
++	depends on PHY_XGENE
+ 	help
+ 	 This option enables support for APM X-Gene SoC SATA host controller.
+ 
