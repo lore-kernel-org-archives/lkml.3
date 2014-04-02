@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086AbaDBCEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 22:04:44 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:47560 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaDBCEf (ORCPT
+	id S932069AbaDBCEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 22:04:42 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:51376 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757425AbaDBCEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 22:04:35 -0400
+	Tue, 1 Apr 2014 22:04:36 -0400
 From: Alex Elder <elder@linaro.org>
 To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/7] clk: bcm281xx: use init_data.name for clock name
-Date: Tue,  1 Apr 2014 21:04:50 -0500
-Message-Id: <1396404296-9390-3-git-send-email-elder@linaro.org>
+Subject: [PATCH v3 3/7] clk: bcm281xx: change some symbol names
+Date: Tue,  1 Apr 2014 21:04:51 -0500
+Message-Id: <1396404296-9390-4-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1396404296-9390-1-git-send-email-elder@linaro.org>
 References: <1396404296-9390-1-git-send-email-elder@linaro.org>
@@ -20,123 +20,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the init_data.name field to hold the name of a Kona clock rather
-than duplicating it.
+As I developed the bcm281xx clock code I understood there were
+restrictions on device tree "compatible" strings names, and as a
+result "bcm11351" was used in places despite the part family being
+more properly called "bcm281xx".  This can be a little confusing.
+
+In some cases I went to far and things using "bcm11351" when that
+was not necessary.
+
+This patch remedies this.  It renames the symbol used to define the
+"compatible" string (but not its value) so it uses "BCM281XX".
+Similarly, the name names provided to the CLK_OF_DECLARE() macro
+are changed, hoping to minimize the number of places that the
+confusing "11351" string is used.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- drivers/clk/bcm/clk-kona-setup.c |    6 +++---
- drivers/clk/bcm/clk-kona.c       |   17 ++++++++++-------
- drivers/clk/bcm/clk-kona.h       |    3 +--
- 3 files changed, 14 insertions(+), 12 deletions(-)
+ drivers/clk/bcm/clk-bcm281xx.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/clk/bcm/clk-kona-setup.c b/drivers/clk/bcm/clk-kona-setup.c
-index c7607fe..eed84f5 100644
---- a/drivers/clk/bcm/clk-kona-setup.c
-+++ b/drivers/clk/bcm/clk-kona-setup.c
-@@ -64,7 +64,7 @@ static bool peri_clk_data_offsets_valid(struct kona_clk *bcm_clk)
+diff --git a/drivers/clk/bcm/clk-bcm281xx.c b/drivers/clk/bcm/clk-bcm281xx.c
+index 3c66de6..bb947af 100644
+--- a/drivers/clk/bcm/clk-bcm281xx.c
++++ b/drivers/clk/bcm/clk-bcm281xx.c
+@@ -15,12 +15,17 @@
+ #include "clk-kona.h"
+ #include "dt-bindings/clock/bcm281xx.h"
  
- 	BUG_ON(bcm_clk->type != bcm_clk_peri);
- 	peri = bcm_clk->peri;
--	name = bcm_clk->name;
-+	name = bcm_clk->init_data.name;
- 	range = bcm_clk->ccu->range;
+-/* bcm11351 CCU device tree "compatible" strings */
+-#define BCM11351_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
+-#define BCM11351_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
+-#define BCM11351_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
+-#define BCM11351_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
+-#define BCM11351_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
++/*
++ * These are the bcm281xx CCU device tree "compatible" strings.
++ * We're stuck with using "bcm11351" in the string because wild
++ * cards aren't allowed, and that name was the first one defined
++ * in this family of devices.
++ */
++#define BCM281XX_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
++#define BCM281XX_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
++#define BCM281XX_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
++#define BCM281XX_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
++#define BCM281XX_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
  
- 	limit = range - sizeof(u32);
-@@ -329,7 +329,7 @@ peri_clk_data_valid(struct kona_clk *bcm_clk)
- 		return false;
+ /* Root CCU clocks */
  
- 	peri = bcm_clk->peri;
--	name = bcm_clk->name;
-+	name = bcm_clk->init_data.name;
- 	gate = &peri->gate;
- 	if (gate_exists(gate) && !gate_valid(gate, "gate", name))
- 		return false;
-@@ -630,7 +630,7 @@ struct clk *kona_clk_setup(struct ccu_data *ccu, const char *name,
- 		return NULL;
- 	}
- 	bcm_clk->ccu = ccu;
--	bcm_clk->name = name;
-+	bcm_clk->init_data.name = name;
- 
- 	init_data = &bcm_clk->init_data;
- 	init_data->name = name;
-diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-index c01d810..488ed1f 100644
---- a/drivers/clk/bcm/clk-kona.c
-+++ b/drivers/clk/bcm/clk-kona.c
-@@ -807,7 +807,7 @@ static int kona_peri_clk_enable(struct clk_hw *hw)
- 	struct kona_clk *bcm_clk = to_kona_clk(hw);
- 	struct bcm_clk_gate *gate = &bcm_clk->peri->gate;
- 
--	return clk_gate(bcm_clk->ccu, bcm_clk->name, gate, true);
-+	return clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, true);
+@@ -404,13 +409,13 @@ static void __init kona_dt_slave_ccu_setup(struct device_node *node)
+ 	kona_dt_ccu_setup(node, bcm281xx_slave_ccu_clks_setup);
  }
  
- static void kona_peri_clk_disable(struct clk_hw *hw)
-@@ -815,7 +815,7 @@ static void kona_peri_clk_disable(struct clk_hw *hw)
- 	struct kona_clk *bcm_clk = to_kona_clk(hw);
- 	struct bcm_clk_gate *gate = &bcm_clk->peri->gate;
- 
--	(void)clk_gate(bcm_clk->ccu, bcm_clk->name, gate, false);
-+	(void)clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, false);
- }
- 
- static int kona_peri_clk_is_enabled(struct clk_hw *hw)
-@@ -873,12 +873,13 @@ static int kona_peri_clk_set_parent(struct clk_hw *hw, u8 index)
- 
- 	ret = selector_write(bcm_clk->ccu, &data->gate, sel, trig, index);
- 	if (ret == -ENXIO) {
--		pr_err("%s: gating failure for %s\n", __func__, bcm_clk->name);
-+		pr_err("%s: gating failure for %s\n", __func__,
-+			bcm_clk->init_data.name);
- 		ret = -EIO;	/* Don't proliferate weird errors */
- 	} else if (ret == -EIO) {
- 		pr_err("%s: %strigger failed for %s\n", __func__,
- 			trig == &data->pre_trig ? "pre-" : "",
--			bcm_clk->name);
-+			bcm_clk->init_data.name);
- 	}
- 
- 	return ret;
-@@ -937,10 +938,12 @@ static int kona_peri_clk_set_rate(struct clk_hw *hw, unsigned long rate,
- 	ret = divider_write(bcm_clk->ccu, &data->gate, &data->div,
- 				&data->trig, scaled_div);
- 	if (ret == -ENXIO) {
--		pr_err("%s: gating failure for %s\n", __func__, bcm_clk->name);
-+		pr_err("%s: gating failure for %s\n", __func__,
-+			bcm_clk->init_data.name);
- 		ret = -EIO;	/* Don't proliferate weird errors */
- 	} else if (ret == -EIO) {
--		pr_err("%s: trigger failed for %s\n", __func__, bcm_clk->name);
-+		pr_err("%s: trigger failed for %s\n", __func__,
-+			bcm_clk->init_data.name);
- 	}
- 
- 	return ret;
-@@ -962,7 +965,7 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
- {
- 	struct ccu_data *ccu = bcm_clk->ccu;
- 	struct peri_clk_data *peri = bcm_clk->peri;
--	const char *name = bcm_clk->name;
-+	const char *name = bcm_clk->init_data.name;
- 	struct bcm_clk_trig *trig;
- 
- 	BUG_ON(bcm_clk->type != bcm_clk_peri);
-diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
-index 5e139ad..96fd0bc 100644
---- a/drivers/clk/bcm/clk-kona.h
-+++ b/drivers/clk/bcm/clk-kona.h
-@@ -373,8 +373,7 @@ struct peri_clk_data {
- 
- struct kona_clk {
- 	struct clk_hw hw;
--	struct clk_init_data init_data;
--	const char *name;	/* name of this clock */
-+	struct clk_init_data init_data;	/* includes name of this clock */
- 	struct ccu_data *ccu;	/* ccu this clock is associated with */
- 	enum bcm_clk_type type;
- 	union {
+-CLK_OF_DECLARE(bcm11351_root_ccu, BCM11351_DT_ROOT_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_root_ccu, BCM281XX_DT_ROOT_CCU_COMPAT,
+ 			kona_dt_root_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_aon_ccu, BCM11351_DT_AON_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_aon_ccu, BCM281XX_DT_AON_CCU_COMPAT,
+ 			kona_dt_aon_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_hub_ccu, BCM11351_DT_HUB_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_hub_ccu, BCM281XX_DT_HUB_CCU_COMPAT,
+ 			kona_dt_hub_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_master_ccu, BCM11351_DT_MASTER_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_master_ccu, BCM281XX_DT_MASTER_CCU_COMPAT,
+ 			kona_dt_master_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_slave_ccu, BCM11351_DT_SLAVE_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_slave_ccu, BCM281XX_DT_SLAVE_CCU_COMPAT,
+ 			kona_dt_slave_ccu_setup);
 -- 
 1.7.9.5
 
