@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675AbaDBRcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 13:32:51 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:38934
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932387AbaDBRcu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 13:32:50 -0400
-Date: Wed, 2 Apr 2014 19:32:49 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sean Pajot <sean.pajot@execulink.com>,
-        lxc-devel@lists.linuxcontainers.org, linux-kernel@vger.kernel.org
-Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
-Message-ID: <20140402173248.GA22804@mail.hallyn.com>
-References: <5266BEA3.6020008@execulink.com>
- <20131022193718.GA18463@ac100>
- <874n89rsoc.fsf@xmission.com>
- <20140402172049.GA13240@sergelap>
+	id S932740AbaDBRdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 13:33:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16069 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932387AbaDBRcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 13:32:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,780,1389772800"; 
+   d="scan'208";a="513460279"
+Message-ID: <533C4474.2060608@linux.intel.com>
+Date: Wed, 02 Apr 2014 10:10:12 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402172049.GA13240@sergelap>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
+        Peter Anvin <hpa@zytor.com>, Jan Hubicka <hubicka@ucw.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jaroslav Kysela <perex@perex.cz>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 LTO changes for v3.15
+References: <201403312105.s2VL5AqX010173@terminus.zytor.com>	<CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>	<20140331230347.GH32556@tassilo.jf.intel.com>	<CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>	<CA+55aFxCCOASxhgRfGmNRPgHwZQJ2Q0Oa9-vwpMdmTqx99m26g@mail.gmail.com>	<533B0B5F.2040907@linux.intel.com>	<20140401200145.05e0437e@gandalf.local.home>	<CA+55aFyQHdtgQpnS7ar2db5QoZhmMStH_LgxHvAaCUbVEx_PQQ@mail.gmail.com> <20140402083325.2b6e5d8b@gandalf.local.home>
+In-Reply-To: <20140402083325.2b6e5d8b@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry - the lxc-devel list has moved, so replying to all with the
-correct list address;   please reply to this rather than my previous
-email)
+On 04/02/2014 05:33 AM, Steven Rostedt wrote:
+> On Tue, 1 Apr 2014 17:35:05 -0700
+> 
+> Heh, I know that not having the SYSCALL_DEFINEx() wrappers means that
+> they wont be traced. I must have misunderstood Peter, as I thought he
+> meant if we added SYSCALL_DEFINEx(), that they would break tracing.
+> 
 
-Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
-> Hi Eric,
+No, I meant that them being missing breaks tracing.
+
 > 
-> (sorry, I don't seem to have the email I actually wanted to reply
-> to in my mbox, but it is
-> https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-October/005857.html)
+> Yeah, adding the SYSCALL_DEFINEx() macros around those functions would
+> be good for tracing as well.
 > 
-> You'd said,
-> > Someone needs to read and think through all of the corner cases and see
-> > if we can ever have a time when task_dumpable is false but root in the
-> > container would not or should not be able to see everything.
-> > 
-> > In particular I am worried about the case of a setuid app calling setns,
-> > and entering a lesser privileged user namespace.  In my foggy mind that
-> > might be a security problem.  And there might be other similar crazy
-> > cases.
+> Glad I understand you two now ;-)
 > 
-> Can we make use of current->mm->exe_file->f_cred->user_ns?
-> 
-> So either always use 
-> make_kgid(current->mm->exe_file->f_cred->user_ns, 0)
-> instead of make_kuid(cred->user_ns, 0), or check that
-> (current->mm->exe_file->f_cred->user_ns == cred->user_ns)
-> and, if not, assume that the caller has done a setns?
-> 
-> -serge
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+:)
+
+Do you want to do the patch?
+
+	-hpa
+
+
