@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098AbaDBTqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:46:31 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44588 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541AbaDBTq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:46:29 -0400
-Subject: Re: [PATCH 7/7] uprobes/x86: Introduce uprobe_xol_ops and
- arch_uprobe->ops
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140331194415.GA9307@redhat.com>
-References: <20140331194415.GA9307@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Apr 2014 12:46:24 -0700
-Message-ID: <1396467984.4659.53.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040219-0928-0000-0000-000000DD4A22
+	id S933105AbaDBTrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:47:19 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58157 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932541AbaDBTrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 15:47:18 -0400
+Date: Wed, 2 Apr 2014 15:47:08 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+Message-ID: <20140402194708.GV14688@cmpxchg.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+ <20140401212102.GM4407@cmpxchg.org>
+ <533B313E.5000403@zytor.com>
+ <533B4555.3000608@sr71.net>
+ <533B8E3C.3090606@linaro.org>
+ <20140402163638.GQ14688@cmpxchg.org>
+ <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
+ <20140402175852.GS14688@cmpxchg.org>
+ <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 21:44 +0200, Oleg Nesterov wrote:
-...
-> +/*
-> + * Adjust the return address pushed by a call insn executed out of line.
-> + */
-> +static int adjust_ret_addr(unsigned long sp, long correction)
-> +{
-> +	int rasize, ncopied;
-> +	long ra = 0;
-> +
-> +	if (is_ia32_task())
-> +		rasize = 4;
-> +	else
-> +		rasize = 8;
-> +
-> +	ncopied = copy_from_user(&ra, (void __user *)sp, rasize);
-> +	if (unlikely(ncopied))
-> +		return -EFAULT;
-> +
-> +	ra += correction;
-> +	ncopied = copy_to_user((void __user *)sp, &ra, rasize);
-> +	if (unlikely(ncopied))
-> +		return -EFAULT;
-> +
-> +	return 0;
-> +}
+On Wed, Apr 02, 2014 at 12:01:00PM -0700, John Stultz wrote:
+> On Wed, Apr 2, 2014 at 10:58 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
+> >> That point beside, I think the other problem with the page-cleaning
+> >> volatility approach is that there are other awkward side effects. For
+> >> example: Say an application marks a range as volatile. One page in the
+> >> range is then purged. The application, due to a bug or otherwise,
+> >> reads the volatile range. This causes the page to be zero-filled in,
+> >> and the application silently uses the corrupted data (which isn't
+> >> great). More problematic though, is that by faulting the page in,
+> >> they've in effect lost the purge state for that page. When the
+> >> application then goes to mark the range as non-volatile, all pages are
+> >> present, so we'd return that no pages were purged.  From an
+> >> application perspective this is pretty ugly.
+> >>
+> >> Johannes: Any thoughts on this potential issue with your proposal? Am
+> >> I missing something else?
+> >
+> > No, this is accurate.  However, I don't really see how this is
+> > different than any other use-after-free bug.  If you access malloc
+> > memory after free(), you might receive a SIGSEGV, you might see random
+> > data, you might corrupt somebody else's data.  This certainly isn't
+> > nice, but it's not exactly new behavior, is it?
+> 
+> The part that troubles me is that I see the purged state as kernel
+> data being corrupted by userland in this case. The kernel will tell
+> userspace that no pages were purged, even though they were. Only
+> because userspace made an errant read of a page, and got garbage data
+> back.
 
-This isn't your bug, Oleg -- you're just moving code -- but consider
-taking this opportunity to fix it...
+That sounds overly dramatic to me.  First of all, this data still
+reflects accurately the actions of userspace in this situation.  And
+secondly, the kernel does not rely on this data to be meaningful from
+a userspace perspective to function correctly.
 
-"ncopied" is a misnomer here.  copy_from_user() and copy_to_user()
-return the number of bytes that could NOT be copied.  Once upon a time
-(in uprobes's pre-upstream days), this was called "nleft" -- i.e., the
-number of bytes left uncopied.  A more accurate name like "nleft" or
-"nmissed" or "nr_uncopied" might yield less confusion in the future --
-or just dispense with the variable altogether.
+It's really nothing but a use-after-free bug that has consequences for
+no-one but the faulty application.  The thing that IS new is that even
+a read is enough to corrupt your data in this case.
 
-arch_uretprobe_hijack_return_addr() has this same problem, although
-there we need the variable, because if zero bytes of the return address
-are overwritten, we can fail more gracefully.
-
-Jim
-
+MADV_REVIVE could return 0 if all pages in the specified range were
+present, -Esomething if otherwise.  That would be semantically sound
+even if userspace messes up.
