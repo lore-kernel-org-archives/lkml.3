@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897AbaDBNzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 09:55:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42796 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758600AbaDBNzs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 09:55:48 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
-CC: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 3/3] ARM: DTS: dra7/dra7xx-clocks: ATL related changes
-Date: Wed, 2 Apr 2014 16:55:07 +0300
-Message-ID: <1396446907-20383-4-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396446907-20383-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1396446907-20383-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1758808AbaDBN6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 09:58:24 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:54620 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758600AbaDBN6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 09:58:22 -0400
+Date: Wed, 2 Apr 2014 15:58:12 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Message-ID: <20140402135812.GI3339@pcnci.linuxbox.cz>
+References: <20140310145530.GA27230@pcnci.linuxbox.cz>
+ <20140329121550.GA5878@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+ <20140331120102.GY3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NmfzLA6GLqNeIeLP"
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-04-02_01
+X-Milter-Copy-Status: I
+X-Milter-Copy-Status: I
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify the clock nodes for the ATL clocks to use the ATL clock driver to
-handle them.
 
-Add the ATL device node at the same time for DRA7.
+--NmfzLA6GLqNeIeLP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/boot/dts/dra7.dtsi          | 11 +++++++++++
- arch/arm/boot/dts/dra7xx-clocks.dtsi | 16 ++++++++--------
- 2 files changed, 19 insertions(+), 8 deletions(-)
+Hi Tomas,
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 1c0f8e1893ae..5e360e939aa7 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -789,6 +789,17 @@
- 			dma-names = "tx0", "rx0";
- 			status = "disabled";
- 		};
-+
-+		atl: atl@4843c000 {
-+			compatible = "ti,dra7-atl";
-+			reg = <0x4843c000 0x3ff>;
-+			ti,hwmods = "atl";
-+			ti,provided-clocks = <&atl_clkin0_ck>, <&atl_clkin1_ck>,
-+					     <&atl_clkin2_ck>, <&atl_clkin3_ck>;
-+			clocks = <&atl_gfclk_mux>;
-+			clock-names = "fck";
-+			status = "disabled";
-+		};
- 	};
- };
- 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index 30160348934c..789e92cd5595 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -10,26 +10,26 @@
- &cm_core_aon_clocks {
- 	atl_clkin0_ck: atl_clkin0_ck {
- 		#clock-cells = <0>;
--		compatible = "fixed-clock";
--		clock-frequency = <0>;
-+		compatible = "ti,dra7-atl-clock";
-+		clocks = <&atl_gfclk_mux>;
- 	};
- 
- 	atl_clkin1_ck: atl_clkin1_ck {
- 		#clock-cells = <0>;
--		compatible = "fixed-clock";
--		clock-frequency = <0>;
-+		compatible = "ti,dra7-atl-clock";
-+		clocks = <&atl_gfclk_mux>;
- 	};
- 
- 	atl_clkin2_ck: atl_clkin2_ck {
- 		#clock-cells = <0>;
--		compatible = "fixed-clock";
--		clock-frequency = <0>;
-+		compatible = "ti,dra7-atl-clock";
-+		clocks = <&atl_gfclk_mux>;
- 	};
- 
- 	atl_clkin3_ck: atl_clkin3_ck {
- 		#clock-cells = <0>;
--		compatible = "fixed-clock";
--		clock-frequency = <0>;
-+		compatible = "ti,dra7-atl-clock";
-+		clocks = <&atl_gfclk_mux>;
- 	};
- 
- 	hdmi_clkin_ck: hdmi_clkin_ck {
--- 
-1.9.1
+bad news, we just had failed boot with 3.10.35 with your patch:
 
+last line was:
+
+mei_me 0000:00:16.0: wait hw ready failed. status =3D -110
+
+so it can probably happen that boot hangs on mei_me init attempt..
+
+colleague just told me it also happened to him with 3.13 kernel,
+however I don't have more info on that case..
+
+if I can provide more information, please let me know.
+
+BR
+
+nik
+
+On Mon, Mar 31, 2014 at 12:05:20PM +0000, Winkler, Tomas wrote:
+>=20
+> >=20
+> > Hi Tomas,
+> >=20
+> > > If this is a server platform can you please try this patch
+> > https://lkml.org/lkml/2014/3/25/396
+> >=20
+> > tried 3.10.35 with Your patch and now I can see following in dmesg:
+> >=20
+> > [  +0.000290] mei_me 0000:00:16.0: Device doesn't have valid ME Interfa=
+ce
+> > [  +0.007656] mei_me 0000:00:16.0: initialization failed.
+> >=20
+> > now reboot works as expected. Once this hits ustream (if it hasn't alre=
+ady),
+> > this could go to -stable, do You agree?
+> >=20
+> > thanks!
+> >=20
+> I definitely asked for adding it to stable. Would you wish to add you tes=
+ted-by to the patch?.=20
+> Tomas
+>=20
+>=20
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--NmfzLA6GLqNeIeLP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlM8F3QACgkQ3xdJJrLygV4osQCeI78IEUQ+Q17048yphs3y/udE
+NOMAn12exLcfhoPUH9sJJAZ+l7Lm07Nj
+=pXTc
+-----END PGP SIGNATURE-----
+
+--NmfzLA6GLqNeIeLP--
