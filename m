@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189AbaDBI5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 04:57:42 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:35931 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758104AbaDBI5k (ORCPT
+	id S1758226AbaDBI7E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 04:59:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:51203 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758054AbaDBI7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 04:57:40 -0400
-Message-ID: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: [RFC PATCH] memory driver: make phys_index/end_phys_index reflect
- the start/end section number
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: nfont@linux.vnet.ibm.com, gregkh@linuxfoundation.org
-Date: Wed, 02 Apr 2014 16:56:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040208-3568-0000-0000-00000531A74D
+	Wed, 2 Apr 2014 04:59:01 -0400
+X-IronPort-AV: E=Sophos;i="4.97,778,1389715200"; 
+   d="scan'208";a="28776747"
+From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-btrfs@vger.kernel.org>, <1i5t5.duncan@cox.net>,
+        Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+Subject: [PATCH v3] lib: add size unit t/p/e to memparse
+Date: Wed, 2 Apr 2014 16:54:37 +0800
+Message-ID: <1396428877-24089-1-git-send-email-guihc.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed the phys_index and end_phys_index under 
-/sys/devices/system/memory/memoryXXX/ have the same value, e.g.
-(for the test machine, one memory block has 8 sections, that is 
- sections_per_block equals 8)
+For modern filesystems such as btrfs, t/p/e size level operations
+are common.
+add size unit t/p/e parsing to memparse
 
-# cd /sys/devices/system/memory/memory100/
-# cat phys_index end_phys_index 
-00000064
-00000064
-
-Seems they should reflect the start/end section number respectively, which 
-also matches what is said in Documentation/memory-hotplug.txt
-
-This patch tries to modify that so the two files could show the start/end
-section number of the memory block.
-
-After this change, output of the above example looks like:
-
-# cat phys_index end_phys_index 
-00000320
-00000327
-
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
 ---
- drivers/base/memory.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+changelog
+	v1->v2: replace kilobyte with kibibyte, and others
+	v2->v3: add missing unit "bytes" in comment
+---
+ lib/cmdline.c | 25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index bece691..b10f2fa 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -114,7 +114,7 @@ static ssize_t show_mem_start_phys_index(struct device *dev,
- 	struct memory_block *mem = to_memory_block(dev);
- 	unsigned long phys_index;
+diff --git a/lib/cmdline.c b/lib/cmdline.c
+index eb67911..511b9be 100644
+--- a/lib/cmdline.c
++++ b/lib/cmdline.c
+@@ -119,11 +119,17 @@ char *get_options(const char *str, int nints, int *ints)
+  *	@retptr: (output) Optional pointer to next char after parse completes
+  *
+  *	Parses a string into a number.  The number stored at @ptr is
+- *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
+- *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
+- *	1073741824).  If the number is suffixed with K, M, or G, then
+- *	the return value is the number multiplied by one kilobyte, one
+- *	megabyte, or one gigabyte, respectively.
++ *	potentially suffixed with
++ *	%K (for kibibytes, or 1024 bytes),
++ *	%M (for mebibytes, or 1048576 bytes),
++ *	%G (for gibibytes, or 1073741824 bytes),
++ *	%T (for tebibytes, or 1099511627776 bytes),
++ *	%P (for pebibytes, or 1125899906842624 bytes),
++ *	%E (for exbibytes, or 1152921504606846976 bytes).
++ *	If the number is suffixed with K, M, G, T, P, E, then
++ *	the return value is the number multiplied by one kibibyte, one
++ *	mebibyte, one gibibyte, one tebibyte, one pebibyte, one exbibyte,
++ *	respectively.
+  */
  
--	phys_index = mem->start_section_nr / sections_per_block;
-+	phys_index = mem->start_section_nr;
- 	return sprintf(buf, "%08lx\n", phys_index);
- }
+ unsigned long long memparse(const char *ptr, char **retptr)
+@@ -133,6 +139,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
+ 	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
  
-@@ -124,7 +124,7 @@ static ssize_t show_mem_end_phys_index(struct device *dev,
- 	struct memory_block *mem = to_memory_block(dev);
- 	unsigned long phys_index;
- 
--	phys_index = mem->end_section_nr / sections_per_block;
-+	phys_index = mem->end_section_nr;
- 	return sprintf(buf, "%08lx\n", phys_index);
- }
- 
-
+ 	switch (*endptr) {
++	case 'E':
++	case 'e':
++		ret <<= 10;
++	case 'P':
++	case 'p':
++		ret <<= 10;
++	case 'T':
++	case 't':
++		ret <<= 10;
+ 	case 'G':
+ 	case 'g':
+ 		ret <<= 10;
+-- 
+1.8.1.4
 
