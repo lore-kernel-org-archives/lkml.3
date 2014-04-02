@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369AbaDBFmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 01:42:20 -0400
-Received: from exprod5og107.obsmtp.com ([64.18.0.184]:37505 "HELO
-	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757318AbaDBFmP (ORCPT
+	id S1756803AbaDBFpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 01:45:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44899 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955AbaDBFpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 01:42:15 -0400
+	Wed, 2 Apr 2014 01:45:54 -0400
+Date: Wed, 2 Apr 2014 07:45:49 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCHv3 3/3] pwm: imx: support output polarity inversion
+Message-ID: <20140402054549.GW17250@pengutronix.de>
+References: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
+ <1395996540-10999-1-git-send-email-LW@KARO-electronics.de>
+ <1395996540-10999-4-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-In-Reply-To: <20140402022858.GA4901@kroah.com>
-References: <20140401184916.GA21938@kroah.com>
-	<CA+55aFwf6e-hkF+4ND0DaAKDmLX8P8+xWCgs5BRnARdSsq9tpw@mail.gmail.com>
-	<20140402022858.GA4901@kroah.com>
-Date: Tue, 1 Apr 2014 22:42:12 -0700
-Message-ID: <CAPw-ZTnb4Ugjo_63HG0DmGaqki6riPk1S13Nx8xF_9gdNu17wA@mail.gmail.com>
-Subject: Re: [GIT PULL] USB patches for 3.15-rc1
-From: Loc Ho <lho@apm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395996540-10999-4-git-send-email-LW@KARO-electronics.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 07:41:42 up 220 days, 15:12, 53 users,  load average: 0.14, 0.16,
+ 0.13
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Lothar,
 
->> > USB patches for 3.15-rc1
->> >
->> > Here's the big USB pull request for 3.15-rc1.
->>
->> Hmm. I'm getting this when testing:
->>
->>   warning: (AHCI_XGENE) selects PHY_XGENE which has unmet direct
->> dependencies (HAS_IOMEM && OF && (ARM64 || COMPILE_TEST))
->>
->> which looks like AHCI_XGENE doesn't have the proper dependency on OF
->> (or alternatively PHY_XGENE has an incorrect dependemcy on OF).
->>
->> According to google it looks like Fengguang reported this on
->> kbuild-all, but nowhere else.
->>
->> The actual build then succeeds. But the Kconfig warning is real and
->> implies that something is seriously wrong wrt the dependencies for
->> this thing.
->>
->> It looks like the "select PHY_XGENE" came in through the libata
->> update, but this USB update actually brought in the "config PHY_XGENE"
->> and thus this error. Which makes me wonder how this all worked. Why
->> does that "select PHY_XGENE" exist when apparently it's not needed?
->>
->> Regardless, there's something broken somewhere.
->
-> Odd, I don't know what to do to fix this up "properly".
->
-> Loc Ho, this came in from your patch, any ideas?
+On Fri, Mar 28, 2014 at 09:49:00AM +0100, Lothar Waßmann wrote:
+>  static struct pwm_ops imx_pwm_ops = {
+>  	.enable = imx_pwm_enable,
+>  	.disable = imx_pwm_disable,
+> @@ -210,6 +228,7 @@ struct imx_pwm_data {
+>  	int (*config)(struct pwm_chip *chip,
+>  		struct pwm_device *pwm, int duty_ns, int period_ns);
+>  	void (*set_enable)(struct pwm_chip *chip, bool enable);
+> +	unsigned output_polarity:1;
+>  };
+>  
+>  static struct imx_pwm_data imx_pwm_data_v1 = {
+> @@ -220,6 +239,7 @@ static struct imx_pwm_data imx_pwm_data_v1 = {
+>  static struct imx_pwm_data imx_pwm_data_v2 = {
+>  	.config = imx_pwm_config_v2,
+>  	.set_enable = imx_pwm_set_enable_v2,
+> +	.output_polarity = 1,
+>  };
+>  
+>  static const struct of_device_id imx_pwm_dt_ids[] = {
+> @@ -272,6 +292,11 @@ static int imx_pwm_probe(struct platform_device *pdev)
+>  		return PTR_ERR(imx->mmio_base);
+>  
+>  	data = of_id->data;
+> +	if (data->output_polarity) {
+> +		dev_dbg(&pdev->dev, "PWM supports output inversion\n");
+> +		imx_pwm_ops.set_polarity = imx_pwm_set_polarity;
+> +	}
 
-I don't think it has anything to do with USB. With the current
-dependency, X-Gene SATA AHCI driver will be included if either ARM64
-or COMPILE_TEST. It in turn will select "PHY_XGENE" which has
-dependency on OF and HAS_IOMEM. An fix would be make AHCI_XGENE
-depends on OF as suggested by Linus. This is trigger by "COMPILE_TEST"
-for non-ARM64. We can also remove "COMPILE_TEST" from AHCI_XGENE
-driver like other SATA drivers. My prefer solution is to remove
-"COMPILE_TEST".
+You shouldn't modify imx_pwm_ops in the probe function, it's not good
+style and prevents us from making the ops const.
 
--Loc
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
