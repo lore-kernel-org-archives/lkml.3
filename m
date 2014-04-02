@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030261AbaDBUk6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:40:58 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:54277 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932705AbaDBUk5 (ORCPT
+	id S1030289AbaDBUn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:43:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55205 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030269AbaDBUnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:40:57 -0400
-Date: Wed, 2 Apr 2014 16:40:52 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH driver-core-linus] kernfs: protect lazy kernfs_iattrs
- allocation with mutex
-Message-ID: <20140402204052.GA18444@htj.dyndns.org>
+	Wed, 2 Apr 2014 16:43:24 -0400
+Date: Wed, 2 Apr 2014 22:43:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+In-Reply-To: <CAFLxGvyBgKQLvSUcbn3EqcEomUgY85PXJBM7JoMKiyizt66gYA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1404022231390.14882@ionos.tec.linutronix.de>
+References: <20140402144219.4cafbe37@gandalf.local.home> <20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org> <alpine.DEB.2.02.1404022146530.14882@ionos.tec.linutronix.de> <CAFLxGvyBgKQLvSUcbn3EqcEomUgY85PXJBM7JoMKiyizt66gYA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernfs_iattrs is allocated lazily when operations which require it
-take place; unfortunately, the lazy allocation and returning weren't
-properly synchronized and when there are multiple concurrent
-operations, it might end up returning kernfs_iattrs which hasn't
-finished initialization yet or different copies to different callers.
+On Wed, 2 Apr 2014, Richard Weinberger wrote:
+> While we are here, can we please also talk about the !cgroup situation?
+> https://bugs.freedesktop.org/show_bug.cgi?id=74589
+> 
+> A segfaulting systemd on CONFIG_CGROUPS=n is no fun.
 
-Fix it by synchronizing with a mutex.  This can be smarter with memory
-barriers but let's go there if it actually turns out to be necessary.
+Wow, the attitude there is amazing:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/g/533ABA32.9080602@oracle.com
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: stable@vger.kernel.org # 3.14
----
- fs/kernfs/inode.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+"To make this work we'd need a patch, as nobody of us tests this."
 
-diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-index e55126f..553946c 100644
---- a/fs/kernfs/inode.c
-+++ b/fs/kernfs/inode.c
-@@ -48,14 +48,18 @@ void __init kernfs_inode_init(void)
- 
- static struct kernfs_iattrs *kernfs_iattrs(struct kernfs_node *kn)
- {
-+	static DEFINE_MUTEX(iattr_mutex);
-+	struct kernfs_iattrs *ret;
- 	struct iattr *iattrs;
- 
-+	mutex_lock(&iattr_mutex);
-+
- 	if (kn->iattr)
--		return kn->iattr;
-+		goto out_unlock;
- 
- 	kn->iattr = kzalloc(sizeof(struct kernfs_iattrs), GFP_KERNEL);
- 	if (!kn->iattr)
--		return NULL;
-+		goto out_unlock;
- 	iattrs = &kn->iattr->ia_iattr;
- 
- 	/* assign default attributes */
-@@ -65,8 +69,10 @@ static struct kernfs_iattrs *kernfs_iattrs(struct kernfs_node *kn)
- 	iattrs->ia_atime = iattrs->ia_mtime = iattrs->ia_ctime = CURRENT_TIME;
- 
- 	simple_xattrs_init(&kn->iattr->xattrs);
--
--	return kn->iattr;
-+out_unlock:
-+	ret = kn->iattr;
-+	mutex_unlock(&iattr_mutex);
-+	return ret;
- }
- 
- static int __kernfs_setattr(struct kernfs_node *kn, const struct iattr *iattr)
+Rule #1: systemd maintainers worldview is always correct
+
+Rule #2: In the unexpected case that you think the worldview of
+     	 systemd maintainers is incorrect, apply rule #1.
+
+Thanks,
+
+	tglx
