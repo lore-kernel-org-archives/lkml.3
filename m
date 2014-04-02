@@ -1,116 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435AbaDBAr1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:47:27 -0400
-Received: from ozlabs.org ([203.10.76.45]:55498 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756913AbaDBArW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:47:22 -0400
-Date: Wed, 2 Apr 2014 11:47:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the tip tree with the arm-soc tree
-Message-Id: <20140402114715.471bcdb0962ef38c17120530@canb.auug.org.au>
-In-Reply-To: <20140320143603.a2f82d77be61c09a7852cfe9@canb.auug.org.au>
-References: <20140320143603.a2f82d77be61c09a7852cfe9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx."
+	id S1757324AbaDBAxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:53:51 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:60786 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522AbaDBAxs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 20:53:48 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-ee-533b5f9aecac
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <000001cf4aff$295d4cd0$7c17e670$@samsung.com>
+ <1396353865.12401.2.camel@kjgkr>
+In-reply-to: <1396353865.12401.2.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH 1/2] f2fs: avoid free slab cache under spinlock
+Date: Wed, 02 Apr 2014 08:52:29 +0800
+Message-id: <000d01cf4e0d$fe278d20$fa76a760$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQG0xa1atgU/61ISdsa0Bm4UqRSMcwJM1hTwmyAoj5A=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jAd1Z8dbBBg0zLSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyphxew5rwXmTisVN
+	e9gaGHdqdjFyckgImEj0r93FCGGLSVy4t56ti5GLQ0hgEaPE9W8bWCCcH4wSP16sAatiE1CR
+	WN7xnwnEFhGQlpj1aR4LiM0skClxr2kGM4gtJBAjsWTvcTCbU0BXounMcbBeYQE/iUtfPoLZ
+	LAKqEmtfPGbtYuTg4BWwlNjZFgsS5hUQlPgx+R7USHWJSfMWMUPY2hJP3l1ghThUQWLH2deM
+	ECdYSRz9vpsRokZcYuORWywTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnquoV5xYm5x
+	aV66XnJ+7iZGcOA/k9rBuLLB4hCjAAejEg/vgfNWwUKsiWXFlbmHGCU4mJVEeL/7WgcL8aYk
+	VlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYNzhLlbZnBA+80+g
+	dejUJZeYpU61vNv668yJIierNqm5fXvW/nXf9Ke+tOPm22PLDjGcX6rG97dxvieL/n279RbH
+	A1RtJux9tyxA7uaz4692fXFUdb1YbyFqtuJz+qV5JyaWz1UJFHLYottge+TTqhfG7zbz3i/o
+	CG94PsWRZe7SNYwhW/+sOzhHiaU4I9FQi7moOBEAuDa1vHgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Kim,
 
-Hi all,
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Tuesday, April 01, 2014 8:04 PM
+> To: Chao Yu
+> Cc: linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [f2fs-dev] [PATCH 1/2] f2fs: avoid free slab cache under spinlock
+> 
+> Hi Chao,
+> 
+> One minor thing as below.
+> 
+> 2014-03-29 (토), 11:29 +0800, Chao Yu:
+> > Move kmem_cache_free out of spinlock protection region for better performance.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/checkpoint.c |   27 +++++++++++++++++----------
+> >  fs/f2fs/node.c       |   15 ++++++++++++++-
+> >  2 files changed, 31 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> > index a80be51..d877f46 100644
+> > --- a/fs/f2fs/checkpoint.c
+> > +++ b/fs/f2fs/checkpoint.c
+> > @@ -347,10 +347,11 @@ void remove_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
+> >  	list_for_each_entry(orphan, head, list) {
+> >  		if (orphan->ino == ino) {
+> >  			list_del(&orphan->list);
+> > -			kmem_cache_free(orphan_entry_slab, orphan);
+> >  			f2fs_bug_on(sbi->n_orphans == 0);
+> >  			sbi->n_orphans--;
+> > -			break;
+> > +			spin_unlock(&sbi->orphan_inode_lock);
+> > +			kmem_cache_free(orphan_entry_slab, orphan);
+> > +			return;
+> >  		}
+> >  	}
+> >  	spin_unlock(&sbi->orphan_inode_lock);
+> > @@ -577,6 +578,7 @@ void set_dirty_dir_page(struct inode *inode, struct page *page)
+> >  {
+> >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> >  	struct dir_inode_entry *new;
+> > +	int ret = 0;
+> >
+> >  	if (!S_ISDIR(inode->i_mode))
+> >  		return;
+> > @@ -586,12 +588,13 @@ void set_dirty_dir_page(struct inode *inode, struct page *page)
+> >  	INIT_LIST_HEAD(&new->list);
+> >
+> >  	spin_lock(&sbi->dir_inode_lock);
+> > -	if (__add_dirty_inode(inode, new))
+> > -		kmem_cache_free(inode_entry_slab, new);
+> > -
+> > +	ret = __add_dirty_inode(inode, new);
+> >  	inode_inc_dirty_dents(inode);
+> >  	SetPagePrivate(page);
+> >  	spin_unlock(&sbi->dir_inode_lock);
+> > +
+> > +	if (ret)
+> > +		kmem_cache_free(inode_entry_slab, new);
+> >  }
+> >
+> >  void add_dirty_dir_inode(struct inode *inode)
+> > @@ -599,20 +602,22 @@ void add_dirty_dir_inode(struct inode *inode)
+> >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> >  	struct dir_inode_entry *new =
+> >  			f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
+> > +	int ret = 0;
+> >
+> >  	new->inode = inode;
+> >  	INIT_LIST_HEAD(&new->list);
+> >
+> >  	spin_lock(&sbi->dir_inode_lock);
+> > -	if (__add_dirty_inode(inode, new))
+> > -		kmem_cache_free(inode_entry_slab, new);
+> > +	ret = __add_dirty_inode(inode, new);
+> >  	spin_unlock(&sbi->dir_inode_lock);
+> > +
+> > +	if (ret)
+> > +		kmem_cache_free(inode_entry_slab, new);
+> >  }
+> >
+> >  void remove_dirty_dir_inode(struct inode *inode)
+> >  {
+> >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> > -
+> >  	struct list_head *this, *head;
+> >
+> >  	if (!S_ISDIR(inode->i_mode))
+> > @@ -630,13 +635,15 @@ void remove_dirty_dir_inode(struct inode *inode)
+> >  		entry = list_entry(this, struct dir_inode_entry, list);
+> >  		if (entry->inode == inode) {
+> >  			list_del(&entry->list);
+> > -			kmem_cache_free(inode_entry_slab, entry);
+> >  			stat_dec_dirty_dir(sbi);
+> > -			break;
+> > +			spin_unlock(&sbi->dir_inode_lock);
+> > +			kmem_cache_free(inode_entry_slab, entry);
+> > +			goto done;
+> >  		}
+> >  	}
+> >  	spin_unlock(&sbi->dir_inode_lock);
+> >
+> > +done:
+> >  	/* Only from the recovery routine */
+> >  	if (is_inode_flag_set(F2FS_I(inode), FI_DELAY_IPUT)) {
+> >  		clear_inode_flag(F2FS_I(inode), FI_DELAY_IPUT);
+> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > index eced8d7..0021056 100644
+> > --- a/fs/f2fs/node.c
+> > +++ b/fs/f2fs/node.c
+> > @@ -1314,7 +1314,6 @@ static void __del_from_free_nid_list(struct f2fs_nm_info *nm_i,
+> >  {
+> >  	list_del(&i->list);
+> >  	radix_tree_delete(&nm_i->free_nid_root, i->nid);
+> > -	kmem_cache_free(free_nid_slab, i);
+> >  }
+> >
+> >  static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build)
+> > @@ -1361,13 +1360,19 @@ static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool
+> build)
+> >  static void remove_free_nid(struct f2fs_nm_info *nm_i, nid_t nid)
+> >  {
+> >  	struct free_nid *i;
+> > +	bool need_free = false;
+> > +
+> >  	spin_lock(&nm_i->free_nid_list_lock);
+> >  	i = __lookup_free_nid_list(nm_i, nid);
+> >  	if (i && i->state == NID_NEW) {
+> >  		__del_from_free_nid_list(nm_i, i);
+> >  		nm_i->fcnt--;
+> > +		need_free = true;
+> >  	}
+> >  	spin_unlock(&nm_i->free_nid_list_lock);
+> > +
+> > +	if (need_free)
+> > +		kmem_cache_free(free_nid_slab, i);
+> >  }
+> >
+> >  static void scan_nat_page(struct f2fs_nm_info *nm_i,
+> > @@ -1492,6 +1497,8 @@ void alloc_nid_done(struct f2fs_sb_info *sbi, nid_t nid)
+> >  	f2fs_bug_on(!i || i->state != NID_ALLOC);
+> >  	__del_from_free_nid_list(nm_i, i);
+> >  	spin_unlock(&nm_i->free_nid_list_lock);
+> > +
+> > +	kmem_cache_free(free_nid_slab, i);
+> >  }
+> >
+> >  /*
+> > @@ -1501,6 +1508,7 @@ void alloc_nid_failed(struct f2fs_sb_info *sbi, nid_t nid)
+> >  {
+> >  	struct f2fs_nm_info *nm_i = NM_I(sbi);
+> >  	struct free_nid *i;
+> > +	bool need_free = false;
+> >
+> >  	if (!nid)
+> >  		return;
+> > @@ -1510,11 +1518,15 @@ void alloc_nid_failed(struct f2fs_sb_info *sbi, nid_t nid)
+> >  	f2fs_bug_on(!i || i->state != NID_ALLOC);
+> >  	if (!available_free_memory(nm_i, FREE_NIDS)) {
+> >  		__del_from_free_nid_list(nm_i, i);
+> > +		need_free = true;
+> >  	} else {
+> >  		i->state = NID_NEW;
+> >  		nm_i->fcnt++;
+> >  	}
+> >  	spin_unlock(&nm_i->free_nid_list_lock);
+> > +
+> > +	if (need_free)
+> > +		kmem_cache_free(free_nid_slab, i);
+> >  }
+> >
+> >  void recover_node_page(struct f2fs_sb_info *sbi, struct page *page,
+> > @@ -1926,6 +1938,7 @@ void destroy_node_manager(struct f2fs_sb_info *sbi)
+> >  		f2fs_bug_on(i->state == NID_ALLOC);
+> >  		__del_from_free_nid_list(nm_i, i);
+> >  		nm_i->fcnt--;
+> > +		kmem_cache_free(free_nid_slab, i);
+> 
+> It seems that we need to do this too.
+> 
+>                spin_unlock(&nm_i->free_nid_list_lock);
+>                kmem_cache_free(free_nid_slab, i);
+>                spin_lock(&nm_i->free_nid_list_lock);
+> 
+> Right?
 
-On Thu, 20 Mar 2014 14:36:03 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Today's linux-next merge of the tip tree got a conflict in
-> arch/arm/mach-imx/pm-imx6q.c between commit 9cdde7217e92 ("ARM: imx6:
-> rename pm-imx6q.c to pm-imx6.c") from the arm-soc tree and commit
-> 8435cf757632 ("arm: Replace various irq_desc accesses") from the tip tree.
->=20
-> I fixed it up (by applying the tip tree patch to the renamed file -
-> arch/arm/mach-imx/pm-imx6.c - see patch below) and can carry the fix as
-> necessary (no action is required).
+You're right, I will send patch v2.
+Thanks for your review.
 
-The below merge fixup is now needed when the arm-soc tree is merged with
-Linus' tree (as well as removing arch/arm/mach-imx/pm-imx6q.c).
+> 
+> >  	}
+> >  	f2fs_bug_on(nm_i->fcnt);
+> >  	spin_unlock(&nm_i->free_nid_list_lock);
+> 
+> --
+> Jaegeuk Kim
+> Samsung
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 20 Mar 2014 14:33:26 +1100
-> Subject: [PATCH] arm: Replace various irq_desc accesses fix for file move
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/arm/mach-imx/pm-imx6.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
->=20
-> diff --git a/arch/arm/mach-imx/pm-imx6.c b/arch/arm/mach-imx/pm-imx6.c
-> index 16f0d249f6a7..9392a8f4ef24 100644
-> --- a/arch/arm/mach-imx/pm-imx6.c
-> +++ b/arch/arm/mach-imx/pm-imx6.c
-> @@ -241,7 +241,7 @@ static void imx6q_enable_wb(bool enable)
-> =20
->  int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
->  {
-> -	struct irq_desc *iomuxc_irq_desc;
-> +	struct irq_data *iomuxc_irq_data =3D irq_get_irq_data(32);
->  	u32 val =3D readl_relaxed(ccm_base + CLPCR);
-> =20
->  	val &=3D ~BM_CLPCR_LPM;
-> @@ -288,10 +288,9 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
->  	 * 3) Software should mask IRQ #32 right after CCM Low-Power mode
->  	 *    is set (set bits 0-1 of CCM_CLPCR).
->  	 */
-> -	iomuxc_irq_desc =3D irq_to_desc(32);
-> -	imx_gpc_irq_unmask(&iomuxc_irq_desc->irq_data);
-> +	imx_gpc_irq_unmask(iomuxc_irq_data);
->  	writel_relaxed(val, ccm_base + CLPCR);
-> -	imx_gpc_irq_mask(&iomuxc_irq_desc->irq_data);
-> +	imx_gpc_irq_mask(iomuxc_irq_data);
-> =20
->  	return 0;
->  }
-> --=20
-> 1.9.0
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTO14XAAoJEMDTa8Ir7ZwVbPcP/25mNUHzl7yJ/mdrBhkmMngO
-demraJgI0hX+6kvvgbBekDTOdRo5cQVuASsSaCgWDxQxS6ntwTN0BKm0eERFYCmo
-xKi+xu9g6GlBJV92Ht/H6o4fQznUPoXtAXOGkByius/z36lV5XypLv7bRqQnuVaI
-TycwHJxVkLvCPUcIccddrjPnxd4WUGbYsqKcFOlrwtDjntPk7C8//+Qe9yJyTEaY
-wDPcZCq/DdGtrmfQ2LTCLGEsIoBRzqa4w1lADcypBmoOhL6f6l8ZcC6J6yy/vm9A
-dWswKPzmaFKnjS3eFYW+VizKAn7U0Yeo1Uw6e5GdB5dCbrxr1rm7btEzwMvotkiN
-cxMmawWfUwIse1ZWkJwPUoPQ4nwF1Y7S91HHkqjTA5H5LhFgm497G1O4Z0vPJY+y
-OB4uHDV9ePyboZSayVYd0t+0nS+O6JrGmTnVEkW9IFR0WUZr2BKyRUIRnU91J9OF
-pkncogk1ZYR3xsUctm11ESEpNhINaFIgaHuUNAIPeToZbRbei/5MRqHC71wnm7yD
-PLa75/+N6XnBGJ++72QSsWYdFfTmwfyy0Vwc3ETrf5+F+lQk2Wo4Hi8L7ScHjeMx
-NG1/JAxo0o+3Gc3IZHTwJTMi02rcMELA2UUUP7H3Sxel1VA0WS7HqZbnxauKbemf
-RjXI9nWvPGw7RczWlYf6
-=fWTN
------END PGP SIGNATURE-----
-
---Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx.--
