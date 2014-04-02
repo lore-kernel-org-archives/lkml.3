@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443AbaDBCrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 22:47:11 -0400
-Received: from imap.thunk.org ([74.207.234.97]:48800 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391AbaDBCrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 22:47:09 -0400
-Date: Tue, 1 Apr 2014 22:46:33 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andrew Stephenson <aste9@icloud.com>
-Cc: David Lang <david@lang.hm>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Replacing GNU
-Message-ID: <20140402024633.GB29944@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andrew Stephenson <aste9@icloud.com>, David Lang <david@lang.hm>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <2A318645-52BD-4650-BDEF-11F6215AA621@icloud.com>
- <alpine.DEB.2.02.1404011744300.14073@nftneq.ynat.uz>
- <7E28311F-2408-4713-82DE-F9708AEAF855@icloud.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7E28311F-2408-4713-82DE-F9708AEAF855@icloud.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1757462AbaDBCsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 22:48:18 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33756 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904AbaDBCsR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 22:48:17 -0400
+From: Zheng Li <zheng.x.li@oracle.com>
+To: netdev@vger.kernel.org, j.vosburgh@gmail.com, fubar@us.ibm.com,
+        andy@greyhouse.net, vfalico@redhat.com
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, joe.jin@oracle.com,
+        zheng.x.li@oracle.com
+Subject: [PATCH v3] bonding: Inactive slaves should keep inactive flag's value
+Date: Wed,  2 Apr 2014 11:01:48 +0800
+Message-Id: <1396407708-4056-1-git-send-email-zheng.x.li@oracle.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 01:03:13PM +1100, Andrew Stephenson wrote:
-> Ah, so there is a Free Software camp and an Open Source camp within
-> the Linux Kernel Mailing List.
+bond_open is not setting the inactive flag correctly for some modes (alb and
+tlb), resulting in error behavior if the bond has been administratively set
+down and then back up. This effect should not occur when slaves are added while
+the bond is up; it's something that only happens after a down/up bounce of the
+bond.
 
-There is a strong consensus that the Linux kernel should remain GPLv2,
-and many senior kernel developers (including Linus) have an extremely
-strong dislike of the GPLv3's anti-Tivo clauses.  I suspect many of us
-regret that license incompatibilities caused by some code being
-licensed under GPLv2 only, and some code being licensed under GPLv3,
-but that's an issue that you need to talk to the FSF about.
+For example, in bond tlb or alb mode, domu send some ARP request which go out
+from dom0 bond's active slave, then the ARP broadcast request packets go back to
+inactive slave from switch, because the inactive slave's inactive flag is zero,
+kernel will receive the packets and pass them to bridge that cause dom0's bridge
+map domu's MAC address to port of bond, bridge should map domu's MAC to port of
+vif.
 
-As far as the kernel is concerned, it doesn't use the gcc runtime
-library, so issues about GPLv3 are simply simply not a major concern
-for most linux kernel developers.
+Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+Signed-off-by: Jay Vosburgh <j.vosburgh@gmail.com>
+---
+ drivers/net/bonding/bond_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Questions about what the implications are of GPLv3 licensed code in
-userspace really are out of scope of the LKML mailing list.  If you
-care about such things, I suggest you talk to your lawyers.
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index e5628fc..b42758f 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3058,7 +3058,7 @@ static int bond_open(struct net_device *bond_dev)
+ 	if (bond_has_slaves(bond)) {
+ 		read_lock(&bond->curr_slave_lock);
+ 		bond_for_each_slave(bond, slave, iter) {
+-			if ((bond->params.mode == BOND_MODE_ACTIVEBACKUP)
++			if (USES_PRIMARY(bond->params.mode)
+ 				&& (slave != bond->curr_active_slave)) {
+ 				bond_set_slave_inactive_flags(slave,
+ 							      BOND_SLAVE_NOTIFY_NOW);
+-- 
+1.7.6.5
 
-Cheers,
-
-						- Ted
