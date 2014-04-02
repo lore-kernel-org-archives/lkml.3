@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791AbaDBSJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:09:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55426 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932450AbaDBSJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:09:14 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
-        mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
-        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, riel@redhat.com
-Subject: [PATCH 0/4] hugetlb: add support gigantic page allocation at runtime
-Date: Wed,  2 Apr 2014 14:08:44 -0400
-Message-Id: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
+	id S932863AbaDBSMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:12:55 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:46435 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932650AbaDBSMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:12:53 -0400
+Message-ID: <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH] integrity: get comm using lock to avoid race in string
+ printing
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        eparis@redhat.com
+Date: Wed, 02 Apr 2014 14:12:48 -0400
+In-Reply-To: <6292885.20TorKeRiK@x2>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+	 <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <6292885.20TorKeRiK@x2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040218-1344-0000-0000-000000AA3961
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HugeTLB subsystem uses the buddy allocator to allocate hugepages during
-runtime. This means that hugepages allocation during runtime is limited to
-MAX_ORDER order. For archs supporting gigantic pages (that is, page sizes
-greater than MAX_ORDER), this in turn means that those pages can't be
-allocated at runtime.
+On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote: 
+> Hello Mimi,
+> 
+> On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
+> > This change is already being upstreamed as commit 73a6b44 "Integrity:
+> > Pass commname via get_task_comm()".
+> 
+> While I was looking at Richard's patch, I noticed a few places where cause and 
+> op are logged and the string isn't tied together with a _ or -. These are in 
+> ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are 
+> these fixed upstream? Or should a patch be made?
 
-HugeTLB supports gigantic page allocation during boottime, via the boot
-allocator. To this end the kernel provides the command-line options
-hugepagesz= and hugepages=, which can be used to instruct the kernel to
-allocate N gigantic pages during boot.
+Nothing has changed in terms of 'cause' and 'op'.  I would suggest
+making the changes in integrity_audit.c: integrity_audit_msg().
 
-For example, x86_64 supports 2M and 1G hugepages, but only 2M hugepages can
-be allocated and freed at runtime. If one wants to allocate 1G gigantic pages,
-this has to be done at boot via the hugepagesz= and hugepages= command-line
-options.
+thanks,
 
-Now, gigantic page allocation at boottime has two serious problems:
+Mimi
 
- 1. Boottime allocation is not NUMA aware. On a NUMA machine the kernel
-    evenly distributes boottime allocated hugepages among nodes.
 
-    For example, suppose you have a four-node NUMA machine and want
-    to allocate four 1G gigantic pages at boottime. The kernel will
-    allocate one gigantic page per node.
-
-    On the other hand, we do have users who want to be able to specify
-    which NUMA node gigantic pages should allocated from. So that they
-    can place virtual machines on a specific NUMA node.
-
- 2. Gigantic pages allocated at boottime can't be freed
-
-At this point it's important to observe that regular hugepages allocated
-at runtime don't have those problems. This is so because HugeTLB interface
-for runtime allocation in sysfs supports NUMA and runtime allocated pages
-can be freed just fine via the buddy allocator.
-
-This series adds support for allocating gigantic pages at runtime. It does
-so by allocating gigantic pages via CMA instead of the buddy allocator.
-Releasing gigantic pages is also supported via CMA. As this series builds
-on top of the existing HugeTLB interface, it makes gigantic page allocation
-and releasing just like regular sized hugepages. This also means that NUMA
-support just works.
-
-For example, to allocate two 1G gigantic pages on node 1, one can do:
-
- # echo 2 > \
-   /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-
-And, to release all gigantic pages on the same node:
-
- # echo 0 > \
-   /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-
-Please, refer to patch 4/4 for full technical details.
-
-Finally, please note that this series is a follow up for a previous series
-that tried to extend the command-line options set to be NUMA aware:
-
- http://marc.info/?l=linux-mm&m=139593335312191&w=2
-
-During the discussion of that series it was agreed that having runtime
-allocation support for gigantic pages was a better solution.
-
-Luiz Capitulino (4):
-  hugetlb: add hstate_is_gigantic()
-  hugetlb: update_and_free_page(): don't clear PG_reserved bit
-  hugetlb: move helpers up in the file
-  hugetlb: add support for gigantic page allocation at runtime
-
- arch/x86/include/asm/hugetlb.h |  10 ++
- include/linux/hugetlb.h        |   5 +
- mm/hugetlb.c                   | 344 ++++++++++++++++++++++++++++++-----------
- 3 files changed, 265 insertions(+), 94 deletions(-)
-
--- 
-1.8.1.4
