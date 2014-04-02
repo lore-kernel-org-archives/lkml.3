@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751AbaDBAQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:16:59 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:44048 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751419AbaDBAQ5 (ORCPT
+	id S1755112AbaDBAUf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:20:35 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:49880 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaDBAUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:16:57 -0400
-Message-ID: <533B5701.4030303@fb.com>
-Date: Tue, 1 Apr 2014 20:17:05 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 1 Apr 2014 20:20:33 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <t-itoh@jp.fujitsu.com>
-Subject: Re: [GIT PULL] Btrfs pull -- part 1
-References: <533ACC62.1080701@fb.com>
-In-Reply-To: <533ACC62.1080701@fb.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-04-01_07:2014-04-01,2014-04-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=2.17048601314218e-14 kscore.compositescore=0
- circleOfTrustscore=17.3681406164796 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404010141
-X-FB-Internal: deliver
+In-Reply-To: <20140402001213.GB29864@amt.cnet>
+References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
+ <5339AB59.4050906@mit.edu> <20140331213032.GA5866@amt.cnet>
+ <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
+ <20140401180134.GA17963@amt.cnet> <CALCETrVFv4dHH1_D1KR43-UsVCPcXDXhwAuUWNUF5_Wgm+kw1g@mail.gmail.com>
+ <20140402001213.GB29864@amt.cnet>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 1 Apr 2014 17:20:13 -0700
+Message-ID: <CALCETrWQ8ntYBKmeUapw6mRSSBMowve82_e1EJrWqLD0e=sneA@mail.gmail.com>
+Subject: Re: VDSO pvclock may increase host cpu consumption, is this a problem?
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhang yanying <zhuangyanying@huawei.com>,
+        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        Zhanghailiang <zhang.zhanghailiang@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 04/01/2014 10:25 AM, Chris Mason wrote:
-> Hi Linus,
+On Tue, Apr 1, 2014 at 5:12 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Tue, Apr 01, 2014 at 12:17:16PM -0700, Andy Lutomirski wrote:
+>> On Tue, Apr 1, 2014 at 11:01 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>> > On Mon, Mar 31, 2014 at 10:33:41PM -0700, Andy Lutomirski wrote:
+>> >> On Mar 31, 2014 8:45 PM, "Marcelo Tosatti" <mtosatti@redhat.com> wrote:
+>> >> >
+>> >> > On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
+>> >> > > On 03/29/2014 01:47 AM, Zhanghailiang wrote:
+>> >> > > > Hi,
+>> >> > > > I found when Guest is idle, VDSO pvclock may increase host consumption.
+>> >> > > > We can calcutate as follow, Correct me if I am wrong.
+>> >> > > >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
+>> >> > > > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
+>> >> > > > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call.
+>> >> > > > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
+>> >> > > > Both Host and Guest is linux-3.13.6.
+>> >> > > > So, whether the host cpu consumption is a problem?
+>> >> > >
+>> >> > > Does pvclock serve any real purpose on systems with fully-functional
+>> >> > > TSCs?  The x86 guest implementation is awful, so it's about 2x slower
+>> >> > > than TSC.  It could be improved a lot, but I'm not sure I understand why
+>> >> > > it exists in the first place.
+>> >> >
+>> >> > VM migration.
+>> >>
+>> >> Why does that need percpu stuff?  Wouldn't it be sufficient to
+>> >> interrupt all CPUs (or at least all cpus running in userspace) on
+>> >> migration and update the normal timing data structures?
+>> >
+>> > Are you suggesting to allow interruption of the timekeeping code
+>> > at any time to update frequency information ?
+>>
+>> I'm not sure what you mean by "interruption of the timekeeping code".
+>> I'm suggesting sending an interrupt to the guest (via a virtio device,
+>> presumably) to tell it that it has been paused and resumed.
 >
-> We still have some corruption fixes and other patches coming in for the
-> merge window, but this batch is tested and ready to go.
+> code:
 >
-> Please pull from:
+> 1) disable interrupts
+> 2) A = RDTSC
+> 3) B = SCALE(A, TSC.FREQ)
 >
-> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git master
+> If migration happens between 2 and 3, you've got an incorrect value.
+>
 
-Tsutomu noticed I put the wrong branch name in.  I've pushed my 
-for-linus over to my master branch so they all match the shortlog and 
-diffstat below.
+Fair enough.
 
-Thanks,
-Chris
+I guess
 
+1) disable interrupts
+2) A = RDTSC
+3) B = SCALE(A, TSC.FREQ)
+
+is also bad if (3) blocks due to magic invalidation of the physical page.
+
+--Andy
