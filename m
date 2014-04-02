@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087AbaDBHzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:55:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45589 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357AbaDBHzq (ORCPT
+	id S1758062AbaDBH4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:56:38 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:49294 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaDBH4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:55:46 -0400
-Date: Wed, 2 Apr 2014 00:55:25 -0700
-From: "tip-bot for K. Y. Srinivasan" <tipbot@zytor.com>
-Message-ID: <tip-f704a7d7f1d815621cb4c47f7a94787e1bd7c27c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        kys@microsoft.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kys@microsoft.com, tglx@linutronix.de
-In-Reply-To: <1396421502-23222-1-git-send-email-kys@microsoft.com>
-References: <1396421502-23222-1-git-send-email-kys@microsoft.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/platform/hyperv:
-  Handle VMBUS driver being a module
-Git-Commit-ID: f704a7d7f1d815621cb4c47f7a94787e1bd7c27c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 2 Apr 2014 03:56:36 -0400
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: davem@davemloft.net, lauro.venancio@openbossa.org
+Cc: aloisio.almeida@openbossa.org, sameo@linux.intel.com,
+        linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] nfc: remove unneeded nfc_put_device() calls
+Date: Wed, 02 Apr 2014 16:56:31 +0900
+Message-ID: <31741678.fEkJSmnf5n@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f704a7d7f1d815621cb4c47f7a94787e1bd7c27c
-Gitweb:     http://git.kernel.org/tip/f704a7d7f1d815621cb4c47f7a94787e1bd7c27c
-Author:     K. Y. Srinivasan <kys@microsoft.com>
-AuthorDate: Tue, 1 Apr 2014 23:51:42 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 2 Apr 2014 09:49:47 +0200
 
-x86/platform/hyperv: Handle VMBUS driver being a module
+If local is NULL, nfs_put_device() is called twice.
+So nfs_put_device() in "if (!local)" is removed.
 
-Hyper-V VMBUS driver can be a module; handle this case
-correctly. Please apply.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: olaf@aepfle.de
-Cc: apw@canonical.com
-Cc: jasowang@redhat.com
-Link: http://lkml.kernel.org/r/1396421502-23222-1-git-send-email-kys@microsoft.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- arch/x86/kernel/irq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/nfc/netlink.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 42805fa..283a76a 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -125,7 +125,7 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 		seq_printf(p, "%10u ", per_cpu(mce_poll_count, j));
- 	seq_printf(p, "  Machine check polls\n");
- #endif
--#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
-+#if IS_ENABLED(CONFIG_HYPERV) || defined(CONFIG_XEN)
- 	seq_printf(p, "%*s: ", prec, "THR");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_hv_callback_count);
+diff --git a/net/nfc/netlink.c b/net/nfc/netlink.c
+index b2ad570..3e0a676 100644
+--- a/net/nfc/netlink.c
++++ b/net/nfc/netlink.c
+@@ -1038,7 +1038,6 @@ static int nfc_genl_llc_sdreq(struct sk_buff *skb, struct genl_info *info)
+ 
+ 	local = nfc_llcp_find_local(dev);
+ 	if (!local) {
+-		nfc_put_device(dev);
+ 		rc = -ENODEV;
+ 		goto exit;
+ 	}
+-- 
+1.7.4.4
+
+
