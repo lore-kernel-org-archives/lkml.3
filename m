@@ -1,148 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857AbaDBSmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:42:23 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:31026 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932494AbaDBSmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:42:22 -0400
-Date: Wed, 2 Apr 2014 14:42:19 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-ID: <20140402144219.4cafbe37@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S932894AbaDBSp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:45:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2990 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932494AbaDBSpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:45:24 -0400
+Date: Wed, 2 Apr 2014 14:45:17 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, eparis@redhat.com,
+        sgrubb@redhat.com
+Subject: Re: [PATCH] integrity: get comm using lock to avoid race in string
+ printing
+Message-ID: <20140402184517.GA24814@madcap2.tricolour.ca>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+ <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has come to our attention that a system running a specific user
-space init program will not boot if you add "debug" to the kernel
-command line. What happens is that the user space tool parses the
-kernel command line, and if it sees "debug" it will spit out so much
-information that the system fails to boot. This basically renders the
-"debug" option for the kernel useless.
+On 14/04/02, Mimi Zohar wrote:
+> On Wed, 2014-04-02 at 12:19 -0400, Richard Guy Briggs wrote: 
+> > When task->comm is passed directly to audit_log_untrustedstring() without
+> > getting a copy or using the task_lock, there is a race that could happen that
+> > would output a NULL (\0) in the output string that would effectively truncate
+> > the rest of the report text after the comm= field in the audit, losing fields.
+> > 
+> > Use get_task_comm() to get a copy while acquiring the task_lock to prevent
+> > this and to prevent the result from being a mixture of old and new values of
+> > comm.
+> > 
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  security/integrity/integrity_audit.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/security/integrity/integrity_audit.c b/security/integrity/integrity_audit.c
+> > index 85253b5..11706a2 100644
+> > --- a/security/integrity/integrity_audit.c
+> > +++ b/security/integrity/integrity_audit.c
+> > @@ -33,6 +33,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
+> >  			 const char *cause, int result, int audit_info)
+> >  {
+> >  	struct audit_buffer *ab;
+> > +	char comm[sizeof(current->comm)];
+> > 
+> >  	if (!integrity_audit_info && audit_info == 1)	/* Skip info messages */
+> >  		return;
+> > @@ -49,7 +50,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
+> >  	audit_log_format(ab, " cause=");
+> >  	audit_log_string(ab, cause);
+> >  	audit_log_format(ab, " comm=");
+> > -	audit_log_untrustedstring(ab, current->comm);
+> > +	audit_log_untrustedstring(ab, get_task_comm(comm, current));
+> >  	if (fname) {
+> >  		audit_log_format(ab, " name=");
+> >  		audit_log_untrustedstring(ab, fname);
+> 
+> This change is already being upstreamed as commit 73a6b44 "Integrity:
+> Pass commname via get_task_comm()".
 
-This bug has been reported to the developers of said tool
-here:
+Excellent.  Missed that.  Thanks.
 
-  https://bugs.freedesktop.org/show_bug.cgi?id=76935
+> thanks,
+> 
+> Mimi
 
-The response is:
+- RGB
 
-"Generic terms are generic, not the first user owns them."
-
-That is, the "debug" statement on the *kernel* command line is not
-owned by the kernel just because it was the first user of it, and
-they refuse to fix their bug.
-
-Well, my response is, we OWN the kernel command line, and as such, we
-can keep the users from seeing stuff on it if we so choose. And with
-that, I propose this patch, which hides "debug" from /proc/cmdline,
-such that we don't have to worry about tools parsing for it and causing
-hardship for those trying to debug the kernel.
-
-Reported-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-diff --git a/fs/proc/cmdline.c b/fs/proc/cmdline.c
-index cbd82df..fdb75f7 100644
---- a/fs/proc/cmdline.c
-+++ b/fs/proc/cmdline.c
-@@ -5,7 +5,7 @@
- 
- static int cmdline_proc_show(struct seq_file *m, void *v)
- {
--	seq_printf(m, "%s\n", saved_command_line);
-+	seq_printf(m, "%s\n", proc_command_line);
- 	return 0;
- }
- 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index a3ba270..daf978a 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -145,6 +145,7 @@ typedef void (*ctor_fn_t)(void);
- extern int do_one_initcall(initcall_t fn);
- extern char __initdata boot_command_line[];
- extern char *saved_command_line;
-+extern char *proc_command_line;
- extern unsigned int reset_devices;
- 
- /* used by init/main.c */
-diff --git a/init/main.c b/init/main.c
-index 9c7fd4c..6c2022f 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -121,8 +121,10 @@ void (*__initdata late_time_init)(void);
- 
- /* Untouched command line saved by arch-specific code. */
- char __initdata boot_command_line[COMMAND_LINE_SIZE];
--/* Untouched saved command line (eg. for /proc) */
-+/* Untouched saved command line */
- char *saved_command_line;
-+/* Slightly touched command line (for /proc) */
-+char *proc_command_line;
- /* Command line for parameter parsing */
- static char *static_command_line;
- /* Command line for per-initcall parameter parsing */
-@@ -349,13 +351,44 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
-  */
- static void __init setup_command_line(char *command_line)
- {
--	saved_command_line =
--		memblock_virt_alloc(strlen(boot_command_line) + 1, 0);
--	initcall_command_line =
--		memblock_virt_alloc(strlen(boot_command_line) + 1, 0);
-+	char *str;
-+	int len = strlen(boot_command_line);
-+
-+	saved_command_line = memblock_virt_alloc(len + 1, 0);
-+	initcall_command_line = memblock_virt_alloc(len + 1, 0);
- 	static_command_line = memblock_virt_alloc(strlen(command_line) + 1, 0);
- 	strcpy (saved_command_line, boot_command_line);
- 	strcpy (static_command_line, command_line);
-+
-+	proc_command_line = saved_command_line;
-+
-+	/*
-+	 * To keep user processes from abusing 'debug', we strip it
-+	 * from what /proc/cmdline shows.
-+	 */
-+	str = saved_command_line;
-+	do {
-+		int index;
-+
-+		str = strstr(str, "debug");
-+		if (!str)
-+			break;
-+
-+		/* Make sure debug is by itself */
-+		if ((str != saved_command_line && str[-1] != ' ') ||
-+		    (str[5] != '\0' && str[5] != ' ')) {
-+			str += 5;
-+			continue;
-+		}
-+
-+		/* Remove "debug" from command line */
-+		index = str - saved_command_line;
-+		proc_command_line = memblock_virt_alloc(len - 4, 0);
-+		strncpy(proc_command_line, boot_command_line, index);
-+		strncpy(proc_command_line + index,
-+			boot_command_line + index + 5, len - (index + 5));
-+		break;
-+	} while (*str != '\0');
- }
- 
- /*
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
