@@ -1,93 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168AbaDBUFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:05:15 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:39505 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324AbaDBUFN (ORCPT
+	id S932817AbaDBUMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:12:08 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42795 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932496AbaDBUME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:05:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1404022146530.14882@ionos.tec.linutronix.de>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org>
-	<alpine.DEB.2.02.1404022146530.14882@ionos.tec.linutronix.de>
-Date: Wed, 2 Apr 2014 22:05:12 +0200
-Message-ID: <CAFLxGvyBgKQLvSUcbn3EqcEomUgY85PXJBM7JoMKiyizt66gYA@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Apr 2014 16:12:04 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 00/40] 3.12.17-stable review
+Date: Wed,  2 Apr 2014 22:12:01 +0200
+Message-Id: <cover.1396469191.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 9:50 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Wed, 2 Apr 2014, Andrew Morton wrote:
->> On Wed, 2 Apr 2014 14:42:19 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
->>
->> > It has come to our attention that a system running a specific user
->> > space init program will not boot if you add "debug" to the kernel
->> > command line. What happens is that the user space tool parses the
->> > kernel command line, and if it sees "debug" it will spit out so much
->> > information that the system fails to boot. This basically renders the
->> > "debug" option for the kernel useless.
->> >
->> > This bug has been reported to the developers of said tool
->> > here:
->> >
->> >   https://bugs.freedesktop.org/show_bug.cgi?id=76935
->> >
->> > The response is:
->> >
->> > "Generic terms are generic, not the first user owns them."
->> >
->> > That is, the "debug" statement on the *kernel* command line is not
->> > owned by the kernel just because it was the first user of it, and
->> > they refuse to fix their bug.
->> >
->> > Well, my response is, we OWN the kernel command line, and as such, we
->> > can keep the users from seeing stuff on it if we so choose. And with
->> > that, I propose this patch, which hides "debug" from /proc/cmdline,
->> > such that we don't have to worry about tools parsing for it and causing
->> > hardship for those trying to debug the kernel.
->> >
->>
->> I had to check the date on this but surprisingly, it's all post
->> April 1.
->>
->> --- a/fs/read_write.c~a
->> +++ a/fs/read_write.c
->> @@ -513,6 +513,8 @@ SYSCALL_DEFINE3(read, unsigned int, fd,
->>       struct fd f = fdget_pos(fd);
->>       ssize_t ret = -EBADF;
->>
->> +     BUG_ON(!strcmp(current->comm, "systemd"));
->
-> Can we make that strncmp(current->comm, "systemd", 7) please? So we
-> catch the systemd-xxx stuff as well!
->
-> Otherwise Acked-by-me
->
->           tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This is the start of the stable review cycle for the 3.12.17 release.
+There are 40 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-While we are here, can we please also talk about the !cgroup situation?
-https://bugs.freedesktop.org/show_bug.cgi?id=74589
+Responses should be made by Fri Apr  4 20:06:31 2014
+Anything received after that time might be too late.
 
-A segfaulting systemd on CONFIG_CGROUPS=n is no fun.
+The whole patch series can be found in one patch at:
+	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.17-rc1.xz
+and the diffstat can be found below.
+
+thanks,
+js
+
+===============
+
+
+Al Viro (1):
+  make prepend_name() work correctly when called with negative *buflen
+
+Alexander Aring (1):
+  nfs: fix dead code of ipv6_addr_scope
+
+Andy Adamson (2):
+  SUNRPC: do not fail gss proc NULL calls with EACCES
+  NFSv4.1 free slot before resending I/O to MDS
+
+Artem Fetishev (1):
+  x86: fix boot on uniprocessor systems
+
+Benjamin Tissoires (1):
+  Input: synaptics - add manual min/max quirk
+
+Christoph Hellwig (3):
+  nfs: fix size updates for aio writes
+  nfs: defer inode_dio_done call until size update is done
+  nfs: increment i_dio_count for reads, too
+
+Daniel Borkmann (1):
+  netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+
+Daniel Vetter (1):
+  drm/i915: Undo gtt scratch pte unmapping again
+
+David Howells (2):
+  X.509: struct x509_certificate needs struct tm declaring
+  FS-Cache: Handle removal of unadded object to the fscache_object_list
+    rb tree
+
+David Rientjes (1):
+  mm: close PageTail race
+
+David Vrabel (1):
+  Revert "xen: properly account for _PAGE_NUMA during xen pte
+    translations"
+
+Dmitry Torokhov (1):
+  Input: mousedev - fix race when creating mixed device
+
+Dongmao Zhang (1):
+  dlm: set zero linger time on sctp socket
+
+Hans de Goede (2):
+  Input: synaptics - add manual min/max quirk for ThinkPad X240
+  Input: cypress_ps2 - don't report as a button pads
+
+J. Bruce Fields (1):
+  nfs: use IS_ROOT not DCACHE_DISCONNECTED
+
+James Ralston (1):
+  i2c: i801: Add Device IDs for Intel Wildcat Point-LP PCH
+
+Jeff Layton (2):
+  NFS: fix the handling of NFS_INO_INVALID_DATA flag in
+    nfs_revalidate_mapping
+  nfs: add memory barriers around NFS_INO_INVALID_DATA and
+    NFS_INO_INVALIDATING
+
+Jeff Mahoney (1):
+  drm/nouveau: make vga_switcheroo code depend on VGA_SWITCHEROO
+
+Len Brown (1):
+  intel_idle: Support Intel Atom Processor C2000 Product Family
+
+Martin Schwidefsky (1):
+  s390/time,vdso: fix clock_gettime for CLOCK_MONOTONIC
+
+Michal Kubecek (1):
+  ipvs: fix AF assignment in ip_vs_conn_new()
+
+Olaf Hering (1):
+  fbmem: really support wildcard video=options for all fbdev drivers
+
+Oliver Neukum (1):
+  crypto: sha256_ssse3 - also test for BMI2
+
+Ping Cheng (1):
+  Input: wacom - add support for three new Intuos Pro devices
+
+Scott Wood (1):
+  i2c: cpm: Fix build by adding of_address.h and of_irq.h
+
+Takashi Iwai (1):
+  ALSA: hda - Fix inconsistent Mic mute LED
+
+Theodore Ts'o (1):
+  ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+
+Thomas Petazzoni (2):
+  net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
+  net: mvneta: fix usage as a module on RGMII configurations
+
+Toshi Kani (1):
+  arch/x86/mm/srat: Skip NUMA_NO_NODE while parsing SLIT
+
+Trond Myklebust (2):
+  NFSv4.1: Prevent a 3-way deadlock between layoutreturn, open and state
+    recovery
+  NFS: Fix races in nfs_revalidate_mapping
+
+Wei Liu (1):
+  xen/balloon: flush persistent kmaps in correct position
+
+Weston Andros Adamson (1):
+  pnfs: fix BUG in filelayout_recover_commit_reqs
+
+ Documentation/i2c/busses/i2c-i801       |  1 +
+ arch/s390/kernel/vdso32/clock_gettime.S |  9 +---
+ arch/s390/kernel/vdso64/clock_gettime.S |  6 +--
+ arch/x86/crypto/sha256_ssse3_glue.c     |  2 +-
+ arch/x86/include/asm/pgtable.h          | 14 +------
+ arch/x86/include/asm/topology.h         |  3 +-
+ arch/x86/mm/srat.c                      | 16 ++++++--
+ arch/x86/xen/mmu.c                      |  4 +-
+ crypto/asymmetric_keys/x509_parser.h    |  1 +
+ drivers/block/aoe/aoecmd.c              |  4 +-
+ drivers/gpu/drm/i915/i915_gem_gtt.c     |  2 +-
+ drivers/gpu/drm/nouveau/nouveau_acpi.c  |  6 +++
+ drivers/i2c/busses/Kconfig              |  1 +
+ drivers/i2c/busses/i2c-cpm.c            |  2 +
+ drivers/i2c/busses/i2c-i801.c           |  3 ++
+ drivers/idle/intel_idle.c               | 24 ++++++++++-
+ drivers/input/mouse/cypress_ps2.c       |  1 -
+ drivers/input/mouse/synaptics.c         | 55 +++++++++++++++++++++++++
+ drivers/input/mousedev.c                | 73 +++++++++++++++++++--------------
+ drivers/input/tablet/wacom_sys.c        | 10 ++++-
+ drivers/input/tablet/wacom_wac.c        | 61 ++++++++++++++++++++-------
+ drivers/input/tablet/wacom_wac.h        |  3 ++
+ drivers/net/ethernet/marvell/mvneta.c   | 43 ++++---------------
+ drivers/vfio/vfio_iommu_type1.c         |  4 +-
+ drivers/video/fbmem.c                   |  3 ++
+ drivers/xen/balloon.c                   | 24 ++++++++---
+ fs/dcache.c                             |  4 +-
+ fs/dlm/lowcomms.c                       |  8 ++++
+ fs/ext4/inode.c                         | 15 ++++---
+ fs/fscache/object-list.c                |  5 +++
+ fs/fscache/object.c                     |  3 ++
+ fs/nfs/dir.c                            | 21 ++++++++--
+ fs/nfs/direct.c                         | 38 +++++++++++------
+ fs/nfs/inode.c                          | 51 +++++++++++++++++++----
+ fs/nfs/nfs4_fs.h                        |  1 +
+ fs/nfs/nfs4filelayout.c                 | 18 +++++---
+ fs/nfs/nfs4filelayoutdev.c              |  2 +-
+ fs/nfs/nfs4proc.c                       | 12 +++++-
+ fs/nfs/nfstrace.h                       |  1 +
+ fs/nfs/write.c                          |  7 +++-
+ fs/proc/page.c                          |  2 +-
+ include/linux/bitops.h                  | 15 +++++++
+ include/linux/huge_mm.h                 | 18 --------
+ include/linux/mm.h                      | 14 ++++++-
+ include/linux/nfs_fs.h                  |  1 +
+ mm/ksm.c                                |  2 +-
+ mm/memory-failure.c                     |  2 +-
+ mm/page_alloc.c                         |  4 +-
+ mm/swap.c                               |  4 +-
+ net/netfilter/ipvs/ip_vs_conn.c         |  8 ++--
+ net/netfilter/nf_conntrack_proto_dccp.c |  6 +--
+ net/sunrpc/auth_gss/auth_gss.c          |  2 +-
+ sound/pci/hda/hda_generic.c             |  8 ++--
+ sound/pci/hda/hda_generic.h             |  1 +
+ sound/pci/hda/patch_conexant.c          |  3 +-
+ sound/pci/hda/patch_realtek.c           |  9 ++--
+ sound/pci/hda/patch_sigmatel.c          | 27 +++++++-----
+ 57 files changed, 469 insertions(+), 218 deletions(-)
 
 -- 
-Thanks,
-//richard
+1.9.1
+
