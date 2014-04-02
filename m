@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101AbaDBAQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:16:27 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:62941 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaDBAQY (ORCPT
+	id S1756751AbaDBAQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:16:59 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:44048 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751419AbaDBAQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:16:24 -0400
-Message-ID: <533B56D5.5070803@bjorling.me>
-Date: Tue, 01 Apr 2014 17:16:21 -0700
-From: Matias Bjorling <m@bjorling.me>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 1 Apr 2014 20:16:57 -0400
+Message-ID: <533B5701.4030303@fb.com>
+Date: Tue, 1 Apr 2014 20:17:05 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@fb.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [RFC] blk-mq: support for shared tags
-References: <1396277175-21382-1-git-send-email-hch@lst.de>
-In-Reply-To: <1396277175-21382-1-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <t-itoh@jp.fujitsu.com>
+Subject: Re: [GIT PULL] Btrfs pull -- part 1
+References: <533ACC62.1080701@fb.com>
+In-Reply-To: <533ACC62.1080701@fb.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-04-01_07:2014-04-01,2014-04-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=2.17048601314218e-14 kscore.compositescore=0
+ circleOfTrustscore=17.3681406164796 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404010141
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 07:46 AM, Christoph Hellwig wrote:
-> This series adds support for sharing tags (and thus requests) between
-> multiple request_queues.  We'll need this for SCSI, and I think Martin
-> also wants something similar for nvme.
-> 
-> Besides the mess with request contructors/destructors the major RFC here
-> is how the blk_mq_alloc_shared_tags API should look like.  For now I've
-> been lazy and reused struct blk_mq_reg, but that feels a bit cumbersome.
-> Either a separate blk_mq_tags_reg or just passing the few arguments directly
-> would work fine for me.
-> 
 
-Hi Christoph,
 
-Can you rebase it on top of 3.14. I have trouble applying it for testing.
+On 04/01/2014 10:25 AM, Chris Mason wrote:
+> Hi Linus,
+>
+> We still have some corruption fixes and other patches coming in for the
+> merge window, but this batch is tested and ready to go.
+>
+> Please pull from:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git master
 
-For nvme, there's need for two separate types of queues. The admin queue
-(before initializing blk-mq) and the actual hardware queues.
-
-Should we allow the driver to get/put tags before initializing blk-mq?
-Or let drivers implement their own framework?
+Tsutomu noticed I put the wrong branch name in.  I've pushed my 
+for-linus over to my master branch so they all match the shortlog and 
+diffstat below.
 
 Thanks,
-Matias
+Chris
+
