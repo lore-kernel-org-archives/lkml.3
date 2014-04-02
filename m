@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758656AbaDBL7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:59:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55939 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758593AbaDBL7W (ORCPT
+	id S1758660AbaDBMCA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 08:02:00 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:57001 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaDBMB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:59:22 -0400
-Date: Wed, 2 Apr 2014 13:59:19 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Bo Shen <voice.shen@atmel.com>
-Cc: nicolas.ferre@atmel.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: at91: fix spi cs on sama5d3 Xplained board
-Message-ID: <20140402115919.GA14726@piout.net>
-References: <1396336363-13709-1-git-send-email-voice.shen@atmel.com>
+	Wed, 2 Apr 2014 08:01:58 -0400
+Message-ID: <533BFC31.1080203@monstr.eu>
+Date: Wed, 02 Apr 2014 14:01:53 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396336363-13709-1-git-send-email-voice.shen@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, chow.kim@samsung.com
+Subject: Re: [PATCH 02/10] ARM: EXYNOS: Correct file path in comment message
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1396425058-4012-3-git-send-email-pankaj.dubey@samsung.com>
+In-Reply-To: <1396425058-4012-3-git-send-email-pankaj.dubey@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="W0HsbOSS1WjbcSkQ5wEcStirGctgTChIw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2014 at 15:12:43 +0800, Bo Shen wrote :
-> The PD16 is the CS3 for SPI0 while not SPI1.
-> 
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--W0HsbOSS1WjbcSkQ5wEcStirGctgTChIw
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
+On 04/02/2014 09:50 AM, Pankaj Dubey wrote:
+> This patch corrects file path mentioned in file comment message.
+>=20
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 > ---
-> This patch is based on v3.14-rc8
-> 
->  arch/arm/boot/dts/at91-sama5d3_xplained.dts | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> index ce13755..4537259 100644
-> --- a/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> +++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> @@ -34,7 +34,7 @@
->  			};
->  
->  			spi0: spi@f0004000 {
-> -				cs-gpios = <&pioD 13 0>;
-> +				cs-gpios = <&pioD 13 0>, <0>, <0>, <&pioD 16 0>;
->  				status = "okay";
->  			};
->  
-> @@ -79,7 +79,7 @@
->  			};
->  
->  			spi1: spi@f8008000 {
-> -				cs-gpios = <&pioC 25 0>, <0>, <0>, <&pioD 16 0>;
-> +				cs-gpios = <&pioC 25 0>;
->  				status = "okay";
->  			};
->  
-> -- 
-> 1.8.5.2
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>  arch/arm/mach-exynos/platsmp.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/plat=
+smp.c
+> index 03e5e9f..d8d1555 100644
+> --- a/arch/arm/mach-exynos/platsmp.c
+> +++ b/arch/arm/mach-exynos/platsmp.c
+> @@ -1,4 +1,4 @@
+> -/* linux/arch/arm/mach-exynos4/platsmp.c
+> +/* linux/arch/arm/mach-exynos/platsmp.c
+>   *
+>   * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+>   *		http://www.samsung.com
+>=20
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Shouldn't you just remove it entirely?
+I had the same file names in the whole microblaze tree
+and some months/years later this was just broken everywhere.
+That's why it is just easier to remove it entirely.
+
+Thanks,
+Michal
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--W0HsbOSS1WjbcSkQ5wEcStirGctgTChIw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlM7/DEACgkQykllyylKDCHusQCfRCuGLq2KM+pbmifH9QH93JA2
+wUUAnAp9z8EAcQoRaCfgz9ffaKU9MxYp
+=UcXJ
+-----END PGP SIGNATURE-----
+
+--W0HsbOSS1WjbcSkQ5wEcStirGctgTChIw--
