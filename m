@@ -1,150 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364AbaDBArQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:47:16 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:64668 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756913AbaDBArO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:47:14 -0400
-MIME-Version: 1.0
-Date: Wed, 2 Apr 2014 02:47:12 +0200
-X-Google-Sender-Auth: 6nMgZXxkY9pzJ6R01WqdhEiF4k8
-Message-ID: <CAJZ5v0htHJ6_eX4eNKB5PrKXx+1BebcEeO9Jt-EQXiEj9hNuEw@mail.gmail.com>
-Subject: [GIT PULL] More ACPI and power management updates for v3.15-rc1
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757435AbaDBAr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:47:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:55498 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756913AbaDBArW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 20:47:22 -0400
+Date: Wed, 2 Apr 2014 11:47:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the tip tree with the arm-soc tree
+Message-Id: <20140402114715.471bcdb0962ef38c17120530@canb.auug.org.au>
+In-Reply-To: <20140320143603.a2f82d77be61c09a7852cfe9@canb.auug.org.au>
+References: <20140320143603.a2f82d77be61c09a7852cfe9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull from
+Hi all,
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.15-rc1-2
+On Thu, 20 Mar 2014 14:36:03 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Today's linux-next merge of the tip tree got a conflict in
+> arch/arm/mach-imx/pm-imx6q.c between commit 9cdde7217e92 ("ARM: imx6:
+> rename pm-imx6q.c to pm-imx6.c") from the arm-soc tree and commit
+> 8435cf757632 ("arm: Replace various irq_desc accesses") from the tip tree.
+>=20
+> I fixed it up (by applying the tip tree patch to the renamed file -
+> arch/arm/mach-imx/pm-imx6.c - see patch below) and can carry the fix as
+> necessary (no action is required).
 
-to receive more ACPI and power management updates for v3.15-rc1 with
-top-most commit 7b5c39389c86063e86fe8f2e0093c7197ddfa60a
+The below merge fixup is now needed when the arm-soc tree is merged with
+Linus' tree (as well as removing arch/arm/mach-imx/pm-imx6q.c).
 
- Merge branch 'pm-runtime'
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 20 Mar 2014 14:33:26 +1100
+> Subject: [PATCH] arm: Replace various irq_desc accesses fix for file move
+>=20
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  arch/arm/mach-imx/pm-imx6.c | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/arch/arm/mach-imx/pm-imx6.c b/arch/arm/mach-imx/pm-imx6.c
+> index 16f0d249f6a7..9392a8f4ef24 100644
+> --- a/arch/arm/mach-imx/pm-imx6.c
+> +++ b/arch/arm/mach-imx/pm-imx6.c
+> @@ -241,7 +241,7 @@ static void imx6q_enable_wb(bool enable)
+> =20
+>  int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
+>  {
+> -	struct irq_desc *iomuxc_irq_desc;
+> +	struct irq_data *iomuxc_irq_data =3D irq_get_irq_data(32);
+>  	u32 val =3D readl_relaxed(ccm_base + CLPCR);
+> =20
+>  	val &=3D ~BM_CLPCR_LPM;
+> @@ -288,10 +288,9 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
+>  	 * 3) Software should mask IRQ #32 right after CCM Low-Power mode
+>  	 *    is set (set bits 0-1 of CCM_CLPCR).
+>  	 */
+> -	iomuxc_irq_desc =3D irq_to_desc(32);
+> -	imx_gpc_irq_unmask(&iomuxc_irq_desc->irq_data);
+> +	imx_gpc_irq_unmask(iomuxc_irq_data);
+>  	writel_relaxed(val, ccm_base + CLPCR);
+> -	imx_gpc_irq_mask(&iomuxc_irq_desc->irq_data);
+> +	imx_gpc_irq_mask(iomuxc_irq_data);
+> =20
+>  	return 0;
+>  }
+> --=20
+> 1.9.0
 
-on top of commit 0ecfe310f4517d7505599be738158087c165be7c
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- Merge branch 'pm-devfreq'
+--Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx.
+Content-Type: application/pgp-signature
 
-These are commits that were not quite ready when I sent the original pull
-request for 3.15-rc1 several days ago, but they have spent some time in
-linux-next since then and appear to be good to go.  All of them are fixes
-and cleanups.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Specifics:
+iQIcBAEBCAAGBQJTO14XAAoJEMDTa8Ir7ZwVbPcP/25mNUHzl7yJ/mdrBhkmMngO
+demraJgI0hX+6kvvgbBekDTOdRo5cQVuASsSaCgWDxQxS6ntwTN0BKm0eERFYCmo
+xKi+xu9g6GlBJV92Ht/H6o4fQznUPoXtAXOGkByius/z36lV5XypLv7bRqQnuVaI
+TycwHJxVkLvCPUcIccddrjPnxd4WUGbYsqKcFOlrwtDjntPk7C8//+Qe9yJyTEaY
+wDPcZCq/DdGtrmfQ2LTCLGEsIoBRzqa4w1lADcypBmoOhL6f6l8ZcC6J6yy/vm9A
+dWswKPzmaFKnjS3eFYW+VizKAn7U0Yeo1Uw6e5GdB5dCbrxr1rm7btEzwMvotkiN
+cxMmawWfUwIse1ZWkJwPUoPQ4nwF1Y7S91HHkqjTA5H5LhFgm497G1O4Z0vPJY+y
+OB4uHDV9ePyboZSayVYd0t+0nS+O6JrGmTnVEkW9IFR0WUZr2BKyRUIRnU91J9OF
+pkncogk1ZYR3xsUctm11ESEpNhINaFIgaHuUNAIPeToZbRbei/5MRqHC71wnm7yD
+PLa75/+N6XnBGJ++72QSsWYdFfTmwfyy0Vwc3ETrf5+F+lQk2Wo4Hi8L7ScHjeMx
+NG1/JAxo0o+3Gc3IZHTwJTMi02rcMELA2UUUP7H3Sxel1VA0WS7HqZbnxauKbemf
+RjXI9nWvPGw7RczWlYf6
+=fWTN
+-----END PGP SIGNATURE-----
 
- - Remaining changes from upstream ACPICA release 20140214 that introduce
-   code to automatically serialize the execution of methods creating any
-   named objects which really cannot be executed in parallel with each
-   other anyway (previously ACPICA attempted to address that by aborting
-   methods upon conflict detection, but that wasn't reliable enough and
-   led to other issues).  From Bob Moore and Lv Zheng.
-
- - intel_pstate fix to use del_timer_sync() instead of del_timer() in
-   the exit path before freeing the timer structure from Dirk Brandewie
-   (original patch from Thomas Gleixner).
-
- - cpufreq fix related to system resume from Viresh Kumar.
-
- - Serialization of frequency transitions in cpufreq that involve
-   PRECHANGE and POSTCHANGE notifications to avoid ordering issues
-   resulting from race conditions.  From Srivatsa S Bhat and Viresh Kumar.
-
- - Revert of an ACPI processor driver change that was based on a specific
-   interpretation of the ACPI spec which may not be correct (the relevant
-   part of the spec appears to be incomplete).  From Hanjun Guo.
-
- - Runtime PM core cleanups and documentation updates from Geert Uytterhoeven.
-
- - PNP core cleanup from Michael Opdenacker.
-
-Thanks!
-
----------------
-
-Bob Moore (2):
-      ACPICA: Add auto-serialization support for ill-behaved control methods.
-      ACPICA: Ignore sync_level for methods that have been auto-serialized.
-
-Dirk Brandewie (1):
-      intel_pstate: Use del_timer_sync in intel_pstate_cpu_stop
-
-Geert Uytterhoeven (6):
-      PM / Runtime: dev_pm_info.runtime_error is signed
-      PM / Runtime: Split line longer than 80 characters
-      PM / Runtime: Correct documented return values for generic PM callbacks
-      PM / Runtime: GENERIC_SUBSYS_PM_OPS is gone
-      PM / Runtime: s/foo_process_requests/foo_process_next_request/
-      PM / Runtime: Spelling s/competing/completing/
-
-Hanjun Guo (1):
-      Revert "ACPI / processor: Make it possible to get APIC ID via GIC"
-
-Lv Zheng (3):
-      ACPICA: Remove global option to serialize all control methods.
-      ACPICA: Add additional named objects for the auto-serialize method scan.
-      ACPICA: Enable auto-serialization as a default kernel behavior.
-
-Michael Opdenacker (1):
-      PNP: remove deprecated IRQF_DISABLED
-
-Srivatsa S. Bhat (1):
-      cpufreq: Make sure frequency transitions are serialized
-
-Viresh Kumar (3):
-      cpufreq: resume drivers before enabling governors
-      cpufreq: Convert existing drivers to use
-cpufreq_freq_transition_{begin|end}
-      cpufreq: Make cpufreq_notify_transition &
-cpufreq_notify_post_transition static
-
----------------
-
- Documentation/kernel-parameters.txt  |  10 ++-
- Documentation/power/runtime_pm.txt   |  29 +++----
- drivers/acpi/acpica/acdispat.h       |  13 +--
- drivers/acpi/acpica/acglobal.h       |  11 +--
- drivers/acpi/acpica/acinterp.h       |   4 -
- drivers/acpi/acpica/acobject.h       |   3 +-
- drivers/acpi/acpica/acstruct.h       |   3 +
- drivers/acpi/acpica/dsinit.c         |  59 ++++++++++---
- drivers/acpi/acpica/dsmethod.c       | 156 +++++++++++++++++++++++++++++++++--
- drivers/acpi/acpica/dswload.c        |  16 ++++
- drivers/acpi/acpica/exsystem.c       |  12 +--
- drivers/acpi/acpica/exutils.c        |  80 +++---------------
- drivers/acpi/acpica/nsinit.c         |   5 +-
- drivers/acpi/acpica/nsload.c         |   4 +-
- drivers/acpi/acpica/psloop.c         |   4 +
- drivers/acpi/acpica/psobject.c       |   7 +-
- drivers/acpi/osl.c                   |  16 ++--
- drivers/acpi/processor_core.c        |  27 ------
- drivers/base/power/generic_ops.c     |   2 +-
- drivers/cpufreq/cpufreq-nforce2.c    |   4 +-
- drivers/cpufreq/cpufreq.c            |  61 ++++++++++----
- drivers/cpufreq/exynos5440-cpufreq.c |   4 +-
- drivers/cpufreq/gx-suspmod.c         |   4 +-
- drivers/cpufreq/integrator-cpufreq.c |   4 +-
- drivers/cpufreq/intel_pstate.c       |   2 +-
- drivers/cpufreq/longhaul.c           |   4 +-
- drivers/cpufreq/pcc-cpufreq.c        |   4 +-
- drivers/cpufreq/powernow-k6.c        |   4 +-
- drivers/cpufreq/powernow-k7.c        |   4 +-
- drivers/cpufreq/powernow-k8.c        |   4 +-
- drivers/cpufreq/s3c24xx-cpufreq.c    |   4 +-
- drivers/cpufreq/sh-cpufreq.c         |   4 +-
- drivers/cpufreq/unicore2-cpufreq.c   |   4 +-
- drivers/pnp/resource.c               |   2 +-
- include/acpi/acpixf.h                |   2 +-
- include/linux/cpufreq.h              |  12 ++-
- 36 files changed, 377 insertions(+), 211 deletions(-)
+--Signature=_Wed__2_Apr_2014_11_47_15_+1100_sBqhvVvxE3=Cvsx.--
