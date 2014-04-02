@@ -1,79 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758464AbaDBLFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:05:06 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19183 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758250AbaDBLFE (ORCPT
+	id S1758540AbaDBLFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:05:20 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:6304 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758492AbaDBLFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:05:04 -0400
-Date: Wed, 2 Apr 2014 14:04:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] clk: vt8500: several forever loops
-Message-ID: <20140402110429.GJ18506@mwanda>
-References: <20130826154908.GD12428@elgon.mountain>
+	Wed, 2 Apr 2014 07:05:14 -0400
+From: Lei Wen <leiwen@marvell.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <leiwen@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clocksource: register persistent clock for arm arch_timer
+Date: Wed, 2 Apr 2014 19:02:37 +0800
+Message-ID: <1396436557-29136-1-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130826154908.GD12428@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-04-02_01:2014-04-01,2014-04-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1404020036
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is still needed in linux-next.  It was Acked by Tony Prisk in
-a private email.
+Since arm's arch_timer's counter would keep accumulated even in the
+low power mode, including suspend state, it is very suitable to be
+the persistent clock instead of RTC.
 
-Acked-by: Tony Prisk <linux@prisktech.co.nz>
+While read_persistent_clock calling place shall be rare, like only
+suspend/resume place? So we shall don't care for its performance
+very much, so use direclty divided by frequency should be accepted
+for this reason. Actually archtimer's counter read performance already
+be very good, since it is directly access from core's bus, not from
+soc, so this is another reason why we choose use divide here.
 
-regards,
-dan carpenter
+Final reason for why we don't use multi+shift way is for we may not
+call read_persistent_clock for long time, like system long time
+not enter into suspend, so that the accumulated cycle difference value
+may larger than we used for calculate the multi+shift, thus precise
+would be highly affected in such corner case.
 
-On Mon, Aug 26, 2013 at 07:02:33PM +0300, Dan Carpenter wrote:
-> This does a bunch of looping like this:
-> 
-> 	for (div2 = 7; div2 >= 0; div2--)
-> 
-> But unsigned values are always greater than or equal to zero so it just
-> loops and loops.  Really "mul", "div1" and "div2" should all be declared
-> as int for cleanliness sake.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> Static checker stuff.
-> 
-> diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-> index 82306f5..8d5b57c 100644
-> --- a/drivers/clk/clk-vt8500.c
-> +++ b/drivers/clk/clk-vt8500.c
-> @@ -363,7 +363,7 @@ static void vt8500_find_pll_bits(unsigned long rate, unsigned long parent_rate,
->  static void wm8650_find_pll_bits(unsigned long rate, unsigned long parent_rate,
->  				u32 *multiplier, u32 *divisor1, u32 *divisor2)
->  {
-> -	u32 mul, div1, div2;
-> +	int mul, div1, div2;
->  	u32 best_mul, best_div1, best_div2;
->  	unsigned long tclk, rate_err, best_err;
->  
-> @@ -431,7 +431,7 @@ static u32 wm8750_get_filter(u32 parent_rate, u32 divisor1)
->  static void wm8750_find_pll_bits(unsigned long rate, unsigned long parent_rate,
->  				u32 *filter, u32 *multiplier, u32 *divisor1, u32 *divisor2)
->  {
-> -	u32 mul, div1, div2;
-> +	int mul, div1, div2;
->  	u32 best_mul, best_div1, best_div2;
->  	unsigned long tclk, rate_err, best_err;
->  
-> @@ -475,7 +475,7 @@ static void wm8750_find_pll_bits(unsigned long rate, unsigned long parent_rate,
->  static void wm8850_find_pll_bits(unsigned long rate, unsigned long parent_rate,
->  				u32 *multiplier, u32 *divisor1, u32 *divisor2)
->  {
-> -	u32 mul, div1, div2;
-> +	int mul, div1, div2;
->  	u32 best_mul, best_div1, best_div2;
->  	unsigned long tclk, rate_err, best_err;
->  
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+
+I am not sure whether it is good to add something like
+generic_persistent_clock_read in the new added kernel/time/sched_clock.c?
+Since from arch timer's perspective, all it need to do is to pick
+the suspend period from the place where sched_clock being stopped/restarted.
+
+Any idea for make the persistent clock reading as one generic function,
+like current sched_clock do?
+
+
+ drivers/clocksource/arm_arch_timer.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 57e823c..5eaa34a 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -23,6 +23,7 @@
+ #include <linux/sched_clock.h>
+ 
+ #include <asm/arch_timer.h>
++#include <asm/mach/time.h>
+ #include <asm/virt.h>
+ 
+ #include <clocksource/arm_arch_timer.h>
+@@ -52,6 +53,8 @@ struct arch_timer {
+ #define to_arch_timer(e) container_of(e, struct arch_timer, evt)
+ 
+ static u32 arch_timer_rate;
++static u32 persistent_multi;
++static u32 persistent_div;
+ 
+ enum ppi_nr {
+ 	PHYS_SECURE_PPI,
+@@ -68,6 +71,31 @@ static struct clock_event_device __percpu *arch_timer_evt;
+ static bool arch_timer_use_virtual = true;
+ static bool arch_timer_mem_use_virtual;
+ 
++static void get_persistent_clock_multi_div(void)
++{
++	u32 i, tmp;
++
++	tmp = arch_timer_rate;
++	persistent_multi = NSEC_PER_SEC;
++	for (i = 0; i < 9; i ++) {
++		if (tmp % 10)
++			break;
++		tmp /= 10;
++		persistent_multi /= 10;
++	}
++
++	persistent_div = tmp;
++}
++
++static void arch_timer_persistent_clock_read(struct timespec *ts)
++{
++	u64 ns;
++
++	ns = arch_timer_read_counter() * persistent_multi;
++	do_div(ns, persistent_div);
++	*ts = ns_to_timespec(ns);
++}
++
+ /*
+  * Architected system timer support.
+  */
+@@ -631,6 +659,9 @@ static void __init arch_timer_common_init(void)
+ 	arch_timer_banner(arch_timers_present);
+ 	arch_counter_register(arch_timers_present);
+ 	arch_timer_arch_init();
++
++	get_persistent_clock_multi_div();
++	register_persistent_clock(NULL, arch_timer_persistent_clock_read);
+ }
+ 
+ static void __init arch_timer_init(struct device_node *np)
+-- 
+1.8.3.2
+
