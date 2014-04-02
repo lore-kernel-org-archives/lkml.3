@@ -1,243 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324AbaDBAxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:53:51 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:60786 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522AbaDBAxs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:53:48 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-ee-533b5f9aecac
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+	id S1757363AbaDBAx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:53:57 -0400
+Received: from smtp.bbn.com ([128.33.0.80]:37074 "EHLO smtp.bbn.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754522AbaDBAxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 20:53:53 -0400
+X-Submitted: to socket.bbn.com (Postfix) with ESMTPSA id 0411340129
+Message-ID: <533B5F9C.9000003@bbn.com>
+Date: Tue, 01 Apr 2014 20:53:48 -0400
+From: Richard Hansen <rhansen@bbn.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-References: <000001cf4aff$295d4cd0$7c17e670$@samsung.com>
- <1396353865.12401.2.camel@kjgkr>
-In-reply-to: <1396353865.12401.2.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH 1/2] f2fs: avoid free slab cache under spinlock
-Date: Wed, 02 Apr 2014 08:52:29 +0800
-Message-id: <000d01cf4e0d$fe278d20$fa76a760$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQG0xa1atgU/61ISdsa0Bm4UqRSMcwJM1hTwmyAoj5A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jAd1Z8dbBBg0zLSyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyphxew5rwXmTisVN
-	e9gaGHdqdjFyckgImEj0r93FCGGLSVy4t56ti5GLQ0hgEaPE9W8bWCCcH4wSP16sAatiE1CR
-	WN7xnwnEFhGQlpj1aR4LiM0skClxr2kGM4gtJBAjsWTvcTCbU0BXounMcbBeYQE/iUtfPoLZ
-	LAKqEmtfPGbtYuTg4BWwlNjZFgsS5hUQlPgx+R7USHWJSfMWMUPY2hJP3l1ghThUQWLH2deM
-	ECdYSRz9vpsRokZcYuORWywTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnquoV5xYm5x
-	aV66XnJ+7iZGcOA/k9rBuLLB4hCjAAejEg/vgfNWwUKsiWXFlbmHGCU4mJVEeL/7WgcL8aYk
-	VlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYNzhLlbZnBA+80+g
-	dejUJZeYpU61vNv668yJIierNqm5fXvW/nXf9Ke+tOPm22PLDjGcX6rG97dxvieL/n279RbH
-	A1RtJux9tyxA7uaz4692fXFUdb1YbyFqtuJz+qV5JyaWz1UJFHLYottge+TTqhfG7zbz3i/o
-	CG94PsWRZe7SNYwhW/+sOzhHiaU4I9FQi7moOBEAuDa1vHgCAAA=
+CC: linux-api@vger.kernel.org, Greg Troxel <gdt@ir.bbn.com>
+Subject: Re: [PATCH] mm: msync: require either MS_ASYNC or MS_SYNC
+References: <533B04A9.6090405@bbn.com> <533B1439.3010403@gmail.com>
+In-Reply-To: <533B1439.3010403@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
+On 2014-04-01 15:32, Michael Kerrisk (man-pages) wrote:
+> Richard,
+> 
+> On 04/01/2014 08:25 PM, Richard Hansen wrote:
+>> For the flags parameter, POSIX says "Either MS_ASYNC or MS_SYNC shall
+>> be specified, but not both." [1]  There was already a test for the
+>> "both" condition.  Add a test to ensure that the caller specified one
+>> of the flags; fail with EINVAL if neither are specified.
+>>
+>> Without this change, specifying neither is the same as specifying
+>> flags=MS_ASYNC because nothing in msync() is conditioned on the
+>> MS_ASYNC flag.  This has not always been true, 
+> 
+> I am curious (since such things should be documented)--when was
+> it not true?
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Tuesday, April 01, 2014 8:04 PM
-> To: Chao Yu
-> Cc: linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [f2fs-dev] [PATCH 1/2] f2fs: avoid free slab cache under spinlock
-> 
-> Hi Chao,
-> 
-> One minor thing as below.
-> 
-> 2014-03-29 (토), 11:29 +0800, Chao Yu:
-> > Move kmem_cache_free out of spinlock protection region for better performance.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/checkpoint.c |   27 +++++++++++++++++----------
-> >  fs/f2fs/node.c       |   15 ++++++++++++++-
-> >  2 files changed, 31 insertions(+), 11 deletions(-)
-> >
-> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> > index a80be51..d877f46 100644
-> > --- a/fs/f2fs/checkpoint.c
-> > +++ b/fs/f2fs/checkpoint.c
-> > @@ -347,10 +347,11 @@ void remove_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
-> >  	list_for_each_entry(orphan, head, list) {
-> >  		if (orphan->ino == ino) {
-> >  			list_del(&orphan->list);
-> > -			kmem_cache_free(orphan_entry_slab, orphan);
-> >  			f2fs_bug_on(sbi->n_orphans == 0);
-> >  			sbi->n_orphans--;
-> > -			break;
-> > +			spin_unlock(&sbi->orphan_inode_lock);
-> > +			kmem_cache_free(orphan_entry_slab, orphan);
-> > +			return;
-> >  		}
-> >  	}
-> >  	spin_unlock(&sbi->orphan_inode_lock);
-> > @@ -577,6 +578,7 @@ void set_dirty_dir_page(struct inode *inode, struct page *page)
-> >  {
-> >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> >  	struct dir_inode_entry *new;
-> > +	int ret = 0;
-> >
-> >  	if (!S_ISDIR(inode->i_mode))
-> >  		return;
-> > @@ -586,12 +588,13 @@ void set_dirty_dir_page(struct inode *inode, struct page *page)
-> >  	INIT_LIST_HEAD(&new->list);
-> >
-> >  	spin_lock(&sbi->dir_inode_lock);
-> > -	if (__add_dirty_inode(inode, new))
-> > -		kmem_cache_free(inode_entry_slab, new);
-> > -
-> > +	ret = __add_dirty_inode(inode, new);
-> >  	inode_inc_dirty_dents(inode);
-> >  	SetPagePrivate(page);
-> >  	spin_unlock(&sbi->dir_inode_lock);
-> > +
-> > +	if (ret)
-> > +		kmem_cache_free(inode_entry_slab, new);
-> >  }
-> >
-> >  void add_dirty_dir_inode(struct inode *inode)
-> > @@ -599,20 +602,22 @@ void add_dirty_dir_inode(struct inode *inode)
-> >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> >  	struct dir_inode_entry *new =
-> >  			f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
-> > +	int ret = 0;
-> >
-> >  	new->inode = inode;
-> >  	INIT_LIST_HEAD(&new->list);
-> >
-> >  	spin_lock(&sbi->dir_inode_lock);
-> > -	if (__add_dirty_inode(inode, new))
-> > -		kmem_cache_free(inode_entry_slab, new);
-> > +	ret = __add_dirty_inode(inode, new);
-> >  	spin_unlock(&sbi->dir_inode_lock);
-> > +
-> > +	if (ret)
-> > +		kmem_cache_free(inode_entry_slab, new);
-> >  }
-> >
-> >  void remove_dirty_dir_inode(struct inode *inode)
-> >  {
-> >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> > -
-> >  	struct list_head *this, *head;
-> >
-> >  	if (!S_ISDIR(inode->i_mode))
-> > @@ -630,13 +635,15 @@ void remove_dirty_dir_inode(struct inode *inode)
-> >  		entry = list_entry(this, struct dir_inode_entry, list);
-> >  		if (entry->inode == inode) {
-> >  			list_del(&entry->list);
-> > -			kmem_cache_free(inode_entry_slab, entry);
-> >  			stat_dec_dirty_dir(sbi);
-> > -			break;
-> > +			spin_unlock(&sbi->dir_inode_lock);
-> > +			kmem_cache_free(inode_entry_slab, entry);
-> > +			goto done;
-> >  		}
-> >  	}
-> >  	spin_unlock(&sbi->dir_inode_lock);
-> >
-> > +done:
-> >  	/* Only from the recovery routine */
-> >  	if (is_inode_flag_set(F2FS_I(inode), FI_DELAY_IPUT)) {
-> >  		clear_inode_flag(F2FS_I(inode), FI_DELAY_IPUT);
-> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> > index eced8d7..0021056 100644
-> > --- a/fs/f2fs/node.c
-> > +++ b/fs/f2fs/node.c
-> > @@ -1314,7 +1314,6 @@ static void __del_from_free_nid_list(struct f2fs_nm_info *nm_i,
-> >  {
-> >  	list_del(&i->list);
-> >  	radix_tree_delete(&nm_i->free_nid_root, i->nid);
-> > -	kmem_cache_free(free_nid_slab, i);
-> >  }
-> >
-> >  static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool build)
-> > @@ -1361,13 +1360,19 @@ static int add_free_nid(struct f2fs_nm_info *nm_i, nid_t nid, bool
-> build)
-> >  static void remove_free_nid(struct f2fs_nm_info *nm_i, nid_t nid)
-> >  {
-> >  	struct free_nid *i;
-> > +	bool need_free = false;
-> > +
-> >  	spin_lock(&nm_i->free_nid_list_lock);
-> >  	i = __lookup_free_nid_list(nm_i, nid);
-> >  	if (i && i->state == NID_NEW) {
-> >  		__del_from_free_nid_list(nm_i, i);
-> >  		nm_i->fcnt--;
-> > +		need_free = true;
-> >  	}
-> >  	spin_unlock(&nm_i->free_nid_list_lock);
-> > +
-> > +	if (need_free)
-> > +		kmem_cache_free(free_nid_slab, i);
-> >  }
-> >
-> >  static void scan_nat_page(struct f2fs_nm_info *nm_i,
-> > @@ -1492,6 +1497,8 @@ void alloc_nid_done(struct f2fs_sb_info *sbi, nid_t nid)
-> >  	f2fs_bug_on(!i || i->state != NID_ALLOC);
-> >  	__del_from_free_nid_list(nm_i, i);
-> >  	spin_unlock(&nm_i->free_nid_list_lock);
-> > +
-> > +	kmem_cache_free(free_nid_slab, i);
-> >  }
-> >
-> >  /*
-> > @@ -1501,6 +1508,7 @@ void alloc_nid_failed(struct f2fs_sb_info *sbi, nid_t nid)
-> >  {
-> >  	struct f2fs_nm_info *nm_i = NM_I(sbi);
-> >  	struct free_nid *i;
-> > +	bool need_free = false;
-> >
-> >  	if (!nid)
-> >  		return;
-> > @@ -1510,11 +1518,15 @@ void alloc_nid_failed(struct f2fs_sb_info *sbi, nid_t nid)
-> >  	f2fs_bug_on(!i || i->state != NID_ALLOC);
-> >  	if (!available_free_memory(nm_i, FREE_NIDS)) {
-> >  		__del_from_free_nid_list(nm_i, i);
-> > +		need_free = true;
-> >  	} else {
-> >  		i->state = NID_NEW;
-> >  		nm_i->fcnt++;
-> >  	}
-> >  	spin_unlock(&nm_i->free_nid_list_lock);
-> > +
-> > +	if (need_free)
-> > +		kmem_cache_free(free_nid_slab, i);
-> >  }
-> >
-> >  void recover_node_page(struct f2fs_sb_info *sbi, struct page *page,
-> > @@ -1926,6 +1938,7 @@ void destroy_node_manager(struct f2fs_sb_info *sbi)
-> >  		f2fs_bug_on(i->state == NID_ALLOC);
-> >  		__del_from_free_nid_list(nm_i, i);
-> >  		nm_i->fcnt--;
-> > +		kmem_cache_free(free_nid_slab, i);
-> 
-> It seems that we need to do this too.
-> 
->                spin_unlock(&nm_i->free_nid_list_lock);
->                kmem_cache_free(free_nid_slab, i);
->                spin_lock(&nm_i->free_nid_list_lock);
-> 
-> Right?
+Before commit 204ec84 [1] (in v2.6.19), specifying MS_ASYNC could
+potentially follow a different code path than specifying neither
+MS_ASYNC nor MS_SYNC.  I'm not familiar enough with the internals to
+know what the behavioral implications were at the time.
 
-You're right, I will send patch v2.
-Thanks for your review.
+[1]
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=204ec841fbea3e5138168edbc3a76d46747cc987
 
 > 
-> >  	}
-> >  	f2fs_bug_on(nm_i->fcnt);
-> >  	spin_unlock(&nm_i->free_nid_list_lock);
+>> and there's no good
+>> reason to believe that this behavior would have persisted
+>> indefinitely.
+>>
+>> The msync(2) man page (as currently written in man-pages.git) is
+>> silent on the behavior if both flags are unset, so this change should
+>> not break an application written by somone who carefully reads the
+>> Linux man pages or the POSIX spec.
 > 
-> --
-> Jaegeuk Kim
-> Samsung
+> Sadly, people do not always carefully read man pages, so there
+> remains the chance that a change like this will break applications.
+
+True.  Mitigating factors:  (1) It'll only break applications that only
+care about Linux, and (2) any app that does flags=0 is arguably buggy
+anyway given the unspecified behavior.
+
+> Aside from standards conformance,
+
+Technically this change isn't required for standards conformance.  The
+POSIX standard is OK with implementation extensions, so this issue could
+be resolved by simply documenting that if neither MS_ASYNC nor MS_SYNC
+are set then MS_ASYNC is implied.  This would preclude us from using
+flags=0 for a different purpose in the future, so I'm a bit reluctant to
+go this route.
+
+(If we do go this route I'd like to see msync() modified to explicitly
+set the MS_ASYNC flag if neither are set to be defensive and to
+communicate intention to anyone reading the code.)
+
+> what do you see as the benefit of the change?
+
+  * Clarify intentions.  Looking at the code and the code history, the
+    fact that flags=0 behaves like flags=MS_ASYNC appears to be a
+    coincidence, not the result of an intentional choice.
+
+  * Eliminate unclear semantics.  (What does it mean for msync() to be
+    neither synchronous nor asynchronous?)
+
+  * Force app portability:  Other operating systems (e.g., NetBSD)
+    enforce POSIX, so an app developer using Linux might not notice the
+    non-conformance.  This is really the app developer's problem, not
+    the kernel's, but the alternatives to this patch are to stay vague
+    or to commit to defaulting to MS_ASYNC, neither of which I like as
+    much.
+
+    Here is a link to a discussion on the bup mailing list about
+    msync() portability.  This is the conversation that motivated this
+    patch.
+
+      http://article.gmane.org/gmane.comp.sysutils.backup.bup/3005
+
+Note that in addition to this patch I'd like to update the msync(2) man
+page to say that one of the two flags must be specified, but this commit
+should go in first.
+
+Thanks,
+Richard
+
+
+> 
+> Thanks,
+> 
+> Michael
+> 
+> 
+>> [1] http://pubs.opengroup.org/onlinepubs/9699919799/functions/msync.html
+>>
+>> Signed-off-by: Richard Hansen <rhansen@bbn.com>
+>> Reported-by: Greg Troxel <gdt@ir.bbn.com>
+>> Reviewed-by: Greg Troxel <gdt@ir.bbn.com>
+>> ---
+>>
+>> This is a resend of:
+>> http://article.gmane.org/gmane.linux.kernel/1554416
+>> I didn't get any feedback from that submission, so I'm resending it
+>> without changes.
+>>
+>>  mm/msync.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/mm/msync.c b/mm/msync.c
+>> index 632df45..472ad3e 100644
+>> --- a/mm/msync.c
+>> +++ b/mm/msync.c
+>> @@ -42,6 +42,8 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t,
+>> len, int, flags)
+>>  		goto out;
+>>  	if ((flags & MS_ASYNC) && (flags & MS_SYNC))
+>>  		goto out;
+>> +	if (!(flags & (MS_ASYNC | MS_SYNC)))
+>> +		goto out;
+>>  	error = -ENOMEM;
+>>  	len = (len + ~PAGE_MASK) & PAGE_MASK;
+>>  	end = start + len;
+>>
+> 
+> 
 
