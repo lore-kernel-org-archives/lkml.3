@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092AbaDBUON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:14:13 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42905 "EHLO
+	id S933035AbaDBUOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:14:11 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42881 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758957AbaDBUNc (ORCPT
+	by vger.kernel.org with ESMTP id S1758955AbaDBUNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Artem Fetishev <artem_fetishev@epam.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 35/40] x86: fix boot on uniprocessor systems
-Date: Wed,  2 Apr 2014 22:13:21 +0200
-Message-Id: <1bcde16c665590f2277b7241f1a27b9ef66faec9.1396469191.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 20/40] NFSv4.1 free slot before resending I/O to MDS
+Date: Wed,  2 Apr 2014 22:13:06 +0200
+Message-Id: <b6be966d5571c7844fee177581c7468035f79e23.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -28,53 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Fetishev <artem_fetishev@epam.com>
+From: Andy Adamson <andros@netapp.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 825600c0f20e595daaa7a6dd8970f84fa2a2ee57 upstream.
+commit f9c96fcc501a43dbc292b17fc0ded4b54e63b79d upstream.
 
-On x86 uniprocessor systems topology_physical_package_id() returns -1
-which causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized
-which leads to GPF in rapl_pmu_init().
+Fix a dynamic session slot leak where a slot is preallocated and I/O is
+resent through the MDS.
 
-See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
-
-It turns out that physical_package_id and core_id can actually be
-retreived for uniprocessor systems too.  Enabling them also fixes
-rapl_pmu code.
-
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/topology.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4_fs.h        |  1 +
+ fs/nfs/nfs4filelayout.c | 10 ++++++++--
+ fs/nfs/nfs4proc.c       |  3 ++-
+ 3 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index d35f24e231cd..1306d117967d 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
+diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
+index 28842abafab4..fdfd59157dce 100644
+--- a/fs/nfs/nfs4_fs.h
++++ b/fs/nfs/nfs4_fs.h
+@@ -249,6 +249,7 @@ static inline struct nfs4_session *nfs4_get_session(const struct nfs_server *ser
+ extern int nfs41_setup_sequence(struct nfs4_session *session,
+ 		struct nfs4_sequence_args *args, struct nfs4_sequence_res *res,
+ 		struct rpc_task *task);
++extern int nfs41_sequence_done(struct rpc_task *, struct nfs4_sequence_res *);
+ extern int nfs4_proc_create_session(struct nfs_client *, struct rpc_cred *);
+ extern int nfs4_proc_destroy_session(struct nfs4_session *, struct rpc_cred *);
+ extern int nfs4_proc_get_lease_time(struct nfs_client *clp,
+diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
+index 6e245d13de10..394b0a0c54bf 100644
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -335,8 +335,11 @@ static void filelayout_read_call_done(struct rpc_task *task, void *data)
+ 	dprintk("--> %s task->tk_status %d\n", __func__, task->tk_status);
  
- extern const struct cpumask *cpu_coregroup_mask(int cpu);
+ 	if (test_bit(NFS_IOHDR_REDO, &rdata->header->flags) &&
+-	    task->tk_status == 0)
++	    task->tk_status == 0) {
++		if (rdata->res.seq_res.sr_slot != NULL)
++			nfs41_sequence_done(task, &rdata->res.seq_res);
+ 		return;
++	}
  
--#ifdef ENABLE_TOPO_DEFINES
- #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
-+
-+#ifdef ENABLE_TOPO_DEFINES
- #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
- #endif
+ 	/* Note this may cause RPC to be resent */
+ 	rdata->header->mds_ops->rpc_call_done(task, data);
+@@ -442,8 +445,11 @@ static void filelayout_write_call_done(struct rpc_task *task, void *data)
+ 	struct nfs_write_data *wdata = data;
+ 
+ 	if (test_bit(NFS_IOHDR_REDO, &wdata->header->flags) &&
+-	    task->tk_status == 0)
++	    task->tk_status == 0) {
++		if (wdata->res.seq_res.sr_slot != NULL)
++			nfs41_sequence_done(task, &wdata->res.seq_res);
+ 		return;
++	}
+ 
+ 	/* Note this may cause RPC to be resent */
+ 	wdata->header->mds_ops->rpc_call_done(task, data);
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 9edb753d9e3a..bcd42fbc04e7 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -585,7 +585,7 @@ out_unlock:
+ 		nfs41_server_notify_highest_slotid_update(session->clp);
+ }
+ 
+-static int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *res)
++int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *res)
+ {
+ 	struct nfs4_session *session;
+ 	struct nfs4_slot *slot;
+@@ -685,6 +685,7 @@ out_retry:
+ 	rpc_delay(task, NFS4_POLL_RETRY_MAX);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(nfs41_sequence_done);
+ 
+ static int nfs4_sequence_done(struct rpc_task *task,
+ 			       struct nfs4_sequence_res *res)
 -- 
 1.9.1
 
