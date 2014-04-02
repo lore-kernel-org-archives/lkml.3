@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748AbaDBReV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 13:34:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932560AbaDBReT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 13:34:19 -0400
-Date: Wed, 2 Apr 2014 19:34:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [PATCH v2 1/2] procfs: make
-	/proc/*/{stack,syscall,personality} 0400
-Message-ID: <20140402173429.GA31668@redhat.com>
-References: <1395495460-7652-1-git-send-email-tixxdz@opendz.org> <1395495460-7652-2-git-send-email-tixxdz@opendz.org> <20140328153231.93bcad089d9ccc670ee6cc17@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140328153231.93bcad089d9ccc670ee6cc17@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932676AbaDBRkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 13:40:10 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:32823 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932569AbaDBRkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 13:40:08 -0400
+Message-ID: <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH] integrity: get comm using lock to avoid race in string
+ printing
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, eparis@redhat.com,
+        sgrubb@redhat.com
+Date: Wed, 02 Apr 2014 13:39:47 -0400
+In-Reply-To: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040217-9332-0000-0000-0000005230A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28, Andrew Morton wrote:
->
-> Now for a six-year-late code review:
->
-> - How the heck can target==current in task_current_syscall()?
->
-> - Less talk, more action:
->
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: lib/syscall.c: unexport task_current_syscall()
->
-> It is only used by procfs and procfs cannot be a module.
->
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+On Wed, 2014-04-02 at 12:19 -0400, Richard Guy Briggs wrote: 
+> When task->comm is passed directly to audit_log_untrustedstring() without
+> getting a copy or using the task_lock, there is a race that could happen that
+> would output a NULL (\0) in the output string that would effectively truncate
+> the rest of the report text after the comm= field in the audit, losing fields.
+> 
+> Use get_task_comm() to get a copy while acquiring the task_lock to prevent
+> this and to prevent the result from being a mixture of old and new values of
+> comm.
+> 
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 > ---
->
->  lib/syscall.c |    1 -
->  1 file changed, 1 deletion(-)
->
-> diff -puN lib/syscall.c~a lib/syscall.c
-> --- a/lib/syscall.c~a
-> +++ a/lib/syscall.c
-> @@ -72,4 +72,3 @@ int task_current_syscall(struct task_str
->
->  	return 0;
->  }
-> -EXPORT_SYMBOL_GPL(task_current_syscall);
+>  security/integrity/integrity_audit.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/integrity/integrity_audit.c b/security/integrity/integrity_audit.c
+> index 85253b5..11706a2 100644
+> --- a/security/integrity/integrity_audit.c
+> +++ b/security/integrity/integrity_audit.c
+> @@ -33,6 +33,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
+>  			 const char *cause, int result, int audit_info)
+>  {
+>  	struct audit_buffer *ab;
+> +	char comm[sizeof(current->comm)];
+> 
+>  	if (!integrity_audit_info && audit_info == 1)	/* Skip info messages */
+>  		return;
+> @@ -49,7 +50,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
+>  	audit_log_format(ab, " cause=");
+>  	audit_log_string(ab, cause);
+>  	audit_log_format(ab, " comm=");
+> -	audit_log_untrustedstring(ab, current->comm);
+> +	audit_log_untrustedstring(ab, get_task_comm(comm, current));
+>  	if (fname) {
+>  		audit_log_format(ab, " name=");
+>  		audit_log_untrustedstring(ab, fname);
 
-Well, I guess it was added for external tracing modules like systemtap.
-And in this case target==current is very likely. And for utrace modules,
-but it is dead.
+This change is already being upstreamed as commit 73a6b44 "Integrity:
+Pass commname via get_task_comm()".
 
-I do not see any usage of task_current_syscall() in
-git://sourceware.org/git/systemtap.git, so this change should not upset
-systemtap at least.
+thanks,
 
-And if we unexport task_current_syscall(), perhaps we should actually
-lib/syscall.c. proc_pid_syscall() can use syscall_get_*() instead.
-Or at least we can simplify it, I don't think /proc/ actually needs
-wait_task_inactive().
-
-Oleg.
+Mimi
 
