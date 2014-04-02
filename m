@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442AbaDBU3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:29:49 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42805 "EHLO
+	id S933426AbaDBU3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:29:47 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42814 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758835AbaDBUN2 (ORCPT
+	by vger.kernel.org with ESMTP id S1758837AbaDBUN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 09/40] fbmem: really support wildcard video=options for all fbdev drivers
-Date: Wed,  2 Apr 2014 22:12:55 +0200
-Message-Id: <69031a9df4abbf17c20dbfd728a4b6e817dfaf65.1396469191.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 25/40] s390/time,vdso: fix clock_gettime for CLOCK_MONOTONIC
+Date: Wed,  2 Apr 2014 22:13:11 +0200
+Message-Id: <b39007aaa046a741031ccd84eb02f54a876fb818.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -23,58 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <olaf@aepfle.de>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f5d2b7c28b67d627646b6a0142bc201a7b1516b0 upstream.
+commit ca5de58ba746b08c920b2024aaf01aa1500b110d upstream.
 
-Documentation/fb/modedb.txt states that video=option should be
-considered a global option. But video_setup and fb_get_options are not
-coded that way. Instead its required to boot with video=driver:option to
-set a given option in drvier.  This is cumbersome because it requires to
-know in advance which driver will be active for a given board/kernel.
+With git commit 79c74ecbebf76732f91b82a62ce7fc8a88326962
+"s390/time,vdso: convert to the new update_vsyscall interface"
+the new update_vsyscall function already does the sum of xtime
+and wall_to_monotonic. The old update_vsyscall function only
+copied the wall_to_monotonic offset. The vdso code needs to be
+modified to take this into consideration.
 
-The following patch implements the documented catchall for the fbdev
-drivers. It is now possible to boot with video=XxY without the need to
-know the active driver in advance. The specific case it tries to fix is
-syslinux in the SUSE installer which offers a menu to set a display
-resolution. Right now this just appends the vga= option the kernel. But
-in addition to vga= it should be possible to pass a generic video=XxY
-for all framebuffer/drm drivers. With this change forcing a certain
-window size of VM displays is now much easier.
-
-Today the video= option is stored in a global fb_mode_option. But
-unfortunately only drm uses it.
-
-Note: this change introduces a small memleak if video=option is actually
-used because fb_mode_option is const. Most drivers use strsep to get to
-individual options. This could be fixed in a followup patch which always
-releases the option string in every caller of fb_get_options.
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/video/fbmem.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/s390/kernel/vdso32/clock_gettime.S | 9 ++-------
+ arch/s390/kernel/vdso64/clock_gettime.S | 6 ++----
+ 2 files changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index dacaf74256a3..8659eb160b4d 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1916,6 +1916,9 @@ int fb_get_options(const char *name, char **option)
- 				options = opt + name_len + 1;
- 		}
- 	}
-+	/* No match, pass global option */
-+	if (!options && option && fb_mode_option)
-+		options = kstrdup(fb_mode_option, GFP_KERNEL);
- 	if (options && !strncmp(options, "off", 3))
- 		retval = 1;
- 
+diff --git a/arch/s390/kernel/vdso32/clock_gettime.S b/arch/s390/kernel/vdso32/clock_gettime.S
+index 5be8e472f57d..65fc3979c2f1 100644
+--- a/arch/s390/kernel/vdso32/clock_gettime.S
++++ b/arch/s390/kernel/vdso32/clock_gettime.S
+@@ -46,18 +46,13 @@ __kernel_clock_gettime:
+ 	jnm	3f
+ 	a	%r0,__VDSO_TK_MULT(%r5)
+ 3:	alr	%r0,%r2
+-	al	%r0,__VDSO_XTIME_NSEC(%r5)	/*  + tk->xtime_nsec */
+-	al	%r1,__VDSO_XTIME_NSEC+4(%r5)
+-	brc	12,4f
+-	ahi	%r0,1
+-4:	al	%r0,__VDSO_WTOM_NSEC(%r5)	/*  + wall_to_monotonic.nsec */
++	al	%r0,__VDSO_WTOM_NSEC(%r5)
+ 	al	%r1,__VDSO_WTOM_NSEC+4(%r5)
+ 	brc	12,5f
+ 	ahi	%r0,1
+ 5:	l	%r2,__VDSO_TK_SHIFT(%r5)	/* Timekeeper shift */
+ 	srdl	%r0,0(%r2)			/*  >> tk->shift */
+-	l	%r2,__VDSO_XTIME_SEC+4(%r5)
+-	al	%r2,__VDSO_WTOM_SEC+4(%r5)
++	l	%r2,__VDSO_WTOM_SEC+4(%r5)
+ 	cl	%r4,__VDSO_UPD_COUNT+4(%r5)	/* check update counter */
+ 	jne	1b
+ 	basr	%r5,0
+diff --git a/arch/s390/kernel/vdso64/clock_gettime.S b/arch/s390/kernel/vdso64/clock_gettime.S
+index 0add1072ba30..c09cda31c894 100644
+--- a/arch/s390/kernel/vdso64/clock_gettime.S
++++ b/arch/s390/kernel/vdso64/clock_gettime.S
+@@ -35,13 +35,11 @@ __kernel_clock_gettime:
+ 	jnz	0b
+ 	stck	48(%r15)			/* Store TOD clock */
+ 	lgf	%r2,__VDSO_TK_SHIFT(%r5)	/* Timekeeper shift */
+-	lg	%r0,__VDSO_XTIME_SEC(%r5)	/* tk->xtime_sec */
+-	alg	%r0,__VDSO_WTOM_SEC(%r5)	/*  + wall_to_monotonic.sec */
++	lg	%r0,__VDSO_WTOM_SEC(%r5)
+ 	lg	%r1,48(%r15)
+ 	sg	%r1,__VDSO_XTIME_STAMP(%r5)	/* TOD - cycle_last */
+ 	msgf	%r1,__VDSO_TK_MULT(%r5)		/*  * tk->mult */
+-	alg	%r1,__VDSO_XTIME_NSEC(%r5)	/*  + tk->xtime_nsec */
+-	alg	%r1,__VDSO_WTOM_NSEC(%r5)	/*  + wall_to_monotonic.nsec */
++	alg	%r1,__VDSO_WTOM_NSEC(%r5)
+ 	srlg	%r1,%r1,0(%r2)			/*  >> tk->shift */
+ 	clg	%r4,__VDSO_UPD_COUNT(%r5)	/* check update counter */
+ 	jne	0b
 -- 
 1.9.1
 
