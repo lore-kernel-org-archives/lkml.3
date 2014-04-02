@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307AbaDBFmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 01:42:06 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:38951 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978AbaDBFmE (ORCPT
+	id S1757369AbaDBFmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 01:42:20 -0400
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:37505 "HELO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757318AbaDBFmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 01:42:04 -0400
-Message-ID: <533BA328.8090807@gmail.com>
-Date: Wed, 02 Apr 2014 01:42:00 -0400
-From: Alexandre Demers <alexandre.f.demers@gmail.com>
-Reply-To: alexandre.f.demers@gmail.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 2 Apr 2014 01:42:15 -0400
 MIME-Version: 1.0
-To: alexandre.f.demers@gmail.com
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to kern_mount()
- sysfs from sysfs_init()" prevents system from booting correctly
-References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com> <20140314140804.GG12613@htj.dyndns.org> <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com> <20140317201346.GE17373@mtj.dyndns.org> <5327AAA8.2080703@gmail.com> <53322777.3030703@gmail.com> <20140326131800.GA7171@htj.dyndns.org> <CAPEhTTGyA7SjedwL8Mv-ZDEY_doucW3thPr==xyOemm3+Vp=Cg@mail.gmail.com> <20140329181258.GF5553@htj.dyndns.org> <5337445E.3080903@gmail.com> <20140330123128.GB8942@htj.dyndns.org> <53384C24.6000309@gmail.com>
-In-Reply-To: <53384C24.6000309@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140402022858.GA4901@kroah.com>
+References: <20140401184916.GA21938@kroah.com>
+	<CA+55aFwf6e-hkF+4ND0DaAKDmLX8P8+xWCgs5BRnARdSsq9tpw@mail.gmail.com>
+	<20140402022858.GA4901@kroah.com>
+Date: Tue, 1 Apr 2014 22:42:12 -0700
+Message-ID: <CAPw-ZTnb4Ugjo_63HG0DmGaqki6riPk1S13Nx8xF_9gdNu17wA@mail.gmail.com>
+Subject: Re: [GIT PULL] USB patches for 3.15-rc1
+From: Loc Ho <lho@apm.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I should have a qemu image running before the end of the week based on 
-the latest Archlinux 64 packages. Then, I'll install the 3.14 kernel 
-and see what I'll get.
+Hi,
 
-By the way, since kernel 3.14 is now available, it has been pushed to 
-Arch's repository. It will be deployed soon on many systems when 
-they'll be updated. As you may have seen from the latest comments in 
-bug 72061, another Arch user has reported today encountering the same 
-problem as myself.
-
-Alexandre Demers
-
-On Sun 30 Mar 2014 12:53:56 PM EDT, Alexandre Demers wrote:
-> Oh boy... Maybe. I'll look at this option this week.
+>> > USB patches for 3.15-rc1
+>> >
+>> > Here's the big USB pull request for 3.15-rc1.
+>>
+>> Hmm. I'm getting this when testing:
+>>
+>>   warning: (AHCI_XGENE) selects PHY_XGENE which has unmet direct
+>> dependencies (HAS_IOMEM && OF && (ARM64 || COMPILE_TEST))
+>>
+>> which looks like AHCI_XGENE doesn't have the proper dependency on OF
+>> (or alternatively PHY_XGENE has an incorrect dependemcy on OF).
+>>
+>> According to google it looks like Fengguang reported this on
+>> kbuild-all, but nowhere else.
+>>
+>> The actual build then succeeds. But the Kconfig warning is real and
+>> implies that something is seriously wrong wrt the dependencies for
+>> this thing.
+>>
+>> It looks like the "select PHY_XGENE" came in through the libata
+>> update, but this USB update actually brought in the "config PHY_XGENE"
+>> and thus this error. Which makes me wonder how this all worked. Why
+>> does that "select PHY_XGENE" exist when apparently it's not needed?
+>>
+>> Regardless, there's something broken somewhere.
 >
-> Alexandre Demers
+> Odd, I don't know what to do to fix this up "properly".
 >
-> On Sun 30 Mar 2014 08:31:28 AM EDT, Tejun Heo wrote:
->> On Sat, Mar 29, 2014 at 06:08:30PM -0400, Alexandre Demers wrote:
->>> That fixes the problem, I'm now running 3.14-rc8 with your patch
->>> applied.
->>
->> Just sent out the patch but I think we still need to find out what's
->> going on.  Is there any chance you can create a qemu image which shows
->> the same behavior?
->>
->> Thanks.
->>
+> Loc Ho, this came in from your patch, any ideas?
+
+I don't think it has anything to do with USB. With the current
+dependency, X-Gene SATA AHCI driver will be included if either ARM64
+or COMPILE_TEST. It in turn will select "PHY_XGENE" which has
+dependency on OF and HAS_IOMEM. An fix would be make AHCI_XGENE
+depends on OF as suggested by Linus. This is trigger by "COMPILE_TEST"
+for non-ARM64. We can also remove "COMPILE_TEST" from AHCI_XGENE
+driver like other SATA drivers. My prefer solution is to remove
+"COMPILE_TEST".
+
+-Loc
