@@ -1,186 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851AbaDBSFV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:05:21 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42411 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932745AbaDBSFS (ORCPT
+	id S932829AbaDBSG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:06:59 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:7423 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932514AbaDBSG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:05:18 -0400
-Date: Wed, 2 Apr 2014 11:05:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jens.axboe@oracle.com>, Kevin Hilman <khilman@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/2] smp: Non busy-waiting IPI queue
-Message-ID: <20140402180513.GQ4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1396455966-21128-1-git-send-email-fweisbec@gmail.com>
- <1396455966-21128-2-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396455966-21128-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040218-7164-0000-0000-000000BF5E3E
+	Wed, 2 Apr 2014 14:06:58 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuMNANxQPFNbtAq4/2dsb2JhbABZDoJ4xHUCAoEgF3SCJQEBAQMBJxMcIwULCAMYLjkeBhOHcQwBzy8XjnAHhDgBA4x6i1sBh0yDEodbgnBCOw
+Date: Wed, 2 Apr 2014 20:08:44 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, jfs-discussion@lists.sourceforge.net,
+        "Dave.Kleikamp" <dave.kleikamp@oracle.com>
+Subject: Re: [PATCH 1/1] fs/jfs/jfs_inode.c: atomically set inode->i_flags
+Message-Id: <20140402200844.bf9c94540921b7647c75e580@skynet.be>
+In-Reply-To: <20140402174707.GK6901@thunk.org>
+References: <20140402192950.82812a331cb154bbc0a4183c@skynet.be>
+	<20140402174707.GK6901@thunk.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 06:26:05PM +0200, Frederic Weisbecker wrote:
-> Some IPI users, such as the nohz subsystem, need to be able to send
-> an async IPI (async = non waiting for any other IPI completion) on
-> contexts with disabled interrupts. And we want the IPI subsystem to handle
-> concurrent calls by itself.
+On Wed, 2 Apr 2014 13:47:07 -0400
+Theodore Ts'o <tytso@mit.edu> wrote:
+
+> On Wed, Apr 02, 2014 at 07:29:50PM +0200, Fabian Frederick wrote:
+> > +	set_mask_bits(&inode->i_flags, S_IMMUTABLE | S_APPEND | S_NOATIME |
+> > +				       S_DIRSYNC | S_SYNC, new_fl);
 > 
-> Currently the nohz machinery uses the scheduler IPI for this purpose
-> because it can be triggered from any context and doesn't need any
-> serialization from the caller. But this is an abuse of a scheduler
-> fast path. We are bloating it with a job that should use its own IPI.
+> Warning --- per discussion with Linus over the weekend, he decided he
+> really didn't like the set_mask_bits() interface, because it was too
+> prone to abuse.  Unfortuantely, Linus had already included an earlier
+> version of my patch that used set_mask_bits() in 3.14 without letting
+> me know.  This is what I have in my ext4 tree for the merge window,
+> which is undergoing final testing at the moment.  This will cause a
+> patch conflict, and it's likely (given Linus's dislike of the
+> set_mask_bits interface) that set_mask_bits() will end up getting
+> removed from the tree, if not when he fixes up the merge conflict, but
+> subsequent to -rc1.
 > 
-> The current set of IPI functions can't be called when interrupts are
-> disabled otherwise we risk a deadlock when two CPUs wait for each
-> other's IPI completion.
+> 							- Ted
 > 
-> OTOH smp_call_function_single_async() can be called when interrupts
-> are disabled. But then it's up to the caller to serialize the given
-> IPI. This can't be called concurrently without special care.
-> 
-> So we need a version of the async IPI that takes care of concurrent
-> calls.
-> 
-> The proposed solution is to synchronize the IPI with a specific flag
-> that prevents the IPI from being sent if it is already pending but not
-> yet executed. Ordering is maintained such that, if the IPI is not sent
-> because it's already pending, we guarantee it will see the new state of
-> the data we expect it to when it will execute.
-> 
-> This model is close to the irq_work design. It's also partly inspired by
-> suggestions from Peter Zijlstra.
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jens Axboe <jens.axboe@oracle.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-Nice, but one question below.
-
-							Thanx, Paul
-
-> ---
->  include/linux/smp.h | 12 ++++++++++++
->  kernel/smp.c        | 44 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 56 insertions(+)
-> 
-> diff --git a/include/linux/smp.h b/include/linux/smp.h
-> index 633f5ed..155dc86 100644
-> --- a/include/linux/smp.h
-> +++ b/include/linux/smp.h
-> @@ -29,6 +29,18 @@ extern unsigned int total_cpus;
->  int smp_call_function_single(int cpuid, smp_call_func_t func, void *info,
->  			     int wait);
-> 
-> +struct queue_single_data;
-> +typedef void (*smp_queue_func_t)(struct queue_single_data *qsd);
-> +
-> +struct queue_single_data {
-> +	struct call_single_data data;
-> +	smp_queue_func_t func;
-> +	int pending;
-> +};
-> +
-> +int smp_queue_function_single(int cpuid, smp_queue_func_t func,
-> +			      struct queue_single_data *qsd);
-> +
->  /*
->   * Call a function on all processors
->   */
-> diff --git a/kernel/smp.c b/kernel/smp.c
-> index 06d574e..bfe7b36 100644
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -265,6 +265,50 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd)
->  }
->  EXPORT_SYMBOL_GPL(smp_call_function_single_async);
-> 
-> +void generic_smp_queue_function_single_interrupt(void *info)
-> +{
-> +	struct queue_single_data *qsd = info;
-> +
-> +	WARN_ON_ONCE(xchg(&qsd->pending, 0) != 1);
-
-I am probably missing something here, but shouldn't this function copy
-*qsd to a local on-stack variable before doing the above xchg()?  What
-prevents the following from happening?
-
-o	CPU 0 does smp_queue_function_single(), which sets ->pending
-	and fills in ->func and ->data.
-
-o	CPU 1 takes IPI, invoking generic_smp_queue_function_single_interrupt().
-
-o	CPU 1 does xchg(), so that ->pending is now zero.
-
-o	An attempt to reuse the queue_single_data sees ->pending equal
-	to zero, so the ->func and ->data is overwritten.
-
-o	CPU 1 calls the new ->func with the new ->data (or any of the other
-	two possible unexpected outcomes), which might not be helpful to
-	the kernel's actuarial statistics.
-
-So what am I missing?
-
-> +	qsd->func(qsd);
-> +}
-> +
-> +/**
-> + * smp_queue_function_single - Queue an asynchronous function to run on a
-> + * 				specific CPU unless it's already pending.
-> + * @func: The function to run. This must be fast and non-blocking.
-> + * @qsd: The data contained in the interested object if any
-> + *
-> + * Like smp_call_function_single_async() but the call to @func is serialized
-> + * and won't be queued if it is already pending. In the latter case, ordering
-> + * is still guaranteed such that the pending call will sees the new data we
-> + * expect it to.
-> + *
-> + * This must not be called on offline CPUs.
-> + *
-> + * Returns 0 when @func is successfully queued or already pending, else a negative
-> + * status code.
-> + */
-> +int smp_queue_function_single(int cpu, smp_queue_func_t func, struct queue_single_data *qsd)
-> +{
-> +	int err;
-> +
-> +	if (cmpxchg(&qsd->pending, 0, 1))
-> +		return 0;
-> +
-> +	qsd->func = func;
-> +
-> +	preempt_disable();
-> +	err = generic_exec_single(cpu, &qsd->data, generic_smp_queue_function_single_interrupt, qsd, 0);
-> +	preempt_enable();
-> +
-> +	/* Reset is case of error. This must not be called on offline CPUs */
-> +	if (err)
-> +		qsd->pending = 0;
-> +
-> +	return err;
-> +}
-> +
->  /*
->   * smp_call_function_any - Run a function on any of the given cpus
->   * @mask: The mask of cpus it can run on.
-> -- 
-> 1.8.3.1
 > 
 
+Thanks a lot Ted, I'll wait your inode patch to got mainline before updating this one.
+Of course I don't wanna step on your toes if you prefer releasing patches for all FS :)
+
+Fabian
