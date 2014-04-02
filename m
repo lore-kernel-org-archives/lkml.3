@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128AbaDBTyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:54:24 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50486 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932998AbaDBTyW (ORCPT
+	id S1030206AbaDBT6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:58:37 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36365 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932688AbaDBT6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:54:22 -0400
-Date: Wed, 2 Apr 2014 20:54:08 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140402195408.GO14763@sirena.org.uk>
-References: <1395389720.29259.1.camel@phoenix>
- <1395389784.29259.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rQ7Ovc9/RBrrr0/1"
-Content-Disposition: inline
-In-Reply-To: <1395389784.29259.2.camel@phoenix>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: s2mps11: Don't check enable_shift before
- setting enable ramp rate
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 2 Apr 2014 15:58:36 -0400
+Subject: Re: [PATCH 0/7] uprobes/x86: introduce uprobe_xol_ops and
+ arch_uprobe->ops
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140331194337.GA9257@redhat.com>
+References: <20140331194337.GA9257@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Apr 2014 12:58:31 -0700
+Message-ID: <1396468711.4659.63.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040219-7164-0000-0000-000000C02A57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-03-31 at 21:43 +0200, Oleg Nesterov wrote:
+> Hello.
+> 
+> x86 can not handle the rip-relative jmp/call instrsuctions, the probed
+> task can be killed by general protection fault. I'll describe this in
+> more details when I send the fixes. Now I am sending the preparations
+> which (I hope) make sense anyway, please review.
+> 
+> My main concern is 3/7. I know absolutely nothing about instruction
+> decoding, so I can only guess what, for example, OPCODE1() == 0xff or
+> MODRM_REG() == 2 actually means. Please review.
+> 
+> Ananth, David, please ack/nack the first change, it affects powerpc/arm.
+> 
+> Oleg.
+> 
+>  arch/x86/include/asm/uprobes.h |    7 +-
+>  arch/x86/kernel/uprobes.c      |  343 ++++++++++++++++++++--------------------
+>  kernel/events/uprobes.c        |   23 +---
+>  3 files changed, 176 insertions(+), 197 deletions(-)
+> 
 
---rQ7Ovc9/RBrrr0/1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I've reviewed all 7 patches.  Aside from a couple of nits (noted
+elsewhere) that Oleg inherited, it looks good so far.
 
-On Fri, Mar 21, 2014 at 04:16:24PM +0800, Axel Lin wrote:
-> Current code misses updating the register when enable_shift is 0.
-> e.g. S2MPS11_BUCK9_RAMP_SHIFT and S2MPS11_BUCK6_RAMP_EN_SHIFT are 0.
+Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 
-Applied, thanks.
-
---rQ7Ovc9/RBrrr0/1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPGrdAAoJELSic+t+oim9vf4QAIzDAcvcpB4/6CgUuNKwoUOb
-DgEuG5IfbV53BxVet1poezvGfPfwwEGCa14yJkctc+ox8sKDnapjSBWCiFH3z47y
-/xhsr7uqGbmuTwZeDYlb1rDWh734UMfZcFIPVpjl8enXeYNAAxt/5TOoAuWpLeFQ
-tgW+iVuy9eQHCoz1L/AuiTUMdEfbQL35tFuxUskKmARlpCQQnJu+RaL8yvBzqxaM
-eEoa0/9HNMUsb3JC1AOFYHg2+zFweakiG1e41i9zMdKCi7rtAh8p2akTFDzHOj/O
-hDP/c1bjgCVp4LuDoveI439AE0j3ZBPcK2mNGFcuYf/ub2UmG9sxariLEB/77guv
-0SKNIg0dQ4Enk8lqNYSYlrfgbArJ8RgITK5TWnv2sDoE36zElrFkVzROL/lPFRb2
-KJDlgqlxqYzmdOgkluXCMCRn1imaQFvlb893QG9fLfZRPtF1/AAB9cK8ALlnSMeV
-rlitUgkvCctxPWrveYqOmQ0H9gY6fADX4LJsoWtsDtZk7kblv/Ne5Y5DG3gDnO8z
-T3wMX/sa5Q9B4T+vzG3uu4l/YCNp1lFMH330xCncA848mdbRArdNOciqFbnqyb5B
-DiNXdxA9NUZM5I3mB/4oNHUH8NYVK2qbh1sUFuZ/f+BLULiowv977tcKgK73dkvx
-qZLqsTXw9dc22pv8GN48
-=g97J
------END PGP SIGNATURE-----
-
---rQ7Ovc9/RBrrr0/1--
