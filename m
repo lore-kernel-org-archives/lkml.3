@@ -1,94 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985AbaDBTBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:01:17 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:38833 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969AbaDBTBN (ORCPT
+	id S933005AbaDBTCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:02:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49782 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932948AbaDBTCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:01:13 -0400
-Date: Wed, 2 Apr 2014 12:01:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jens.axboe@oracle.com>, Kevin Hilman <khilman@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/2] smp: Non busy-waiting IPI queue
-Message-ID: <20140402190108.GR4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1396455966-21128-1-git-send-email-fweisbec@gmail.com>
- <1396455966-21128-2-git-send-email-fweisbec@gmail.com>
- <20140402180513.GQ4284@linux.vnet.ibm.com>
- <CAFTL4hyUC7JO6+H4kiLCLOxO7WzyC+MUKxE-jrmanZMM4dXSrg@mail.gmail.com>
+	Wed, 2 Apr 2014 15:02:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hyUC7JO6+H4kiLCLOxO7WzyC+MUKxE-jrmanZMM4dXSrg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040219-7164-0000-0000-000000BFBE60
+In-Reply-To: <533BD3CD.1010905@ahsoftware.de>
+References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
+ <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 2 Apr 2014 12:01:25 -0700
+Message-ID: <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com>
+Subject: Re: [PATCH regression] net: phy: fix initialization (config_init) for
+ Marvel 88E1116R PHYs
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 08:30:23PM +0200, Frederic Weisbecker wrote:
-> 2014-04-02 20:05 GMT+02:00 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > On Wed, Apr 02, 2014 at 06:26:05PM +0200, Frederic Weisbecker wrote:
-> >> diff --git a/kernel/smp.c b/kernel/smp.c
-> >> index 06d574e..bfe7b36 100644
-> >> --- a/kernel/smp.c
-> >> +++ b/kernel/smp.c
-> >> @@ -265,6 +265,50 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd)
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(smp_call_function_single_async);
-> >>
-> >> +void generic_smp_queue_function_single_interrupt(void *info)
-> >> +{
-> >> +     struct queue_single_data *qsd = info;
-> >> +
-> >> +     WARN_ON_ONCE(xchg(&qsd->pending, 0) != 1);
-> >
-> > I am probably missing something here, but shouldn't this function copy
-> > *qsd to a local on-stack variable before doing the above xchg()?  What
-> > prevents the following from happening?
-> >
-> > o       CPU 0 does smp_queue_function_single(), which sets ->pending
-> >         and fills in ->func and ->data.
-> >
-> > o       CPU 1 takes IPI, invoking generic_smp_queue_function_single_interrupt().
-> >
-> > o       CPU 1 does xchg(), so that ->pending is now zero.
-> >
-> > o       An attempt to reuse the queue_single_data sees ->pending equal
-> >         to zero, so the ->func and ->data is overwritten.
-> >
-> > o       CPU 1 calls the new ->func with the new ->data (or any of the other
-> >         two possible unexpected outcomes), which might not be helpful to
-> >         the kernel's actuarial statistics.
-> >
-> > So what am I missing?
-> 
-> Ah, I forgot to precise that the function must remain the same for all
-> calls on a single qsd. And the data is always the qsd so this one can
-> only stay stable. So that shouldn't be a problem.
+2014-04-02 2:09 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
+> Am 02.04.2014 02:57, schrieb Florian Fainelli:
+>
+>> 2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
+>>>
+>>> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
+>>> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
+>>> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
+>>> was broken such, that it used mdelay() instead of really waiting for a
+>>> reset to finish.
+>>
+>>
+>> So the only big difference before
+>> 7cd1463664c2a15721ff4ccfb61d4d970815cb3d ("net: mv643xx_eth: use
+>> phy_init_hw to reset PHY") is that we waited potentially forever for
+>> the BMCR_RESET bit to get cleared, while now, we only wait for up to
+>> 500 milliseconds.
+>>
+>> Could you verify the following two things before your patch gets merged:
+>>
+>> - how long does it take for your PHY to clear the BMCR_RESET bit, is
+>> it more than the allowed time out in
+>> drivers/net/phy/phy_device.c::phy_poll_reset
+>> - is your PHY powered down (check BMCR_PWRDOWN), if that is the case,
+>> we might be hitting some corner case where toggling BMCR_RESET will
+>> power it on, but at the expense of waiting longer
+>
+>
+> I've  done two tests with pr_info before and after the two resets in
+> m88e1116r_config_init:
+>
+> with my patch:
+> -----------------------
+> dmesg | grep -A1 -B1  AHO
+> [    1.090099] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
+> [    1.175916] AHO: before first reset
+> [    1.179613] AHO: after first reset
 
-I did indeed miss that particular constraint.  ;-)
+That makes about 3.697 milliseconds
 
-> But you're right. The fact that we pass the function as an argument of
-> smp_queue_function_single() suggests that we can pass a different
-> function across various calls on a same qsd. So that's confusing.
-> Perhaps changing smp_queue_function_single() such that it only takes
-> the qsd as an argument would make that clearer? Then it's up to the
-> caller to initialize the qsd with the constant function. I could
-> define smp_queue_function_init() for that purpose. Or
-> DEFINE_QUEUE_FUNCTION_DATA() for static initializers.
-> 
-> How does that sound?
+> [    1.183743] AHO: before second reset
+> [    1.187530] AHO: after second reset
 
-Sounds good!
+That makes about 3.787 milliseconds
 
-							Thanx, Paul
+> [    1.191905] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC
+> address xx
+> --
+> [    1.426487] netpoll: netconsole: device eth0 not up yet, forcing it
+> [    1.505986] AHO: before first reset
+> [    1.509725] AHO: after first reset
+> [    1.513899] AHO: before second reset
+> [    1.517754] AHO: after second reset
+> [    1.521802] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+> --
+> [   21.372591] Adding 2996116k swap on /dev/sda3.  Priority:-1 extents:1
+> across:2996116k
+> [   28.305989] AHO: before first reset
+> [   28.306200] AHO: after first reset
+> [   28.306936] AHO: before second reset
+> [   28.307153] AHO: after second reset
+> [   31.509973] mv643xx_eth_port mv643xx_eth_port.0 eth0: link up, 1000 Mb/s,
+> full duplex, flow control disabled
+> -----------------------
+>
+>
+> with mdelay (the value after reset is what contains MII_BMCR):
+>
+> -----------------------
+> dmesg | grep -A1 -B1  AHO
+> [    1.090072] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
+> [    1.175888] AHO: before first reset
+> [    1.678806] AHO: after first reset 0x0
 
+That's 502.918 milliseconds
+
+> [    1.683281] AHO: before second reset
+> [    2.186288] AHO: after second reset 0x0
+
+That's 503.007 milliseconds
+
+> [    2.191010] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC
+> address xx
+> --
+> [    2.426349] netpoll: netconsole: device eth0 not up yet, forcing it
+> [    2.505917] AHO: before first reset
+> [    2.605824] usb 1-1: new high-speed USB device number 2 using orion-ehci
+> --
+> [    2.829987] hub 1-1:1.0: 4 ports detected
+> [    3.044502] AHO: after first reset 0x0
+> [    3.049133] AHO: before second reset
+> [    3.126110] usb 1-1.1: new high-speed USB device number 3 using
+> orion-ehci
+> --
+> [    3.526107] usb 1-1.3: device descriptor read/64, error -32
+> [    3.614264] AHO: after second reset 0x0
+> [    3.618708] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+> --
+> [   21.335730] Adding 2996116k swap on /dev/sda3.  Priority:-1 extents:1
+> across:2996116k
+> [   28.195942] AHO: before first reset
+> [   28.696270] AHO: after first reset 0x800
+> [   28.696958] AHO: before second reset
+> [   29.197354] AHO: after second reset 0x800
+> [  111.612263] RPC: Registered named UNIX socket transport module.
+> -----------------------
+>
+> So we see, the first reset in the last call of m88e1116r_config_init() fails
+> to complete in 500ms and the phy seems to be stuck afterwards, but, for
+> whatever reason, it doesn't need 500ms if mdelay isn't used (if we can trust
+> the timestamps).
+
+I wonder if the extra 2/3 microseconds we are seeing are nothing more
+than the buffered printk. At any rate, it looks like the software
+reset of this PHY needs to polled, and frequently for it to complete
+successfully.
+
+Can you resubmit with the following information:
+
+- you specify the commit that introduce the problem in parenthesis,
+e.g: deadbeef ("dead: beef: cafe babe")
+- put this dmesg snippet in your log message to clearly illustrate
+what is happening
+- clarify that the PHY needs to be polled in a comment in
+m88e1116r_config_init()
+
+Meanwhile, it would be good if someone with access to this particular
+PHY datasheet could look for known erratas, problems, non-standard
+compliant behavior ....
+
+>
+> (You can also see, I have netconsole enabled using netconsole=... in the
+> kernel cmdline).
+>
+> That behaviour is reproducible. The first reset in the last call to
+> m88e1116r_config_init() always fails if mdelay is used.
+>
+> Regards,
+>
+> Alexander Holler
+-- 
+Florian
