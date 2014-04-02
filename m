@@ -1,75 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676AbaDBRkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 13:40:10 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:32823 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569AbaDBRkI (ORCPT
+	id S932764AbaDBRka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 13:40:30 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:43030 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932506AbaDBRkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 13:40:08 -0400
-Message-ID: <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH] integrity: get comm using lock to avoid race in string
- printing
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, eparis@redhat.com,
-        sgrubb@redhat.com
-Date: Wed, 02 Apr 2014 13:39:47 -0400
-In-Reply-To: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
-References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040217-9332-0000-0000-0000005230A4
+	Wed, 2 Apr 2014 13:40:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140402163638.GQ14688@cmpxchg.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+	<20140401212102.GM4407@cmpxchg.org>
+	<533B313E.5000403@zytor.com>
+	<533B4555.3000608@sr71.net>
+	<533B8E3C.3090606@linaro.org>
+	<20140402163638.GQ14688@cmpxchg.org>
+Date: Wed, 2 Apr 2014 10:40:16 -0700
+Message-ID: <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+From: John Stultz <john.stultz@linaro.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 12:19 -0400, Richard Guy Briggs wrote: 
-> When task->comm is passed directly to audit_log_untrustedstring() without
-> getting a copy or using the task_lock, there is a race that could happen that
-> would output a NULL (\0) in the output string that would effectively truncate
-> the rest of the report text after the comm= field in the audit, losing fields.
-> 
-> Use get_task_comm() to get a copy while acquiring the task_lock to prevent
-> this and to prevent the result from being a mixture of old and new values of
-> comm.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  security/integrity/integrity_audit.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/security/integrity/integrity_audit.c b/security/integrity/integrity_audit.c
-> index 85253b5..11706a2 100644
-> --- a/security/integrity/integrity_audit.c
-> +++ b/security/integrity/integrity_audit.c
-> @@ -33,6 +33,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
->  			 const char *cause, int result, int audit_info)
->  {
->  	struct audit_buffer *ab;
-> +	char comm[sizeof(current->comm)];
-> 
->  	if (!integrity_audit_info && audit_info == 1)	/* Skip info messages */
->  		return;
-> @@ -49,7 +50,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
->  	audit_log_format(ab, " cause=");
->  	audit_log_string(ab, cause);
->  	audit_log_format(ab, " comm=");
-> -	audit_log_untrustedstring(ab, current->comm);
-> +	audit_log_untrustedstring(ab, get_task_comm(comm, current));
->  	if (fname) {
->  		audit_log_format(ab, " name=");
->  		audit_log_untrustedstring(ab, fname);
+On Wed, Apr 2, 2014 at 9:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Tue, Apr 01, 2014 at 09:12:44PM -0700, John Stultz wrote:
+>> On 04/01/2014 04:01 PM, Dave Hansen wrote:
+>> > On 04/01/2014 02:35 PM, H. Peter Anvin wrote:
+>> >> On 04/01/2014 02:21 PM, Johannes Weiner wrote:
+>> > John, this was something that the Mozilla guys asked for, right?  Any
+>> > idea why this isn't ever a problem for them?
+>> So one of their use cases for it is for library text. Basically they
+>> want to decompress a compressed library file into memory. Then they plan
+>> to mark the uncompressed pages volatile, and then be able to call into
+>> it. Ideally for them, the kernel would only purge cold pages, leaving
+>> the hot pages in memory. When they traverse a purged page, they handle
+>> the SIGBUS and patch the page up.
+>
+> How big are these libraries compared to overall system size?
 
-This change is already being upstreamed as commit 73a6b44 "Integrity:
-Pass commname via get_task_comm()".
+Mike or Taras would have to refresh my memory on this detail. My
+recollection is it mostly has to do with keeping the on-disk size of
+the library small, so it can load off of slow media very quickly.
 
-thanks,
+>> Now.. this is not what I'd consider a normal use case, but was hoping to
+>> illustrate some of the more interesting uses and demonstrate the
+>> interfaces flexibility.
+>
+> I'm just dying to hear a "normal" use case then. :)
 
-Mimi
+So the more "normal" use cause would be marking objects volatile and
+then non-volatile w/o accessing them in-between. In this case the
+zero-fill vs SIGBUS semantics don't really matter, its really just a
+trade off in how we handle applications deviating (intentionally or
+not) from this use case.
 
+So to maybe flesh out the context here for folks who are following
+along (but weren't in the hallway at LSF :),  Johannes made a fairly
+interesting proposal (Johannes: Please correct me here where I'm maybe
+slightly off here) to use only the dirty bits of the ptes to mark a
+page as volatile. Then the kernel could reclaim these clean pages as
+it needed, and when we marked the range as non-volatile, the pages
+would be re-dirtied and if any of the pages were missing, we could
+return a flag with the purged state.  This had some different
+semantics then what I've been working with for awhile (for example,
+any writes to pages would implicitly clear volatility), so I wasn't
+completely comfortable with it, but figured I'd think about it to see
+if it could be done. Particularly since it would in some ways simplify
+tmpfs/shm shared volatility that I'd eventually like to do.
+
+After thinking it over in the hallway, I talked some of the details w/
+Johnnes and there was one issue that while w/ anonymous memory, we can
+still add a VM_VOLATILE flag on the vma, so we can get SIGBUS
+semantics, but since on shared volatile ranges, we don't have anything
+to hang a volatile flag on w/o adding some new vma like structure to
+the address_space structure (much as we did in the past w/ earlier
+volatile range implementations). This would negate much of the point
+of using the dirty bits to simplify the shared volatility
+implementation.
+
+Thus Johannes is reasonably questioning the need for SIGBUS semantics,
+since if it wasn't needed, the simpler page-cleaning based volatility
+could potentially be used.
+
+
+Now, while for the case I'm personally most interested in (ashmem),
+zero-fill would technically be ok, since that's what Android does.
+Even so, I don't think its the best approach for the interface, since
+applications may end up quite surprised by the results when they
+accidentally don't follow the "don't touch volatile pages" rule.
+
+That point beside, I think the other problem with the page-cleaning
+volatility approach is that there are other awkward side effects. For
+example: Say an application marks a range as volatile. One page in the
+range is then purged. The application, due to a bug or otherwise,
+reads the volatile range. This causes the page to be zero-filled in,
+and the application silently uses the corrupted data (which isn't
+great). More problematic though, is that by faulting the page in,
+they've in effect lost the purge state for that page. When the
+application then goes to mark the range as non-volatile, all pages are
+present, so we'd return that no pages were purged.  From an
+application perspective this is pretty ugly.
+
+Johannes: Any thoughts on this potential issue with your proposal? Am
+I missing something else?
+
+thanks
+-john
