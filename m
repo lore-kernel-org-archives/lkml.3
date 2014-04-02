@@ -1,95 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117AbaDBHhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:37:46 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:14709 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758000AbaDBHeC (ORCPT
+	id S1758127AbaDBHiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:38:52 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:63984 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757992AbaDBHis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:34:02 -0400
-X-AuditID: cbfee690-b7f266d00000287c-07-533bbd691fcc
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
-        Young-Gun Jang <yg1004.jang@samsung.com>
-Subject: [PATCH 04/10] ARM: EXYNOS: Remove regs-pmu.h file dependency from
- pm_domain
-Date: Wed, 02 Apr 2014 16:50:55 +0900
-Message-id: <1396425058-4012-5-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t8zI93MvdbBBis+a1osm3SXzaJ3wVU2
-	i02Pr7FaXN41h81ixvl9TBa3L/Na7GhZzeLA7tHS3MPmsXlJvUffllWMHp83yQWwRHHZpKTm
-	ZJalFunbJXBlvDyzmq3gNnfFt99nmBsYP3N2MXJySAiYSLya8YMFwhaTuHBvPVsXIxeHkMAy
-	Ronne1azwxQdefObHSKxiFFiSstnKKeNSeLr04usIFVsAroST97PZQaxRQSyJS7NugU2llmg
-	WOLb6z6wGmGBMIlLu+YwgtgsAqoS62Y+BdvAK+Au8W3bVqB6DqBtChJzJtmAhDkFPCTut7SA
-	lQgBlcy9sZMVZK+EwGR2ib0z+pkh5ghIfJt8CKpXVmLTAWaIoyUlDq64wTKBUXgBI8MqRtHU
-	guSC4qT0IhO94sTc4tK8dL3k/NxNjJDAnrCD8d4B60OMyUDjJjJLiSbnAyMjryTe0NjMyMLU
-	xNTYyNzSjDRhJXFetUdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYQ3a2iSxcxNLOo9GZ
-	q2g2+fZ2xeaa3VLfmJ7WdcVOLQz23jLxUmiU25n49zd5nkRVrrwWleX+qc65oq0n45x07bXk
-	L+nbul47FPj6Sa5cyKRoO+nEmd8fsw/X2rjPrHLd9CFzorrxl63s6vbyLI/+dLyZkqJ8Zs+9
-	KsanFedfn4qRCt6uKzJdiaU4I9FQi7moOBEAYxjNf4ICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t9jAd3MvdbBBu+XqFosm3SXzaJ3wVU2
-	i02Pr7FaXN41h81ixvl9TBa3L/Na7GhZzeLA7tHS3MPmsXlJvUffllWMHp83yQWwRDUw2mSk
-	JqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHaCkUJaYUwoU
-	CkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzHh5ZjVbwW3uim+/zzA3MH7m7GLk5JAQ
-	MJE48uY3O4QtJnHh3nq2LkYuDiGBRYwSU1o+s0M4bUwSX59eZAWpYhPQlXjyfi4ziC0ikC1x
-	adYtFhCbWaBY4tvrPrAaYYEwiUu75jCC2CwCqhLrZj4F28Ar4C7xbdtWoHoOoG0KEnMm2YCE
-	OQU8JO63tICVCAGVzL2xk3UCI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFx80xq
-	B+PKBotDjAIcjEo8vAfOWwULsSaWFVfmHmKU4GBWEuHlnGQdLMSbklhZlVqUH19UmpNafIgx
-	GeioicxSosn5wJjOK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5O
-	qQbGzdOsFK5tVfCJ+1Zxvamu3sa3Pi1n4uN3B/55cEb+6/N/atkT3eHAf2yX2pMdd4/uvfh/
-	m/PVVWHSKzmfXOlfu4Jbwi77+dWUGxubGG+szS/P1+qLvXwzxnzWmtw/iV5i/LbqnzS5K9nt
-	zdg3B8Z0LWZL3apyoWHCv3qW3SamW1W2XKkP+KSkxFKckWioxVxUnAgA0o3nPN8CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 2 Apr 2014 03:38:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140217092155.GB17875@lee--X1>
+References: <1391175275-27347-1-git-send-email-linus.walleij@linaro.org>
+	<20140217092155.GB17875@lee--X1>
+Date: Wed, 2 Apr 2014 09:38:47 +0200
+Message-ID: <CACRpkdZ5YQoV3zxXiF5H-nxf-Kz_YiETvLsbJ9pkT=ueZ=VJSQ@mail.gmail.com>
+Subject: Re: [PATCH] RFC: MFD: driver for Atmel Microcontroller on iPaq h3xxx
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Alessandro Gardich <gremlin@gremlin.it>,
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Young-Gun Jang <yg1004.jang@samsung.com>
+On Mon, Feb 17, 2014 at 10:21 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Current "pm_domain.c" file uses "S5P_INT_LOCAL_PWR_EN" definition from
-"regs-pmu.h" and hence needs to include this header file. As there is
-no other user of "S5P_INT_LOCAL_PWR_EN" definition other than pm_domain,
-to remove "regs-pmu.h" header file dependency from "pm_domain.c"  it's
-better we define this definition in "pm_domain.c" file itself and thus it
-will help in removing header file inclusion from "pm_domain.c".
+>> +#include <linux/module.h>
+>
+> Does it matter that you're using:
+>
+>   module_platform_driver();
+>
+> ... yet you can't build this as a module?
 
-Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
----
- arch/arm/mach-exynos/pm_domains.c |    2 +-
- arch/arm/mach-exynos/regs-pmu.h   |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+I think it's a conceptual thing. Module means two things (IIUC):
+(a) it is a run-time loadable module
+(b) it's a piece of compartmentalized code
 
-diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-index fe6570e..f676b0a 100644
---- a/arch/arm/mach-exynos/pm_domains.c
-+++ b/arch/arm/mach-exynos/pm_domains.c
-@@ -22,7 +22,7 @@
- #include <linux/of_platform.h>
- #include <linux/sched.h>
- 
--#include "regs-pmu.h"
-+#define S5P_INT_LOCAL_PWR_EN 0x7
- 
- /*
-  * Exynos specific wrapper around the generic power domain
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 4ee706d..bfebe84 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -116,7 +116,6 @@
- #define S5P_PAD_RET_EBIB_OPTION			S5P_PMUREG(0x31A8)
- 
- #define S5P_CORE_LOCAL_PWR_EN			0x3
--#define S5P_INT_LOCAL_PWR_EN			0x7
- 
- #define S5P_CHECK_SLEEP				0x00000BAD
- 
--- 
-1.7.10.4
+In this case the macro refers to (b). module_platform_driver()
+resolves to module_driver() from <linux/device.h>
+and it's clearly a core part of the device core and available
+no matter whether the file is used as module at runtime or not.
+It just simplifies the initcalls and that's no different depending
+on whether the code is compiled-in or used as module.
 
+>> +     case MSG_KEYBOARD:
+>> +             if (micro->key != NULL)
+>
+> !micro->key
+
+I guess you mean if (micro->key) {} rather than the !invert,
+but I get it, changed everywhere we check for != NULL like this.
+
+>> +                     micro->key(micro->key_data, len, data);
+>> +             else
+>> +                     dev_dbg(micro->dev, "ipaq micro : key message ignored, "
+>> +                             "no handle \n");
+>
+> Log print spread over two lines. Doesn't Checkpatch complain about
+> this?
+
+Rather the other way around but you're right, it's better if
+we keep it on one line so changed messages to a single oneliner
+everywhere.
+
+>> +static void micro_tx_chars(struct ipaq_micro *micro)
+>> +{
+>> +     struct ipaq_micro_txdev *tx = &micro->tx;
+>> +     u32 val;
+>> +
+>> +     while ((tx->index < tx->len) &&
+>> +            (readl(micro->base + UTSR1) & UTSR1_TNF)) {
+>> +             writel(tx->buf[tx->index], micro->base + UTDR);
+>
+> This is pretty messy. Better broken out? Your call.
+
+The best I can think of is converting to a for-loop but that
+is just as hard to read I think :-/
+
+Breaking out the readl() invitably result in two lines of code
+like reading the flag before entering the while and once inside
+the loop which is nastier IMO.
+
+>> +static struct mfd_cell micro_cells[] = {
+>> +     {
+>> +             .name = "ipaq-micro-backlight",
+>> +     },
+>> +     {
+>> +             .name = "ipaq-micro-battery",
+>> +     },
+>> +     {
+>> +             .name = "ipaq-micro-keys",
+>> +     },
+>> +     {
+>> +             .name = "ipaq-micro-ts",
+>> +     },
+>> +     {
+>> +             .name = "ipaq-micro-leds",
+>> +     },
+>> +};
+>
+> Is Device Tree ever going to be supported on the iPAC?
+
+No clue.
+
+> If not, I think
+> it's okay for you to make these single line entries.
+
+OK doing that for now.
+
+>> +static int micro_suspend(struct device *dev)
+>> +{
+>> +     return 0;
+>> +}
+>
+> Doesn't the PM framework check for NULL .suspend?
+
+No it's just like:
+
+#ifdef CONFIG_SUSPEND
+        case PM_EVENT_SUSPEND:
+                return ops->suspend;
+        case PM_EVENT_RESUME:
+                return ops->resume;
+#endif /* CONFIG_SUSPEND */
+
+(drivers/power/main.c)
+
+>> +module_platform_driver(micro_device_driver);
+>
+> It may seem silly for these piece of h/w, but don't we have a 'no new
+> device drivers without DT support rule'?
+
+It's more like a "no new sub-architectures without DT support".
+
+The SA1100 systems (such as this H3600 iPAQ) are in a "legacy"
+category of architectures, that will probably never get converted
+over to device tree. But they are compartmentalized so they're OK.
+
+>> +static inline int
+>> +ipaq_micro_tx_msg_sync(struct ipaq_micro *micro,
+>> +                    struct ipaq_micro_msg *msg)
+>> +{
+>> +     int ret;
+>> +
+>> +     init_completion(&msg->ack);
+>> +     ret = ipaq_micro_tx_msg(micro, msg);
+>> +     wait_for_completion(&msg->ack);
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +static inline int
+>> +ipaq_micro_tx_msg_async(struct ipaq_micro *micro,
+>> +                     struct ipaq_micro_msg *msg)
+>> +{
+>> +     init_completion(&msg->ack);
+>> +     return ipaq_micro_tx_msg(micro, msg);
+>> +}
+>
+> Why are these in here? Where else are they called from?
+
+This MFD driver provided infrastructure for all the subdrivers, LEDs,
+keys etc.
+
+These may want to send messages through the core and wait for
+the message to come back, or they may want to send off a
+message and await its completion at another time. Since the
+most common is to send the message and then immediately
+wait for it to complete, but sometimes not, these inline helpers
+are provided.
+
+Example use in the battery driver:
+
+static void micro_battery_work(struct work_struct *work)
+{
+(...)
+        struct ipaq_micro_msg msg_battery = {
+                .id = MSG_BATTERY,
+        };
+(...)
+
+        /* First send battery message */
+        ipaq_micro_tx_msg_sync(mb->micro, &msg_battery);
+        if (msg_battery.rx_len < 4)
+                pr_info("ERROR");
+
+        /*
+         * Returned message format:
+         * byte 0:   0x00 = Not plugged in
+         *           0x01 = AC adapter plugged in
+         * byte 1:   chemistry
+         * byte 2:   voltage LSB
+         * byte 3:   voltage MSB
+         * byte 4:   flags
+         * byte 5-9: same for battery 2
+         */
+        mb->ac = msg_battery.rx_data[0];
+(...)
+
+All other comments are fixed up.
+
+I'm sending out a v2 targeted for v3.16.
+
+Yours,
+Linus Walleij
