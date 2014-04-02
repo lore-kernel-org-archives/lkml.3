@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273AbaDBPCP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 11:02:15 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:59818 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180AbaDBPCO (ORCPT
+	id S932318AbaDBPRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 11:17:13 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:47023 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932252AbaDBPRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 11:02:14 -0400
+	Wed, 2 Apr 2014 11:17:12 -0400
+Date: Wed, 2 Apr 2014 16:16:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Roger <rogerable@realtek.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
+Subject: Re: [PATCH v5 3/3] memstick: Add realtek USB memstick host driver
+Message-ID: <20140402151654.GA24060@lee--X1>
+References: <1395744293-24398-1-git-send-email-rogerable@realtek.com>
+ <1395744293-24398-4-git-send-email-rogerable@realtek.com>
+ <533A3080.2020008@realtek.com>
+ <20140401150654.fe27636428a62fdf9e0d2dc1@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20140402135959.GA16397@localhost.localdomain>
-References: <20140401190502.GA30970@kernel.dk>
-	<CA+55aFzq+mAkUQQkVGe8U8Rd13_Cr1GTcTZfCadjKpF23_OGmA@mail.gmail.com>
-	<20140402135959.GA16397@localhost.localdomain>
-Date: Wed, 2 Apr 2014 08:02:13 -0700
-X-Google-Sender-Auth: INl-auNSPxZgf0823VfGoMDAcUE
-Message-ID: <CA+55aFxcy=TDWucdnjHPPp=Dh-boA0uPLkKQP3oCGaKMDg-h_A@mail.gmail.com>
-Subject: Re: [GIT PULL] Core block IO bits for 3.15-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jens Axboe <axboe@fb.com>, Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linuxpatches@star.c10r.facebook.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140401150654.fe27636428a62fdf9e0d2dc1@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 7:00 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
-> So yeah that's because I was worried about strong conflicts. What kind of approach
-> do you prefer then to solve that kind of issue? Do you prefer that we create a seperate
-> branch and deal with non trivial nor small conflicts on merge window time?
+On Tue, 01 Apr 2014, Andrew Morton wrote:
 
-I'd indeed rather see a separate branch, and deal with the conflicts.
+> On Tue, 1 Apr 2014 11:20:32 +0800 Roger <rogerable@realtek.com> wrote:
+> 
+> > On 03/25/2014 06:44 PM, rogerable@realtek.com wrote:
+> > > From: Roger Tseng <rogerable@realtek.com>
+> > >
+> > > Realtek USB memstick host driver provides memstick host support based on the
+> > > Realtek USB card reader MFD driver.
+> > >
+> > > Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> > > ---
+> > >   drivers/memstick/host/Kconfig       |  10 +
+> > >   drivers/memstick/host/Makefile      |   1 +
+> > >   drivers/memstick/host/rtsx_usb_ms.c | 839 ++++++++++++++++++++++++++++++++++++
+> > >   3 files changed, 850 insertions(+)
+> > >   create mode 100644 drivers/memstick/host/rtsx_usb_ms.c
+> > Hi Andrew,
+> > 
+> > Since I'll have to send next revision(v6, to modify patch 1/3) and 
+> > you've commented v4, would you also comment or Ack the 3/3 of this one? 
+> > This should save one revision for me to make any necessary change.
+> 
+> It looks OK to my inexpert eye.  It would be better if Maxim and/or Alex
+> could review the code.  If that doesn't happen then I guess the best we
+> can do is to go ahead and merge it.  Have you worked out via which tree
+> the patches will be merged?
 
-And in fact I think you over-estimate the conflicts. The smp function
-naming changes were trivial as far as outside users were concerned,
-and while the "stop abusing fileds in csd" might have clashed more
-with the rest of the block changes (because they were actually to the
-block functions), I doubt it would have been painful. In fact, looking
-at "fifo_time" there should be no conflicts at all, and the queuelist
-changes look like they would have had a *trivial* conflict with
-"blk-mq: merge blk_mq_insert_request and blk_mq_run_request" just
-because there were changes nearby. Even that is debatable - it's
-possible git would just have resolved that one automatically too.
+I'll be happy to take the set if one of the subsystem experts would be
+kind enough to cast an eye over it.
 
-So I think that the patches from you and Honza could easily have been
-in another branch, and had trivial or no conflicts with the other
-block changes.
+Maxim, Alex?
 
-                Linus
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
