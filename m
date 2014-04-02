@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497AbaDBQmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:42:05 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:35900 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932335AbaDBQmD (ORCPT
+	id S932556AbaDBQm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:42:58 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:54674 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335AbaDBQm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:42:03 -0400
-Date: Wed, 2 Apr 2014 12:41:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Loc Ho <lho@apm.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: [PATCH libata/for-3.15-fixes] libata: make AHCI_XGENE depend on
- PHY_XGENE
-Message-ID: <20140402164159.GE16631@htj.dyndns.org>
-References: <20140401184916.GA21938@kroah.com>
- <CA+55aFwf6e-hkF+4ND0DaAKDmLX8P8+xWCgs5BRnARdSsq9tpw@mail.gmail.com>
- <20140402022858.GA4901@kroah.com>
- <CAPw-ZTnb4Ugjo_63HG0DmGaqki6riPk1S13Nx8xF_9gdNu17wA@mail.gmail.com>
- <533C0B45.4050909@ti.com>
- <CAPw-ZTn3_oEMFFNua1zoDibOBJOLC92k7zdc8Do+hk3Ai-BSaw@mail.gmail.com>
- <20140402155357.GA16631@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402155357.GA16631@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Apr 2014 12:42:56 -0400
+Message-ID: <1396456973.3989.41.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: 3.14 regression: huge latency in read/select on tun
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ortwin =?ISO-8859-1?Q?Gl=FCck?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Wed, 02 Apr 2014 09:42:53 -0700
+In-Reply-To: <533C381E.9090103@odi.ch>
+References: <533C381E.9090103@odi.ch>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AHCI_XGENE is only applicable on ARM64 but it can also be enabled for
-compile testing; however, AHCI_XGENE selects PHY_XGENE which has other
-arch specific dependencies.  This leads to the following warning when
-enabling it on other archs for compile testing.
+On Wed, 2014-04-02 at 18:17 +0200, Ortwin Glück wrote:
+> Hi,
+> 
+> Since 3.14 the openconnect VPN tunnel becomes unusable for me because
+> packets appear on the tun device at a horribly low rate. 3.12 and 3.13
+> do not exhibt the problem.
+> 
+> Here is an strace of openconnect trying to read from its fd
+>   7 -> /dev/net/tun
+> 
+> 15:07:33.130640 read(7, 0x1e05e58, 1280) = -1 EAGAIN (Resource
+> temporarily unavailable)
+> ===> should return available data already
+> 15:07:33.130745 select(8, [3 6 7], [], [6], {30, 0}) = 1 (in [7], left
+> {29, 783272})
+> ===> HUGE 217ms delay here
+> 15:07:33.347681 read(6, 0x1dfc973, 5)   = -1 EAGAIN (Resource
+> temporarily unavailable)
+> 15:07:33.347806 read(7,
+> "E\10\5\0b\343@\0@\6\17~\n\363X\236\n\271UE\222:\0\26\37O\7\342\315\21q\33"...,
+> 1280) = 1280
+> 
+> 
+> The send queue of the socket being routed via the tun device has a lot
+> of outstanding data (here an scp/ssh upload):
+> tcp        0  29788 local:46577  remote:22   ESTABLISHED
+> 
+> (IPs replaced for privacy)
+> 
+> toggling TCP autocorking has no influence.
+> 
+> Any ideas what could be the culprit?
 
-  warning: (AHCI_XGENE) selects PHY_XGENE which has unmet direct
-  dependencies (HAS_IOMEM && OF && (ARM64 || COMPILE_TEST))
+Nothing else than autocorking comes to mind.
 
-Selecting a config option which itself has dependencies can easily
-lead to broken configurations.  For now, let's just make AHCI_XGENE
-depend on PHY_XGENE which has all the necessary dependencies already.
+You could post a tcpdump maybe ?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Loc Ho <lho@apm.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/ata/Kconfig |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I believe some tools exist to anonymize a pcap file.
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 20e03a7..2e4da3b 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -134,8 +134,7 @@ config AHCI_SUNXI
- 
- config AHCI_XGENE
- 	tristate "APM X-Gene 6.0Gbps AHCI SATA host controller support"
--	depends on ARM64 || COMPILE_TEST
--	select PHY_XGENE
-+	depends on PHY_XGENE
- 	help
- 	 This option enables support for APM X-Gene SoC SATA host controller.
- 
+
+
