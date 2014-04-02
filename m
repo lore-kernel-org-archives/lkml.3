@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623AbaDBXsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 19:48:23 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43833 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312AbaDBXsV (ORCPT
+	id S1161072AbaDBXxC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 19:53:02 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:44970 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030190AbaDBXxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 19:48:21 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <533CA179.3050005@jp.fujitsu.com>
-Date: Thu, 03 Apr 2014 08:47:05 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 2 Apr 2014 19:53:00 -0400
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
-        chenhanxiao <chenhanxiao@cn.fujitsu.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>	<20140331170546.3b3e72f0.akpm@linux-foundation.org>	<533A5CB1.1@jp.fujitsu.com>	<20140401121920.50d1dd96c2145acc81561b82@linux-foundation.org> <20140402155507.1d976144@alan.etchedpixels.co.uk>
-In-Reply-To: <20140402155507.1d976144@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+	<20140402221212.GD16570@mguzik.redhat.com>
+	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
+	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
+	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
+	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
+Date: Wed, 2 Apr 2014 16:52:59 -0700
+X-Google-Sender-Auth: Jpb89jSCqRj_FUgsGgtBia7acNU
+Message-ID: <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Content-Type: multipart/mixed; boundary=047d7b3436d2044bbf04f617fc46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/02 23:55), One Thousand Gnomes wrote:
->> Why aren't people just setting the sysctl to a petabyte?  What problems
->> would that lead to?
->
-> Historically - hanging on real world desktop systems when someone
-> accidentally creates a giant SHM segment and maps it.
->
-> If you are running with vm overcmmit set to actually do checks then it
-> *shouldn't* blow up nowdays.
->
-> More to the point wtf are people still using prehistoric sys5 IPC APIs
-> not shmemfs/posix shmem ?
->
+--047d7b3436d2044bbf04f617fc46
+Content-Type: text/plain; charset=UTF-8
 
-AFAIK, there are many sys5 ipc users.
-And admins are using ipcs etc...for checking status. I guess they will not
-change the attitude until they see trouble with sysv IPC.
-*) I think some RedHat's document(MRG?) says sysv IPC is obsolete clearly but...
+On Wed, Apr 2, 2014 at 4:47 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>
+> Which doesn't really protect you from tasks that do open()/write()/close()
+> cycle for /dev/kmsg write every 2ms though.
 
-I tend to recommend posix shared memory when people newly starts development but
-there is an another trap.
-IIUC, for posix shmem, an implicit size limit is applied by tmpfs's fs size.
-tmpfs mounted on /dev/shm tends to be limited to half size of system memory.
-It's hard to know that limit for users before hitting trouble.
+I don't think we should try to protect against wilful bad behavior
+unless that is shown to be necessary. Yeah, if it turns out that
+systemd really does that just to mess with us, we'd need to extend it,
+but in the absence of proof to the contrary, maybe this simple
+attached patch works?
 
-Thanks,
--Kame
+TOTALLY UNTESTED. But it really isn't complex.
 
+The complexity is likely to be about setting the actual default
+values. So consider this a RFC and a "does this fix the problem that
+Borislav reported?" test-patch.
+
+Borislav?
+
+                  Linus
+
+--047d7b3436d2044bbf04f617fc46
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_htj9qb780
+
+IGtlcm5lbC9wcmludGsvcHJpbnRrLmMgfCA2ICsrKysrKwogMSBmaWxlIGNoYW5nZWQsIDYgaW5z
+ZXJ0aW9ucygrKQoKZGlmZiAtLWdpdCBhL2tlcm5lbC9wcmludGsvcHJpbnRrLmMgYi9rZXJuZWwv
+cHJpbnRrL3ByaW50ay5jCmluZGV4IDRkYWU5Y2JlOTI1OS4uN2U0YTA0MTJkOWZmIDEwMDY0NAot
+LS0gYS9rZXJuZWwvcHJpbnRrL3ByaW50ay5jCisrKyBiL2tlcm5lbC9wcmludGsvcHJpbnRrLmMK
+QEAgLTQxMCw2ICs0MTAsNyBAQCBzdHJ1Y3QgZGV2a21zZ191c2VyIHsKIAl1NjQgc2VxOwogCXUz
+MiBpZHg7CiAJZW51bSBsb2dfZmxhZ3MgcHJldjsKKwlzdHJ1Y3QgcmF0ZWxpbWl0X3N0YXRlIHJz
+OwogCXN0cnVjdCBtdXRleCBsb2NrOwogCWNoYXIgYnVmWzgxOTJdOwogfTsKQEAgLTQ4Myw2ICs0
+ODQsOCBAQCBzdGF0aWMgc3NpemVfdCBkZXZrbXNnX3JlYWQoc3RydWN0IGZpbGUgKmZpbGUsIGNo
+YXIgX191c2VyICpidWYsCiAKIAlpZiAoIXVzZXIpCiAJCXJldHVybiAtRUJBREY7CisJaWYgKCFf
+X19yYXRlbGltaXQoJnVzZXItPnJzLCBjdXJyZW50LT5jb21tKSkKKwkJcmV0dXJuIDA7CiAKIAly
+ZXQgPSBtdXRleF9sb2NrX2ludGVycnVwdGlibGUoJnVzZXItPmxvY2spOwogCWlmIChyZXQpCkBA
+IC02NzEsNiArNjc0LDkgQEAgc3RhdGljIGludCBkZXZrbXNnX29wZW4oc3RydWN0IGlub2RlICpp
+bm9kZSwgc3RydWN0IGZpbGUgKmZpbGUpCiAJaWYgKCF1c2VyKQogCQlyZXR1cm4gLUVOT01FTTsK
+IAorCS8qIENvbmZpZ3VyYWJsZT8gKi8KKwlyYXRlbGltaXRfc3RhdGVfaW5pdCgmdXNlci0+cnMs
+IERFRkFVTFRfUkFURUxJTUlUX0lOVEVSVkFMLCBERUZBVUxUX1JBVEVMSU1JVF9CVVJTVCk7CisK
+IAltdXRleF9pbml0KCZ1c2VyLT5sb2NrKTsKIAogCXJhd19zcGluX2xvY2tfaXJxKCZsb2didWZf
+bG9jayk7Cg==
+--047d7b3436d2044bbf04f617fc46--
