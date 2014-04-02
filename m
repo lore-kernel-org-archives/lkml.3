@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060AbaDBHeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:34:07 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:31129 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757956AbaDBHeB (ORCPT
+	id S932101AbaDBHe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:34:26 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:63643 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757956AbaDBHeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:34:01 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-36-533bbd6738a2
+	Wed, 2 Apr 2014 03:34:14 -0400
+X-AuditID: cbfee690-b7f266d00000287c-88-533bbd5fdb82
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
 Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
         Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH 02/10] ARM: EXYNOS: Correct file path in comment message
-Date: Wed, 02 Apr 2014 16:50:53 +0900
-Message-id: <1396425058-4012-3-git-send-email-pankaj.dubey@samsung.com>
+Subject: [PATCH 0/7] ARM: Exynos: PMU cleanup and refactoring for using DT
+Date: Wed, 02 Apr 2014 16:50:51 +0900
+Message-id: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t8zQ930vdbBBi0TzSyWTbrLZtG74Cqb
-	xabH11gtLu+aw2Yx4/w+Jovbl3ktFm39wu7A7tHS3MPmsXlJvUffllWMHp83yQWwRHHZpKTm
-	ZJalFunbJXBl3LmwjL3gNUvFxRWv2BoYe1m6GDk5JARMJHZ3PmKDsMUkLtxbD2RzcQgJLGOU
-	mLFsDxNM0aNL/SwQiUWMEntvn2SFcNqYJG6+PMYIUsUmoCvx5P1cZhBbRCBb4tKsW2ArmAWK
-	JN6s+wO2QljAQ+LHtJ9AzRwcLAKqEvOfloOEeQXcJe7Ne8AGEpYQUJCYM8kGJMwJVH2/pYUd
-	xBYCKpl7YyfYWgmByewSq393gI1kERCQ+Db5EAtEr6zEpgPMEDdLShxccYNlAqPwAkaGVYyi
-	qQXJBcVJ6UWmesWJucWleel6yfm5mxghYT1xB+P9A9aHGJOBxk1klhJNzgfGRV5JvKGxmZGF
-	qYmpsZG5pRlpwkrivOmPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MNbN5ag+y3fMQlVl
-	/bmS4ts/p61gbBQ8+q28W2vGIufoiyzbAieuaU7Z9XlleOb3dyeEYz4y1JWZqvr4K+vO7ig8
-	2WndO0cwZ/Nj9dD853J6/f1LrQ113mnd2Nj4qKPdQ3Dl3xfHViVGTsifzhxVeOhLdlv6lXWF
-	ir0GP82+aBpG33gU/KSpSYmlOCPRUIu5qDgRAHxxcLmBAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t9jAd30vdbBBsv7jCyWTbrLZtG74Cqb
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t8zA934vdbBBvP2iVksm3SXzaJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd2B3aOluYfNY/OSeo++LasYPT5vkgtgieKySUnN
+	ySxLLdK3S+DKeLViNkvBBf6K3Wcb2RsYJ/B0MXJySAiYSKxc8YANwhaTuHBvPZDNxSEksIxR
+	4t3fNYxdjBxgRZ9+x0DEFzFKvHq6hgnCaWOSuH/iPiNIN5uArsST93OZQWwRgWyJS7NusYDY
+	zAJFEm/W/QHbICzgJfF+0kWwOIuAqsTLVa/AenkF3CV+z5vCArFMQWLOJBuQ+RICv9kknv79
+	zQhRLyDxbfIhqBpZiU0HmCGOlpQ4uOIGywRGwQWMDKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLz
+	czcxQsJ0wg7GewesDzEmA42byCwlmpwPDPO8knhDYzMjC1MTU2Mjc0sz0oSVxHnVHiUFCQmk
+	J5akZqemFqQWxReV5qQWH2Jk4uCUamCUdPtoNd+azTkq2fPelle3tax4Fxm65dxw6OYRCtOV
+	F9DU1JrIc9RZ/rO1fyFDR8i9Px3hipO9v8zna437efDDHq/g6fv0XHJ++hx44VH+oXRbD5tZ
+	pc1EhS07v7lbZfhYG0tWbHh7Vkk0tzZh1/GO1QcdXhj1zt/x+8kW3z8tfWk7Tz65oKLEUpyR
+	aKjFXFScCABfbzPfaQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t9jAd34vdbBBj33BC2WTbrLZtG74Cqb
 	xabH11gtLu+aw2Yx4/w+Jovbl3ktFm39wu7A7tHS3MPmsXlJvUffllWMHp83yQWwRDUw2mSk
 	JqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHaCkUJaYUwoU
-	CkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzLhzYRl7wWuWiosrXrE1MPaydDFyckgI
-	mEg8utQPZYtJXLi3nq2LkYtDSGARo8Te2ydZIZw2JombL48xglSxCehKPHk/lxnEFhHIlrg0
-	6xZYN7NAkcSbdX/YQGxhAQ+JH9N+AjVzcLAIqErMf1oOEuYVcJe4N+8BG0hYQkBBYs4kG5Aw
-	J1D1/ZYWdhBbCKhk7o2drBMYeRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI6aZ9I7
-	GFc1WBxiFOBgVOLhPXDeKliINbGsuDL3EKMEB7OSCC/nJOtgId6UxMqq1KL8+KLSnNTiQ4zJ
-	QDdNZJYSTc4HRnReSbyhsYmZkaWRmYWRibk5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBK
-	NTDWtBSlc9f809134Fr1e7PwNW5MPce9en5G7rzr15B4SkBiVXxW3WbtM7MfiRu2LDELuv9i
-	Ecs+tbMbrBdcuO952vHLBK9jvc6ZJllf2dhPO7zyCDcJ9fq4tS8z9JRrqeBdt7QwR9cbAv0h
-	Fyx3xD1Y52nWrv1xWqnw8QLvn7ZBDzcsX7Vh3QMlluKMREMt5qLiRACqejKA3gIAAA==
+	CkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzHi1YjZLwQX+it1nG9kbGCfwdDFycEgI
+	mEh8+h3TxcgJZIpJXLi3nq2LkYtDSGARo8Srp2uYIJw2Jon7J+4zglSxCehKPHk/lxnEFhHI
+	lrg06xYLiM0sUCTxZt0fNhBbWMBL4v2ki2BxFgFViZerXoH18gq4S/yeN4UFYrGCxJxJNhMY
+	uRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI6CZ1I7GFc2WBxiFOBgVOLhPXDeKliI
+	NbGsuDL3EKMEB7OSCC/nJOtgId6UxMqq1KL8+KLSnNTiQ4zJQMsnMkuJJucDIzSvJN7Q2MTM
+	yNLIzMLIxNycNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhjn7T8klfpzK09EepVw2+dF
+	LjdlsjQ/8P7rE/zVyvPydGTmZaYL1mKXd8b2lnFM6tp0YhkbT9uBjzxyGw9y8j3dcYL5jXsk
+	34tg2Y3ZL0z2lGQWrrxQy6n6VfmNZ4+dskJDrpzVtpNXjGqvrLU4KzD1jc79h5Kmdq8uxwvf
+	cXvRxVtjF3w5oFqJpTgj0VCLuag4EQCddftvxgIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,23 +47,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects file path mentioned in file comment message.
+This patch series, does some minor cleanup and modifies Exynos PMU related
+code for mapping Exynos Power Management Unit (PMU) base address from device
+tree. Since PMU offsets are used across many files under mach-exynos, it
+introduces one helper function to get PMU base address in exynos.c.
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
- arch/arm/mach-exynos/platsmp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch series is preparation for moving PMU related code out of machine
+folder and converting into a driver.
 
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index 03e5e9f..d8d1555 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -1,4 +1,4 @@
--/* linux/arch/arm/mach-exynos4/platsmp.c
-+/* linux/arch/arm/mach-exynos/platsmp.c
-  *
-  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-  *		http://www.samsung.com
+This patch requires change in Exynos4210, Exynos4212 and Exynos4412 dtsi files,
+which I will post shortly as separate patch series.
+
+These patches are created on top of kgene for-next branch.
+We have tested these patches for System boot and PMU initialization of
+Exynos5250 and Exynos5260 (with some internal patches).
+For rest Exynos SoC it has been only compile tested.
+
+Pankaj Dubey (4):
+  ARM: EXYNOS: Cleanup  "mach-exynos/common.h" file
+  ARM: EXYNOS: Correct file path in comment message
+  ARM: EXYNOS: Move "regs-pmu" header inclusion in common.h
+  ARM: EXYNOS: Refactored code for PMU register mapping via DT
+
+Young-Gun Jang (3):
+  ARM: EXYNOS: Move SYSREG definition into sys-reg specific file
+  ARM: EXYNOS: Remove regs-pmu.h file dependency from pm_domain
+  ARM: EXYNOS: Add support for mapping PMU base address via DT
+
+ arch/arm/mach-exynos/common.h           |   10 +-
+ arch/arm/mach-exynos/cpuidle.c          |   29 +-
+ arch/arm/mach-exynos/exynos.c           |   58 +++-
+ arch/arm/mach-exynos/hotplug.c          |    5 +-
+ arch/arm/mach-exynos/include/mach/map.h |    3 -
+ arch/arm/mach-exynos/platsmp.c          |   15 +-
+ arch/arm/mach-exynos/pm.c               |   55 ++--
+ arch/arm/mach-exynos/pm_domains.c       |    2 +-
+ arch/arm/mach-exynos/pmu.c              |   35 +--
+ arch/arm/mach-exynos/regs-pmu.h         |  510 +++++++++++++++----------------
+ arch/arm/mach-exynos/regs-sys.h         |   22 ++
+ 11 files changed, 405 insertions(+), 339 deletions(-)
+ create mode 100644 arch/arm/mach-exynos/regs-sys.h
+
 -- 
 1.7.10.4
 
