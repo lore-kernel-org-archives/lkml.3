@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758588AbaDBLGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:06:41 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:55674 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758161AbaDBLGj (ORCPT
+	id S1758619AbaDBLIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:08:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56934 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758161AbaDBLH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:06:39 -0400
-Message-ID: <533BEF38.50301@de.ibm.com>
-Date: Wed, 02 Apr 2014 13:06:32 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 2 Apr 2014 07:07:59 -0400
+Date: Wed, 2 Apr 2014 13:07:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: David Miller <davem@davemloft.net>, ben@decadent.org.uk,
+        mkl@pengutronix.de, linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] net: sched: dev_deactivate_many(): use msleep(1) instead
+ of yield() to wait for outstanding qdisc_run callsb
+Message-ID: <20140402110743.GG27965@twins.programming.kicks-ass.net>
+References: <1393976987-23555-1-git-send-email-mkl@pengutronix.de>
+ <20140306.160622.59358366688518505.davem@davemloft.net>
+ <1394392160.15968.13.camel@deadeye.wl.decadent.org.uk>
+ <20140309.185338.2057082497431220324.davem@davemloft.net>
+ <alpine.DEB.2.02.1403312333100.14882@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-CC: gleb@kernel.org, kvm@vger.kernel.org
-Subject: Re: [GIT PULL] KVM changes for 3.15 merge window
-References: <1396254646-14971-1-git-send-email-pbonzini@redhat.com> <533938AE.5060709@redhat.com>
-In-Reply-To: <533938AE.5060709@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040211-4966-0000-0000-000008EDD39B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1403312333100.14882@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/03/14 11:43, Paolo Bonzini wrote:
-> Il 31/03/2014 10:30, Paolo Bonzini ha scritto:
->> Linus,
->>
->> The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
->>
->>   Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
->>
->> are available in the git repository at:
->>
->>   git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/kvm-3.15-1
-> 
-> Also at tags/for-linus, but request-pull chose this other tag for some reason.
-> 
-> Paolo
-> 
->> for you to fetch changes up to 7227fc0666606b0df2c0d2966a7f4859b01bdf74:
->>
->>   Merge branch 'kvm-ppchv-next' of git://git.kernel.org/pub/scm/linux/kernel/git/paulus/powerpc into kvm-next (2014-03-29 15:44:05 +0100)
->>
->> No other changes expected for this merge window.
+On Mon, Mar 31, 2014 at 11:49:16PM +0200, Thomas Gleixner wrote:
+> > >> The intent of a yield() call, like this one here, is unambiguously
+> > >> that the current thread cannot do anything until some other thread
+> > >> gets onto the cpu and makes forward progress.
 
-Linus, fyi, this will cause a merge conflict in arch/s390/include/asm/kvm_host.h
+Yeah; like Thomas said; that's not what yield() does -- or can do.
 
-Fixup looks like
-	__u32   fac;                    /* 0x01a0 */
-	__u8    reserved1a4[20];        /* 0x01a4 */
-	__u64   cbrlo;                  /* 0x01b8 */
-	__u8    reserved1c0[30];        /* 0x01c0 */
-	__u64   pp;                     /* 0x01de */
-	__u8    reserved1e6[2];         /* 0x01e6 */
-	__u64   itdba;                  /* 0x01e8 */
-	__u8    reserved1f0[16];        /* 0x01f0 */
+yield() only says 'I don't know what to do, you figure it out', but then
+fails to provide enough information to actually do something sensible.
 
+It cannot put the task to sleep; because it doesn't pair with a wakeup;
+and therefore the task stays an eligible/runnable task from a scheduler
+pov.
 
-see
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next-history.git/commit/arch/s390/include/asm/kvm_host.h?id=9f6b9558157c2670410827d2ca969bb7a325a8ec
+The scheduler is therefore entirely in its right to pick this task
+again; and pretty much has to under many circumstances.
 
-Christian
+yield() does not, and can not, guarantee forward progress - ever.
+
+Use wait_event() and assorted bits to wait for an actual event. That is
+a sleep paired with a wakeup and thus has progress guarantees.
+
+Also; see the comment near yield:
+
+/**
+ * yield - yield the current processor to other threads.
+ *
+ * Do not ever use this function, there's a 99% chance you're doing it wrong.
+ *
+ * The scheduler is at all times free to pick the calling task as the most
+ * eligible task to run, if removing the yield() call from your code breaks
+ * it, its already broken.
+ *
+ * Typical broken usage is:
+ *
+ * while (!event)
+ * 	yield();
+ *
+ * where one assumes that yield() will let 'the other' process run that will
+ * make event true. If the current task is a SCHED_FIFO task that will never
+ * happen. Never use yield() as a progress guarantee!!
+ *
+ * If you want to use yield() to wait for something, use wait_event().
+ * If you want to use yield() to be 'nice' for others, use cond_resched().
+ * If you still want to use yield(), do not!
+ */
+void __sched yield(void)
+
 
