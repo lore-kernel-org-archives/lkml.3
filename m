@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912AbaDBSAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:00:30 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:50827 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653AbaDBSAX (ORCPT
+	id S932924AbaDBSAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:00:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43622 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932332AbaDBSAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:00:23 -0400
-Date: Wed, 2 Apr 2014 14:00:19 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Glyn Normington <gnormington@gopivotal.com>
-Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org
-Subject: Re: Kernel scanning/freeing to relieve cgroup memory pressure
-Message-ID: <20140402180019.GL16631@htj.dyndns.org>
-References: <533C0BB4.4070009@gopivotal.com>
+	Wed, 2 Apr 2014 14:00:43 -0400
+Message-ID: <533C503B.7000007@oracle.com>
+Date: Wed, 02 Apr 2014 13:00:27 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533C0BB4.4070009@gopivotal.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Theodore Ts'o" <tytso@mit.edu>, Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, jfs-discussion@lists.sourceforge.net
+Subject: Re: [Jfs-discussion] [PATCH 1/1] fs/jfs/jfs_inode.c: atomically set
+ inode->i_flags
+References: <20140402192950.82812a331cb154bbc0a4183c@skynet.be> <20140402174707.GK6901@thunk.org>
+In-Reply-To: <20140402174707.GK6901@thunk.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing memcg maintainers and cgroup ML)
-
-On Wed, Apr 02, 2014 at 02:08:04PM +0100, Glyn Normington wrote:
-> Currently, a memory cgroup can hit its oom limit when pages could, in
-> principle, be reclaimed by the kernel except that the kernel does not
-> respond directly to cgroup-local memory pressure.
-
-So, ummm, it does.
-
-> A use case where this is important is running a moderately large Java
-> application in a memory cgroup in a PaaS environment where cost to the
-> user depends on the memory limit ([1]). Users need to tune the memory
-> limit to reduce their costs. During application initialisation large
-> numbers of JAR files are opened (read-only) and read while loading the
-> application code and its dependencies. This is reflected in a peak of
-> file cache usage which can push the memory cgroup memory usage
-> significantly higher than the value actually needed to run the application.
+On 04/02/2014 12:47 PM, Theodore Ts'o wrote:
+> On Wed, Apr 02, 2014 at 07:29:50PM +0200, Fabian Frederick wrote:
+>> +	set_mask_bits(&inode->i_flags, S_IMMUTABLE | S_APPEND | S_NOATIME |
+>> +				       S_DIRSYNC | S_SYNC, new_fl);
 > 
-> Possible approaches include (1) automatic response to cgroup-local
-> memory pressure in the kernel, and (2) a kernel API for reclaiming
-> memory from a cgroup which could be driven under oom notification (with
-> the oom killer disabled for the cgroup - it would be enabled if the
-> cgroup was still oom after calling the kernel to reclaim memory).
-> 
-> Clearly (1) is the preferred approach. The closest facility in the
-> kernel to (2) is to ask the kernel to free pagecache using `echo 1 >
-> /proc/sys/vms/drop_caches`, but that is too wide-ranging, especially in
-> a PaaS environment hosting multiple applications. A similar facility
-> could be provided for a cgroup via a cgroup pseudo-file
-> `memory.drop_caches`.
-> 
-> Other approaches include a mempressure cgroup ([2]) which would not be
-> suitable for PaaS applications. See [3] for Andrew Morton's response. A
-> related workaround ([4]) was included in the 3.6 kernel.
-> 
-> Related discussions:
-> [1] https://groups.google.com/a/cloudfoundry.org/d/topic/vcap-dev/6M8BDV_tq7w/discussion
-> [2]https://lwn.net/Articles/531077/ <https://lwn.net/Articles/531077/>
-> [3]https://lwn.net/Articles/531138/ <https://lwn.net/Articles/531138/>
-> [4]https://lkml.org/lkml/2013/6/6/462 <https://lkml.org/lkml/2013/6/6/462>&
-> https://github.com/torvalds/linux/commit/e62e384e
-> <https://github.com/torvalds/linux/commit/e62e384e>.
+> Warning --- per discussion with Linus over the weekend, he decided he
+> really didn't like the set_mask_bits() interface, because it was too
+> prone to abuse.  Unfortuantely, Linus had already included an earlier
+> version of my patch that used set_mask_bits() in 3.14 without letting
+> me know.  This is what I have in my ext4 tree for the merge window,
+> which is undergoing final testing at the moment.  This will cause a
+> patch conflict, and it's likely (given Linus's dislike of the
+> set_mask_bits interface) that set_mask_bits() will end up getting
+> removed from the tree, if not when he fixes up the merge conflict, but
+> subsequent to -rc1.
 
--- 
-tejun
+Thanks Ted. I'll wait until the ext4 piece is resolved before merging
+this one.
+
+Fabian, feel free to resubmit the patch based on Ted's revision.
+Otherwise, I'll fix it up myself.
+
+Thanks,
+Shaggy
