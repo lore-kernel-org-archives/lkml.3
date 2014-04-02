@@ -1,90 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247AbaDBIap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 04:30:45 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:40297 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758139AbaDBIai (ORCPT
+	id S1758271AbaDBIbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 04:31:10 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:4186
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758181AbaDBIbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 04:30:38 -0400
-X-Sasl-enc: sW8CDX5H8bmuaU6symFymOL1nt5cGa4DXoKiBQLWVHIK 1396427435
-Message-ID: <1396427412.2726.21.camel@perseus.fritz.box>
-Subject: [ANNOUNCE] autofs 5.1.0 beta1 release
-From: Ian Kent <raven@themaw.net>
-To: autofs@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 02 Apr 2014 16:30:12 +0800
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-pISYbW3eMeTGKZf99V+U"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 2 Apr 2014 04:31:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chz8dhz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
+Date: Wed, 2 Apr 2014 16:30:47 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Kaushal Butala <kaushalkernelmailinglist@gmail.com>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Kaushal Butala <kaushal.butala@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [RFC PATCH] imx-i2c: Add smbus block read support to imx i2c bus
+Message-ID: <20140402083046.GB8753@dragon>
+References: <1395759982-18559-1-git-send-email-kaushalkernelmailinglist@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1395759982-18559-1-git-send-email-kaushalkernelmailinglist@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 25, 2014 at 04:06:22PM +0100, Kaushal Butala wrote:
+> From: Kaushal Butala <kaushal.butala@gmail.com>
+> 
+> The smbus block read is not currently supported for imx i2c devices.
+> This patchset adds the support to imx i2c bus so that blocks of data
+> can be read using SMbus block reads.(using i2c_smbus_read_block_data()
+> function from the i2c_core.c.). Tested with 3.10.9 kernel.
+> 
+> Signed-off-by: Kaushal Butala <kaushalkernelmailinglist@gmail.com>
 
---=-pISYbW3eMeTGKZf99V+U
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The patch should be sent to I2C subsystem maintainer - Wolfram (copied)
+rather than me.
 
-Hi all,
+The patch looks good to me except a few unnecessary parentheses.
 
-This is an initial beta release which adds the ability of autofs
-to understand the amd map format.
+> ---
+>  drivers/i2c/busses/i2c-imx.c |   31 ++++++++++++++++++++++++++++---
+>  1 file changed, 28 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
+> index db895fb..b6c2c3c 100644
+> --- a/drivers/i2c/busses/i2c-imx.c
+> +++ b/drivers/i2c/busses/i2c-imx.c
+> @@ -462,6 +462,7 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
+>  {
+>  	int i, result;
+>  	unsigned int temp;
+> +	int block_data = msgs->flags & I2C_M_RECV_LEN;
+>  
+>  	dev_dbg(&i2c_imx->adapter.dev,
+>  		"<%s> write slave address: addr=0x%x\n",
+> @@ -481,7 +482,12 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
+>  	/* setup bus to read data */
+>  	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
+>  	temp &= ~I2CR_MTX;
+> -	if (msgs->len - 1)
+> +
+> +	/*
+> +	 * Reset the I2CR_TXAK flag initially for SMbus block read since the
+> +	 * length is unknown
+> +	 */
+> +	if ((msgs->len - 1) || (block_data))
 
-Making autofs understand the amd map format is a significant change
-and, due to the way it's implemented, forms the basis for further
-changes for autofs 5.1. However, most of these changes won't add
-functionality, they are meant to improve the current implementation.
+Unnecessary parentheses around block_data.
 
-One functionality change that this will eventually lead to is the
-alility to specify a custom umount program in a map entry, but an
-awful lot needs to be done before that can be added.
+>  		temp &= ~I2CR_TXAK;
+>  	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+>  	imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR); /* dummy read */
+> @@ -490,9 +496,24 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
+>  
+>  	/* read data */
+>  	for (i = 0; i < msgs->len; i++) {
+> +		u8 len = 0;
+>  		result = i2c_imx_trx_complete(i2c_imx);
+>  		if (result)
+>  			return result;
+> +		/*
+> +		 * First byte is the length of remaining packet
+> +		 * in the SMBus block data read. Add it to
+> +		 * msgs->len.
+> +		 */
+> +		if ((!i) && (block_data)) {
 
-autofs
-=3D=3D=3D=3D=3D=3D
+if (!i && block_data)
 
-The package can be found at:
+> +			len = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
+> +			if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX))
+> +				return -EPROTO;
+> +			dev_dbg(&i2c_imx->adapter.dev,
+> +				"<%s> read length: 0x%X\n",
+> +				__func__, len);
+> +			msgs->len += len;
+> +		}
+>  		if (i == (msgs->len - 1)) {
+>  			/* It must generate STOP before read I2DR to prevent
+>  			   controller from generating another clock cycle */
+> @@ -510,7 +531,10 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
+>  			temp |= I2CR_TXAK;
+>  			imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+>  		}
+> -		msgs->buf[i] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
+> +		if ((!i) && (block_data))
 
-ftp://ftp.kernel.org/pub/linux/daemons/autofs/v5
+Ditto
 
-It is autofs-5.1.0-beta1.tar.[gz|xz]
+Shawn
 
-No source rpm is there as it can be produced by using:
-
-rpmbuild -ts autofs-5.1.0-beta1.tar.gz
-
-and the binary rpm by using:
-
-rpmbuild -tb autofs-5.1.0-beta1.tar.gz
-
-See the README.amd-maps file for information about using amd format
-maps.
-
-Ian
-
---=-pISYbW3eMeTGKZf99V+U
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAABAgAGBQJTO8qUAAoJEOdnc4D1T9ipRYgP/3PMaUxHySCNX4g3YOV0oft5
-uJaUvSAWWR8fE5rB589CX8IiucYzSyLXlR/n1VrpsIihbrgfDDU7r1+lHVRQdwM2
-E5/SLE4ycm2MOfM32OlX1QamMZ51jVhM6pf6zQt9ZbWH0hM6zItx10H3nKnaBTtl
-Zru5+GkL5PKLiUGAxjCu8p1CuOlmLe4ej4yFvN/JHZALIcH6qlvNxbzpn7URCdxp
-6W1rmW10bmGXX783lbPVpv7o6945s+HPolvfqDwdEgYQlWjcPNyhyUwxsxeFtjPH
-B21Mj3sGXAbmBGbfTN23i+lRHg6HGQAiNa3GpLTrHj3IAaU8XOszHtlXdAsCk9H+
-OOhjG8VgcqAN9vQfwW8sEIxOOOI3ZEOaRSToUscOaYLd89IXWHPTzP7+8MJraxIS
-nJC9FEfZCbAv0TH5R8mRMN3q1BxzX5kZM2ePUdu+bPqriaUQa4pLlCo0QwyTQt74
-lEBpSngox1JSZSBe94BeQSGgCl/EOVQNP7XYi8ewcb67qRhlIpx5/lmAmGusnmLQ
-9gTUXtxKW8b6g7EHBY7pRUmDt0Pslt3N8i4NJ3lSOaGOU1kXknfbVt59NPB8U6dw
-09XpG5hvE4m96SynhThN8UX4r3L/oqXnsnutr9fDDsP1epbf3s7uRZCzcf+U7Ggk
-0f8HR/7DLFVeqKGuhFCw
-=hil/
------END PGP SIGNATURE-----
-
---=-pISYbW3eMeTGKZf99V+U--
+> +			msgs->buf[0] = len;
+> +		else
+> +			msgs->buf[i] =  imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
+>  		dev_dbg(&i2c_imx->adapter.dev,
+>  			"<%s> read byte: B%d=0x%X\n",
+>  			__func__, i, msgs->buf[i]);
+> @@ -583,7 +607,8 @@ fail0:
+>  
+>  static u32 i2c_imx_func(struct i2c_adapter *adapter)
+>  {
+> -	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
+> +		| I2C_FUNC_SMBUS_READ_BLOCK_DATA;
+>  }
+>  
+>  static struct i2c_algorithm i2c_imx_algo = {
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
 
