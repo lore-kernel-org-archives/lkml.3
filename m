@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698AbaDBMQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 08:16:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6180 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758663AbaDBMQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 08:16:42 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Rui Wang <rui.y.wang@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
-        tony.luck@intel.com, ruiv.wang@gmail.com,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] x86, apic, Fix missing replacement for VECTOR_UNDEFINED
-Date: Wed,  2 Apr 2014 08:16:30 -0400
-Message-Id: <1396440990-18484-1-git-send-email-prarit@redhat.com>
+	id S1758711AbaDBMRC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 08:17:02 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60569 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758526AbaDBMRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 08:17:00 -0400
+X-Nat-Received: from [202.181.97.72]:55170 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1396441018.1103
+To: struan.bartlett@gmail.com, mpm@selenic.com
+Cc: linux-kernel@vger.kernel.org, schwab@linux-m68k.org,
+        netdev@vger.kernel.org, davem@davemloft.net, nikolay@redhat.com,
+        andy.shevchenko@gmail.com, gregkh@linuxfoundation.org,
+        jiri@resnulli.us, joe@perches.com, alonid@postram.com
+Subject: Re: [PATCH v2] netconsole: Add tty driver
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <533B2F03.6060008@gmail.com>
+In-Reply-To: <533B2F03.6060008@gmail.com>
+Message-Id: <201404022116.HIB82683.FOJMFFHVStOLOQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 2 Apr 2014 21:16:56 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 02042014 #7733682, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending ... making sure this wasn't dropped for some reason.
+Struan Bartlett wrote:
+> Adds tty driver to netconsole module. When module is loaded,
+> creates /dev/netcon0 device and enables support for console=netcon0
+> kernel cmdline option, causing /dev/console output to be sent to
+> /dev/netcon0. This allows startup/shutdown script output from
+> headless platforms to be logged over (secure) network.
 
-Previously sent here: http://marc.info/?l=linux-kernel&m=139397268027681&w=2
+Excuse me, but I think that the netconsole logging can work only during network
+interfaces (e.g. eth0) are up. Did this patch description assume that the
+network interfaces are up before the startup script is started and the shutdown
+script is finished before the network interfaces are down?
 
-P.
-
----8<---
-
-linux.git commit 9345005f4eed805308193658d12e4e7e9c261e74 added
-a definition for VECTOR_UNDEFINED = -1.  There is a missing replacement in
-the io_apic.c file.  Found during debugging of another issue.
-
-Cc: Rui Wang <rui.y.wang@intel.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Yang Zhang <yang.z.zhang@Intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: janet.morgan@Intel.com
-Cc: tony.luck@Intel.com
-Cc: ruiv.wang@gmail.com
-Cc: David Rientjes <rientjes@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
----
- arch/x86/kernel/apic/io_apic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6ad4658..bf97b64 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2240,7 +2240,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
- 			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
- 			goto unlock;
- 		}
--		__this_cpu_write(vector_irq[vector], -1);
-+		__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
- unlock:
- 		raw_spin_unlock(&desc->lock);
- 	}
--- 
-1.7.9.3
-
+By the way, I uploaded a logger specialized for receiving netconsole messages
+to http://sourceforge.jp/projects/akari/scm/svn/tree/head/branches/udplogger/ .
+The shortage of netconsole approach compared to serial console approach is that
+the netconsole logging cannot work if the network interfaces are down. If we
+could log kernel messages via the netconsole module while initializing kdump
+kernel by adding console=netcon0 to kdump kernel's command line, we can utilize
+netconsole as an alternative tool for logging kernel messages in case
+initialization of kdump kernel fails.
