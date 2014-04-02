@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103AbaDBTff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:35:35 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:44132 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932993AbaDBTfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:35:33 -0400
+	id S1030238AbaDBTf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:35:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21929 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932993AbaDBTf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 15:35:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,782,1389772800"; 
+   d="scan'208";a="505576307"
+Date: Wed, 2 Apr 2014 15:27:59 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 04/22] Change direct_access calling convention
+Message-ID: <20140402192759.GD27299@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <214af2a38d840d0b8e983d39d03711d1292bc2d6.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140329163028.GD1211@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA4G9NtixrwN3H+e2jmj=oLHZO2JfERqm70ama+zh_DUWw@mail.gmail.com>
-References: <CA+5PVA787+k0TVFUuo6PxNWMwffWDKixmt2C+E4_9szUJatYkw@mail.gmail.com>
-	<20140402164709.GI29256@twin.jikos.cz>
-	<CA+5PVA4G9NtixrwN3H+e2jmj=oLHZO2JfERqm70ama+zh_DUWw@mail.gmail.com>
-Date: Wed, 2 Apr 2014 15:35:33 -0400
-X-Google-Sender-Auth: l3cora1r9x4hCvY9H0Xy6SqcxpI
-Message-ID: <CA+5PVA5H_03YmiC-atypY34QsNTN_3a6iTbFKhgihc-bCEWfvw@mail.gmail.com>
-Subject: Re: Btrfs lockdep with 3.15 merge window v3.14-751-g683b6c6f82a6
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: dsterba@suse.cz
-Cc: Chris Mason <clm@fb.com>, jbacik@fb.com,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140329163028.GD1211@quack.suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 12:56 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> On Wed, Apr 2, 2014 at 12:47 PM, David Sterba <dsterba@suse.cz> wrote:
->> On Tue, Apr 01, 2014 at 06:23:11PM -0400, Josh Boyer wrote:
->>> Below is a lockdep spew I have on a local VM running Linus' tree as of
->>> this afternoon.  The specific git commit is v3.14-751-g683b6c6f82a6.
->>
->>> [  295.349016]        CPU0                    CPU1
->>> [  295.349016]        ----                    ----
->>> [  295.349016]   lock(&found->groups_sem);
->>> [  295.349016]                                local_irq_disable();
->>> [  295.349016]                                lock(&delayed_node->mutex);
->>> [  295.349016]                                lock(&found->groups_sem);
->>> [  295.349016]   <Interrupt>
->>> [  295.349016]     lock(&delayed_node->mutex);
->>
->> Fixed by https://patchwork.kernel.org/patch/3894781/
->
-> Thanks for the pointer!  I'll grab that and give it a shot on my VM.
+On Sat, Mar 29, 2014 at 05:30:28PM +0100, Jan Kara wrote:
+> > @@ -379,7 +379,9 @@ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+> >  	*kaddr = page_address(page);
+> >  	*pfn = page_to_pfn(page);
+> >  
+> > -	return 0;
+> > +	/* Could optimistically check to see if the next page in the
+> > +	 * file is mapped to the next page of physical RAM */
+> > +	return PAGE_SIZE;
+>   This should be min_t(long, PAGE_SIZE, size), shouldn't it?
 
-FWIW, this does seem to make the issue go away in my VM after testing
-it for a while.  Thanks again for the pointer.
+Yes, it should.  In practice, I don't think anyone's calling it with
+size < PAGE_SIZE, but we might as well future-proof it.
 
-josh
+> > @@ -866,25 +866,26 @@ fail:
+> >  	bio_io_error(bio);
+> >  }
+> >  
+> > -static int
+> > +static long
+> >  dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+> > -			void **kaddr, unsigned long *pfn)
+> > +			void **kaddr, unsigned long *pfn, long size)
+> >  {
+> >  	struct dcssblk_dev_info *dev_info;
+> > -	unsigned long pgoff;
+> > +	unsigned long offset, dev_sz;
+
+> > -	return 0;
+> > +	return min_t(unsigned long, size, dev_sz - offset);
+>                      ^^^ Why unsigned? Everything seems to be long...
+
+offset is unsigned long ... but might as well do the comparison in signed
+as unsigned.  'size' shouldn't be passed in as < 0 anyway.
