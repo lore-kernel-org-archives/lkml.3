@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030449AbaDBV3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 17:29:05 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:64594 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030420AbaDBV3B (ORCPT
+	id S933265AbaDBV3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 17:29:55 -0400
+Received: from mail-pb0-f74.google.com ([209.85.160.74]:53488 "EHLO
+	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933034AbaDBV3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 17:29:01 -0400
+	Wed, 2 Apr 2014 17:29:52 -0400
+Date: Wed, 2 Apr 2014 14:29:49 -0700
+From: Yu Zhao <yuzhao@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        jamieliu@google.com, suleiman@google.com
+Subject: Re: [PATCH v2 0/3] Per-cgroup swap file support
+Message-ID: <20140402212949.GA29322@google.com>
+References: <1396470849-26154-1-git-send-email-yuzhao@google.com>
+ <20140402205433.GW14688@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <20140228205358.GA5340@xanatos>
-References: <1392959535-29654-1-git-send-email-jwerner@chromium.org>
-	<20140228205358.GA5340@xanatos>
-Date: Wed, 2 Apr 2014 14:29:00 -0700
-X-Google-Sender-Auth: q6L1h0QVmxdKwzFMVbe-dJJPHak
-Message-ID: <CAODwPW9ziqrT2THof7D6Y6_AVbk9Mvo9YteLJp7-KstAKoSzSA@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci: Prefer endpoint context dequeue pointer over stopped_trb
-From: Julius Werner <jwerner@chromium.org>
-To: "Nyman, Mathias" <mathias.nyman@intel.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140402205433.GW14688@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mathias,
+On Wed, Apr 02, 2014 at 04:54:33PM -0400, Johannes Weiner wrote:
+> On Wed, Apr 02, 2014 at 01:34:06PM -0700, Yu Zhao wrote:
+> > This series of patches adds support to configure a cgroup to swap to a
+> > particular file by using control file memory.swapfile.
+> > 
+> > Originally, cgroups share system-wide swap space and limiting cgroup swapping
+> > is not possible. This patchset solves the problem by adding mechanism that
+> > isolates cgroup swap spaces (i.e. per-cgroup swap file) so users can safely
+> > enable swap for particular cgroups without worrying about one cgroup uses up
+> > all swap space.
+> 
+> Isn't that what the swap controller is for?
 
-> The patch looks fine.  Mathias is taking over for xHCI driver
-> maintainership in 3.15.  He's currently handling queuing bug fix patches
-> for 3.14 while I finish queueing feature patches for 3.15.  Mathias,
-> will you test and queue this up for 3.14?
+Well, I should've used word "isolating" instead of "limiting" (and yes, the
+example I gave is confusing too). MEMCG_SWAP limits swaping while per-cgroup
+swap file not only limits but also isolates the swap space. In another word,
+per-cgroup swap file acts like the cgroup owns its private swap file which
+can be specified to a particular path when users want the cgroup to swap to
+a disk volumes rather than the one used by default (system-wide) swap files.
 
-Did you pick this patch up anywhere yet or are there still issues with
-it? I just want to make sure it doesn't slip through the cracks.
-(Maybe I just didn't see it yet... are you still queueing patches in
-sarah/xhci.git or do you have your own repository somewhere?)
+> 
+> config MEMCG_SWAP
+> 	bool "Memory Resource Controller Swap Extension"
+> 	depends on MEMCG && SWAP
+> 	help
+> 	  Add swap management feature to memory resource controller. When you
+> 	  enable this, you can limit mem+swap usage per cgroup. In other words,
+> 	  when you disable this, memory resource controller has no cares to
+> 	  usage of swap...a process can exhaust all of the swap. This extension
+> 	  is useful when you want to avoid exhaustion swap but this itself
+> 	  adds more overheads and consumes memory for remembering information.
+> 	  Especially if you use 32bit system or small memory system, please
+> 	  be careful about enabling this. When memory resource controller
+> 	  is disabled by boot option, this will be automatically disabled and
+> 	  there will be no overhead from this. Even when you set this config=y,
+> 	  if boot option "swapaccount=0" is set, swap will not be accounted.
+> 	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+> 	  size is 4096bytes, 512k per 1Gbytes of swap.
