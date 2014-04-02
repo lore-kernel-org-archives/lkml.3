@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192AbaDBUZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:25:08 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51396 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932993AbaDBUZE (ORCPT
+	id S933303AbaDBUZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:25:58 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42832 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758875AbaDBUN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:25:04 -0400
-Message-ID: <533C721E.1080004@gmail.com>
-Date: Wed, 02 Apr 2014 22:25:02 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Florian Fainelli <f.fainelli@gmail.com>,
-        Alexander Holler <holler@ahsoftware.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
- for Marvel 88E1116R PHYs
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com>
-In-Reply-To: <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Apr 2014 16:13:28 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 29/40] Input: synaptics - add manual min/max quirk for ThinkPad X240
+Date: Wed,  2 Apr 2014 22:13:15 +0200
+Message-Id: <19f8ac05819e1988ff2a5c634e355d1ad955f507.1396469191.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
+References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
+In-Reply-To: <cover.1396469191.git.jslaby@suse.cz>
+References: <cover.1396469191.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 09:01 PM, Florian Fainelli wrote:
-> 2014-04-02 2:09 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
->> Am 02.04.2014 02:57, schrieb Florian Fainelli:
->>> 2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
->>>> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
->>>> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
->>>> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
->>>> was broken such, that it used mdelay() instead of really waiting for a
->>>> reset to finish.
->
-> Can you resubmit with the following information:
-> 
-> - you specify the commit that introduce the problem in parenthesis,
-> e.g: deadbeef ("dead: beef: cafe babe")
-> - put this dmesg snippet in your log message to clearly illustrate
-> what is happening
-> - clarify that the PHY needs to be polled in a comment in
-> m88e1116r_config_init()
-> 
-> Meanwhile, it would be good if someone with access to this particular
-> PHY datasheet could look for known erratas, problems, non-standard
-> compliant behavior ....
+From: Hans de Goede <hdegoede@redhat.com>
 
-Alexander,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I tried todays linux/master on Seagate Dockstar with Marvell 88E1116R
-(0x01410e40) and cannot reproduce any regression. I tried booting from
-tftp and usb, I also rebooted twice to see if there are any side
-effects - nothing - ethernet always comes up as expected.
+===============
 
-I am curious, how you determined above commit to be the cause of the
-regression you are seeing. Can you bisect, if you didn't already?
+commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
 
-Sebastian
+This extends Benjamin Tissoires manual min/max quirk table with support for
+the ThinkPad X240.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/input/mouse/synaptics.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index ef148f997c84..d8d49d10f9bb 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1507,6 +1507,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1024, 5052, 2258, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad X240 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-- 
+1.9.1
+
