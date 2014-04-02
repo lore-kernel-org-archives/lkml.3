@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933518AbaDBXNV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 19:13:21 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:44337 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933423AbaDBXNT (ORCPT
+	id S933539AbaDBXNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 19:13:31 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:47720 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933423AbaDBXN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 19:13:19 -0400
-Date: Thu, 3 Apr 2014 01:12:35 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Struan Bartlett <struan.bartlett@gmail.com>
-Cc: Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
-        Andreas Schwab <schwab@linux-m68k.org>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Pirko <jiri@resnulli.us>, Joe Perches <joe@perches.com>,
-        Dan Aloni <alonid@postram.com>
-Subject: Re: [PATCH v3] netconsole: Add tty driver
-Message-ID: <20140402231235.GA5013@electric-eye.fr.zoreil.com>
-References: <20140402185904.GD11734@NewsNow.co.uk>
+	Wed, 2 Apr 2014 19:13:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402185904.GD11734@NewsNow.co.uk>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140402221212.GD16570@mguzik.redhat.com>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+	<20140402221212.GD16570@mguzik.redhat.com>
+Date: Wed, 2 Apr 2014 16:13:27 -0700
+X-Google-Sender-Auth: unb6rxuPT011G5LSzuQMFNk-ErE
+Message-ID: <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Struan Bartlett <struan.bartlett@gmail.com> :
-[...]
-> --- a/drivers/net/netconsole.c	2014-03-31 04:40:15.000000000 +0100
-> +++ b/drivers/net/netconsole.c	2014-04-01 11:58:50.000000000 +0100
-> @@ -15,6 +15,7 @@
->   *               generic card hooks
->   *               works non-modular
->   * 2003-09-07    rewritten with netpoll api
-> + * 2014-03-31    tty driver by Struan Bartlett
+On Wed, Apr 2, 2014 at 3:12 PM, Mateusz Guzik <mguzik@redhat.com> wrote:
+>
+> Well, parsing kernel cmdline by systemd is a bad idea
 
-Useless.
+No, we very much expose /proc/cmdline for a reason. System services
+are *supposed* to parse it, because it gives a unified way for people
+to pass in various flags. The kernel doesn't complain about flags it
+doesn't recognize, exactly because the kernel realizes that "hey,
+maybe this flag is for something else".
 
-[...]
-> +static int netconsole_tty_put_char(struct tty_struct *tty, unsigned char ch)
-> +{
-> +	char temp[2] = { ch, 0 };
-> +	_write_msg(temp, 1);
+The classic example of this is things like "charset" markers, but also
+options to modules that modprobe parses etc etc.
 
-Please add an empty line after declaration.
+And yes, that does include "quiet" and "debug". Parsing them and doing
+something sane with them is not a bug, it's a feature.
 
-[...]
-> @@ -802,11 +857,39 @@ static int __init init_netconsole(void)
->  	if (err)
->  		goto undonotifier;
->  
-> +	netconsole_tty_driver = alloc_tty_driver(1);
+But the problem appears when system services seem to think that they
+*own* those flags, and nothing else matters, and they don't do
+something "sane" any more.
 
-alloc_tty_driver is said deprecated in include/linux/tty_driver.h
+And the thing is, this has never really been a problem in practice.
+Because nobody minds if some kernel option like "debug" makes not only
+the kernel enable debugging, but some system deamon log a bit more
+too.
 
-http://marc.info/?l=linux-netdev&m=139629339513575 may delay things a bit.
-If so please be patient.
+HOWEVER.
 
--- 
-Ueimor
+It does become a problem when you have a system service developer who
+thinks the universe revolves around him, and nobody else matters, and
+people sending him bug-reports are annoyances that should be ignored
+rather than acknowledged and fixed. At that point, it's a problem.
+
+It looks like Greg has stepped in as a baby-sitter for Kay, and things
+are going to be fixed. And I'd really like to avoid adding hacky code
+to the kernel because of Kay's continued bad behavior, so I hope this
+works. But it's really sad that things like this get elevated to this
+kind of situation, and I personally find it annoying that it's always
+the same f*cking primadonna involved.
+
+Steven, Borislav, one thing that strikes me might be a good idea is to
+limit the amount of non-kernel noise in dmesg. We already have the
+concept of rate-limiting various spammy internal kernel messages for
+when device drivers misbehave etc. Maybe we can just add rate-limiting
+to the interfaces that add messages to the kernel buffers, and work
+around this problem that way instead while waiting for Gregs fix to
+percolate? Or are the systemd debug messages going to so many other
+places too that that wouldn't really help?
+
+          Linus
