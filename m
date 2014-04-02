@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122AbaDBTs0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:48:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50459 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaDBTsY (ORCPT
+	id S933132AbaDBTu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:50:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54977 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932688AbaDBTu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:48:24 -0400
-Date: Wed, 2 Apr 2014 20:48:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140402194812.GK14763@sirena.org.uk>
-References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
- <1396433349-31470-3-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 2 Apr 2014 15:50:26 -0400
+Date: Wed, 2 Apr 2014 21:50:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+In-Reply-To: <20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1404022146530.14882@ionos.tec.linutronix.de>
+References: <20140402144219.4cafbe37@gandalf.local.home> <20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wRokNccIwvMzawGl"
-Content-Disposition: inline
-In-Reply-To: <1396433349-31470-3-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 2/3] regmap: Add the DT binding documentation for
- endianness
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 Apr 2014, Andrew Morton wrote:
+> On Wed, 2 Apr 2014 14:42:19 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > It has come to our attention that a system running a specific user
+> > space init program will not boot if you add "debug" to the kernel
+> > command line. What happens is that the user space tool parses the
+> > kernel command line, and if it sees "debug" it will spit out so much
+> > information that the system fails to boot. This basically renders the
+> > "debug" option for the kernel useless.
+> > 
+> > This bug has been reported to the developers of said tool
+> > here:
+> > 
+> >   https://bugs.freedesktop.org/show_bug.cgi?id=76935
+> > 
+> > The response is:
+> > 
+> > "Generic terms are generic, not the first user owns them."
+> > 
+> > That is, the "debug" statement on the *kernel* command line is not
+> > owned by the kernel just because it was the first user of it, and
+> > they refuse to fix their bug.
+> > 
+> > Well, my response is, we OWN the kernel command line, and as such, we
+> > can keep the users from seeing stuff on it if we so choose. And with
+> > that, I propose this patch, which hides "debug" from /proc/cmdline,
+> > such that we don't have to worry about tools parsing for it and causing
+> > hardship for those trying to debug the kernel.
+> > 
+> 
+> I had to check the date on this but surprisingly, it's all post
+> April 1.
+> 
+> --- a/fs/read_write.c~a
+> +++ a/fs/read_write.c
+> @@ -513,6 +513,8 @@ SYSCALL_DEFINE3(read, unsigned int, fd,
+>  	struct fd f = fdget_pos(fd);
+>  	ssize_t ret = -EBADF;
+>  
+> +	BUG_ON(!strcmp(current->comm, "systemd"));
 
---wRokNccIwvMzawGl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Can we make that strncmp(current->comm, "systemd", 7) please? So we
+catch the systemd-xxx stuff as well!
 
-On Wed, Apr 02, 2014 at 06:09:08PM +0800, Xiubo Li wrote:
+Otherwise Acked-by-me
 
-> +sai2: sai@40031000 {
-> +	      compatible = "fsl,vf610-sai";
-> +	      reg = <0x40031000 0x1000>;
-> +	      ...
-> +	      val-endian = 'LE';
-> +};
-
-This is mostly OK as a binding (though it should be CCed to the DT list
-and maintiners as all DT bindings should) except using upper case
-doesn't really seem idiomatic for DT - lower case is more normal - and I
-don't think we can make these properties mandatory in themselves.
-Individual bindings would need to make them mandatory.  It's also odd to
-have a mandatory property which may be absent!
-
-It'd probably be better if the binding defined what the default
-endianess was too, or just didn't say what happens in cases where
-nothing is specified, the latter seems better.  Generally just not
-mentioning regmap is better for a binding definition, the binding should
-be usable by all OSs and not just Linux.
-
---wRokNccIwvMzawGl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPGl5AAoJELSic+t+oim92VwQAJHm2vYiFQuwMgF7nTDV/BxI
-xLf85c6tcmFIZY0hLIEL2EBZ8At6PyKUFjbW1/XT12SAAtnM80jBVOB8xvU2esER
-tqPyygLAo/ExQQU4csJP7vs3rcFHJwSmgV+Nfg235v+wPbjhHdl1g4zK5Pxe/7st
-FjwvWQyTlTyxAx8pqEqYewD+FZ/tvp858r/Fap3D2RmzWvQPXk2Yb6p3Rn+G6aHC
-dOEly+MSo7dClAhq/KWpvshmf4HRm3T1wvzlK1xhOxRDvmNM3T7TKH0+RUiDKNjR
-+doKZhnTRDOB+OBrsCRrSoZJ7UnAaSklMneYwRQCW9HMLn3xO+zgGl3dLu+V9T6s
-MWPRl4fmqy8NLklIoYmF+NLVcBRnf2oV3cezMQRdHRQxDNkFeo/rImS+2rEw7GKb
-HBi89G7lH6BfEW+Hh9balsiO/N+ROducDnOFo2lDsrrgWEb4hrRYUEsYbBAO7F7k
-yMNnn5LwxaHsemtfgfMr7yPeTLE/IlC2lV3Zde55poPdzrgiUxvJeD0vN5whHopF
-bHStBb0qjNEl8Jqcho6r1TwHGL8/Xmrg5RUglZnWjIWqpEBCzmNn+RfYuScc6A+f
-EcLT8dct4NQJwj2HjBZgJUxkosqby285JS0dNqxaAfMs1u6Xin8FRpe0JjGI62j8
-JY7jiL/oR0YqmfIY1nDZ
-=U21g
------END PGP SIGNATURE-----
-
---wRokNccIwvMzawGl--
+	  tglx
