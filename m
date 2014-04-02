@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582AbaDBKxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 06:53:33 -0400
-Received: from [216.32.181.185] ([216.32.181.185]:48293 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1758509AbaDBKxb (ORCPT
+	id S1758598AbaDBKxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 06:53:39 -0400
+Received: from [65.55.88.13] ([65.55.88.13]:53077 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1758509AbaDBKxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 06:53:31 -0400
+	Wed, 2 Apr 2014 06:53:34 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
@@ -14,9 +14,9 @@ From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <broonie@kernel.org>
 CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv2 1/3] regmap: implement LE formatting/parsing for 16/32-bit values.
-Date: Wed, 2 Apr 2014 18:09:07 +0800
-Message-ID: <1396433349-31470-2-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv2 3/3] regmap: add DT endianness binding support.
+Date: Wed, 2 Apr 2014 18:09:09 +0800
+Message-ID: <1396433349-31470-4-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
@@ -29,142 +29,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow busses to request little endianness formatting and
-parsing for 16- and 32-bit values. This will be useful to
-support regmap-mmio.
+For many drivers which will support rich endianness of CPU<-->Dev
+need define DT properties by itself without the binding support.
 
-For the following the scenarios using the regmap-mmio,
-for example:
+The value endianness using regmap-mmio, for example:
+Index    CPU       Device     Endianess flag for DT property
+------------------------------------------------------------
+1        LE        LE         -
+2        LE        BE         'big-endian'
+3        BE        BE         -
+4        BE        LE         'little-endian'
 
-Index    CPU       Device     Endianess flag for values
-----------------------------------------------------------
-1        LE        LE         REGMAP_ENDIAN_DEFAULT/NATIVE
-2        LE        BE         REGMAP_ENDIAN_BIG
-3        BE        BE         REGMAP_ENDIAN_DEFAULT/NATIVE
-4        BE        LE         REGMAP_ENDIAN_LITTLE
+============
 
-For one device driver, which will support all the cases above,
-needs two boolean properties in DT node like: 'big-endian'
-for case 2 and 'little-endian' for case 4, and for cases 1
-and 3 they all will be absent.
+Here add DT endianness binding support will define two string
+properties of the register and value endiannesses:
+
+'reg-endian' and 'val-endian'.
+
+And the value of them will be:
+'LE' : REGMAP_ENDIAN_LITTLE
+'BE' : REGMAP_ENDIAN_BIG
+'NT' : REGMAP_ENDIAN_NATIVE
+Absent : REGMAP_ENDIAN_DEFAULT
+
+The value endianness using regmap-mmio, for example:
+Index    CPU       Device     Endianess flag for DT property
+------------------------------------------------------------
+1        LE        LE         'NT' or absent
+2        LE        BE         'BE'
+3        BE        BE         'NT' or absent
+4        BE        LE         'LE'
+
+Please see the following documetation for detail usage:
+    Documentation/devicetree/bindings/regmap/regmap-endianness.txt
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- drivers/base/regmap/regmap.c | 52 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
+ drivers/base/regmap/regmap.c | 91 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 80 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 6a19515..8e8cea1 100644
+index 8e8cea1..36a96cc 100644
 --- a/drivers/base/regmap/regmap.c
 +++ b/drivers/base/regmap/regmap.c
-@@ -192,6 +192,13 @@ static void regmap_format_16_be(void *buf, unsigned int val, unsigned int shift)
- 	b[0] = cpu_to_be16(val << shift);
+@@ -15,6 +15,7 @@
+ #include <linux/export.h>
+ #include <linux/mutex.h>
+ #include <linux/err.h>
++#include <linux/of.h>
+ #include <linux/rbtree.h>
+ #include <linux/sched.h>
+ 
+@@ -423,6 +424,78 @@ static void regmap_range_exit(struct regmap *map)
  }
  
-+static void regmap_format_16_le(void *buf, unsigned int val, unsigned int shift)
+ /**
++ * of_regmap_endian_get_by_name() - Parse and lookup the endianness referenced
++ * by a device node
++ * @np: pointer to clock consumer node
++ * @name: name of consumer's endianness input
++ *
++ * This function parses the device endianness property, and uses them to
++ * determine the endianness of the registers and values.
++ */
++static int of_regmap_endian_get_by_name(struct device_node *np,
++					const char *endian_name,
++					enum regmap_endian *out_endian)
 +{
-+	__le16 *b = buf;
++	const char *endianness;
++	int ret;
 +
-+	b[0] = cpu_to_le16(val << shift);
++	if (!out_endian)
++		return -EINVAL;
++
++	/* Set the default endianness */
++	*out_endian = REGMAP_ENDIAN_DEFAULT;
++
++	/* Absent or being to use the flag from config of the drivers */
++	if (!of_find_property(np, endian_name, NULL))
++		return 0;
++
++	ret = of_property_read_string(np, endian_name, &endianness);
++	if (ret)
++		return ret;
++
++	if (!strcmp("LE", endianness))
++		*out_endian = REGMAP_ENDIAN_LITTLE;
++	else if (!strcmp("BE", endianness))
++		*out_endian = REGMAP_ENDIAN_BIG;
++	else if (!strcmp("NT", endianness))
++		*out_endian = REGMAP_ENDIAN_NATIVE;
++
++	return 0;
 +}
 +
- static void regmap_format_16_native(void *buf, unsigned int val,
- 				    unsigned int shift)
- {
-@@ -216,6 +223,13 @@ static void regmap_format_32_be(void *buf, unsigned int val, unsigned int shift)
- 	b[0] = cpu_to_be32(val << shift);
- }
++static int of_regmap_get_endian(struct device *dev,
++				const struct regmap_bus *bus,
++				const struct regmap_config *config,
++				const char *endian_name,
++				enum regmap_endian *out_endian)
++{
++	int ret;
++
++	if (!out_endian)
++		return -EINVAL;
++
++	if (dev) {
++		ret = of_regmap_endian_get_by_name(dev->of_node, endian_name,
++						   out_endian);
++		if (ret)
++			return ret;
++	}
++
++	/* To be compatible with the none DT or the old drivers */
++	if (*out_endian != REGMAP_ENDIAN_DEFAULT)
++		return 0;
++
++	/* Parsing the endianness from driver's config or bus */
++	*out_endian = config->reg_format_endian;
++	if (*out_endian == REGMAP_ENDIAN_DEFAULT)
++		*out_endian = bus->reg_format_endian_default;
++	if (*out_endian == REGMAP_ENDIAN_DEFAULT)
++		*out_endian = REGMAP_ENDIAN_BIG;
++
++	return 0;
++}
++
++/**
+  * regmap_init(): Initialise register map
+  *
+  * @dev: Device that will be interacted with
+@@ -518,17 +591,13 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->reg_read  = _regmap_bus_read;
+ 	}
  
-+static void regmap_format_32_le(void *buf, unsigned int val, unsigned int shift)
-+{
-+	__le32 *b = buf;
+-	reg_endian = config->reg_format_endian;
+-	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
+-		reg_endian = bus->reg_format_endian_default;
+-	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
+-		reg_endian = REGMAP_ENDIAN_BIG;
+-
+-	val_endian = config->val_format_endian;
+-	if (val_endian == REGMAP_ENDIAN_DEFAULT)
+-		val_endian = bus->val_format_endian_default;
+-	if (val_endian == REGMAP_ENDIAN_DEFAULT)
+-		val_endian = REGMAP_ENDIAN_BIG;
++	ret = of_regmap_get_endian(dev, bus, config, "reg_endian", &reg_endian);
++	if (ret)
++		return ERR_PTR(ret);
 +
-+	b[0] = cpu_to_le32(val << shift);
-+}
-+
- static void regmap_format_32_native(void *buf, unsigned int val,
- 				    unsigned int shift)
- {
-@@ -240,6 +254,13 @@ static unsigned int regmap_parse_16_be(const void *buf)
- 	return be16_to_cpu(b[0]);
- }
++	ret = of_regmap_get_endian(dev, bus, config, "val_endian", &val_endian);
++	if (ret)
++		return ERR_PTR(ret);
  
-+static unsigned int regmap_parse_16_le(const void *buf)
-+{
-+	const __le16 *b = buf;
-+
-+	return le16_to_cpu(b[0]);
-+}
-+
- static void regmap_parse_16_be_inplace(void *buf)
- {
- 	__be16 *b = buf;
-@@ -247,6 +268,13 @@ static void regmap_parse_16_be_inplace(void *buf)
- 	b[0] = be16_to_cpu(b[0]);
- }
- 
-+static void regmap_parse_16_le_inplace(void *buf)
-+{
-+	__le16 *b = buf;
-+
-+	b[0] = le16_to_cpu(b[0]);
-+}
-+
- static unsigned int regmap_parse_16_native(const void *buf)
- {
- 	return *(u16 *)buf;
-@@ -269,6 +297,13 @@ static unsigned int regmap_parse_32_be(const void *buf)
- 	return be32_to_cpu(b[0]);
- }
- 
-+static unsigned int regmap_parse_32_le(const void *buf)
-+{
-+	const __le32 *b = buf;
-+
-+	return le32_to_cpu(b[0]);
-+}
-+
- static void regmap_parse_32_be_inplace(void *buf)
- {
- 	__be32 *b = buf;
-@@ -276,6 +311,13 @@ static void regmap_parse_32_be_inplace(void *buf)
- 	b[0] = be32_to_cpu(b[0]);
- }
- 
-+static void regmap_parse_32_le_inplace(void *buf)
-+{
-+	__le32 *b = buf;
-+
-+	b[0] = le32_to_cpu(b[0]);
-+}
-+
- static unsigned int regmap_parse_32_native(const void *buf)
- {
- 	return *(u32 *)buf;
-@@ -585,6 +627,11 @@ struct regmap *regmap_init(struct device *dev,
- 			map->format.parse_val = regmap_parse_16_be;
- 			map->format.parse_inplace = regmap_parse_16_be_inplace;
- 			break;
-+		case REGMAP_ENDIAN_LITTLE:
-+			map->format.format_val = regmap_format_16_le;
-+			map->format.parse_val = regmap_parse_16_le;
-+			map->format.parse_inplace = regmap_parse_16_le_inplace;
-+			break;
- 		case REGMAP_ENDIAN_NATIVE:
- 			map->format.format_val = regmap_format_16_native;
- 			map->format.parse_val = regmap_parse_16_native;
-@@ -606,6 +653,11 @@ struct regmap *regmap_init(struct device *dev,
- 			map->format.parse_val = regmap_parse_32_be;
- 			map->format.parse_inplace = regmap_parse_32_be_inplace;
- 			break;
-+		case REGMAP_ENDIAN_LITTLE:
-+			map->format.format_val = regmap_format_32_le;
-+			map->format.parse_val = regmap_parse_32_le;
-+			map->format.parse_inplace = regmap_parse_32_le_inplace;
-+			break;
- 		case REGMAP_ENDIAN_NATIVE:
- 			map->format.format_val = regmap_format_32_native;
- 			map->format.parse_val = regmap_parse_32_native;
+ 	switch (config->reg_bits + map->reg_shift) {
+ 	case 2:
 -- 
 1.8.4
 
