@@ -1,156 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139AbaDBTcM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:32:12 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59356 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056AbaDBT3h (ORCPT
+	id S933154AbaDBTdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:33:06 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:56364 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932965AbaDBTdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:29:37 -0400
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
-        devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 2/5] ARM: dts: revise kona clock binding document
-Date: Wed,  2 Apr 2014 14:29:58 -0500
-Message-Id: <1396467001-3551-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396467001-3551-1-git-send-email-elder@linaro.org>
-References: <1396467001-3551-1-git-send-email-elder@linaro.org>
+	Wed, 2 Apr 2014 15:33:04 -0400
+Date: Wed, 2 Apr 2014 15:33:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Kay Sievers <kay@vrfy.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-ID: <20140402153301.53cc7af5@gandalf.local.home>
+In-Reply-To: <20140402190851.GD21167@pd.tnic>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+	<20140402190851.GD21167@pd.tnic>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next patch defines a binding for a new Broadcom SoC that uses
-Kona style CCUs for its clocks.  Update the generic Kona clock
-binding document so it's more natural to accomodate the definitions
-of additional SoC families.
+On Wed, 2 Apr 2014 21:08:51 +0200
+Borislav Petkov <bp@alien8.de> wrote:
+ 
+> Well, maybe the minor nit that it leaves two spaces in /proc/cmdline now:
+> 
+> "root=/dev/sda1  ignore_loglevel log_buf_len=10M earlyprintk=ttyS0,115200 console=ttyS0,115200 console=tty0"
+> 
+> Also, you need to add
+> 
+> Suggested-by: PeterZ.
 
-Specifically:
-    - Define the compatible string values generically, referring
-      to specific per-model values later in the document.
-    - Put the device tree example immediately after the required
-      properties listing, before the tables of SoC-specific values.
-    - Clearly identify the start of the section defining specific
-      values related to the BCM281XX family
-    - Add a list of the specific BCM281XX family compatible strings.
-    - Reword the description of the table slightly.
+And surprisingly, I forgot to Cc him. How the heck did I miss that :-p
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- .../devicetree/bindings/clock/bcm-kona-clock.txt   |   87 +++++++++++---------
- 1 file changed, 47 insertions(+), 40 deletions(-)
+-- Steve
 
-diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-index 56d1f49..ebe3ab6 100644
---- a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-@@ -10,12 +10,12 @@ This binding uses the common clock binding:
- 
- Required properties:
- - compatible
--	Shall have one of the following values:
--	- "brcm,bcm11351-root-ccu"
--	- "brcm,bcm11351-aon-ccu"
--	- "brcm,bcm11351-hub-ccu"
--	- "brcm,bcm11351-master-ccu"
--	- "brcm,bcm11351-slave-ccu"
-+	Shall have a value of the form "brcm,<model>-<which>-ccu",
-+	where <model> is a Broadcom SoC model number and <which> is
-+	the name of a defined CCU.  For example:
-+	    "brcm,bcm11351-root-ccu"
-+	The compatible strings used for each supported SoC family
-+	are defined below.
- - reg
- 	Shall define the base and range of the address space
- 	containing clock control registers
-@@ -26,12 +26,48 @@ Required properties:
- 	Shall be an ordered list of strings defining the names of
- 	the clocks provided by the CCU.
- 
-+Device tree example:
- 
--BCM281XX family SoCs use Kona CCUs.  The following table defines
--the set of CCUs and clock specifiers for BCM281XX clocks.  When
--a clock consumer references a clocks, its symbolic specifier
--(rather than its numeric index value) should be used.  These
--specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
-+	slave_ccu: slave_ccu {
-+		compatible = "brcm,bcm11351-slave-ccu";
-+		reg = <0x3e011000 0x0f00>;
-+		#clock-cells = <1>;
-+		clock-output-names = "uartb",
-+				     "uartb2",
-+				     "uartb3",
-+				     "uartb4";
-+	};
-+
-+	ref_crystal_clk: ref_crystal {
-+		#clock-cells = <0>;
-+		compatible = "fixed-clock";
-+		clock-frequency = <26000000>;
-+	};
-+
-+	uart@3e002000 {
-+		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
-+		status = "disabled";
-+		reg = <0x3e002000 0x1000>;
-+		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
-+		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+	};
-+
-+BCM281XX family
-+---------------
-+CCU compatible string values for SoCs in the BCM281XX family are:
-+    "brcm,bcm11351-root-ccu"
-+    "brcm,bcm11351-aon-ccu"
-+    "brcm,bcm11351-hub-ccu"
-+    "brcm,bcm11351-master-ccu"
-+    "brcm,bcm11351-slave-ccu"
-+
-+The following table defines the set of CCUs and clock specifiers for
-+BCM281XX family clocks.  When a clock consumer references a clocks,
-+its symbolic specifier (rather than its numeric index value) should
-+be used.  These specifiers are defined in:
-+    "include/dt-bindings/clock/bcm281xx.h"
- 
-     CCU     Clock           Type    Index   Specifier
-     ---     -----           ----    -----   ---------
-@@ -62,32 +98,3 @@ specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
-     slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
-     slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
-     slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
--
--
--Device tree example:
--
--	slave_ccu: slave_ccu {
--		compatible = "brcm,bcm11351-slave-ccu";
--		reg = <0x3e011000 0x0f00>;
--		#clock-cells = <1>;
--		clock-output-names = "uartb",
--				     "uartb2",
--				     "uartb3",
--				     "uartb4";
--	};
--
--	ref_crystal_clk: ref_crystal {
--		#clock-cells = <0>;
--		compatible = "fixed-clock";
--		clock-frequency = <26000000>;
--	};
--
--	uart@3e002000 {
--		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
--		status = "disabled";
--		reg = <0x3e002000 0x1000>;
--		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
--		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
--		reg-shift = <2>;
--		reg-io-width = <4>;
--	};
--- 
-1.7.9.5
+> 
+> Other than that:
+> 
+> Vehemently-and-totally-acked-by: Borislav Petkov <bp@suse.de>
+> 
+> It is about time this idiotic shit stopped.
+> 
 
