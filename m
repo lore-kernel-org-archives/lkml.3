@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035AbaDBUOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:14:11 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42881 "EHLO
+	id S933196AbaDBUO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:14:58 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42883 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758955AbaDBUNc (ORCPT
+	by vger.kernel.org with ESMTP id S1758943AbaDBUNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:13:32 -0400
+	Wed, 2 Apr 2014 16:13:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 20/40] NFSv4.1 free slot before resending I/O to MDS
-Date: Wed,  2 Apr 2014 22:13:06 +0200
-Message-Id: <b6be966d5571c7844fee177581c7468035f79e23.1396469191.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 05/40] nfs: use IS_ROOT not DCACHE_DISCONNECTED
+Date: Wed,  2 Apr 2014 22:12:51 +0200
+Message-Id: <5ad410c5e34aad12e2523f25b32314791b823631.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -24,89 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Adamson <andros@netapp.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f9c96fcc501a43dbc292b17fc0ded4b54e63b79d upstream.
+commit a3f432bfd06a4ec3b812e32d3266e0d1ad75d008 upstream.
 
-Fix a dynamic session slot leak where a slot is preallocated and I/O is
-resent through the MDS.
+This check was added by Al Viro with
+d9e80b7de91db05c1c4d2e5ebbfd70b3b3ba0e0f "nfs d_revalidate() is too
+trigger-happy with d_drop()", with the explanation that we don't want to
+remove the root of a disconnected tree, which will still be included on
+the s_anon list.
 
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+But DCACHE_DISCONNECTED does *not* actually identify dentries that are
+disconnected from the dentry tree or hashed on s_anon.  IS_ROOT() is the
+way to do that.
+
+Also add a comment from Al's commit to remind us why this check is
+there.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfs/nfs4_fs.h        |  1 +
- fs/nfs/nfs4filelayout.c | 10 ++++++++--
- fs/nfs/nfs4proc.c       |  3 ++-
- 3 files changed, 11 insertions(+), 3 deletions(-)
+ fs/nfs/dir.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
-index 28842abafab4..fdfd59157dce 100644
---- a/fs/nfs/nfs4_fs.h
-+++ b/fs/nfs/nfs4_fs.h
-@@ -249,6 +249,7 @@ static inline struct nfs4_session *nfs4_get_session(const struct nfs_server *ser
- extern int nfs41_setup_sequence(struct nfs4_session *session,
- 		struct nfs4_sequence_args *args, struct nfs4_sequence_res *res,
- 		struct rpc_task *task);
-+extern int nfs41_sequence_done(struct rpc_task *, struct nfs4_sequence_res *);
- extern int nfs4_proc_create_session(struct nfs_client *, struct rpc_cred *);
- extern int nfs4_proc_destroy_session(struct nfs4_session *, struct rpc_cred *);
- extern int nfs4_proc_get_lease_time(struct nfs_client *clp,
-diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
-index 6e245d13de10..394b0a0c54bf 100644
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -335,8 +335,11 @@ static void filelayout_read_call_done(struct rpc_task *task, void *data)
- 	dprintk("--> %s task->tk_status %d\n", __func__, task->tk_status);
- 
- 	if (test_bit(NFS_IOHDR_REDO, &rdata->header->flags) &&
--	    task->tk_status == 0)
-+	    task->tk_status == 0) {
-+		if (rdata->res.seq_res.sr_slot != NULL)
-+			nfs41_sequence_done(task, &rdata->res.seq_res);
- 		return;
-+	}
- 
- 	/* Note this may cause RPC to be resent */
- 	rdata->header->mds_ops->rpc_call_done(task, data);
-@@ -442,8 +445,11 @@ static void filelayout_write_call_done(struct rpc_task *task, void *data)
- 	struct nfs_write_data *wdata = data;
- 
- 	if (test_bit(NFS_IOHDR_REDO, &wdata->header->flags) &&
--	    task->tk_status == 0)
-+	    task->tk_status == 0) {
-+		if (wdata->res.seq_res.sr_slot != NULL)
-+			nfs41_sequence_done(task, &wdata->res.seq_res);
- 		return;
-+	}
- 
- 	/* Note this may cause RPC to be resent */
- 	wdata->header->mds_ops->rpc_call_done(task, data);
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 9edb753d9e3a..bcd42fbc04e7 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -585,7 +585,7 @@ out_unlock:
- 		nfs41_server_notify_highest_slotid_update(session->clp);
- }
- 
--static int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *res)
-+int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *res)
- {
- 	struct nfs4_session *session;
- 	struct nfs4_slot *slot;
-@@ -685,6 +685,7 @@ out_retry:
- 	rpc_delay(task, NFS4_POLL_RETRY_MAX);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(nfs41_sequence_done);
- 
- static int nfs4_sequence_done(struct rpc_task *task,
- 			       struct nfs4_sequence_res *res)
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index e81a1cae81b5..d0325d7db643 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1139,7 +1139,13 @@ out_zap_parent:
+ 	if (inode && S_ISDIR(inode->i_mode)) {
+ 		/* Purge readdir caches. */
+ 		nfs_zap_caches(inode);
+-		if (dentry->d_flags & DCACHE_DISCONNECTED)
++		/*
++		 * We can't d_drop the root of a disconnected tree:
++		 * its d_hash is on the s_anon list and d_drop() would hide
++		 * it from shrink_dcache_for_unmount(), leading to busy
++		 * inodes on unmount and further oopses.
++		 */
++		if (IS_ROOT(dentry))
+ 			goto out_valid;
+ 	}
+ 	/* If we have submounts, don't unhash ! */
 -- 
 1.9.1
 
