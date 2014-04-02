@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931AbaDBF7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 01:59:37 -0400
-Received: from smtp-out-046.synserver.de ([212.40.185.46]:1060 "EHLO
-	smtp-out-019.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756603AbaDBF7f (ORCPT
+	id S1757432AbaDBGLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 02:11:21 -0400
+Received: from relay.parallels.com ([195.214.232.42]:44962 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756703AbaDBGLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 01:59:35 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29333
-Message-ID: <533BA779.9010005@metafoo.de>
-Date: Wed, 02 Apr 2014 08:00:25 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 2 Apr 2014 02:11:20 -0400
+Message-ID: <533BAA03.9000406@parallels.com>
+Date: Wed, 2 Apr 2014 10:11:15 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Arun Shamanna Lakshmi <aruns@nvidia.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Songhee Baek <sbaek@nvidia.com>
-Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
-References: <1396333288-19113-1-git-send-email-aruns@nvidia.com> <533A6F4A.2060702@metafoo.de> <781A12BB53C15A4BB37291FDE08C03F3A05CDCD63B@HQMAIL02.nvidia.com> <781A12BB53C15A4BB37291FDE08C03F3A05CDCD659@HQMAIL02.nvidia.com>
-In-Reply-To: <781A12BB53C15A4BB37291FDE08C03F3A05CDCD659@HQMAIL02.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Greg Thelen <gthelen@google.com>
+CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <glommer@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <devel@openvz.org>
+Subject: Re: [PATCH -mm v2 2/2] mm: get rid of __GFP_KMEMCG
+References: <cover.1396335798.git.vdavydov@parallels.com> <c50644c5c979fbe21e72cc2751876ceaff6ef495.1396335798.git.vdavydov@parallels.com> <xr93a9c4k13q.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93a9c4k13q.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 08:26 PM, Arun Shamanna Lakshmi wrote:
-[...]
->>> diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c index
->>> c8a780d..4d2b35c 100644
->>> --- a/sound/soc/soc-dapm.c
->>> +++ b/sound/soc/soc-dapm.c
->>> @@ -514,9 +514,9 @@ static int dapm_connect_mux(struct
->> snd_soc_dapm_context *dapm,
->>>    	unsigned int val, item;
->>>    	int i;
->>>
->>> -	if (e->reg != SND_SOC_NOPM) {
->>> -		soc_widget_read(dest, e->reg, &val);
->>> -		val = (val >> e->shift_l) & e->mask;
->>> +	if (e->reg[0] != SND_SOC_NOPM) {
->>> +		soc_widget_read(dest, e->reg[0], &val);
->>> +		val = (val >> e->shift_l) & e->mask[0];
->>>    		item = snd_soc_enum_val_to_item(e, val);
->>
->> This probably should handle the new enum type as well. You'll probably
->> need some kind of flag in the struct to distinguish between the two
->> enum types.
->
-> Any suggestion on the flag name ?
->
+On 04/02/2014 04:48 AM, Greg Thelen wrote:
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index 3dd389aa91c7..6d6959292e00 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -358,17 +358,6 @@ kmem_cache_alloc_node_trace(struct kmem_cache *s,
+>  #include <linux/slub_def.h>
+>  #endif
+>  
+> -static __always_inline void *
+> -kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+> -{
+> -	void *ret;
+> -
+> -	flags |= (__GFP_COMP | __GFP_KMEMCG);
+> -	ret = (void *) __get_free_pages(flags, order);
+> -	kmemleak_alloc(ret, size, 1, flags);
+> -	return ret;
+> -}
+> -
+> Removing this from the header file breaks builds without
+> CONFIG_TRACING.
+> Example:
+>     % make allnoconfig && make -j4 mm/
+>     [...]
+>     include/linux/slab.h: In function ‘kmalloc_order_trace’:
+>     include/linux/slab.h:367:2: error: implicit declaration of function ‘kmalloc_order’ [-Werror=implicit-function-declaration]
 
-How about 'onehot'?
+Oh, my bad - forgot to add the function declaration :-(
 
-[...]
->>> +		reg_val = BIT(bit_pos);
->>> +	}
->>> +
->>> +	for (i = 0; i < e->num_regs; i++) {
->>> +		if (i == reg_idx) {
->>> +			change = snd_soc_test_bits(codec, e->reg[i],
->>> +							e->mask[i],
->> reg_val);
->>> +
->>> +		} else {
->>> +			/* accumulate the change to update the DAPM
->> path
->>> +			    when none is selected */
->>> +			change += snd_soc_test_bits(codec, e->reg[i],
->>> +							e->mask[i], 0);
->>
->> change |=
->>
->>> +
->>> +			/* clear the register when not selected */
->>> +			snd_soc_write(codec, e->reg[i], 0);
->>
->> I think this should happen as part of the DAPM update sequence like
->> you had earlier. Some special care should probably be take to make
->> sure that you de-select the previous mux input before selecting the
->> new one if the new one is in a different register than the previous one.
->
-> I am not sure I follow this part. We are clearing the 'not selected'
-> registers before we set the one we want. Do you want us to loop the
-> logic of soc_dapm_mux_update_power for each register ? or do you
-> want to change the dapm_update structure so that it takes all the regs,
-> masks, and values together ?
-
-The idea with the dapm_update struct is that the register updates are done 
-in the middle of the power-down and power-up sequence. So yes, change the 
-dapm_update struct to be able to hold all register updates and do all 
-register updates in dapm_widget_update. I think an earlier version of your 
-patch already had this.
-
+The fixed version is on its way. Thank you for catching this!
