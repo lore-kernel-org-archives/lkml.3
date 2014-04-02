@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927AbaDBSql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:46:41 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:63611 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932494AbaDBSqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:46:39 -0400
+	id S932893AbaDBSxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:53:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45272 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932494AbaDBSxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:53:04 -0400
+Date: Wed, 2 Apr 2014 14:52:50 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        linux-ima-user <linux-ima-user@lists.sourceforge.net>
+Subject: oraphaned keywords in audit log text [was: Re: [PATCH] integrity:
+ get comm using lock to avoid race in string] printing
+Message-ID: <20140402185250.GB24814@madcap2.tricolour.ca>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+ <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <6292885.20TorKeRiK@x2>
+ <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <1396462716.2608.1.camel@localhost>
+ <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20140402172639.994587272@goodmis.org>
-References: <20140402172639.994587272@goodmis.org>
-Date: Wed, 2 Apr 2014 11:46:38 -0700
-X-Google-Sender-Auth: _m7IVoUKlHJPP1esSu_WOWkON_o
-Message-ID: <CA+55aFwzD0azkqLQLKz+9XOwDbY937z+Ym02diu91AZR7XT6Dw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] x86: Fix perf deadlock caused by dumpstack cleanup
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 10:26 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Here are two patches that fix the deadlock that you discovered.
->
-> The first patch is the real culprit, but as I was looking at the code
-> I realized that the irq stack part was a bit off too. That part didn't
-> cause the lock up, but needs to be fixed regardless.
->
-> Note, I'm hoping to use these clean ups to make x86_64 and i386 code
-> a bit closer to each other, so I hope the original change does not
-> get reverted.
+On 14/04/02, Mimi Zohar wrote:
+> On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote: 
+> > On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
+> > > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote: 
+> > > > Hello Mimi,
+> > > > 
+> > > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
+> > > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
+> > > > > Pass commname via get_task_comm()".
+> > > > 
+> > > > While I was looking at Richard's patch, I noticed a few places where cause and 
+> > > > op are logged and the string isn't tied together with a _ or -. These are in 
+> > > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are 
+> > > > these fixed upstream? Or should a patch be made?
+> > > 
+> > > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
+> > > making the changes in integrity_audit.c: integrity_audit_msg().
 
-I'll apply them.
+That function could massage incoming text fields and convert spaces to
+hyphens or underscores, but I'd assume the right place to do it would be
+in the original text.  If you suggest the former, it could just be done
+in audit_log_string(), but then grepping the source for error messages
+would not be nearly as useful.  Is this what you were suggesting?
 
-That said, I'm not *AT*ALL* convinced that a "cleanup" that involves
-having helper functions with multiple bugs and now seven (7!)
-arguments passed into it is a "cleanup" at all.
+> > The question is actually, do you know of anyone who is expecting the
+> > space, instead of a more 'audit standard' - or _ ?  If not, we'll change
+> > it.  If so, we'll discuss more   :)
+> 
+> CC'ing linux-ima-user as well.
 
-The cleanup was claimed to help improve readability. Really? Somebody
-needs to reconsider their goals in life if they think that a
-7-argument helper functions where the caller needs to pass in
-addresses to variables because the helper function will change them is
-a good idea. Just the *call* is spread out over two lines because
-calling that function is so complex.
+Thanks.
 
-I suspect that maybe creating some kind of "struct stack_information"
-structure might help somewhat. Because right now I'm very doubtful
-about the whole "this clarifies/simplifies" argument. The very fact
-that the "cleaned-up" function was a buggy pile of sh*t should make
-you question the cleanup itself.
+> Mimi
 
-            Linus
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
