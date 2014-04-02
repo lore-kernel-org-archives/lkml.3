@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759006AbaDBUNo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:13:44 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:60712 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758984AbaDBUNi (ORCPT
+	id S933092AbaDBUON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:14:13 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42905 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758957AbaDBUNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:13:38 -0400
-Message-ID: <533C6F6E.4080601@linaro.org>
-Date: Wed, 02 Apr 2014 13:13:34 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+	Wed, 2 Apr 2014 16:13:32 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Artem Fetishev <artem_fetishev@epam.com>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org> <533B313E.5000403@zytor.com> <533B4555.3000608@sr71.net> <533B8E3C.3090606@linaro.org> <20140402163638.GQ14688@cmpxchg.org> <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com> <20140402175852.GS14688@cmpxchg.org> <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com> <20140402194708.GV14688@cmpxchg.org>
-In-Reply-To: <20140402194708.GV14688@cmpxchg.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 35/40] x86: fix boot on uniprocessor systems
+Date: Wed,  2 Apr 2014 22:13:21 +0200
+Message-Id: <1bcde16c665590f2277b7241f1a27b9ef66faec9.1396469191.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
+References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
+In-Reply-To: <cover.1396469191.git.jslaby@suse.cz>
+References: <cover.1396469191.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 12:47 PM, Johannes Weiner wrote:
-> On Wed, Apr 02, 2014 at 12:01:00PM -0700, John Stultz wrote:
->> On Wed, Apr 2, 2014 at 10:58 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->>> On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
->>>> That point beside, I think the other problem with the page-cleaning
->>>> volatility approach is that there are other awkward side effects. For
->>>> example: Say an application marks a range as volatile. One page in the
->>>> range is then purged. The application, due to a bug or otherwise,
->>>> reads the volatile range. This causes the page to be zero-filled in,
->>>> and the application silently uses the corrupted data (which isn't
->>>> great). More problematic though, is that by faulting the page in,
->>>> they've in effect lost the purge state for that page. When the
->>>> application then goes to mark the range as non-volatile, all pages are
->>>> present, so we'd return that no pages were purged.  From an
->>>> application perspective this is pretty ugly.
->>>>
->>>> Johannes: Any thoughts on this potential issue with your proposal? Am
->>>> I missing something else?
->>> No, this is accurate.  However, I don't really see how this is
->>> different than any other use-after-free bug.  If you access malloc
->>> memory after free(), you might receive a SIGSEGV, you might see random
->>> data, you might corrupt somebody else's data.  This certainly isn't
->>> nice, but it's not exactly new behavior, is it?
->> The part that troubles me is that I see the purged state as kernel
->> data being corrupted by userland in this case. The kernel will tell
->> userspace that no pages were purged, even though they were. Only
->> because userspace made an errant read of a page, and got garbage data
->> back.
-> That sounds overly dramatic to me.  First of all, this data still
-> reflects accurately the actions of userspace in this situation.  And
-> secondly, the kernel does not rely on this data to be meaningful from
-> a userspace perspective to function correctly.
-<insert dramatic-chipmunk video w/ text overlay "errant read corrupted
-volatile page purge state!!!!1">
+From: Artem Fetishev <artem_fetishev@epam.com>
 
-Maybe you're right, but I feel this is the sort of thing application
-developers would be surprised and annoyed by.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
+===============
 
-> It's really nothing but a use-after-free bug that has consequences for
-> no-one but the faulty application.  The thing that IS new is that even
-> a read is enough to corrupt your data in this case.
->
-> MADV_REVIVE could return 0 if all pages in the specified range were
-> present, -Esomething if otherwise.  That would be semantically sound
-> even if userspace messes up.
+commit 825600c0f20e595daaa7a6dd8970f84fa2a2ee57 upstream.
 
-So its semantically more of just a combined mincore+dirty operation..
-and nothing more?
+On x86 uniprocessor systems topology_physical_package_id() returns -1
+which causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized
+which leads to GPF in rapl_pmu_init().
 
-What are other folks thinking about this? Although I don't particularly
-like it, I probably could go along with Johannes' approach, forgoing
-SIGBUS for zero-fill and adapting the semantics that are in my mind a
-bit stranger. This would allow for ashmem-like style behavior w/ the
-additional  write-clears-volatile-state and read-clears-purged-state
-constraints (which I don't think would be problematic for Android, but
-am not totally sure).
+See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
 
-But I do worry that these semantics are easier for kernel-mm-developers
-to grasp, but are much much harder for application developers to
-understand.
+It turns out that physical_package_id and core_id can actually be
+retreived for uniprocessor systems too.  Enabling them also fixes
+rapl_pmu code.
 
-Additionally unless we could really leave access-after-volatile as a
-total undefined behavior, this would lock us into O(page) behavior and
-would remove the possibility of O(log(ranges)) behavior Minchan and I
-were able to get (admittedly with more complicated code - but something
-I was hoping we'd be able to get back to after the base semantics and
-interface behavior was understood and merged). I since applications will
-have bugs and will access after volatile, we won't be able to get away
-with that sort of behavioral flexibility.
+Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/x86/include/asm/topology.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-thanks
--john
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index d35f24e231cd..1306d117967d 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
+ 
+ extern const struct cpumask *cpu_coregroup_mask(int cpu);
+ 
+-#ifdef ENABLE_TOPO_DEFINES
+ #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
+ #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
++
++#ifdef ENABLE_TOPO_DEFINES
+ #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
+ #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
+ #endif
+-- 
+1.9.1
+
