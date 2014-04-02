@@ -1,141 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681AbaDBMPo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 08:15:44 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:54703 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758663AbaDBMPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 08:15:42 -0400
-Message-ID: <533BFF69.1060701@monstr.eu>
-Date: Wed, 02 Apr 2014 14:15:37 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-CC: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, chow.kim@samsung.com,
-        Young-Gun Jang <yg1004.jang@samsung.com>
-Subject: Re: [PATCH 06/10] ARM: EXYNOS: Add support for mapping PMU base address
- via DT
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com> <533BF905.6070701@samsung.com>
-In-Reply-To: <533BF905.6070701@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6"
+	id S1758698AbaDBMQn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 08:16:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6180 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758663AbaDBMQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 08:16:42 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Rui Wang <rui.y.wang@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
+        tony.luck@intel.com, ruiv.wang@gmail.com,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] x86, apic, Fix missing replacement for VECTOR_UNDEFINED
+Date: Wed,  2 Apr 2014 08:16:30 -0400
+Message-Id: <1396440990-18484-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Resending ... making sure this wasn't dropped for some reason.
 
-On 04/02/2014 01:48 PM, Sylwester Nawrocki wrote:
-> On 02/04/14 09:50, Pankaj Dubey wrote:
->> From: Young-Gun Jang <yg1004.jang@samsung.com>
->>
->> Add support for mapping Exynos Power Management Unit (PMU) base addres=
-s
->> from device tree. Code will use existing samsung pmu binding informati=
-on.
->> This patch also adds "get_exynos_pmubase" a helper function to return =
-mapped base
->> address to various other files under "mach-exynos".
->>
->> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
->> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
->> ---
->>  arch/arm/mach-exynos/common.h |    2 ++
->>  arch/arm/mach-exynos/exynos.c |   44 ++++++++++++++++++++++++++++++++=
-+++++++++
->>  2 files changed, 46 insertions(+)
->>
-> [...]
->>  #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
->> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exyn=
-os.c
->> index a5e1349..a5127fb 100644
->> --- a/arch/arm/mach-exynos/exynos.c
->> +++ b/arch/arm/mach-exynos/exynos.c
->> @@ -35,6 +35,8 @@
->>  #define L2_AUX_VAL 0x7C470001
->>  #define L2_AUX_MASK 0xC200ffff
->> =20
->> +static void __iomem *exynos_pmu_base __initdata;
->> +
->>  static struct map_desc exynos4_iodesc[] __initdata =3D {
->>  	{
->>  		.virtual	=3D (unsigned long)S3C_VA_SYS,
->> @@ -245,6 +247,47 @@ void __init exynos_init_late(void)
->>  	exynos_pm_init();
->>  }
->> =20
->> +static char const *exynos_dt_pmu_match[] __initconst =3D {
->> +	"samsung,exynos4210-pmu",
->> +	"samsung,exynos4212-pmu",
->> +	"samsung,exynos4412-pmu",
->> +	"samsung,exynos5250-pmu",
->> +	NULL
->> +};
->> +
->> +static int __init exynos_fdt_map_pmu(unsigned long node,
->> +		const char *uname, int depth, void *data)
->> +{
->> +	struct map_desc iodesc;
->> +	__be32 *reg;
->> +	unsigned long len;
->> +
->> +	if (of_flat_dt_match(node, exynos_dt_pmu_match)) {
->> +		phys_addr_t phys_addr;
->> +		reg =3D of_get_flat_dt_prop(node, "reg", &len);
->> +		if (reg =3D=3D NULL || len !=3D (sizeof(unsigned long) * 2))
->> +			return 0;
->> +
->> +		phys_addr =3D be32_to_cpu(reg[0]);
->> +		iodesc.pfn =3D __phys_to_pfn(phys_addr);
->> +		iodesc.length =3D be32_to_cpu(reg[1]) - 1;
->> +		iodesc.virtual =3D (unsigned long)S5P_VA_PMU;
->> +		iodesc.type =3D MT_DEVICE;
->> +		iotable_init(&iodesc, 1);
->=20
-> Are you sure...you need this in addition to ioremap() below ?
-> Can't you just use the Linux syscon API ?
-> There were some patches posted for syscon to make it available in earli=
-er
-> system initialization stage: https://lkml.org/lkml/2014/2/19/218
+Previously sent here: http://marc.info/?l=linux-kernel&m=139397268027681&w=2
 
-I haven't finished this yet. I have to look at it again.
+P.
 
-Thanks,
-Michal
+---8<---
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+linux.git commit 9345005f4eed805308193658d12e4e7e9c261e74 added
+a definition for VECTOR_UNDEFINED = -1.  There is a missing replacement in
+the io_apic.c file.  Found during debugging of another issue.
 
+Cc: Rui Wang <rui.y.wang@intel.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: janet.morgan@Intel.com
+Cc: tony.luck@Intel.com
+Cc: ruiv.wang@gmail.com
+Cc: David Rientjes <rientjes@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 6ad4658..bf97b64 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2240,7 +2240,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
+ 			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
+ 			goto unlock;
+ 		}
+-		__this_cpu_write(vector_irq[vector], -1);
++		__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
+ unlock:
+ 		raw_spin_unlock(&desc->lock);
+ 	}
+-- 
+1.7.9.3
 
---9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlM7/2kACgkQykllyylKDCECUgCeJ3+bOw48VpTbeStAgsgY8XbV
-1xoAnRM5V6AfnKiFjb69OgmXhzepol/a
-=X/hw
------END PGP SIGNATURE-----
-
---9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6--
