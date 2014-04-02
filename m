@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113AbaDBIYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 04:24:08 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:64763 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757462AbaDBIYG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 04:24:06 -0400
-Message-ID: <1396427043.18431.20.camel@x220>
-Subject: Re: [GIT PULL] Staging driver patches for 3.15-rc1
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Insop Song <insop.song@gainspeed.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Date: Wed, 02 Apr 2014 10:24:03 +0200
-In-Reply-To: <20140401184817.GA21855@kroah.com>
-References: <20140401184817.GA21855@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Apr 2014 08:24:03.0730 (UTC) FILETIME=[E834F720:01CF4E4C]
-X-RcptDomain: vger.kernel.org
+	id S1758164AbaDBIYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 04:24:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54237 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758116AbaDBIYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 04:24:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,778,1389772800"; 
+   d="scan'208";a="512647635"
+From: Jani Nikula <jani.nikula@intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, jani.nikula@intel.com
+Subject: [PATCH] drm/i915: fix command parser debug print format mismatches
+Date: Wed,  2 Apr 2014 11:24:20 +0300
+Message-Id: <1396427060-12539-1-git-send-email-jani.nikula@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <533B106B.8090408@infradead.org>
+References: <533B106B.8090408@infradead.org>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 11:48 -0700, Greg KH wrote:
-> Staging driver pull request for 3.15-rc1
-> 
-> Here's the huge drivers/staging/ update for 3.15-rc1.
-> 
-> Loads of cleanup fixes, a few drivers removed, and some new ones added.
-> 
-> All have been in linux-next for a while.
->
->[...]
->
-> Insop Song (1):
->       staging: fpgaboot: Xilinx FPGA firmware download driver
+Drop the cast from the pointer diff to fix:
 
-This commit adds checks for CONFIG_B4860G100. Is a patch to add a
-Kconfig symbol B4860G100 perhaps queued somewhere?
+drivers/gpu/drm/i915/i915_cmd_parser.c:405:4: warning: format '%td' expects
+argument of type 'ptrdiff_t', but argument 5 has type 'long unsigned int'
+[-Wformat]
 
-It also adds this Makefile line:
-    ccflags-$(CONFIG_GS_FPGA_DEBUG)    := -DDEBUG
+While at it, use %u for u32.
 
-But there's no Kconfig symbol GS_FGPA_DEBUG. On the other hand, the code
-involved doesn't seem to use either DEBUG or dev_dbg() so perhaps it
-isn't actually needed. (But note that the code does check for
-DEBUG_FPGA, which apparently has to be set manually.)
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 
+---
 
-Paul  Bolle
+Randy, try as I might, I wasn't able to coerce gcc to spit out that
+warning. Please enlighten me! (Does this fix the warn?)
+
+Thanks for the report.
+---
+ drivers/gpu/drm/i915/i915_cmd_parser.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_cmd_parser.c b/drivers/gpu/drm/i915/i915_cmd_parser.c
+index 71ac3b4eaa0d..e5c4e99a22fb 100644
+--- a/drivers/gpu/drm/i915/i915_cmd_parser.c
++++ b/drivers/gpu/drm/i915/i915_cmd_parser.c
+@@ -811,10 +811,10 @@ int i915_parse_cmds(struct intel_ring_buffer *ring,
+ 			length = ((*cmd & desc->length.mask) + LENGTH_BIAS);
+ 
+ 		if ((batch_end - cmd) < length) {
+-			DRM_DEBUG_DRIVER("CMD: Command length exceeds batch length: 0x%08X length=%d batchlen=%td\n",
++			DRM_DEBUG_DRIVER("CMD: Command length exceeds batch length: 0x%08X length=%u batchlen=%td\n",
+ 					 *cmd,
+ 					 length,
+-					 (unsigned long)(batch_end - cmd));
++					 batch_end - cmd);
+ 			ret = -EINVAL;
+ 			break;
+ 		}
+-- 
+1.7.9.5
 
