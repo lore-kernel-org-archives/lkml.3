@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645AbaDBMbu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 08:31:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37480 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758289AbaDBMbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 08:31:49 -0400
-Subject: Re: [PATCH 2/2] ttyprintk: Allow built as a module
-From: Jean Delvare <jdelvare@suse.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Struan Bartlett <struan.bartlett@gmail.com>,
-        Andreas Schwab <schwab@linux-m68k.org>, gnomes@lxorguk.ukuu.org.uk,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1396434582-30799-2-git-send-email-tiwai@suse.de>
-References: <1396434582-30799-1-git-send-email-tiwai@suse.de>
-	 <1396434582-30799-2-git-send-email-tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Wed, 02 Apr 2014 14:31:46 +0200
-Message-ID: <1396441906.28124.3.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1758696AbaDBMdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 08:33:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:14452 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758456AbaDBMd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 08:33:29 -0400
+Date: Wed, 2 Apr 2014 08:33:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Gleb Natapov <gleb@redhat.com>, Peter Anvin <hpa@zytor.com>,
+        Jan Hubicka <hubicka@ucw.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jaroslav Kysela <perex@perex.cz>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 LTO changes for v3.15
+Message-ID: <20140402083325.2b6e5d8b@gandalf.local.home>
+In-Reply-To: <CA+55aFyQHdtgQpnS7ar2db5QoZhmMStH_LgxHvAaCUbVEx_PQQ@mail.gmail.com>
+References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
+	<CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>
+	<20140331230347.GH32556@tassilo.jf.intel.com>
+	<CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>
+	<CA+55aFxCCOASxhgRfGmNRPgHwZQJ2Q0Oa9-vwpMdmTqx99m26g@mail.gmail.com>
+	<533B0B5F.2040907@linux.intel.com>
+	<20140401200145.05e0437e@gandalf.local.home>
+	<CA+55aFyQHdtgQpnS7ar2db5QoZhmMStH_LgxHvAaCUbVEx_PQQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
+On Tue, 1 Apr 2014 17:35:05 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Le Wednesday 02 April 2014 à 12:29 +0200, Takashi Iwai a écrit :
-> The driver is well written to be used as a module, just the exit call
-> is missing.
+> On Tue, Apr 1, 2014 at 5:01 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > Why would they break tracing? I remember there was a issue with compat
+> > calls, are these related to that?
 > 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/char/Kconfig     |  2 +-
->  drivers/char/ttyprintk.c | 13 ++++++++++++-
->  2 files changed, 13 insertions(+), 2 deletions(-)
+> They "break" tracing by being invisible to syscall tracing. As you
+> really should know ;)
 > 
-> diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-> index 1386749b48ff..97816b133c7f 100644
-> --- a/drivers/char/Kconfig
-> +++ b/drivers/char/Kconfig
-> @@ -40,7 +40,7 @@ config SGI_MBCS
->  source "drivers/tty/serial/Kconfig"
->  
->  config TTY_PRINTK
-> -	bool "TTY driver to output user messages via printk"
-> +	tristate "TTY driver to output user messages via printk"
->  	depends on EXPERT && TTY
->  	default n
->  	---help---
-> diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
-> index 2a39c5790364..73606eaaba71 100644
-> --- a/drivers/char/ttyprintk.c
-> +++ b/drivers/char/ttyprintk.c
-> @@ -17,7 +17,7 @@
->  #include <linux/device.h>
->  #include <linux/serial.h>
->  #include <linux/tty.h>
-> -#include <linux/export.h>
-> +#include <linux/module.h>
->  
->  struct ttyprintk_port {
->  	struct tty_port port;
-> @@ -214,4 +214,15 @@ error:
->  	tty_port_destroy(&tpk_port.port);
->  	return ret;
->  }
-> +
-> +static void ttyprintk_exit(void)
+> The syscall tracing feature depends on the wrappers that
+> SYSCALL_DEFINEx() creates. See the SYSCALL_TRACE_ENTER_EVENT() etc
+> crud in <linux/syscalls.h>
+> 
+> So there's no SYSCALL_METADATA for those system calls that weren't
+> created with the proper SYSCALL_DEFINE() wrappers.
+> 
 
-Could be marked __exit.
+Heh, I know that not having the SYSCALL_DEFINEx() wrappers means that
+they wont be traced. I must have misunderstood Peter, as I thought he
+meant if we added SYSCALL_DEFINEx(), that they would break tracing.
 
-> +{
-> +	tty_unregister_driver(ttyprintk_driver);
-> +	put_tty_driver(ttyprintk_driver);
-> +	tty_port_destroy(&tpk_port.port);
-> +}
-> +
->  device_initcall(ttyprintk_init);
-> +module_exit(ttyprintk_exit);
-> +
-> +MODULE_LICENSE("GPL");
+IIRC, the compat calls had some issues with the SYSCALL_DEFINE()
+macros, and I was thinking theses functions would have some off the
+wall issue as well.
 
-Other than this, this looks good, thanks for doing that.
+Yeah, adding the SYSCALL_DEFINEx() macros around those functions would
+be good for tracing as well.
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Glad I understand you two now ;-)
 
--- 
-Jean Delvare
-SUSE L3 Support
+I would have thought my jet lag would be over by now.
 
+-- Steve
