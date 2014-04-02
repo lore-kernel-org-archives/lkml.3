@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607AbaDBQ47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:56:59 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:41473 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaDBQ46 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:56:58 -0400
+	id S932611AbaDBQ7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:59:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932413AbaDBQ7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 12:59:37 -0400
+Date: Wed, 2 Apr 2014 17:58:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Matthew Dempsky <mdempsky@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] pid_namespace: pidns_get() should check
+	task_active_pid_ns() != NULL
+Message-ID: <20140402155850.GA30570@redhat.com>
+References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com> <1396391358-22367-1-git-send-email-mdempsky@chromium.org> <20140402145850.GB7332@redhat.com> <20140402154447.GA29857@redhat.com> <20140402154505.GB29857@redhat.com> <87eh1fisfm.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <20140402164709.GI29256@twin.jikos.cz>
-References: <CA+5PVA787+k0TVFUuo6PxNWMwffWDKixmt2C+E4_9szUJatYkw@mail.gmail.com>
-	<20140402164709.GI29256@twin.jikos.cz>
-Date: Wed, 2 Apr 2014 12:56:57 -0400
-X-Google-Sender-Auth: 5nPIMZlvKUklD34Z7nGhhrOQ0_Q
-Message-ID: <CA+5PVA4G9NtixrwN3H+e2jmj=oLHZO2JfERqm70ama+zh_DUWw@mail.gmail.com>
-Subject: Re: Btrfs lockdep with 3.15 merge window v3.14-751-g683b6c6f82a6
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: dsterba@suse.cz, Chris Mason <clm@fb.com>, jbacik@fb.com,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87eh1fisfm.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 12:47 PM, David Sterba <dsterba@suse.cz> wrote:
-> On Tue, Apr 01, 2014 at 06:23:11PM -0400, Josh Boyer wrote:
->> Below is a lockdep spew I have on a local VM running Linus' tree as of
->> this afternoon.  The specific git commit is v3.14-751-g683b6c6f82a6.
+On 04/02, Eric W. Biederman wrote:
 >
->> [  295.349016]        CPU0                    CPU1
->> [  295.349016]        ----                    ----
->> [  295.349016]   lock(&found->groups_sem);
->> [  295.349016]                                local_irq_disable();
->> [  295.349016]                                lock(&delayed_node->mutex);
->> [  295.349016]                                lock(&found->groups_sem);
->> [  295.349016]   <Interrupt>
->> [  295.349016]     lock(&delayed_node->mutex);
+> Oleg Nesterov <oleg@redhat.com> writes:
 >
-> Fixed by https://patchwork.kernel.org/patch/3894781/
+> > pidns_get()->get_pid_ns() can hit ns == NULL. This task_struct can't
+> > go away, but task_active_pid_ns(task) is NULL if release_task(task)
+> > was already called. Alternatively we could change get_pid_ns(ns) to
+> > check ns != NULL, but it seems that other callers are fine.
+>
+> get_pid_ns already has a ns == NULL check, so no code changes should be
+> needed.
 
-Thanks for the pointer!  I'll grab that and give it a shot on my VM.
+Hmm...
 
-josh
+	static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+	{
+		if (ns != &init_pid_ns)
+			kref_get(&ns->kref);
+		return ns;
+	}
+
+?
+
+Oleg.
+
