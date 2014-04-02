@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058AbaDBTnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:43:00 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50456 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932571AbaDBTm6 (ORCPT
+	id S933094AbaDBTnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:43:46 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:37855 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933029AbaDBTno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:42:58 -0400
-Date: Wed, 2 Apr 2014 20:42:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140402194247.GJ14763@sirena.org.uk>
-References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
- <1396433349-31470-2-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 2 Apr 2014 15:43:44 -0400
+Message-ID: <533C6871.7060003@fb.com>
+Date: Wed, 2 Apr 2014 15:43:45 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AXxEqdD4tcVTjWte"
-Content-Disposition: inline
-In-Reply-To: <1396433349-31470-2-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 1/3] regmap: implement LE formatting/parsing for
- 16/32-bit values.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: <dsterba@suse.cz>, Josh Boyer <jwboyer@fedoraproject.org>, <jbacik@fb.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: Btrfs lockdep with 3.15 merge window v3.14-751-g683b6c6f82a6
+References: <CA+5PVA787+k0TVFUuo6PxNWMwffWDKixmt2C+E4_9szUJatYkw@mail.gmail.com> <20140402164709.GI29256@twin.jikos.cz>
+In-Reply-To: <20140402164709.GI29256@twin.jikos.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-04-02_05:2014-04-02,2014-04-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=4.94049245958195e-15 kscore.compositescore=0
+ circleOfTrustscore=3.17628122076682 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404020160
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/02/2014 12:47 PM, David Sterba wrote:
+> On Tue, Apr 01, 2014 at 06:23:11PM -0400, Josh Boyer wrote:
+>> Below is a lockdep spew I have on a local VM running Linus' tree as of
+>> this afternoon.  The specific git commit is v3.14-751-g683b6c6f82a6.
+>
+>> [  295.349016]        CPU0                    CPU1
+>> [  295.349016]        ----                    ----
+>> [  295.349016]   lock(&found->groups_sem);
+>> [  295.349016]                                local_irq_disable();
+>> [  295.349016]                                lock(&delayed_node->mutex);
+>> [  295.349016]                                lock(&found->groups_sem);
+>> [  295.349016]   <Interrupt>
+>> [  295.349016]     lock(&delayed_node->mutex);
+>
+> Fixed by https://urldefense.proofpoint.com/v1/url?u=https://patchwork.kernel.org/patch/3894781/&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=R1vuFCUzlD4QksU2UH3APFiFgMVkwmMci%2Bktv%2BzqQnE%3D%0A&s=adbe2bfbb243d9781307cfff001f30c01afd35a32e0fb976ecca933ef4cebd26
+>
 
---AXxEqdD4tcVTjWte
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I've got this lined up for my next pull as well.  I sent early this 
+time, but more is going in.
 
-On Wed, Apr 02, 2014 at 06:09:07PM +0800, Xiubo Li wrote:
-> Allow busses to request little endianness formatting and
-> parsing for 16- and 32-bit values. This will be useful to
-> support regmap-mmio.
-
-Applied, thanks.
-
---AXxEqdD4tcVTjWte
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPGg0AAoJELSic+t+oim9SVgP/1nQeGJX/O+gkZ3kPaC9lTUB
-KRdXCgtnnej+NNGufImwR04ODG8YRpohLmhep8xmV79S3NSsSFbTOW6TSnOuDzPt
-QV9LNr/NVjJCQwN8/VNiYEeTAYxVmtH2a2KJlZg5A+ppdJiefvekK8aENZtULlwn
-4KZbuSqEpr63CzFCKezV/yKzw4Aib/JuW98uAX6kn7vsYFBZIdY7CWkYeA4uld6O
-g9foezINaH+0xY29QvkeH+1GNGKXqwO9pfbVbWUwO++SE2RgYrkqbDrTCvcpeuvK
-kPdAa/KqwOi+uoI+abs1jMT1IpvvS3oMeefOeX1/4yAZdvZ99t+DUfnIxj5PYYVO
-/PLG6+IXWwpZ3gS7FQLs8tRACyVesfh0qy+34Td9IeWM/E2b452DsYQduqeCF9l2
-TfYmJIyPaJZjxHCm+nC76K5kcobedQW97gVSOa0GFkf4Ozioiae+gtz5VIhnWlo6
-2YDDC98/+Xu+HhmZ4BcwR6N4oAUOV7yHKvb6kC1lu03gpJgdqhrx3IfBsaDLOgUn
-at5Kw5TEFh5WKvuglNloaDEI0j76Od3VuromrHIMZnf29TKiqXT6UEjLJp6FGrXM
-+nhU4YZ5RwoGuEH7g929udmJfz16RZm1K6eOGBBhddLQVFTqMrnGOhurlKqXa7ar
-EwwZTj//4v+2vDH92+F+
-=L2RS
------END PGP SIGNATURE-----
-
---AXxEqdD4tcVTjWte--
+-chris
