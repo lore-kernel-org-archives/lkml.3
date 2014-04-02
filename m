@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030281AbaDBThR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:37:17 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:58037 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030188AbaDBThP (ORCPT
+	id S1030266AbaDBThQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:37:16 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:50866 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030185AbaDBThO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:37:15 -0400
-Date: Wed, 2 Apr 2014 15:37:13 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] x86: Fix perf deadlock caused by dumpstack cleanup
-Message-ID: <20140402153713.18e3444e@gandalf.local.home>
-In-Reply-To: <CA+55aFwzD0azkqLQLKz+9XOwDbY937z+Ym02diu91AZR7XT6Dw@mail.gmail.com>
-References: <20140402172639.994587272@goodmis.org>
-	<CA+55aFwzD0azkqLQLKz+9XOwDbY937z+Ym02diu91AZR7XT6Dw@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 2 Apr 2014 15:37:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140402180707.GT14688@cmpxchg.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+	<20140401212102.GM4407@cmpxchg.org>
+	<533B8C2D.9010108@linaro.org>
+	<20140402163013.GP14688@cmpxchg.org>
+	<533C3BB4.8020904@zytor.com>
+	<533C3CDD.9090400@zytor.com>
+	<20140402171812.GR14688@cmpxchg.org>
+	<533C4B7E.6030807@sr71.net>
+	<CALAqxLUR4ucQ_zOp5i3Y0+WpCWiwm2oR6Dp7aeD2XN1pjiELEQ@mail.gmail.com>
+	<20140402180707.GT14688@cmpxchg.org>
+Date: Wed, 2 Apr 2014 12:37:13 -0700
+Message-ID: <CALAqxLX1EADOVw_OrB4eP9c__7eftpCgWPU=u6gH6bZ5u3FCMQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+From: John Stultz <john.stultz@linaro.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Apr 2014 11:46:38 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Wed, Apr 2, 2014 at 11:07 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Wed, Apr 02, 2014 at 10:48:03AM -0700, John Stultz wrote:
+>> I suspect handling the SIGBUS and patching up the purged page you
+>> trapped on is likely much to complicated for most use cases. But I do
+>> think SIGBUS is preferable to zero-fill on purged page access, just
+>> because its likely to be easier to debug applications.
+>
+> Fully agreed, but it seems a bit overkill to add a separate syscall, a
+> range-tree on top of shmem address_spaces, and an essentially new
+> programming model based on SIGBUS userspace fault handling (incl. all
+> the complexities and confusion this inevitably will bring when people
+> DO end up passing these pointers into kernel space) just to be a bit
+> nicer about use-after-free bugs in applications.
 
-> On Wed, Apr 2, 2014 at 10:26 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Here are two patches that fix the deadlock that you discovered.
-> >
-> > The first patch is the real culprit, but as I was looking at the code
-> > I realized that the irq stack part was a bit off too. That part didn't
-> > cause the lock up, but needs to be fixed regardless.
-> >
-> > Note, I'm hoping to use these clean ups to make x86_64 and i386 code
-> > a bit closer to each other, so I hope the original change does not
-> > get reverted.
-> 
-> I'll apply them.
-> 
-> That said, I'm not *AT*ALL* convinced that a "cleanup" that involves
-> having helper functions with multiple bugs and now seven (7!)
-> arguments passed into it is a "cleanup" at all.
-> 
+Its more about making an interface that has graspable semantics to
+userspace, instead of having the semantics being a side-effect of the
+implementation.
 
-Yeah, I didn't like it after the second patch :-(
+Tying volatility to the page-clean state and page-was-purged to
+page-present seems problematic to me, because there are too many ways
+to change the page-clean or page-present outside of the interface
+being proposed.
 
-> The cleanup was claimed to help improve readability. Really? Somebody
-> needs to reconsider their goals in life if they think that a
-> 7-argument helper functions where the caller needs to pass in
-> addresses to variables because the helper function will change them is
-> a good idea. Just the *call* is spread out over two lines because
-> calling that function is so complex.
+I feel this causes a cascade of corner cases that have to be explained
+to users of the interface.
 
-The helper can be merged back to the main function as it doesn't seem
-to be much of a helper anymore.
+Also I disagree we're adding a new programming model, as SIGBUSes can
+already be caught, just that there's not usually much one can do,
+where with volatile pages its more likely something could be done. And
+again, its really just a side-effect of having semantics (SIGBUS on
+purged page access) that are more helpful from a applications
+perspective.
 
-> 
-> I suspect that maybe creating some kind of "struct stack_information"
-> structure might help somewhat. Because right now I'm very doubtful
-> about the whole "this clarifies/simplifies" argument. The very fact
-> that the "cleaned-up" function was a buggy pile of sh*t should make
-> you question the cleanup itself.
+As for the separate syscall: Again, this is mainly needed to handle
+allocation failures that happen mid-way through modifying the range.
+There may still be a way to do the allocation first and only after it
+succeeds do the modification. The vma merge/splitting logic doesn't
+make this easy but if we can be sure that on a failed split of 1 vma
+-> 3 vmas (which may fail half way) we can re-merge w/o allocation and
+error out (without having to do any other allocations), this might be
+avoidable. I'm still wanting to look at this. If so, it would be
+easier to re-add this support under madvise, if folks really really
+don't like the new syscall.   For the most part, having the separate
+syscall allows us to discuss other details of the semantics, which to
+me are more important then the syscall naming.
 
-Well, actually, it proves that there's a clean up needed, as the reason
-for the bugs was due to the subtle interactions of the original code.
-That said, I agree, the cleanup itself isn't much of a cleanup. But I
-intend on continuing to cleanup this code, and remove all the subtle
-interactions that is going on here.
-
-This is an ongoing project and what you see here is not the end result.
-I am quite ashamed of the bugs though.
-
--- Steve
-
+thanks
+-john
