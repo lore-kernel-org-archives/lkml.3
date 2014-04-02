@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324AbaDBOwD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 10:52:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57070 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932195AbaDBOwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 10:52:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,780,1389772800"; 
-   d="scan'208";a="505366431"
-Message-ID: <1396450314.11878.90.camel@empanada>
-Subject: Re: About 'hash' event trigger patchset
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 02 Apr 2014 09:51:54 -0500
-In-Reply-To: <CAM9d7ch-ZBYRHmhbHJEXQtS-V_kBPK5nMhtM3bPbHmnY+m-EeQ@mail.gmail.com>
-References: <CAM9d7ch-ZBYRHmhbHJEXQtS-V_kBPK5nMhtM3bPbHmnY+m-EeQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932351AbaDBOwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 10:52:19 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:60596 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195AbaDBOwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 10:52:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANq1E4QV-=kWhzxqq4F-mZ2puh--SPydR+HmbLvoCixiJ_c6=g@mail.gmail.com>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	<1395256011-2423-4-git-send-email-dh.herrmann@gmail.com>
+	<CALYGNiPnAVf+wSsdn4aO=89H_HqyjL_-vNHpZdop=Wchf7gTtw@mail.gmail.com>
+	<CANq1E4QV-=kWhzxqq4F-mZ2puh--SPydR+HmbLvoCixiJ_c6=g@mail.gmail.com>
+Date: Wed, 2 Apr 2014 18:52:14 +0400
+Message-ID: <CALYGNiPY-1pYqaMX9PrhKvMMW=fgP7CoqWfaH6mdtxfFnf4fqQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] shm: add memfd_create() syscall
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Kay Sievers <kay@vrfy.org>,
+        Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+On Wed, Apr 2, 2014 at 6:18 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Wed, Apr 2, 2014 at 3:38 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>> On Wed, Mar 19, 2014 at 11:06 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
+>>> that you can pass to mmap(). It explicitly allows sealing and
+>>> avoids any connection to user-visible mount-points. Thus, it's not
+>>> subject to quotas on mounted file-systems, but can be used like
+>>> malloc()'ed memory, but with a file-descriptor to it.
+>>>
+>>> memfd_create() does not create a front-FD, but instead returns the raw
+>>> shmem file, so calls like ftruncate() can be used. Also calls like fstat()
+>>> will return proper information and mark the file as regular file. Sealing
+>>> is explicitly supported on memfds.
+>>>
+>>> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
+>>> subject to quotas and alike.
+>>
+>> Instead of adding new syscall we can extend existing openat() a little
+>> bit more:
+>>
+>> openat(AT_FDSHM, "name", O_TMPFILE | O_RDWR, 0666)
+>
+> O_TMPFILE requires an existing directory as "name". So you have to use:
+>   open("/run/", O_TMPFILE | O_RDWR, 0666)
+> instead of
+>   open("/run/new_file", O_TMPFILE | O_RDWR, 0666)
+>
+> We _really_ want to set a name for the inode, though. Otherwise,
+> debug-info via /proc/pid/fd/ is useless.
+>
+> Furthermore, Linus requested to allow sealing only on files that
+> _explicitly_ allow sealing. So v2 of this series will have
+> MFD_ALLOW_SEALING as memfd_create() flag. I don't think we can do this
+> with linkat() (or is that meant to be implicit for the new AT_FDSHM?).
+> Last but not least, you now need a separate syscall to set the
+> file-size.
+>
+> I could live with most of these issues, except for the name-thing. Ideas?
 
-On Wed, 2014-04-02 at 08:31 +0000, Namhyung Kim wrote:
-> Hi Tom,
-> 
-> (Sorry for replying in another thread, I have a problem on mail settings)
-> 
-> I've just read your hash event trigger series, and want to give some feedback.
-> 
-> At first, the change log of 5/5 is actually a better documentation
-> than in patch 4/5 so I think it should be added to the doc also.  But
+Hmm, why AT_FDSHM + O_TMPFILE pair cannot has different naming behavior?
+Actually O_TMPFILE flag is optional here. AT_FDSHM is enough, but
+O_TMPFILE allows to
+move branching out of common fast-paths and hide it inside do_tmpfile.
 
-Good point, I'll do that (after trimming it down a bit).
+BTW you can set some extended attribute via fsetxattr and distinguish
+files in proc by its value.
 
-> the syntax of the hash trigger should be look like:
-> 
-> - # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
-> + # echo hash:key(s):value(s)[:"sort="sort_key(s)][ if filter] > event/trigger
-> 
-> Also on first example in the changelog of 5/5, key should be
-> 'stacktrace' instead of 'call_site'.
-> 
+OR you could add fcntl() for changing 'name' of tmpfiles. In
+combination with AT_FDSHM this
+would give complete solution without changing O_TMPFILE naming scheme.
+But one syscall turns into three. )
 
-Yeah, I realized that just after posting - will fix.
-
-> As far as I see in the code, the sort key can receive an optional
-> descending/ascending modifier, but it's not documented.
-> 
-
-I knew I was forgetting something ;-)  Thanks for pointing it out.
-
-> One thing I noticed in the main logic is that it seems there's no
-> limit checking when adding/creating new entry.  In
-> hash_trigger_entry_create(), there's a check against max_entries but
-> if it goes beyond the max, it'd just access a NULL pointer AFAICS.  Am
-> I missing something?  Also I don't know what the difference between
-> ->n_entries and ->total_entries (in hash_data).
-> 
-> I guess you wanted to set ->drops in that case, but I cannot find
-
-Yes, the code is missing a very important snippet, which I realized
-after hitting the problem.  My current code has this:
-
-        if (hash_data->drops)
-                return NULL;
-        else if (hash_data->n_entries == hash_data->max_entries) {
-                hash_data->drops = 1;
-                return NULL;
-        }
-
-n_entries is the current number of entries used up, and max_entries is
-the total number of available entries (a cached value to avoid
-calculating it every time).
-
-> where it gets set.  And I'm not sure it's good to check ->drop first,
-> since entry can find an existing entry and merged to it even if it
-> reached the max already.
-> 
-
-The assumption is that if you have any drops at all, you probably want
-to redo the test with a bigger table, but regardless the data reflects
-the situation up to the point the drops started happening.  Letting
-events that already have a entry merge while rejecting those that don't
-would invalidate the data you already have.
-
-Thanks for taking a look and for your helpful comments,
-
-Tom
-
-> Thanks,
-> Namhyung
-
-
+--
