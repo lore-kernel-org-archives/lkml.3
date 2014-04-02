@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030273AbaDBUQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:16:27 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42871 "EHLO
+	id S1030249AbaDBUQZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:16:25 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42879 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758934AbaDBUNb (ORCPT
+	by vger.kernel.org with ESMTP id S1758942AbaDBUNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Holger Kiehl <Holger.Kiehl@dwd.de>, Christoph Lameter <cl@linux.com>,
-        Rafael Aquini <aquini@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@primarydata.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 39/40] mm: close PageTail race
-Date: Wed,  2 Apr 2014 22:13:25 +0200
-Message-Id: <35654f1f0ba5123fa1a4aaebee4c02550ee4d11e.1396469191.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 11/40] NFSv4.1: Prevent a 3-way deadlock between layoutreturn, open and state recovery
+Date: Wed,  2 Apr 2014 22:12:57 +0200
+Message-Id: <025cbea96f0894dddc811ff237a43df0c1db02db.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -30,243 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 668f9abbd4334e6c29fa8acd71635c4f9101caa7 upstream.
+commit f22e5edd2244609aed3906207a62223e7707a34d upstream.
 
-Commit bf6bddf1924e ("mm: introduce compaction and migration for
-ballooned pages") introduces page_count(page) into memory compaction
-which dereferences page->first_page if PageTail(page).
+Andy Adamson reports:
 
-This results in a very rare NULL pointer dereference on the
-aforementioned page_count(page).  Indeed, anything that does
-compound_head(), including page_count() is susceptible to racing with
-prep_compound_page() and seeing a NULL or dangling page->first_page
-pointer.
+The state manager is recovering expired state and recovery OPENs are being
+processed. If kswapd is pruning inodes at the same time, a deadlock can occur
+when kswapd calls evict_inode on an NFSv4.1 inode with a layout, and the
+resultant layoutreturn gets an error that the state mangager is to handle,
+causing the layoutreturn to wait on the (NFS client) cl_rpcwaitq.
 
-This patch uses Andrea's implementation of compound_trans_head() that
-deals with such a race and makes it the default compound_head()
-implementation.  This includes a read memory barrier that ensures that
-if PageTail(head) is true that we return a head page that is neither
-NULL nor dangling.  The patch then adds a store memory barrier to
-prep_compound_page() to ensure page->first_page is set.
+At the same time an open is waiting for the inode deletion to complete in
+__wait_on_freeing_inode.
 
-This is the safest way to ensure we see the head page that we are
-expecting, PageTail(page) is already in the unlikely() path and the
-memory barriers are unfortunately required.
+If the open is either the open called by the state manager, or an open from
+the same open owner that is holding the NFSv4 sequence id which causes the
+OPEN from the state manager to wait for the sequence id on the Seqid_waitqueue,
+then the state is deadlocked with kswapd.
 
-Hugetlbfs is the exception, we don't enforce a store memory barrier
-during init since no race is possible.
+The fix is simply to have layoutreturn ignore all errors except NFS4ERR_DELAY.
+We already know that layouts are dropped on all server reboots, and that
+it has to be coded to deal with the "forgetful client model" that doesn't
+send layoutreturns.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rafael Aquini <aquini@redhat.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Andy Adamson <andros@netapp.com>
+Link: http://lkml.kernel.org/r/1385402270-14284-1-git-send-email-andros@netapp.com
+Signed-off-by: Trond Myklebust <Trond.Myklebust@primarydata.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/block/aoe/aoecmd.c      |  4 ++--
- drivers/vfio/vfio_iommu_type1.c |  4 ++--
- fs/proc/page.c                  |  2 +-
- include/linux/huge_mm.h         | 18 ------------------
- include/linux/mm.h              | 14 ++++++++++++--
- mm/ksm.c                        |  2 +-
- mm/memory-failure.c             |  2 +-
- mm/page_alloc.c                 |  4 +++-
- mm/swap.c                       |  4 ++--
- 9 files changed, 24 insertions(+), 30 deletions(-)
+ fs/nfs/nfs4proc.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index d2515435e23f..8fb295350efb 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -905,7 +905,7 @@ bio_pageinc(struct bio *bio)
- 		/* Non-zero page count for non-head members of
- 		 * compound pages is no longer allowed by the kernel.
- 		 */
--		page = compound_trans_head(bv->bv_page);
-+		page = compound_head(bv->bv_page);
- 		atomic_inc(&page->_count);
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 5a5fb98edb8a..9edb753d9e3a 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7273,7 +7273,14 @@ static void nfs4_layoutreturn_done(struct rpc_task *task, void *calldata)
+ 		return;
+ 
+ 	server = NFS_SERVER(lrp->args.inode);
+-	if (nfs4_async_handle_error(task, server, NULL) == -EAGAIN) {
++	switch (task->tk_status) {
++	default:
++		task->tk_status = 0;
++	case 0:
++		break;
++	case -NFS4ERR_DELAY:
++		if (nfs4_async_handle_error(task, server, NULL) != -EAGAIN)
++			break;
+ 		rpc_restart_call_prepare(task);
+ 		return;
  	}
- }
-@@ -918,7 +918,7 @@ bio_pagedec(struct bio *bio)
- 	int i;
- 
- 	bio_for_each_segment(bv, bio, i) {
--		page = compound_trans_head(bv->bv_page);
-+		page = compound_head(bv->bv_page);
- 		atomic_dec(&page->_count);
- 	}
- }
-diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-index 4fb7a8f83c8a..54af4e933695 100644
---- a/drivers/vfio/vfio_iommu_type1.c
-+++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -186,12 +186,12 @@ static bool is_invalid_reserved_pfn(unsigned long pfn)
- 	if (pfn_valid(pfn)) {
- 		bool reserved;
- 		struct page *tail = pfn_to_page(pfn);
--		struct page *head = compound_trans_head(tail);
-+		struct page *head = compound_head(tail);
- 		reserved = !!(PageReserved(head));
- 		if (head != tail) {
- 			/*
- 			 * "head" is not a dangling pointer
--			 * (compound_trans_head takes care of that)
-+			 * (compound_head takes care of that)
- 			 * but the hugepage may have been split
- 			 * from under us (and we may not hold a
- 			 * reference count on the head page so it can
-diff --git a/fs/proc/page.c b/fs/proc/page.c
-index b8730d9ebaee..2a8cc94bb641 100644
---- a/fs/proc/page.c
-+++ b/fs/proc/page.c
-@@ -121,7 +121,7 @@ u64 stable_page_flags(struct page *page)
- 	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
- 	 * sure a given page is a thp, not a non-huge compound page.
- 	 */
--	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
-+	else if (PageTransCompound(page) && PageLRU(compound_head(page)))
- 		u |= 1 << KPF_THP;
- 
- 	/*
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 3935428c57cf..a291552ab767 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -156,23 +156,6 @@ static inline int hpage_nr_pages(struct page *page)
- 		return HPAGE_PMD_NR;
- 	return 1;
- }
--static inline struct page *compound_trans_head(struct page *page)
--{
--	if (PageTail(page)) {
--		struct page *head;
--		head = page->first_page;
--		smp_rmb();
--		/*
--		 * head may be a dangling pointer.
--		 * __split_huge_page_refcount clears PageTail before
--		 * overwriting first_page, so if PageTail is still
--		 * there it means the head pointer isn't dangling.
--		 */
--		if (PageTail(page))
--			return head;
--	}
--	return page;
--}
- 
- extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
-@@ -202,7 +185,6 @@ static inline int split_huge_page(struct page *page)
- 	do { } while (0)
- #define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
- 	do { } while (0)
--#define compound_trans_head(page) compound_head(page)
- static inline int hugepage_madvise(struct vm_area_struct *vma,
- 				   unsigned long *vm_flags, int advice)
- {
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 648bcb007eba..073734339583 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -371,8 +371,18 @@ static inline void compound_unlock_irqrestore(struct page *page,
- 
- static inline struct page *compound_head(struct page *page)
- {
--	if (unlikely(PageTail(page)))
--		return page->first_page;
-+	if (unlikely(PageTail(page))) {
-+		struct page *head = page->first_page;
-+
-+		/*
-+		 * page->first_page may be a dangling pointer to an old
-+		 * compound page, so recheck that it is still a tail
-+		 * page before returning.
-+		 */
-+		smp_rmb();
-+		if (likely(PageTail(page)))
-+			return head;
-+	}
- 	return page;
- }
- 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 0bea2b262a47..c78fff1e9eae 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -444,7 +444,7 @@ static void break_cow(struct rmap_item *rmap_item)
- static struct page *page_trans_compound_anon(struct page *page)
- {
- 	if (PageTransCompound(page)) {
--		struct page *head = compound_trans_head(page);
-+		struct page *head = compound_head(page);
- 		/*
- 		 * head may actually be splitted and freed from under
- 		 * us but it's ok here.
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index de476c2f8827..5ea3cf734138 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1659,7 +1659,7 @@ int soft_offline_page(struct page *page, int flags)
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
--	struct page *hpage = compound_trans_head(page);
-+	struct page *hpage = compound_head(page);
- 
- 	if (PageHWPoison(page)) {
- 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 06f847933eeb..6fca39097766 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -369,9 +369,11 @@ void prep_compound_page(struct page *page, unsigned long order)
- 	__SetPageHead(page);
- 	for (i = 1; i < nr_pages; i++) {
- 		struct page *p = page + i;
--		__SetPageTail(p);
- 		set_page_count(p, 0);
- 		p->first_page = page;
-+		/* Make sure p->first_page is always valid for PageTail() */
-+		smp_wmb();
-+		__SetPageTail(p);
- 	}
- }
- 
-diff --git a/mm/swap.c b/mm/swap.c
-index 0c8f7a471925..aa4da5d9401d 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -84,7 +84,7 @@ static void put_compound_page(struct page *page)
- {
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
--		struct page *page_head = compound_trans_head(page);
-+		struct page *page_head = compound_head(page);
- 
- 		if (likely(page != page_head &&
- 			   get_page_unless_zero(page_head))) {
-@@ -222,7 +222,7 @@ bool __get_page_tail(struct page *page)
- 	 */
- 	unsigned long flags;
- 	bool got = false;
--	struct page *page_head = compound_trans_head(page);
-+	struct page *page_head = compound_head(page);
- 
- 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
- 		/* Ref to put_compound_page() comment. */
 -- 
 1.9.1
 
