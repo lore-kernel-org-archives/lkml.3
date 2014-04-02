@@ -1,131 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874AbaDBScl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:32:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2089 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932481AbaDBScj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:32:39 -0400
-Date: Wed, 2 Apr 2014 20:31:13 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, LKML <linux-kernel@vger.kernel.org>,
+	id S932857AbaDBSmX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:42:23 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:31026 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932494AbaDBSmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:42:22 -0400
+Date: Wed, 2 Apr 2014 14:42:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Message-ID: <20140402183113.GL1500@redhat.com>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
- <20140401212102.GM4407@cmpxchg.org>
- <533B8C2D.9010108@linaro.org>
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-ID: <20140402144219.4cafbe37@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533B8C2D.9010108@linaro.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+It has come to our attention that a system running a specific user
+space init program will not boot if you add "debug" to the kernel
+command line. What happens is that the user space tool parses the
+kernel command line, and if it sees "debug" it will spit out so much
+information that the system fails to boot. This basically renders the
+"debug" option for the kernel useless.
 
-On Tue, Apr 01, 2014 at 09:03:57PM -0700, John Stultz wrote:
-> So between zero-fill and SIGBUS, I think SIGBUS makes the most sense. If
-> you have a third option you're thinking of, I'd of course be interested
-> in hearing it.
+This bug has been reported to the developers of said tool
+here:
 
-I actually thought the way of being notified with a page fault (sigbus
-or whatever) was the most efficient way of using volatile ranges.
+  https://bugs.freedesktop.org/show_bug.cgi?id=76935
 
-Why having to call a syscall to know if you can still access the
-volatile range, if there was no VM pressure before the access?
-syscalls are expensive, accessing the memory direct is not. Only if it
-page was actually missing and a page fault would fire, you'd take the
-slowpath.
+The response is:
 
-The usages I see for this are plenty, like for maintaining caches in
-memory that may be big and would be nice to discard if there's VM
-pressure, jpeg uncompressed images sounds like a candidate too. So the
-browser size would shrink if there's VM pressure, instead of ending up
-swapping out uncompressed image data that can be regenerated more
-quickly with the CPU than with swapins.
+"Generic terms are generic, not the first user owns them."
 
-> Now... once you've chosen SIGBUS semantics, there will be folks who will
-> try to exploit the fact that we get SIGBUS on purged page access (at
-> least on the user-space side) and will try to access pages that are
-> volatile until they are purged and try to then handle the SIGBUS to fix
-> things up. Those folks exploiting that will have to be particularly
-> careful not to pass volatile data to the kernel, and if they do they'll
-> have to be smart enough to handle the EFAULT, etc. That's really all
-> their problem, because they're being clever. :)
+That is, the "debug" statement on the *kernel* command line is not
+owned by the kernel just because it was the first user of it, and
+they refuse to fix their bug.
 
-I'm actually working on feature that would solve the problem for the
-syscalls accessing missing volatile pages. So you'd never see a
--EFAULT because all syscalls won't return even if they encounters a
-missing page in the volatile range dropped by the VM pressure.
+Well, my response is, we OWN the kernel command line, and as such, we
+can keep the users from seeing stuff on it if we so choose. And with
+that, I propose this patch, which hides "debug" from /proc/cmdline,
+such that we don't have to worry about tools parsing for it and causing
+hardship for those trying to debug the kernel.
 
-It's called userfaultfd. You call sys_userfaultfd(flags) and it
-connects the current mm to a pseudo filedescriptor. The filedescriptor
-works similarly to eventfd but with a different protocol.
-
-You need a thread that will never access the userfault area with the
-CPU, that is responsible to poll on the userfaultfd and talk the
-userfaultfd protocol to fill-in missing pages. The userfault thread
-after a POLLIN event reads the virtual addresses of the fault that
-must have happened on some other thread of the same mm, and then
-writes back an "handled" virtual range into the fd, after the page (or
-pages if multiple) have been regenerated and mapped in with
-sys_remap_anon_pages(), mremap or equivalent atomic pagetable page
-swapping. Then depending on the "solved" range written back into the
-fd, the kernel will wakeup the thread or threads that were waiting in
-kernel mode on the "handled" virtual range, and retry the fault
-without ever exiting kernel mode.
-
-We need this in KVM for running the guest on memory that is on other
-nodes or other processes (postcopy live migration is the most common
-use case but there are others like memory externalization and
-cross-node KSM in the cloud, to keep a single copy of memory across
-multiple nodes and externalized to the VM and to the host node).
-
-This thread made me wonder if we could mix the two features and you
-would then depend on MADV_USERFAULT and userfaultfd to deliver to
-userland the "faults" happening on the volatile pages that have been
-purged as result of VM pressure.
-
-I'm just saying this after Johannes mentioned the issue with syscalls
-returning -EFAULT. Because that is the very issue that the userfaultfd
-is going to solve for the KVM migration thread.
-
-What I'm thinking now would be to mark the volatile range also
-MADV_USERFAULT and then calling userfaultfd and instead of having the
-cache regeneration "slow path" inside the SIGBUS handler, to run it in
-the userfault thread that polls the userfaultfd. Then you could write
-the volatile ranges to disk with a write() syscall (or use any other
-syscall on the volatile ranges), without having to worry about -EFAULT
-being returned because one page was discarded. And if MADV_USERFAULT
-is not called in combination with vrange syscalls, then it'd still
-work without the userfault, but with the vrange syscalls only.
-
-In short the idea would be to let the userfault code solve the fault
-delivery to userland for you, and make the vrange syscalls only focus
-on the page purging problem, without having to worry about what
-happens when something access a missing page.
-
-But if you don't intend to solve the syscall -EFAULT problem, well
-then probably the overlap is still as thin as I thought it was before
-(like also mentioned in the below link).
-
-Thanks,
-Andrea
-
-PS. my last email about this from a more KVM centric point of view:
-
-http://www.spinics.net/lists/kvm/msg101449.html
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+diff --git a/fs/proc/cmdline.c b/fs/proc/cmdline.c
+index cbd82df..fdb75f7 100644
+--- a/fs/proc/cmdline.c
++++ b/fs/proc/cmdline.c
+@@ -5,7 +5,7 @@
+ 
+ static int cmdline_proc_show(struct seq_file *m, void *v)
+ {
+-	seq_printf(m, "%s\n", saved_command_line);
++	seq_printf(m, "%s\n", proc_command_line);
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/init.h b/include/linux/init.h
+index a3ba270..daf978a 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -145,6 +145,7 @@ typedef void (*ctor_fn_t)(void);
+ extern int do_one_initcall(initcall_t fn);
+ extern char __initdata boot_command_line[];
+ extern char *saved_command_line;
++extern char *proc_command_line;
+ extern unsigned int reset_devices;
+ 
+ /* used by init/main.c */
+diff --git a/init/main.c b/init/main.c
+index 9c7fd4c..6c2022f 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -121,8 +121,10 @@ void (*__initdata late_time_init)(void);
+ 
+ /* Untouched command line saved by arch-specific code. */
+ char __initdata boot_command_line[COMMAND_LINE_SIZE];
+-/* Untouched saved command line (eg. for /proc) */
++/* Untouched saved command line */
+ char *saved_command_line;
++/* Slightly touched command line (for /proc) */
++char *proc_command_line;
+ /* Command line for parameter parsing */
+ static char *static_command_line;
+ /* Command line for per-initcall parameter parsing */
+@@ -349,13 +351,44 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
+  */
+ static void __init setup_command_line(char *command_line)
+ {
+-	saved_command_line =
+-		memblock_virt_alloc(strlen(boot_command_line) + 1, 0);
+-	initcall_command_line =
+-		memblock_virt_alloc(strlen(boot_command_line) + 1, 0);
++	char *str;
++	int len = strlen(boot_command_line);
++
++	saved_command_line = memblock_virt_alloc(len + 1, 0);
++	initcall_command_line = memblock_virt_alloc(len + 1, 0);
+ 	static_command_line = memblock_virt_alloc(strlen(command_line) + 1, 0);
+ 	strcpy (saved_command_line, boot_command_line);
+ 	strcpy (static_command_line, command_line);
++
++	proc_command_line = saved_command_line;
++
++	/*
++	 * To keep user processes from abusing 'debug', we strip it
++	 * from what /proc/cmdline shows.
++	 */
++	str = saved_command_line;
++	do {
++		int index;
++
++		str = strstr(str, "debug");
++		if (!str)
++			break;
++
++		/* Make sure debug is by itself */
++		if ((str != saved_command_line && str[-1] != ' ') ||
++		    (str[5] != '\0' && str[5] != ' ')) {
++			str += 5;
++			continue;
++		}
++
++		/* Remove "debug" from command line */
++		index = str - saved_command_line;
++		proc_command_line = memblock_virt_alloc(len - 4, 0);
++		strncpy(proc_command_line, boot_command_line, index);
++		strncpy(proc_command_line + index,
++			boot_command_line + index + 5, len - (index + 5));
++		break;
++	} while (*str != '\0');
+ }
+ 
+ /*
