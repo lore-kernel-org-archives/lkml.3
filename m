@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843AbaDBS1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:27:48 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:48354 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652AbaDBS1q (ORCPT
+	id S932883AbaDBS2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:28:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50395 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932652AbaDBS2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:27:46 -0400
-Message-ID: <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH] integrity: get comm using lock to avoid race in string
- printing
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Steve Grubb <sgrubb@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        linux-ima-user <linux-ima-user@lists.sourceforge.net>
-Date: Wed, 02 Apr 2014 14:27:40 -0400
-In-Reply-To: <1396462716.2608.1.camel@localhost>
-References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
-	 <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <6292885.20TorKeRiK@x2>
-	 <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <1396462716.2608.1.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040218-9332-0000-0000-000000524FDA
+	Wed, 2 Apr 2014 14:28:04 -0400
+Date: Wed, 2 Apr 2014 19:27:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: gregkh@linuxfoundation.org, linux@roeck-us.net,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140402182747.GC14763@sirena.org.uk>
+References: <1396405217-12658-1-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
+Content-Disposition: inline
+In-Reply-To: <1396405217-12658-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: To make an enemy, do someone a favor.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH resend] regmap: mmio: Fix the bug of 'offset' value
+ parsing.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote: 
-> On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
-> > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote: 
-> > > Hello Mimi,
-> > > 
-> > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
-> > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
-> > > > Pass commname via get_task_comm()".
-> > > 
-> > > While I was looking at Richard's patch, I noticed a few places where cause and 
-> > > op are logged and the string isn't tied together with a _ or -. These are in 
-> > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are 
-> > > these fixed upstream? Or should a patch be made?
-> > 
-> > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
-> > making the changes in integrity_audit.c: integrity_audit_msg().
-> 
-> The question is actually, do you know of anyone who is expecting the
-> space, instead of a more 'audit standard' - or _ ?  If not, we'll change
-> it.  If so, we'll discuss more   :)
 
-CC'ing linux-ima-user as well.
+--ncSAzJYg3Aa9+CRW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Mimi
+On Wed, Apr 02, 2014 at 10:20:17AM +0800, Xiubo Li wrote:
+> 'offset = *(u32 *)reg;'
+> This will be okey for 32/64-bits register device, but for 8/16-bits
+> register ones, the 'offset' value will overflow, for example:
 
+Applied, thanks.
+
+--ncSAzJYg3Aa9+CRW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPFagAAoJELSic+t+oim9SNoP/0DF6q86Kn1+mC83UPzHT53N
+A2M4FV1KfqA5XIIliRId8yCW2NPMfximWxu9VTpgGdeWvknuhPQ/iGGzC1BPWpRE
+bgWo1ZNrO1w9YeP3A6vi7sLMKdVG9Q8vrypt4azP7MP2jctRJorKlJH/GXAwIEuo
+k7vOJL8L9L+itRFlRpf8v6Ileo2JLdlzvVBFTVIsM7UXtJQK0UB7RqzgcRlk8bgR
+qb+wSGvsPJUrqX/bG25ZvZ8zQyoPizknskO8eCruXqLvf+julTKlyF+VeGrOmre6
+dqvukkD0Cspt17xDTp28sHtJseFtK2lRzOOTmhejf5nmW6A356sf6uIK3WIuH6+t
+AoGZ3F7HUILY1chuzgcXXKiolx7lBpNqC7xU51pfJyZl9hB1xqYYQcBhQBf9sbOV
+oFVbaMUjKiPFRRRLAb5ZLlW9HmsUJVyw9cJEPYH4nPVfR4tS9lesDO2pX4k1iaXE
+ivk5KHmk+6ycuKrSCgPydCJQuVOgdKq9YGpoDueEPt/I2G+EPx1jOn8ZDxO5OSyo
+Oypx257yRKdIYi18gTRgja9eupVppI8C++MjCVRfql6YHLCqpDSAb1GCRdJ9jA3F
+/cbizLWmV93nTzv/ZPUD8ABpQTZA0ZrnTOn/mLTikGs7OEZg7HbFANUqBTIjhe58
+lSl49ZBeFHnF2TXK8ySB
+=cr9H
+-----END PGP SIGNATURE-----
+
+--ncSAzJYg3Aa9+CRW--
