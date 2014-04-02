@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283AbaDBIb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 04:31:28 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:38068 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757478AbaDBIbZ (ORCPT
+	id S1758150AbaDBIgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 04:36:08 -0400
+Received: from v-27-120-111-12.ub-freebit.net ([27.120.111.12]:55799 "EHLO
+	ns.cpanel.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757956AbaDBIgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 04:31:25 -0400
+	Wed, 2 Apr 2014 04:36:06 -0400
+X-Greylist: delayed 6290 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Apr 2014 04:36:05 EDT
+Message-ID: <718d9695ce9295ebc826c10d4e302275.squirrel@27.120.111.12>
+Date: Wed, 2 Apr 2014 13:52:47 +0900
+Subject: =?iso-8859-1?Q?F=E5_et_l=E5n_p=E5_3%?=
+From: "Santander Consumer Finance" <info@santander.com>
+Reply-To: santanderloanfins@manager.in.th
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Wed, 2 Apr 2014 08:31:04 +0000
-X-Google-Sender-Auth: jpSf2IXRlYIhsf7lKuDGVR5m1Ew
-Message-ID: <CAM9d7ch-ZBYRHmhbHJEXQtS-V_kBPK5nMhtM3bPbHmnY+m-EeQ@mail.gmail.com>
-Subject: About 'hash' event trigger patchset
-To: Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - ns.cpanel.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - santander.com
+X-Get-Message-Sender-Via: ns.cpanel.net: authenticated_id: info@fanbio.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tom,
+Sir / Madam,
 
-(Sorry for replying in another thread, I have a problem on mail settings)
 
-I've just read your hash event trigger series, and want to give some feedback.
+   Få et lån på 3% både på kort og lang sikt. Santander Consumer
+   Finance er en global lånegruppe etablert for å møte behovene til
+   økonomisk deprimert kunder. Vi opererer i alle kategorier av lån.
+   Oppgi følgende informasjon hvis interessert.
 
-At first, the change log of 5/5 is actually a better documentation
-than in patch 4/5 so I think it should be added to the doc also.  But
-the syntax of the hash trigger should be look like:
+  Fullt navn:
+  kjønn:
+  land:
+   Beløp Needed:
+   Varighet:
+   formål:
 
-- # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
-+ # echo hash:key(s):value(s)[:"sort="sort_key(s)][ if filter] > event/trigger
+Vi trenger denne informasjonen for å fullføre lån behandling.
+   Vennlig hilsen,
 
-Also on first example in the changelog of 5/5, key should be
-'stacktrace' instead of 'call_site'.
+   Rosemary Scott Evans
+   Tel: +447-700-093-210
+   E-post: santanderloanfins@manager.in.th
 
-As far as I see in the code, the sort key can receive an optional
-descending/ascending modifier, but it's not documented.
-
-One thing I noticed in the main logic is that it seems there's no
-limit checking when adding/creating new entry.  In
-hash_trigger_entry_create(), there's a check against max_entries but
-if it goes beyond the max, it'd just access a NULL pointer AFAICS.  Am
-I missing something?  Also I don't know what the difference between
-->n_entries and ->total_entries (in hash_data).
-
-I guess you wanted to set ->drops in that case, but I cannot find
-where it gets set.  And I'm not sure it's good to check ->drop first,
-since entry can find an existing entry and merged to it even if it
-reached the max already.
-
-Thanks,
-Namhyung
