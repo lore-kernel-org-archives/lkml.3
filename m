@@ -1,79 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332AbaDBOSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 10:18:33 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:35375 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaDBOS3 (ORCPT
+	id S932314AbaDBOSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 10:18:31 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:34219 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932145AbaDBOS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 10:18:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALYGNiPnAVf+wSsdn4aO=89H_HqyjL_-vNHpZdop=Wchf7gTtw@mail.gmail.com>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
-	<1395256011-2423-4-git-send-email-dh.herrmann@gmail.com>
-	<CALYGNiPnAVf+wSsdn4aO=89H_HqyjL_-vNHpZdop=Wchf7gTtw@mail.gmail.com>
-Date: Wed, 2 Apr 2014 16:18:29 +0200
-Message-ID: <CANq1E4QV-=kWhzxqq4F-mZ2puh--SPydR+HmbLvoCixiJ_c6=g@mail.gmail.com>
-Subject: Re: [PATCH 3/6] shm: add memfd_create() syscall
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Kay Sievers <kay@vrfy.org>,
-        Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>
+In-Reply-To: <CAAVeFuKezGqPnmi=XJW1FrL-3e8hyqdjuY83VEh496SLm+0mFQ@mail.gmail.com>
+References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
+	<1395650554-31925-7-git-send-email-acourbot@nvidia.com>
+	<20140324223444.GF17218@mithrandir>
+	<CAAVeFuKezGqPnmi=XJW1FrL-3e8hyqdjuY83VEh496SLm+0mFQ@mail.gmail.com>
+Date: Wed, 2 Apr 2014 10:18:28 -0400
+X-Google-Sender-Auth: Zp1dSqQREOJ_bz_pqVf9G6wV7Oc
+Message-ID: <CAKb7Uvj_+s+PTbziGD_jb=ryk372vgxSTOrmxOZVGUghHnveAw@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 06/12] drm/nouveau/ibus: add GK20A support
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Wed, Apr 2, 2014 at 3:38 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
-> On Wed, Mar 19, 2014 at 11:06 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
->> that you can pass to mmap(). It explicitly allows sealing and
->> avoids any connection to user-visible mount-points. Thus, it's not
->> subject to quotas on mounted file-systems, but can be used like
->> malloc()'ed memory, but with a file-descriptor to it.
+On Wed, Apr 2, 2014 at 9:52 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, Mar 25, 2014 at 7:34 AM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+>> On Mon, Mar 24, 2014 at 05:42:28PM +0900, Alexandre Courbot wrote:
+>> [...]
+>>> diff --git a/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c b/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
+>> [...]
+>>> +#include <subdev/ibus.h>
+>>> +
+>>> +struct nvea_ibus_priv {
+>>> +     struct nouveau_ibus base;
+>>> +};
+>>> +
+>>> +static void
+>>> +nvea_ibus_init_priv_ring(struct nvea_ibus_priv *priv)
+>>> +{
+>>> +     nv_mask(priv, 0x137250, 0x3f, 0);
+>>> +
+>>> +     nv_mask(priv, 0x000200, 0x20, 0);
+>>> +     udelay(20);
 >>
->> memfd_create() does not create a front-FD, but instead returns the raw
->> shmem file, so calls like ftruncate() can be used. Also calls like fstat()
->> will return proper information and mark the file as regular file. Sealing
->> is explicitly supported on memfds.
+>> usleep_range()?
+>
+> Sure.
+>
 >>
->> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
->> subject to quotas and alike.
+>>> +static void
+>>> +nvea_ibus_intr(struct nouveau_subdev *subdev)
+>>> +{
+>> [...]
+>>> +     /* Acknowledge interrupt */
+>>> +     nv_mask(priv, 0x12004c, 0x2, 0x2);
+>>> +
+>>> +     while (--retry >= 0) {
+>>> +             command = nv_rd32(priv, 0x12004c) & 0x3f;
+>>> +             if (command == 0)
+>>> +                     break;
+>>> +     }
+>>> +
+>>> +     if (retry < 0)
+>>> +             nv_warn(priv, "timeout waiting for ringmaster ack\n");
+>>> +}
+>>
+>> Perhaps I'm being paranoid, but this loop now depends on the frequency
+>> of the various clocks involved and therefore might break at some point
+>> if the frequencies get sufficiently high.
+>>
+>> So a slightly safer implementation would use a proper timeout using a
+>> combination of msecs_to_jiffies(), time_before() and usleep_range(),
+>> like so:
+>>
+>>         timeout = jiffies + msecs_to_jiffies(...);
+>>
+>>         while (time_before(jiffies, timeout)) {
+>>                 command = nv_rd32(...) & 0x3f;
+>>                 if (command == 0)
+>>                         break;
+>>
+>>                 usleep_range(...);
+>>         }
+>>
+>>         if (time_after(jiffies, timeout))
+>>                 nv_warn(...);
 >
-> Instead of adding new syscall we can extend existing openat() a little
-> bit more:
+> Right, now that I look at this code again I don't even understand why
+> I left it this way. Maybe I left some early test code slip into the
+> final patch, sorry about that.
+
+I just remembered about this, but there's also the nv_wait() macro,
+which you could use, e.g.
+
+if (!nv_wait(subdev, 0x12004c, 0x3f, 0x00))
+  nv_warn(...)
+
+It has built-in timeout logic/etc (although no sleeps in the middle).
+It does use the timer subdev, so if that's not operational at this
+point, you can't use it.
+
 >
-> openat(AT_FDSHM, "name", O_TMPFILE | O_RDWR, 0666)
-
-O_TMPFILE requires an existing directory as "name". So you have to use:
-  open("/run/", O_TMPFILE | O_RDWR, 0666)
-instead of
-  open("/run/new_file", O_TMPFILE | O_RDWR, 0666)
-
-We _really_ want to set a name for the inode, though. Otherwise,
-debug-info via /proc/pid/fd/ is useless.
-
-Furthermore, Linus requested to allow sealing only on files that
-_explicitly_ allow sealing. So v2 of this series will have
-MFD_ALLOW_SEALING as memfd_create() flag. I don't think we can do this
-with linkat() (or is that meant to be implicit for the new AT_FDSHM?).
-Last but not least, you now need a separate syscall to set the
-file-size.
-
-I could live with most of these issues, except for the name-thing. Ideas?
-
-Thanks
-David
+>> This assumes that there's some known timeout after which the ringmaster
+>> is expected to have acked the interrupt. On that note, I wonder if the
+>> warning is accurate here: it's my understanding that writing 0x2 to the
+>> register does acknowledge the interrupt, so the ringmaster does in fact
+>> "clear" it rather than "acknowledge" it, doesn't it?
+>>
+>> Although now that I mention it I seem to remember that this write is
+>> actually sending a command to the ring master and perhaps waiting for
+>> the register to return to 0 is indeed waiting for an ACK of sorts. Maybe
+>> adding a comment or so describing what this sequence does would be
+>> appropriate here?
+>
+> Can we from an IP point of view? AFAIK this sequence has never been
+> publicly documented.
+> _______________________________________________
+> Nouveau mailing list
+> Nouveau@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/nouveau
