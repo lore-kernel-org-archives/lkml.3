@@ -1,58 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818AbaDBSEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:04:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932332AbaDBSET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:04:19 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: axboe@fb.com
-Cc: linux-kernel@vger.kernel.org, mpatocka@redhat.com, dm-devel@redhat.com
-Subject: [PATCH] block: use kmalloc alignment for bio slab
-Date: Wed,  2 Apr 2014 14:04:16 -0400
-Message-Id: <1396461856-27243-1-git-send-email-snitzer@redhat.com>
+	id S932851AbaDBSFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:05:21 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:42411 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932745AbaDBSFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:05:18 -0400
+Date: Wed, 2 Apr 2014 11:05:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jens.axboe@oracle.com>, Kevin Hilman <khilman@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] smp: Non busy-waiting IPI queue
+Message-ID: <20140402180513.GQ4284@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1396455966-21128-1-git-send-email-fweisbec@gmail.com>
+ <1396455966-21128-2-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396455966-21128-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040218-7164-0000-0000-000000BF5E3E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+On Wed, Apr 02, 2014 at 06:26:05PM +0200, Frederic Weisbecker wrote:
+> Some IPI users, such as the nohz subsystem, need to be able to send
+> an async IPI (async = non waiting for any other IPI completion) on
+> contexts with disabled interrupts. And we want the IPI subsystem to handle
+> concurrent calls by itself.
+> 
+> Currently the nohz machinery uses the scheduler IPI for this purpose
+> because it can be triggered from any context and doesn't need any
+> serialization from the caller. But this is an abuse of a scheduler
+> fast path. We are bloating it with a job that should use its own IPI.
+> 
+> The current set of IPI functions can't be called when interrupts are
+> disabled otherwise we risk a deadlock when two CPUs wait for each
+> other's IPI completion.
+> 
+> OTOH smp_call_function_single_async() can be called when interrupts
+> are disabled. But then it's up to the caller to serialize the given
+> IPI. This can't be called concurrently without special care.
+> 
+> So we need a version of the async IPI that takes care of concurrent
+> calls.
+> 
+> The proposed solution is to synchronize the IPI with a specific flag
+> that prevents the IPI from being sent if it is already pending but not
+> yet executed. Ordering is maintained such that, if the IPI is not sent
+> because it's already pending, we guarantee it will see the new state of
+> the data we expect it to when it will execute.
+> 
+> This model is close to the irq_work design. It's also partly inspired by
+> suggestions from Peter Zijlstra.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jens Axboe <jens.axboe@oracle.com>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-Various subsystems can ask the bio subsystem to create a bio slab cache
-with some free space before the bio.  This free space can be used for any
-purpose.  Device mapper uses this per-bio-data feature to place some
-target-specific and device-mapper specific data before the bio, so that
-the target-specific data doesn't have to be allocated separately.
+Nice, but one question below.
 
-This per-bio-data mechanism is used in place of kmalloc, so we need the
-allocated slab to have the same memory alignment as memory allocated
-with kmalloc.
+							Thanx, Paul
 
-Change bio_find_or_create_slab() so that it uses ARCH_KMALLOC_MINALIGN
-alignment when creating the slab cache.  This is needed so that dm-crypt
-can use per-bio-data for encryption - the crypto subsystem assumes this
-data will have the same alignment as kmalloc'ed memory.
+> ---
+>  include/linux/smp.h | 12 ++++++++++++
+>  kernel/smp.c        | 44 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 56 insertions(+)
+> 
+> diff --git a/include/linux/smp.h b/include/linux/smp.h
+> index 633f5ed..155dc86 100644
+> --- a/include/linux/smp.h
+> +++ b/include/linux/smp.h
+> @@ -29,6 +29,18 @@ extern unsigned int total_cpus;
+>  int smp_call_function_single(int cpuid, smp_call_func_t func, void *info,
+>  			     int wait);
+> 
+> +struct queue_single_data;
+> +typedef void (*smp_queue_func_t)(struct queue_single_data *qsd);
+> +
+> +struct queue_single_data {
+> +	struct call_single_data data;
+> +	smp_queue_func_t func;
+> +	int pending;
+> +};
+> +
+> +int smp_queue_function_single(int cpuid, smp_queue_func_t func,
+> +			      struct queue_single_data *qsd);
+> +
+>  /*
+>   * Call a function on all processors
+>   */
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 06d574e..bfe7b36 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -265,6 +265,50 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd)
+>  }
+>  EXPORT_SYMBOL_GPL(smp_call_function_single_async);
+> 
+> +void generic_smp_queue_function_single_interrupt(void *info)
+> +{
+> +	struct queue_single_data *qsd = info;
+> +
+> +	WARN_ON_ONCE(xchg(&qsd->pending, 0) != 1);
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- fs/bio.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+I am probably missing something here, but shouldn't this function copy
+*qsd to a local on-stack variable before doing the above xchg()?  What
+prevents the following from happening?
 
-diff --git a/fs/bio.c b/fs/bio.c
-index b2dd42e..6c94ba6 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -112,7 +112,8 @@ static struct kmem_cache *bio_find_or_create_slab(unsigned int extra_size)
- 	bslab = &bio_slabs[entry];
- 
- 	snprintf(bslab->name, sizeof(bslab->name), "bio-%d", entry);
--	slab = kmem_cache_create(bslab->name, sz, 0, SLAB_HWCACHE_ALIGN, NULL);
-+	slab = kmem_cache_create(bslab->name, sz, ARCH_KMALLOC_MINALIGN,
-+				 SLAB_HWCACHE_ALIGN, NULL);
- 	if (!slab)
- 		goto out_unlock;
- 
--- 
-1.8.1.4
+o	CPU 0 does smp_queue_function_single(), which sets ->pending
+	and fills in ->func and ->data.
+
+o	CPU 1 takes IPI, invoking generic_smp_queue_function_single_interrupt().
+
+o	CPU 1 does xchg(), so that ->pending is now zero.
+
+o	An attempt to reuse the queue_single_data sees ->pending equal
+	to zero, so the ->func and ->data is overwritten.
+
+o	CPU 1 calls the new ->func with the new ->data (or any of the other
+	two possible unexpected outcomes), which might not be helpful to
+	the kernel's actuarial statistics.
+
+So what am I missing?
+
+> +	qsd->func(qsd);
+> +}
+> +
+> +/**
+> + * smp_queue_function_single - Queue an asynchronous function to run on a
+> + * 				specific CPU unless it's already pending.
+> + * @func: The function to run. This must be fast and non-blocking.
+> + * @qsd: The data contained in the interested object if any
+> + *
+> + * Like smp_call_function_single_async() but the call to @func is serialized
+> + * and won't be queued if it is already pending. In the latter case, ordering
+> + * is still guaranteed such that the pending call will sees the new data we
+> + * expect it to.
+> + *
+> + * This must not be called on offline CPUs.
+> + *
+> + * Returns 0 when @func is successfully queued or already pending, else a negative
+> + * status code.
+> + */
+> +int smp_queue_function_single(int cpu, smp_queue_func_t func, struct queue_single_data *qsd)
+> +{
+> +	int err;
+> +
+> +	if (cmpxchg(&qsd->pending, 0, 1))
+> +		return 0;
+> +
+> +	qsd->func = func;
+> +
+> +	preempt_disable();
+> +	err = generic_exec_single(cpu, &qsd->data, generic_smp_queue_function_single_interrupt, qsd, 0);
+> +	preempt_enable();
+> +
+> +	/* Reset is case of error. This must not be called on offline CPUs */
+> +	if (err)
+> +		qsd->pending = 0;
+> +
+> +	return err;
+> +}
+> +
+>  /*
+>   * smp_call_function_any - Run a function on any of the given cpus
+>   * @mask: The mask of cpus it can run on.
+> -- 
+> 1.8.3.1
+> 
 
