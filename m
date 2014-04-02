@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397AbaDBLOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:14:01 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24351 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758116AbaDBLOA (ORCPT
+	id S1758566AbaDBLRo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:17:44 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:63236 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758184AbaDBLRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:14:00 -0400
-Date: Wed, 2 Apr 2014 12:13:26 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Bug(?) in patch "arm64: Implement coherent DMA API based on
- swiotlb" (was Re: [GIT PULL] arm64 patches for 3.15)
-Message-ID: <20140402111326.GC31892@arm.com>
-References: <20140331175230.GA7480@arm.com>
- <1396368657.3681.17.camel@linaro1.home>
- <20140401172939.GG20061@arm.com>
- <1396428722.3554.20.camel@linaro1.home>
- <20140402092032.GB31892@arm.com>
- <20140402094045.GH7528@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402094045.GH7528@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Apr 2014 07:17:42 -0400
+Message-ID: <1396437459.3989.39.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net: sched: dev_deactivate_many(): use msleep(1)
+ instead of yield() to wait for outstanding qdisc_run callsb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, David Miller <davem@davemloft.net>,
+        ben@decadent.org.uk, mkl@pengutronix.de,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        kernel@pengutronix.de
+Date: Wed, 02 Apr 2014 04:17:39 -0700
+In-Reply-To: <20140402110743.GG27965@twins.programming.kicks-ass.net>
+References: <1393976987-23555-1-git-send-email-mkl@pengutronix.de>
+	 <20140306.160622.59358366688518505.davem@davemloft.net>
+	 <1394392160.15968.13.camel@deadeye.wl.decadent.org.uk>
+	 <20140309.185338.2057082497431220324.davem@davemloft.net>
+	 <alpine.DEB.2.02.1403312333100.14882@ionos.tec.linutronix.de>
+	 <20140402110743.GG27965@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 10:40:45AM +0100, Russell King - ARM Linux wrote:
-> On Wed, Apr 02, 2014 at 10:20:32AM +0100, Catalin Marinas wrote:
-> > You are right. I think having unaligned DMA buffers for inbound
-> > transfers is pointless. We can avoid losing data written by another CPU
-> > in the same cache line but, depending on the stage of the DMA transfer,
-> > it can corrupt the DMA data.
-> > 
-> > I wonder whether it's easier to define the cache_line_size() macro to
-> > read CWG and assume that the DMA buffers are always aligned, ignoring
-> > the invalidation of the unaligned boundaries. This wouldn't be much
-> > different from your scenario where the shared cache line is written
-> > (just less likely to trigger but still a bug, so I would rather notice
-> > this early).
-> > 
-> > The ARMv7 code has a similar issue, it performs clean&invalidate on the
-> > unaligned start but it doesn't move r0, so it goes into the main loop
-> > invalidating the same cache line again. If it was written by something
-> > else, the information would be lost.
+On Wed, 2014-04-02 at 13:07 +0200, Peter Zijlstra wrote:
+> On Mon, Mar 31, 2014 at 11:49:16PM +0200, Thomas Gleixner wrote:
+> > > >> The intent of a yield() call, like this one here, is unambiguously
+> > > >> that the current thread cannot do anything until some other thread
+> > > >> gets onto the cpu and makes forward progress.
 > 
-> You can't make that a requirement.  People have shared stuff across a
-> cache line for years in Linux, and people have brought it up and tried
-> to fix it, but there's much resistance against it.  In particular is
-> SCSI, which submits the sense buffer as part of a larger structure (the
-> host.)  SCSI sort-of guarantees that the surrounding struct members
-> won't be touched, but their data has to be preserved.
+> Yeah; like Thomas said; that's not what yield() does -- or can do.
+> 
+> yield() only says 'I don't know what to do, you figure it out', but then
+> fails to provide enough information to actually do something sensible.
+> 
+> It cannot put the task to sleep; because it doesn't pair with a wakeup;
+> and therefore the task stays an eligible/runnable task from a scheduler
+> pov.
+> 
+> The scheduler is therefore entirely in its right to pick this task
+> again; and pretty much has to under many circumstances.
+> 
+> yield() does not, and can not, guarantee forward progress - ever.
+> 
+> Use wait_event() and assorted bits to wait for an actual event. That is
+> a sleep paired with a wakeup and thus has progress guarantees.
 
-Let's hope that CWG stays small enough on real hardware (as the
-architecture specifies it to max 2K).
+Why wouldn't it be safe to redefine yield as msleep(1) ?
 
-> In any case, remember that there are strict rules about ownership of the
-> DMA memory vs calls to the DMA API.  It is invalid to call the DMA
-> streaming API functions while a DMA transfer is active.
+net/ipv4/tcp_output.c seems to also use yield().
 
-Yes, I was referring to non-DMA buffer area in the same cache line being
-touched during a DMA transfer.
 
--- 
-Catalin
+                /* Socket is locked, keep trying until memory is available. */
+                for (;;) {
+                        skb = alloc_skb_fclone(MAX_TCP_HEADER,
+                                               sk->sk_allocation);
+                        if (skb)
+                                break;
+                        yield();
+                }
+
+
