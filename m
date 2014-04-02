@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955AbaDBS5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:57:44 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:53861 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932802AbaDBS5m (ORCPT
+	id S932966AbaDBTBD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:01:03 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:44593 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932555AbaDBTBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:57:42 -0400
+	Wed, 2 Apr 2014 15:01:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140402144219.4cafbe37@gandalf.local.home>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-Date: Wed, 2 Apr 2014 11:57:41 -0700
-X-Google-Sender-Auth: Yeb9-XKSeFNObBgplZSUNNiOvbQ
-Message-ID: <CA+55aFzCGQ-jk8ar4tiQEHCUoOPQzr-Mz+-LsPHCWZKryXZquQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+In-Reply-To: <20140402175852.GS14688@cmpxchg.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+	<20140401212102.GM4407@cmpxchg.org>
+	<533B313E.5000403@zytor.com>
+	<533B4555.3000608@sr71.net>
+	<533B8E3C.3090606@linaro.org>
+	<20140402163638.GQ14688@cmpxchg.org>
+	<CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
+	<20140402175852.GS14688@cmpxchg.org>
+Date: Wed, 2 Apr 2014 12:01:00 -0700
+Message-ID: <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+From: John Stultz <john.stultz@linaro.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 11:42 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+On Wed, Apr 2, 2014 at 10:58 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
+>> That point beside, I think the other problem with the page-cleaning
+>> volatility approach is that there are other awkward side effects. For
+>> example: Say an application marks a range as volatile. One page in the
+>> range is then purged. The application, due to a bug or otherwise,
+>> reads the volatile range. This causes the page to be zero-filled in,
+>> and the application silently uses the corrupted data (which isn't
+>> great). More problematic though, is that by faulting the page in,
+>> they've in effect lost the purge state for that page. When the
+>> application then goes to mark the range as non-volatile, all pages are
+>> present, so we'd return that no pages were purged.  From an
+>> application perspective this is pretty ugly.
+>>
+>> Johannes: Any thoughts on this potential issue with your proposal? Am
+>> I missing something else?
 >
-> The response is:
->
-> "Generic terms are generic, not the first user owns them."
+> No, this is accurate.  However, I don't really see how this is
+> different than any other use-after-free bug.  If you access malloc
+> memory after free(), you might receive a SIGSEGV, you might see random
+> data, you might corrupt somebody else's data.  This certainly isn't
+> nice, but it's not exactly new behavior, is it?
 
-And by "their" you mean Kay Sievers.
+The part that troubles me is that I see the purged state as kernel
+data being corrupted by userland in this case. The kernel will tell
+userspace that no pages were purged, even though they were. Only
+because userspace made an errant read of a page, and got garbage data
+back.
 
-Key, I'm f*cking tired of the fact that you don't fix problems in the
-code *you* write, so that the kernel then has to work around the
-problems you cause.
-
-Greg - just for your information, I will *not* be merging any code
-from Kay into the kernel until this constant pattern is fixed.
-
-This has been going on for *years*, and doesn't seem to be getting any
-better. This is relevant to you because I have seen you talk about the
-kdbus patches, and this is a heads-up that you need to keep them
-separate from other work. Let distributions merge it as they need to
-and maybe we can merge it once it has been proven to be stable by
-whatever distro that was willing to play games with the developers.
-
-But I'm not willing to merge something where the maintainer is known
-to not care about bugs and regressions and then forces people in other
-projects to fix their project. Because I am *not* willing to take
-patches from people who don't clean up after their problems, and don't
-admit that it's their problem to fix.
-
-Kay - one more time: you caused the problem, you need to fix it. None
-of this "I can do whatever I want, others have to clean up after me"
-crap.
-
-                 Linus
+thanks
+-john
