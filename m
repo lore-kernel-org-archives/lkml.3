@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689AbaDBM1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 08:27:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11762 "EHLO mga01.intel.com"
+	id S1758645AbaDBMbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 08:31:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37480 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758618AbaDBM1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 08:27:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,780,1389772800"; 
-   d="scan'208";a="512837132"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, chiau.ee.chew@intel.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] phy: don't return error from the stubs
-Date: Wed,  2 Apr 2014 15:25:43 +0300
-Message-Id: <1396441543-11744-1-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1758289AbaDBMbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 08:31:49 -0400
+Subject: Re: [PATCH 2/2] ttyprintk: Allow built as a module
+From: Jean Delvare <jdelvare@suse.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Struan Bartlett <struan.bartlett@gmail.com>,
+        Andreas Schwab <schwab@linux-m68k.org>, gnomes@lxorguk.ukuu.org.uk,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1396434582-30799-2-git-send-email-tiwai@suse.de>
+References: <1396434582-30799-1-git-send-email-tiwai@suse.de>
+	 <1396434582-30799-2-git-send-email-tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Wed, 02 Apr 2014 14:31:46 +0200
+Message-ID: <1396441906.28124.3.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Returning 0 from the stubs for the functions that are used
-for PHY controlling. The interface should not appear to be
-failing with every operation when the framework is not
-enabled.
+Hi Takashi,
 
-This fixes an issue in dwc3 driver, where the driver fails
-the moment first phy_*() call is made when the framework is
-not enabled.
+Le Wednesday 02 April 2014 à 12:29 +0200, Takashi Iwai a écrit :
+> The driver is well written to be used as a module, just the exit call
+> is missing.
+> 
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/char/Kconfig     |  2 +-
+>  drivers/char/ttyprintk.c | 13 ++++++++++++-
+>  2 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+> index 1386749b48ff..97816b133c7f 100644
+> --- a/drivers/char/Kconfig
+> +++ b/drivers/char/Kconfig
+> @@ -40,7 +40,7 @@ config SGI_MBCS
+>  source "drivers/tty/serial/Kconfig"
+>  
+>  config TTY_PRINTK
+> -	bool "TTY driver to output user messages via printk"
+> +	tristate "TTY driver to output user messages via printk"
+>  	depends on EXPERT && TTY
+>  	default n
+>  	---help---
+> diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
+> index 2a39c5790364..73606eaaba71 100644
+> --- a/drivers/char/ttyprintk.c
+> +++ b/drivers/char/ttyprintk.c
+> @@ -17,7 +17,7 @@
+>  #include <linux/device.h>
+>  #include <linux/serial.h>
+>  #include <linux/tty.h>
+> -#include <linux/export.h>
+> +#include <linux/module.h>
+>  
+>  struct ttyprintk_port {
+>  	struct tty_port port;
+> @@ -214,4 +214,15 @@ error:
+>  	tty_port_destroy(&tpk_port.port);
+>  	return ret;
+>  }
+> +
+> +static void ttyprintk_exit(void)
 
-Reported-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- include/linux/phy/phy.h | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+Could be marked __exit.
 
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index e2f5ca9..00d6949 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -174,22 +174,22 @@ void devm_of_phy_provider_unregister(struct device *dev,
- #else
- static inline int phy_pm_runtime_get(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int phy_pm_runtime_get_sync(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int phy_pm_runtime_put(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int phy_pm_runtime_put_sync(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline void phy_pm_runtime_allow(struct phy *phy)
-@@ -204,27 +204,27 @@ static inline void phy_pm_runtime_forbid(struct phy *phy)
- 
- static inline int phy_init(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int phy_exit(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int phy_power_on(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int phy_power_off(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline int phy_get_bus_width(struct phy *phy)
- {
--	return -ENOSYS;
-+	return 0;
- }
- 
- static inline void phy_set_bus_width(struct phy *phy, int bus_width)
+> +{
+> +	tty_unregister_driver(ttyprintk_driver);
+> +	put_tty_driver(ttyprintk_driver);
+> +	tty_port_destroy(&tpk_port.port);
+> +}
+> +
+>  device_initcall(ttyprintk_init);
+> +module_exit(ttyprintk_exit);
+> +
+> +MODULE_LICENSE("GPL");
+
+Other than this, this looks good, thanks for doing that.
+
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+
 -- 
-1.9.1
+Jean Delvare
+SUSE L3 Support
 
