@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933430AbaDBWMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:12:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38025 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414AbaDBWLE (ORCPT
+	id S1161043AbaDBWMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:12:43 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45570 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030526AbaDBWMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:11:04 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Linux PPC <linuxppc-dev@lists.ozlabs.org>, cody+local@linux.vnet.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>,
-        David.Laight@aculab.com, Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] fixup: "powerpc/perf: Add support for the hv 24x7 interface"
-Date: Wed,  2 Apr 2014 15:10:53 -0700
-Message-Id: <1396476654-20623-2-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396476654-20623-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1396476654-20623-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040222-9332-0000-0000-00000052E9AB
+	Wed, 2 Apr 2014 18:12:37 -0400
+Message-ID: <533C8B49.8080704@ahsoftware.de>
+Date: Thu, 03 Apr 2014 00:12:25 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
+ for Marvel 88E1116R PHYs
+References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com> <533C721E.1080004@gmail.com>
+In-Reply-To: <533C721E.1080004@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the "not enabled" message less awful.
+Am 02.04.2014 22:25, schrieb Sebastian Hesselbarth:
+> On 04/02/2014 09:01 PM, Florian Fainelli wrote:
+>> 2014-04-02 2:09 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
+>>> Am 02.04.2014 02:57, schrieb Florian Fainelli:
+>>>> 2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
+>>>>> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
+>>>>> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
+>>>>> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
+>>>>> was broken such, that it used mdelay() instead of really waiting for a
+>>>>> reset to finish.
+>>
+>> Can you resubmit with the following information:
+>>
+>> - you specify the commit that introduce the problem in parenthesis,
+>> e.g: deadbeef ("dead: beef: cafe babe")
+>> - put this dmesg snippet in your log message to clearly illustrate
+>> what is happening
+>> - clarify that the PHY needs to be polled in a comment in
+>> m88e1116r_config_init()
+>>
+>> Meanwhile, it would be good if someone with access to this particular
+>> PHY datasheet could look for known erratas, problems, non-standard
+>> compliant behavior ....
+> 
+> Alexander,
+> 
+> I tried todays linux/master on Seagate Dockstar with Marvell 88E1116R
+> (0x01410e40) and cannot reproduce any regression. I tried booting from
+> tftp and usb, I also rebooted twice to see if there are any side
+> effects - nothing - ethernet always comes up as expected.
+> 
+> I am curious, how you determined above commit to be the cause of the
+> regression you are seeing. Can you bisect, if you didn't already?
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- arch/powerpc/perf/hv-24x7.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+There was no bisecting necessary. I've just looked at what changed in
+mv643xx_eth since 3.13 and the first commit I've reverted was already a
+hit. Reading a bit source revealed the differences between the old reset
+and the newly used one and ended up with my patch (first try) and was a
+hit too.
 
-diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-index 297c9105..3246ea2 100644
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -491,7 +491,7 @@ static int hv_24x7_init(void)
- 
- 	hret = hv_perf_caps_get(&caps);
- 	if (hret) {
--		pr_info("could not obtain capabilities, error 0x%80lx, not enabling\n",
-+		pr_info("could not obtain capabilities, not enabling (%ld)\n",
- 				hret);
- 		return -ENODEV;
- 	}
--- 
-1.9.1
+Actually I assumed the reset needs longer than the 500ms, but as the
+printks revealed, the reset is much faster.
+So the problem seems to be the much increased time (1s) the newly used
+reset function idles in mdelay.
 
+But I think I have found the real reason. and the change of the reset
+just increased the chance the problem is hit (here with 100% success or
+fail rate however you want to name it).
+
+Just give me a day or two to find the time to verify my assumption (I
+don't want to speculate) and maybe find a real fix for the problem. Of
+course, I still like my patch because it greatly decreases the time
+necessary for a reset (and the chance to hit the problem).
+
+Regards,
+
+Alexander Holler
