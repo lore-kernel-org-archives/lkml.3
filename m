@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758873AbaDBQRj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:17:39 -0400
-Received: from fep12.mx.upcmail.net ([62.179.121.32]:47385 "EHLO
-	fep12.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758808AbaDBQRi (ORCPT
+	id S1758923AbaDBQUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:20:48 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:42973 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758776AbaDBQUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:17:38 -0400
-X-SourceIP: 77.56.27.120
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <533C381E.9090103@odi.ch>
-Date: Wed, 02 Apr 2014 18:17:34 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 2 Apr 2014 12:20:46 -0400
+Date: Wed, 2 Apr 2014 09:20:43 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_prempt stalls / lockup
+Message-ID: <20140402162043.GA11090@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140331230241.GA30019@redhat.com>
+ <20140331232220.GP4284@linux.vnet.ibm.com>
+ <20140331233552.GB30019@redhat.com>
+ <20140401004801.GQ4284@linux.vnet.ibm.com>
+ <20140401150849.GA14757@redhat.com>
+ <20140401153032.GT4284@linux.vnet.ibm.com>
+ <20140401172244.GA10363@redhat.com>
+ <20140401175545.GV4284@linux.vnet.ibm.com>
+ <20140401180414.GA12326@redhat.com>
+ <20140401183245.GA12473@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: 3.14 regression: huge latency in read/select on tun
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401183245.GA12473@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040216-8236-0000-0000-0000013D5620
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Apr 01, 2014 at 11:32:45AM -0700, Paul E. McKenney wrote:
+> On Tue, Apr 01, 2014 at 02:04:14PM -0400, Dave Jones wrote:
+> > On Tue, Apr 01, 2014 at 10:55:45AM -0700, Paul E. McKenney wrote:
 
-Since 3.14 the openconnect VPN tunnel becomes unusable for me because
-packets appear on the tun device at a horribly low rate. 3.12 and 3.13
-do not exhibt the problem.
+[ . . . ]
 
-Here is an strace of openconnect trying to read from its fd
-  7 -> /dev/net/tun
+> >  > Waiting uninterruptibly.  Presumably blocked on mutex_lock().  But
+> >  > you have CONFIG_PROVE_LOCKING(), so any deadlocks should have been
+> >  > reported.
+> > 
+> > Lockdep had reported something a little earlier (timestamped at 1108.xxxxxx)
+> > but that's a known false-positive in xfs.
+> 
+> Yep, I would be very surprised if that was related to the grace-period hang.
 
-15:07:33.130640 read(7, 0x1e05e58, 1280) = -1 EAGAIN (Resource
-temporarily unavailable)
-===> should return available data already
-15:07:33.130745 select(8, [3 6 7], [], [6], {30, 0}) = 1 (in [7], left
-{29, 783272})
-===> HUGE 217ms delay here
-15:07:33.347681 read(6, 0x1dfc973, 5)   = -1 EAGAIN (Resource
-temporarily unavailable)
-15:07:33.347806 read(7,
-"E\10\5\0b\343@\0@\6\17~\n\363X\236\n\271UE\222:\0\26\37O\7\342\315\21q\33"...,
-1280) = 1280
+Ah, but it could be suppressing later lockdep splats.  So if this can be
+reproduced without xfs, we might get additional information from lockdep.
 
+							Thanx, Paul
 
-The send queue of the socket being routed via the tun device has a lot
-of outstanding data (here an scp/ssh upload):
-tcp        0  29788 local:46577  remote:22   ESTABLISHED
-
-(IPs replaced for privacy)
-
-toggling TCP autocorking has no influence.
-
-Any ideas what could be the culprit?
-
-Ortwin
