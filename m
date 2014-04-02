@@ -1,149 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933508AbaDBXCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 19:02:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933422AbaDBXCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 19:02:42 -0400
-Message-ID: <1396479728.476.410.camel@ul30vt.home>
-Subject: Re: [RFC PATCH] PCI: Introduce new device binding path using
- pci_dev.driver_override
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Kim Phillips <kim.phillips@linaro.org>
-Cc: gregkh@linuxfoundation.org, stuart.yoder@freescale.com,
-        kvm@vger.kernel.org, jan.kiszka@siemens.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, bhelgaas@google.com,
-        Varun.Sethi@freescale.com, kvmarm@lists.cs.columbia.edu,
-        rafael.j.wysocki@intel.com, agraf@suse.de, linux-pci@vger.kernel.org,
-        linux@roeck-us.net, konrad.wilk@oracle.com, d.kasatkin@samsung.com,
-        tj@kernel.org, scottwood@freescale.com,
-        a.motakis@virtualopensystems.com, tech@virtualopensystems.com,
-        Bharat.Bhushan@freescale.com, toshi.kani@hp.com,
-        a.rigo@virtualopensystems.com, iommu@lists.linux-foundation.org,
-        joe@perches.com, christoffer.dall@linaro.org,
-        kim.phillips@freescale.com
-Date: Wed, 02 Apr 2014 17:02:08 -0600
-In-Reply-To: <20140402170638.51745f5c231a7632422e4cc5@linaro.org>
-References: <20140401161851.18815.31108.stgit@bling.home>
-	 <20140401185212.7229f2c114c7e95089f00e90@linaro.org>
-	 <20140402002324.GA2662@kroah.com>
-	 <20140402170638.51745f5c231a7632422e4cc5@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933531AbaDBXFP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 19:05:15 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:43776 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933450AbaDBXFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 19:05:11 -0400
+Message-ID: <533C97A3.8080104@archlinux.org>
+Date: Thu, 03 Apr 2014 01:05:07 +0200
+From: =?windows-1252?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
+References: <533C8F3C.6090306@archlinux.org> <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
+In-Reply-To: <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 17:06 -0500, Kim Phillips wrote:
-> On Tue, 1 Apr 2014 17:23:24 -0700
-> Greg KH <gregkh@linuxfoundation.org> wrote:
-> 
-> > On Tue, Apr 01, 2014 at 06:52:12PM -0500, Kim Phillips wrote:
-> > > On Tue, 01 Apr 2014 10:28:54 -0600
-> > > Alex Williamson <alex.williamson@redhat.com> wrote:
-> > > 
-> > > > The driver_override field allows us to specify the driver for a device
-> > > > rather than relying on the driver to provide a positive match of the
-> > > > device.  This shortcuts the existing process of looking up the vendor
-> > > > and device ID, adding them to the driver new_id, binding the device,
-> > > > then removing the ID, but it also provides a couple advantages.
-> > > > 
-> > > > First, the above process allows the driver to bind to any device
-> > > > matching the new_id for the window where it's enabled.  This is often
-> > > > not desired, such as the case of trying to bind a single device to a
-> > > > meta driver like pci-stub or vfio-pci.  Using driver_override we can
-> > > > do this deterministically using:
-> > > > 
-> > > > echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> > > > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > > > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > > > 
-> > > > Previously we could not invoke drivers_probe after adding a device
-> > > > to new_id for a driver as we get non-deterministic behavior whether
-> > > > the driver we intend or the standard driver will claim the device.
-> > > > Now it becomes a deterministic process, only the driver matching
-> > > > driver_override will probe the device.
-> > > > 
-> > > > To return the device to the standard driver, we simply clear the
-> > > > driver_override and reprobe the device, ex:
-> > > > 
-> > > > echo > /sys/bus/pci/devices/0000:03:00.0/preferred_driver
-> > > > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > > > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > > > 
-> > > > Another advantage to this approach is that we can specify a driver
-> > > > override to force a specific binding or prevent any binding.  For
-> > > > instance when an IOMMU group is exposed to userspace through VFIO
-> > > > we require that all devices within that group are owned by VFIO.
-> > > > However, devices can be hot-added into an IOMMU group, in which case
-> > > > we want to prevent the device from binding to any driver (preferred
-> > > > driver = "none") or perhaps have it automatically bind to vfio-pci.
-> > > > With driver_override it's a simple matter for this field to be set
-> > > > internally when the device is first discovered to prevent driver
-> > > > matches.
-> > > > 
-> > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > ---
-> > > > 
-> > > > Apologies for the exceptionally long cc list, this is a follow-up to
-> > > > Stuart's "Subject: mechanism to allow a driver to bind to any device"
-> > > > thread.  This is effectively a v2 of the proof-of-concept patch I
-> > > > posted in that thread.  This version changes to use a dummy id struct
-> > > > to return on an "override" match, which removes the collateral damage
-> > > > and greatly simplifies the patch.  This feels fairly well baked for
-> > > > PCI and I would expect that platform drivers could do a similar
-> > > > implementation.  From there perhaps we can discuss whether there's
-> > > > any advantage to placing driver_override on struct device.  The logic
-> > > > for incorporating it into the match still needs to happen per bus
-> > > > driver, so it might only contribute to consistency of the show/store
-> > > > sysfs attributes to move it up to struct device.  Please comment.
-> > > 
-> > > Sounds like Greg likes this approach more than {drv,dev}_sysfs_only.
-> > 
-> > I have made no such judgement, I only pointed out that if you
-> 
-> ok.  If no-one chimes in in favour of one or the other, driver_override
-> works for platform devices.
-> 
-> > modify/add/remove a sysfs file, it needs to have documentation for it.
-> 
-> ok, so the platform device implementation should add a new
-> Documentation/ABI/testing/sysfs-bus-platform...
-> 
-> > > The diff below is the result of duplicating and converting this patch
-> > > for platform devices, and, indeed, binding a device to the
-> > > vfio-platform driver succeeds with:
-> > > 
-> > > echo vfio-platform > /sys/bus/platform/devices/fff51000.ethernet/driver_override
-> > > echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
-> > > echo fff51000.ethernet > /sys/bus/platform/drivers_probe
-> > > 
-> > > However, it's almost pure duplication modulo the bus match code.  The
-> > > only other place I can see where to put the common bus check is
-> > > drivers/base/base.h:driver_match_device(), which I'm guessing is
-> > > off-limits?  So should we leave this as per-bus code, and somehow
-> > > refactor driver_override_{show,store}?
-> > 
-> > If you can provide a way for this to be done in a bus-independant way,
-> > like we did for new_id and the like, I'd be open to reviewing it.
-> 
-> I may be blind, but I don't see any new_id-related code shared
-> between drivers/pci/pci-driver.c and, e.g., drivers/usb/serial/bus.c,
-> nor do I see anything new_id related in drivers/base/.
-> 
-> So if we are to follow the current model, the PCI and platform device
-> implementations should be maintained separately.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-I'm not finding any common new_id code either.  Only PCI and USB
-implement both new_id and remove_id and they don't share code or ABI
-documentation.  I also don't see much advantage to trying to push this
-into struct device, we could save a few lines of show/store code, but
-the functionality needs to be implemented by the bus driver.  The base
-code can't override bus drivers like PCI that do another match lookup to
-retrieve the ID table entry to pass to the driver.  At best we could
-have common show/store keyed from a bool on struct bus_type.  Thanks,
+Am 03.04.2014 00:39, schrieb Marcel Holtmann:
+> Hi Thomas,
+>=20
+>> The culprit is USB autosuspend. When I explicitly disable it (echo 'on=
+'
+>>> power/control), the mouse works fine again. However, due to the
+>> aforementioned commit, I need to do this manually after every boot and=
 
-Alex
+>> every resume, because btusb keeps setting it back to 'auto'. I have
+>> found no way of overriding this behaviour.
+>=20
+> what USB controller do you have your Bluetooth controller attached to. =
+I had the same issue, but it went away when some of the xHCI host control=
+ler fixes got merged. Some other reported issues with some USB 2 controll=
+ers.
 
+Thanks for replying to me here and on IRC. In order for nothing to get
+lost, I am reposting what I mentioned on IRC here.
+
+$ lspci|grep USB
+00:14.0 USB controller: Intel Corporation Lynx Point-LP USB xHCI HC (rev =
+04)
+00:1d.0 USB controller: Intel Corporation Lynx Point-LP USB EHCI #1 (rev =
+04)
+
+$ lsusb -t
+/:  Bus 03.Port 1: Dev 1, Class=3Droot_hub, Driver=3Dehci-pci/3p, 480M
+    |__ Port 1: Dev 2, If 0, Class=3DHub, Driver=3Dhub/8p, 480M
+        |__ Port 5: Dev 3, If 0, Class=3DChip/SmartCard, Driver=3D, 12M
+/:  Bus 02.Port 1: Dev 1, Class=3Droot_hub, Driver=3Dxhci_hcd/4p, 5000M
+/:  Bus 01.Port 1: Dev 1, Class=3Droot_hub, Driver=3Dxhci_hcd/9p, 480M
+    |__ Port 6: Dev 2, If 0, Class=3DVendor Specific Class, Driver=3D, 12=
+M
+    |__ Port 7: Dev 5, If 0, Class=3DWireless, Driver=3Dbtusb, 12M
+    |__ Port 7: Dev 5, If 1, Class=3DWireless, Driver=3Dbtusb, 12M
+    |__ Port 8: Dev 4, If 0, Class=3DVideo, Driver=3Duvcvideo, 480M
+    |__ Port 8: Dev 4, If 1, Class=3DVideo, Driver=3Duvcvideo, 480M
+
+This looks like it is attached to the xhci controller.
+
+Output from bluemoon is as follows:
+
+Bluemoon configuration utility ver 5.16
+Controller Version Information
+Hardware Platform: 55
+Hardware Variant: iBT 2.0 (0x07)
+Hardware Revision: 1.0
+Firmware Variant: BT IP 4.0 (0x01)
+Firmware Revision: 8.0
+Firmware Build Number: 2-3.2013
+Firmware Patch Number: 51
+
+> You can easily check by running the "Inquiry (LIAC)=94 test from tools/=
+hci-tester. Problem is that some of the HCI events are not making it to t=
+he host. They get delivered as soon as the device wakes up again. In this=
+ test case it is the Inquiry Complete event. If you poke the controller a=
+nd send a new command, the even will be magically dequeued.
+
+I cannot figure out how to compile hci-tester. The Makefiles from
+bluez.git won't build it.
+
+
+
+--No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTPJejAAoJEChPw0yOSxolWgEQAIGKngCFJhV3AT35LGTxQgZl
+ghzpG1yR364M6hvhsW92+ocUgAzV+LzENQYDmFMrYDkkx9daMB09oLN0xWdIX2n9
+rXUqd0JAJGaO0iQ9oC+wmPIuTlIhW0ZXsrZfYH73gtKQctXeW3q+WWb8DNZjztV2
+tk6NNfgoQLNXcpjAPOfMgoi8Vc80URum7s+xjHr4kvO4ZkDPm3GdRx3DSl6IVwsH
+6RndGdKPBT5b1PhiH47ePx9/kWrFUfh3Pnl8I3/RJfiVVjLs8MigIODcUMq4DIo3
+J5q6cTMFRAqztaLhkv6uZdoC6gqfYaL98stn0fBElV3oqjuSIf9RAYLMOiG7PI6v
+Kmg9G9iHnzxTROYggLY83xZxtI/amEDq0qVAWKG2kap34lSbSELG1vDil75uliJl
+LVCC49jaGOQBhp2SlrRuu20Gy8gsQR7Ygi4qeKsNX55T+o59yuhUMTv+BSmI8xoj
+EC+jNB+e7yAgH58obXCvOVkIlvhPS6DG778BCOhSLgxidExjknCzEltMWAUqRVVK
+tavaFS4s1/67Ml05hZpAY9kRKfE4loloBYeCNGrwyam+lXD75zRtqP00ed9RNyEi
+WvbW85wvuPj6sZOiMdXoRgrdBh+GXy7cgKoHnTxfgtqlFiVybS3OSSouJ+/CnlTA
+0PcEStMpMwddS2jlnAMH
+=KwoM
+-----END PGP SIGNATURE-----
+
+--No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5--
