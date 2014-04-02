@@ -1,40 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174AbaDBUTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:19:44 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:50189 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759154AbaDBUTi (ORCPT
+	id S1759040AbaDBUSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:18:23 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42850 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758915AbaDBUNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:19:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140402091445.65c6b660@mschwide>
-References: <20140331092400.17071766@mschwide>
-	<CA+55aFzPP6kBzWrcvps6NVu=f-FUtrfs1U6DyRpdwX6hH6PM-Q@mail.gmail.com>
-	<20140401085218.72f67e51@mschwide>
-	<alpine.LFD.2.11.1404010827140.26309@i7.linux-foundation.org>
-	<20140402091445.65c6b660@mschwide>
-Date: Wed, 2 Apr 2014 13:19:36 -0700
-X-Google-Sender-Auth: FWQ8VoROcelr8zBu4RxOWXiKXEk
-Message-ID: <CA+55aFzJw4DrsMnr-D-gC18UJZsFB9kC_7F1PAYJA5X8Yb4+QQ@mail.gmail.com>
-Subject: Re: [GIT PULL] s390 patches for the 3.15 merge window
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 2 Apr 2014 16:13:30 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 03/40] intel_idle: Support Intel Atom Processor C2000 Product Family
+Date: Wed,  2 Apr 2014 22:12:49 +0200
+Message-Id: <2aa86e03cdb2567a97d3f8a4d931208ae177b0f7.1396469191.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
+References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
+In-Reply-To: <cover.1396469191.git.jslaby@suse.cz>
+References: <cover.1396469191.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 12:14 AM, Martin Schwidefsky
-<schwidefsky@de.ibm.com> wrote:
->
-> Part of the problem is this lovely piece from include/linux/preempt.h:
+From: Len Brown <len.brown@intel.com>
 
-Oh, the pain. That's annoying. Oh well. I guess we'll live with the
-ugliness for now.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-         Linus
+===============
+
+commit fab04b2208dd1d4121319f0096c5a5f4b70abc54 upstream.
+
+Support the "Intel(R) Atom(TM) Processor C2000 Product Family",
+formerly code-named Avoton.  It is based on the next generation
+Intel Atom processor architecture, formerly code-named Silvermont.
+
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/idle/intel_idle.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index d47bb0f267f7..000d370519d9 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -1,7 +1,7 @@
+ /*
+  * intel_idle.c - native hardware idle loop for modern Intel processors
+  *
+- * Copyright (c) 2010, Intel Corporation.
++ * Copyright (c) 2013, Intel Corporation.
+  * Len Brown <len.brown@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+@@ -329,6 +329,22 @@ static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] = {
+ 	{
+ 		.enter = NULL }
+ };
++static struct cpuidle_state avn_cstates[CPUIDLE_STATE_MAX] = {
++	{
++		.name = "C1-AVN",
++		.desc = "MWAIT 0x00",
++		.flags = MWAIT2flg(0x00) | CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 2,
++		.target_residency = 2,
++		.enter = &intel_idle },
++	{
++		.name = "C6-AVN",
++		.desc = "MWAIT 0x51",
++		.flags = MWAIT2flg(0x58) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.exit_latency = 15,
++		.target_residency = 45,
++		.enter = &intel_idle },
++};
+ 
+ /**
+  * intel_idle
+@@ -465,6 +481,11 @@ static const struct idle_cpu idle_cpu_hsw = {
+ 	.disable_promotion_to_c1e = true,
+ };
+ 
++static const struct idle_cpu idle_cpu_avn = {
++	.state_table = avn_cstates,
++	.disable_promotion_to_c1e = true,
++};
++
+ #define ICPU(model, cpu) \
+ 	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
+ 
+@@ -486,6 +507,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
+ 	ICPU(0x3f, idle_cpu_hsw),
+ 	ICPU(0x45, idle_cpu_hsw),
+ 	ICPU(0x46, idle_cpu_hsw),
++	ICPU(0x4D, idle_cpu_avn),
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
+-- 
+1.9.1
+
