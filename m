@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016AbaDBHOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:14:54 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:47903 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989AbaDBHOw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:14:52 -0400
-Date: Wed, 2 Apr 2014 09:14:45 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [GIT PULL] s390 patches for the 3.15 merge window
-Message-ID: <20140402091445.65c6b660@mschwide>
-In-Reply-To: <alpine.LFD.2.11.1404010827140.26309@i7.linux-foundation.org>
-References: <20140331092400.17071766@mschwide>
-	<CA+55aFzPP6kBzWrcvps6NVu=f-FUtrfs1U6DyRpdwX6hH6PM-Q@mail.gmail.com>
-	<20140401085218.72f67e51@mschwide>
-	<alpine.LFD.2.11.1404010827140.26309@i7.linux-foundation.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758015AbaDBH3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:29:41 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:64217 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757948AbaDBH3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 03:29:40 -0400
+X-IronPort-AV: E=Sophos;i="4.97,778,1389744000"; 
+   d="scan'208";a="117224367"
+Message-ID: <1396423778.26869.61.camel@dagon.hellion.org.uk>
+Subject: Re: [PATCH net-next v2 2/2] xen-netback: Grant copy the header
+ instead of map and memcpy
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Paul Durrant <Paul.Durrant@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jonathan Davies" <Jonathan.Davies@citrix.com>
+Date: Wed, 2 Apr 2014 08:29:38 +0100
+In-Reply-To: <533B0BA7.6040607@citrix.com>
+References: <1396278539-27639-1-git-send-email-zoltan.kiss@citrix.com>
+	 <1396278539-27639-2-git-send-email-zoltan.kiss@citrix.com>
+	 <9AAE0902D5BC7E449B7C8E4E778ABCD02B75F1@AMSPEX01CL01.citrite.net>
+	 <533B0BA7.6040607@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040207-6892-0000-0000-000008538B21
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014 08:40:41 -0700 (PDT)
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Tue, 2014-04-01 at 19:55 +0100, Zoltan Kiss wrote:
+> >> @@ -1389,7 +1393,7 @@ static int xenvif_tx_submit(struct xenvif
+> *vif)
+> >>              txp = &vif->pending_tx_info[pending_idx].req;
+> >>
+> >>              /* Check the remap error code. */
+> >> -            if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map)))
+> {
+> >> +            if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map,
+> >> &gop_copy))) {
+> >>                      netdev_dbg(vif->dev, "netback grant
+> failed.\n");
+> >
+> > It could have been the copy that failed. You should probably change
+> the error message.
+> I've changed it to "netback grant op failed.\n"
 
-> 
-> 
-> On Tue, 1 Apr 2014, Martin Schwidefsky wrote:
-> > 
-> > I gave up after a few hours trying to solve the header dependencies, the two
-> > trouble makes are alpha with the task_thread_info call in mmu_context.h and
-> > arm with the preempt_enable_no_resched call. Welcome to include file hell.
-> 
-> I don't understand. The only file <asm/mmu_context.h> should need is 
-> <linux/mm.h>. Maybe <kernel/sched.h>.
-> 
-> Look at mm/mmu_context.c, for example. It includes <asm/mmu_context.h> 
-> without having included very many header files at all. So we *know* that 
-> that small set is sufficient. 
-> 
-> And there aren't very many users of <linux/mmu_context.h> and none of them 
-> are other header files, so there's no point in trying to religiously avoid 
-> including one or two header files from it.
-> 
-> So I'm thinking something like this should work. It's untested, and maybe 
-> some architecture really needs some other header file, but it looks quite 
-> likely to work. No?
+Perhaps xenvif_tx_check_gop is in a position to log something more
+specific about the failure? (maybe it already does, I didn't look).
 
-I had a patch quite similar to yours and I ended up with the error report
-from the kbuild robot. Just tried yours with the corgi_defconfig and got
-this:
+Ian.
 
-In file included from include/linux/mmu_context.h:6,
-                 from drivers/usb/gadget/inode.c:27:
-/home4/mschwide/linux/arch/arm/include/asm/mmu_context.h: In function 'finish_arch_post_lock_switch':
-/home4/mschwide/linux/arch/arm/include/asm/mmu_context.h:82: error: implicit declaration of function 'preempt_enable_no_resched'
-
-Part of the problem is this lovely piece from include/linux/preempt.h:
-
-#ifdef MODULE
-/*
- * Modules have no business playing preemption tricks.
- */
-#undef sched_preempt_enable_no_resched
-#undef preempt_enable_no_resched
-#undef preempt_enable_no_resched_notrace
-#undef preempt_check_resched
-#endif
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
 
