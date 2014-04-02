@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879AbaDBSJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:09:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38880 "EHLO mx1.redhat.com"
+	id S932791AbaDBSJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:09:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437AbaDBSJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932450AbaDBSJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 14:09:14 -0400
 From: Luiz Capitulino <lcapitulino@redhat.com>
 To: linux-mm@kvack.org
@@ -12,39 +12,86 @@ Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
         mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
         davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
         yinghai@kernel.org, riel@redhat.com
-Subject: [PATCH 2/4] hugetlb: update_and_free_page(): don't clear PG_reserved bit
-Date: Wed,  2 Apr 2014 14:08:46 -0400
-Message-Id: <1396462128-32626-3-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
-References: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
+Subject: [PATCH 0/4] hugetlb: add support gigantic page allocation at runtime
+Date: Wed,  2 Apr 2014 14:08:44 -0400
+Message-Id: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugepages pages never get the PG_reserved bit set, so don't clear it. But
-add a warning just in case.
+The HugeTLB subsystem uses the buddy allocator to allocate hugepages during
+runtime. This means that hugepages allocation during runtime is limited to
+MAX_ORDER order. For archs supporting gigantic pages (that is, page sizes
+greater than MAX_ORDER), this in turn means that those pages can't be
+allocated at runtime.
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
----
- mm/hugetlb.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+HugeTLB supports gigantic page allocation during boottime, via the boot
+allocator. To this end the kernel provides the command-line options
+hugepagesz= and hugepages=, which can be used to instruct the kernel to
+allocate N gigantic pages during boot.
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8c50547..7e07e47 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -581,8 +581,9 @@ static void update_and_free_page(struct hstate *h, struct page *page)
- 	for (i = 0; i < pages_per_huge_page(h); i++) {
- 		page[i].flags &= ~(1 << PG_locked | 1 << PG_error |
- 				1 << PG_referenced | 1 << PG_dirty |
--				1 << PG_active | 1 << PG_reserved |
--				1 << PG_private | 1 << PG_writeback);
-+				1 << PG_active | 1 << PG_private |
-+				1 << PG_writeback);
-+		WARN_ON(PageReserved(&page[i]));
- 	}
- 	VM_BUG_ON_PAGE(hugetlb_cgroup_from_page(page), page);
- 	set_compound_page_dtor(page, NULL);
+For example, x86_64 supports 2M and 1G hugepages, but only 2M hugepages can
+be allocated and freed at runtime. If one wants to allocate 1G gigantic pages,
+this has to be done at boot via the hugepagesz= and hugepages= command-line
+options.
+
+Now, gigantic page allocation at boottime has two serious problems:
+
+ 1. Boottime allocation is not NUMA aware. On a NUMA machine the kernel
+    evenly distributes boottime allocated hugepages among nodes.
+
+    For example, suppose you have a four-node NUMA machine and want
+    to allocate four 1G gigantic pages at boottime. The kernel will
+    allocate one gigantic page per node.
+
+    On the other hand, we do have users who want to be able to specify
+    which NUMA node gigantic pages should allocated from. So that they
+    can place virtual machines on a specific NUMA node.
+
+ 2. Gigantic pages allocated at boottime can't be freed
+
+At this point it's important to observe that regular hugepages allocated
+at runtime don't have those problems. This is so because HugeTLB interface
+for runtime allocation in sysfs supports NUMA and runtime allocated pages
+can be freed just fine via the buddy allocator.
+
+This series adds support for allocating gigantic pages at runtime. It does
+so by allocating gigantic pages via CMA instead of the buddy allocator.
+Releasing gigantic pages is also supported via CMA. As this series builds
+on top of the existing HugeTLB interface, it makes gigantic page allocation
+and releasing just like regular sized hugepages. This also means that NUMA
+support just works.
+
+For example, to allocate two 1G gigantic pages on node 1, one can do:
+
+ # echo 2 > \
+   /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
+
+And, to release all gigantic pages on the same node:
+
+ # echo 0 > \
+   /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
+
+Please, refer to patch 4/4 for full technical details.
+
+Finally, please note that this series is a follow up for a previous series
+that tried to extend the command-line options set to be NUMA aware:
+
+ http://marc.info/?l=linux-mm&m=139593335312191&w=2
+
+During the discussion of that series it was agreed that having runtime
+allocation support for gigantic pages was a better solution.
+
+Luiz Capitulino (4):
+  hugetlb: add hstate_is_gigantic()
+  hugetlb: update_and_free_page(): don't clear PG_reserved bit
+  hugetlb: move helpers up in the file
+  hugetlb: add support for gigantic page allocation at runtime
+
+ arch/x86/include/asm/hugetlb.h |  10 ++
+ include/linux/hugetlb.h        |   5 +
+ mm/hugetlb.c                   | 344 ++++++++++++++++++++++++++++++-----------
+ 3 files changed, 265 insertions(+), 94 deletions(-)
+
 -- 
 1.8.1.4
-
