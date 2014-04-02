@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946AbaDBPro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 11:47:44 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:35492 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758665AbaDBPoQ (ORCPT
+	id S932470AbaDBPtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 11:49:10 -0400
+Received: from exprod5og119.obsmtp.com ([64.18.0.189]:33803 "HELO
+	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758751AbaDBPtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 11:44:16 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Daniel Thompson <daniel.thompson@linaro.org>
-Subject: [RFC v2 02/10] kdb: Remove currently unused kdbtab_t->cmd_flags
-Date: Wed,  2 Apr 2014 16:43:52 +0100
-Message-Id: <1396453440-16445-3-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1396453440-16445-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396453440-16445-1-git-send-email-daniel.thompson@linaro.org>
+	Wed, 2 Apr 2014 11:49:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <533C0B45.4050909@ti.com>
+References: <20140401184916.GA21938@kroah.com>
+	<CA+55aFwf6e-hkF+4ND0DaAKDmLX8P8+xWCgs5BRnARdSsq9tpw@mail.gmail.com>
+	<20140402022858.GA4901@kroah.com>
+	<CAPw-ZTnb4Ugjo_63HG0DmGaqki6riPk1S13Nx8xF_9gdNu17wA@mail.gmail.com>
+	<533C0B45.4050909@ti.com>
+Date: Wed, 2 Apr 2014 08:49:07 -0700
+Message-ID: <CAPw-ZTn3_oEMFFNua1zoDibOBJOLC92k7zdc8Do+hk3Ai-BSaw@mail.gmail.com>
+Subject: Re: [GIT PULL] USB patches for 3.15-rc1
+From: Loc Ho <lho@apm.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+Hi,
 
-The struct member is never used in the code, so we can remove it.
+>>>>> USB patches for 3.15-rc1
+>>>>>
+>>>>> Here's the big USB pull request for 3.15-rc1.
+>>>>
+>>>> Hmm. I'm getting this when testing:
+>>>>
+>>>>   warning: (AHCI_XGENE) selects PHY_XGENE which has unmet direct
+>>>> dependencies (HAS_IOMEM && OF && (ARM64 || COMPILE_TEST))
+>>>>
+>>>> which looks like AHCI_XGENE doesn't have the proper dependency on OF
+>>>> (or alternatively PHY_XGENE has an incorrect dependemcy on OF).
+>>>>
+>>>> According to google it looks like Fengguang reported this on
+>>>> kbuild-all, but nowhere else.
+>>>>
+>>>> The actual build then succeeds. But the Kconfig warning is real and
+>>>> implies that something is seriously wrong wrt the dependencies for
+>>>> this thing.
+>>>>
+>>>> It looks like the "select PHY_XGENE" came in through the libata
+>>>> update, but this USB update actually brought in the "config PHY_XGENE"
+>>>> and thus this error. Which makes me wonder how this all worked. Why
+>>>> does that "select PHY_XGENE" exist when apparently it's not needed?
+>>>>
+>>>> Regardless, there's something broken somewhere.
+>>>
+>>> Odd, I don't know what to do to fix this up "properly".
+>>>
+>>> Loc Ho, this came in from your patch, any ideas?
+>
+> Shouldn't we let the users to enable PHY_XGENE (maybe add in the platform
+> defconfig)?
+>
 
-We will introduce real flags soon by renaming cmd_repeat to cmd_flags.
+This is another option but PHY_XGENE is required by AHCI_XGENE . If
+one selects AHCI_XGENE, it should select its dependency.
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- kernel/debug/kdb/kdb_main.c    | 1 -
- kernel/debug/kdb/kdb_private.h | 1 -
- 2 files changed, 2 deletions(-)
-
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index f39f926..938c47b 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2694,7 +2694,6 @@ int kdb_register_repeat(char *cmd,
- 	kp->cmd_func   = func;
- 	kp->cmd_usage  = usage;
- 	kp->cmd_help   = help;
--	kp->cmd_flags  = 0;
- 	kp->cmd_minlen = minlen;
- 	kp->cmd_repeat = repeat;
- 
-diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index 7afd3c8..c4c46c7 100644
---- a/kernel/debug/kdb/kdb_private.h
-+++ b/kernel/debug/kdb/kdb_private.h
-@@ -172,7 +172,6 @@ typedef struct _kdbtab {
- 	kdb_func_t cmd_func;		/* Function to execute command */
- 	char    *cmd_usage;		/* Usage String for this command */
- 	char    *cmd_help;		/* Help message for this command */
--	short    cmd_flags;		/* Parsing flags */
- 	short    cmd_minlen;		/* Minimum legal # command
- 					 * chars required */
- 	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
--- 
-1.9.0
-
+-Loc
