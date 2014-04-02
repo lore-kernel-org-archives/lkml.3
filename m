@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741AbaDBNC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 09:02:28 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:51665 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758683AbaDBNC0 (ORCPT
+	id S1758763AbaDBND2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 09:03:28 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:57867
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758683AbaDBND1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 09:02:26 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-1c-533c0a5fe222
-Message-id: <533C0A57.50102@samsung.com>
-Date: Wed, 02 Apr 2014 15:02:15 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "laurent.pinchart@ideasonboard.com" 
-	<laurent.pinchart@ideasonboard.com>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
-Subject: Re: [PATCH RFC v4 2/2] clk: Add handling of clk parent and rate
- assigned from DT
-References: <1396284116-19178-1-git-send-email-s.nawrocki@samsung.com>
- <1396284116-19178-3-git-send-email-s.nawrocki@samsung.com>
- <20140331200620.GA13881@kroah.com> <533ABCEC.8040701@codethink.co.uk>
- <20140402080102.GK2931@tbergstrom-lnx.Nvidia.com>
-In-reply-to: <20140402080102.GK2931@tbergstrom-lnx.Nvidia.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t/xa7rxXDbBBp1rxCwe3Gplsph/5Byr
-	Rf+bhawWB/7sYLRoXryezeJs0xt2i86JS9gtNj2+xmpxedccNovbl3kt1h65y26x9PpFJoun
-	Ey6yWUxaO5XRonXvEXaLv9s3sVjMmPySzWL9jNcsDkIea+atYfRoae5h87jc18vk8ezlZCaP
-	2R0zWT02repk87hzbQ+bx/65a9g9Ni+p9+htfsfm0f/XwKNvyypGj8+b5AJ4o7hsUlJzMstS
-	i/TtErgy3h/ay1Swm6/i3O2LLA2Mu7m7GDk5JARMJB7vv88KYYtJXLi3nq2LkYtDSGApo8Tn
-	wwtYIJxPjBLfOq+CVfEKaEjsmvSJHcRmEVCV6PkzGcxmEzCU6D3axwhiiwpESNxrPAxVLyjx
-	Y/I9oEEcHCICBhKz36qDzGQWWMIuMf8zxBxhgWiJMw0bmSGW/WeU2Pf9KgtIglPATuLFojls
-	IDazgI7E/tZpULa8xOY1b5knMArMQrJjFpKyWUjKFjAyr2IUTS1NLihOSs811CtOzC0uzUvX
-	S87P3cQIidAvOxgXH7M6xCjAwajEwytxySpYiDWxrLgy9xCjBAezkgjvpE/WwUK8KYmVValF
-	+fFFpTmpxYcYmTg4pRoYmVecsE2ff9usonS719OjzHN/zGqyqOhNP8zNfcSn/zbTZ8Yy3SmF
-	daKy61Yvu+ZyJlL2t+e0u3uaWRKLvNb/37Gzeo2AaNsWzYwpS+eli14Pv7FvwU3WA7+PSBpv
-	rel7HNArquRRM1Vzr750uVDQcZmK0JidpXEbbCImvPQStfF1lk3Yca9biaU4I9FQi7moOBEA
-	rZBq5q4CAAA=
+	Wed, 2 Apr 2014 09:03:27 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 2 Apr 2014 21:03:04 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+CC: <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
+        <timur@tabi.org>, <Li.Xiubo@freescale.com>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <rob@landley.net>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>
+Subject: Re: [PATCH v2 2/2] ARM: dts: Append clock bindings for sai2 on VF610
+ platform
+Message-ID: <20140402130302.GC8558@dragon>
+References: <cover.1396432924.git.Guangyu.Chen@freescale.com>
+ <d09da3eb629143abd3f61ae037af4ddaf7286a83.1396432924.git.Guangyu.Chen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <d09da3eb629143abd3f61ae037af4ddaf7286a83.1396432924.git.Guangyu.Chen@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/14 10:01, Peter De Schrijver wrote:
-> On Tue, Apr 01, 2014 at 03:19:40PM +0200, Ben Dooks wrote:
->> On 31/03/14 21:06, Greg KH wrote:
->>> On Mon, Mar 31, 2014 at 06:41:56PM +0200, Sylwester Nawrocki wrote:
->>>> This function adds a helper function to configure clock parents and rates
->>>> as specified in clock-parents, clock-rates DT properties for a consumer
->>>> device and a call to it before driver is bound to a device.
->>>>
->>>> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->>
->> [snip]
->>
->>> I don't understand why you need the driver core to initialize this one
->>> type of thing?  That should be in a driver, or in a class, or at worse
->>> case, the platform code.
->>>
->>> What makes clocks so "unique" here?
->>
->> I suppose the issue here is that a lot of drivers currently use
->> clocks and a number of systems have badly setup default clock trees
->> at start time.
->>
->> Mark Brown and others have argued that the management of clocks which
->> is common to all devices should not live in the driver.
+On Wed, Apr 02, 2014 at 06:10:20PM +0800, Nicolin Chen wrote:
+> Since we added fours clock to the DT binding, we should update the current
+> SAI dts/dtsi so as not to break their functions.
 > 
-> Exactly, this data should be part of the clock provider DT nodes, not
-> of the device nodes. 
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> ---
+>  arch/arm/boot/dts/vf610.dtsi | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> index d31ce1b..9fd0007 100644
+> --- a/arch/arm/boot/dts/vf610.dtsi
+> +++ b/arch/arm/boot/dts/vf610.dtsi
+> @@ -139,8 +139,10 @@
+>  				compatible = "fsl,vf610-sai";
+>  				reg = <0x40031000 0x1000>;
+>  				interrupts = <0 86 0x04>;
+> -				clocks = <&clks VF610_CLK_SAI2>;
+> -				clock-names = "sai";
+> +				clocks = <&clks VF610_CLK_SAI2>,
+> +				       <&clks VF610_CLK_SAI2>,
+> +				       <&clks 0>, <&clks 0>;
 
-Why not in the device nodes, when often this data is closely related
-to a device ? I'd prefer to keep the ability to also specify it at
-the consumer nodes. IMHO the DT binding would be more explicit and
-less error prone this way. E.g. clock-rates may refer directly to the
-consumer clocks, so why we should be specifying it for all devices in
-a single DT node ?
+So it seems that SAI on vf610 does work with only one clock.  So the
+driver change will break old DTB for vf610?  If that's case, we will
+have to need a new compatible for cases where 4 clocks are needed.
 
-Also I'm not sure if a fact that something shouldn't be handled in
-a device driver necessarily means that related data shouldn't be put
-in the device node.
+Shawn
 
-It would be nice to hear more opinions, it seems now there is
-roughly same number of proponents and opponents of each option.
+> +				clock-names = "bus", "mclk1", "mclk2", "mclk3";
+>  				status = "disabled";
+>  			};
+>  
+> -- 
+> 1.8.4
+> 
+> 
 
---
-Thanks,
-Sylwester
