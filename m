@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161072AbaDBXxC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 19:53:02 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:44970 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030190AbaDBXxA (ORCPT
+	id S933606AbaDBXze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 19:55:34 -0400
+Received: from smtprelay0248.hostedemail.com ([216.40.44.248]:60548 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932312AbaDBXzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 19:53:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
-	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
-	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
-	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
-Date: Wed, 2 Apr 2014 16:52:59 -0700
-X-Google-Sender-Auth: Jpb89jSCqRj_FUgsGgtBia7acNU
-Message-ID: <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Content-Type: multipart/mixed; boundary=047d7b3436d2044bbf04f617fc46
+	Wed, 2 Apr 2014 19:55:33 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3872:3874:4250:4321:5007:6119:7652:8957:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: range19_878dfa7921b5a
+X-Filterd-Recvd-Size: 1768
+Message-ID: <1396482929.32040.23.camel@joe-AO722>
+Subject: Re: [PATCH] driver: staging: wlan-ng: Fixed Breaking long lines and
+ strings style rule
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Sherif <silentquote@gmail.com>,
+        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 02 Apr 2014 16:55:29 -0700
+In-Reply-To: <20140402234810.GA545@kroah.com>
+References: <1396480678-32036-1-git-send-email-shehabaldin.sherif@gmail.com>
+	 <1396480892.32040.17.camel@joe-AO722> <533C9F2A.9000102@gmail.com>
+	 <1396482038.32040.19.camel@joe-AO722> <20140402234810.GA545@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b3436d2044bbf04f617fc46
-Content-Type: text/plain; charset=UTF-8
+On Wed, 2014-04-02 at 16:48 -0700, Greg KH wrote:
+> On Wed, Apr 02, 2014 at 04:40:38PM -0700, Joe Perches wrote:
+> > On Thu, 2014-04-03 at 01:37 +0200, Sherif wrote:
+> > > BTW regarding "Alignment should match open parenthesis" rule, It's 
+> > > missing from Documentation/CodingStyle
+> > 
+> > It's "maintainer's preference" in at least
+> > net/, drivers/net and drivers/staging.
+> > 
+> > Maybe it's true for drivers/usb too.
+> > 
+> > Greg?
+> 
+> Yes, I "prefer" that as well, but if that's the only thing wrong with
+> the code, I really don't care.
 
-On Wed, Apr 2, 2014 at 4:47 PM, Jiri Kosina <jkosina@suse.cz> wrote:
->
-> Which doesn't really protect you from tasks that do open()/write()/close()
-> cycle for /dev/kmsg write every 2ms though.
+I generally don't care much either, but this patch was
+also changing lines from the preferred indentation style
+to something else.
 
-I don't think we should try to protect against wilful bad behavior
-unless that is shown to be necessary. Yeah, if it turns out that
-systemd really does that just to mess with us, we'd need to extend it,
-but in the absence of proof to the contrary, maybe this simple
-attached patch works?
+cheers, Joe
 
-TOTALLY UNTESTED. But it really isn't complex.
-
-The complexity is likely to be about setting the actual default
-values. So consider this a RFC and a "does this fix the problem that
-Borislav reported?" test-patch.
-
-Borislav?
-
-                  Linus
-
---047d7b3436d2044bbf04f617fc46
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_htj9qb780
-
-IGtlcm5lbC9wcmludGsvcHJpbnRrLmMgfCA2ICsrKysrKwogMSBmaWxlIGNoYW5nZWQsIDYgaW5z
-ZXJ0aW9ucygrKQoKZGlmZiAtLWdpdCBhL2tlcm5lbC9wcmludGsvcHJpbnRrLmMgYi9rZXJuZWwv
-cHJpbnRrL3ByaW50ay5jCmluZGV4IDRkYWU5Y2JlOTI1OS4uN2U0YTA0MTJkOWZmIDEwMDY0NAot
-LS0gYS9rZXJuZWwvcHJpbnRrL3ByaW50ay5jCisrKyBiL2tlcm5lbC9wcmludGsvcHJpbnRrLmMK
-QEAgLTQxMCw2ICs0MTAsNyBAQCBzdHJ1Y3QgZGV2a21zZ191c2VyIHsKIAl1NjQgc2VxOwogCXUz
-MiBpZHg7CiAJZW51bSBsb2dfZmxhZ3MgcHJldjsKKwlzdHJ1Y3QgcmF0ZWxpbWl0X3N0YXRlIHJz
-OwogCXN0cnVjdCBtdXRleCBsb2NrOwogCWNoYXIgYnVmWzgxOTJdOwogfTsKQEAgLTQ4Myw2ICs0
-ODQsOCBAQCBzdGF0aWMgc3NpemVfdCBkZXZrbXNnX3JlYWQoc3RydWN0IGZpbGUgKmZpbGUsIGNo
-YXIgX191c2VyICpidWYsCiAKIAlpZiAoIXVzZXIpCiAJCXJldHVybiAtRUJBREY7CisJaWYgKCFf
-X19yYXRlbGltaXQoJnVzZXItPnJzLCBjdXJyZW50LT5jb21tKSkKKwkJcmV0dXJuIDA7CiAKIAly
-ZXQgPSBtdXRleF9sb2NrX2ludGVycnVwdGlibGUoJnVzZXItPmxvY2spOwogCWlmIChyZXQpCkBA
-IC02NzEsNiArNjc0LDkgQEAgc3RhdGljIGludCBkZXZrbXNnX29wZW4oc3RydWN0IGlub2RlICpp
-bm9kZSwgc3RydWN0IGZpbGUgKmZpbGUpCiAJaWYgKCF1c2VyKQogCQlyZXR1cm4gLUVOT01FTTsK
-IAorCS8qIENvbmZpZ3VyYWJsZT8gKi8KKwlyYXRlbGltaXRfc3RhdGVfaW5pdCgmdXNlci0+cnMs
-IERFRkFVTFRfUkFURUxJTUlUX0lOVEVSVkFMLCBERUZBVUxUX1JBVEVMSU1JVF9CVVJTVCk7CisK
-IAltdXRleF9pbml0KCZ1c2VyLT5sb2NrKTsKIAogCXJhd19zcGluX2xvY2tfaXJxKCZsb2didWZf
-bG9jayk7Cg==
---047d7b3436d2044bbf04f617fc46--
