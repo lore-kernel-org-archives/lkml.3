@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400AbaDBCDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 22:03:36 -0400
-Received: from nk11p20im-asmtp002.me.com ([17.158.216.161]:62512 "EHLO
-	nk11p20im-asmtp002.me.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377AbaDBCDf (ORCPT
+	id S1757422AbaDBCEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 22:04:34 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:46517 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707AbaDBCEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 22:03:35 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-References: <2A318645-52BD-4650-BDEF-11F6215AA621@icloud.com>
- <alpine.DEB.2.02.1404011744300.14073@nftneq.ynat.uz>
-In-reply-to: <alpine.DEB.2.02.1404011744300.14073@nftneq.ynat.uz>
-Message-id: <7E28311F-2408-4713-82DE-F9708AEAF855@icloud.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (11D169)
-From: Andrew Stephenson <aste9@icloud.com>
-Subject: Re: Replacing GNU
-Date: Wed, 02 Apr 2014 13:03:13 +1100
-To: David Lang <david@lang.hm>
-X-MANTSH: 1TEIXREEbG1oaGkdHB0lGUkdDRl5PWBoaGREKTEMXGx0EGx8SBBscHwQdHhAbHho
-	fGhEKWE0XSxEKbX4XGhEKTFkXGxobGxEKWUkXEQpZXhdoY3kRCkNOF0sbHhpiTk1mHx5IfBl4c
-	wcZGBoYGhl6GREKWFwXGQQaBB0HTUsdEkhJHEwFGx0EGx8SBBscHwQdHhAbHhofGxEKXlkXYUl
-	4eWMRCkxGF2xraxEKQ1oXHhMEGxIbBBsdEgQYGRgRCkRYFxgRCkRJFxsRCkJFF297HH9pXm4FU
-	BhAEQpCThdrRRpSUB5DXFlcaBEKQkwXYGReYU9OfR9JeUQRCkJsF3obH3hSHFJtQ29aEQpCQBd
-	mcF1HRwFrBXxMeREKcGcXY1xGHUVubGVHRGkRCnBoF2ZrQ3pue3luewFDEQpwaBdiHntyE2dhe
-	URNQhEKcGgXZU5kSH1OWU5BZG8RCnBoF259YxlOXGJlH0BTEQpwaBduTB5uBRsdfU4bYBEKcGc
-	Xbn5gYEhjHFlLX24RCnB/F2BLaR9CWWF+XmJvEQpwXxdmQFx/TUIScG4YSREKcH8XbmVwQ1N6T
-	VJ7YG0RCnBfF2hOS1NgaWNYZWZlEQpwbBdkQ39nR2VbW2xkUBEKcEwXY0RlX3xhRAVdQ2sR
-X-CLX-Spam: false
-X-CLX-Score: 1011
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-04-01_07:2014-04-01,2014-04-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- suspectscore=9 phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0
- reason=mlx scancount=1 engine=7.0.1-1402240000 definitions=main-1404010158
+	Tue, 1 Apr 2014 22:04:32 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/7] clk: bcm281xx: updates for 3.15
+Date: Tue,  1 Apr 2014 21:04:48 -0500
+Message-Id: <1396404296-9390-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah, so there is a Free Software camp and an Open Source camp within the Linux Kernel Mailing List.
+This series includes updates for the bcm281xx clock code for 3.15.
+It is dependent on the following code, already queued for 3.15:
+    https://github.com/broadcom/mach-bcm/
+    Branch armsoc/for-3.15/drivers
+	clk: bcm281xx: don't disable unused peripheral clocks
+	clk: bcm281xx: add initial clock framework support
+followed by (same repository):
+    Branch armsoc/for-3.15/dt
+	ARM: dts: bcm281xx: define real clocks
 
-> On 2 Apr 2014, at 11:45 am, David Lang <david@lang.hm> wrote:
-> 
-> There is no concensus, some people are working hard to do so, others love GPLv3
-> 
-> David Lang
-> 
->> On Wed, 2 Apr 2014, Andrew Stephenson wrote:
->> 
->> Date: Wed, 02 Apr 2014 10:26:44 +1100
->> From: Andrew Stephenson <aste9@icloud.com>
->> To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
->> Subject: Replacing GNU
->> What is the consensus on replacing GNU with software that won't become GPLv3 in the future, with the latest gcc for example.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->> 
+Previously Mike Turquette had some questions about the way
+prerequisite clock support was implemented.  I have removed that
+functionality as well as the bus clock that depended on it from
+this series.
+
+The patches in this series (including the three commits they depend
+on) are available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/bcm-clk-next-v3
+
+History:
+  - v3: Dropped prerequisite clock support so resolving how
+	best to handle that can be resolved separately.  As
+	a result, bus clock support is no longer included.
+  - v2: Removed one unrelated patch from the series.
+
+Alex Elder (7):
+  clk: bcm281xx: warn if ccu_wait_bit() fails
+  clk: bcm281xx: use init_data.name for clock name
+  clk: bcm281xx: change some symbol names
+       	Three small code improvements.
+
+  clk: bcm281xx: initialize CCU structures statically
+  clk: bcm281xx: define CCU clock data statically
+	Rearrange the way CCUs and the clocks they provide are
+	defined, so that they're defined statically to the extent
+	possible rather than allocating and initializing things at
+	runtime.
+
+  clk: bcm281xx: add clock policy support
+  clk: bcm281xx: add clock hysteresis support
+	Add two new features, ultimately for the eventual purpose of
+	adding support for another type of Kona clock.
+
+ drivers/clk/bcm/clk-bcm281xx.c   |  243 +++++++++++++++++---------------------
+ drivers/clk/bcm/clk-kona-setup.c |  229 +++++++++++++++++++++++++----------
+ drivers/clk/bcm/clk-kona.c       |  212 +++++++++++++++++++++++++++++++--
+ drivers/clk/bcm/clk-kona.h       |  160 ++++++++++++++++++++-----
+ 4 files changed, 611 insertions(+), 233 deletions(-)
+
+-- 
+1.7.9.5
