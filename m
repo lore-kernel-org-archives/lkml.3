@@ -1,92 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaDBL32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:29:28 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:21170
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758420AbaDBL30 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:29:26 -0400
-X-Greylist: delayed 891 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Apr 2014 07:29:26 EDT
-From: "Haijun.Zhang@freescale.com" <Haijun.Zhang@freescale.com>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
-CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Subject: RE: [PATCHv2 0/3] regmap: add LE and DT binding for endianness
-Thread-Topic: [PATCHv2 0/3] regmap: add LE and DT binding for endianness
-Thread-Index: AQHPTmGs8EWk059ojUa9NNpTPq6m4Zr+Jshw
-Date: Wed, 2 Apr 2014 11:14:32 +0000
-Message-ID: <e6c89c0c983041fba39110b5517b7605@DM2PR03MB384.namprd03.prod.outlook.com>
-References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.50]
-x-forefront-prvs: 0169092318
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(377454003)(13464003)(76576001)(15975445006)(76786001)(49866001)(74876001)(31966008)(90146001)(74502001)(19580405001)(66066001)(47976001)(63696002)(54356001)(51856001)(81686001)(99396002)(87936001)(81542001)(87266001)(76796001)(95666003)(56776001)(50986001)(86362001)(54316002)(53806001)(81342001)(74316001)(74366001)(80022001)(83322001)(47736001)(83072002)(2656002)(94316002)(98676001)(79102001)(93516002)(97186001)(94946001)(93136001)(59766001)(33646001)(19580395003)(47446002)(77982001)(99286001)(4396001)(69226001)(65816001)(92566001)(85852003)(74706001)(76482001)(15202345003)(20776003)(81816001)(56816005)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB512;H:DM2PR03MB384.namprd03.prod.outlook.com;FPR:B865C9A6.9803CF12.B1D57720.C0E4DAF9.20221;MLV:sfv;PTR:InfoNoRecords;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S932131AbaDBL35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:29:57 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37227 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932110AbaDBL3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 07:29:55 -0400
+Message-ID: <1396438160.19206.23.camel@pasglop>
+Subject: Re: [PATCH REPOST v5 1/3] powernv, cpufreq: Select CPUFreq related
+ Kconfig options for powernv
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linuxppc-dev@ozlabs.org,
+        Linux PM list <linux-pm@vger.kernel.org>, svaidy@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, Anton Blanchard <anton@samba.org>,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 02 Apr 2014 22:29:20 +1100
+In-Reply-To: <1621325.cz1O3Ng49e@vostro.rjw.lan>
+References: <CAKohpo=jvswNPmUPEbS79bSp9ZWC1e3DjaEUX=O4CWMXfufHrw@mail.gmail.com>
+	 <1506880.SKUfks4BOU@vostro.rjw.lan> <1396412608.1394.15.camel@pasglop>
+	 <1621325.cz1O3Ng49e@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-04-02 at 13:03 +0200, Rafael J. Wysocki wrote:
+> > To be honest pretty urgent. It's a new drop-in driver so it
+> shouldn't
+> > be a huge deal.
+> > 
+> > We have distros really waiting for this to hit upstream... But I'll
+> > leave that decision to you :-)
+> 
+> Well, I've already sent a second pull request for this merge window
+> and I'm not going to send the next one before it is merged.
+> 
+> So, I can push them next week realistically.
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Xiubo Li
-> Sent: Wednesday, April 02, 2014 6:09 PM
-> To: broonie@kernel.org
-> Cc: linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org; Xiubo Li-
-> B47053
-> Subject: [PATCHv2 0/3] regmap: add LE and DT binding for endianness
->
+Thanks. You can blame me for the lateness if you want (and the debate as
+to which tree should carry them :-)
 
+Cheers,
+Ben.
 
-This patch set is very useful for eSDHC driver, which will support
-different endiannesses on both powerpc and arm platforms at the
-same time.
-
-And this patch set looks good to me.
-
-> 
-> For this patch series has dependency, so resend them together.
-> 
-> 
-> Change in v2:
-> - resend 'regmap: implement LE formatting/parsing for 16/32-bit values.'
-> - resend 'regmap: Add the DT binding documentation for endianness'
-> - fix the commit message of 'regmap: add DT endianness binding support.'
-> 
-> 
-> 
-> 
-> Xiubo Li (3):
->   regmap: implement LE formatting/parsing for 16/32-bit values.
->   regmap: Add the DT binding documentation for endianness
->   regmap: add DT endianness binding support.
-> 
->  .../bindings/regmap/regmap-endianness.txt          |  49 +++++++
->  drivers/base/regmap/regmap.c                       | 141
-> +++++++++++++++++++--
->  2 files changed, 180 insertions(+), 10 deletions(-)  create mode 100644
-> Documentation/devicetree/bindings/regmap/regmap-endianness.txt
-> 
-> --
-> 1.8.4
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
