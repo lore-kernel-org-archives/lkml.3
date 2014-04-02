@@ -1,163 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161064AbaDBWcT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:32:19 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:64234 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030673AbaDBWcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:32:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140402220557.GA22637@amt.cnet>
-References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
- <5339AB59.4050906@mit.edu> <20140331213032.GA5866@amt.cnet>
- <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
- <20140401180134.GA17963@amt.cnet> <CALCETrVFv4dHH1_D1KR43-UsVCPcXDXhwAuUWNUF5_Wgm+kw1g@mail.gmail.com>
- <20140402002926.GB31945@amt.cnet> <CALCETrWEbEeZM5umHPqtLJMm21phJG4AXPQXK=h_4FR8EPJotg@mail.gmail.com>
- <20140402220557.GA22637@amt.cnet>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 2 Apr 2014 15:31:56 -0700
-Message-ID: <CALCETrUegpxAWRfci8saMPVgFgtnN0xNU4bJ5-fhtz1zS6N5-A@mail.gmail.com>
-Subject: Re: VDSO pvclock may increase host cpu consumption, is this a problem?
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        zhang yanying <zhuangyanying@huawei.com>,
-        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        Zhanghailiang <zhang.zhanghailiang@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1161070AbaDBWeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:34:00 -0400
+Received: from ozlabs.org ([203.10.76.45]:36138 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030593AbaDBWd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 18:33:59 -0400
+Date: Thu, 3 Apr 2014 09:33:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linus <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the tip tree with the omap_dss2
+ tree
+Message-Id: <20140403093351.12729ea091dba0fe6570823c@canb.auug.org.au>
+In-Reply-To: <20140304161320.2d76810bf6bd8c6eb554b564@canb.auug.org.au>
+References: <20140304161320.2d76810bf6bd8c6eb554b564@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__3_Apr_2014_09_33_51_+1100_1jFOf_L1cylAIGqh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 3:05 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> On Tue, Apr 01, 2014 at 05:46:34PM -0700, Andy Lutomirski wrote:
->> On Tue, Apr 1, 2014 at 5:29 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
->> > On Tue, Apr 01, 2014 at 12:17:16PM -0700, Andy Lutomirski wrote:
->> >> On Tue, Apr 1, 2014 at 11:01 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
->> >> > On Mon, Mar 31, 2014 at 10:33:41PM -0700, Andy Lutomirski wrote:
->> >> >> On Mar 31, 2014 8:45 PM, "Marcelo Tosatti" <mtosatti@redhat.com> wrote:
->> >> >> >
->> >> >> > On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
->> >> >> > > On 03/29/2014 01:47 AM, Zhanghailiang wrote:
->> >> >> > > > Hi,
->> >> >> > > > I found when Guest is idle, VDSO pvclock may increase host consumption.
->> >> >> > > > We can calcutate as follow, Correct me if I am wrong.
->> >> >> > > >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
->> >> >> > > > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
->> >> >> > > > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call.
->> >> >> > > > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
->> >> >> > > > Both Host and Guest is linux-3.13.6.
->> >> >> > > > So, whether the host cpu consumption is a problem?
->> >> >> > >
->> >> >> > > Does pvclock serve any real purpose on systems with fully-functional
->> >> >> > > TSCs?  The x86 guest implementation is awful, so it's about 2x slower
->> >> >> > > than TSC.  It could be improved a lot, but I'm not sure I understand why
->> >> >> > > it exists in the first place.
->> >> >> >
->> >> >> > VM migration.
->> >> >>
->> >> >> Why does that need percpu stuff?  Wouldn't it be sufficient to
->> >> >> interrupt all CPUs (or at least all cpus running in userspace) on
->> >> >> migration and update the normal timing data structures?
->> >> >
->> >> > Are you suggesting to allow interruption of the timekeeping code
->> >> > at any time to update frequency information ?
->> >>
->> >> I'm not sure what you mean by "interruption of the timekeeping code".
->> >> I'm suggesting sending an interrupt to the guest (via a virtio device,
->> >> presumably) to tell it that it has been paused and resumed.
->> >>
->> >> This is probably worth getting John's input if you actually want to do
->> >> this.  I'm not about to :)
->> >
->> > Honestly, neither am i at the moment. But i'll think about it.
->> >
->> >> Is there any case in which the TSC is stable and the kvmclock data for
->> >> different cpus is actually different?
->> >
->> > No. However, kvmclock_data.flags field is an interface for watchdog
->> > unpause.
->> >
->> >> > Do you want to that as a special tsc clocksource driver ?
->> >> >
->> >> >> Even better: have the VM offer to invalidate the physical page
->> >> >> containing the kernel's clock data on migration and interrupt one CPU.
->> >> >>  If another CPU races, it'll fault and wait for the guest kernel to
->> >> >> update its timing.
->> >> >
->> >> > Perhaps that is a good idea.
->> >> >
->> >> >> Does the current kvmclock stuff track CLOCK_MONOTONIC and
->> >> >> CLOCK_REALTIME separately?
->> >> >
->> >> > No. kvmclock counting is interrupted on vm pause (the "hw" clock does not
->> >> > count during vm pause).
->> >>
->> >> Makes sense.
->> >>
->> >> >
->> >> >> > Can you explain why you consider it so bad ? How you think it could be
->> >> >> > improved ?
->> >> >>
->> >> >> The second rdtsc_barrier looks unnecessary.  Even better, if rdtscp is
->> >> >> available, then rdtscp can replace rdtsc_barrier, rdtsc, and the
->> >> >> getcpu call.
->> >> >>
->> >> >> It would also be nice to avoid having two sets of rescalings of the timing data.
->> >> >
->> >> > Yep, probably good improvements, patches are welcome :-)
->> >> >
->> >>
->> >> I may get to it at some point.  No guarantees.  I did just rewrite all
->> >> the mapping-related code for every other x86 vdso timesource, so maybe
->> >> I should try to add this to the pile.  The fact that the data is a
->> >> variable number of pages makes it messy, though, and since I don't
->> >> understand why there's a separate structure for each CPU, I'm hesitant
->> >> to change it too much.
->> >>
->> >> --Andy
->> >
->> > kvmclock.data? Because each VCPU can have different .flags fields for
->> > example.
->>
->> It looks like the vdso kvmclock code only runs if
->> PVCLOCK_TSC_STABLE_BIT is set, which in turn is only the case if the
->> TSC is guaranteed to be monotonic across all CPUs.  If we can rely on
->> the fact that that bit will only be set if tsc_to_system_mul and
->> tsc_shift are the same on all CPUs and that (system_time -
->> (tsc_timestamp * mul) >> shift) is the same on all CPUs, then there
->> should be no reason for the vdso to read the pvclock data for anything
->> but CPU 0.  That will make it a lot faster and simpler.
->>
->> Can we rely on that?
->
-> In theory yes, but you would have to handle
->
-> PVCLOCK_TSC_STABLE_BIT set -> PVCLOCK_TSC_STABLE_BIT not set
->
-> Transition (and the other way around as well).
+--Signature=_Thu__3_Apr_2014_09_33_51_+1100_1jFOf_L1cylAIGqh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Since !STABLE already results in a real syscall for clock_gettime and
-gettimeofday, I don't think this is a real hardship for the vdso.
+H all,
 
+On Tue, 4 Mar 2014 16:13:20 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
 >
->> I wonder what happens if the guest runs ntpd or otherwise uses
->> adjtimex.  Presumably it starts drifting relative to the host.
->
-> It should use ntpd and adjtimex.  KVMCLOCK is the "hw" clock,
-> the values returned by CLOCK_REALTIME and CLOCK_GETTIME are built
-> by the Linux guest timekeeping subsystem on top of the "hw" clock.
->
+> Today's linux-next merge of the tip tree got conflicts in
+> drivers/video/Kconfig, drivers/video/Makefile and drivers/video/sgivwfb.c
+> between commit 08667731d1d4 ("video: move fbdev to drivers/video/fbdev")
+> from the omap_dss2 tree and commit c5f9ee3d665a ("x86, platforms: Remove
+> SGI Visual Workstation") from the tip tree.
+>=20
+> I removed drivers/video/fbdev/sgivwfb.c and added the following merge
+> fix patch and can carry the fix as necessary (no action is required).
 
-If the kernel can guarantee that, then the timing code gets faster,
-since the cyc2ns scale will be unity.  Maybe this is worth a branch.
+This resolution is now needed when the omap_dss2 tree is merged with
+Linus' tree.
 
-Anyway, I'll try to find some time to improve this if/when hpa picks
-up my current series of vdso cleanups.  I suspect that the overall
-effect will be a 30-40% speedup in clock_gettime along with a decent
-reduction of code complexity.
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 4 Mar 2014 16:11:12 +1100
+> Subject: [PATCH] video: fbdev: fix up fro removal of SGI Visual Workstati=
+on
+>=20
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/video/fbdev/Kconfig  | 11 +----------
+>  drivers/video/fbdev/Makefile |  1 -
+>  2 files changed, 1 insertion(+), 11 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
+> index 31c3f3ddfd38..6b1984c7f4e7 100644
+> --- a/drivers/video/fbdev/Kconfig
+> +++ b/drivers/video/fbdev/Kconfig
+> @@ -765,18 +765,9 @@ config FB_HGA
+>  	  As this card technology is at least 25 years old,
+>  	  most people will answer N here.
+> =20
+> -config FB_SGIVW
+> -	tristate "SGI Visual Workstation framebuffer support"
+> -	depends on FB && X86_VISWS
+> -	select FB_CFB_FILLRECT
+> -	select FB_CFB_COPYAREA
+> -	select FB_CFB_IMAGEBLIT
+> -	help
+> -	  SGI Visual Workstation support for framebuffer graphics.
+> -
+>  config FB_GBE
+>  	bool "SGI Graphics Backend frame buffer support"
+> -	depends on (FB =3D y) && (SGI_IP32 || X86_VISWS)
+> +	depends on (FB =3D y) && SGI_IP32
+>  	select FB_CFB_FILLRECT
+>  	select FB_CFB_COPYAREA
+>  	select FB_CFB_IMAGEBLIT
+> diff --git a/drivers/video/fbdev/Makefile b/drivers/video/fbdev/Makefile
+> index 6ef2c66110e3..0284f2a12538 100644
+> --- a/drivers/video/fbdev/Makefile
+> +++ b/drivers/video/fbdev/Makefile
+> @@ -55,7 +55,6 @@ obj-$(CONFIG_FB_CG14)             +=3D cg14.o sbuslib.o
+>  obj-$(CONFIG_FB_P9100)            +=3D p9100.o sbuslib.o
+>  obj-$(CONFIG_FB_TCX)              +=3D tcx.o sbuslib.o
+>  obj-$(CONFIG_FB_LEO)              +=3D leo.o sbuslib.o
+> -obj-$(CONFIG_FB_SGIVW)            +=3D sgivwfb.o
+>  obj-$(CONFIG_FB_ACORN)            +=3D acornfb.o
+>  obj-$(CONFIG_FB_ATARI)            +=3D atafb.o c2p_iplan2.o atafb_mfb.o \
+>                                       atafb_iplan2p2.o atafb_iplan2p4.o a=
+tafb_iplan2p8.o
 
---Andy
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__3_Apr_2014_09_33_51_+1100_1jFOf_L1cylAIGqh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTPJBUAAoJEMDTa8Ir7ZwVoAoP/0nE+jZWts8GkM5Xukv9PB3b
+fcsm2lwJIdftWRQQ6CieyZZMb7oJJCyAoKbsLVbMcpUDMUxBOimNyHUDI1y3XZJ4
+4LloZqXk22OMJtS9bswkpGqHelYbCk53+h3VCA1+a2+3/aiu95yzaXsVlNl7YFNs
+wRIC168ty2oYB6ouX1WJVNdtRxgfBXYsbrBqsexR6OGz7c9qdtBiZK0zu9CYcWZR
+IxLtfNIxiC4M4+5qxCDHQ46W8FhJD0Qlvyc3KWKQT8suF2+LYz/BGQS3XRdEHjh0
+WUU75U49vX9claZ7wWCsjWSXXd8fv9XRzaf3LrfKHPu1gh4BrsLak5sxmeMIKGll
+AYAgvPnmNiLDxODZwEcSyAFhJq2QDJCA0J44ax7H1wQCfZsvhm1EQsgLeDOVdx7N
+cBEyigzbQCFB8LX+vGhmYqXLICYlaOOyDDWmd5k4Dh9hgrdpd5vTMa2XzvWcrWKh
+EK9kd83iwb12zUnZlgZ4kQWzawzbau4AkQVnhXmqts87cZLf0HBTzPaw63nqx0ko
+RlNRFLwq39CZHSO387DYsncTt/w7tyuSt1kDdqdtyfsg2iP5UgAK562JTg6kyS3T
+VYptgYH4TcbTgpdJx3xo3uO2DMW7GSiupu/uaxoyPG2W5N4125RtoEDstpI7HkdI
+Y3zoO1OuaDgCu0p/YbVz
+=fe/k
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__3_Apr_2014_09_33_51_+1100_1jFOf_L1cylAIGqh--
