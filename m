@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030706AbaDBWae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:30:34 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:41685 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030634AbaDBWa3 (ORCPT
+	id S1161020AbaDBWaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:30:18 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:45469 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030634AbaDBWaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:30:29 -0400
-Date: Wed, 2 Apr 2014 23:30:24 +0100
-From: Struan Bartlett <struan.bartlett@gmail.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, mpm@selenic.com
-Cc: linux-kernel@vger.kernel.org, schwab@linux-m68k.org,
-        netdev@vger.kernel.org, davem@davemloft.net, nikolay@redhat.com,
-        andy.shevchenko@gmail.com, gregkh@linuxfoundation.org,
-        jiri@resnulli.us, joe@perches.com, alonid@postram.com
-Subject: Re: [PATCH v2] netconsole: Add tty driver
-Message-ID: <20140402223024.GA12627@NewsNow.co.uk>
-References: <533B2F03.6060008@gmail.com>
- <201404022116.HIB82683.FOJMFFHVStOLOQ@I-love.SAKURA.ne.jp>
+	Wed, 2 Apr 2014 18:30:17 -0400
+Message-ID: <533C8F75.9000301@gmail.com>
+Date: Wed, 02 Apr 2014 15:30:13 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201404022116.HIB82683.FOJMFFHVStOLOQ@I-love.SAKURA.ne.jp>
-FCC: imap://struan.bartlett%40gmail.com@imap.googlemail.com/[Gmail]/Sent Mail
-X-Identity-Key: id4
-X-Account-Key: account4
-X-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0)
- Gecko/20100101 Thunderbird/24.3.0
+To: Mateusz Guzik <mguzik@redhat.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+References: <20140402144219.4cafbe37@gandalf.local.home> <20140402221212.GD16570@mguzik.redhat.com>
+In-Reply-To: <20140402221212.GD16570@mguzik.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 14:16, Tetsuo Handa wrote:
-> Struan Bartlett wrote:
->> Adds tty driver to netconsole module. When module is loaded,
->> creates /dev/netcon0 device and enables support for console=netcon0
->> kernel cmdline option, causing /dev/console output to be sent to
->> /dev/netcon0. This allows startup/shutdown script output from
->> headless platforms to be logged over (secure) network.
-> 
-> Excuse me, but I think that the netconsole logging can work only during network
-> interfaces (e.g. eth0) are up. Did this patch description assume that the
-> network interfaces are up before the startup script is started and the shutdown
-> script is finished before the network interfaces are down?
+On 04/02/2014 03:12 PM, Mateusz Guzik wrote:
+> On Wed, Apr 02, 2014 at 02:42:19PM -0400, Steven Rostedt wrote:
+>> It has come to our attention that a system running a specific user
+>> space init program will not boot if you add "debug" to the kernel
+>> command line. What happens is that the user space tool parses the
+>> kernel command line, and if it sees "debug" it will spit out so much
+>> information that the system fails to boot. This basically renders the
+>> "debug" option for the kernel useless.
+>>
+>> This bug has been reported to the developers of said tool
+>> here:
+>>
+>>    https://bugs.freedesktop.org/show_bug.cgi?id=76935
+>>
+>> The response is:
+>>
+>> "Generic terms are generic, not the first user owns them."
+>>
+>> That is, the "debug" statement on the *kernel* command line is not
+>> owned by the kernel just because it was the first user of it, and
+>> they refuse to fix their bug.
+>>
+>> Well, my response is, we OWN the kernel command line, and as such, we
+>> can keep the users from seeing stuff on it if we so choose. And with
+>> that, I propose this patch, which hides "debug" from /proc/cmdline,
+>> such that we don't have to worry about tools parsing for it and causing
+>> hardship for those trying to debug the kernel.
+>>
+>
+> Well, parsing kernel cmdline by systemd is a bad idea, and hiding
+> "debug" is even worse. What will happen when the next keyword clashes?
+> And how should I check the kernel is booted with "debug"?
+>
+> If there is a real need to pass arguments to systemd, how about a
+> dedicated option (initargs= or whatever, where it has to be last in
+> cmdline), then systemd would be spawned with these arguments and would
+> just go over its argv.
+>
 
-Yes it did. I hope I have clarified that in the v3 patch description.
-In practice, at least in a Debian environment: i) the netconsole module itself
-is generally capable of raising the network interface when it is loaded by the
-initramfs init script (which precedes all /etc/init.d/* scripts); ii) very
-little of consequence tends to happens during shutdown after networking is
-stopped; iii) equally, it is not usually problematic to disable the networking
-shutdown script, since it runs on platforms about to be rebooted or powered off.
-We do this by editing the Default-Stop LSB header in /etc/init.d/networking.
+What if systemd only parsed kernel command line arguments of the form:
 
-> By the way, I uploaded a logger specialized for receiving netconsole messages
-> to http://sourceforge.jp/projects/akari/scm/svn/tree/head/branches/udplogger/ .
+...  systemd.arg_foo systemd.arg_bar=x ...
 
-Thank you. I'll check it out.
+Then it wouldn't get confused by arguments that weren't directly 
+targeted at it.
+
+There is precedence for this form, as it is what we already use for 
+built-in modules.  As a bonus, we would be ready for when systemd is 
+integrated into the kernel as a module itself.
+
+Thanks,
+David Daney
