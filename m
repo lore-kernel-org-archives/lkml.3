@@ -1,54 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528AbaDBLrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:47:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3664 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758197AbaDBLrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:47:46 -0400
-Date: Wed, 2 Apr 2014 13:49:32 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
-        intel-linux-scu@intel.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
-        qla2xxx-upstream@qlogic.com, iscsi-driver@qlogic.com,
-        pv-drivers@vmware.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 00/23] scsi: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140402114932.GB10007@dhcp-26-207.brq.redhat.com>
-References: <cover.1393191330.git.agordeev@redhat.com>
- <20140313040440.GB26657@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313040440.GB26657@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758595AbaDBLsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:48:33 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:56281 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758551AbaDBLsa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 07:48:30 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-8d-533bf90c6758
+Message-id: <533BF905.6070701@samsung.com>
+Date: Wed, 02 Apr 2014 13:48:21 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, chow.kim@samsung.com,
+        Young-Gun Jang <yg1004.jang@samsung.com>
+Subject: Re: [PATCH 06/10] ARM: EXYNOS: Add support for mapping PMU base
+ address via DT
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
+ <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xK7o8P62DDZ7f1bBYNukum0Xvgqts
+	FpseX2O1uLxrDpvFjPP7mCxuX+a1WLT1C7vFjpbVLA4cHi3NPWwem5fUe/RtWcXo8XmTXABL
+	FJdNSmpOZllqkb5dAlfGuWlsBVNFKh5taWBtYNwp0MXIySEhYCJx7Ph/NghbTOLCvfVANheH
+	kMBSRomZU1+yQjifGCXere4Aq+IV0JJ4ufIGK4jNIqAq0blvOZjNJmAo0Xu0jxHEFhWIkLjX
+	eJgVol5Q4sfkeywgtohAnsSeRzPANjALzGaUWPJ4FthQYYFIidmnX7BDbGtllJhysRVsEqeA
+	h8TVXW+YQGxmAR2J/a3T2CBseYnNa94yT2AUmIVkySwkZbOQlC1gZF7FKJpamlxQnJSea6hX
+	nJhbXJqXrpecn7uJERLkX3YwLj5mdYhRgINRiYdX4pJVsBBrYllxZe4hRgkOZiUR3kmfrIOF
+	eFMSK6tSi/Lji0pzUosPMTJxcEo1MEp93Kp5pJzxkcCL0wkZic3aH363zrynv+mqk6NXH9fO
+	I2HmzjmWE2Q165nKEqbIXJ3bGLXLu1VFfppT6q3ssy++L+H5FznB8SVPnKn/pfZUkYTjHmnh
+	HQt/x/9prfZtPcCY78XGcPlyNCvzgSPuwYEOn76dtRLcpuX+ckUZh/G8B5OjbA4WKLEUZyQa
+	ajEXFScCAHGnVIlQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 10:04:40PM -0600, Bjorn Helgaas wrote:
-> Hi James,
+On 02/04/14 09:50, Pankaj Dubey wrote:
+> From: Young-Gun Jang <yg1004.jang@samsung.com>
 > 
-> I think Alexander sent these to linux-scsi hoping that you would handle
-> them, but I know it's a hassle because they depend on f7fc32c, which went
-> in after the merge window.
+> Add support for mapping Exynos Power Management Unit (PMU) base address
+> from device tree. Code will use existing samsung pmu binding information.
+> This patch also adds "get_exynos_pmubase" a helper function to return mapped base
+> address to various other files under "mach-exynos".
 > 
-> I'd be glad to review these and apply them through my tree, unless you want
-> to do it.  I'd like to get these merged in the v3.15 merge window so
-> Alexander can move on to something else.  I haven't checked for merge
-> conflicts with scsi.git yet, but I assume they'd be pretty trivial if there
-> are any.
+> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>  arch/arm/mach-exynos/common.h |    2 ++
+>  arch/arm/mach-exynos/exynos.c |   44 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 46 insertions(+)
+> 
+[...]
+>  #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
+> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+> index a5e1349..a5127fb 100644
+> --- a/arch/arm/mach-exynos/exynos.c
+> +++ b/arch/arm/mach-exynos/exynos.c
+> @@ -35,6 +35,8 @@
+>  #define L2_AUX_VAL 0x7C470001
+>  #define L2_AUX_MASK 0xC200ffff
+>  
+> +static void __iomem *exynos_pmu_base __initdata;
+> +
+>  static struct map_desc exynos4_iodesc[] __initdata = {
+>  	{
+>  		.virtual	= (unsigned long)S3C_VA_SYS,
+> @@ -245,6 +247,47 @@ void __init exynos_init_late(void)
+>  	exynos_pm_init();
+>  }
+>  
+> +static char const *exynos_dt_pmu_match[] __initconst = {
+> +	"samsung,exynos4210-pmu",
+> +	"samsung,exynos4212-pmu",
+> +	"samsung,exynos4412-pmu",
+> +	"samsung,exynos5250-pmu",
+> +	NULL
+> +};
+> +
+> +static int __init exynos_fdt_map_pmu(unsigned long node,
+> +		const char *uname, int depth, void *data)
+> +{
+> +	struct map_desc iodesc;
+> +	__be32 *reg;
+> +	unsigned long len;
+> +
+> +	if (of_flat_dt_match(node, exynos_dt_pmu_match)) {
+> +		phys_addr_t phys_addr;
+> +		reg = of_get_flat_dt_prop(node, "reg", &len);
+> +		if (reg == NULL || len != (sizeof(unsigned long) * 2))
+> +			return 0;
+> +
+> +		phys_addr = be32_to_cpu(reg[0]);
+> +		iodesc.pfn = __phys_to_pfn(phys_addr);
+> +		iodesc.length = be32_to_cpu(reg[1]) - 1;
+> +		iodesc.virtual = (unsigned long)S5P_VA_PMU;
+> +		iodesc.type = MT_DEVICE;
+> +		iotable_init(&iodesc, 1);
 
-Hi Bjorn,
+Are you sure...you need this in addition to ioremap() below ?
+Can't you just use the Linux syscon API ?
+There were some patches posted for syscon to make it available in earlier
+system initialization stage: https://lkml.org/lkml/2014/2/19/218
 
-It has shifted to v3.16, right?
+> +		exynos_pmu_base = ioremap(phys_addr, be32_to_cpu(reg[1]));
+> +		if (WARN_ON(!exynos_pmu_base))
+> +			return -EFAULT;
+> +	}
+> +
+> +	return 0;
+> +}
 
-> Bjorn
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+--
+Thanks,
+Sylwester
