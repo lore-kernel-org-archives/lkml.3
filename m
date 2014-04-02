@@ -1,139 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030644AbaDBWGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:06:44 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:48884 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030526AbaDBWGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:06:41 -0400
-Date: Wed, 2 Apr 2014 17:06:38 -0500
-From: Kim Phillips <kim.phillips@linaro.org>
-To: gregkh@linuxfoundation.org
-Cc: alex.williamson@redhat.com, stuart.yoder@freescale.com,
-        kvm@vger.kernel.org, jan.kiszka@siemens.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, bhelgaas@google.com,
-        Varun.Sethi@freescale.com, kvmarm@lists.cs.columbia.edu,
-        rafael.j.wysocki@intel.com, agraf@suse.de, linux-pci@vger.kernel.org,
-        linux@roeck-us.net, konrad.wilk@oracle.com, d.kasatkin@samsung.com,
-        tj@kernel.org, scottwood@freescale.com,
-        a.motakis@virtualopensystems.com, tech@virtualopensystems.com,
-        Bharat.Bhushan@freescale.com, toshi.kani@hp.com,
-        a.rigo@virtualopensystems.com, iommu@lists.linux-foundation.org,
-        joe@perches.com, christoffer.dall@linaro.org,
-        kim.phillips@freescale.com
-Subject: Re: [RFC PATCH] PCI: Introduce new device binding path using
- pci_dev.driver_override
-Message-Id: <20140402170638.51745f5c231a7632422e4cc5@linaro.org>
-In-Reply-To: <20140402002324.GA2662@kroah.com>
-References: <20140401161851.18815.31108.stgit@bling.home>
-	<20140401185212.7229f2c114c7e95089f00e90@linaro.org>
-	<20140402002324.GA2662@kroah.com>
-X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1030662AbaDBWHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:07:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10145 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030647AbaDBWHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 18:07:14 -0400
+Date: Wed, 2 Apr 2014 19:05:57 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhang yanying <zhuangyanying@huawei.com>,
+        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        Zhanghailiang <zhang.zhanghailiang@huawei.com>
+Subject: Re: VDSO pvclock may increase host cpu consumption, is this a
+ problem?
+Message-ID: <20140402220557.GA22637@amt.cnet>
+References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
+ <5339AB59.4050906@mit.edu>
+ <20140331213032.GA5866@amt.cnet>
+ <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
+ <20140401180134.GA17963@amt.cnet>
+ <CALCETrVFv4dHH1_D1KR43-UsVCPcXDXhwAuUWNUF5_Wgm+kw1g@mail.gmail.com>
+ <20140402002926.GB31945@amt.cnet>
+ <CALCETrWEbEeZM5umHPqtLJMm21phJG4AXPQXK=h_4FR8EPJotg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWEbEeZM5umHPqtLJMm21phJG4AXPQXK=h_4FR8EPJotg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014 17:23:24 -0700
-Greg KH <gregkh@linuxfoundation.org> wrote:
-
-> On Tue, Apr 01, 2014 at 06:52:12PM -0500, Kim Phillips wrote:
-> > On Tue, 01 Apr 2014 10:28:54 -0600
-> > Alex Williamson <alex.williamson@redhat.com> wrote:
-> > 
-> > > The driver_override field allows us to specify the driver for a device
-> > > rather than relying on the driver to provide a positive match of the
-> > > device.  This shortcuts the existing process of looking up the vendor
-> > > and device ID, adding them to the driver new_id, binding the device,
-> > > then removing the ID, but it also provides a couple advantages.
-> > > 
-> > > First, the above process allows the driver to bind to any device
-> > > matching the new_id for the window where it's enabled.  This is often
-> > > not desired, such as the case of trying to bind a single device to a
-> > > meta driver like pci-stub or vfio-pci.  Using driver_override we can
-> > > do this deterministically using:
-> > > 
-> > > echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> > > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > > 
-> > > Previously we could not invoke drivers_probe after adding a device
-> > > to new_id for a driver as we get non-deterministic behavior whether
-> > > the driver we intend or the standard driver will claim the device.
-> > > Now it becomes a deterministic process, only the driver matching
-> > > driver_override will probe the device.
-> > > 
-> > > To return the device to the standard driver, we simply clear the
-> > > driver_override and reprobe the device, ex:
-> > > 
-> > > echo > /sys/bus/pci/devices/0000:03:00.0/preferred_driver
-> > > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > > 
-> > > Another advantage to this approach is that we can specify a driver
-> > > override to force a specific binding or prevent any binding.  For
-> > > instance when an IOMMU group is exposed to userspace through VFIO
-> > > we require that all devices within that group are owned by VFIO.
-> > > However, devices can be hot-added into an IOMMU group, in which case
-> > > we want to prevent the device from binding to any driver (preferred
-> > > driver = "none") or perhaps have it automatically bind to vfio-pci.
-> > > With driver_override it's a simple matter for this field to be set
-> > > internally when the device is first discovered to prevent driver
-> > > matches.
-> > > 
-> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > ---
-> > > 
-> > > Apologies for the exceptionally long cc list, this is a follow-up to
-> > > Stuart's "Subject: mechanism to allow a driver to bind to any device"
-> > > thread.  This is effectively a v2 of the proof-of-concept patch I
-> > > posted in that thread.  This version changes to use a dummy id struct
-> > > to return on an "override" match, which removes the collateral damage
-> > > and greatly simplifies the patch.  This feels fairly well baked for
-> > > PCI and I would expect that platform drivers could do a similar
-> > > implementation.  From there perhaps we can discuss whether there's
-> > > any advantage to placing driver_override on struct device.  The logic
-> > > for incorporating it into the match still needs to happen per bus
-> > > driver, so it might only contribute to consistency of the show/store
-> > > sysfs attributes to move it up to struct device.  Please comment.
-> > 
-> > Sounds like Greg likes this approach more than {drv,dev}_sysfs_only.
+On Tue, Apr 01, 2014 at 05:46:34PM -0700, Andy Lutomirski wrote:
+> On Tue, Apr 1, 2014 at 5:29 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > On Tue, Apr 01, 2014 at 12:17:16PM -0700, Andy Lutomirski wrote:
+> >> On Tue, Apr 1, 2014 at 11:01 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> >> > On Mon, Mar 31, 2014 at 10:33:41PM -0700, Andy Lutomirski wrote:
+> >> >> On Mar 31, 2014 8:45 PM, "Marcelo Tosatti" <mtosatti@redhat.com> wrote:
+> >> >> >
+> >> >> > On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
+> >> >> > > On 03/29/2014 01:47 AM, Zhanghailiang wrote:
+> >> >> > > > Hi,
+> >> >> > > > I found when Guest is idle, VDSO pvclock may increase host consumption.
+> >> >> > > > We can calcutate as follow, Correct me if I am wrong.
+> >> >> > > >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
+> >> >> > > > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
+> >> >> > > > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call.
+> >> >> > > > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
+> >> >> > > > Both Host and Guest is linux-3.13.6.
+> >> >> > > > So, whether the host cpu consumption is a problem?
+> >> >> > >
+> >> >> > > Does pvclock serve any real purpose on systems with fully-functional
+> >> >> > > TSCs?  The x86 guest implementation is awful, so it's about 2x slower
+> >> >> > > than TSC.  It could be improved a lot, but I'm not sure I understand why
+> >> >> > > it exists in the first place.
+> >> >> >
+> >> >> > VM migration.
+> >> >>
+> >> >> Why does that need percpu stuff?  Wouldn't it be sufficient to
+> >> >> interrupt all CPUs (or at least all cpus running in userspace) on
+> >> >> migration and update the normal timing data structures?
+> >> >
+> >> > Are you suggesting to allow interruption of the timekeeping code
+> >> > at any time to update frequency information ?
+> >>
+> >> I'm not sure what you mean by "interruption of the timekeeping code".
+> >> I'm suggesting sending an interrupt to the guest (via a virtio device,
+> >> presumably) to tell it that it has been paused and resumed.
+> >>
+> >> This is probably worth getting John's input if you actually want to do
+> >> this.  I'm not about to :)
+> >
+> > Honestly, neither am i at the moment. But i'll think about it.
+> >
+> >> Is there any case in which the TSC is stable and the kvmclock data for
+> >> different cpus is actually different?
+> >
+> > No. However, kvmclock_data.flags field is an interface for watchdog
+> > unpause.
+> >
+> >> > Do you want to that as a special tsc clocksource driver ?
+> >> >
+> >> >> Even better: have the VM offer to invalidate the physical page
+> >> >> containing the kernel's clock data on migration and interrupt one CPU.
+> >> >>  If another CPU races, it'll fault and wait for the guest kernel to
+> >> >> update its timing.
+> >> >
+> >> > Perhaps that is a good idea.
+> >> >
+> >> >> Does the current kvmclock stuff track CLOCK_MONOTONIC and
+> >> >> CLOCK_REALTIME separately?
+> >> >
+> >> > No. kvmclock counting is interrupted on vm pause (the "hw" clock does not
+> >> > count during vm pause).
+> >>
+> >> Makes sense.
+> >>
+> >> >
+> >> >> > Can you explain why you consider it so bad ? How you think it could be
+> >> >> > improved ?
+> >> >>
+> >> >> The second rdtsc_barrier looks unnecessary.  Even better, if rdtscp is
+> >> >> available, then rdtscp can replace rdtsc_barrier, rdtsc, and the
+> >> >> getcpu call.
+> >> >>
+> >> >> It would also be nice to avoid having two sets of rescalings of the timing data.
+> >> >
+> >> > Yep, probably good improvements, patches are welcome :-)
+> >> >
+> >>
+> >> I may get to it at some point.  No guarantees.  I did just rewrite all
+> >> the mapping-related code for every other x86 vdso timesource, so maybe
+> >> I should try to add this to the pile.  The fact that the data is a
+> >> variable number of pages makes it messy, though, and since I don't
+> >> understand why there's a separate structure for each CPU, I'm hesitant
+> >> to change it too much.
+> >>
+> >> --Andy
+> >
+> > kvmclock.data? Because each VCPU can have different .flags fields for
+> > example.
 > 
-> I have made no such judgement, I only pointed out that if you
-
-ok.  If no-one chimes in in favour of one or the other, driver_override
-works for platform devices.
-
-> modify/add/remove a sysfs file, it needs to have documentation for it.
-
-ok, so the platform device implementation should add a new
-Documentation/ABI/testing/sysfs-bus-platform...
-
-> > The diff below is the result of duplicating and converting this patch
-> > for platform devices, and, indeed, binding a device to the
-> > vfio-platform driver succeeds with:
-> > 
-> > echo vfio-platform > /sys/bus/platform/devices/fff51000.ethernet/driver_override
-> > echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
-> > echo fff51000.ethernet > /sys/bus/platform/drivers_probe
-> > 
-> > However, it's almost pure duplication modulo the bus match code.  The
-> > only other place I can see where to put the common bus check is
-> > drivers/base/base.h:driver_match_device(), which I'm guessing is
-> > off-limits?  So should we leave this as per-bus code, and somehow
-> > refactor driver_override_{show,store}?
+> It looks like the vdso kvmclock code only runs if
+> PVCLOCK_TSC_STABLE_BIT is set, which in turn is only the case if the
+> TSC is guaranteed to be monotonic across all CPUs.  If we can rely on
+> the fact that that bit will only be set if tsc_to_system_mul and
+> tsc_shift are the same on all CPUs and that (system_time -
+> (tsc_timestamp * mul) >> shift) is the same on all CPUs, then there
+> should be no reason for the vdso to read the pvclock data for anything
+> but CPU 0.  That will make it a lot faster and simpler.
 > 
-> If you can provide a way for this to be done in a bus-independant way,
-> like we did for new_id and the like, I'd be open to reviewing it.
+> Can we rely on that?
 
-I may be blind, but I don't see any new_id-related code shared
-between drivers/pci/pci-driver.c and, e.g., drivers/usb/serial/bus.c,
-nor do I see anything new_id related in drivers/base/.
+In theory yes, but you would have to handle
 
-So if we are to follow the current model, the PCI and platform device
-implementations should be maintained separately.
+PVCLOCK_TSC_STABLE_BIT set -> PVCLOCK_TSC_STABLE_BIT not set
 
-Kim
+Transition (and the other way around as well).
+
+> I wonder what happens if the guest runs ntpd or otherwise uses
+> adjtimex.  Presumably it starts drifting relative to the host.
+
+It should use ntpd and adjtimex.  KVMCLOCK is the "hw" clock, 
+the values returned by CLOCK_REALTIME and CLOCK_GETTIME are built
+by the Linux guest timekeeping subsystem on top of the "hw" clock.
+
