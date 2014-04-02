@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394AbaDBJ65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 05:58:57 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:58072 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758197AbaDBJ6y (ORCPT
+	id S1758451AbaDBJ7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:59:40 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:36114 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758342AbaDBJ6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 05:58:54 -0400
+	Wed, 2 Apr 2014 05:58:52 -0400
 From: David Herrmann <dh.herrmann@gmail.com>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>, Tom Gundersen <teg@jklm.no>,
@@ -14,9 +14,9 @@ Cc: "David S. Miller" <davem@davemloft.net>, Tom Gundersen <teg@jklm.no>,
         linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
         Kay Sievers <kay.sievers@vrfy.org>,
         David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v6 4/4] brcmfmac: set NET_NAME_USER for P2P ifs
-Date: Wed,  2 Apr 2014 11:58:26 +0200
-Message-Id: <1396432706-14470-5-git-send-email-dh.herrmann@gmail.com>
+Subject: [PATCH v6 3/4] ath6kl: set NET_NAME_USER for P2P ifs
+Date: Wed,  2 Apr 2014 11:58:25 +0200
+Message-Id: <1396432706-14470-4-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396432706-14470-1-git-send-email-dh.herrmann@gmail.com>
 References: <1396432706-14470-1-git-send-email-dh.herrmann@gmail.com>
@@ -24,30 +24,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Netdevs created via nl80211 (currently only P2P ifs) have names provided
-by user-space. Therefore, set the naming-policy to NET_NAME_USER so it is
-correctly shown in sysfs.
+P2P netdevs and other devices that are created via nl80211 from user-space
+have a name provided by user-space. Therefore, set NET_NAME_USER so this
+is correctly shown in sysfs.
 
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Acked-by: Arend van Spriel <arend@broadcom.com>
+Acked-by: Kalle Valo <kvalo@qca.qualcomm.com>
 Acked-by: Tom Gundersen <teg@jklm.no>
 Acked-by: Kay Sievers <kay.sievers@vrfy.org>
 ---
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath6kl/cfg80211.c | 5 ++++-
+ drivers/net/wireless/ath/ath6kl/cfg80211.h | 1 +
+ drivers/net/wireless/ath/ath6kl/core.c     | 4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-index f3445ac..f721ed6 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-@@ -2308,6 +2308,7 @@ struct wireless_dev *brcmf_p2p_add_vif(struct wiphy *wiphy, const char *name,
- 		goto fail;
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.c b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+index c2c6f46..131d8ab 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.c
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+@@ -1512,7 +1512,8 @@ static struct wireless_dev *ath6kl_cfg80211_add_iface(struct wiphy *wiphy,
+ 		return ERR_PTR(-EINVAL);
  	}
  
-+	ifp->ndev->name_assign_type = NET_NAME_USER;
- 	strncpy(ifp->ndev->name, name, sizeof(ifp->ndev->name) - 1);
- 	err = brcmf_net_attach(ifp, true);
- 	if (err) {
+-	wdev = ath6kl_interface_add(ar, name, type, if_idx, nw_type);
++	wdev = ath6kl_interface_add(ar, name, NET_NAME_USER, type,
++				    if_idx, nw_type);
+ 	if (!wdev)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -3630,6 +3631,7 @@ void ath6kl_cfg80211_vif_cleanup(struct ath6kl_vif *vif)
+ }
+ 
+ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
++					  unsigned char name_assign_type,
+ 					  enum nl80211_iftype type,
+ 					  u8 fw_vif_idx, u8 nw_type)
+ {
+@@ -3666,6 +3668,7 @@ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
+ 			ndev->dev_addr[4] ^= 0x80;
+ 	}
+ 
++	ndev->name_assign_type = name_assign_type;
+ 	init_netdev(ndev);
+ 
+ 	ath6kl_init_control_info(vif);
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.h b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+index b59becd..5aa57a7 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.h
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+@@ -25,6 +25,7 @@ enum ath6kl_cfg_suspend_mode {
+ };
+ 
+ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
++					  unsigned char name_assign_type,
+ 					  enum nl80211_iftype type,
+ 					  u8 fw_vif_idx, u8 nw_type);
+ void ath6kl_cfg80211_ch_switch_notify(struct ath6kl_vif *vif, int freq,
+diff --git a/drivers/net/wireless/ath/ath6kl/core.c b/drivers/net/wireless/ath/ath6kl/core.c
+index 4b46adb..3cc8145 100644
+--- a/drivers/net/wireless/ath/ath6kl/core.c
++++ b/drivers/net/wireless/ath/ath6kl/core.c
+@@ -195,8 +195,8 @@ int ath6kl_core_init(struct ath6kl *ar, enum ath6kl_htc_type htc_type)
+ 	rtnl_lock();
+ 
+ 	/* Add an initial station interface */
+-	wdev = ath6kl_interface_add(ar, "wlan%d", NL80211_IFTYPE_STATION, 0,
+-				    INFRA_NETWORK);
++	wdev = ath6kl_interface_add(ar, "wlan%d", NET_NAME_ENUM,
++				    NL80211_IFTYPE_STATION, 0, INFRA_NETWORK);
+ 
+ 	rtnl_unlock();
+ 
 -- 
 1.9.1
 
