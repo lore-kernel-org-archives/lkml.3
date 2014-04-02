@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaDBEoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 00:44:34 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51370 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaDBEob (ORCPT
+	id S1756100AbaDBEq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 00:46:28 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:58898 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835AbaDBEq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 00:44:31 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lxoliva@fsfla.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: loongson2_cpufreq: don't declare local variable as static
-Date: Wed,  2 Apr 2014 10:14:24 +0530
-Message-Id: <254471b8cee296f860d24368cc467c00b5a07336.1396413826.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Wed, 2 Apr 2014 00:46:26 -0400
+Message-ID: <533B95F6.2010303@linux.vnet.ibm.com>
+Date: Wed, 02 Apr 2014 10:15:42 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Dave Hansen <dave.hansen@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
+Subject: Re: [PATCH 1/1] mm: move FAULT_AROUND_ORDER to arch/
+References: <1395730215-11604-1-git-send-email-maddy@linux.vnet.ibm.com> <1395730215-11604-2-git-send-email-maddy@linux.vnet.ibm.com> <20140325173605.GA21411@node.dhcp.inet.fi> <5331C1C9.5020309@intel.com>
+In-Reply-To: <5331C1C9.5020309@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040204-3568-0000-0000-000005316054
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Earlier commit:
-	commit 652ed95d5fa6074b3c4ea245deb0691f1acb6656
-	Author: Viresh Kumar <viresh.kumar@linaro.org>
-	Date:   Thu Jan 9 20:38:43 2014 +0530
+On Tuesday 25 March 2014 11:20 PM, Dave Hansen wrote:
+> On 03/25/2014 10:36 AM, Kirill A. Shutemov wrote:
+>>>> +/*
+>>>> + * Fault around order is a control knob to decide the fault around pages.
+>>>> + * Default value is set to 0UL (disabled), but the arch can override it as
+>>>> + * desired.
+>>>> + */
+>>>> +#ifndef FAULT_AROUND_ORDER
+>>>> +#define FAULT_AROUND_ORDER	0UL
+>>>> +#endif
+>> FAULT_AROUND_ORDER == 0 case should be handled separately in
+>> do_read_fault(): no reason to go to do_fault_around() if we are going to
+>> fault in only one page.
+> 
+> Isn't this the kind of thing we want to do in Kconfig?
+> 
+> 
+I am still investigating this option since this looks better. But it is
+taking time, my bad. I will get back on this.
 
-	    cpufreq: introduce cpufreq_generic_get() routine
-
-did some changes to driver and by mistake made cpuclk as a 'static' local
-variable, which wasn't actually required. Fix it.
-
-Reported-by: Alexandre Oliva <lxoliva@fsfla.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/loongson2_cpufreq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
-index a3588d61..f0bc31f 100644
---- a/drivers/cpufreq/loongson2_cpufreq.c
-+++ b/drivers/cpufreq/loongson2_cpufreq.c
-@@ -69,7 +69,7 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
- 
- static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- {
--	static struct clk *cpuclk;
-+	struct clk *cpuclk;
- 	int i;
- 	unsigned long rate;
- 	int ret;
--- 
-1.7.12.rc2.18.g61b472e
+With Regards
+Maddy
 
