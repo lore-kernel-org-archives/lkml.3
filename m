@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639AbaDBMHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 08:07:13 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:63580 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758403AbaDBMHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 08:07:10 -0400
-Message-ID: <533BFD6B.7050503@cogentembedded.com>
-Date: Wed, 02 Apr 2014 16:07:07 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
-CC: netdev@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>, stable@vger.kernel.org
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
- for Marvel 88E1116R PHYs
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <533BF9CE.3050302@cogentembedded.com>
-In-Reply-To: <533BF9CE.3050302@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758582AbaDBMOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 08:14:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40990 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758289AbaDBMOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 08:14:08 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>, Andi Kleen <ak@linux.intel.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] x86, fix defined for VECTOR_UNDEFINED and VECTOR_RETRIGGERED
+Date: Wed,  2 Apr 2014 08:13:47 -0400
+Message-Id: <1396440827-18352-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02-04-2014 15:51, Sergei Shtylyov wrote:
+Resending ... want to make sure this wasn't dropped for some reason.
 
->> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
->> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
->> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
->> was broken such, that it used mdelay() instead of really waiting for a
->> reset to finish.
+Sent previously here: http://marc.info/?l=linux-kernel&m=139405208523968&w=2
 
->> The effect was that the ethernet on my Kirkwood 88F6281 based device didn't
->> come up anymore (no carrier).
+P.
 
->> Fix this by waiting for a reset to finish before proceeding further.
+---8<---
 
->> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+During another patch review, David Rientjes noted that VECTOR_UNDEFINED
+and VECTOR_RETRIGGERED should be defined with ()s so that they are not
+erroneously used in an arithmetic operation.
 
->> Cc: Michal Simek <michal.simek@xilinx.com>
->> Cc: Florian Fainelli <f.fainelli@gmail.com>
->> Cc: <stable@vger.kernel.org>
->> ---
->>   drivers/net/phy/marvell.c | 8 ++++++--
->>   1 file changed, 6 insertions(+), 2 deletions(-)
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Rientjes <rientjes@google.com>
+---
+ arch/x86/include/asm/hw_irq.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
->> diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
->> index bd37e45..5b84808 100644
->> --- a/drivers/net/phy/marvell.c
->> +++ b/drivers/net/phy/marvell.c
-[...]
->> @@ -429,7 +431,9 @@ static int m88e1116r_config_init(struct phy_device *phydev)
->>       if (err < 0)
->>           return err;
->>
->> -    mdelay(500);
->> +    do
->> +        temp = phy_read(phydev, MII_BMCR);
->> +    while (temp & BMCR_RESET);
-
->     Not clear why it's necessary to reset one more time... Also, tight loop
-> without a timeout (0.5 sec, specified by IEEE 802.3) doesn't look good. The
-> comment above phy_poll_reset() suggests that it could be used in the PHY
-> drivers as well. Florian?
-
-    Ah, I was looking at Linus' tree, not net-next.git, and hadn't read 
-Florian's replies before commenting on this...
-
-WBR, Sergei
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 67d69b8..9d4dabe 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -191,8 +191,8 @@ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
+ #define trace_interrupt interrupt
+ #endif
+ 
+-#define VECTOR_UNDEFINED	-1
+-#define VECTOR_RETRIGGERED	-2
++#define VECTOR_UNDEFINED	(-1)
++#define VECTOR_RETRIGGERED	(-2)
+ 
+ typedef int vector_irq_t[NR_VECTORS];
+ DECLARE_PER_CPU(vector_irq_t, vector_irq);
+-- 
+1.7.9.3
 
