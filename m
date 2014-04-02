@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339AbaDBOTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 10:19:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40805 "EHLO mx2.suse.de"
+	id S932354AbaDBOTa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 10:19:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40808 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160AbaDBOTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 10:19:15 -0400
-Date: Wed, 2 Apr 2014 16:19:12 +0200 (CEST)
+	id S932160AbaDBOT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 10:19:28 -0400
+Date: Wed, 2 Apr 2014 16:19:27 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: linux-kernel@vger.kernel.org
-Subject: [GIT] trivial
-Message-ID: <alpine.LNX.2.00.1404021511490.32122@pobox.suse.cz>
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1404021513280.32122@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -21,131 +21,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-please pull
+please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-to receive:
-
-
-
-- updates from trivial tree; usual rocket science -- mostly documentation 
-  and comment updates
+to receive the following updates for HID layer:
 
 
 
-Alexander Shiyan (1):
-      mmc: core: typo fix in printk specifier
+- substantial cleanup of the generic and transport layers, in the 
+  direction of an ultimate goal of making struct hid_device completely 
+  transport independent, by Benjamin Tissoires
+- cp2112 driver from David Barksdale
+- a lot of fixes and new hardware support (Dualshock 4) to hid-sony 
+  driver, by Frank Praznik
+- support for Win 8.1 multitouch protocol by Andrew Duggan
+- other smaller fixes / device ID additions
 
-Brian Campbell (1):
-      user_namespace.c: Remove duplicated word in comment
 
-Geert Uytterhoeven (1):
-      CREDITS: fix formatting
 
-Jiang Liu (1):
-      driver core: unexport static function create_syslog_header
+Andrew Duggan (1):
+      HID: multitouch: add support for Win 8.1 multitouch touchpads
 
-Li Zhong (1):
-      sparse: fix comment
+Benjamin Tissoires (29):
+      HID: add inliners for ll_driver transport-layer callbacks
+      HID: logitech-dj: remove hidinput_input_event
+      HID: HIDp: remove hidp_hidinput_event
+      HID: remove hidinput_input_event handler
+      HID: HIDp: remove duplicated coded
+      HID: usbhid: remove duplicated code
+      HID: remove hid_get_raw_report in struct hid_device
+      HID: introduce helper to access hid_output_raw_report()
+      HID: Add HID transport driver documentation
+      HID: uHID: remove duplicated code
+      HID: uHID: implement .raw_request
+      HID: core: implement generic .request()
+      HID: i2c-hid: implement ll_driver transport-layer callbacks
+      HID: i2c-hid: use generic .request() implementation
+      HID: usbhid: change return error of usbhid_output_report
+      HID: logitech-dj: remove hid_output_raw_report call
+      HID: replace hid_output_raw_report with hid_hw_raw_request for feature requests
+      HID: wiimote: replace hid_output_raw_report with hid_hw_output_report for output requests
+      HID: core: check parameters when sending/receiving data from the device
+      HID: input: hid-input remove hid_output_raw_report call
+      HID: make .raw_request mandatory
+      HID: hidraw: replace hid_output_raw_report() calls by appropriates ones
+      HID: multitouch: remove registered devices with default behavior
+      HID: multitouch: remove pen special handling
+      HID: multitouch: add support of other generic collections in hid-mt
+      HID: cp2112: remove various hid_out_raw_report calls
+      HID: cp2112: remove the last hid_output_raw_report() call
+      HID: sony: do not rely on hid_output_raw_report
+      HID: remove hid_output_raw_report transport implementations
 
-Masanari Iida (5):
-      mm: Fix warning on make htmldocs caused by slab.c
-      treewide: Fix typo in Documentation/DocBook
-      ixgbe: Fix format string in ixgbe_fcoe.
-      doc: DocBook: Fix typos in xml and template file
-      doc: fix double words
+David Barksdale (1):
+      HID: add hid-cp2112 driver
 
-Olaf Hering (1):
-      Documentation: update URL to hfsplus Technote 1150
+Frank Praznik (22):
+      HID: sony: add battery status reporting for the Sixaxis and Dualshock 4
+      HID: sony: add output events for the multi-touch pad on the Dualshock 4
+      HID: Add transport-driver callbacks to the hid_ll_driver struct
+      HID: Add transport-driver functions to the USB HID interface.
+      HID: Add the transport-driver function to the uhid driver
+      HID: Add the transport-driver functions to the HIDP driver.
+      HID: Kconfig updates for the Sony module
+      HID: sony: Use low-level transport driver functions
+      HID: sony: Add modified Dualshock 4 Bluetooth HID descriptor
+      HID: sony: Add Dualshock 4 Bluetooth output report formatting
+      HID: sony: Add Dualshock 4 Bluetooth battery and touchpad parsing
+      HID: sony: Set initial battery level to 100% to avoid false low battery warnings
+      HID: sony: Add conditionals to enable all features in Bluetooth mode
+      HID: sony: Correct Sixaxis battery reporting
+      HID: sony: Enable LED controls and rumble for the Sixaxis on Bluetooth.
+      HID: sony: Fix multi-line comment styling
+      HID: sony: Fix work queue issues
+      HID: sony: Perform a boundry check on the sixaxis battery level index.
+      HID: sony: Prevent duplicate controller connections.
+      HID: hidp: Add a comment that some devices depend on the current behavior of uniq
+      HID: sony: Fix Sixaxis cable state detection
+      HID: sony: Set the quriks flag for Bluetooth controllers
 
-Paul Bolle (5):
-      Kconfig: Remove useless "default N" lines
-      doc: Insert MODULE_ in module-signing macros
-      net-sysfs: fix comment typo 'CONFIG_SYFS'
-      ARM: spear: clean up editing mistake
-      isdn: capi: fix "CAPI_VERSION" comment
+Hans de Goede (4):
+      HID: Add some missing HUT mappings
+      HID: hid-microsoft: Do the check for the ms usage page per device
+      HID: hid-microsoft: Add support for scrollwheel and special keypad keys
+      HID: hid-microsoft: Add support for 2 reserved usage ids used on ms office kb
 
-Pavel Machek (1):
-      Bluetooth: add module name for btwilink
+Jiri Kosina (10):
+      HID: sony: fix build wrt. power_supply
+      HID: uhid: remove uhid_hid_get_raw()
+      HID: uhid: reintroduce uhid_hid_get_raw()
+      HID: cp2112: make sysfs attributes static
+      HID: cp2112: use proper specifier for size_t
+      HID: cp2112: convert to use hid_hw_raw_request()
+      HID: cp2112: can't be used without gpio support
+      HID: cp2112: fix incorrect error propagation in cp2112_xfer()
+      HID: hyperv: fix _raw_request() prototype
+      HID: sony: fix force feedback mismerge
 
-Richard Genoud (1):
-      gpio: update path to documentation
+K. Y. Srinivasan (1):
+      HID: hyperv: Implement a stub raw_request() entry point
 
-Sachin Kamat (1):
-      ata: ata-samsung_cf: cleanup in header file
+Mika Westerberg (1):
+      HID: i2c-hid: add runtime PM support
 
-Vladimir Davydov (1):
-      idr: remove unused prototype of idr_free()
+Petri Gynther (1):
+      HID: uhid: Add UHID_CREATE2 + UHID_INPUT2
 
- CREDITS                                            |    4 ++--
- Documentation/DocBook/media/dvb/dvbproperty.xml    |    2 +-
- Documentation/DocBook/media/v4l/compat.xml         |    2 +-
- Documentation/DocBook/media_api.tmpl               |    2 +-
- .../filesystems/autofs4-mount-control.txt          |    2 +-
- Documentation/filesystems/hfsplus.txt              |    2 +-
- Documentation/futex-requeue-pi.txt                 |    2 +-
- Documentation/input/multi-touch-protocol.txt       |    2 +-
- Documentation/kmemcheck.txt                        |    2 +-
- Documentation/memory-barriers.txt                  |    2 +-
- Documentation/module-signing.txt                   |   10 +++++-----
- Documentation/networking/spider_net.txt            |    2 +-
- Documentation/power/devices.txt                    |    2 +-
- Documentation/security/Smack.txt                   |    2 +-
- Documentation/trace/ring-buffer-design.txt         |    2 +-
- Documentation/usb/WUSB-Design-overview.txt         |    2 +-
- Documentation/virtual/kvm/api.txt                  |    2 +-
- Documentation/vm/unevictable-lru.txt               |    2 +-
- arch/arc/Kconfig                                   |    1 -
- arch/arm/mach-spear/Kconfig                        |    2 +-
- arch/cris/arch-v32/drivers/Kconfig                 |    2 --
- arch/s390/include/asm/cio.h                        |    2 +-
- block/blk-core.c                                   |    2 +-
- block/blk-map.c                                    |    2 +-
- drivers/ata/libata-core.c                          |    4 ++--
- drivers/base/bus.c                                 |    2 +-
- drivers/bluetooth/Kconfig                          |    3 ++-
- drivers/gpu/drm/drm_crtc_helper.c                  |    2 +-
- drivers/input/sparse-keymap.c                      |    2 +-
- drivers/misc/mic/Kconfig                           |    2 --
- drivers/mmc/core/host.c                            |    2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c      |    2 +-
- drivers/regulator/core.c                           |    2 +-
- drivers/scsi/scsi_transport_iscsi.c                |    6 +++---
- drivers/staging/android/Kconfig                    |    2 --
- drivers/staging/bcm/Kconfig                        |    1 -
- drivers/staging/frontier/Kconfig                   |    1 -
- drivers/staging/media/go7007/Kconfig               |    3 ---
- drivers/staging/rtl8187se/Kconfig                  |    1 -
- drivers/staging/rtl8188eu/Kconfig                  |    1 -
- drivers/staging/rtl8192e/rtl8192e/Kconfig          |    1 -
- drivers/staging/rtl8192u/Kconfig                   |    1 -
- drivers/staging/rtl8712/Kconfig                    |    2 --
- drivers/staging/usbip/Kconfig                      |    4 ----
- drivers/usb/core/Kconfig                           |    1 -
- drivers/usb/core/message.c                         |    2 +-
- drivers/usb/core/urb.c                             |    2 +-
- drivers/usb/host/Kconfig                           |    3 ---
- fs/buffer.c                                        |    2 +-
- fs/debugfs/inode.c                                 |    6 +++---
- include/drm/drm_fb_helper.h                        |    2 +-
- include/linux/gpio.h                               |    2 +-
- include/linux/hsi/hsi.h                            |    2 +-
- include/linux/idr.h                                |    1 -
- include/linux/kfifo.h                              |    2 +-
- include/linux/pipe_fs_i.h                          |    2 +-
- include/linux/platform_data/ata-samsung_cf.h       |    9 ++++-----
- include/linux/skbuff.h                             |    2 +-
- include/linux/spi/spi.h                            |    8 ++++----
- include/linux/usb/composite.h                      |    2 +-
- include/net/mac80211.h                             |    6 +++---
- include/uapi/linux/capi.h                          |    2 +-
- kernel/relay.c                                     |    2 +-
- kernel/signal.c                                    |    2 +-
- mm/sparse.c                                        |    2 +-
- net/core/dev.c                                     |    2 +-
- net/core/net-sysfs.c                               |    2 +-
- 67 files changed, 70 insertions(+), 97 deletions(-)
+Simon Wood (1):
+      HID: hid-sony: report actual brightness value when reading LED
+
+Srinivas Pandruvada (4):
+      HID: hid-sensor-hub: Add selector api
+      iio: hid-sensor-hub: Remove hard coded indexes
+      HID: hid-sensor-hub: Processing for duplicate physical ids
+      HID: hid-sensor-hub: fix sleeping function called from invalid context
+
+ Documentation/hid/hid-transport.txt                |  317 ++++++
+ Documentation/hid/uhid.txt                         |   11 +
+ drivers/hid/Kconfig                                |   19 +-
+ drivers/hid/Makefile                               |    1 +
+ drivers/hid/hid-core.c                             |   52 +-
+ drivers/hid/hid-cp2112.c                           | 1073 ++++++++++++++++++++
+ drivers/hid/hid-hyperv.c                           |   10 +
+ drivers/hid/hid-ids.h                              |    5 +
+ drivers/hid/hid-input.c                            |   21 +-
+ drivers/hid/hid-lg.c                               |    6 +-
+ drivers/hid/hid-logitech-dj.c                      |  111 +--
+ drivers/hid/hid-magicmouse.c                       |    4 +-
+ drivers/hid/hid-microsoft.c                        |   74 ++-
+ drivers/hid/hid-multitouch.c                       |  281 ++----
+ drivers/hid/hid-sensor-hub.c                       |  217 +++--
+ drivers/hid/hid-sony.c                             |  808 +++++++++++++--
+ drivers/hid/hid-thingm.c                           |    4 +-
+ drivers/hid/hid-wacom.c                            |   28 +-
+ drivers/hid/hid-wiimote-core.c                     |    4 +-
+ drivers/hid/hidraw.c                               |   27 +-
+ drivers/hid/i2c-hid/i2c-hid.c                      |  139 ++-
+ drivers/hid/uhid.c                                 |  103 ++-
+ drivers/hid/usbhid/hid-core.c                      |  102 ++-
+ .../iio/common/hid-sensors/hid-sensor-trigger.c    |   39 +-
+ include/linux/hid-sensor-hub.h                     |    9 +-
+ include/linux/hid-sensor-ids.h                     |   16 +-
+ include/linux/hid.h                                |   76 ++-
+ include/uapi/linux/uhid.h                          |   23 +
+ net/bluetooth/hidp/core.c                          |  100 +-
+ 29 files changed, 3022 insertions(+), 658 deletions(-)
+ create mode 100644 Documentation/hid/hid-transport.txt
+ create mode 100644 drivers/hid/hid-cp2112.c
 
 -- 
 Jiri Kosina
