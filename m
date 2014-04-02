@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758829AbaDBQEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:04:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58095 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758702AbaDBQEk (ORCPT
+	id S1758873AbaDBQRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:17:39 -0400
+Received: from fep12.mx.upcmail.net ([62.179.121.32]:47385 "EHLO
+	fep12.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758808AbaDBQRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:04:40 -0400
-Date: Wed, 2 Apr 2014 17:04:38 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] regulator: core: Get and put regulator of_node
-Message-ID: <20140402160438.GO1665@opensource.wolfsonmicro.com>
-References: <1396447614-3048-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140402142356.GE2269@sirena.org.uk>
+	Wed, 2 Apr 2014 12:17:38 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <533C381E.9090103@odi.ch>
+Date: Wed, 02 Apr 2014 18:17:34 +0200
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402142356.GE2269@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: 3.14 regression: huge latency in read/select on tun
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 03:23:56PM +0100, Mark Brown wrote:
-> On Wed, Apr 02, 2014 at 03:06:54PM +0100, Charles Keepax wrote:
-> 
-> > We should be incrementing the reference count of the of_node for the
-> > regulator when we take a copy of it. This patch does so.
-> 
-> Why?
-> 
-> Note that in any case this is going to have absolutely no impact on
-> practical systems since everything using regulators uses FDT at the
-> minute.
+Hi,
 
-Apologies I must be missing something, take for example the fixed
-regulator driver (fixed.c). We get an of_node from
-pdev->dev->of_node, pull the init_data from it, then copy the
-of_node into the regulator_config and call regulator_register.
-regulator_register will copy the of_node from the regulator_config
-and put it into the new device, but as far as I can see no one ever
-incremented the reference count?
+Since 3.14 the openconnect VPN tunnel becomes unusable for me because
+packets appear on the tun device at a horribly low rate. 3.12 and 3.13
+do not exhibt the problem.
 
-	of_node = pdev->dev.of_node;
+Here is an strace of openconnect trying to read from its fd
+  7 -> /dev/net/tun
 
-	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
+15:07:33.130640 read(7, 0x1e05e58, 1280) = -1 EAGAIN (Resource
+temporarily unavailable)
+===> should return available data already
+15:07:33.130745 select(8, [3 6 7], [], [6], {30, 0}) = 1 (in [7], left
+{29, 783272})
+===> HUGE 217ms delay here
+15:07:33.347681 read(6, 0x1dfc973, 5)   = -1 EAGAIN (Resource
+temporarily unavailable)
+15:07:33.347806 read(7,
+"E\10\5\0b\343@\0@\6\17~\n\363X\236\n\271UE\222:\0\26\37O\7\342\315\21q\33"...,
+1280) = 1280
 
-Looks like there are a couple of other regulator drivers in the
-same boat. Just seems easier to let the core do the reference
-stuff rather than needing to do it in the drivers.
 
-Thanks,
-Charles
+The send queue of the socket being routed via the tun device has a lot
+of outstanding data (here an scp/ssh upload):
+tcp        0  29788 local:46577  remote:22   ESTABLISHED
+
+(IPs replaced for privacy)
+
+toggling TCP autocorking has no influence.
+
+Any ideas what could be the culprit?
+
+Ortwin
