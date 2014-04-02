@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966AbaDBTBD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:01:03 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:44593 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555AbaDBTBB (ORCPT
+	id S932985AbaDBTBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:01:17 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38833 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932969AbaDBTBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:01:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140402175852.GS14688@cmpxchg.org>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
-	<20140401212102.GM4407@cmpxchg.org>
-	<533B313E.5000403@zytor.com>
-	<533B4555.3000608@sr71.net>
-	<533B8E3C.3090606@linaro.org>
-	<20140402163638.GQ14688@cmpxchg.org>
-	<CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
-	<20140402175852.GS14688@cmpxchg.org>
-Date: Wed, 2 Apr 2014 12:01:00 -0700
-Message-ID: <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-From: John Stultz <john.stultz@linaro.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
+	Wed, 2 Apr 2014 15:01:13 -0400
+Date: Wed, 2 Apr 2014 12:01:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Jens Axboe <jens.axboe@oracle.com>, Kevin Hilman <khilman@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] smp: Non busy-waiting IPI queue
+Message-ID: <20140402190108.GR4284@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1396455966-21128-1-git-send-email-fweisbec@gmail.com>
+ <1396455966-21128-2-git-send-email-fweisbec@gmail.com>
+ <20140402180513.GQ4284@linux.vnet.ibm.com>
+ <CAFTL4hyUC7JO6+H4kiLCLOxO7WzyC+MUKxE-jrmanZMM4dXSrg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hyUC7JO6+H4kiLCLOxO7WzyC+MUKxE-jrmanZMM4dXSrg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040219-7164-0000-0000-000000BFBE60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 2, 2014 at 10:58 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
->> That point beside, I think the other problem with the page-cleaning
->> volatility approach is that there are other awkward side effects. For
->> example: Say an application marks a range as volatile. One page in the
->> range is then purged. The application, due to a bug or otherwise,
->> reads the volatile range. This causes the page to be zero-filled in,
->> and the application silently uses the corrupted data (which isn't
->> great). More problematic though, is that by faulting the page in,
->> they've in effect lost the purge state for that page. When the
->> application then goes to mark the range as non-volatile, all pages are
->> present, so we'd return that no pages were purged.  From an
->> application perspective this is pretty ugly.
->>
->> Johannes: Any thoughts on this potential issue with your proposal? Am
->> I missing something else?
->
-> No, this is accurate.  However, I don't really see how this is
-> different than any other use-after-free bug.  If you access malloc
-> memory after free(), you might receive a SIGSEGV, you might see random
-> data, you might corrupt somebody else's data.  This certainly isn't
-> nice, but it's not exactly new behavior, is it?
+On Wed, Apr 02, 2014 at 08:30:23PM +0200, Frederic Weisbecker wrote:
+> 2014-04-02 20:05 GMT+02:00 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> > On Wed, Apr 02, 2014 at 06:26:05PM +0200, Frederic Weisbecker wrote:
+> >> diff --git a/kernel/smp.c b/kernel/smp.c
+> >> index 06d574e..bfe7b36 100644
+> >> --- a/kernel/smp.c
+> >> +++ b/kernel/smp.c
+> >> @@ -265,6 +265,50 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd)
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(smp_call_function_single_async);
+> >>
+> >> +void generic_smp_queue_function_single_interrupt(void *info)
+> >> +{
+> >> +     struct queue_single_data *qsd = info;
+> >> +
+> >> +     WARN_ON_ONCE(xchg(&qsd->pending, 0) != 1);
+> >
+> > I am probably missing something here, but shouldn't this function copy
+> > *qsd to a local on-stack variable before doing the above xchg()?  What
+> > prevents the following from happening?
+> >
+> > o       CPU 0 does smp_queue_function_single(), which sets ->pending
+> >         and fills in ->func and ->data.
+> >
+> > o       CPU 1 takes IPI, invoking generic_smp_queue_function_single_interrupt().
+> >
+> > o       CPU 1 does xchg(), so that ->pending is now zero.
+> >
+> > o       An attempt to reuse the queue_single_data sees ->pending equal
+> >         to zero, so the ->func and ->data is overwritten.
+> >
+> > o       CPU 1 calls the new ->func with the new ->data (or any of the other
+> >         two possible unexpected outcomes), which might not be helpful to
+> >         the kernel's actuarial statistics.
+> >
+> > So what am I missing?
+> 
+> Ah, I forgot to precise that the function must remain the same for all
+> calls on a single qsd. And the data is always the qsd so this one can
+> only stay stable. So that shouldn't be a problem.
 
-The part that troubles me is that I see the purged state as kernel
-data being corrupted by userland in this case. The kernel will tell
-userspace that no pages were purged, even though they were. Only
-because userspace made an errant read of a page, and got garbage data
-back.
+I did indeed miss that particular constraint.  ;-)
 
-thanks
--john
+> But you're right. The fact that we pass the function as an argument of
+> smp_queue_function_single() suggests that we can pass a different
+> function across various calls on a same qsd. So that's confusing.
+> Perhaps changing smp_queue_function_single() such that it only takes
+> the qsd as an argument would make that clearer? Then it's up to the
+> caller to initialize the qsd with the constant function. I could
+> define smp_queue_function_init() for that purpose. Or
+> DEFINE_QUEUE_FUNCTION_DATA() for static initializers.
+> 
+> How does that sound?
+
+Sounds good!
+
+							Thanx, Paul
+
