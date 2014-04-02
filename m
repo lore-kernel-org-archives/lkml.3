@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785AbaDBNrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 09:47:51 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:53819 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758746AbaDBNrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 09:47:49 -0400
+	id S1758812AbaDBNtH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 09:49:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40475 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758784AbaDBNtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 09:49:05 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
+Date: Wed, 2 Apr 2014 16:48:45 +0300
+Message-ID: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-In-Reply-To: <20140324221051.GC17218@mithrandir>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
- <1395650554-31925-5-git-send-email-acourbot@nvidia.com> <20140324221051.GC17218@mithrandir>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 2 Apr 2014 22:47:28 +0900
-Message-ID: <CAAVeFuKUu-oN-sMEcvcZVTuhcz9dZVauvca7T1_iN5=qkU7Zcg@mail.gmail.com>
-Subject: Re: [PATCH 04/12] drm/nouveau/bar/nvc0: support chips without BAR3
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 7:10 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Mon, Mar 24, 2014 at 05:42:26PM +0900, Alexandre Courbot wrote:
-> [...]
->> diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
-> [...]
->>  static int
->> -nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
->> -           struct nouveau_oclass *oclass, void *data, u32 size,
->> -           struct nouveau_object **pobject)
->> +nvc0_bar_init_vm(struct nvc0_bar_priv *priv, int nr, int bar)
->>  {
-> [...]
->> -     /* BAR3 */
->>       ret = nouveau_gpuobj_new(nv_object(priv), NULL, 0x1000, 0, 0,
->> -                             &priv->bar[0].mem);
->> -     mem = priv->bar[0].mem;
->> +                             &priv->bar[nr].mem);
->> +     mem = priv->bar[nr].mem;
->>       if (ret)
->>               return ret;
->>
->>       ret = nouveau_gpuobj_new(nv_object(priv), NULL, 0x8000, 0, 0,
->> -                             &priv->bar[0].pgd);
->> +                             &priv->bar[nr].pgd);
->>       if (ret)
->>               return ret;
-> [...]
->> +static int
->> +nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
->> +           struct nouveau_oclass *oclass, void *data, u32 size,
->> +           struct nouveau_object **pobject)
->> +{
-> [...]
->> +     /* BAR3 */
->> +     if (has_bar3) {
->> +             ret = nvc0_bar_init_vm(priv, 0, 3);
-> [...]
->> +     /* BAR1 */
->> +     ret = nvc0_bar_init_vm(priv, 1, 1);
->>       if (ret)
->>               return ret;
->
-> The calls to nvc0_bar_init_vm() are somewhat confusing in my opinion. It
-> is hard to see from the invocation what these numbers mean and therefore
-> distinguish which parameter is which.
->
-> Perhaps a slightly more readable way would be to pass in a pointer to a
-> structure as second parameter instead of the index into an array. So
-> it'd look somewhat like this:
->
->         if (has_bar3) {
->                 ret = nvc0_bar_init_vm(priv, &priv->bar[0], 3);
->                 ...
->         }
->         ...
->         ret = nvc0_bar_init_vm(priv, &priv->bar[1], 1);
->         ...
->
-> Unfortunately that would require a new type to be created for the bar[]
-> structures, so it'd be slightly more intrusive.
+ABE DPLL frequency need to be lowered from 361267200
+to 180633600 to facilitate the ATL requironments.
+The dpll_abe_m2x2_ck clock need to be set to double
+of ABE DPLL rate in order to have correct clocks
+for audio.
 
-These types are local to nvc0.c anyway, so I don't think it would
-hurt. And you are right that the code would become more readable as a
-result, passing array indexes as arguments is not a common practice
-(and should not be).
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/clk/ti/clk-7xx.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Alex.
+diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+index f7e40734c819..19a55bf407dd 100644
+--- a/drivers/clk/ti/clk-7xx.c
++++ b/drivers/clk/ti/clk-7xx.c
+@@ -16,7 +16,7 @@
+ #include <linux/clkdev.h>
+ #include <linux/clk/ti.h>
+ 
+-#define DRA7_DPLL_ABE_DEFFREQ				361267200
++#define DRA7_DPLL_ABE_DEFFREQ				180633600
+ #define DRA7_DPLL_GMAC_DEFFREQ				1000000000
+ 
+ 
+@@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
+ 	if (rc)
+ 		pr_err("%s: failed to configure ABE DPLL!\n", __func__);
+ 
++	dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
++	rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
++	if (rc)
++		pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
++
+ 	dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
+ 	rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
+ 	if (rc)
+-- 
+1.9.1
+
