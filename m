@@ -1,423 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480AbaDBCux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 22:50:53 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33203 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaDBCuv (ORCPT
+	id S1757343AbaDBDDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 23:03:14 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:30366 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751598AbaDBDDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 22:50:51 -0400
-Date: Tue, 1 Apr 2014 19:50:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-Message-ID: <20140402025044.GE4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140330230856.GA21498@linux.vnet.ibm.com>
- <1983376434.2684.1396236565608.JavaMail.zimbra@efficios.com>
- <20140331035458.GJ4284@linux.vnet.ibm.com>
- <1448966218.2982.1396274543268.JavaMail.zimbra@efficios.com>
- <20140331153813.GL4284@linux.vnet.ibm.com>
- <20140331172318.GA4961@linux.vnet.ibm.com>
- <101799342.3796.1396398904748.JavaMail.zimbra@efficios.com>
+	Tue, 1 Apr 2014 23:03:12 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <gregkh@linuxfoundation.org>, <linux@roeck-us.net>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH resend] regmap: mmio: Fix the bug of 'offset' value parsing.
+Date: Wed, 2 Apr 2014 10:20:17 +0800
+Message-ID: <1396405217-12658-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <101799342.3796.1396398904748.JavaMail.zimbra@efficios.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040202-6688-0000-0000-000000C957DF
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 12:35:04AM +0000, Mathieu Desnoyers wrote:
-> ----- Original Message -----
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > Cc: fweisbec@gmail.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-> > Sent: Monday, March 31, 2014 1:23:19 PM
-> > Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-> > 
-> > On Mon, Mar 31, 2014 at 08:38:13AM -0700, Paul E. McKenney wrote:
-> > > On Mon, Mar 31, 2014 at 02:02:23PM +0000, Mathieu Desnoyers wrote:
-> > > > ----- Original Message -----
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > > > > Cc: fweisbec@gmail.com, peterz@infradead.org,
-> > > > > linux-kernel@vger.kernel.org
-> > > > > Sent: Sunday, March 30, 2014 11:54:58 PM
-> > > > > Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-> > > > > 
-> > > > > On Mon, Mar 31, 2014 at 03:29:25AM +0000, Mathieu Desnoyers wrote:
-> > > > > > ----- Original Message -----
-> > > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > > > To: fweisbec@gmail.com, "mathieu desnoyers"
-> > > > > > > <mathieu.desnoyers@efficios.com>, peterz@infradead.org
-> > > > > > > Cc: linux-kernel@vger.kernel.org
-> > > > > > > Sent: Sunday, March 30, 2014 7:08:56 PM
-> > > > > > > Subject: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-> > > > > > > 
-> > > > > > > For whatever it is worth, the following model claims safety and
-> > > > > > > progress
-> > > > > > > for the sysidle state machine.
-> > > > > > > 
-> > > > > > > Thoughts?
-> > > > > > 
-> > > > > > Hi Paul,
-> > > > > > 
-> > > > > > Please keep in mind that it's been a while since I've looked at
-> > > > > > Promela
-> > > > > > proofs, but a couple of questions come to mind. First, how is the
-> > > > > > execution
-> > > > > > script below checking for progress in any way ? I remember that we
-> > > > > > used
-> > > > > > the negation of a "_np" LTL claim to check for progress in the past.
-> > > > > > Moreover, I'd be much more comfortable seeing ifdefs in the code that
-> > > > > > inject
-> > > > > > known failures, and let them be triggered by error-triggering runs in
-> > > > > > the
-> > > > > > scripts (with e.g. -DINJECT_ERROR_XYZ), to confirm that this model
-> > > > > > actually
-> > > > > > catches known issues.
-> > > > > 
-> > > > > Well, if I comment out the four "progress_" labels, it complains about
-> > > > > a non-progress cycle.  So at least spin does pay attention to these.
-> > > > > ;-)
-> > > > > 
-> > > > > If I put the "progress_" labels back in, but change the check so as to
-> > > > > prevent the state machine from ever entering RCU_SYSIDLE_FULL_NOTED,
-> > > > > it cranks through 14M states before complaining about a non-progress
-> > > > > cycle,
-> > > > > as expected.
-> > > > > 
-> > > > > If I revert back to pristine state, and then comment out the statements
-> > > > > that reverts state back to RCU_SYSIDLE_NOT when exiting idle, an
-> > > > > assert()
-> > > > > triggers, as expected.
-> > > > > 
-> > > > > > If we can show that the model can detect a few failure modes, both
-> > > > > > for
-> > > > > > safety
-> > > > > > and progress, then my confidence level in the model will start to
-> > > > > > improve.
-> > > > > > ;-)
-> > > > > 
-> > > > > Well, there probably is a bug in there somewhere, Murphy being who he
-> > > > > is.
-> > > > > ;-)
-> > > > 
-> > > > One failure mode your model seems to miss is when I comment the wakeup:
-> > > > 
-> > > >                 /* If needed, wake up the timekeeper. */
-> > > >                 if
-> > > > #ifndef INJECT_NO_WAKEUP
-> > > >                 :: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-> > > >                         wakeup_timekeeper = 1;
-> > > > #endif /* #ifndef INJECT_NO_WAKEUP */
-> > > >                 :: else -> skip;
-> > > >                 fi;
-> > > > 
-> > > > Somehow, I feel I am doing something very nasty to the algorithm,
-> > > > but the model checker fails to find any kind of progress or safety
-> > > > issue. Any idea why ?
-> > > 
-> > > Hmmm...  One reason is because I am not modeling the timekeeper thread
-> > > as waiting for the wakeup.  Let me see what I can do about that...
-> > 
-> > And here is an updated model.  I now make it loop waiting for the
-> > wakeup_timekeeper variable to transition to 1.  And I learned that
-> > Promela ignores "progress" labels within atomic statements...
-> > 
-> > The previous error injections still trigger asserts.
-> 
-> Here is the experiment I did on this latest version: I just enabled the
-> safety checking (not progress). I commented these lines out (again):
-> 
->                 /* If needed, wake up the timekeeper. */
->                 if
->                 //:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
->                 //      wakeup_timekeeper = 1;
->                 :: else -> skip;
->                 fi;
-> 
-> compile and run with:
-> 
-> spin -a sysidle.spin
-> gcc -o pan pan.c
-> ./pan -m1280000 -w22
-> 
-> My expectation would be to trigger some kind of assertion that the
-> timekeeper is not active while the worker is running. Unfortunately,
-> nothing triggers.
+'offset = *(u32 *)reg;'
+This will be okey for 32/64-bits register device, but for 8/16-bits
+register ones, the 'offset' value will overflow, for example:
 
-That is expected behavior.  Failure to wake up the timekeeper is set
-up as a progress criterion.
+The IMX2 Watchdog, whose registers and values are all 16-bits:
 
-> I see 3 possible solutions: we could either add assertions into
-> other branches of the timekeeper, or add assertions into the worker
-> thread. Another way to do it would be to express the assertions as
-> negation of a LTL formula based on state variables.
+If the IO base virtual address is ctx->regs = 0x888c0000, and the now
+doing the 0x00 register accessing:
+Using 'offset = *(u32 *)reg' the offset value will possiblly be 0x77310000,
+Using 'offset = *(u16 *)reg' the offset value will be 0x0000.
 
-I did try both a hand-coded "never" clause and LTL formulas without
-success. You have more experience with them, so perhaps you could make
-something work.  The need is that if all worker threads go non-idle
-indefinitely starting from the RCU_SYSIDLE_FULL_NOTED state, the
-wakeup_timekeeper must eventually be set to 1, and then the timekeeper
-must start running, for example, the wakeup_timekeeper value must revert
-to zero.
+In the regmap_mmio_gather_write(), ctx->regs + 0x7731000 will be 0xffbd0000,
+but actually it should be ctx->regs + 0x0000 = 0x888c0000.
 
-The problem I had is that the "never" claims seem set up to catch some
-finite behavior after a possibly-infinite prefix.  In this case, we
-instead need to catch some infinite behavior after a possibly-infinite
-prefix.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/base/regmap/regmap-mmio.c | 29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
-> Thoughts ?
+diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
+index de45a1e..e1b42c5 100644
+--- a/drivers/base/regmap/regmap-mmio.c
++++ b/drivers/base/regmap/regmap-mmio.c
+@@ -67,12 +67,31 @@ static inline void regmap_mmio_count_check(size_t count)
+ 	BUG_ON(count % 2 != 0);
+ }
+ 
++static inline unsigned int
++regmap_mmio_get_offset(const void *reg, size_t reg_size)
++{
++	switch (reg_size) {
++	case 1:
++		return *(u8 *)reg;
++	case 2:
++		return *(u16 *)reg;
++	case 4:
++		return *(u32 *)reg;
++#ifdef CONFIG_64BIT
++	case 8:
++		return *(u64 *)reg;
++#endif
++	default:
++		BUG();
++	}
++}
++
+ static int regmap_mmio_gather_write(void *context,
+ 				    const void *reg, size_t reg_size,
+ 				    const void *val, size_t val_size)
+ {
+ 	struct regmap_mmio_context *ctx = context;
+-	u32 offset;
++	unsigned int offset;
+ 	int ret;
+ 
+ 	regmap_mmio_regsize_check(reg_size);
+@@ -83,7 +102,7 @@ static int regmap_mmio_gather_write(void *context,
+ 			return ret;
+ 	}
+ 
+-	offset = *(u32 *)reg;
++	offset = regmap_mmio_get_offset(reg, reg_size);
+ 
+ 	while (val_size) {
+ 		switch (ctx->val_bytes) {
+@@ -119,7 +138,7 @@ static int regmap_mmio_gather_write(void *context,
+ static int regmap_mmio_write(void *context, const void *data, size_t count)
+ {
+ 	struct regmap_mmio_context *ctx = context;
+-	u32 offset = ctx->reg_bytes + ctx->pad_bytes;
++	unsigned int offset = ctx->reg_bytes + ctx->pad_bytes;
+ 
+ 	regmap_mmio_count_check(count);
+ 
+@@ -132,7 +151,7 @@ static int regmap_mmio_read(void *context,
+ 			    void *val, size_t val_size)
+ {
+ 	struct regmap_mmio_context *ctx = context;
+-	u32 offset;
++	unsigned int offset;
+ 	int ret;
+ 
+ 	regmap_mmio_regsize_check(reg_size);
+@@ -143,7 +162,7 @@ static int regmap_mmio_read(void *context,
+ 			return ret;
+ 	}
+ 
+-	offset = *(u32 *)reg;
++	offset = regmap_mmio_get_offset(reg, reg_size);
+ 
+ 	while (val_size) {
+ 		switch (ctx->val_bytes) {
+-- 
+1.8.4
 
-Me, I eventually switched over to using progress detection.  Which might
-be a bit unconventional, but it did have the virtue of making the
-model complain when it should complain.  ;-)
-
-							Thanx, Paul
-
-> Thanks,
-> 
-> Mathieu
-> 
-> > 
-> > 							Thanx, Paul
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > /*
-> >  * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
-> >  * This model assumes that the dyntick-idle bit manipulation works based
-> >  * on long usage, and substitutes a per-thread boolean "am_busy[]" array
-> >  * for the Linux kernel's dyntick-idle masks.  The focus of this model
-> >  * is therefore on the state machine itself.  Checks for both safety and
-> >  * forward progress.
-> >  *
-> >  * This program is free software; you can redistribute it and/or modify
-> >  * it under the terms of the GNU General Public License as published by
-> >  * the Free Software Foundation; either version 2 of the License, or
-> >  * (at your option) any later version.
-> >  *
-> >  * This program is distributed in the hope that it will be useful,
-> >  * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >  * GNU General Public License for more details.
-> >  *
-> >  * You should have received a copy of the GNU General Public License
-> >  * along with this program; if not, you can access it online at
-> >  * http://www.gnu.org/licenses/gpl-2.0.html.
-> >  *
-> >  * Copyright IBM Corporation, 2014
-> >  *
-> >  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >  */
-> > 
-> > #define NUM_WORKERS 2
-> > 
-> > byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
-> > 
-> > #define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-> > #define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-> > #define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-> > #define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-> > #define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
-> > 
-> > byte full_sysidle_state = RCU_SYSIDLE_NOT;
-> > 
-> > byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
-> > byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not idle. */
-> > 
-> > /*
-> >  * Non-timekeeping CPU going into and out of dyntick-idle state.
-> >  */
-> > proctype worker(byte me)
-> > {
-> > 	byte oldstate;
-> > 
-> > 	do
-> > 	:: 1 ->
-> > 		/* Go idle. */
-> > 		am_setup[me] = 0;
-> > 		am_busy[me] = 0;
-> > 
-> > 		/* Dyntick-idle in the following loop. */
-> > 		do
-> > 		:: 1 -> skip;
-> > 		:: 1 -> break;
-> > 		od;
-> > 
-> > 		/* Exit idle loop, model getting out of dyntick idle state. */
-> > 		am_busy[me] = 1;
-> > 
-> > 		/* Get state out of full-system idle states. */
-> > 		atomic {
-> > 			oldstate = full_sysidle_state;
-> > 			if
-> > 			:: oldstate > RCU_SYSIDLE_SHORT ->
-> > 				full_sysidle_state = RCU_SYSIDLE_NOT;
-> > 			:: else -> skip;
-> > 			fi;
-> > 		}
-> > 
-> > 		/* If needed, wake up the timekeeper. */
-> > 		if
-> > 		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-> > 			wakeup_timekeeper = 1;
-> > 		:: else -> skip;
-> > 		fi;
-> > 
-> > 		/* Mark ourselves fully awake and operational. */
-> > 		am_setup[me] = 1;
-> > 
-> > 		/* We are fully awake, so timekeeper must not be asleep. */
-> > 		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
-> > 
-> > 		/* Running in kernel in the following loop. */
-> > 		do
-> > 		:: 1 -> skip;
-> > 		:: 1 -> break;
-> > 		od;
-> > 	od
-> > }
-> > 
-> > /*
-> >  * Are all the workers in dyntick-idle state?
-> >  */
-> > #define check_idle() \
-> > 	i = 0; \
-> > 	idle = 1; \
-> > 	do \
-> > 	:: i < NUM_WORKERS -> \
-> > 		if \
-> > 		:: am_busy[i] == 1 -> idle = 0; \
-> > 		:: else -> skip; \
-> > 		fi; \
-> > 		i++; \
-> > 	:: i >= NUM_WORKERS -> break; \
-> > 	od
-> > 
-> > /*
-> >  * Timekeeping CPU.
-> >  */
-> > proctype timekeeper()
-> > {
-> > 	byte i;
-> > 	byte idle;
-> > 	byte curstate;
-> > 	byte newstate;
-> > 
-> > 	do
-> > 	:: 1 ->
-> > 		/* Capture current state. */
-> > 		check_idle();
-> > 		curstate = full_sysidle_state;
-> > 		newstate = curstate;
-> > 
-> > 		/* Check for acceptance state. */
-> > 		if
-> > 		:: idle == 0 ->
-> > progress_idle:
-> > 			skip;
-> > 		:: curstate == RCU_SYSIDLE_NOT ->
-> > progress_idle_reset:
-> > 			skip;
-> > 		:: else -> skip;
-> > 		fi;
-> > 
-> > 		/* Manage state... */
-> > 		if
-> > 		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
-> > 			/* Idle, advance to next state. */
-> > 			atomic {
-> > 				if
-> > 				:: full_sysidle_state == curstate ->
-> > 					newstate = curstate + 1;
-> > 					full_sysidle_state = newstate;
-> > 				:: else -> skip;
-> > 				fi;
-> > 			}
-> > 		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
-> > 			/* Non-idle and state advanced, revert to base state. */
-> > 			full_sysidle_state = RCU_SYSIDLE_NOT;
-> > 		:: else -> skip;
-> > 		fi;
-> > 
-> > 		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
-> > 		do
-> > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 1 ->
-> > 			assert(0); /* Should never get here. */
-> > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 0 ->
-> > 			break;
-> > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 1 ->
-> > progress_full_system_idle_1:
-> > 			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
-> > 			wakeup_timekeeper = 0;
-> > 			break;
-> > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 0 ->
-> > 			do
-> > 			:: full_sysidle_state == RCU_SYSIDLE_FULL_NOTED &&
-> > 			   wakeup_timekeeper == 0 ->
-> > 				/*
-> > 				 * We are asleep, so all workers better
-> > 				 * be idle.
-> > 				 */
-> > progress_full_system_idle_2:
-> > 				atomic {
-> > 					i = 0;
-> > 					idle = 1;
-> > 					do
-> > 					:: i < NUM_WORKERS ->
-> > 						if
-> > 						:: am_setup[i] -> idle = 0;
-> > 						:: else -> skip;
-> > 						fi;
-> > 						i++;
-> > 					:: i >= NUM_WORKERS -> break;
-> > 					od;
-> > 					assert(idle == 1 ||
-> > 					       full_sysidle_state <
-> > 					       RCU_SYSIDLE_FULL);
-> > 				}
-> > 			:: full_sysidle_state != RCU_SYSIDLE_FULL_NOTED &&
-> > 			   wakeup_timekeeper == 0 ->
-> > 				skip; /* No progress, should be awakened. */
-> > 			:: wakeup_timekeeper != 0 ->
-> > 				break;
-> > 			od;
-> > 		od;
-> > 		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
-> > 	od;
-> > }
-> > 
-> > init {
-> > 	byte i = 0;
-> > 
-> > 	do
-> > 	:: i < NUM_WORKERS ->
-> > 		am_busy[i] = 1;
-> > 		am_setup[i] = 1;
-> > 		run worker(i);
-> > 		i++;
-> > 	:: i >= NUM_WORKERS -> break;
-> > 	od;
-> > 	run timekeeper();
-> > }
-> > 
-> > 
-> 
-> -- 
-> Mathieu Desnoyers
-> EfficiOS Inc.
-> http://www.efficios.com
-> 
 
