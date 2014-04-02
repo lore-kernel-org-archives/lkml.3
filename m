@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbaDBJlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 05:41:25 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:53493 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758042AbaDBJlV (ORCPT
+	id S1758207AbaDBJp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:45:59 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:56450 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758062AbaDBJpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 05:41:21 -0400
+	Wed, 2 Apr 2014 05:45:54 -0400
+Message-ID: <533BDC4F.3060903@suse.cz>
+Date: Wed, 02 Apr 2014 11:45:51 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140402091334.GV6991@mwanda>
-References: <1671118.MbmRfxWPeo@daeseok-laptop.cloud.net>
-	<20140402091334.GV6991@mwanda>
-Date: Wed, 2 Apr 2014 18:41:20 +0900
-Message-ID: <CAHb8M2AN5Hx4Mn9uTnge2MQzyT7BD1XxM2edZyPdeCt-V91J5g@mail.gmail.com>
-Subject: Re: [PATCH] staging: lirc: fix NULL pointer dereference
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: m.chehab@samsung.com, devel <devel@driverdev.osuosl.org>,
-        Andreea Bernat <bernat.ada@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, jarod@wilsonet.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Martina Trompouki <mtrompou@gmail.com>, linux-media@vger.kernel.org
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] serial: 8250, disable "too much work" messages
+References: <1396352220-5031-1-git-send-email-jslaby@suse.cz> <20140401144057.63b3ceb5@alan.etchedpixels.co.uk>
+In-Reply-To: <20140401144057.63b3ceb5@alan.etchedpixels.co.uk>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are right. remove whole thing and send it again.
+On 04/01/2014 03:40 PM, One Thousand Gnomes wrote:
+> On Tue,  1 Apr 2014 13:37:00 +0200
+> Jiri Slaby <jslaby@suse.cz> wrote:
+> 
+>> The 8250 driver now reports many of these:
+>>   serial8250: too much work for irq4
+>> These messages turned out to be common these days with a use of
+>> virtualization. I tried to increase the limit of processed characters
+>> in commit e7328ae1848966181a7ac47e8ae6cddbd2cf55f3 (serial: 8250,
+>> increase PASS_LIMIT) in 2011. It was raised from 256 to 512, but it is
+>> still not enough, apparently.
+> 
+> A lot of emulations model the queue completely incorrectly. However
+> simply hiding it with a pr_debug is the wrong answer - it wants fixing.
+> 
+> If we set a large PASS_LIMIT then it's not going to be a big loss on real
+> hardware - we'll burp for a second or two and continue, but it ought to
+> cure the virtualisation case.
+> 
+> If it doesn't we've got a bigger problem because it means we are jammed
+> in the kernel spinning in an IRQ handler feeding data to a fake serial
+> port that never stops being an IRQ and we end up hanging the virtualised
+> OS for a long period
+> 
+> If that is happening then we need to actually workaround whatever
+> crapware emulator is triggering it so we don't hang the guest for long
+> periods if there is a big I/O.
+> 
+> If its a real port that is jammed our normal time around the loop on the
+> LPC bus is going to be a shade over 24uS (32uS if TX is jammed on)
+> 
+> So we certainly ought to be able to go a bit higher without major
+> crisis. Beyond that if it is still tripping then instead of whining we
+> need to set IIR_NO_INT and set a polling timer to turn the IRQ back on
+> next timer tick. That way a crappy emulated port can't hang the guest
+> with a continual stream of data and a busted real one might actually sort
+> out.
 
-Thanks.
-Daeseok Youn
+So, according to Takashi's measurements, we would need over 15000 loops
+on a single port. Of course, this value is highly dependent on a system.
+On my system, it is like 7 times lower (2100). And it lasts ~300ms here.
 
-2014-04-02 18:13 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Wed, Apr 02, 2014 at 05:18:39PM +0900, Daeseok Youn wrote:
->>
->> coccicheck says:
->>  drivers/staging/media/lirc/lirc_igorplugusb.c:226:15-21:
->> ERROR: ir is NULL but dereferenced.
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->>  drivers/staging/media/lirc/lirc_igorplugusb.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/staging/media/lirc/lirc_igorplugusb.c b/drivers/staging/media/lirc/lirc_igorplugusb.c
->> index f508a13..0ef393b 100644
->> --- a/drivers/staging/media/lirc/lirc_igorplugusb.c
->> +++ b/drivers/staging/media/lirc/lirc_igorplugusb.c
->> @@ -223,8 +223,8 @@ static int unregister_from_lirc(struct igorplug *ir)
->>       int devnum;
->>
->>       if (!ir) {
->> -             dev_err(&ir->usbdev->dev,
->> -                     "%s: called with NULL device struct!\n", __func__);
->> +             printk(DRIVER_NAME "%s: called with NULL device struct!\n",
->> +                    __func__);
->
->
-> It should be pr_err() or something.  But actually "ir" can't be NULL so
-> just delete the whole condition.
->
->
->>               return -EINVAL;
->>       }
->
-> regards,
-> dan carpenter
->
+I suppose a limit like 32k loops is way too much and I just should go
+and implement the polling. Or what about adding inter-character sleeps
+to qemu to correspond to the speed? I can do that too, but I am not sure
+if limiting the throughput will be accepted by them.
+
+thanks,
+-- 
+js
+suse labs
