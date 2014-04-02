@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150AbaDBIgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 04:36:08 -0400
-Received: from v-27-120-111-12.ub-freebit.net ([27.120.111.12]:55799 "EHLO
-	ns.cpanel.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757956AbaDBIgG (ORCPT
+	id S1758163AbaDBIrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 04:47:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23487 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049AbaDBIrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 04:36:06 -0400
-X-Greylist: delayed 6290 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Apr 2014 04:36:05 EDT
-Message-ID: <718d9695ce9295ebc826c10d4e302275.squirrel@27.120.111.12>
-Date: Wed, 2 Apr 2014 13:52:47 +0900
-Subject: =?iso-8859-1?Q?F=E5_et_l=E5n_p=E5_3%?=
-From: "Santander Consumer Finance" <info@santander.com>
-Reply-To: santanderloanfins@manager.in.th
-User-Agent: SquirrelMail/1.4.22
+	Wed, 2 Apr 2014 04:47:23 -0400
+Date: Wed, 2 Apr 2014 11:47:08 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, vegard.nossum@oracle.com,
+        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch 1/2] lib/string.c: use the name "C-string" in comments
+Message-ID: <20140402084708.GA6018@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - ns.cpanel.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - santander.com
-X-Get-Message-Sender-Via: ns.cpanel.net: authenticated_id: info@fanbio.com
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401.161838.1562296825577866979.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sir / Madam,
+For strncpy() and friends the source string may or may not have an
+actual NUL character at the end.  The documentation is confusing in this
+because it specifically mentions that you are passing a "NUL-terminated"
+string.  Wikipedia says that "C-string" is an alternative name we can
+use instead.
 
+http://en.wikipedia.org/wiki/Null-terminated_string
 
-   Få et lån på 3% både på kort og lang sikt. Santander Consumer
-   Finance er en global lånegruppe etablert for å møte behovene til
-   økonomisk deprimert kunder. Vi opererer i alle kategorier av lån.
-   Oppgi følgende informasjon hvis interessert.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-  Fullt navn:
-  kjønn:
-  land:
-   Beløp Needed:
-   Varighet:
-   formål:
-
-Vi trenger denne informasjonen for å fullføre lån behandling.
-   Vennlig hilsen,
-
-   Rosemary Scott Evans
-   Tel: +447-700-093-210
-   E-post: santanderloanfins@manager.in.th
-
+diff --git a/lib/string.c b/lib/string.c
+index 9b1f906..89ad0f0 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -107,7 +107,7 @@ EXPORT_SYMBOL(strcpy);
+ 
+ #ifndef __HAVE_ARCH_STRNCPY
+ /**
+- * strncpy - Copy a length-limited, %NUL-terminated string
++ * strncpy - Copy a length-limited, C-string
+  * @dest: Where to copy the string to
+  * @src: Where to copy the string from
+  * @count: The maximum number of bytes to copy
+@@ -136,7 +136,7 @@ EXPORT_SYMBOL(strncpy);
+ 
+ #ifndef __HAVE_ARCH_STRLCPY
+ /**
+- * strlcpy - Copy a %NUL terminated string into a sized buffer
++ * strlcpy - Copy a C-string into a sized buffer
+  * @dest: Where to copy the string to
+  * @src: Where to copy the string from
+  * @size: size of destination buffer
+@@ -182,7 +182,7 @@ EXPORT_SYMBOL(strcat);
+ 
+ #ifndef __HAVE_ARCH_STRNCAT
+ /**
+- * strncat - Append a length-limited, %NUL-terminated string to another
++ * strncat - Append a length-limited, C-string to another
+  * @dest: The string to be appended to
+  * @src: The string to append to it
+  * @count: The maximum numbers of bytes to copy
+@@ -211,7 +211,7 @@ EXPORT_SYMBOL(strncat);
+ 
+ #ifndef __HAVE_ARCH_STRLCAT
+ /**
+- * strlcat - Append a length-limited, %NUL-terminated string to another
++ * strlcat - Append a length-limited, C-string to another
+  * @dest: The string to be appended to
+  * @src: The string to append to it
+  * @count: The size of the destination buffer.
