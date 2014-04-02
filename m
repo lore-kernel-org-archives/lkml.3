@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758761AbaDBPSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 11:18:37 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:59055 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758337AbaDBPSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 11:18:34 -0400
-Date: Wed, 2 Apr 2014 11:18:27 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Haggai Eran <haggaie@mellanox.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Rapoport <mike.rapoport@ravellosystems.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
-        Shachar Raindel <raindel@mellanox.com>
-Subject: Re: [PATCH] mm/mmu_notifier: restore set_pte_at_notify semantics
-Message-ID: <20140402151825.GA3614@gmail.com>
-References: <1389778834-21200-1-git-send-email-mike.rapoport@ravellosystems.com>
- <20140122131046.GF14193@redhat.com>
- <52DFCF2B.1010603@mellanox.com>
- <20140330203328.GA4859@gmail.com>
- <533C081D.9050202@mellanox.com>
+	id S1758807AbaDBPS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 11:18:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758337AbaDBPSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 11:18:55 -0400
+Date: Wed, 2 Apr 2014 17:20:44 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Mathias Nyman <mathias.nyman@intel.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v2 RESEND 4/4] xhci: Use pci_enable_msix_exact() instead
+ of pci_enable_msix()
+Message-ID: <20140402152044.GA13421@dhcp-26-207.brq.redhat.com>
+References: <cover.1394128952.git.agordeev@redhat.com>
+ <606a52afdccf627b6273379b21daffc460b9559a.1394128952.git.agordeev@redhat.com>
+ <20140306215646.GA23294@xanatos>
+ <20140325142730.GA4518@dhcp-26-207.brq.redhat.com>
+ <20140402114127.GA10007@dhcp-26-207.brq.redhat.com>
+ <533C1919.3010506@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <533C081D.9050202@mellanox.com>
+In-Reply-To: <533C1919.3010506@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 03:52:45PM +0300, Haggai Eran wrote:
-> On 03/30/2014 11:33 PM, Jerome Glisse wrote:
-> >On Wed, Jan 22, 2014 at 04:01:15PM +0200, Haggai Eran wrote:
-> >>I'm worried about the following scenario:
+On Wed, Apr 02, 2014 at 05:05:13PM +0300, Mathias Nyman wrote:
+> On 04/02/2014 02:41 PM, Alexander Gordeev wrote:
+> >On Tue, Mar 25, 2014 at 03:27:30PM +0100, Alexander Gordeev wrote:
+> >>On Thu, Mar 06, 2014 at 01:56:46PM -0800, Sarah Sharp wrote:
+> >>>What do you mean by this sentence?  Are you fixing some bug in those two
+> >>>functions, or just cleaning up how they look?  Either way, this should
+> >>>really be two patches.
+> >>Hi Sarah,
 > >>
-> >>Given a read-only page, suppose one host thread (thread 1) writes to
-> >>that page, and performs COW, but before it calls the
-> >>mmu_notifier_invalidate_page_if_missing_change_pte function another host
-> >>thread (thread 2) writes to the same page (this time without a page
-> >>fault). Then we have a valid entry in the secondary page table to a
-> >>stale page, and someone (thread 3) may read stale data from there.
-> >>
-> >>Here's a diagram that shows this scenario:
-> >>
-> >>Thread 1                                | Thread 2        | Thread 3
-> >>========================================================================
-> >>do_wp_page(page 1)                      |                 |
-> >>   ...                                   |                 |
-> >>   set_pte_at_notify                     |                 |
-> >>   ...                                   | write to page 1 |
-> >>                                         |                 | stale access
-> >>   pte_unmap_unlock                      |                 |
-> >>   invalidate_page_if_missing_change_pte |                 |
-> >>
-> >>This is currently prevented by the use of the range start and range end
-> >>notifiers.
-> >>
-> >>Do you agree that this scenario is possible with the new patch, or am I
-> >>missing something?
-> >>
-> >I believe you are right, but of all the upstream user of the mmu_notifier
-> >API only xen would suffer from this ie any user that do not have a proper
-> >change_pte callback can see the bogus scenario you describe above.
-> Yes. I sent our RDMA paging RFC patch-set on linux-rdma [1] last
-> month, and it would also suffer from this scenario, but it's not
-> upstream yet.
-> >The issue i see is with user that want to/or might sleep when they are
-> >invalidation the secondary page table. The issue being that change_pte is
-> >call with the cpu page table locked (well at least for the affected pmd).
+> >>Any feedback on v2?
 > >
-> >I would rather keep the invalidate_range_start/end bracket around change_pte
-> >and invalidate page. I think we can fix the kvm regression by other means.
-> Perhaps another possibility would be to do the
-> invalidate_range_start/end bracket only when the mmu_notifier is
-> missing a change_pte implementation.
-
-This would imply either to scan all mmu_notifier currently register or to
-have a global flags for the mm to know if there is one mmu_notifier without
-change_pte. Moreover this would means that kvm would remain "broken" if one
-of the mmu notifier do not have the change_pte callback.
-
-Solution i have in mind and is part of a patchset i am working on, just
-involve passing along an enum value to mmu notifier callback. The enum
-value would tell what are the exact event that actually triggered the
-mmu notifier call (vmscan, migrate, ksm, ...). Knowing this kvm could then
-simply ignore invalidate_range_start/end for event it knows it will get
-a change_pte callback.
-
-Cheers,
-Jérôme
-
 > 
-> Best regards,
-> Haggai
+> Hi
+
+Thank you for the review, Mathias.
+
+> Thanks for the patches,
+> I'll  queue patch 2/2  for usb-linus once 3.15-rc1 comes out.
 > 
-> [1] http://www.spinics.net/lists/linux-rdma/msg18906.html
+> But I'm going to omit patch 1/2 because it doesn't really improve
+> code readability and doesn't change functionality.
+
+I fail to see how it does not improve the readability. It makes the
+way the result returned consistent with the rest of the code and
+explicitly returns succeess where it is known 'ret' contains zero.
+
+But it surely up to you :)
+
+> At this stage I'd like to avoid extra patches as much as possible.
+> And besides, it adds one extra line of code
+> 
+> -Mathias
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
