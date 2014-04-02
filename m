@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356AbaDBCBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 22:01:49 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48565 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118AbaDBCBs (ORCPT
+	id S1757400AbaDBCDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 22:03:36 -0400
+Received: from nk11p20im-asmtp002.me.com ([17.158.216.161]:62512 "EHLO
+	nk11p20im-asmtp002.me.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757377AbaDBCDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 22:01:48 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <533B6EC0.10303@jp.fujitsu.com>
-Date: Wed, 02 Apr 2014 10:58:24 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>, Davidlohr Bueso <davidlohr@hp.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com> <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com> <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com> <20140401142947.927642a408d84df27d581e36@linux-foundation.org> <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com> <20140401144801.603c288674ab8f417b42a043@linux-foundation.org> <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail. gmail.co m> <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com> <1396399239.25314.47.camel@buesod1.americas.hpqcorp.net> <xr937g78k06y.fsf@gthelen.mtv.corp.google.co
- m>
-In-Reply-To: <xr937g78k06y.fsf@gthelen.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Apr 2014 22:03:35 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+References: <2A318645-52BD-4650-BDEF-11F6215AA621@icloud.com>
+ <alpine.DEB.2.02.1404011744300.14073@nftneq.ynat.uz>
+In-reply-to: <alpine.DEB.2.02.1404011744300.14073@nftneq.ynat.uz>
+Message-id: <7E28311F-2408-4713-82DE-F9708AEAF855@icloud.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (11D169)
+From: Andrew Stephenson <aste9@icloud.com>
+Subject: Re: Replacing GNU
+Date: Wed, 02 Apr 2014 13:03:13 +1100
+To: David Lang <david@lang.hm>
+X-MANTSH: 1TEIXREEbG1oaGkdHB0lGUkdDRl5PWBoaGREKTEMXGx0EGx8SBBscHwQdHhAbHho
+	fGhEKWE0XSxEKbX4XGhEKTFkXGxobGxEKWUkXEQpZXhdoY3kRCkNOF0sbHhpiTk1mHx5IfBl4c
+	wcZGBoYGhl6GREKWFwXGQQaBB0HTUsdEkhJHEwFGx0EGx8SBBscHwQdHhAbHhofGxEKXlkXYUl
+	4eWMRCkxGF2xraxEKQ1oXHhMEGxIbBBsdEgQYGRgRCkRYFxgRCkRJFxsRCkJFF297HH9pXm4FU
+	BhAEQpCThdrRRpSUB5DXFlcaBEKQkwXYGReYU9OfR9JeUQRCkJsF3obH3hSHFJtQ29aEQpCQBd
+	mcF1HRwFrBXxMeREKcGcXY1xGHUVubGVHRGkRCnBoF2ZrQ3pue3luewFDEQpwaBdiHntyE2dhe
+	URNQhEKcGgXZU5kSH1OWU5BZG8RCnBoF259YxlOXGJlH0BTEQpwaBduTB5uBRsdfU4bYBEKcGc
+	Xbn5gYEhjHFlLX24RCnB/F2BLaR9CWWF+XmJvEQpwXxdmQFx/TUIScG4YSREKcH8XbmVwQ1N6T
+	VJ7YG0RCnBfF2hOS1NgaWNYZWZlEQpwbBdkQ39nR2VbW2xkUBEKcEwXY0RlX3xhRAVdQ2sR
+X-CLX-Spam: false
+X-CLX-Score: 1011
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-04-01_07:2014-04-01,2014-04-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ suspectscore=9 phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0
+ reason=mlx scancount=1 engine=7.0.1-1402240000 definitions=main-1404010158
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/02 10:08), Greg Thelen wrote:
+Ah, so there is a Free Software camp and an Open Source camp within the Linux Kernel Mailing List.
+
+> On 2 Apr 2014, at 11:45 am, David Lang <david@lang.hm> wrote:
 > 
-> On Tue, Apr 01 2014, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> There is no concensus, some people are working hard to do so, others love GPLv3
 > 
->> On Tue, 2014-04-01 at 19:56 -0400, KOSAKI Motohiro wrote:
->>>>>> Ah-hah, that's interesting info.
->>>>>>
->>>>>> Let's make the default 64GB?
->>>>>
->>>>> 64GB is infinity at that time, but it no longer near infinity today. I like
->>>>> very large or total memory proportional number.
->>>>
->>>> So I still like 0 for unlimited. Nice, clean and much easier to look at
->>>> than ULONG_MAX. And since we cannot disable shm through SHMMIN, I really
->>>> don't see any disadvantages, as opposed to some other arbitrary value.
->>>> Furthermore it wouldn't break userspace: any existing sysctl would
->>>> continue to work, and if not set, the user never has to worry about this
->>>> tunable again.
->>>>
->>>> Please let me know if you all agree with this...
->>>
->>> Surething. Why not. :)
->>
->> *sigh* actually, the plot thickens a bit with SHMALL (total size of shm
->> segments system wide, in pages). Currently by default:
->>
->> #define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
->>
->> This deals with physical memory, at least admins are recommended to set
->> it to some large percentage of ram / pagesize. So I think that if we
->> loose control over the default value, users can potentially DoS the
->> system, or at least cause excessive swapping if not manually set, but
->> then again the same goes for anon mem... so do we care?
+> David Lang
 > 
-> At least when there's an egregious anon leak the oom killer has the
-> power to free the memory by killing until the memory is unreferenced.
-> This isn't true for shm or tmpfs.  So shm is more effective than anon at
-> crushing a machine.
-
-Hm..sysctl.kernel.shm_rmid_forced won't work with oom-killer ?
-
-http://www.openwall.com/lists/kernel-hardening/2011/07/26/7
-
-I like to handle this kind of issue under memcg but hmm..tmpfs's limit is half
-of memory at default.
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-
+>> On Wed, 2 Apr 2014, Andrew Stephenson wrote:
+>> 
+>> Date: Wed, 02 Apr 2014 10:26:44 +1100
+>> From: Andrew Stephenson <aste9@icloud.com>
+>> To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+>> Subject: Replacing GNU
+>> What is the consensus on replacing GNU with software that won't become GPLv3 in the future, with the latest gcc for example.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>> 
