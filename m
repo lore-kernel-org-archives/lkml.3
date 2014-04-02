@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161037AbaDBXFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 19:05:33 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:39593 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933472AbaDBXF2 (ORCPT
+	id S1030685AbaDBXLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 19:11:07 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:50367 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933473AbaDBXLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 19:05:28 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tarek Dakhran <t.dakhran@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
-Subject: Re: [PATCH v7 0/3] Exynos 5410 support
-References: <1393213435-20863-1-git-send-email-t.dakhran@samsung.com>
-Date: Wed, 02 Apr 2014 16:05:25 -0700
-In-Reply-To: <1393213435-20863-1-git-send-email-t.dakhran@samsung.com> (Tarek
-	Dakhran's message of "Mon, 24 Feb 2014 12:43:52 +0900")
-Message-ID: <7h7g772uyy.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Wed, 2 Apr 2014 19:11:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAAVeFuLimi8Mzmqs0Y1OQv6ZJxgQd6Y2bfyF7hmP5_wcPya-gA@mail.gmail.com>
+References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
+	<1395650554-31925-11-git-send-email-acourbot@nvidia.com>
+	<CACAvsv4yQuPeoGMW6+k7ChsCZWCjpyBYhEMUomQH2QRrxkW=-w@mail.gmail.com>
+	<CAAVeFuLimi8Mzmqs0Y1OQv6ZJxgQd6Y2bfyF7hmP5_wcPya-gA@mail.gmail.com>
+Date: Thu, 3 Apr 2014 09:11:03 +1000
+Message-ID: <CACAvsv5Cy0BWXMTTeDtFSrX2jg51YAzgF9AjOdyhA-XMALLYjw@mail.gmail.com>
+Subject: Re: [PATCH 10/12] drm/nouveau/graph: add GK20A support
+From: Ben Skeggs <skeggsb@gmail.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tarek Dakhran <t.dakhran@samsung.com> writes:
-
-> The series of patches represent support of Exynos 5410 SoC
+On Thu, Apr 3, 2014 at 12:03 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Wed, Mar 26, 2014 at 1:24 PM, Ben Skeggs <skeggsb@gmail.com> wrote:
+>> On Mon, Mar 24, 2014 at 6:42 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>> Add a GR device for GK20A based on NVE4, with the correct classes
+>>> definitions (GK20A's 3D class is 0xa297).
+>>>
+>>> Most of the NVE4 code can be used on GK20A, so make relevant bits of
+>>> NVE4 available to other chips as well.
+>> This will need a bit of a rebase on top of the tree I mentioned
+>> earlier (also queued for drm-next now), where I've further split out
+>> and named the various chunks of state.
 >
-> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture
+> Will do that.
 >
-> Patches add new platform description, support of clock controller and device 
-> tree for Exynos 5410.
+>>
+>> Does GK104 match entirely correctly, or just happen to work?  I could
+>> probably hunt down the GK20A netlist images and check that actually :)
 >
-> Has been build on Linux Kernel v3.14-rc1 (Samsung kernel,
-> 	for-next branch,
-> 	commit aaeeda6f57833c7c0e16fef3d76205f36882c21b,
-> 	"Merge branch 'v3.15-next/cleanup-samsung' into for-next")
-> Has been tested on Exynos 5410 reference board (exynos_defconfig)
+> Do you mean, the init sequence? I haven't checked in detail (we are
+> certainly doing things differently in the non-DRM driver), but the
+> registers seem to match and the GPU is able to render after that. I
+> admit I have not looked much further for now.
+I meant the arrays of register data, there's generally been some
+differences for most major chipset bumps.  Where can I find the
+netlist firmware packages that go with the android driver?  I can pull
+all the required info out of there to check :)
+
 >
-> I hope, this is enough clean and hasn't any dependencies to go through 
-> Samsung tree.
-
-FWIW: boot tested on Exynos 5410 odroid-xu.
-
-Tested-by: Kevin Hilman <khilman@linaro.org>
-
-What's the status of this being queued up for upstream?  Looks like it
-just needs to be broken up in to a drivers/clk pull request and a
-arm-soc pull request.
-
-Kevin
+> The only register that does not exist on GK20A is 0x260, but when
+> accessing it Nouveau will be able to continue unharmed after a memory
+> fault.
+I have it in my queue to fix that too, the register doesn't exist on a
+couple of the other chips we support too.
