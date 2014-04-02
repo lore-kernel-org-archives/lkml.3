@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933278AbaDBUfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:35:47 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:18419 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933048AbaDBUfo (ORCPT
+	id S933181AbaDBUfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:35:34 -0400
+Received: from mail-pb0-f73.google.com ([209.85.160.73]:56674 "EHLO
+	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932763AbaDBUfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:35:44 -0400
-Message-ID: <533C7485.3030203@hp.com>
-Date: Wed, 02 Apr 2014 16:35:17 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV support
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <20140402143201.GF12188@phenom.dumpdata.com>
-In-Reply-To: <20140402143201.GF12188@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Apr 2014 16:35:30 -0400
+From: Yu Zhao <yuzhao@google.com>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        jamieliu@google.com, suleiman@google.com, hannes@cmpxchg.org,
+        Yu Zhao <yuzhao@google.com>
+Subject: [PATCH v2 0/3] Per-cgroup swap file support
+Date: Wed,  2 Apr 2014 13:34:06 -0700
+Message-Id: <1396470849-26154-1-git-send-email-yuzhao@google.com>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
-> On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
->> N.B. Sorry for the duplicate. This patch series were resent as the
->>       original one was rejected by the vger.kernel.org list server
->>       due to long header. There is no change in content.
->>
->> v7->v8:
->>    - Remove one unneeded atomic operation from the slowpath, thus
->>      improving performance.
->>    - Simplify some of the codes and add more comments.
->>    - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
->>      unfair lock.
->>    - Reduce unfair lock slowpath lock stealing frequency depending
->>      on its distance from the queue head.
->>    - Add performance data for IvyBridge-EX CPU.
-> FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
-> HVM guest under Xen after a while stops working. The workload
-> is doing 'make -j32' on the Linux kernel.
->
-> Completely unresponsive. Thoughts?
->
+This series of patches adds support to configure a cgroup to swap to a
+particular file by using control file memory.swapfile.
 
-Thank for reporting that. I haven't done that much testing on Xen. My 
-focus was in KVM. I will perform more test on Xen to see if I can 
-reproduce the problem.
+Originally, cgroups share system-wide swap space and limiting cgroup swapping
+is not possible. This patchset solves the problem by adding mechanism that
+isolates cgroup swap spaces (i.e. per-cgroup swap file) so users can safely
+enable swap for particular cgroups without worrying about one cgroup uses up
+all swap space.
 
--Longman
+A value of "default" in memory.swapfile indicates that this cgroup should
+use the default, system-wide, swap files. A value of "none" indicates that
+this cgroup should never swap. Other values are interpreted as the path
+to a private swap file that can only be used by the owner (and its children).
+
+The swap file has to be created and swapon() has to be done on it with
+SWAP_FLAG_PRIVATE, before it can be used. This flag ensures that the swap
+file is private and does not get used by others.
+
+Changelog since v1:
+  - Fixed typos in comment and commit message
+  - Added rationale to this cover letter (Johannes Weiner)
+
+Jamie Liu (1):
+  swap: do not store private swap files on swap_list
+
+Suleiman Souhlal (2):
+  mm/swap: support per memory cgroup swapfiles
+  swap: Increase the max swap files to 8192 on x86_64
+
+ Documentation/cgroups/memory.txt  |  15 ++
+ arch/x86/include/asm/pgtable_64.h |  62 ++++++--
+ include/linux/memcontrol.h        |   2 +
+ include/linux/swap.h              |  45 +++---
+ mm/memcontrol.c                   |  76 ++++++++++
+ mm/memory.c                       |   3 +-
+ mm/shmem.c                        |   2 +-
+ mm/swap_state.c                   |   2 +-
+ mm/swapfile.c                     | 307 +++++++++++++++++++++++++++++++-------
+ mm/vmscan.c                       |   2 +-
+ 10 files changed, 422 insertions(+), 94 deletions(-)
+
+-- 
+1.9.1.423.g4596e3a
+
