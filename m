@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849AbaDBRYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 13:24:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53336 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758761AbaDBRYL (ORCPT
+	id S932606AbaDBR2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 13:28:12 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:5961 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932501AbaDBR2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 13:24:11 -0400
-Message-ID: <533C4795.9080209@ti.com>
-Date: Wed, 2 Apr 2014 13:23:33 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Andrew Murray <amurray@embedded-bits.co.uk>
-CC: Thierry Reding <thierry.reding@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Richard Zhu <r65037@freescale.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based
- on designware core driver
-References: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com> <1395707726-20437-4-git-send-email-m-karicheri2@ti.com> <235376049.yyfljDtinu@wuerfel>	<20140325103525.GA14789@ulmo> <CAPcvp5Gy8uNW3UULi8jYk7GNbmgTd2B_qOEAXnP4H4Wq3v9BCw@mail.gmail.com> <533C300E.7070109@ti.com> <CAPcvp5FEFbP_Fwc47V=LppiZnfbTgPqaAAm-A9K17dVEZWwHQQ@mail.gmail.com>
-In-Reply-To: <CAPcvp5FEFbP_Fwc47V=LppiZnfbTgPqaAAm-A9K17dVEZWwHQQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 2 Apr 2014 13:28:09 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuMNACxIPFNbtAq4/2dsb2JhbABZgwa9RIcxAgKBHhd0gi0CJBMcIxhxESQTh30Bz0uOcIQ/AQOOWYcmglYBil6HW4MyOw
+Date: Wed, 2 Apr 2014 19:29:50 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, jfs-discussion@lists.sourceforge.net
+Subject: [PATCH 1/1] fs/jfs/jfs_inode.c: atomically set inode->i_flags
+Message-Id: <20140402192950.82812a331cb154bbc0a4183c@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/2/2014 12:47 PM, Andrew Murray wrote:
-> On 2 April 2014 16:43, Murali Karicheri <m-karicheri2@ti.com> wrote:
->
->> Keystone pcie driver is developed based on other dw based pcie drivers
->>
->> such as pci-exynos that uses subsys_initcall(). I am new to this list,
->>
->> probably Jingoo (copied) has some history on why we can't use module.
->> For now I will keep it as is and can be re-visited in the next revisions.
->> Also I will experiment with PCIE port driver as well.
->>
->>
->> BTW, PCIE driver currently uses Legacy or MSI IRQ. Keystone PCI has
->> a platform IRQ. Is DT based irq configuration is the appropriate way
->> to add this capability?
-> As far as I am aware - the PCI standards define a particular way for
-> devices to describe which interrupt will be used for things like
-> hotplug, AER and PME. These interrupts are always PCI interrupts (i.e.
-> MSI/MSI-X/legacy). Thus the port services code in the kernel uses
-> standard configuration space accesses to determine the interrupt to
-> use. Also note that it's not just the host bridge that can provide
-> these services but any PCIE device, I guess in this sense a host
-> bridge is treated like any other device.
->
-> If my understanding is correct I don't believe the current port
-> services code allows exceptions to this, i.e. to say this host bridge
-> actually uses a platform IRQ for AER rather than an MSI. Though this
-> may be quite useful as I suspect many host bridges provide interrupts
-> for things like PME through platform IRQs rather that PCI interrupts.
->
-> Does the Keystone have platform IRQs for things like AER? Is that
-> because the IP makes these events available through platform IRQs in
-> addition to the standard PCI means?
->
-> Andrew Murray
-Andrew,
+According to commit 00a1a053ebe5f
+("ext4: atomically set inode->i_flags in ext4_set_inode_flags()")
 
-Yes. Keystone PCIe hw is based on designware hw version v3.65 that 
-implements
-Error interrupt as a platform IRQ only (not in addition) and 
-unfortunately standard
-PCI means are not supported. The latter versions do support standard PCI 
-means.
+Inspired-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: jfs-discussion@lists.sourceforge.net
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/jfs/jfs_inode.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Murali
+diff --git a/fs/jfs/jfs_inode.c b/fs/jfs/jfs_inode.c
+index 7f464c5..3309074 100644
+--- a/fs/jfs/jfs_inode.c
++++ b/fs/jfs/jfs_inode.c
+@@ -29,20 +29,20 @@
+ void jfs_set_inode_flags(struct inode *inode)
+ {
+ 	unsigned int flags = JFS_IP(inode)->mode2;
+-
+-	inode->i_flags &= ~(S_IMMUTABLE | S_APPEND |
+-		S_NOATIME | S_DIRSYNC | S_SYNC);
++	unsigned int new_fl = 0;
+ 
+ 	if (flags & JFS_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
++		new_fl |= S_IMMUTABLE;
+ 	if (flags & JFS_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
++		new_fl |= S_APPEND;
+ 	if (flags & JFS_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
++		new_fl |= S_NOATIME;
+ 	if (flags & JFS_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++		new_fl |= S_DIRSYNC;
+ 	if (flags & JFS_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
++		new_fl |= S_SYNC;
++	set_mask_bits(&inode->i_flags, S_IMMUTABLE | S_APPEND | S_NOATIME |
++				       S_DIRSYNC | S_SYNC, new_fl);
+ }
+ 
+ void jfs_get_inode_flags(struct jfs_inode_info *jfs_ip)
+-- 
+1.8.4.5
 
