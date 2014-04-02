@@ -1,344 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629AbaDBRFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 13:05:11 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:39634 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932488AbaDBRFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 13:05:09 -0400
+	id S932680AbaDBRF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 13:05:28 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:37728 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414AbaDBRFT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 13:05:19 -0400
 X-IronPort-AV: E=Sophos;i="4.97,780,1389744000"; 
-   d="scan'208";a="117396979"
+   d="scan'208";a="116171743"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
         <xen-devel@lists.xenproject.org>
 CC: <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
         Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v3 2/2] xen-netback: Grant copy the header instead of map and memcpy
-Date: Wed, 2 Apr 2014 18:04:58 +0100
-Message-ID: <1396458298-30041-2-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v3 1/2] xen-netback: Rename map ops
+Date: Wed, 2 Apr 2014 18:04:57 +0100
+Message-ID: <1396458298-30041-1-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396458298-30041-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1396458298-30041-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An old inefficiency of the TX path that we are grant mapping the first slot,
-and then copy the header part to the linear area. Instead, doing a grant copy
-for that header straight on is more reasonable. Especially because there are
-ongoing efforts to make Xen avoiding TLB flush after unmap when the page were
-not touched in Dom0. In the original way the memcpy ruined that.
-The key changes:
-- the vif has a tx_copy_ops array again
-- xenvif_tx_build_gops sets up the grant copy operations
-- we don't have to figure out whether the header and first frag are on the same
-  grant mapped page or not
-Note, we only grant copy PKT_PROT_LEN bytes from the first slot, the rest (if
-any) will be on the first frag, which is grant mapped. If the first slot is
-smaller than PKT_PROT_LEN, then we grant copy that, and later __pskb_pull_tail
-will pull more from the frags (if any)
+Rename identifiers to state explicitly that they refer to map ops.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 ---
-v2:
-- extend commit message
-- add patch to rename map ops
-
 v3:
-- remove unrelated refactoring
-- remove stale newline
-- fix sanity check at the end of build_gops
-- change debug message in tx_submit
-- remove unnecessary 'else' from tx_action
+- rename xenvif_tx_create_gop to xenvif_tx_create_map_op
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 89b2d42..c995532 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -119,6 +119,7 @@ struct xenvif {
- 	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
- 	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
- 
-+	struct gnttab_copy tx_copy_ops[MAX_PENDING_REQS];
- 	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
- 	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
- 	/* passed to gnttab_[un]map_refs with pages under (un)mapping */
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 8ce93ff..a6cacf1 100644
+index ae34f5f..8f468ab 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -939,35 +939,37 @@ static inline void xenvif_grant_handle_reset(struct xenvif *vif,
+@@ -819,13 +819,13 @@ struct xenvif_tx_cb {
+ 
+ #define XENVIF_TX_CB(skb) ((struct xenvif_tx_cb *)(skb)->cb)
+ 
+-static inline void xenvif_tx_create_gop(struct xenvif *vif,
+-					u16 pending_idx,
+-					struct xen_netif_tx_request *txp,
+-					struct gnttab_map_grant_ref *gop)
++static inline void xenvif_tx_create_map_op(struct xenvif *vif,
++					  u16 pending_idx,
++					  struct xen_netif_tx_request *txp,
++					  struct gnttab_map_grant_ref *mop)
+ {
+-	vif->pages_to_map[gop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
+-	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
++	vif->pages_to_map[mop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
++	gnttab_set_map_op(mop, idx_to_kaddr(vif, pending_idx),
+ 			  GNTMAP_host_map | GNTMAP_readonly,
+ 			  txp->gref, vif->domid);
+ 
+@@ -879,7 +879,7 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 	     shinfo->nr_frags++, txp++, gop++) {
+ 		index = pending_index(vif->pending_cons++);
+ 		pending_idx = vif->pending_ring[index];
+-		xenvif_tx_create_gop(vif, pending_idx, txp, gop);
++		xenvif_tx_create_map_op(vif, pending_idx, txp, gop);
+ 		frag_set_pending_idx(&frags[shinfo->nr_frags], pending_idx);
+ 	}
+ 
+@@ -899,7 +899,7 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+ 		     shinfo->nr_frags++, txp++, gop++) {
+ 			index = pending_index(vif->pending_cons++);
+ 			pending_idx = vif->pending_ring[index];
+-			xenvif_tx_create_gop(vif, pending_idx, txp, gop);
++			xenvif_tx_create_map_op(vif, pending_idx, txp, gop);
+ 			frag_set_pending_idx(&frags[shinfo->nr_frags],
+ 					     pending_idx);
+ 		}
+@@ -939,9 +939,9 @@ static inline void xenvif_grant_handle_reset(struct xenvif *vif,
  
  static int xenvif_tx_check_gop(struct xenvif *vif,
  			       struct sk_buff *skb,
--			       struct gnttab_map_grant_ref **gopp_map)
-+			       struct gnttab_map_grant_ref **gopp_map,
-+			       struct gnttab_copy **gopp_copy)
+-			       struct gnttab_map_grant_ref **gopp)
++			       struct gnttab_map_grant_ref **gopp_map)
  {
- 	struct gnttab_map_grant_ref *gop_map = *gopp_map;
+-	struct gnttab_map_grant_ref *gop = *gopp;
++	struct gnttab_map_grant_ref *gop_map = *gopp_map;
  	u16 pending_idx = XENVIF_TX_CB(skb)->pending_idx;
  	struct skb_shared_info *shinfo = skb_shinfo(skb);
--	struct pending_tx_info *tx_info;
- 	int nr_frags = shinfo->nr_frags;
--	int i, err, start;
-+	int i, err;
+ 	struct pending_tx_info *tx_info;
+@@ -950,11 +950,11 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
  	struct sk_buff *first_skb = NULL;
  
  	/* Check status of header. */
--	err = gop_map->status;
--	if (unlikely(err))
-+	err = (*gopp_copy)->status;
-+	(*gopp_copy)++;
-+	if (unlikely(err)) {
-+		if (net_ratelimit())
-+			netdev_dbg(vif->dev,
-+				   "Grant copy of header failed! status: %d pending_idx% %u ref: %u\n",
-+				   (*gopp_copy)->status,
-+				   pending_idx,
-+				   (*gopp_copy)->source.u.ref);
+-	err = gop->status;
++	err = gop_map->status;
+ 	if (unlikely(err))
  		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
--	else
--		xenvif_grant_handle_set(vif, pending_idx , gop_map->handle);
--
--	/* Skip first skb fragment if it is on same page as header fragment. */
--	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
-+	}
+ 	else
+-		xenvif_grant_handle_set(vif, pending_idx , gop->handle);
++		xenvif_grant_handle_set(vif, pending_idx , gop_map->handle);
  
- check_frags:
--	for (i = start; i < nr_frags; i++) {
-+	for (i = 0; i < nr_frags; i++, gop_map++) {
- 		int j, newerr;
- 
- 		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
--		tx_info = &vif->pending_tx_info[pending_idx];
+ 	/* Skip first skb fragment if it is on same page as header fragment. */
+ 	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+@@ -967,10 +967,12 @@ check_frags:
+ 		tx_info = &vif->pending_tx_info[pending_idx];
  
  		/* Check error status: if okay then remember grant handle. */
--		newerr = (++gop_map)->status;
-+		newerr = gop_map->status;
+-		newerr = (++gop)->status;
++		newerr = (++gop_map)->status;
  
  		if (likely(!newerr)) {
- 			xenvif_grant_handle_set(vif,
-@@ -980,18 +982,20 @@ check_frags:
- 		}
- 
- 		/* Error on this fragment: respond to client with an error. */
-+		if (net_ratelimit())
-+			netdev_dbg(vif->dev,
-+				   "Grant map of %d. frag failed! status: %d pending_idx% %u ref: %u\n",
-+				   i,
-+				   gop_map->status,
-+				   pending_idx,
-+				   gop_map->ref);
- 		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
- 
- 		/* Not the first error? Preceding frags already invalidated. */
- 		if (err)
- 			continue;
--		/* First error: invalidate header and preceding fragments. */
--		if (!first_skb)
--			pending_idx = XENVIF_TX_CB(skb)->pending_idx;
--		else
--			pending_idx = XENVIF_TX_CB(skb)->pending_idx;
--		xenvif_idx_unmap(vif, pending_idx);
--		for (j = start; j < i; j++) {
-+		/* First error: invalidate preceding fragments. */
-+		for (j = 0; j < i; j++) {
- 			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
- 			xenvif_idx_unmap(vif, pending_idx);
- 		}
-@@ -1005,7 +1009,6 @@ check_frags:
- 		skb = shinfo->frag_list;
- 		shinfo = skb_shinfo(skb);
- 		nr_frags = shinfo->nr_frags;
--		start = 0;
- 
- 		goto check_frags;
- 	}
-@@ -1016,15 +1019,13 @@ check_frags:
- 	if (first_skb && err) {
- 		int j;
- 		shinfo = skb_shinfo(first_skb);
--		pending_idx = XENVIF_TX_CB(skb)->pending_idx;
--		start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
--		for (j = start; j < shinfo->nr_frags; j++) {
-+		for (j = 0; j < shinfo->nr_frags; j++) {
- 			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
- 			xenvif_idx_unmap(vif, pending_idx);
+-			xenvif_grant_handle_set(vif, pending_idx , gop->handle);
++			xenvif_grant_handle_set(vif,
++						pending_idx,
++						gop_map->handle);
+ 			/* Had a previous error? Invalidate this fragment. */
+ 			if (unlikely(err))
+ 				xenvif_idx_unmap(vif, pending_idx);
+@@ -1022,7 +1024,7 @@ check_frags:
  		}
  	}
  
--	*gopp_map = gop_map + 1;
-+	*gopp_map = gop_map;
+-	*gopp = gop + 1;
++	*gopp_map = gop_map + 1;
  	return err;
  }
  
-@@ -1035,9 +1036,6 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
- 	int i;
- 	u16 prev_pending_idx = INVALID_PENDING_IDX;
- 
--	if (skb_shinfo(skb)->destructor_arg)
--		prev_pending_idx = XENVIF_TX_CB(skb)->pending_idx;
--
- 	for (i = 0; i < nr_frags; i++) {
- 		skb_frag_t *frag = shinfo->frags + i;
- 		struct xen_netif_tx_request *txp;
-@@ -1047,10 +1045,10 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
- 		pending_idx = frag_get_pending_idx(frag);
- 
- 		/* If this is not the first frag, chain it to the previous*/
--		if (unlikely(prev_pending_idx == INVALID_PENDING_IDX))
-+		if (prev_pending_idx == INVALID_PENDING_IDX)
- 			skb_shinfo(skb)->destructor_arg =
- 				&callback_param(vif, pending_idx);
--		else if (likely(pending_idx != prev_pending_idx))
-+		else
- 			callback_param(vif, prev_pending_idx).ctx =
- 				&callback_param(vif, pending_idx);
- 
-@@ -1190,7 +1188,10 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
- 	return false;
- }
- 
--static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
-+static void xenvif_tx_build_gops(struct xenvif *vif,
-+				     int budget,
-+				     unsigned *copy_ops,
-+				     unsigned *map_ops)
- {
- 	struct gnttab_map_grant_ref *gop = vif->tx_map_ops, *request_gop;
- 	struct sk_buff *skb;
-@@ -1293,22 +1294,36 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+@@ -1291,7 +1293,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
  			}
  		}
  
--		xenvif_tx_create_map_op(vif, pending_idx, &txreq, gop);
--
--		gop++;
--
- 		XENVIF_TX_CB(skb)->pending_idx = pending_idx;
+-		xenvif_tx_create_gop(vif, pending_idx, &txreq, gop);
++		xenvif_tx_create_map_op(vif, pending_idx, &txreq, gop);
  
- 		__skb_put(skb, data_len);
-+		vif->tx_copy_ops[*copy_ops].source.u.ref = txreq.gref;
-+		vif->tx_copy_ops[*copy_ops].source.domid = vif->domid;
-+		vif->tx_copy_ops[*copy_ops].source.offset = txreq.offset;
-+
-+		vif->tx_copy_ops[*copy_ops].dest.u.gmfn =
-+			virt_to_mfn(skb->data);
-+		vif->tx_copy_ops[*copy_ops].dest.domid = DOMID_SELF;
-+		vif->tx_copy_ops[*copy_ops].dest.offset =
-+			offset_in_page(skb->data);
-+
-+		vif->tx_copy_ops[*copy_ops].len = data_len;
-+		vif->tx_copy_ops[*copy_ops].flags = GNTCOPY_source_gref;
-+
-+		(*copy_ops)++;
+ 		gop++;
  
- 		skb_shinfo(skb)->nr_frags = ret;
- 		if (data_len < txreq.size) {
- 			skb_shinfo(skb)->nr_frags++;
- 			frag_set_pending_idx(&skb_shinfo(skb)->frags[0],
- 					     pending_idx);
-+			xenvif_tx_create_map_op(vif, pending_idx, &txreq, gop);
-+			gop++;
- 		} else {
- 			frag_set_pending_idx(&skb_shinfo(skb)->frags[0],
- 					     INVALID_PENDING_IDX);
-+			memcpy(&vif->pending_tx_info[pending_idx].req, &txreq,
-+			       sizeof(txreq));
- 		}
+@@ -1398,7 +1400,7 @@ static int xenvif_handle_frag_list(struct xenvif *vif, struct sk_buff *skb)
  
- 		vif->pending_cons++;
-@@ -1325,11 +1340,13 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
- 
- 		vif->tx.req_cons = idx;
- 
--		if ((gop-vif->tx_map_ops) >= ARRAY_SIZE(vif->tx_map_ops))
-+		if (((gop-vif->tx_map_ops) >= ARRAY_SIZE(vif->tx_map_ops)) ||
-+		    (*copy_ops >= ARRAY_SIZE(vif->tx_copy_ops)))
- 			break;
- 	}
- 
--	return gop - vif->tx_map_ops;
-+	(*map_ops) = gop - vif->tx_map_ops;
-+	return;
- }
- 
- /* Consolidate skb with a frag_list into a brand new one with local pages on
-@@ -1401,6 +1418,7 @@ static int xenvif_handle_frag_list(struct xenvif *vif, struct sk_buff *skb)
  static int xenvif_tx_submit(struct xenvif *vif)
  {
- 	struct gnttab_map_grant_ref *gop_map = vif->tx_map_ops;
-+	struct gnttab_copy *gop_copy = vif->tx_copy_ops;
+-	struct gnttab_map_grant_ref *gop = vif->tx_map_ops;
++	struct gnttab_map_grant_ref *gop_map = vif->tx_map_ops;
  	struct sk_buff *skb;
  	int work_done = 0;
  
-@@ -1413,27 +1431,22 @@ static int xenvif_tx_submit(struct xenvif *vif)
+@@ -1411,7 +1413,7 @@ static int xenvif_tx_submit(struct xenvif *vif)
  		txp = &vif->pending_tx_info[pending_idx].req;
  
  		/* Check the remap error code. */
--		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map))) {
--			netdev_dbg(vif->dev, "netback grant failed.\n");
-+		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map, &gop_copy))) {
+-		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop))) {
++		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map))) {
+ 			netdev_dbg(vif->dev, "netback grant failed.\n");
  			skb_shinfo(skb)->nr_frags = 0;
  			kfree_skb(skb);
- 			continue;
- 		}
- 
- 		data_len = skb->len;
--		memcpy(skb->data,
--		       (void *)(idx_to_kaddr(vif, pending_idx)|txp->offset),
--		       data_len);
- 		callback_param(vif, pending_idx).ctx = NULL;
- 		if (data_len < txp->size) {
- 			/* Append the packet payload as a fragment. */
- 			txp->offset += data_len;
- 			txp->size -= data_len;
--			skb_shinfo(skb)->destructor_arg =
--				&callback_param(vif, pending_idx);
- 		} else {
- 			/* Schedule a response immediately. */
--			xenvif_idx_unmap(vif, pending_idx);
-+			xenvif_idx_release(vif, pending_idx,
-+					   XEN_NETIF_RSP_OKAY);
- 		}
- 
- 		if (txp->flags & XEN_NETTXF_csum_blank)
-@@ -1612,22 +1625,25 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+@@ -1610,21 +1612,21 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
  /* Called after netfront has transmitted */
  int xenvif_tx_action(struct xenvif *vif, int budget)
  {
--	unsigned nr_mops;
-+	unsigned nr_mops, nr_cops = 0;
+-	unsigned nr_gops;
++	unsigned nr_mops;
  	int work_done, ret;
  
  	if (unlikely(!tx_work_todo(vif)))
  		return 0;
  
--	nr_mops = xenvif_tx_build_gops(vif, budget);
-+	xenvif_tx_build_gops(vif, budget, &nr_cops, &nr_mops);
+-	nr_gops = xenvif_tx_build_gops(vif, budget);
++	nr_mops = xenvif_tx_build_gops(vif, budget);
  
--	if (nr_mops == 0)
-+	if (nr_cops == 0)
+-	if (nr_gops == 0)
++	if (nr_mops == 0)
  		return 0;
  
--	ret = gnttab_map_refs(vif->tx_map_ops,
--			      NULL,
--			      vif->pages_to_map,
--			      nr_mops);
--	BUG_ON(ret);
-+	gnttab_batch_copy(vif->tx_copy_ops, nr_cops);
-+	if (nr_mops != 0) {
-+		ret = gnttab_map_refs(vif->tx_map_ops,
-+				      NULL,
-+				      vif->pages_to_map,
-+				      nr_mops);
-+		BUG_ON(ret);
-+	}
+ 	ret = gnttab_map_refs(vif->tx_map_ops,
+ 			      NULL,
+ 			      vif->pages_to_map,
+-			      nr_gops);
++			      nr_mops);
+ 	BUG_ON(ret);
  
  	work_done = xenvif_tx_submit(vif);
- 
