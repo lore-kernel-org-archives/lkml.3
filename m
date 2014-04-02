@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633AbaDBABR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:01:17 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:63460 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755699AbaDBABN (ORCPT
+	id S1756617AbaDBAAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:00:47 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62778 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598AbaDBAAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:01:13 -0400
+	Tue, 1 Apr 2014 20:00:37 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <533B5322.6020304@roeck-us.net>
+Date: Tue, 01 Apr 2014 17:00:34 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 1 Apr 2014 17:00:30 -0700
-Message-ID: <CAGVrzcZGYTK9goPnrxNLxvFJJBk9zUpedH+wZOeWPx-WKxOmbQ@mail.gmail.com>
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init) for
- Marvel 88E1116R PHYs
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 0/6] 3.4.86-stable review
+References: <20140401032815.814334997@linuxfoundation.org>
+In-Reply-To: <20140401032815.814334997@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
-> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
-
-Please specify the commit message in parenthesis.
-
-> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
-> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
-> was broken such, that it used mdelay() instead of really waiting for a
-> reset to finish.
+On 03/31/2014 09:07 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.86 release.
+> There are 6 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> The effect was that the ethernet on my Kirkwood 88F6281 based device didn't
-> come up anymore (no carrier).
->
-> Fix this by waiting for a reset to finish before proceeding further.
->
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->
-> Cc: Michal Simek <michal.simek@xilinx.com>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: <stable@vger.kernel.org>
-> ---
->  drivers/net/phy/marvell.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
-> index bd37e45..5b84808 100644
-> --- a/drivers/net/phy/marvell.c
-> +++ b/drivers/net/phy/marvell.c
-> @@ -396,7 +396,9 @@ static int m88e1116r_config_init(struct phy_device *phydev)
->         if (err < 0)
->                 return err;
->
-> -       mdelay(500);
-> +       do
-> +               temp = phy_read(phydev, MII_BMCR);
-> +       while (temp & BMCR_RESET);
-
-Please use genphy_soft_reset() which ensures that the bit is cleared,
-and will also wait for an appropriate amount of time before returning.
-I had a bunch of local patches waiting for net-next which clean up the
-Marvell PHY driver to use genphy_soft_reset() consistently instead of
-open-coding BMCR_RESET without waiting for the bit to get cleared.
-
->
->         err = phy_write(phydev, MII_MARVELL_PHY_PAGE, 0);
->         if (err < 0)
-> @@ -429,7 +431,9 @@ static int m88e1116r_config_init(struct phy_device *phydev)
->         if (err < 0)
->                 return err;
->
-> -       mdelay(500);
-> +       do
-> +               temp = phy_read(phydev, MII_BMCR);
-> +       while (temp & BMCR_RESET);
-
-Ditto.
-
->
->         return 0;
->  }
-> --
-> 1.8.3.1
+> Responses should be made by Thu Apr  3 03:28:04 UTC 2014.
+> Anything received after that time might be too late.
 >
 
+Build results:
+         total: 119 pass: 97 skipped: 18 fail: 4
 
+Qemu tests all passed. Results are as expected.
 
--- 
-Florian
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
+
