@@ -1,121 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595AbaDBLsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:48:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56281 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758551AbaDBLsa (ORCPT
+	id S1758627AbaDBLt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:49:29 -0400
+Received: from queue01c.mail.zen.net.uk ([212.23.3.237]:52891 "EHLO
+	queue01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758559AbaDBLt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:48:30 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-8d-533bf90c6758
-Message-id: <533BF905.6070701@samsung.com>
-Date: Wed, 02 Apr 2014 13:48:21 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, chow.kim@samsung.com,
-        Young-Gun Jang <yg1004.jang@samsung.com>
-Subject: Re: [PATCH 06/10] ARM: EXYNOS: Add support for mapping PMU base
- address via DT
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
- <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xK7o8P62DDZ7f1bBYNukum0Xvgqts
-	FpseX2O1uLxrDpvFjPP7mCxuX+a1WLT1C7vFjpbVLA4cHi3NPWwem5fUe/RtWcXo8XmTXABL
-	FJdNSmpOZllqkb5dAlfGuWlsBVNFKh5taWBtYNwp0MXIySEhYCJx7Ph/NghbTOLCvfVANheH
-	kMBSRomZU1+yQjifGCXere4Aq+IV0JJ4ufIGK4jNIqAq0blvOZjNJmAo0Xu0jxHEFhWIkLjX
-	eJgVol5Q4sfkeywgtohAnsSeRzPANjALzGaUWPJ4FthQYYFIidmnX7BDbGtllJhysRVsEqeA
-	h8TVXW+YQGxmAR2J/a3T2CBseYnNa94yT2AUmIVkySwkZbOQlC1gZF7FKJpamlxQnJSea6hX
-	nJhbXJqXrpecn7uJERLkX3YwLj5mdYhRgINRiYdX4pJVsBBrYllxZe4hRgkOZiUR3kmfrIOF
-	eFMSK6tSi/Lji0pzUosPMTJxcEo1MEp93Kp5pJzxkcCL0wkZic3aH363zrynv+mqk6NXH9fO
-	I2HmzjmWE2Q165nKEqbIXJ3bGLXLu1VFfppT6q3ssy++L+H5FznB8SVPnKn/pfZUkYTjHmnh
-	HQt/x/9prfZtPcCY78XGcPlyNCvzgSPuwYEOn76dtRLcpuX+ckUZh/G8B5OjbA4WKLEUZyQa
-	ajEXFScCAHGnVIlQAgAA
+	Wed, 2 Apr 2014 07:49:27 -0400
+X-Greylist: delayed 3955 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Apr 2014 07:49:27 EDT
+Message-ID: <1396435290.3554.52.camel@linaro1.home>
+Subject: Re: Bug(?) in patch "arm64: Implement coherent DMA API based on
+ swiotlb"
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>
+Date: Wed, 02 Apr 2014 11:41:30 +0100
+In-Reply-To: <20140402092032.GB31892@arm.com>
+References: <20140331175230.GA7480@arm.com>
+	 <1396368657.3681.17.camel@linaro1.home> <20140401172939.GG20061@arm.com>
+	 <1396428722.3554.20.camel@linaro1.home> <20140402092032.GB31892@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01a-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/14 09:50, Pankaj Dubey wrote:
-> From: Young-Gun Jang <yg1004.jang@samsung.com>
+On Wed, 2014-04-02 at 10:20 +0100, Catalin Marinas wrote:
+> On Wed, Apr 02, 2014 at 09:52:02AM +0100, Jon Medhurst (Tixy) wrote:
+> > On Tue, 2014-04-01 at 18:29 +0100, Catalin Marinas wrote:
+> > > On Tue, Apr 01, 2014 at 05:10:57PM +0100, Jon Medhurst (Tixy) wrote:
+> > > > On Mon, 2014-03-31 at 18:52 +0100, Catalin Marinas wrote:
+> > > > > +__dma_inv_range:
+> > > > > +	dcache_line_size x2, x3
+> > > > > +	sub	x3, x2, #1
+> > > > > +	bic	x0, x0, x3
+> > > > > +	bic	x1, x1, x3
+> > > > 
+> > > > Why is the 'end' value in x1 above rounded down to be cache aligned?
+> > > > This means the cache invalidate won't include the cache line containing
+> > > > the final bytes of the region, unless it happened to already be cache
+> > > > line aligned. This looks especially suspect as the other two cache
+> > > > operations added in the same patch (below) don't do that.
+> > > 
+> > > Cache invalidation is destructive, so we want to make sure that it
+> > > doesn't affect anything beyond x1. But you are right, if either end of
+> > > the buffer is not cache line aligned it can get it wrong. The fix is to
+> > > use clean+invalidate on the unaligned ends:
+> > 
+> > Like the ARMv7 implementation does :-) However, I wonder, is it possible
+> > for the Cache Writeback Granule (CWG) to come into play? If the CWG of
+> > further out caches was bigger than closer (to CPU) caches then it would
+> > cause data corruption. So for these region ends, should we not be using
+> > the CWG size, not the minimum D cache line size? On second thoughts,
+> > that wouldn't be safe either in the converse case where the CWG of a
+> > closer cache was bigger. So we would need to first use minimum cache
+> > line size to clean a CWG sized region, then invalidate cache lines by
+> > the same method.
 > 
-> Add support for mapping Exynos Power Management Unit (PMU) base address
-> from device tree. Code will use existing samsung pmu binding information.
-> This patch also adds "get_exynos_pmubase" a helper function to return mapped base
-> address to various other files under "mach-exynos".
+> CWG gives us the maximum size (of all cache levels in the system, even
+> on a different CPU for example in big.LITTLE configurations) that would
+> be evicted by the cache operation. So we need small loops of Dmin size
+> that go over the bigger CWG (and that's guaranteed to be at least Dmin).
+
+Yes, that's what I was getting at.
+
 > 
-> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-exynos/common.h |    2 ++
->  arch/arm/mach-exynos/exynos.c |   44 +++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 46 insertions(+)
+> > But then that leaves a time period where a write can
+> > happen between the clean and the invalidate, again leading to data
+> > corruption. I hope all this means I've either got rather confused or
+> > that that cache architectures are smart enough to automatically cope. 
 > 
-[...]
->  #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
-> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-> index a5e1349..a5127fb 100644
-> --- a/arch/arm/mach-exynos/exynos.c
-> +++ b/arch/arm/mach-exynos/exynos.c
-> @@ -35,6 +35,8 @@
->  #define L2_AUX_VAL 0x7C470001
->  #define L2_AUX_MASK 0xC200ffff
->  
-> +static void __iomem *exynos_pmu_base __initdata;
-> +
->  static struct map_desc exynos4_iodesc[] __initdata = {
->  	{
->  		.virtual	= (unsigned long)S3C_VA_SYS,
-> @@ -245,6 +247,47 @@ void __init exynos_init_late(void)
->  	exynos_pm_init();
->  }
->  
-> +static char const *exynos_dt_pmu_match[] __initconst = {
-> +	"samsung,exynos4210-pmu",
-> +	"samsung,exynos4212-pmu",
-> +	"samsung,exynos4412-pmu",
-> +	"samsung,exynos5250-pmu",
-> +	NULL
-> +};
-> +
-> +static int __init exynos_fdt_map_pmu(unsigned long node,
-> +		const char *uname, int depth, void *data)
-> +{
-> +	struct map_desc iodesc;
-> +	__be32 *reg;
-> +	unsigned long len;
-> +
-> +	if (of_flat_dt_match(node, exynos_dt_pmu_match)) {
-> +		phys_addr_t phys_addr;
-> +		reg = of_get_flat_dt_prop(node, "reg", &len);
-> +		if (reg == NULL || len != (sizeof(unsigned long) * 2))
-> +			return 0;
-> +
-> +		phys_addr = be32_to_cpu(reg[0]);
-> +		iodesc.pfn = __phys_to_pfn(phys_addr);
-> +		iodesc.length = be32_to_cpu(reg[1]) - 1;
-> +		iodesc.virtual = (unsigned long)S5P_VA_PMU;
-> +		iodesc.type = MT_DEVICE;
-> +		iotable_init(&iodesc, 1);
+> You are right. I think having unaligned DMA buffers for inbound
+> transfers is pointless. We can avoid losing data written by another CPU
+> in the same cache line but, depending on the stage of the DMA transfer,
+> it can corrupt the DMA data.
+> 
+> I wonder whether it's easier to define the cache_line_size() macro to
+> read CWG
 
-Are you sure...you need this in addition to ioremap() below ?
-Can't you just use the Linux syscon API ?
-There were some patches posted for syscon to make it available in earlier
-system initialization stage: https://lkml.org/lkml/2014/2/19/218
+That won't work, the stride of cache operations needs to be the
+_minimum_ cache line size, otherwise we might skip over some cache lines
+and not flush them. (We've been hit before by bugs caused by the fact
+that big.LITTLE systems report different minimum i-cache line sizes
+depend on whether you execute on the big or LITTLE cores [1], we need
+the 'real' minimum otherwise things go horribly wrong.)
 
-> +		exynos_pmu_base = ioremap(phys_addr, be32_to_cpu(reg[1]));
-> +		if (WARN_ON(!exynos_pmu_base))
-> +			return -EFAULT;
-> +	}
-> +
-> +	return 0;
-> +}
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149950.html
 
---
-Thanks,
-Sylwester
+>  and assume that the DMA buffers are always aligned,
+
+We can't assume the region in any particular DMA transfer is cache
+aligned, but I agree, that if multiple actors were operating on adjacent
+memory locations in the same cache line, without implementing their own
+coordination then there's nothing the low level DMA code can do to avoid
+data corruption from cache cleaning.
+
+We at least need to make sure that the memory allocation functions used
+for DMA buffers return regions of whole CWG size, to avoid unrelated
+buffers corrupting each other. If I have correctly read
+__dma_alloc_noncoherent and the functions it calls, then it looks like
+buffers are actually whole pages, so that's not a problem.
+
+>  ignoring
+> the invalidation of the unaligned boundaries. This wouldn't be much
+> different from your scenario where the shared cache line is written
+> (just less likely to trigger but still a bug, so I would rather notice
+> this early).
+> 
+> The ARMv7 code has a similar issue, it performs clean&invalidate on the
+> unaligned start but it doesn't move r0, so it goes into the main loop
+> invalidating the same cache line again.
+
+Yes, and as it's missing a dsb could also lead to the wrong behaviour if
+the invalidate was reordered to execute prior to the clean+invalidate on
+the same line. I just dug into git history to see if I could find a clue
+as to how the v7 code came to look like it does, but I see that it's
+been like that since the day it was submitted in 2007, by a certain
+Catalin Marinas ;-)
+
+-- 
+Tixy
+
