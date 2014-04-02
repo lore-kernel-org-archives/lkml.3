@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792AbaDBRG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 13:06:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932484AbaDBRGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 13:06:53 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>, sgrubb@redhat.com
-Subject: [PATCH] integrity: get comm using lock to avoid race in string printing
-Date: Wed,  2 Apr 2014 12:19:51 -0400
-Message-Id: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+	id S932735AbaDBRF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 13:05:56 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:33004 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414AbaDBRFs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 13:05:48 -0400
+From: stefan@agner.ch
+To: shawn.guo@freescale.com, kernel@pengutronix.de, viresh.linux@gmail.com
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stefan@agner.ch
+Subject: [PATCH v2 1/2] ARM: dts: mx5: fix wrong stmpe-ts bindings
+Date: Wed,  2 Apr 2014 19:05:37 +0200
+Message-Id: <94a8b96fe30ce97ec89e49ef6470271888024256.1396457876.git.stefan@agner.ch>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1396457876.git.stefan@agner.ch>
+References: <cover.1396457876.git.stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When task->comm is passed directly to audit_log_untrustedstring() without
-getting a copy or using the task_lock, there is a race that could happen that
-would output a NULL (\0) in the output string that would effectively truncate
-the rest of the report text after the comm= field in the audit, losing fields.
+From: Stefan Agner <stefan@agner.ch>
 
-Use get_task_comm() to get a copy while acquiring the task_lock to prevent
-this and to prevent the result from being a mixture of old and new values of
-comm.
+Fix bindings for STMPE touchscreen controller to match the documented
+bindings and the actual bindings used by the driver.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+Reviewed-by: Marek Vasut <marex@denx.de>
 ---
- security/integrity/integrity_audit.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/arm/boot/dts/imx53-m53evk.dts | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/security/integrity/integrity_audit.c b/security/integrity/integrity_audit.c
-index 85253b5..11706a2 100644
---- a/security/integrity/integrity_audit.c
-+++ b/security/integrity/integrity_audit.c
-@@ -33,6 +33,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
- 			 const char *cause, int result, int audit_info)
- {
- 	struct audit_buffer *ab;
-+	char comm[sizeof(current->comm)];
+diff --git a/arch/arm/boot/dts/imx53-m53evk.dts b/arch/arm/boot/dts/imx53-m53evk.dts
+index 7d304d0..e97f298 100644
+--- a/arch/arm/boot/dts/imx53-m53evk.dts
++++ b/arch/arm/boot/dts/imx53-m53evk.dts
+@@ -165,17 +165,17 @@
+ 		irq-trigger = <0x1>;
  
- 	if (!integrity_audit_info && audit_info == 1)	/* Skip info messages */
- 		return;
-@@ -49,7 +50,7 @@ void integrity_audit_msg(int audit_msgno, struct inode *inode,
- 	audit_log_format(ab, " cause=");
- 	audit_log_string(ab, cause);
- 	audit_log_format(ab, " comm=");
--	audit_log_untrustedstring(ab, current->comm);
-+	audit_log_untrustedstring(ab, get_task_comm(comm, current));
- 	if (fname) {
- 		audit_log_format(ab, " name=");
- 		audit_log_untrustedstring(ab, fname);
+ 		stmpe_touchscreen {
+-			compatible = "stmpe,ts";
++			compatible = "st,stmpe-ts";
+ 			reg = <0>;
+-			ts,sample-time = <4>;
+-			ts,mod-12b = <1>;
+-			ts,ref-sel = <0>;
+-			ts,adc-freq = <1>;
+-			ts,ave-ctrl = <3>;
+-			ts,touch-det-delay = <3>;
+-			ts,settling = <4>;
+-			ts,fraction-z = <7>;
+-			ts,i-drive = <1>;
++			st,sample-time = <4>;
++			st,mod-12b = <1>;
++			st,ref-sel = <0>;
++			st,adc-freq = <1>;
++			st,ave-ctrl = <3>;
++			st,touch-det-delay = <3>;
++			st,settling = <4>;
++			st,fraction-z = <7>;
++			st,i-drive = <1>;
+ 		};
+ 	};
+ 
 -- 
-1.7.1
+1.9.1
 
