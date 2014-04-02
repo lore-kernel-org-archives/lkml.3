@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226AbaDBI7E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 04:59:04 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:51203 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758054AbaDBI7B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 04:59:01 -0400
-X-IronPort-AV: E=Sophos;i="4.97,778,1389715200"; 
-   d="scan'208";a="28776747"
-From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-btrfs@vger.kernel.org>, <1i5t5.duncan@cox.net>,
-        Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-Subject: [PATCH v3] lib: add size unit t/p/e to memparse
-Date: Wed, 2 Apr 2014 16:54:37 +0800
-Message-ID: <1396428877-24089-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.1.4
+	id S1758240AbaDBJBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:01:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42806 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758126AbaDBJBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 05:01:46 -0400
+Date: Wed, 2 Apr 2014 11:01:32 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: William Dauchy <wdauchy@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        "tglx@linutronix.de" <tglx@linutronix.de>, Tony <tony.luck@intel.com>,
+        Gong <gong.chen@linux.intel.com>, linux-tip-commits@vger.kernel.org,
+        William Dauchy <william@gandi.net>
+Subject: Re: [tip:x86/urgent] x86, CMCI: Add proper detection of end of CMCI
+ storms
+Message-ID: <20140402090132.GA16033@pd.tnic>
+References: <tip-27f6c573e0f77f7d1cc907c1494c99a61e48b7d8@git.kernel.org>
+ <CAJ75kXZbvs2mGRQod0df5Xs_AcodsQ=n+030tYawQDrFW01Y2Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.111]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAJ75kXZbvs2mGRQod0df5Xs_AcodsQ=n+030tYawQDrFW01Y2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For modern filesystems such as btrfs, t/p/e size level operations
-are common.
-add size unit t/p/e parsing to memparse
+On Wed, Apr 02, 2014 at 10:51:49AM +0200, William Dauchy wrote:
+> Could you use the following address instead?
+> Reported-by: William Dauchy <william@gandi.net>
 
-Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
----
-changelog
-	v1->v2: replace kilobyte with kibibyte, and others
-	v2->v3: add missing unit "bytes" in comment
----
- lib/cmdline.c | 25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+It is too late for that now as the patch is in -tip already... Unless
+Ingo can still amend it, that is.
 
-diff --git a/lib/cmdline.c b/lib/cmdline.c
-index eb67911..511b9be 100644
---- a/lib/cmdline.c
-+++ b/lib/cmdline.c
-@@ -119,11 +119,17 @@ char *get_options(const char *str, int nints, int *ints)
-  *	@retptr: (output) Optional pointer to next char after parse completes
-  *
-  *	Parses a string into a number.  The number stored at @ptr is
-- *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
-- *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
-- *	1073741824).  If the number is suffixed with K, M, or G, then
-- *	the return value is the number multiplied by one kilobyte, one
-- *	megabyte, or one gigabyte, respectively.
-+ *	potentially suffixed with
-+ *	%K (for kibibytes, or 1024 bytes),
-+ *	%M (for mebibytes, or 1048576 bytes),
-+ *	%G (for gibibytes, or 1073741824 bytes),
-+ *	%T (for tebibytes, or 1099511627776 bytes),
-+ *	%P (for pebibytes, or 1125899906842624 bytes),
-+ *	%E (for exbibytes, or 1152921504606846976 bytes).
-+ *	If the number is suffixed with K, M, G, T, P, E, then
-+ *	the return value is the number multiplied by one kibibyte, one
-+ *	mebibyte, one gibibyte, one tebibyte, one pebibyte, one exbibyte,
-+ *	respectively.
-  */
- 
- unsigned long long memparse(const char *ptr, char **retptr)
-@@ -133,6 +139,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
- 	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
- 
- 	switch (*endptr) {
-+	case 'E':
-+	case 'e':
-+		ret <<= 10;
-+	case 'P':
-+	case 'p':
-+		ret <<= 10;
-+	case 'T':
-+	case 't':
-+		ret <<= 10;
- 	case 'G':
- 	case 'g':
- 		ret <<= 10;
+But, we're working on a real solution for the storm issue and there
+we'll be asking you to test stuff anyway so we'll make sure to use this
+mail address then, ok?
+
+:-)
+
 -- 
-1.8.1.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
