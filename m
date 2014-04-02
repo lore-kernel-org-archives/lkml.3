@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740AbaDBRdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 13:33:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16069 "EHLO mga09.intel.com"
+	id S932748AbaDBReV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 13:34:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45959 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387AbaDBRcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 13:32:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,780,1389772800"; 
-   d="scan'208";a="513460279"
-Message-ID: <533C4474.2060608@linux.intel.com>
-Date: Wed, 02 Apr 2014 10:10:12 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932560AbaDBReT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 13:34:19 -0400
+Date: Wed, 2 Apr 2014 19:34:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [PATCH v2 1/2] procfs: make
+	/proc/*/{stack,syscall,personality} 0400
+Message-ID: <20140402173429.GA31668@redhat.com>
+References: <1395495460-7652-1-git-send-email-tixxdz@opendz.org> <1395495460-7652-2-git-send-email-tixxdz@opendz.org> <20140328153231.93bcad089d9ccc670ee6cc17@linux-foundation.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Peter Anvin <hpa@zytor.com>, Jan Hubicka <hubicka@ucw.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] x86 LTO changes for v3.15
-References: <201403312105.s2VL5AqX010173@terminus.zytor.com>	<CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>	<20140331230347.GH32556@tassilo.jf.intel.com>	<CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>	<CA+55aFxCCOASxhgRfGmNRPgHwZQJ2Q0Oa9-vwpMdmTqx99m26g@mail.gmail.com>	<533B0B5F.2040907@linux.intel.com>	<20140401200145.05e0437e@gandalf.local.home>	<CA+55aFyQHdtgQpnS7ar2db5QoZhmMStH_LgxHvAaCUbVEx_PQQ@mail.gmail.com> <20140402083325.2b6e5d8b@gandalf.local.home>
-In-Reply-To: <20140402083325.2b6e5d8b@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140328153231.93bcad089d9ccc670ee6cc17@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 05:33 AM, Steven Rostedt wrote:
-> On Tue, 1 Apr 2014 17:35:05 -0700
-> 
-> Heh, I know that not having the SYSCALL_DEFINEx() wrappers means that
-> they wont be traced. I must have misunderstood Peter, as I thought he
-> meant if we added SYSCALL_DEFINEx(), that they would break tracing.
-> 
+On 03/28, Andrew Morton wrote:
+>
+> Now for a six-year-late code review:
+>
+> - How the heck can target==current in task_current_syscall()?
+>
+> - Less talk, more action:
+>
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: lib/syscall.c: unexport task_current_syscall()
+>
+> It is only used by procfs and procfs cannot be a module.
+>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+>  lib/syscall.c |    1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff -puN lib/syscall.c~a lib/syscall.c
+> --- a/lib/syscall.c~a
+> +++ a/lib/syscall.c
+> @@ -72,4 +72,3 @@ int task_current_syscall(struct task_str
+>
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(task_current_syscall);
 
-No, I meant that them being missing breaks tracing.
+Well, I guess it was added for external tracing modules like systemtap.
+And in this case target==current is very likely. And for utrace modules,
+but it is dead.
 
-> 
-> Yeah, adding the SYSCALL_DEFINEx() macros around those functions would
-> be good for tracing as well.
-> 
-> Glad I understand you two now ;-)
-> 
+I do not see any usage of task_current_syscall() in
+git://sourceware.org/git/systemtap.git, so this change should not upset
+systemtap at least.
 
-:)
+And if we unexport task_current_syscall(), perhaps we should actually
+lib/syscall.c. proc_pid_syscall() can use syscall_get_*() instead.
+Or at least we can simplify it, I don't think /proc/ actually needs
+wait_task_inactive().
 
-Do you want to do the patch?
-
-	-hpa
-
+Oleg.
 
