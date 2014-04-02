@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065AbaDBTiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:38:08 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:8291 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932768AbaDBTiG (ORCPT
+	id S933058AbaDBTnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:43:00 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50456 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932571AbaDBTm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:38:06 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArobAGxmPFNbtAq4/2dsb2JhbABZgwY7qxmZIgICgSAXdIJmHCMYF2skE4d9Ac8+jHKBfoQ/BJhXAYEzkQaDMjs
-Date: Wed, 2 Apr 2014 21:39:52 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org
-Subject: [PATCH v2] scripts/bootgraph.pl: Add graphic header
-Message-Id: <20140402213952.7c05ff6d77a85f97b3b3e19e@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Apr 2014 15:42:58 -0400
+Date: Wed, 2 Apr 2014 20:42:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140402194247.GJ14763@sirena.org.uk>
+References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
+ <1396433349-31470-2-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AXxEqdD4tcVTjWte"
+Content-Disposition: inline
+In-Reply-To: <1396433349-31470-2-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: To make an enemy, do someone a favor.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2 1/3] regmap: implement LE formatting/parsing for
+ 16/32-bit values.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding -header + help function like other .pl in /scripts.
 
-Cc: linux-kbuild@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- v2: fix some typos
+--AXxEqdD4tcVTjWte
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- scripts/bootgraph.pl | 42 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 40 insertions(+), 2 deletions(-)
+On Wed, Apr 02, 2014 at 06:09:07PM +0800, Xiubo Li wrote:
+> Allow busses to request little endianness formatting and
+> parsing for 16- and 32-bit values. This will be useful to
+> support regmap-mmio.
 
-diff --git a/scripts/bootgraph.pl b/scripts/bootgraph.pl
-index b78fca9..9ca667b 100644
---- a/scripts/bootgraph.pl
-+++ b/scripts/bootgraph.pl
-@@ -38,6 +38,31 @@
- #
- 
- use strict;
-+use Getopt::Long;
-+my $header = 0;
-+
-+sub help {
-+	my $text = << "EOM";
-+Usage:
-+1) dmesg | perl scripts/bootgraph.pl [OPTION] > output.svg
-+2) perl scripts/bootgraph.pl -h
-+
-+Options:
-+	-header	Insert kernel version and date
-+EOM
-+	my $std=shift;
-+	if ($std == 1) {
-+		print STDERR $text;
-+	} else {
-+		print $text;
-+	}
-+	exit;
-+}
-+
-+GetOptions(
-+	'h|help'	=>\&help,
-+	'header'	=>\$header
-+);
- 
- my %start;
- my %end;
-@@ -49,6 +74,11 @@ my $count = 0;
- my %pids;
- my %pidctr;
- 
-+my $headerstep = 20;
-+my $xheader = 15;
-+my $yheader = 25;
-+my $cyheader = 0;
-+
- while (<>) {
- 	my $line = $_;
- 	if ($line =~ /([0-9\.]+)\] calling  ([a-zA-Z0-9\_\.]+)\+/) {
-@@ -112,15 +142,23 @@ if ($count == 0) {
-     print STDERR <<END;
- No data found in the dmesg. Make sure that 'printk.time=1' and
- 'initcall_debug' are passed on the kernel command line.
--Usage:
--      dmesg | perl scripts/bootgraph.pl > output.svg
- END
-+	help(1);
-     exit 1;
- }
- 
- print "<?xml version=\"1.0\" standalone=\"no\"?> \n";
- print "<svg width=\"2000\" height=\"100%\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n";
- 
-+
-+if ($header) {
-+	my $version = `uname -a`;
-+	my $date = `date`;
-+	print "<text transform=\"translate($xheader,$yheader)\">Kernel version: $version</text>\n";
-+	$cyheader = $yheader+$headerstep;
-+	print "<text transform=\"translate($xheader,$cyheader)\">Date: $date</text>\n";
-+}
-+
- my @styles;
- 
- $styles[0] = "fill:rgb(0,0,255);fill-opacity:0.5;stroke-width:1;stroke:rgb(0,0,0)";
--- 
-1.8.4.5
+Applied, thanks.
 
+--AXxEqdD4tcVTjWte
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPGg0AAoJELSic+t+oim9SVgP/1nQeGJX/O+gkZ3kPaC9lTUB
+KRdXCgtnnej+NNGufImwR04ODG8YRpohLmhep8xmV79S3NSsSFbTOW6TSnOuDzPt
+QV9LNr/NVjJCQwN8/VNiYEeTAYxVmtH2a2KJlZg5A+ppdJiefvekK8aENZtULlwn
+4KZbuSqEpr63CzFCKezV/yKzw4Aib/JuW98uAX6kn7vsYFBZIdY7CWkYeA4uld6O
+g9foezINaH+0xY29QvkeH+1GNGKXqwO9pfbVbWUwO++SE2RgYrkqbDrTCvcpeuvK
+kPdAa/KqwOi+uoI+abs1jMT1IpvvS3oMeefOeX1/4yAZdvZ99t+DUfnIxj5PYYVO
+/PLG6+IXWwpZ3gS7FQLs8tRACyVesfh0qy+34Td9IeWM/E2b452DsYQduqeCF9l2
+TfYmJIyPaJZjxHCm+nC76K5kcobedQW97gVSOa0GFkf4Ozioiae+gtz5VIhnWlo6
+2YDDC98/+Xu+HhmZ4BcwR6N4oAUOV7yHKvb6kC1lu03gpJgdqhrx3IfBsaDLOgUn
+at5Kw5TEFh5WKvuglNloaDEI0j76Od3VuromrHIMZnf29TKiqXT6UEjLJp6FGrXM
++nhU4YZ5RwoGuEH7g929udmJfz16RZm1K6eOGBBhddLQVFTqMrnGOhurlKqXa7ar
+EwwZTj//4v+2vDH92+F+
+=L2RS
+-----END PGP SIGNATURE-----
+
+--AXxEqdD4tcVTjWte--
