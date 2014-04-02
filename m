@@ -1,110 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197AbaDBJMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 05:12:39 -0400
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:37711 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835AbaDBJMg convert rfc822-to-8bit (ORCPT
+	id S1758269AbaDBJN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:13:57 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39816 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758147AbaDBJNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 05:12:36 -0400
-From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
-To: "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        Hiroshi Baba <h-baba@ax.jp.nec.com>
-Subject: RE: fail to add 64 VLANs or more when SR-IOV is enabled
-Thread-Topic: fail to add 64 VLANs or more when SR-IOV is enabled
-Thread-Index: Ac9JlO1ffB0oi4AYSwyNh+nra3OjGQErv7Xw
-Date: Wed, 2 Apr 2014 09:11:26 +0000
-Message-ID: <9DE5760509B7974286F38D93BF31DD62C7DF93@BPXM13GP.gisp.nec.co.jp>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.8.69]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Apr 2014 05:13:54 -0400
+Date: Wed, 2 Apr 2014 12:13:34 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: m.chehab@samsung.com, devel@driverdev.osuosl.org, bernat.ada@gmail.com,
+        gregkh@linuxfoundation.org, jarod@wilsonet.com,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        mtrompou@gmail.com, linux-media@vger.kernel.org
+Subject: Re: [PATCH] staging: lirc: fix NULL pointer dereference
+Message-ID: <20140402091334.GV6991@mwanda>
+References: <1671118.MbmRfxWPeo@daeseok-laptop.cloud.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1671118.MbmRfxWPeo@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->-----Original Message-----
->From: Komatsubara Madoka(小松原 円) 
->Sent: Thursday, March 27, 2014 6:11 PM
->To: 'linux-kernel@vger.kernel.org'; 'e1000-devel@lists.sourceforge.net'; 'netdev@vger.kernel.org'
->Cc: Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕司)
->Subject: fail to add 64 VLANs or more when SR-IOV is enabled
->
->Hi all,
->
->
->We're facing an issue that we cannot add 64 VLANs or more per VF.
->When using SR-IOV, pass through a VF to the KVM guest and a lot of VLANs, we could add 63 VLANs using vconfig but we >failed to add 64th VLAN.
->We'd like to use many VLANs on the guest with SR-IOV.
->We're using Intel's 82599EB chip with ixgbe and ixgbevf driver.
->
->Has anyone seen the same issue?
->Is there any idea to solve this?
->
-
-Hi Donald,
-
-Do you also notice this problem?
-We're facing an issue that we can use only 64 VLANs per VF.
-We're using Intel's 82599EB chip with ixgbe and ixgbevf driver.
+On Wed, Apr 02, 2014 at 05:18:39PM +0900, Daeseok Youn wrote:
+> 
+> coccicheck says:
+>  drivers/staging/media/lirc/lirc_igorplugusb.c:226:15-21:
+> ERROR: ir is NULL but dereferenced.
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/media/lirc/lirc_igorplugusb.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/media/lirc/lirc_igorplugusb.c b/drivers/staging/media/lirc/lirc_igorplugusb.c
+> index f508a13..0ef393b 100644
+> --- a/drivers/staging/media/lirc/lirc_igorplugusb.c
+> +++ b/drivers/staging/media/lirc/lirc_igorplugusb.c
+> @@ -223,8 +223,8 @@ static int unregister_from_lirc(struct igorplug *ir)
+>  	int devnum;
+>  
+>  	if (!ir) {
+> -		dev_err(&ir->usbdev->dev,
+> -			"%s: called with NULL device struct!\n", __func__);
+> +		printk(DRIVER_NAME "%s: called with NULL device struct!\n",
+> +		       __func__);
 
 
-Is it subject to the specification restrictions only 64 VLAN can use per VF?
-We'd like to use about 2000 VLAN per VF.
-
-Does it come from hardware?
+It should be pr_err() or something.  But actually "ir" can't be NULL so
+just delete the whole condition.
 
 
+>  		return -EINVAL;
+>  	}
 
-Regards,
-Madoka Komatsubara
-
-
->The below instruction is a reproducing method.
->Create hundred VLANs on the guest.
->
-># for i in `seq 100 199`; do vconfig add eth2 $i; ifconfig 192.168.$i.1/24; done
->
-># vconfig add eth2 100
->Added VLAN with VID == 100 to IF -:eth2:-
->
-># vconfig add eth2 101
->Added VLAN with VID == 101 to IF -:eth2:-
->
-># vconfig add eth2 102
->Added VLAN with VID == 102 to IF -:eth2:-
->
->...
->
-># vconfig add eth2 162
->Added VLAN with VID == 162 to IF -:eth2:-
->
-># vconfig add eth2 163
->ERROR: trying to add VLAN #163 to IF -:eth2:-  error: Permission denied
->SIOCSIFADDR: No such device
->eth2.163: unknown interface: No such device
->
-># vconfig add eth2 164
->ERROR: trying to add VLAN #164 to IF -:eth2:-  error: Permission denied
->SIOCSIFADDR: No such device
->eth2.164: unknown interface: No such device
->
-># vconfig add eth2 165
->ERROR: trying to add VLAN #165 to IF -:eth2:-  error: Permission denied
->SIOCSIFADDR: No such device
->eth2.165: unknown interface: No such device
->
->
->thanks,
->Madoka Komatsubara
+regards,
+dan carpenter
 
