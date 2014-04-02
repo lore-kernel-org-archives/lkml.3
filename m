@@ -1,110 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225AbaDBJHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 05:07:43 -0400
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:64481 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758151AbaDBJHk convert rfc822-to-8bit (ORCPT
+	id S1758261AbaDBJJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:09:50 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:59278 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758104AbaDBJJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 05:07:40 -0400
-From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
-To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        Hiroshi Baba <h-baba@ax.jp.nec.com>
-Subject: RE: Unable to receive multicast packet on VF
-Thread-Topic: Unable to receive multicast packet on VF
-Thread-Index: Ac9KeKSflRJoEdc0T8ah/zzTQlagLwARBM0wAOVYrHA=
-Date: Wed, 2 Apr 2014 09:04:47 +0000
-Message-ID: <9DE5760509B7974286F38D93BF31DD62C7DF52@BPXM13GP.gisp.nec.co.jp>
-References: <9DE5760509B7974286F38D93BF31DD62C7D0B8@BPXM13GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF2228664685D9725C@ORSMSX110.amr.corp.intel.com>
-In-Reply-To: <F6FB0E698C9B3143BDF729DF2228664685D9725C@ORSMSX110.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.8.69]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Apr 2014 05:09:45 -0400
+Message-ID: <533BD3CD.1010905@ahsoftware.de>
+Date: Wed, 02 Apr 2014 11:09:33 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
+ for Marvel 88E1116R PHYs
+References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com>
+In-Reply-To: <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 02.04.2014 02:57, schrieb Florian Fainelli:
+> 2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
+>> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
+>> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
+>> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
+>> was broken such, that it used mdelay() instead of really waiting for a
+>> reset to finish.
+>
+> So the only big difference before
+> 7cd1463664c2a15721ff4ccfb61d4d970815cb3d ("net: mv643xx_eth: use
+> phy_init_hw to reset PHY") is that we waited potentially forever for
+> the BMCR_RESET bit to get cleared, while now, we only wait for up to
+> 500 milliseconds.
+>
+> Could you verify the following two things before your patch gets merged:
+>
+> - how long does it take for your PHY to clear the BMCR_RESET bit, is
+> it more than the allowed time out in
+> drivers/net/phy/phy_device.c::phy_poll_reset
+> - is your PHY powered down (check BMCR_PWRDOWN), if that is the case,
+> we might be hitting some corner case where toggling BMCR_RESET will
+> power it on, but at the expense of waiting longer
 
-> -----Original Message-----
-> From: Skidmore, Donald C [mailto:donald.c.skidmore@intel.com]
-> Sent: Saturday, March 29, 2014 5:54 AM
-> To: Komatsubara Madoka(小松原 円); linux-kernel@vger.kernel.org;
-> e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org
-> Cc: Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕司)
-> Subject: RE: Unable to receive multicast packet on VF
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: Madoka Komatsubara [mailto:m-komatsubara@ab.jp.nec.com]
-> > Sent: Friday, March 28, 2014 4:49 AM
-> > To: linux-kernel@vger.kernel.org; e1000-devel@lists.sourceforge.net;
-> > netdev@vger.kernel.org
-> > Cc: Hiroshi Shimamoto; Hiroshi Baba
-> > Subject: [E1000-devel] Unable to receive multicast packet on VF
-> >
-> > Hi all,
-> >
-> >
-> > We would like to use multicast packet on the guest with Intel 82599EB
-> > SR- IOV.
-> > However, the document says that adding the multicast MAC address to
-> > the VF is allowed during PF initialization only. (Please refer to the
-> > URL below.) It means that we couldn't handle dynamically allocated multicast
-> address.
-> >
-> > On the other hand,
-> > >From the data sheet, 82599EB has Multicast Promiscuous mode.
-> > We could enable it on PF and all multicast packets are delivered to every
-> VF.
-> > That doesn't seem good, because each guest has to handle unnecessary
-> > packet.
-> >
-> > Isn't it good to have a feature to add specific multicast address to VF?
-> > Does anyone know that issue or the solution?
-> >
-> >
-> >
-> > <http://www.intel.com/content/dam/www/public/us/en/documents/datas
-> > heets/82599-10-gbe-controller-datasheet.pdf>
-> >  page585
-> >  section 8.2.3.7.7
-> >  "This table should be initialized by software before transmit and
-> > receive are enabled."
-> >
-> > Regards,
-> > Madoka Komatsubara
-> >
-> 
-> Hi Madoka,
-> 
-> You can see where we are changing the multicast address list in the VF driver
-> in ixgbevf_set_rx_mode().  This not only called via ndo_set_rx_mode but in
-> our up and open calls.   So while it is true this needs to be initialized before
-> transmit and receive are enabled, the value can be changed without requiring
-> the module to be reloaded.
-> 
-> Hope that helps,
-> -Don
+I've  done two tests with pr_info before and after the two resets in 
+m88e1116r_config_init:
+
+with my patch:
+-----------------------
+dmesg | grep -A1 -B1  AHO
+[    1.090099] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
+[    1.175916] AHO: before first reset
+[    1.179613] AHO: after first reset
+[    1.183743] AHO: before second reset
+[    1.187530] AHO: after second reset
+[    1.191905] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC 
+address xx
+--
+[    1.426487] netpoll: netconsole: device eth0 not up yet, forcing it
+[    1.505986] AHO: before first reset
+[    1.509725] AHO: after first reset
+[    1.513899] AHO: before second reset
+[    1.517754] AHO: after second reset
+[    1.521802] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+--
+[   21.372591] Adding 2996116k swap on /dev/sda3.  Priority:-1 extents:1 
+across:2996116k
+[   28.305989] AHO: before first reset
+[   28.306200] AHO: after first reset
+[   28.306936] AHO: before second reset
+[   28.307153] AHO: after second reset
+[   31.509973] mv643xx_eth_port mv643xx_eth_port.0 eth0: link up, 1000 
+Mb/s, full duplex, flow control disabled
+-----------------------
 
 
-Hi Donald,
+with mdelay (the value after reset is what contains MII_BMCR):
 
-Thank you for your information.
-it is currently under consideration.
-I will contact you again later.
+-----------------------
+dmesg | grep -A1 -B1  AHO
+[    1.090072] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
+[    1.175888] AHO: before first reset
+[    1.678806] AHO: after first reset 0x0
+[    1.683281] AHO: before second reset
+[    2.186288] AHO: after second reset 0x0
+[    2.191010] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC 
+address xx
+--
+[    2.426349] netpoll: netconsole: device eth0 not up yet, forcing it
+[    2.505917] AHO: before first reset
+[    2.605824] usb 1-1: new high-speed USB device number 2 using orion-ehci
+--
+[    2.829987] hub 1-1:1.0: 4 ports detected
+[    3.044502] AHO: after first reset 0x0
+[    3.049133] AHO: before second reset
+[    3.126110] usb 1-1.1: new high-speed USB device number 3 using 
+orion-ehci
+--
+[    3.526107] usb 1-1.3: device descriptor read/64, error -32
+[    3.614264] AHO: after second reset 0x0
+[    3.618708] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+--
+[   21.335730] Adding 2996116k swap on /dev/sda3.  Priority:-1 extents:1 
+across:2996116k
+[   28.195942] AHO: before first reset
+[   28.696270] AHO: after first reset 0x800
+[   28.696958] AHO: before second reset
+[   29.197354] AHO: after second reset 0x800
+[  111.612263] RPC: Registered named UNIX socket transport module.
+-----------------------
 
+So we see, the first reset in the last call of m88e1116r_config_init() 
+fails to complete in 500ms and the phy seems to be stuck afterwards, 
+but, for whatever reason, it doesn't need 500ms if mdelay isn't used (if 
+we can trust the timestamps).
+
+(You can also see, I have netconsole enabled using netconsole=... in the 
+kernel cmdline).
+
+That behaviour is reproducible. The first reset in the last call to
+m88e1116r_config_init() always fails if mdelay is used.
 
 Regards,
-Madoka Komatsubara
+
+Alexander Holler
