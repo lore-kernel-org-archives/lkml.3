@@ -1,56 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002AbaDBHE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:04:27 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:40669 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757929AbaDBHE0 (ORCPT
+	id S932083AbaDBHFC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:05:02 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56404 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757929AbaDBHFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:04:26 -0400
+	Wed, 2 Apr 2014 03:05:00 -0400
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: avagin@openvz.org, oleg@redhat.com, roland@redhat.com, mikey@neuling.org,
         benh@kernel.crashing.org,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 1/3] elf: Add some new PowerPC specifc note sections
-Date: Wed,  2 Apr 2014 12:32:22 +0530
-Message-Id: <1396422144-11032-2-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [PATCH 3/3] powerpc, ptrace: Add new ptrace request macro for miscellaneous registers
+Date: Wed,  2 Apr 2014 12:32:24 +0530
+Message-Id: <1396422144-11032-4-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040207-5490-0000-0000-0000054AFA45
+x-cbid: 14040207-7014-0000-0000-0000049BD023
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds four new note sections for transactional memory
-and one note section for some miscellaneous registers. This addition
-of new elf note sections extends the existing elf ABI without affecting
-it in any manner.
+This patch adds following new set of ptrace request macros for miscellaneous
+registers expanding the existing ptrace ABI on PowerPC.
+
+	/* Miscellaneous registers */
+	PTRACE_GETMSCREGS
+	PTRACE_SETMSCREGS
 
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 ---
- include/uapi/linux/elf.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/powerpc/include/uapi/asm/ptrace.h | 10 ++++
+ arch/powerpc/kernel/ptrace.c           | 91 +++++++++++++++++++++++++++++++++-
+ 2 files changed, 100 insertions(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
-index ef6103b..bd59452 100644
---- a/include/uapi/linux/elf.h
-+++ b/include/uapi/linux/elf.h
-@@ -379,6 +379,11 @@ typedef struct elf64_shdr {
- #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
- #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
- #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
-+#define NT_PPC_TM_SPR	0x103		/* PowerPC transactional memory special registers */
-+#define NT_PPC_TM_CGPR	0x104		/* PowerpC transactional memory checkpointed GPR */
-+#define NT_PPC_TM_CFPR	0x105		/* PowerPC transactional memory checkpointed FPR */
-+#define NT_PPC_TM_CVMX	0x106		/* PowerPC transactional memory checkpointed VMX */
-+#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
- #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
- #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
- #define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
+diff --git a/arch/powerpc/include/uapi/asm/ptrace.h b/arch/powerpc/include/uapi/asm/ptrace.h
+index 1a12c36..bce1055 100644
+--- a/arch/powerpc/include/uapi/asm/ptrace.h
++++ b/arch/powerpc/include/uapi/asm/ptrace.h
+@@ -241,6 +241,16 @@ struct pt_regs {
+ #define PTRACE_GETTM_CVMXREGS	0x76
+ #define PTRACE_SETTM_CVMXREGS	0x77
+ 
++/* Miscellaneous registers */
++#define PTRACE_GETMSCREGS      0x78
++#define PTRACE_SETMSCREGS      0x79
++
++/*
++ * XXX: A note to application developers. The existing data layout
++ * of the above four ptrace requests can change when new registers
++ * are available for each category in forthcoming processors.
++ */
++
+ #ifndef __ASSEMBLY__
+ 
+ struct ppc_debug_info {
+diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+index 9fbcb6a..2893958 100644
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -1054,6 +1054,76 @@ static int tm_cvmx_set(struct task_struct *target, const struct user_regset *reg
+ #endif	/* CONFIG_PPC_TRANSACTIONAL_MEM */
+ 
+ /*
++ * Miscellaneous Registers
++ *
++ * struct {
++ * 	unsigned long dscr;
++ *	unsigned long ppr;
++ * 	unsigned long tar;
++ * };
++ */
++static int misc_get(struct task_struct *target, const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   void *kbuf, void __user *ubuf)
++{
++	int ret;
++
++	/* DSCR register */
++	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
++					&target->thread.dscr, 0,
++					sizeof(unsigned long));
++
++	BUILD_BUG_ON(offsetof(struct thread_struct, dscr) + sizeof(unsigned long) +
++		     		sizeof(unsigned long) != offsetof(struct thread_struct, ppr));
++
++	/* PPR register */
++	if (!ret)
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
++					  &target->thread.ppr, sizeof(unsigned long),
++					  2 * sizeof(unsigned long));
++
++	BUILD_BUG_ON(offsetof(struct thread_struct, ppr) + sizeof(unsigned long)
++		     			!= offsetof(struct thread_struct, tar));
++	/* TAR register */
++	if (!ret)
++		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
++					  &target->thread.tar, 2 * sizeof(unsigned long),
++					  3 * sizeof(unsigned long));
++	return ret;
++}
++
++static int misc_set(struct task_struct *target, const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   const void *kbuf, const void __user *ubuf)
++{
++	int ret;
++
++	/* DSCR register */
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++					&target->thread.dscr, 0,
++					sizeof(unsigned long));
++
++	BUILD_BUG_ON(offsetof(struct thread_struct, dscr) + sizeof(unsigned long) +
++		     	sizeof(unsigned long) != offsetof(struct thread_struct, ppr));
++
++	/* PPR register */
++	if (!ret)
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++						&target->thread.ppr, sizeof(unsigned long),
++						2 * sizeof(unsigned long));
++
++	BUILD_BUG_ON(offsetof(struct thread_struct, ppr) + sizeof(unsigned long)
++						!= offsetof(struct thread_struct, tar));
++
++	/* TAR register */
++	if (!ret)
++		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++						&target->thread.tar, 2 * sizeof(unsigned long),
++						3 * sizeof(unsigned long));
++	return ret;
++}
++
++/*
+  * These are our native regset flavors.
+  */
+ enum powerpc_regset {
+@@ -1072,8 +1142,9 @@ enum powerpc_regset {
+ 	REGSET_TM_SPR,		/* TM specific SPR */
+ 	REGSET_TM_CGPR,		/* TM checkpointed GPR */
+ 	REGSET_TM_CFPR,		/* TM checkpointed FPR */
+-	REGSET_TM_CVMX		/* TM checkpointed VMX */
++	REGSET_TM_CVMX,		/* TM checkpointed VMX */
+ #endif
++	REGSET_MISC		/* Miscellaneous */
+ };
+ 
+ static const struct user_regset native_regsets[] = {
+@@ -1130,6 +1201,11 @@ static const struct user_regset native_regsets[] = {
+ 		.get = tm_cvmx_get, .set = tm_cvmx_set
+ 	},
+ #endif
++	[REGSET_MISC] = {
++		.core_note_type = NT_PPC_MISC, .n = 3,
++		.size = sizeof(u64), .align = sizeof(u64),
++		.get = misc_get, .set = misc_set
++	},
+ };
+ 
+ static const struct user_regset_view user_ppc_native_view = {
+@@ -1320,6 +1396,11 @@ static const struct user_regset compat_regsets[] = {
+ 		.get = tm_cvmx_get, .set = tm_cvmx_set
+ 	},
+ #endif
++	[REGSET_MISC] = {
++		.core_note_type = NT_PPC_MISC, .n = 3,
++		.size = sizeof(u64), .align = sizeof(u64),
++		.get = misc_get, .set = misc_set
++	},
+ };
+ 
+ static const struct user_regset_view user_ppc_compat_view = {
+@@ -2269,6 +2350,14 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		return copy_regset_from_user(child, &user_ppc_native_view,
+ 					   REGSET_TM_CVMX, 0, (33 * sizeof(vector128) + sizeof(u32)), datavp);
+ #endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
++	case PTRACE_GETMSCREGS:
++		return copy_regset_to_user(child, &user_ppc_native_view,
++					REGSET_MISC, 0, 3 * sizeof(u64),
++					datavp);
++	case PTRACE_SETMSCREGS:
++		return copy_regset_from_user(child, &user_ppc_native_view,
++					REGSET_MISC, 0, 3 * sizeof(u64),
++					datavp);
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
+ 		break;
 -- 
 1.7.11.7
 
