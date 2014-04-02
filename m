@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278AbaDBNcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 09:32:16 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:39276 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262AbaDBNcL (ORCPT
+	id S932258AbaDBNcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 09:32:10 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:46434 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160AbaDBNcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 09:32:11 -0400
+	Wed, 2 Apr 2014 09:32:04 -0400
 From: Rostislav Lisovy <lisovy@gmail.com>
 To: Johannes Berg <johannes@sipsolutions.net>,
         "John W. Linville" <linville@tuxdriver.com>,
@@ -14,40 +14,41 @@ To: Johannes Berg <johannes@sipsolutions.net>,
 Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
         jan-niklas.meier@volkswagen.de,
         Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [PATCH 4/4] mac80211: Update conf_is_ht() to work properly with 5/10MHz channels
-Date: Wed,  2 Apr 2014 15:31:55 +0200
-Message-Id: <1396445515-5808-5-git-send-email-rostislav.lisovy@fel.cvut.cz>
+Subject: [PATCH 0/4 v2] cfg80211: The very first steps to support 5/10MHz channels in 5.9Ghz band
+Date: Wed,  2 Apr 2014 15:31:51 +0200
+Message-Id: <1396445515-5808-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396445515-5808-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-References: <1396445515-5808-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The channels with 5/10MHz bandwidth are not HT. We have to
-reflect this in conf_is_ht() function which returns whether the
-particular channel is HT or not.
+The IEEE 802.11p amendment specifies usage of 5 and 10 MHz wide
+channels in 5.9GHz band for vehicular environment. This patch-set
+adds new channel attributes holding the information about the
+prohibited bandwidths. This is meant to be used mainly with
+channels in 5.9GHz band in future implementation of 802.11p.
 
-Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
----
- include/net/mac80211.h | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Changes since v1:
+ * Rebased to 3.14
+ * Squashed patches 1+2
+ * All patches have long commit message
 
-diff --git a/include/net/mac80211.h b/include/net/mac80211.h
-index f4ab2fb..f56e45b 100644
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -4585,7 +4585,9 @@ conf_is_ht40(struct ieee80211_conf *conf)
- static inline bool
- conf_is_ht(struct ieee80211_conf *conf)
- {
--	return conf->chandef.width != NL80211_CHAN_WIDTH_20_NOHT;
-+	return (conf->chandef.width != NL80211_CHAN_WIDTH_5) &&
-+		(conf->chandef.width != NL80211_CHAN_WIDTH_10) &&
-+		(conf->chandef.width != NL80211_CHAN_WIDTH_20_NOHT);
- }
- 
- static inline enum nl80211_iftype
+
+Rostislav Lisovy (4):
+  cfg80211: Add attributes describing prohibited channel bandwidth
+  cfg80211: Take the BW restrictions into account when checking the
+    channel
+  cfg80211: Use 5MHz bandwidth by default when checking usable channels
+  mac80211: Update conf_is_ht() to work properly with 5/10MHz channels
+
+ include/net/cfg80211.h       |  6 ++++++
+ include/net/mac80211.h       |  4 +++-
+ include/uapi/linux/nl80211.h |  6 ++++++
+ net/wireless/chan.c          |  2 ++
+ net/wireless/nl80211.c       | 13 +++++++++++++
+ net/wireless/reg.c           | 22 +++++++++++++++-------
+ 6 files changed, 45 insertions(+), 8 deletions(-)
+
 -- 
 1.9.1
 
