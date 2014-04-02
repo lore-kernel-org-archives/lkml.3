@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845AbaDBNy2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 09:54:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60673 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758600AbaDBNyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 09:54:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,780,1389772800"; 
-   d="scan'208";a="513308886"
-Message-ID: <533C1919.3010506@intel.com>
-Date: Wed, 02 Apr 2014 17:05:13 +0300
-From: Mathias Nyman <mathias.nyman@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1758860AbaDBNzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 09:55:09 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:39756 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758600AbaDBNzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 09:55:06 -0400
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v2 RESEND 4/4] xhci: Use pci_enable_msix_exact() instead
- of pci_enable_msix()
-References: <cover.1394128952.git.agordeev@redhat.com> <606a52afdccf627b6273379b21daffc460b9559a.1394128952.git.agordeev@redhat.com> <20140306215646.GA23294@xanatos> <20140325142730.GA4518@dhcp-26-207.brq.redhat.com> <20140402114127.GA10007@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140402114127.GA10007@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACAvsv6eCoWEU7ZNd5158-V3n=ZVo5O04CZa2EWE78e_tZEXPA@mail.gmail.com>
+References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
+ <1395650554-31925-10-git-send-email-acourbot@nvidia.com> <CACAvsv6eCoWEU7ZNd5158-V3n=ZVo5O04CZa2EWE78e_tZEXPA@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 2 Apr 2014 22:54:45 +0900
+Message-ID: <CAAVeFuLbwqGRbE1LFJh54_4FE601w=czHOfBB=ETZ0RtFqdicQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH 09/12] drm/nouveau/graph: pad firmware code at
+ load time
+To: Ben Skeggs <skeggsb@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 02:41 PM, Alexander Gordeev wrote:
-> On Tue, Mar 25, 2014 at 03:27:30PM +0100, Alexander Gordeev wrote:
->> On Thu, Mar 06, 2014 at 01:56:46PM -0800, Sarah Sharp wrote:
->>> What do you mean by this sentence?  Are you fixing some bug in those two
->>> functions, or just cleaning up how they look?  Either way, this should
->>> really be two patches.
->> Hi Sarah,
+On Wed, Mar 26, 2014 at 1:22 PM, Ben Skeggs <skeggsb@gmail.com> wrote:
+> On Mon, Mar 24, 2014 at 6:42 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> Pad the microcode to a multiple of 0x40, otherwise firmware will fail to
+>> run from non-prepadded firmware files.
 >>
->> Any feedback on v2?
->
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> ---
+>>  drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c | 4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+>> index f997a18f5760..367e72daf8b1 100644
+>> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+>> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+>> @@ -768,6 +768,10 @@ nvc0_graph_init_fw(struct nvc0_graph_priv *priv, u32 fuc_base,
+>>                         nv_wr32(priv, fuc_base + 0x0188, i >> 6);
+>>                 nv_wr32(priv, fuc_base + 0x0184, code->data[i]);
+>>         }
+>> +
+>> +       /* code must be padded to 0x40 */
+>> +       for (; i < (((code->size / 4) + 0x3f) & ~0x3f); i++)
+> "for (; i & 0x3f; i++)" would work just as well :)
 
-Hi
-
-Thanks for the patches,
-I'll  queue patch 2/2  for usb-linus once 3.15-rc1 comes out.
-
-But I'm going to omit patch 1/2 because it doesn't really improve
-code readability and doesn't change functionality.
-At this stage I'd like to avoid extra patches as much as possible.
-And besides, it adds one extra line of code
-
--Mathias
+Indeed. >_<
