@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665AbaDBLvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:51:47 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:33529 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758518AbaDBLvp (ORCPT
+	id S1758600AbaDBL5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:57:53 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48094 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758426AbaDBL5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:51:45 -0400
-Message-ID: <533BF9CE.3050302@cogentembedded.com>
-Date: Wed, 02 Apr 2014 15:51:42 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 2 Apr 2014 07:57:51 -0400
+Date: Wed, 2 Apr 2014 04:57:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mdr@sgi.com, Ingo Molnar <mingo@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, pazke@donpac.ru,
+        David Rientjes <rientjes@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 old platform removal for v3.15
+Message-ID: <20140402115746.GL4284@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <201404011852.s31Iqh12025199@terminus.zytor.com>
+ <CAMuHMdUyG1fnhiTCiVpJd2m=DuYGMY92ydGVJhYw1ZCGtzxmRg@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
-CC: netdev@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>, stable@vger.kernel.org
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
- for Marvel 88E1116R PHYs
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
-In-Reply-To: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUyG1fnhiTCiVpJd2m=DuYGMY92ydGVJhYw1ZCGtzxmRg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040211-0928-0000-0000-000000DA641B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Apr 02, 2014 at 10:01:00AM +0200, Geert Uytterhoeven wrote:
+> On Tue, Apr 1, 2014 at 8:52 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> > David Rientjes (2):
+> >       x86, apic: Remove support for ia32-based Unisys ES7000
+> >       x86, apic: Remove support for IBM Summit/EXA chipset
+> >
+> > H. Peter Anvin (2):
+> >       x86, platforms: Remove SGI Visual Workstation
+> >       x86, platforms: Remove NUMAQ
+> 
+> Nice try on April the 1st! Nobody's gonna notice ;-)
 
-On 02-04-2014 3:55, Alexander Holler wrote:
+No April fools in NUMAQ -- I gave it my Acked-by some time back.  ;-)
 
-> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
-> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
-> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
-> was broken such, that it used mdelay() instead of really waiting for a
-> reset to finish.
+But yes, I don't know of anyone still running recent Linux on one of
+those 15-year-old NUMAQ boxes, which by today's standards are old, slow,
+and power-hungry.
 
-> The effect was that the ethernet on my Kirkwood 88F6281 based device didn't
-> come up anymore (no carrier).
+							Thanx, Paul
 
-> Fix this by waiting for a reset to finish before proceeding further.
-
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-
-> Cc: Michal Simek <michal.simek@xilinx.com>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: <stable@vger.kernel.org>
-> ---
->   drivers/net/phy/marvell.c | 8 ++++++--
->   1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
-> index bd37e45..5b84808 100644
-> --- a/drivers/net/phy/marvell.c
-> +++ b/drivers/net/phy/marvell.c
-> @@ -396,7 +396,9 @@ static int m88e1116r_config_init(struct phy_device *phydev)
->   	if (err < 0)
->   		return err;
->
-> -	mdelay(500);
-> +	do
-> +		temp = phy_read(phydev, MII_BMCR);
-> +	while (temp & BMCR_RESET);
-
-    I don't understand what's the point of this BMCR reset if phy_init_hw() 
-will have already done it before calling phy_init_hw().
-
-> @@ -429,7 +431,9 @@ static int m88e1116r_config_init(struct phy_device *phydev)
->   	if (err < 0)
->   		return err;
->
-> -	mdelay(500);
-> +	do
-> +		temp = phy_read(phydev, MII_BMCR);
-> +	while (temp & BMCR_RESET);
-
-    Not clear why it's necessary to reset one more time... Also, tight loop 
-without a timeout (0.5 sec, specified by IEEE 802.3) doesn't look good. The 
-comment above phy_poll_reset() suggests that it could be used in the PHY 
-drivers as well. Florian?
-
-WBR, Sergei
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> 
 
