@@ -1,106 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022AbaDBE1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 00:27:22 -0400
-Received: from gproxy3-pub.mail.unifiedlayer.com ([69.89.30.42]:58976 "HELO
-	gproxy3-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751552AbaDBE1U (ORCPT
+	id S1754879AbaDBEgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 00:36:33 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:32275 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118AbaDBEgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 00:27:20 -0400
-X-Authority-Analysis: v=2.1 cv=ZpR+dbLG c=1 sm=1 tr=0
- a=RxOGq9YxerWOMOBYTEp+bA==:117 a=RxOGq9YxerWOMOBYTEp+bA==:17 a=cNaOj0WVAAAA:8
- a=f5113yIGAAAA:8 a=8Ta_JQFhb8AA:10 a=bbmU6RERmxsA:10 a=8nJEP1OIZ-IA:10
- a=Guo9nE61AAAA:8 a=lM4n3qrjNgMA:10 a=emhf11hzAAAA:8 a=pgNxlGAFGiNpb-XTzfcA:9
- a=wPNLvfGTeEIA:10
-Message-ID: <1396412820.3383.111.camel@Wailaba2>
-Subject: Re: [PATCH] [media] uvcvideo: Fix clock param realtime setting
-From: Olivier Langlois <olivier@trillion01.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: m.chehab@samsung.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stable <stable@vger.kernel.org>,
-        ffmpeg-devel@ffmpeg.com
-Date: Wed, 02 Apr 2014 00:27:00 -0400
-In-Reply-To: <1711768.4zHOjaJUg6@avalon>
-References: <1395985358-17047-1-git-send-email-olivier@trillion01.com>
-	 <2051908.tTlcvVaa3D@avalon> <1396153381.3383.66.camel@Wailaba2>
-	 <1711768.4zHOjaJUg6@avalon>
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.179.63.169 authed with olivier@trillion01.com}
+	Wed, 2 Apr 2014 00:36:31 -0400
+X-AuditID: cbfee68e-b7f566d000002344-fe-533b93cdc5e9
+From: Jungseok Lee <jays.lee@samsung.com>
+To: "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, sungjinn.chung@samsung.com,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>
+References: <011801cf4d4c$f7ba51f0$e72ef5d0$@samsung.com>
+ <20140401124606.GA7135@phenom.dumpdata.com>
+In-reply-to: <20140401124606.GA7135@phenom.dumpdata.com>
+Subject: Re: [PATCH] swiotlb: Correct kernel command line handler
+Date: Wed, 02 Apr 2014 13:36:29 +0900
+Message-id: <004c01cf4e2d$1d84a1c0$588de540$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: ko
+Thread-index: AQH/eYOrp7F4fAtMYt33A7B+7Ps6dgHNl7kWmo7wVoA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t8zI92zk62DDba1ilssW/yU0eLyrjls
+	FjPO72Oy+DBjJaMDi8fHp7dYPPq2rGL0+LxJLoA5issmJTUnsyy1SN8ugSvj9fY3LAUfRSte
+	zj/F0sA4SbCLkZNDQsBE4syZtSwQtpjEhXvr2UBsIYFljBILTjDC1HT+/wZkcwHFFzFKdL5f
+	xwzh/GGUaN/4gxmkik1AU+LR3R52EFsEqONI1y+wqcwC5RKz/l5kh5iaLjFzXgdYnFPAQuLa
+	/kNMILawgKPEzhsdYJtZBFQllnX/ZQWxeQUsJU7O7GeEsAUlfky+BzVTS2L9zuNMELa8xOY1
+	b5khLlWQ2HH2NSNEXERi34t3jBD3WEmsP/aVHeRoCYFD7BKfrv1nglgmIPFt8iGgoRxACVmJ
+	TQeg5khKHFxxg2UCo8QsJKtnIVk9C8nqWUjWLWBkWcUomlqQXFCclF5kpFecmFtcmpeul5yf
+	u4kREo19OxhvHrA+xJgMtH4is5Rocj4wmvNK4g2NzYwsTE1MjY3MLc1IE1YS5130MCkIGL6J
+	JanZqakFqUXxRaU5qcWHGJk4OKUaGP0Eth2I9drk83jJWu8sM2+N8gKjuBnJCZcTlLY/bJgz
+	5fL2YI7HYp0vEl5dlcv93fv9XQPDuRMF9d7pb2YW3Lv2aNEvhU3qDh8XX3G48vGUx83Hba2M
+	su31l108Ki5nle8s2CO4Un76c//4B9cjVjJu0vKb5BDxVzrzxp8dj/SNLr7uig9pMVViKc5I
+	NNRiLipOBAAVFL1F3AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAd2zk62DDe7dELJYtvgpo8XlXXPY
+	LGac38dk8WHGSkYHFo+PT2+xePRtWcXo8XmTXABzVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8
+	c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QOiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6
+	viFBcD1GBmggYR1jxuvtb1gKPopWvJx/iqWBcZJgFyMnh4SAiUTn/2+MELaYxIV769m6GLk4
+	hAQWMUp0vl/HDOH8YZRo3/iDGaSKTUBT4tHdHnYQWwSo+0jXLxYQm1mgXGLW34tgcSGBdImZ
+	8zrA4pwCFhLX9h9iArGFBRwldt7oYAOxWQRUJZZ1/2UFsXkFLCVOzuxnhLAFJX5Mvgc1U0ti
+	/c7jTBC2vMTmNW+ZIS5VkNhx9jUjRFxEYt+Ld4wQ91hJrD/2lX0Co9AsJKNmIRk1C8moWUja
+	FzCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjvZn0jsYVzVYHGIU4GBU4uE9cN4qWIg1
+	say4MvcQowQHs5IIL+ck62Ah3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmorySeENjEzMj
+	SyMzCyMTc3PShJXEeQ+2WgcCQzexJDU7NbUgtQhmCxMHp1QD4+LdalXr70Vt3FG4XVXlm81x
+	9yWLinheplw/alLKMf197JoUE277JQbxT5oyJ+g4PfvxnFdFRLpF8qdFm3LyugmTfTIev9FV
+	UZ2W+3dv9OG9n3amBpyvnfntoI9yRfkEqU5X0+xe/lkfWVbX10kq7N60erbDjUcP3kizdU/Z
+	GemlvIJldt6REiWW4oxEQy3mouJEADBslp86AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-On Tue, 2014-04-01 at 15:49 +0200, Laurent Pinchart wrote:
-> Hi Olivier,
-> 
-> On Sunday 30 March 2014 00:23:01 Olivier Langlois wrote:
-> > Hi Laurent,
-> > 
-> > > > Yes. ffmpeg uses wall clock time to create timestamps for audio packets
-> > > > from ALSA device.
-> > > 
-> > > OK. I suppose I shouldn't drop support for the realtime clock like I
-> > > wanted to then :-)
-> > > 
-> > > > There is a bug in ffmpeg describing problems to synchronize audio and
-> > > > the video from a v4l2 webcam.
-> > > > 
-> > > > https://trac.ffmpeg.org/ticket/692
-> > > > 
-> > > > To workaround this issue, ffmpeg devs added a switch to convert back
-> > > > 
-> > > > monotonic to realtime. From ffmpeg/libavdevice/v4l2.c:
-> > > >   -ts                <int>        .D.... set type of timestamps for
-> > > >                                          grabbed frames (from 0 to 2)
-> > > >                                          (default 0)
-> > > >      default                      .D.... use timestamps from the kernel
-> > > >      abs                          .D.... use absolute timestamps (wall
-> > > >                                          clock)
-> > > >      mono2abs                     .D.... force conversion from monotonic
-> > > >                                          to absolute timestamps
-> > > > 
-> > > > If the v4l2 driver is able to send realtime ts, it is easier synchronize
-> > > > in userspace if all inputs use the same clock.
-> > > 
-> > > That might be a stupid question, but shouldn't ALSA use the monotonic
-> > > clock instead ?
-> > 
-> > I think that I have that answer why ffmpeg use realtime clock for ALSA data.
-> > In fact ffmpeg uses realtime clock for every data coming from capture
-> > devices and the purpose is to be able to seek into the recorded stream by
-> > using the date where the recording occured. Same principle than a camera
-> > recording dates when pictures are taken.
+On Tuesday, April 01, 2014 9:46 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Apr 01, 2014 at 10:51:58AM +0900, Jungseok Lee wrote:
+> > This patch corrects kernel command line handler when io_tlb_nslabs is
+> > set to 0.
 > >
-> > now a tougher question is whether or not it is up to the driver to provide
-> > these realtime ts.
+> > A current implementation allocates default size memory (64MB) when
+> > 0 is given to io_tlb_nslabs ("swiotlb=0") by kernel command line.
+> > In other words, memory is allocated unintentionally.
 > 
-> It makes sense to associate a wall time with recorded streams for that 
-> purpose, but synchronization should in my opinion be performed using the 
-> monotonic clock, as the wall time can jump around. I believe drivers should 
-> provide monotonic timestamps only. However, given that the uvcvideo driver has 
-> the option of providing wall clock timestamps, that option should work, so 
-> your patch makes sense. I'd still like to remove support for the wall clock 
-> though, but I don't want to break userspace. ffmpeg should be fixed, 
-> especially given that most V4L devices provide monotonic timestamps only.
-> 
-Please do not stop yourself to remove realtime ts support in your driver
-because that would not break ffmpeg, IMHO. It is just me that have tried
-to leverage options offered by your driver to remove the need to use
-ffmpeg workaround for a sync issue. I apparently have been the first
-ffmpeg user to try out!
+> What are the other IOMMUs that end up taking over the DMA ops?
 
-I am currently in the process to contribute the introduction of using
-CLOCK_MONOTONIC inside ffmpeg. CCing their list because I think your
-reply is relevant to the discussion we have on the topic there at the
-moment.
+I think that no other IOMMUs take over it on ARM64 system, except Xen.
 
-thank you,
-Olivier
+> Or do you end up with no DMA ops?
 
+I focus on ARM64 system which uses swiotlb as default DMA ops.
+
+If some ARM64 platforms would like to use memory only from
+__get_free_pages in swiotlb_alloc_coherent function, an
+interface would be needed to configure reserved memory size.
+
+Thus, I add it to kernel command line handler.
+
+Best Regards
+Jungseok Lee
+
+> >
+> > Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
+> > Signed-off-by: Sungjinn Chung <sungjinn.chung@samsung.com>
+> > ---
+> >  lib/swiotlb.c |    8 ++++++--
+> >  1 file changed, 6 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/lib/swiotlb.c b/lib/swiotlb.c index b604b83..9fe9f71
+> > 100644
+> > --- a/lib/swiotlb.c
+> > +++ b/lib/swiotlb.c
+> > @@ -55,6 +55,8 @@
+> >
+> >  int swiotlb_force;
+> >
+> > +static int swiotlb_no_use;
+> > +
+> >  /*
+> >   * Used to do a quick range check in swiotlb_tbl_unmap_single and
+> >   * swiotlb_tbl_sync_single_*, to see if the memory was in fact
+> > allocated by this @@ -102,6 +104,8 @@ setup_io_tlb_npages(char *str)
+> >  		io_tlb_nslabs = simple_strtoul(str, &str, 0);
+> >  		/* avoid tail segment of size < IO_TLB_SEGSIZE */
+> >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
+> > +		if (!io_tlb_nslabs)
+> > +			swiotlb_no_use = 1;
+> >  	}
+> >  	if (*str == ',')
+> >  		++str;
+> > @@ -212,7 +216,7 @@ swiotlb_init(int verbose)
+> >  	unsigned char *vstart;
+> >  	unsigned long bytes;
+> >
+> > -	if (!io_tlb_nslabs) {
+> > +	if (!swiotlb_no_use && !io_tlb_nslabs) {
+> >  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
+> >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
+> >  	}
+> > @@ -244,7 +248,7 @@ swiotlb_late_init_with_default_size(size_t default_size)
+> >  	unsigned int order;
+> >  	int rc = 0;
+> >
+> > -	if (!io_tlb_nslabs) {
+> > +	if (!swiotlb_no_use && !io_tlb_nslabs) {
+> >  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
+> >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
+> >  	}
+> > --
+> > 1.7.10.4
+> >
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in the body of a message
+> to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
