@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853AbaDBP7G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 11:59:06 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:44754 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758702AbaDBP7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 11:59:04 -0400
-Date: Wed, 2 Apr 2014 11:58:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Loc Ho <lho@apm.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH libata/for-3.15-fixes] libata: drop COMPILE_TEST from
- AHCI_XGENE
-Message-ID: <20140402155859.GB16631@htj.dyndns.org>
-References: <20140401184916.GA21938@kroah.com>
- <CA+55aFwf6e-hkF+4ND0DaAKDmLX8P8+xWCgs5BRnARdSsq9tpw@mail.gmail.com>
- <20140402022858.GA4901@kroah.com>
- <CAPw-ZTnb4Ugjo_63HG0DmGaqki6riPk1S13Nx8xF_9gdNu17wA@mail.gmail.com>
- <533C0B45.4050909@ti.com>
- <CAPw-ZTn3_oEMFFNua1zoDibOBJOLC92k7zdc8Do+hk3Ai-BSaw@mail.gmail.com>
- <20140402155357.GA16631@htj.dyndns.org>
+	id S1758890AbaDBP7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 11:59:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758702AbaDBP7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 11:59:36 -0400
+Date: Wed, 2 Apr 2014 16:58:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matthew Dempsky <mdempsky@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ptrace: Fix fork event messages across pid
+	namespaces
+Message-ID: <20140402145850.GB7332@redhat.com>
+References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com> <1396391358-22367-1-git-send-email-mdempsky@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140402155357.GA16631@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1396391358-22367-1-git-send-email-mdempsky@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 11:53:57AM -0400, Tejun Heo wrote:
->  config AHCI_XGENE
->  	tristate "APM X-Gene 6.0Gbps AHCI SATA host controller support"
-> -	depends on ARM64 || COMPILE_TEST
-> +	depends on ARM64
->  	select PHY_XGENE
+On 04/01, Matthew Dempsky wrote:
+>
+> @@ -1605,10 +1605,12 @@ long do_fork(unsigned long clone_flags,
+>  	 */
+>  	if (!IS_ERR(p)) {
+>  		struct completion vfork;
+> +		struct pid *pid;
+>
+>  		trace_sched_process_fork(current, p);
+>
+> -		nr = task_pid_vnr(p);
+> +		pid = get_task_pid(p, PIDTYPE_PID);
 
-So, an alternative would be doing
+So you decided to use get_pid/put_pid ;) Honestly, I'd prefer to just
+calculate "pid_t trace_pid" before wake_up_new_task(), but I won't
+argue. Plus this way the race window becomes really small, OK.
 
-	select PHY_XGENE if ARM64
+> +		if (unlikely(trace)) {
+> +			/*
+> +			 * We want to report the child's pid as seen from the
+> +			 * tracer's pid namespace.
+> +			 * FIXME: We still risk sending a bogus event message if
+> +			 * debuggers from different pid namespaces detach and
+> +			 * reattach between rcu_read_unlock() and ptrace_stop().
+> +			 */
+> +			unsigned long message;
+> +			rcu_read_lock();
+> +			message = pid_nr_ns(pid,
+> +				task_active_pid_ns(current->parent));
+> +			rcu_read_unlock();
+> +			ptrace_event(trace, message);
+> +		}
+>
+>  		if (clone_flags & CLONE_VFORK) {
+> -			if (!wait_for_vfork_done(p, &vfork))
+> -				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
+> +			if (!wait_for_vfork_done(p, &vfork)) {
+> +				/* See comment above about pid namespaces. */
+> +				unsigned long message;
+> +				rcu_read_lock();
+> +				message = pid_nr_ns(pid,
+> +					task_active_pid_ns(current->parent));
+> +				rcu_read_unlock();
+> +				ptrace_event(PTRACE_EVENT_VFORK_DONE, message);
+> +			}
 
-butI don't think it'd be worthwhile to go above and beyond for
-COMPILE_TEST and it might cause other linkage issues down the road.
+OK, but may I suggest you to make a helper? Note that the code under
+"if (trace)" and "if (CLONE_VFORK)" is the same. Even the comment above
+equally applies to the CLONE_VFORK branch.
 
-Thanks.
+Especially because this code needs a fix. Yes, rcu_read_lock() should
+be enough to ensure that ->parent and its namespace (if !NULL) can not
+go away, but task_active_pid_ns() can return NULL release_task(->parent)
+was already (although this race is pure theoretical). So this helper
+should also check it is !NULL under rcu_read_lock(), afaics.
 
--- 
-tejun
+(Hmm... off-topic, but get_pidns looks buggy by the same reason, I'll
+ send a fix).
+
+And I forgot to mention, please send v5 to akpm. We usually route ptrace
+patches via -mm tree.
+
+Oleg.
+
