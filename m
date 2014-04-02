@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030293AbaDBUQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:16:28 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42877 "EHLO
+	id S1030273AbaDBUQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:16:27 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42871 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758936AbaDBUNb (ORCPT
+	by vger.kernel.org with ESMTP id S1758934AbaDBUNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 37/40] net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
-Date: Wed,  2 Apr 2014 22:13:23 +0200
-Message-Id: <c41e5a0f38a367b2ba343ba87b17e7ff9e9be72f.1396469191.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Holger Kiehl <Holger.Kiehl@dwd.de>, Christoph Lameter <cl@linux.com>,
+        Rafael Aquini <aquini@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 39/40] mm: close PageTail race
+Date: Wed,  2 Apr 2014 22:13:25 +0200
+Message-Id: <35654f1f0ba5123fa1a4aaebee4c02550ee4d11e.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -24,47 +30,243 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: David Rientjes <rientjes@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a79121d3b57e7ad61f0b5d23eae05214054f3ccd upstream.
+commit 668f9abbd4334e6c29fa8acd71635c4f9101caa7 upstream.
 
-Bit 3 of the MVNETA_GMAC_CTRL_2 is actually used to enable the PCS,
-not the PSC: there was a typo in the name of the define, which this
-commit fixes.
+Commit bf6bddf1924e ("mm: introduce compaction and migration for
+ballooned pages") introduces page_count(page) into memory compaction
+which dereferences page->first_page if PageTail(page).
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This results in a very rare NULL pointer dereference on the
+aforementioned page_count(page).  Indeed, anything that does
+compound_head(), including page_count() is susceptible to racing with
+prep_compound_page() and seeing a NULL or dangling page->first_page
+pointer.
+
+This patch uses Andrea's implementation of compound_trans_head() that
+deals with such a race and makes it the default compound_head()
+implementation.  This includes a read memory barrier that ensures that
+if PageTail(head) is true that we return a head page that is neither
+NULL nor dangling.  The patch then adds a store memory barrier to
+prep_compound_page() to ensure page->first_page is set.
+
+This is the safest way to ensure we see the head page that we are
+expecting, PageTail(page) is already in the unlikely() path and the
+memory barriers are unfortunately required.
+
+Hugetlbfs is the exception, we don't enforce a store memory barrier
+during init since no race is possible.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rafael Aquini <aquini@redhat.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/marvell/mvneta.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/aoe/aoecmd.c      |  4 ++--
+ drivers/vfio/vfio_iommu_type1.c |  4 ++--
+ fs/proc/page.c                  |  2 +-
+ include/linux/huge_mm.h         | 18 ------------------
+ include/linux/mm.h              | 14 ++++++++++++--
+ mm/ksm.c                        |  2 +-
+ mm/memory-failure.c             |  2 +-
+ mm/page_alloc.c                 |  4 +++-
+ mm/swap.c                       |  4 ++--
+ 9 files changed, 24 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index e35bac7cfdf1..5cdd2b2f18c5 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -121,7 +121,7 @@
- #define      MVNETA_GMAC_MAX_RX_SIZE_MASK        0x7ffc
- #define      MVNETA_GMAC0_PORT_ENABLE            BIT(0)
- #define MVNETA_GMAC_CTRL_2                       0x2c08
--#define      MVNETA_GMAC2_PSC_ENABLE             BIT(3)
-+#define      MVNETA_GMAC2_PCS_ENABLE             BIT(3)
- #define      MVNETA_GMAC2_PORT_RGMII             BIT(4)
- #define      MVNETA_GMAC2_PORT_RESET             BIT(6)
- #define MVNETA_GMAC_STATUS                       0x2c10
-@@ -688,7 +688,7 @@ static void mvneta_port_sgmii_config(struct mvneta_port *pp)
- 	u32 val;
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index d2515435e23f..8fb295350efb 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -905,7 +905,7 @@ bio_pageinc(struct bio *bio)
+ 		/* Non-zero page count for non-head members of
+ 		 * compound pages is no longer allowed by the kernel.
+ 		 */
+-		page = compound_trans_head(bv->bv_page);
++		page = compound_head(bv->bv_page);
+ 		atomic_inc(&page->_count);
+ 	}
+ }
+@@ -918,7 +918,7 @@ bio_pagedec(struct bio *bio)
+ 	int i;
  
- 	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--	val |= MVNETA_GMAC2_PSC_ENABLE;
-+	val |= MVNETA_GMAC2_PCS_ENABLE;
- 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
+ 	bio_for_each_segment(bv, bio, i) {
+-		page = compound_trans_head(bv->bv_page);
++		page = compound_head(bv->bv_page);
+ 		atomic_dec(&page->_count);
+ 	}
+ }
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+index 4fb7a8f83c8a..54af4e933695 100644
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -186,12 +186,12 @@ static bool is_invalid_reserved_pfn(unsigned long pfn)
+ 	if (pfn_valid(pfn)) {
+ 		bool reserved;
+ 		struct page *tail = pfn_to_page(pfn);
+-		struct page *head = compound_trans_head(tail);
++		struct page *head = compound_head(tail);
+ 		reserved = !!(PageReserved(head));
+ 		if (head != tail) {
+ 			/*
+ 			 * "head" is not a dangling pointer
+-			 * (compound_trans_head takes care of that)
++			 * (compound_head takes care of that)
+ 			 * but the hugepage may have been split
+ 			 * from under us (and we may not hold a
+ 			 * reference count on the head page so it can
+diff --git a/fs/proc/page.c b/fs/proc/page.c
+index b8730d9ebaee..2a8cc94bb641 100644
+--- a/fs/proc/page.c
++++ b/fs/proc/page.c
+@@ -121,7 +121,7 @@ u64 stable_page_flags(struct page *page)
+ 	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
+ 	 * sure a given page is a thp, not a non-huge compound page.
+ 	 */
+-	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
++	else if (PageTransCompound(page) && PageLRU(compound_head(page)))
+ 		u |= 1 << KPF_THP;
  
- 	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
+ 	/*
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 3935428c57cf..a291552ab767 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -156,23 +156,6 @@ static inline int hpage_nr_pages(struct page *page)
+ 		return HPAGE_PMD_NR;
+ 	return 1;
+ }
+-static inline struct page *compound_trans_head(struct page *page)
+-{
+-	if (PageTail(page)) {
+-		struct page *head;
+-		head = page->first_page;
+-		smp_rmb();
+-		/*
+-		 * head may be a dangling pointer.
+-		 * __split_huge_page_refcount clears PageTail before
+-		 * overwriting first_page, so if PageTail is still
+-		 * there it means the head pointer isn't dangling.
+-		 */
+-		if (PageTail(page))
+-			return head;
+-	}
+-	return page;
+-}
+ 
+ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
+@@ -202,7 +185,6 @@ static inline int split_huge_page(struct page *page)
+ 	do { } while (0)
+ #define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
+ 	do { } while (0)
+-#define compound_trans_head(page) compound_head(page)
+ static inline int hugepage_madvise(struct vm_area_struct *vma,
+ 				   unsigned long *vm_flags, int advice)
+ {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 648bcb007eba..073734339583 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -371,8 +371,18 @@ static inline void compound_unlock_irqrestore(struct page *page,
+ 
+ static inline struct page *compound_head(struct page *page)
+ {
+-	if (unlikely(PageTail(page)))
+-		return page->first_page;
++	if (unlikely(PageTail(page))) {
++		struct page *head = page->first_page;
++
++		/*
++		 * page->first_page may be a dangling pointer to an old
++		 * compound page, so recheck that it is still a tail
++		 * page before returning.
++		 */
++		smp_rmb();
++		if (likely(PageTail(page)))
++			return head;
++	}
+ 	return page;
+ }
+ 
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 0bea2b262a47..c78fff1e9eae 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -444,7 +444,7 @@ static void break_cow(struct rmap_item *rmap_item)
+ static struct page *page_trans_compound_anon(struct page *page)
+ {
+ 	if (PageTransCompound(page)) {
+-		struct page *head = compound_trans_head(page);
++		struct page *head = compound_head(page);
+ 		/*
+ 		 * head may actually be splitted and freed from under
+ 		 * us but it's ok here.
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index de476c2f8827..5ea3cf734138 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1659,7 +1659,7 @@ int soft_offline_page(struct page *page, int flags)
+ {
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
+-	struct page *hpage = compound_trans_head(page);
++	struct page *hpage = compound_head(page);
+ 
+ 	if (PageHWPoison(page)) {
+ 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 06f847933eeb..6fca39097766 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -369,9 +369,11 @@ void prep_compound_page(struct page *page, unsigned long order)
+ 	__SetPageHead(page);
+ 	for (i = 1; i < nr_pages; i++) {
+ 		struct page *p = page + i;
+-		__SetPageTail(p);
+ 		set_page_count(p, 0);
+ 		p->first_page = page;
++		/* Make sure p->first_page is always valid for PageTail() */
++		smp_wmb();
++		__SetPageTail(p);
+ 	}
+ }
+ 
+diff --git a/mm/swap.c b/mm/swap.c
+index 0c8f7a471925..aa4da5d9401d 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -84,7 +84,7 @@ static void put_compound_page(struct page *page)
+ {
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+-		struct page *page_head = compound_trans_head(page);
++		struct page *page_head = compound_head(page);
+ 
+ 		if (likely(page != page_head &&
+ 			   get_page_unless_zero(page_head))) {
+@@ -222,7 +222,7 @@ bool __get_page_tail(struct page *page)
+ 	 */
+ 	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head = compound_trans_head(page);
++	struct page *page_head = compound_head(page);
+ 
+ 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
+ 		/* Ref to put_compound_page() comment. */
 -- 
 1.9.1
 
