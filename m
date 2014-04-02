@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161043AbaDBWMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:12:43 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:45570 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030526AbaDBWMh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:12:37 -0400
-Message-ID: <533C8B49.8080704@ahsoftware.de>
-Date: Thu, 03 Apr 2014 00:12:25 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1161057AbaDBWMw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:12:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030526AbaDBWMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 18:12:47 -0400
+Date: Thu, 3 Apr 2014 00:12:13 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-ID: <20140402221212.GD16570@mguzik.redhat.com>
+References: <20140402144219.4cafbe37@gandalf.local.home>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
- for Marvel 88E1116R PHYs
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com> <533C721E.1080004@gmail.com>
-In-Reply-To: <533C721E.1080004@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140402144219.4cafbe37@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.04.2014 22:25, schrieb Sebastian Hesselbarth:
-> On 04/02/2014 09:01 PM, Florian Fainelli wrote:
->> 2014-04-02 2:09 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
->>> Am 02.04.2014 02:57, schrieb Florian Fainelli:
->>>> 2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
->>>>> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
->>>>> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
->>>>> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
->>>>> was broken such, that it used mdelay() instead of really waiting for a
->>>>> reset to finish.
->>
->> Can you resubmit with the following information:
->>
->> - you specify the commit that introduce the problem in parenthesis,
->> e.g: deadbeef ("dead: beef: cafe babe")
->> - put this dmesg snippet in your log message to clearly illustrate
->> what is happening
->> - clarify that the PHY needs to be polled in a comment in
->> m88e1116r_config_init()
->>
->> Meanwhile, it would be good if someone with access to this particular
->> PHY datasheet could look for known erratas, problems, non-standard
->> compliant behavior ....
+On Wed, Apr 02, 2014 at 02:42:19PM -0400, Steven Rostedt wrote:
+> It has come to our attention that a system running a specific user
+> space init program will not boot if you add "debug" to the kernel
+> command line. What happens is that the user space tool parses the
+> kernel command line, and if it sees "debug" it will spit out so much
+> information that the system fails to boot. This basically renders the
+> "debug" option for the kernel useless.
 > 
-> Alexander,
+> This bug has been reported to the developers of said tool
+> here:
 > 
-> I tried todays linux/master on Seagate Dockstar with Marvell 88E1116R
-> (0x01410e40) and cannot reproduce any regression. I tried booting from
-> tftp and usb, I also rebooted twice to see if there are any side
-> effects - nothing - ethernet always comes up as expected.
+>   https://bugs.freedesktop.org/show_bug.cgi?id=76935
 > 
-> I am curious, how you determined above commit to be the cause of the
-> regression you are seeing. Can you bisect, if you didn't already?
+> The response is:
+> 
+> "Generic terms are generic, not the first user owns them."
+> 
+> That is, the "debug" statement on the *kernel* command line is not
+> owned by the kernel just because it was the first user of it, and
+> they refuse to fix their bug.
+> 
+> Well, my response is, we OWN the kernel command line, and as such, we
+> can keep the users from seeing stuff on it if we so choose. And with
+> that, I propose this patch, which hides "debug" from /proc/cmdline,
+> such that we don't have to worry about tools parsing for it and causing
+> hardship for those trying to debug the kernel.
+> 
 
-There was no bisecting necessary. I've just looked at what changed in
-mv643xx_eth since 3.13 and the first commit I've reverted was already a
-hit. Reading a bit source revealed the differences between the old reset
-and the newly used one and ended up with my patch (first try) and was a
-hit too.
+Well, parsing kernel cmdline by systemd is a bad idea, and hiding
+"debug" is even worse. What will happen when the next keyword clashes?
+And how should I check the kernel is booted with "debug"?
 
-Actually I assumed the reset needs longer than the 500ms, but as the
-printks revealed, the reset is much faster.
-So the problem seems to be the much increased time (1s) the newly used
-reset function idles in mdelay.
+If there is a real need to pass arguments to systemd, how about a
+dedicated option (initargs= or whatever, where it has to be last in
+cmdline), then systemd would be spawned with these arguments and would
+just go over its argv.
 
-But I think I have found the real reason. and the change of the reset
-just increased the chance the problem is hit (here with 100% success or
-fail rate however you want to name it).
-
-Just give me a day or two to find the time to verify my assumption (I
-don't want to speculate) and maybe find a real fix for the problem. Of
-course, I still like my patch because it greatly decreases the time
-necessary for a reset (and the chance to hit the problem).
-
-Regards,
-
-Alexander Holler
+-- 
+Mateusz Guzik
