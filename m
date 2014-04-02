@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714AbaDBFlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 01:41:16 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:34481 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955AbaDBFlO (ORCPT
+	id S1757307AbaDBFmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 01:42:06 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:38951 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978AbaDBFmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 01:41:14 -0400
+	Wed, 2 Apr 2014 01:42:04 -0400
+Message-ID: <533BA328.8090807@gmail.com>
+Date: Wed, 02 Apr 2014 01:42:00 -0400
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
+Reply-To: alexandre.f.demers@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <9ea86197955aee2b751ccb5a8ea746dbd3244850.1396006658.git.viresh.kumar@linaro.org>
-References: <cover.1396006658.git.viresh.kumar@linaro.org>
-	<9ea86197955aee2b751ccb5a8ea746dbd3244850.1396006658.git.viresh.kumar@linaro.org>
-Date: Wed, 2 Apr 2014 11:11:13 +0530
-Message-ID: <CAKohpokwwHk=0HxaiRQO2CMfrq2qnikvO9V1G5wpD6bhEjDs0w@mail.gmail.com>
-Subject: Re: [PATCH 02/16] hrtimer: reorder code in __remove_hrtimer()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: alexandre.f.demers@gmail.com
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to kern_mount()
+ sysfs from sysfs_init()" prevents system from booting correctly
+References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com> <20140314140804.GG12613@htj.dyndns.org> <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com> <20140317201346.GE17373@mtj.dyndns.org> <5327AAA8.2080703@gmail.com> <53322777.3030703@gmail.com> <20140326131800.GA7171@htj.dyndns.org> <CAPEhTTGyA7SjedwL8Mv-ZDEY_doucW3thPr==xyOemm3+Vp=Cg@mail.gmail.com> <20140329181258.GF5553@htj.dyndns.org> <5337445E.3080903@gmail.com> <20140330123128.GB8942@htj.dyndns.org> <53384C24.6000309@gmail.com>
+In-Reply-To: <53384C24.6000309@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 March 2014 17:11, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+I should have a qemu image running before the end of the week based on 
+the latest Archlinux 64 packages. Then, I'll install the 3.14 kernel 
+and see what I'll get.
 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+By the way, since kernel 3.14 is now available, it has been pushed to 
+Arch's repository. It will be deployed soon on many systems when 
+they'll be updated. As you may have seen from the latest comments in 
+bug 72061, another Arch user has reported today encountering the same 
+problem as myself.
 
-> @@ -887,25 +887,22 @@ static void __remove_hrtimer(struct hrtimer *timer,
->                              struct hrtimer_clock_base *base,
->                              unsigned long newstate, int reprogram)
->  {
-> -       struct timerqueue_node *next_timer;
->         if (!(timer->state & HRTIMER_STATE_ENQUEUED))
->                 goto out;
+Alexandre Demers
+
+On Sun 30 Mar 2014 12:53:56 PM EDT, Alexandre Demers wrote:
+> Oh boy... Maybe. I'll look at this option this week.
 >
-> -       next_timer = timerqueue_getnext(&base->active);
->         timerqueue_del(&base->active, &timer->node);
-> -       if (&timer->node == next_timer) {
-> +
->  #ifdef CONFIG_HIGH_RES_TIMERS
-> -               /* Reprogram the clock event device. if enabled */
-> -               if (reprogram && hrtimer_hres_active()) {
-> -                       ktime_t expires;
-> -
-> -                       expires = ktime_sub(hrtimer_get_expires(timer),
-> -                                           base->offset);
-> -                       if (base->cpu_base->expires_next.tv64 == expires.tv64)
-> -                               hrtimer_force_reprogram(base->cpu_base, 1);
-> -               }
-> -#endif
-> +       /* Reprogram the clock event device. if enabled */
-> +       if (reprogram && hrtimer_hres_active() &&
-> +           &timer->node == timerqueue_getnext(&base->active)) {
-
-Last comparison here would always fail as we have already removed the timer.
-Here is a fixup for that, will include that in my V2:
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 516c67f..189c525 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -886,15 +886,16 @@ static void __remove_hrtimer(struct hrtimer *timer,
-                             struct hrtimer_clock_base *base,
-                             unsigned long newstate, int reprogram)
- {
-+       struct timerqueue_node *next_timer;
-        if (!(timer->state & HRTIMER_STATE_ENQUEUED))
-                goto out;
-
-+       next_timer = timerqueue_getnext(&base->active);
-        timerqueue_del(&base->active, &timer->node);
-
- #ifdef CONFIG_HIGH_RES_TIMERS
-        /* Reprogram the clock event device. if enabled */
--       if (reprogram && hrtimer_hres_active() &&
--           &timer->node == timerqueue_getnext(&base->active)) {
-+       if (reprogram && hrtimer_hres_active() && &timer->node == next_timer) {
-                ktime_t expires;
-
-                expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+> Alexandre Demers
+>
+> On Sun 30 Mar 2014 08:31:28 AM EDT, Tejun Heo wrote:
+>> On Sat, Mar 29, 2014 at 06:08:30PM -0400, Alexandre Demers wrote:
+>>> That fixes the problem, I'm now running 3.14-rc8 with your patch
+>>> applied.
+>>
+>> Just sent out the patch but I think we still need to find out what's
+>> going on.  Is there any chance you can create a qemu image which shows
+>> the same behavior?
+>>
+>> Thanks.
+>>
