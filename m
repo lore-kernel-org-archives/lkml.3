@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349AbaDBDNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 23:13:40 -0400
-Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:23752
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752523AbaDBDNj convert rfc822-to-8bit (ORCPT
+	id S1757449AbaDBDOi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 23:14:38 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:42660 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757364AbaDBDOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 23:13:39 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "linux@roeck-us.net" <linux@roeck-us.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] regmap: mmio: Fix the bug of 'offset' value parsing.
-Thread-Topic: [PATCH] regmap: mmio: Fix the bug of 'offset' value parsing.
-Thread-Index: AQHPTLEaoyg26X4ysUSgJy7g1wpY45r8tSYAgADzxGA=
-Date: Wed, 2 Apr 2014 03:13:36 +0000
-Message-ID: <d203bcf4b50945e6bb02cfa7740c528e@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1396247611-22289-1-git-send-email-Li.Xiubo@freescale.com>
- <20140401123822.GW2269@sirena.org.uk>
-In-Reply-To: <20140401123822.GW2269@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0169092318
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(51704005)(24454002)(74316001)(76786001)(65816001)(54316002)(56776001)(76796001)(76576001)(99286001)(54356001)(74366001)(33646001)(98676001)(63696002)(79102001)(66066001)(80022001)(99396002)(77982001)(59766001)(47736001)(31966008)(74662001)(4396001)(49866001)(47976001)(81342001)(47446002)(20776003)(69226001)(81542001)(53806001)(50986001)(74876001)(74502001)(86362001)(85852003)(93136001)(83322001)(93516002)(83072002)(81686001)(19580395003)(51856001)(80976001)(85306002)(74706001)(92566001)(76482001)(46102001)(87936001)(97336001)(97186001)(94316002)(95666003)(95416001)(94946001)(2656002)(56816005)(87266001)(90146001)(81816001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:BCDCFBE5.2CA2CC19.33F517BF.8CA9D859.2020B;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Apr 2014 23:14:36 -0400
+Date: Tue, 1 Apr 2014 23:14:33 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 0/3] sched/idle : find the idlest cpu with cpuidle
+ info
+In-Reply-To: <22904760.5rGZuP5nsx@vostro.rjw.lan>
+Message-ID: <alpine.LFD.2.11.1404012141580.1571@knanqh.ubzr>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <22904760.5rGZuP5nsx@vostro.rjw.lan>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: Re: [PATCH] regmap: mmio: Fix the bug of 'offset' value parsing.
-> 
-> On Mon, Mar 31, 2014 at 02:33:31PM +0800, Xiubo Li wrote:
-> > 'offset = *(u32 *)reg;', this will be okey for 32/64-bit register, but
-> > for 8/16-bit register, the 'offset' value will overflow.
-> 
-> This doesn't apply against regmap-v3.15, please check and resend.
-> 
-> > The core trace:
-> > ===============
-> > Unable to handle kernel paging request at virtual address ffbd0000
-> > pgd = 871e8000
-> > [ffbd0000] *pgd=00000000
-> > Internal error: Oops: 805 [#1] ARM
-> > Modules linked in:
-> > CPU: 0 PID: 1004 Comm: sh Not tainted 3.14.0-rc6+ #990
-> > task: 871baa40 ti: 87090000 task.ti: 87090000
-> 
-> Don't paste entire backtraces into commit messages, they're enormous and
-> most of the detail isn't useful making it easy to miss relevant
-> information - either pick relevant sections or just describe the
-> failure.
+On Wed, 2 Apr 2014, Rafael J. Wysocki wrote:
 
-Yes, I have resent this patch and have fixed the issue that you pointed out.
+> On Friday, March 28, 2014 01:29:53 PM Daniel Lezcano wrote:
+> > The following patchset provides an interaction between cpuidle and the scheduler.
+> > 
+> > The first patch encapsulate the needed information for the scheduler in a
+> > separate cpuidle structure. The second one stores the pointer to this structure
+> > when entering idle. The third one, use this information to take the decision to
+> > find the idlest cpu.
+> > 
+> > After some basic testing with hackbench, it appears there is an improvement for
+> > the performances (small) and for the duration of the idle states (which provides
+> > a better power saving).
+> > 
+> > The measurement has been done with the 'idlestat' tool previously posted in this
+> > mailing list.
+> > 
+> > So the benefit is good for both sides performance and power saving.
+> > 
+> > The select_idle_sibling could be also improved in the same way.
+> 
+> Well, quite frankly, I don't really like this series.  Not the idea itself, but
+> the way it has been implemented.
+> 
+> First off, if the scheduler is to access idle state data stored in struct
+> cpuidle_state, I'm not sure why we need a separate new structure for that?
+> Couldn't there be a pointer to a whole struct cpuidle_state from struct rq
+> instead?  [->exit_latency is the only field that find_idlest_cpu() in your
+> third patch seems to be using anyway.]
 
-Thanks :)
---
+Future patches are likely to use the other fields.  I presume that's why 
+Daniel put them there.
 
-Best Regards,
-Xiubo
+But I admit being on the fence about this i.e whether or not we should 
+encapsulate shared fields into a separate structure or not.
+
+> Second, is accessing the idle state information for all CPUs from find_idlest_cpu()
+> guaranteed to be non-racy?  I mean, what if a CPU changes its state from idle to
+> non-idle while another one is executing find_idlest_cpu()?  In other words,
+> where's the read memory barrier corresponding to the write ones in the modified
+> cpu_idle_call()?  And is the memory barrier actually sufficient?  After all,
+> you need to guarantee that the CPU is still idle after you have evaluated
+> idle_cpu() on it.
+
+I don't think avoiding races is all that important here.  Right now any 
+idle CPU is selected regardless of its idle state depth.  What this 
+patch should do (considering my previous comments on it) is to favor the 
+idle CPU with the shalloest idle state.  If once in a while the 
+selection is wrong because of a race we're not going to make it any 
+worse than what we have today without this patch.
+
+That probably means the write barrier could potentially be omitted as 
+well if it implies a useless cost.
+
+We need to ensure the cpuidle data structure is not going away (e.g. 
+cpuidle driver module removal) while another CPU looks at it though.  
+The timing would have to be awfully weird for this to happen but still.
+
+> Finally, is really the heuristics used by find_idlest_cpu() to select the "idlest"
+> CPU the best one?  What about deeper vs shallower idle states, for example?
+
+That's what this patch series is about.  The find_idlest_cpu code should 
+look for the idle CPU with the shallowest idle state, or the one with 
+the smallest load.  In this context "find_idlest_cpu" might become a 
+misnomer.
+
+
+Nicolas
