@@ -1,84 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525AbaDBQx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:53:58 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:42523 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932401AbaDBQx5 (ORCPT
+	id S932576AbaDBQyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:54:14 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50361 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932547AbaDBQyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:53:57 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Matthew Dempsky <mdempsky@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com>
-	<1396391358-22367-1-git-send-email-mdempsky@chromium.org>
-	<20140402145850.GB7332@redhat.com> <20140402154447.GA29857@redhat.com>
-	<20140402154505.GB29857@redhat.com>
-Date: Wed, 02 Apr 2014 09:53:33 -0700
-In-Reply-To: <20140402154505.GB29857@redhat.com> (Oleg Nesterov's message of
-	"Wed, 2 Apr 2014 17:45:05 +0200")
-Message-ID: <87eh1fisfm.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 2 Apr 2014 12:54:10 -0400
+Date: Wed, 2 Apr 2014 17:53:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20140402165354.GG2269@sirena.org.uk>
+References: <1396447614-3048-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20140402142356.GE2269@sirena.org.uk>
+ <20140402160438.GO1665@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19jvFdjvzhAeB5wE2wyDiFsHa1bSJ5In7w=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4980]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_05 8+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/1] pid_namespace: pidns_get() should check task_active_pid_ns() != NULL
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="suyaDfHbCMIDpItJ"
+Content-Disposition: inline
+In-Reply-To: <20140402160438.GO1665@opensource.wolfsonmicro.com>
+X-Cookie: Printed on recycled paper.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Get and put regulator of_node
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
 
-> pidns_get()->get_pid_ns() can hit ns == NULL. This task_struct can't
-> go away, but task_active_pid_ns(task) is NULL if release_task(task)
-> was already called. Alternatively we could change get_pid_ns(ns) to
-> check ns != NULL, but it seems that other callers are fine.
+--suyaDfHbCMIDpItJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-get_pid_ns already has a ns == NULL check, so no code changes should be
-needed.
+On Wed, Apr 02, 2014 at 05:04:38PM +0100, Charles Keepax wrote:
+> On Wed, Apr 02, 2014 at 03:23:56PM +0100, Mark Brown wrote:
+> > On Wed, Apr 02, 2014 at 03:06:54PM +0100, Charles Keepax wrote:
 
-Eric
+> > > We should be incrementing the reference count of the of_node for the
+> > > regulator when we take a copy of it. This patch does so.
 
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->
-> --- x/kernel/pid_namespace.c
-> +++ x/kernel/pid_namespace.c
-> @@ -318,7 +318,9 @@ static void *pidns_get(struct task_struct *task)
->  	struct pid_namespace *ns;
->  
->  	rcu_read_lock();
-> -	ns = get_pid_ns(task_active_pid_ns(task));
-> +	ns = task_active_pid_ns(task);
-> +	if (ns)
-> +		get_pid_ns(ns);
->  	rcu_read_unlock();
->  
->  	return ns;
+> > Why?
+
+> Apologies I must be missing something, take for example the fixed
+
+The immediate thing you're missing is this explanation - it's not
+sufficiently obvious why the reference needs to be held.
+
+> regulator driver (fixed.c). We get an of_node from
+> pdev->dev->of_node, pull the init_data from it, then copy the
+> of_node into the regulator_config and call regulator_register.
+> regulator_register will copy the of_node from the regulator_config
+> and put it into the new device, but as far as I can see no one ever
+> incremented the reference count?
+
+> 	of_node =3D pdev->dev.of_node;
+
+> 	drvdata->dev =3D regulator_register(&drvdata->desc, &cfg);
+
+> Looks like there are a couple of other regulator drivers in the
+> same boat. Just seems easier to let the core do the reference
+> stuff rather than needing to do it in the drivers.
+
+Two things here.  One is that we're not copying the node, we're copying
+a pointer to it (duplicating the node would be a problem since we need
+to look for a phandle to the original node to do consumer lookups).  The
+other is that if there is an issue with things never getting referenced
+at all here then taking a reference within the regulator code is too
+late - if a reference isn't already held at the point where we pass the
+node into the regulator core then the pointer that's getting passed
+about is already potentially invalid. =20
+
+To make this correct we need to at least ensure that the node passed
+into the regulator API is valid and referenced at that time so there
+should only be an issue for the core if the reference is dropped after
+that.  In the above case the device model is holding a reference since
+this is the of_node for the device itself so taking the reference won't
+hurt but is redundant.  In cases where we have more than one regulator
+and are using of_regulator_match() then things are more tricky.
+Something needs to drop the references it returns (which isn't happening
+at all at the minute).  Doing it while doing the match and register
+seems simple and neat from an error handling point of view so having the
+core take an additional reference during the registration would join up
+with that.
+
+--suyaDfHbCMIDpItJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPECfAAoJELSic+t+oim9DiQP/Rubn4699OUX+LAPterW7T9L
+ZWkjVOWYrCSo68X7v4QKIw5Zc6iU+VMSvh7cJv7ftYTWH20rrUf4GoDqbg1NQcN8
+gNURwXNNRwL7dhTzEoRQhqEd/bYELDZ2P8G5t3xjvD3l7oxdixWP7RnjCehT+X5Z
+06jD7jngHNfaNmgj6ivl8Oluq4c80WRdMmS3d7wvVxXsXlrMDFAemoJpjKa2bVGT
+M0n5EMheh2RNwEBy/plhNfxXL1aTmVsZMdj4COxFzAmc2GQZCKZVGec7xVc8ljum
+IiIf4QI4yyoJXX7xjpmmvL67qeitHDYVL6Gh4e/Nuj7OrziPnMhJNY7UXOHwjnoQ
+1kRasWl8FCfMsuJp2B5oufqqC1VJHN7KwfNyEWj+bqtg0Ufu2uVrx9nAlrXW5GQo
+H9z9SgR9rtgaqGfxODVuTAAawdoKpDJSRcQrpZIS3aXKApR0hh44o0LZj8EgoSYk
+AWPy6oX/skJafHn65MPrzfwDcPXFZNIewQFAUyVfFTKZDSkRv5kKV+rpUBMeV93A
+L8gFW+DxhTLsu5mkEgpDMRY94mkyYPPbuilLBBNbP03h81gVzFbq1xxsLsMn4pFq
+ExObjuKI7Gr1SmKw5ZthKI37RgJZC/kiDzx24Obw9AwyOXHjM/T2UK0bXx49a2ak
+9LRvkQm+5KCJYm26qAGu
+=qcAA
+-----END PGP SIGNATURE-----
+
+--suyaDfHbCMIDpItJ--
