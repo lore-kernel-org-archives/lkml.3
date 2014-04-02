@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030213AbaDBTHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:07:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40796 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932910AbaDBTHg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1030197AbaDBTHi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:07:38 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:33741 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932890AbaDBTHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 15:07:36 -0400
-Message-ID: <533C6012.20800@infradead.org>
-Date: Wed, 02 Apr 2014 12:08:02 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+Date: Wed, 2 Apr 2014 22:07:09 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-References: <20140402144219.4cafbe37@gandalf.local.home> <20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org>
-In-Reply-To: <20140402120440.1644d6a6486c554a33e584bc@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/2] mm: implement ->map_pages for page cache
+Message-ID: <20140402190709.GA31799@node.dhcp.inet.fi>
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1393530827-25450-3-git-send-email-kirill.shutemov@linux.intel.com>
+ <CALYGNiNHBo9-XsZEvn+Oy5rKh7QyJtVm=vbmido7hmvuR++Vqg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALYGNiNHBo9-XsZEvn+Oy5rKh7QyJtVm=vbmido7hmvuR++Vqg@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 12:04 PM, Andrew Morton wrote:
-> On Wed, 2 Apr 2014 14:42:19 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
->
->> It has come to our attention that a system running a specific user
->> space init program will not boot if you add "debug" to the kernel
->> command line. What happens is that the user space tool parses the
->> kernel command line, and if it sees "debug" it will spit out so much
->> information that the system fails to boot. This basically renders the
->> "debug" option for the kernel useless.
->>
->> This bug has been reported to the developers of said tool
->> here:
->>
->>    https://bugs.freedesktop.org/show_bug.cgi?id=76935
->>
->> The response is:
->>
->> "Generic terms are generic, not the first user owns them."
->>
->> That is, the "debug" statement on the *kernel* command line is not
->> owned by the kernel just because it was the first user of it, and
->> they refuse to fix their bug.
->>
->> Well, my response is, we OWN the kernel command line, and as such, we
->> can keep the users from seeing stuff on it if we so choose. And with
->> that, I propose this patch, which hides "debug" from /proc/cmdline,
->> such that we don't have to worry about tools parsing for it and causing
->> hardship for those trying to debug the kernel.
->>
->
-> I had to check the date on this but surprisingly, it's all post
-> April 1.
->
-> --- a/fs/read_write.c~a
-> +++ a/fs/read_write.c
-> @@ -513,6 +513,8 @@ SYSCALL_DEFINE3(read, unsigned int, fd,
->   	struct fd f = fdget_pos(fd);
->   	ssize_t ret = -EBADF;
->
-> +	BUG_ON(!strcmp(current->comm, "systemd"));
-> +
->   	if (f.file) {
->   		loff_t pos = file_pos_read(f.file);
->   		ret = vfs_read(f.file, buf, count, &pos);
-> _
+On Wed, Apr 02, 2014 at 10:03:24PM +0400, Konstantin Khlebnikov wrote:
+> > +void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
+> > +{
+> > +       struct radix_tree_iter iter;
+> > +       void **slot;
+> > +       struct file *file = vma->vm_file;
+> > +       struct address_space *mapping = file->f_mapping;
+> > +       loff_t size;
+> > +       struct page *page;
+> > +       unsigned long address = (unsigned long) vmf->virtual_address;
+> > +       unsigned long addr;
+> > +       pte_t *pte;
+> > +
+> > +       rcu_read_lock();
+> > +       radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, vmf->pgoff) {
+> > +               if (iter.index > vmf->max_pgoff)
+> > +                       break;
+> > +repeat:
+> > +               page = radix_tree_deref_slot(slot);
+> 
+> Here is obvious race with memory reclaimer/truncate. Pointer to page
+> might become NULL.
 
-Ack here.
-
-This situation is ridiculous.
-
+Thanks for noticing that. It has been fixed in -mm already.
 
 -- 
-~Randy
+ Kirill A. Shutemov
