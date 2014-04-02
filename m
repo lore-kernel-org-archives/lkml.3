@@ -1,82 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161020AbaDBWaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:30:18 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:45469 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030634AbaDBWaR (ORCPT
+	id S1161064AbaDBWcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:32:19 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:64234 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030673AbaDBWcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:30:17 -0400
-Message-ID: <533C8F75.9000301@gmail.com>
-Date: Wed, 02 Apr 2014 15:30:13 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 2 Apr 2014 18:32:17 -0400
 MIME-Version: 1.0
-To: Mateusz Guzik <mguzik@redhat.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-References: <20140402144219.4cafbe37@gandalf.local.home> <20140402221212.GD16570@mguzik.redhat.com>
-In-Reply-To: <20140402221212.GD16570@mguzik.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140402220557.GA22637@amt.cnet>
+References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
+ <5339AB59.4050906@mit.edu> <20140331213032.GA5866@amt.cnet>
+ <CALCETrW9sBUSg8gRBEpDNC_Vcqq2oDRkVNPxTBGmehpMay9=5Q@mail.gmail.com>
+ <20140401180134.GA17963@amt.cnet> <CALCETrVFv4dHH1_D1KR43-UsVCPcXDXhwAuUWNUF5_Wgm+kw1g@mail.gmail.com>
+ <20140402002926.GB31945@amt.cnet> <CALCETrWEbEeZM5umHPqtLJMm21phJG4AXPQXK=h_4FR8EPJotg@mail.gmail.com>
+ <20140402220557.GA22637@amt.cnet>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 2 Apr 2014 15:31:56 -0700
+Message-ID: <CALCETrUegpxAWRfci8saMPVgFgtnN0xNU4bJ5-fhtz1zS6N5-A@mail.gmail.com>
+Subject: Re: VDSO pvclock may increase host cpu consumption, is this a problem?
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhang yanying <zhuangyanying@huawei.com>,
+        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        Zhanghailiang <zhang.zhanghailiang@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 03:12 PM, Mateusz Guzik wrote:
-> On Wed, Apr 02, 2014 at 02:42:19PM -0400, Steven Rostedt wrote:
->> It has come to our attention that a system running a specific user
->> space init program will not boot if you add "debug" to the kernel
->> command line. What happens is that the user space tool parses the
->> kernel command line, and if it sees "debug" it will spit out so much
->> information that the system fails to boot. This basically renders the
->> "debug" option for the kernel useless.
+On Wed, Apr 2, 2014 at 3:05 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Tue, Apr 01, 2014 at 05:46:34PM -0700, Andy Lutomirski wrote:
+>> On Tue, Apr 1, 2014 at 5:29 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>> > On Tue, Apr 01, 2014 at 12:17:16PM -0700, Andy Lutomirski wrote:
+>> >> On Tue, Apr 1, 2014 at 11:01 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>> >> > On Mon, Mar 31, 2014 at 10:33:41PM -0700, Andy Lutomirski wrote:
+>> >> >> On Mar 31, 2014 8:45 PM, "Marcelo Tosatti" <mtosatti@redhat.com> wrote:
+>> >> >> >
+>> >> >> > On Mon, Mar 31, 2014 at 10:52:25AM -0700, Andy Lutomirski wrote:
+>> >> >> > > On 03/29/2014 01:47 AM, Zhanghailiang wrote:
+>> >> >> > > > Hi,
+>> >> >> > > > I found when Guest is idle, VDSO pvclock may increase host consumption.
+>> >> >> > > > We can calcutate as follow, Correct me if I am wrong.
+>> >> >> > > >       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
+>> >> >> > > > In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
+>> >> >> > > > In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call.
+>> >> >> > > > When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
+>> >> >> > > > Both Host and Guest is linux-3.13.6.
+>> >> >> > > > So, whether the host cpu consumption is a problem?
+>> >> >> > >
+>> >> >> > > Does pvclock serve any real purpose on systems with fully-functional
+>> >> >> > > TSCs?  The x86 guest implementation is awful, so it's about 2x slower
+>> >> >> > > than TSC.  It could be improved a lot, but I'm not sure I understand why
+>> >> >> > > it exists in the first place.
+>> >> >> >
+>> >> >> > VM migration.
+>> >> >>
+>> >> >> Why does that need percpu stuff?  Wouldn't it be sufficient to
+>> >> >> interrupt all CPUs (or at least all cpus running in userspace) on
+>> >> >> migration and update the normal timing data structures?
+>> >> >
+>> >> > Are you suggesting to allow interruption of the timekeeping code
+>> >> > at any time to update frequency information ?
+>> >>
+>> >> I'm not sure what you mean by "interruption of the timekeeping code".
+>> >> I'm suggesting sending an interrupt to the guest (via a virtio device,
+>> >> presumably) to tell it that it has been paused and resumed.
+>> >>
+>> >> This is probably worth getting John's input if you actually want to do
+>> >> this.  I'm not about to :)
+>> >
+>> > Honestly, neither am i at the moment. But i'll think about it.
+>> >
+>> >> Is there any case in which the TSC is stable and the kvmclock data for
+>> >> different cpus is actually different?
+>> >
+>> > No. However, kvmclock_data.flags field is an interface for watchdog
+>> > unpause.
+>> >
+>> >> > Do you want to that as a special tsc clocksource driver ?
+>> >> >
+>> >> >> Even better: have the VM offer to invalidate the physical page
+>> >> >> containing the kernel's clock data on migration and interrupt one CPU.
+>> >> >>  If another CPU races, it'll fault and wait for the guest kernel to
+>> >> >> update its timing.
+>> >> >
+>> >> > Perhaps that is a good idea.
+>> >> >
+>> >> >> Does the current kvmclock stuff track CLOCK_MONOTONIC and
+>> >> >> CLOCK_REALTIME separately?
+>> >> >
+>> >> > No. kvmclock counting is interrupted on vm pause (the "hw" clock does not
+>> >> > count during vm pause).
+>> >>
+>> >> Makes sense.
+>> >>
+>> >> >
+>> >> >> > Can you explain why you consider it so bad ? How you think it could be
+>> >> >> > improved ?
+>> >> >>
+>> >> >> The second rdtsc_barrier looks unnecessary.  Even better, if rdtscp is
+>> >> >> available, then rdtscp can replace rdtsc_barrier, rdtsc, and the
+>> >> >> getcpu call.
+>> >> >>
+>> >> >> It would also be nice to avoid having two sets of rescalings of the timing data.
+>> >> >
+>> >> > Yep, probably good improvements, patches are welcome :-)
+>> >> >
+>> >>
+>> >> I may get to it at some point.  No guarantees.  I did just rewrite all
+>> >> the mapping-related code for every other x86 vdso timesource, so maybe
+>> >> I should try to add this to the pile.  The fact that the data is a
+>> >> variable number of pages makes it messy, though, and since I don't
+>> >> understand why there's a separate structure for each CPU, I'm hesitant
+>> >> to change it too much.
+>> >>
+>> >> --Andy
+>> >
+>> > kvmclock.data? Because each VCPU can have different .flags fields for
+>> > example.
 >>
->> This bug has been reported to the developers of said tool
->> here:
+>> It looks like the vdso kvmclock code only runs if
+>> PVCLOCK_TSC_STABLE_BIT is set, which in turn is only the case if the
+>> TSC is guaranteed to be monotonic across all CPUs.  If we can rely on
+>> the fact that that bit will only be set if tsc_to_system_mul and
+>> tsc_shift are the same on all CPUs and that (system_time -
+>> (tsc_timestamp * mul) >> shift) is the same on all CPUs, then there
+>> should be no reason for the vdso to read the pvclock data for anything
+>> but CPU 0.  That will make it a lot faster and simpler.
 >>
->>    https://bugs.freedesktop.org/show_bug.cgi?id=76935
->>
->> The response is:
->>
->> "Generic terms are generic, not the first user owns them."
->>
->> That is, the "debug" statement on the *kernel* command line is not
->> owned by the kernel just because it was the first user of it, and
->> they refuse to fix their bug.
->>
->> Well, my response is, we OWN the kernel command line, and as such, we
->> can keep the users from seeing stuff on it if we so choose. And with
->> that, I propose this patch, which hides "debug" from /proc/cmdline,
->> such that we don't have to worry about tools parsing for it and causing
->> hardship for those trying to debug the kernel.
->>
+>> Can we rely on that?
 >
-> Well, parsing kernel cmdline by systemd is a bad idea, and hiding
-> "debug" is even worse. What will happen when the next keyword clashes?
-> And how should I check the kernel is booted with "debug"?
+> In theory yes, but you would have to handle
 >
-> If there is a real need to pass arguments to systemd, how about a
-> dedicated option (initargs= or whatever, where it has to be last in
-> cmdline), then systemd would be spawned with these arguments and would
-> just go over its argv.
+> PVCLOCK_TSC_STABLE_BIT set -> PVCLOCK_TSC_STABLE_BIT not set
+>
+> Transition (and the other way around as well).
+
+Since !STABLE already results in a real syscall for clock_gettime and
+gettimeofday, I don't think this is a real hardship for the vdso.
+
+>
+>> I wonder what happens if the guest runs ntpd or otherwise uses
+>> adjtimex.  Presumably it starts drifting relative to the host.
+>
+> It should use ntpd and adjtimex.  KVMCLOCK is the "hw" clock,
+> the values returned by CLOCK_REALTIME and CLOCK_GETTIME are built
+> by the Linux guest timekeeping subsystem on top of the "hw" clock.
 >
 
-What if systemd only parsed kernel command line arguments of the form:
+If the kernel can guarantee that, then the timing code gets faster,
+since the cyc2ns scale will be unity.  Maybe this is worth a branch.
 
-...  systemd.arg_foo systemd.arg_bar=x ...
+Anyway, I'll try to find some time to improve this if/when hpa picks
+up my current series of vdso cleanups.  I suspect that the overall
+effect will be a 30-40% speedup in clock_gettime along with a decent
+reduction of code complexity.
 
-Then it wouldn't get confused by arguments that weren't directly 
-targeted at it.
-
-There is precedence for this form, as it is what we already use for 
-built-in modules.  As a bonus, we would be ready for when systemd is 
-integrated into the kernel as a module itself.
-
-Thanks,
-David Daney
+--Andy
