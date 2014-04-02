@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452AbaDBWmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:42:36 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:57799 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932683AbaDBWmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:42:32 -0400
-X-IronPort-AV: E=Sophos;i="4.97,783,1389772800"; 
-   d="scan'208";a="22903787"
-From: Sherman Yin <syin@broadcom.com>
-To: Mark Brown <broonie@kernel.org>,
-        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, "Christian Daudt" <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>, Olof Johansson <olof@lixom.net>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Sherman Yin <syin@broadcom.com>
-Subject: [PATCH v3 2/3] Update bcm_defconfig with new pinctrl CONFIG
-Date: Wed, 2 Apr 2014 15:40:38 -0700
-Message-ID: <1396478439-16586-3-git-send-email-syin@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396478439-16586-1-git-send-email-syin@broadcom.com>
-References: <1390509887-19278-1-git-send-email-syin@broadcom.com>
- <1396478439-16586-1-git-send-email-syin@broadcom.com>
+	id S933524AbaDBWot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:44:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52039 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932414AbaDBWor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 18:44:47 -0400
+Date: Thu, 3 Apr 2014 00:44:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+Message-ID: <20140402224444.GB20894@quack.suse.cz>
+References: <20140401212102.GM4407@cmpxchg.org>
+ <533B313E.5000403@zytor.com>
+ <533B4555.3000608@sr71.net>
+ <533B8E3C.3090606@linaro.org>
+ <20140402163638.GQ14688@cmpxchg.org>
+ <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
+ <20140402175852.GS14688@cmpxchg.org>
+ <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com>
+ <20140402194708.GV14688@cmpxchg.org>
+ <533C6F6E.4080601@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533C6F6E.4080601@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
-driver and its related CONFIG option are renamed to bcm281xx.
+On Wed 02-04-14 13:13:34, John Stultz wrote:
+> On 04/02/2014 12:47 PM, Johannes Weiner wrote:
+> > On Wed, Apr 02, 2014 at 12:01:00PM -0700, John Stultz wrote:
+> >> On Wed, Apr 2, 2014 at 10:58 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> >>> On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
+> >>>> That point beside, I think the other problem with the page-cleaning
+> >>>> volatility approach is that there are other awkward side effects. For
+> >>>> example: Say an application marks a range as volatile. One page in the
+> >>>> range is then purged. The application, due to a bug or otherwise,
+> >>>> reads the volatile range. This causes the page to be zero-filled in,
+> >>>> and the application silently uses the corrupted data (which isn't
+> >>>> great). More problematic though, is that by faulting the page in,
+> >>>> they've in effect lost the purge state for that page. When the
+> >>>> application then goes to mark the range as non-volatile, all pages are
+> >>>> present, so we'd return that no pages were purged.  From an
+> >>>> application perspective this is pretty ugly.
+> >>>>
+> >>>> Johannes: Any thoughts on this potential issue with your proposal? Am
+> >>>> I missing something else?
+> >>> No, this is accurate.  However, I don't really see how this is
+> >>> different than any other use-after-free bug.  If you access malloc
+> >>> memory after free(), you might receive a SIGSEGV, you might see random
+> >>> data, you might corrupt somebody else's data.  This certainly isn't
+> >>> nice, but it's not exactly new behavior, is it?
+> >> The part that troubles me is that I see the purged state as kernel
+> >> data being corrupted by userland in this case. The kernel will tell
+> >> userspace that no pages were purged, even though they were. Only
+> >> because userspace made an errant read of a page, and got garbage data
+> >> back.
+> > That sounds overly dramatic to me.  First of all, this data still
+> > reflects accurately the actions of userspace in this situation.  And
+> > secondly, the kernel does not rely on this data to be meaningful from
+> > a userspace perspective to function correctly.
+> <insert dramatic-chipmunk video w/ text overlay "errant read corrupted
+> volatile page purge state!!!!1">
+> 
+> Maybe you're right, but I feel this is the sort of thing application
+> developers would be surprised and annoyed by.
+> 
+> 
+> > It's really nothing but a use-after-free bug that has consequences for
+> > no-one but the faulty application.  The thing that IS new is that even
+> > a read is enough to corrupt your data in this case.
+> >
+> > MADV_REVIVE could return 0 if all pages in the specified range were
+> > present, -Esomething if otherwise.  That would be semantically sound
+> > even if userspace messes up.
+> 
+> So its semantically more of just a combined mincore+dirty operation..
+> and nothing more?
+> 
+> What are other folks thinking about this? Although I don't particularly
+> like it, I probably could go along with Johannes' approach, forgoing
+> SIGBUS for zero-fill and adapting the semantics that are in my mind a
+> bit stranger. This would allow for ashmem-like style behavior w/ the
+> additional  write-clears-volatile-state and read-clears-purged-state
+> constraints (which I don't think would be problematic for Android, but
+> am not totally sure).
+> 
+> But I do worry that these semantics are easier for kernel-mm-developers
+> to grasp, but are much much harder for application developers to
+> understand.
+  Yeah, I have to admit that although the simplicity of the implementation
+looks compelling, the interface from a userspace POV looks weird.
 
-This commit updates the defconfig that enables the pinctrl driver.
-
-Signed-off-by: Sherman Yin <syin@broadcom.com>
-Reviewed-by: Matt Porter <mporter@linaro.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/configs/bcm_defconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index 2519d6d..b4d3013 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -125,7 +125,7 @@ CONFIG_CRC_ITU_T=y
- CONFIG_CRC7=y
- CONFIG_XZ_DEC=y
- CONFIG_AVERAGE=y
--CONFIG_PINCTRL_CAPRI=y
-+CONFIG_PINCTRL_BCM281XX=y
- CONFIG_WATCHDOG=y
- CONFIG_BCM_KONA_WDT=y
- CONFIG_BCM_KONA_WDT_DEBUG=y
+								Honza
 -- 
-1.7.9.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
