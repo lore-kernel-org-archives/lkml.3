@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105AbaDBTrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:47:19 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58157 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932541AbaDBTrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:47:18 -0400
-Date: Wed, 2 Apr 2014 15:47:08 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Message-ID: <20140402194708.GV14688@cmpxchg.org>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
- <20140401212102.GM4407@cmpxchg.org>
- <533B313E.5000403@zytor.com>
- <533B4555.3000608@sr71.net>
- <533B8E3C.3090606@linaro.org>
- <20140402163638.GQ14688@cmpxchg.org>
- <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
- <20140402175852.GS14688@cmpxchg.org>
- <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com>
+	id S933122AbaDBTs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:48:26 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50459 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932688AbaDBTsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 15:48:24 -0400
+Date: Wed, 2 Apr 2014 20:48:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140402194812.GK14763@sirena.org.uk>
+References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
+ <1396433349-31470-3-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRokNccIwvMzawGl"
 Content-Disposition: inline
-In-Reply-To: <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com>
+In-Reply-To: <1396433349-31470-3-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: To make an enemy, do someone a favor.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2 2/3] regmap: Add the DT binding documentation for
+ endianness
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 12:01:00PM -0700, John Stultz wrote:
-> On Wed, Apr 2, 2014 at 10:58 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
-> >> That point beside, I think the other problem with the page-cleaning
-> >> volatility approach is that there are other awkward side effects. For
-> >> example: Say an application marks a range as volatile. One page in the
-> >> range is then purged. The application, due to a bug or otherwise,
-> >> reads the volatile range. This causes the page to be zero-filled in,
-> >> and the application silently uses the corrupted data (which isn't
-> >> great). More problematic though, is that by faulting the page in,
-> >> they've in effect lost the purge state for that page. When the
-> >> application then goes to mark the range as non-volatile, all pages are
-> >> present, so we'd return that no pages were purged.  From an
-> >> application perspective this is pretty ugly.
-> >>
-> >> Johannes: Any thoughts on this potential issue with your proposal? Am
-> >> I missing something else?
-> >
-> > No, this is accurate.  However, I don't really see how this is
-> > different than any other use-after-free bug.  If you access malloc
-> > memory after free(), you might receive a SIGSEGV, you might see random
-> > data, you might corrupt somebody else's data.  This certainly isn't
-> > nice, but it's not exactly new behavior, is it?
-> 
-> The part that troubles me is that I see the purged state as kernel
-> data being corrupted by userland in this case. The kernel will tell
-> userspace that no pages were purged, even though they were. Only
-> because userspace made an errant read of a page, and got garbage data
-> back.
 
-That sounds overly dramatic to me.  First of all, this data still
-reflects accurately the actions of userspace in this situation.  And
-secondly, the kernel does not rely on this data to be meaningful from
-a userspace perspective to function correctly.
+--wRokNccIwvMzawGl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It's really nothing but a use-after-free bug that has consequences for
-no-one but the faulty application.  The thing that IS new is that even
-a read is enough to corrupt your data in this case.
+On Wed, Apr 02, 2014 at 06:09:08PM +0800, Xiubo Li wrote:
 
-MADV_REVIVE could return 0 if all pages in the specified range were
-present, -Esomething if otherwise.  That would be semantically sound
-even if userspace messes up.
+> +sai2: sai@40031000 {
+> +	      compatible = "fsl,vf610-sai";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +	      val-endian = 'LE';
+> +};
+
+This is mostly OK as a binding (though it should be CCed to the DT list
+and maintiners as all DT bindings should) except using upper case
+doesn't really seem idiomatic for DT - lower case is more normal - and I
+don't think we can make these properties mandatory in themselves.
+Individual bindings would need to make them mandatory.  It's also odd to
+have a mandatory property which may be absent!
+
+It'd probably be better if the binding defined what the default
+endianess was too, or just didn't say what happens in cases where
+nothing is specified, the latter seems better.  Generally just not
+mentioning regmap is better for a binding definition, the binding should
+be usable by all OSs and not just Linux.
+
+--wRokNccIwvMzawGl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPGl5AAoJELSic+t+oim92VwQAJHm2vYiFQuwMgF7nTDV/BxI
+xLf85c6tcmFIZY0hLIEL2EBZ8At6PyKUFjbW1/XT12SAAtnM80jBVOB8xvU2esER
+tqPyygLAo/ExQQU4csJP7vs3rcFHJwSmgV+Nfg235v+wPbjhHdl1g4zK5Pxe/7st
+FjwvWQyTlTyxAx8pqEqYewD+FZ/tvp858r/Fap3D2RmzWvQPXk2Yb6p3Rn+G6aHC
+dOEly+MSo7dClAhq/KWpvshmf4HRm3T1wvzlK1xhOxRDvmNM3T7TKH0+RUiDKNjR
++doKZhnTRDOB+OBrsCRrSoZJ7UnAaSklMneYwRQCW9HMLn3xO+zgGl3dLu+V9T6s
+MWPRl4fmqy8NLklIoYmF+NLVcBRnf2oV3cezMQRdHRQxDNkFeo/rImS+2rEw7GKb
+HBi89G7lH6BfEW+Hh9balsiO/N+ROducDnOFo2lDsrrgWEb4hrRYUEsYbBAO7F7k
+yMNnn5LwxaHsemtfgfMr7yPeTLE/IlC2lV3Zde55poPdzrgiUxvJeD0vN5whHopF
+bHStBb0qjNEl8Jqcho6r1TwHGL8/Xmrg5RUglZnWjIWqpEBCzmNn+RfYuScc6A+f
+EcLT8dct4NQJwj2HjBZgJUxkosqby285JS0dNqxaAfMs1u6Xin8FRpe0JjGI62j8
+JY7jiL/oR0YqmfIY1nDZ
+=U21g
+-----END PGP SIGNATURE-----
+
+--wRokNccIwvMzawGl--
