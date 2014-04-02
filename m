@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528AbaDBDnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 23:43:49 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:21959 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716AbaDBDnr (ORCPT
+	id S1757462AbaDBDwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 23:52:16 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:23694 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757313AbaDBDwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 23:43:47 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-72-533b8770a6d0
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: fix to cover io->bio with io_rwsem
-Date: Wed, 02 Apr 2014 12:41:49 +0900
-Message-id: <1396410109-20156-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t8zfd2CdutggzefeS2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyrj2cQJrwRH2io5p
-	U1kaGCexdTFycEgImEi0Ts3uYuQEMsUkLtxbzwZiCwksY5S4dD0IpmT67rouRi6g8HRGieVv
-	mlkgnE4miRu35zODFLEJaEts3m8A0isiwCyxYOp5RpAaZoEJjBL/F71nAUkIC1hKXPl/khXE
-	ZhFQlVh8ezITiM0r4C6x/vNLRogjtCW2PZ8I1iwh8JhNYsKEBywQDQIS3yYfYoG4SFZi0wFm
-	iHpJiYMrbrBMYBRcwMiwilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMk/Hp3MN4+YH2IMRlo
-	3ERmKdHkfGD45pXEGxqbGVmYmpgaG5lbmpEmrCTOm/QwKUhIID2xJDU7NbUgtSi+qDQntfgQ
-	IxMHp1QD45qgCYG/Yq5/OXfCTqpjwnpbhUPdDQ36196xdE+7UDfvjsvHhnc1BdmdXErdHCc2
-	Snz9eG1WwHJJzcQyi/XrNb7fLhB4fjAh+eOduv189zf+buy8pfrIsj6iP3D2vr6dOqcLns6Y
-	5/PLPLvhfgfbt4nL0r94f7r1ffckKf1fexqmTNh9WNtcjF+JpTgj0VCLuag4EQDDvBhDVQIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jQd2Cdutgg+99XBbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
-	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWZc+ziBteAIe0XHtKksDYyT2LoYOTgkBEwkpu+u62LkBDLFJC7cWw8U5uIQ
-	EpjOKLH8TTMLhNPJJHHj9nxmkAY2AW2JzfsNQBpEBJglFkw9zwhSwywwgVHi/6L3LCAJYQFL
-	iSv/T7KC2CwCqhKLb09mArF5Bdwl1n9+yQixTVti2/OJjBMYuRcwMqxiFE0tSC4oTkrPNdIr
-	TswtLs1L10vOz93ECA7wZ9I7GFc1WBxiFOBgVOLhPXDeKliINbGsuDL3EKMEB7OSCO93X+tg
-	Id6UxMqq1KL8+KLSnNTiQ4zJQNsnMkuJJucDoy+vJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaB
-	QgLpiSWp2ampBalFMFuYODilGhiTpoqfOPOD848/+84TmUdYvy36qFPz3LDd0SQzW27Zb9N7
-	STeMheeuWuEjVJ727rKOGLeIWmoC68rQ1e+WrrCbdVPWM2yRnd6H+lIbv9DqeN2K0As/LTQu
-	TLy0unHv04z9GV2mzKu275/+6PuBthfzH8yfz2jhfE5eaW5WuP4bJmbh7j+cNreVWIozEg21
-	mIuKEwGgWpSNtAIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 1 Apr 2014 23:52:13 -0400
+X-IronPort-AV: E=Sophos;i="4.97,777,1389715200"; 
+   d="scan'208";a="28765117"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <rdunlap@infradead.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <bsingharora@gmail.com>, <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>, <guz.fnst@cn.fujitsu.com>
+Subject: [PATCH 1/1] doc, mempolicy: Fix wrong document in numa_memory_policy.txt
+Date: Wed, 2 Apr 2014 11:53:02 +0800
+Message-ID: <1396410782-26208-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the f2fs_wait_on_page_writeback, io->bio should be covered by io_rwsem.
-Otherwise, the bio pointer can become a dangling pointer due to data races.
+In document numa_memory_policy.txt, the following examples for flag
+MPOL_F_RELATIVE_NODES are incorrect.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+	For example, consider a task that is attached to a cpuset with
+	mems 2-5 that sets an Interleave policy over the same set with
+	MPOL_F_RELATIVE_NODES.  If the cpuset's mems change to 3-7, the
+	interleave now occurs over nodes 3,5-6.  If the cpuset's mems
+	then change to 0,2-3,5, then the interleave occurs over nodes
+	0,3,5.
+
+According to the comment of the patch adding flag MPOL_F_RELATIVE_NODES,
+the nodemasks the user specifies should be considered relative to the
+current task's mems_allowed.
+(https://lkml.org/lkml/2008/2/29/428)
+
+And according to numa_memory_policy.txt, if the user's nodemask includes
+nodes that are outside the range of the new set of allowed nodes, then
+the remap wraps around to the beginning of the nodemask and, if not already
+set, sets the node in the mempolicy nodemask.
+
+So in the example, if the user specifies 2-5, for a task whose mems_allowed
+is 3-7, the nodemasks should be remapped the third, fourth, fifth, sixth
+node in mems_allowed.  like the following:
+
+	mems_allowed:       3  4  5  6  7
+
+	relative index:     0  1  2  3  4
+	                    5
+
+So the nodemasks should be remapped to 3,5-7, but not 3,5-6.
+
+And for a task whose mems_allowed is 0,2-3,5, the nodemasks should be
+remapped to 0,2-3,5, but not 0,3,5.
+
+	mems_allowed:       0  2  3  5
+
+        relative index:     0  1  2  3
+                            4  5
+
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- fs/f2fs/segment.c | 5 ++---
+ Documentation/vm/numa_memory_policy.txt | 5 ++---
  1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index cb49e63..f799c6a 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -1049,15 +1049,14 @@ static inline bool is_merged_page(struct f2fs_sb_info *sbi,
- {
- 	enum page_type btype = PAGE_TYPE_OF_BIO(type);
- 	struct f2fs_bio_info *io = &sbi->write_io[btype];
--	struct bio *bio = io->bio;
- 	struct bio_vec *bvec;
- 	int i;
+diff --git a/Documentation/vm/numa_memory_policy.txt b/Documentation/vm/numa_memory_policy.txt
+index 4e7da65..badb050 100644
+--- a/Documentation/vm/numa_memory_policy.txt
++++ b/Documentation/vm/numa_memory_policy.txt
+@@ -174,7 +174,6 @@ Components of Memory Policies
+ 	allocation fails, the kernel will search other nodes, in order of
+ 	increasing distance from the preferred node based on information
+ 	provided by the platform firmware.
+-	containing the cpu where the allocation takes place.
  
- 	down_read(&io->io_rwsem);
--	if (!bio)
-+	if (!io->bio)
- 		goto out;
+ 	    Internally, the Preferred policy uses a single node--the
+ 	    preferred_node member of struct mempolicy.  When the internal
+@@ -275,9 +274,9 @@ Components of Memory Policies
+ 	    For example, consider a task that is attached to a cpuset with
+ 	    mems 2-5 that sets an Interleave policy over the same set with
+ 	    MPOL_F_RELATIVE_NODES.  If the cpuset's mems change to 3-7, the
+-	    interleave now occurs over nodes 3,5-6.  If the cpuset's mems
++	    interleave now occurs over nodes 3,5-7.  If the cpuset's mems
+ 	    then change to 0,2-3,5, then the interleave occurs over nodes
+-	    0,3,5.
++	    0,2-3,5.
  
--	bio_for_each_segment_all(bvec, bio, i) {
-+	bio_for_each_segment_all(bvec, io->bio, i) {
- 		if (page == bvec->bv_page) {
- 			up_read(&io->io_rwsem);
- 			return true;
+ 	    Thanks to the consistent remapping, applications preparing
+ 	    nodemasks to specify memory policies using this flag should
 -- 
-1.8.4.474.g128a96c
+1.7.11.7
 
