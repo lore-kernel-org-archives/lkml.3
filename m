@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839AbaDBPTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 11:19:18 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:60662 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758337AbaDBPTQ (ORCPT
+	id S1758829AbaDBPWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 11:22:04 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:41257 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaDBPWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 11:19:16 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: axboe@kernel.dk
-Cc: hch@lst.de, jack@suse.cz, viro@zeniv.linux.org.uk, kmo@daterainc.com,
-        namjae.jeon@samsung.com, nasa4836@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] blkdev: use an efficient way to check merge flags
-Date: Wed,  2 Apr 2014 23:19:06 +0800
-Message-Id: <1396451946-13924-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	Wed, 2 Apr 2014 11:22:01 -0400
+Date: Wed, 2 Apr 2014 11:21:58 -0400
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Ariel Elior <ariele@broadcom.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: bnx2x: include irq.h for irqreturn_t definitions
+Message-ID: <20140402152158.GB20438@zod>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bitwise flag comparison could be done using a more efficient bit-ops way.
+The bnx2x driver fails to build on ARM with:
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+In file included from drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c:28:0:
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h:243:1: error: unknown type name 'irqreturn_t'
+ irqreturn_t bnx2x_msix_sp_int(int irq, void *dev_instance);
+ ^
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h:251:1: error: unknown type name 'irqreturn_t'
+ irqreturn_t bnx2x_interrupt(int irq, void *dev_instance);
+ ^
+
+Nothing in bnx2x_link.c or bnx2x_cmn.h is explicitly including the irq
+definitions, so we add an include of linux/irq.h to pick them up.
+
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
 ---
- include/linux/blkdev.h | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1e1fa3f..adfa40a 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -655,16 +655,9 @@ static inline bool rq_mergeable(struct request *rq)
- static inline bool blk_check_merge_flags(unsigned int flags1,
- 					 unsigned int flags2)
- {
--	if ((flags1 & REQ_DISCARD) != (flags2 & REQ_DISCARD))
--		return false;
--
--	if ((flags1 & REQ_SECURE) != (flags2 & REQ_SECURE))
--		return false;
--
--	if ((flags1 & REQ_WRITE_SAME) != (flags2 & REQ_WRITE_SAME))
--		return false;
--
--	return true;
-+	return (flags1 & (REQ_DISCARD | REQ_SECURE | REQ_WRITE_SAME)) ^
-+	       (flags2 & (REQ_DISCARD | REQ_SECURE | REQ_WRITE_SAME))
-+		== 0;
- }
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
+index a89a40f88c25..384025605948 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
+@@ -21,6 +21,7 @@
+ #include <linux/pci.h>
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
++#include <linux/irq.h>
  
- static inline bool blk_write_same_mergeable(struct bio *a, struct bio *b)
+ #include "bnx2x.h"
+ #include "bnx2x_sriov.h"
 -- 
-1.9.0.GIT
+1.8.5.3
 
