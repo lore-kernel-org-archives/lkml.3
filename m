@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758415AbaDBLqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 07:46:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40758 "EHLO mx1.redhat.com"
+	id S1758528AbaDBLrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 07:47:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758207AbaDBLqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 07:46:02 -0400
-Message-ID: <1396439119.2726.29.camel@menhir>
-Subject: Re: [PATCH] mm: msync: require either MS_ASYNC or MS_SYNC
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Richard Hansen <rhansen@bbn.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Greg Troxel <gdt@ir.bbn.com>
-Date: Wed, 02 Apr 2014 12:45:19 +0100
-In-Reply-To: <20140402111032.GA27551@infradead.org>
-References: <533B04A9.6090405@bbn.com>
-	 <20140402111032.GA27551@infradead.org>
-Organization: Red Hat UK Ltd
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758197AbaDBLrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 07:47:46 -0400
+Date: Wed, 2 Apr 2014 13:49:32 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+        intel-linux-scu@intel.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
+        qla2xxx-upstream@qlogic.com, iscsi-driver@qlogic.com,
+        pv-drivers@vmware.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 00/23] scsi: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140402114932.GB10007@dhcp-26-207.brq.redhat.com>
+References: <cover.1393191330.git.agordeev@redhat.com>
+ <20140313040440.GB26657@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140313040440.GB26657@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 2014-04-02 at 04:10 -0700, Christoph Hellwig wrote:
-> On Tue, Apr 01, 2014 at 02:25:45PM -0400, Richard Hansen wrote:
-> > For the flags parameter, POSIX says "Either MS_ASYNC or MS_SYNC shall
-> > be specified, but not both." [1]  There was already a test for the
-> > "both" condition.  Add a test to ensure that the caller specified one
-> > of the flags; fail with EINVAL if neither are specified.
+On Wed, Mar 12, 2014 at 10:04:40PM -0600, Bjorn Helgaas wrote:
+> Hi James,
 > 
-> This breaks various (sloppy) existing userspace for no gain.
+> I think Alexander sent these to linux-scsi hoping that you would handle
+> them, but I know it's a hassle because they depend on f7fc32c, which went
+> in after the merge window.
 > 
-> NAK.
-> 
-Agreed. It might be better to have something like:
+> I'd be glad to review these and apply them through my tree, unless you want
+> to do it.  I'd like to get these merged in the v3.15 merge window so
+> Alexander can move on to something else.  I haven't checked for merge
+> conflicts with scsi.git yet, but I assume they'd be pretty trivial if there
+> are any.
 
-if (flags == 0)
-	flags = MS_SYNC;
+Hi Bjorn,
 
-That way applications which don't set the flags (and possibly also don't
-check the return value, so will not notice an error return) will get the
-sync they desire. Not that either of those things is desirable, but at
-least we can make the best of the situation. Probably better to be slow
-than to potentially lose someone's data in this case,
+It has shifted to v3.16, right?
 
-Steve.
+> Bjorn
 
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
