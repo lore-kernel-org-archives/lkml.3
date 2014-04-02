@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021AbaDBTYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:24:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44719 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932888AbaDBTYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:24:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,782,1389772800"; 
-   d="scan'208";a="485977429"
-Date: Wed, 2 Apr 2014 15:24:46 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 03/22] axonram: Fix bug in direct_access
-Message-ID: <20140402192446.GC27299@linux.intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <e3ede380dd37d3cae604ee20198e568c9eb4fa00.1395591795.git.matthew.r.wilcox@intel.com>
- <20140329162216.GC1211@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140329162216.GC1211@quack.suse.cz>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S933038AbaDBT0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 15:26:49 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:56518 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932888AbaDBT0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 15:26:48 -0400
+From: Rabin Vincent <rabin@rab.in>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Rabin Vincent <rabin@rab.in>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: musb: turn phy on
+Date: Wed,  2 Apr 2014 21:26:27 +0200
+Message-Id: <1396466787-19093-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 05:22:16PM +0100, Jan Kara wrote:
-> On Sun 23-03-14 15:08:29, Matthew Wilcox wrote:
-> > The 'pfn' returned by axonram was completely bogus, and has been since
-> > 2008.
->   Maybe time to drop the driver instead? When noone noticed for 6 years, it
-> seems pretty much dead... Or is there some possibility the driver can get
-> reused for new HW?
+30a70b026b4cde4 ("usb: musb: fix obex in g_nokia.ko causing kernel
+panic") broke USB gadget support on Pandaboard because it simply deletes
+the call to phy_power_on() and the PHY is therefore never turned on.
 
-It may be in use, just not with the -o xip option to ext2 ... I can't
-find out which of the various vendors on the internet that are called
-'Axon' that this device was originally supposed to support.  I suspect
-it's dead, since it's DDR-2, but *shrug*, it costs little to fix it.
+Fix it by actually turning the phy on.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ drivers/usb/musb/musb_gadget.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index d4aa779..09d5883 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1850,6 +1850,7 @@ static int musb_gadget_start(struct usb_gadget *g,
+ 	}
+ 
+ 	pm_runtime_get_sync(musb->controller);
++	phy_power_on(musb->phy);
+ 
+ 	dev_dbg(musb->controller, "registering driver %s\n", driver->function);
+ 
+@@ -1963,6 +1964,7 @@ static int musb_gadget_stop(struct usb_gadget *g,
+ 	 * that currently misbehaves.
+ 	 */
+ 
++	phy_power_off(musb->phy);
+ 	pm_runtime_put(musb->controller);
+ 
+ 	return 0;
+-- 
+1.9.1
+
