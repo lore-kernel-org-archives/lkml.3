@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860AbaDBNzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 09:55:09 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:39756 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758600AbaDBNzG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 09:55:06 -0400
+	id S1758875AbaDBNzl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 09:55:41 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40750 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758600AbaDBNzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 09:55:38 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
+CC: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 0/3] clk: Add clock driver for DRA7 ATL (Audio Tracking Logic)
+Date: Wed, 2 Apr 2014 16:55:04 +0300
+Message-ID: <1396446907-20383-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-In-Reply-To: <CACAvsv6eCoWEU7ZNd5158-V3n=ZVo5O04CZa2EWE78e_tZEXPA@mail.gmail.com>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
- <1395650554-31925-10-git-send-email-acourbot@nvidia.com> <CACAvsv6eCoWEU7ZNd5158-V3n=ZVo5O04CZa2EWE78e_tZEXPA@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 2 Apr 2014 22:54:45 +0900
-Message-ID: <CAAVeFuLbwqGRbE1LFJh54_4FE601w=czHOfBB=ETZ0RtFqdicQ@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH 09/12] drm/nouveau/graph: pad firmware code at
- load time
-To: Ben Skeggs <skeggsb@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 1:22 PM, Ben Skeggs <skeggsb@gmail.com> wrote:
-> On Mon, Mar 24, 2014 at 6:42 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> Pad the microcode to a multiple of 0x40, otherwise firmware will fail to
->> run from non-prepadded firmware files.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>  drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
->> index f997a18f5760..367e72daf8b1 100644
->> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
->> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
->> @@ -768,6 +768,10 @@ nvc0_graph_init_fw(struct nvc0_graph_priv *priv, u32 fuc_base,
->>                         nv_wr32(priv, fuc_base + 0x0188, i >> 6);
->>                 nv_wr32(priv, fuc_base + 0x0184, code->data[i]);
->>         }
->> +
->> +       /* code must be padded to 0x40 */
->> +       for (; i < (((code->size / 4) + 0x3f) & ~0x3f); i++)
-> "for (; i & 0x3f; i++)" would work just as well :)
+Hi,
 
-Indeed. >_<
+Audio Tracking Logic is designed to be used by HD Radio
+applications to synchronize the audio output clocks to the
+baseband clock. ATL can be also used to track errors between
+two reference clocks (BWS, AWS) and generate a modulated
+clock output which averages to some desired frequency.
+
+To be able to integrate the ATL provided clocks to the clock tree we need
+two types of DT binding:
+- DT clock nodes to represent the ATL clocks towards the CCF
+- binding for the ATL IP itself which is going to handle the hw
+  configuration
+
+The reason for this type of setup is that ATL itself is a separate device
+in the SoC, it has it's own address space and clock domain. Other IPs can
+use the ATL generated clock as their functional clock (McASPs for example)
+and external components like audio codecs can also use the very same clock
+as their MCLK.
+
+With setup pm_runtime can handle the ATL clock on demand of it's use and
+all the IP which needs ATL clock can be sure that it is enabled for them.
+
+The first patch fixes the name of atl clkin3 node in dtsi file.
+
+Regards,
+Peter
+---
+Peter Ujfalusi (3):
+  ARM: dts: dra7xx-clocks: Correct name for atl clkin3 clock
+  clk: Driver for DRA7 ATL (Audio Tracking Logic)
+  ARM: DTS: dra7/dra7xx-clocks: ATL related changes
+
+ .../devicetree/bindings/clock/ti/dra7-atl.txt      |  97 +++++++
+ arch/arm/boot/dts/dra7.dtsi                        |  11 +
+ arch/arm/boot/dts/dra7xx-clocks.dtsi               |  38 +--
+ drivers/clk/ti/Makefile                            |   3 +-
+ drivers/clk/ti/clk-7xx.c                           |   2 +-
+ drivers/clk/ti/clk-dra7-atl.c                      | 313 +++++++++++++++++++++
+ include/dt-bindings/clk/ti-dra7-atl.h              |  40 +++
+ 7 files changed, 483 insertions(+), 21 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/ti/dra7-atl.txt
+ create mode 100644 drivers/clk/ti/clk-dra7-atl.c
+ create mode 100644 include/dt-bindings/clk/ti-dra7-atl.h
+
+-- 
+1.9.1
+
