@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030689AbaDBW13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:27:29 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:47622 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030593AbaDBW11 (ORCPT
+	id S933433AbaDBW31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:29:27 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:41457 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933158AbaDBW30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:27:27 -0400
-Message-ID: <533C8ECB.4090900@gmail.com>
-Date: Thu, 03 Apr 2014 00:27:23 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+	Wed, 2 Apr 2014 18:29:26 -0400
+Message-ID: <533C8F3C.6090306@archlinux.org>
+Date: Thu, 03 Apr 2014 00:29:16 +0200
+From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Alexander Holler <holler@ahsoftware.de>,
-        Florian Fainelli <f.fainelli@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
- for Marvel 88E1116R PHYs
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com> <533C721E.1080004@gmail.com> <533C8B49.8080704@ahsoftware.de>
-In-Reply-To: <533C8B49.8080704@ahsoftware.de>
+MIME-Version: 1.0
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 12:12 AM, Alexander Holler wrote:
-> Am 02.04.2014 22:25, schrieb Sebastian Hesselbarth:
->> On 04/02/2014 09:01 PM, Florian Fainelli wrote:
->>> 2014-04-02 2:09 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
->>>> Am 02.04.2014 02:57, schrieb Florian Fainelli:
->>>>> 2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
->>>>>> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
->>>>>> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
->>>>>> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
->>>>>> was broken such, that it used mdelay() instead of really waiting for a
->>>>>> reset to finish.
->>>
->>> Can you resubmit with the following information:
->>>
->>> - you specify the commit that introduce the problem in parenthesis,
->>> e.g: deadbeef ("dead: beef: cafe babe")
->>> - put this dmesg snippet in your log message to clearly illustrate
->>> what is happening
->>> - clarify that the PHY needs to be polled in a comment in
->>> m88e1116r_config_init()
->>>
->>> Meanwhile, it would be good if someone with access to this particular
->>> PHY datasheet could look for known erratas, problems, non-standard
->>> compliant behavior ....
->>
->> Alexander,
->>
->> I tried todays linux/master on Seagate Dockstar with Marvell 88E1116R
->> (0x01410e40) and cannot reproduce any regression. I tried booting from
->> tftp and usb, I also rebooted twice to see if there are any side
->> effects - nothing - ethernet always comes up as expected.
->>
->> I am curious, how you determined above commit to be the cause of the
->> regression you are seeing. Can you bisect, if you didn't already?
-> 
-> There was no bisecting necessary. I've just looked at what changed in
-> mv643xx_eth since 3.13 and the first commit I've reverted was already a
-> hit. Reading a bit source revealed the differences between the old reset
-> and the newly used one and ended up with my patch (first try) and was a
-> hit too.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Honestly, your own fix changes a different driver than mv643xx_eth.
-There is a lot of changes from v3.13 to v3.14 and bisecting really
-helps to pin-point the one offending patch. As you can see from my
-tests with Dockstar, poking in the PHY driver may not be the right
-place to fix it.
+I am having trouble due to the following commit, which landed in 3.14:
 
-> Actually I assumed the reset needs longer than the 500ms, but as the
-> printks revealed, the reset is much faster.
-> So the problem seems to be the much increased time (1s) the newly used
-> reset function idles in mdelay.
+commit d2bee8fb6e18f6116aada39851918473761f7ab1
+Author: Tedd Ho-Jeong An <tedd.an@intel.com>
+Date:   Tue Nov 12 13:16:41 2013 -0800
 
-You assume that the PHY issue comes from waiting for too long _after_
-the reset? And again, the very same PHY on Dockstar is not affected.
+    Bluetooth: Enable autosuspend for Intel Bluetooth device
 
-> But I think I have found the real reason. and the change of the reset
-> just increased the chance the problem is hit (here with 100% success or
-> fail rate however you want to name it).
-> 
-> Just give me a day or two to find the time to verify my assumption (I
-> don't want to speculate) and maybe find a real fix for the problem. Of
-> course, I still like my patch because it greatly decreases the time
-> necessary for a reset (and the chance to hit the problem).
+I have an Intel bluetooth dongle (8087:07dc) built into a Thinkpad. I
+primarily use it with my bluetooth mouse. Whenever I stop using the
+mouse for a few seconds, the mouse stops working. When I turn it off,
+the bluetooth applet on my desktop shows it as connected indefinitely. I
+can fix this situation by either of these actions:
+* restart bluetooth.service
+* disable+reenable bluetooth in the bluetooth applet
+* modprobe -r btusb && modprobe btusb
+The mouse then works again until I stop moving it for a short while.
 
-Well, you can share your idea anytime. You already speculated that PHY
-reset on 88e1116r is broken but it seems that is not true. The more
-you share of your issue and the tries to fix it, the more likely is it
-we can follow your patch immediately.
+The culprit is USB autosuspend. When I explicitly disable it (echo 'on'
+> power/control), the mouse works fine again. However, due to the
+aforementioned commit, I need to do this manually after every boot and
+every resume, because btusb keeps setting it back to 'auto'. I have
+found no way of overriding this behaviour.
 
-Again, if you really want to find the real patch breaking Sheevaplug,
-use git bisect.
+Any advice or help is appreciated.
+Regards
+Thomas B=E4chler
 
-Sebastian
 
+--5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTPI9CAAoJEChPw0yOSxolpaYP/inQQjMzH7jHukByOE0sFS97
+qXAyN4e4R+uPeWtfIrmgJUNYqlNSSnGEG2TJSxpdD4ZxjotJZQjkXGl9Y218L0N0
+dSIJLrNWLFnCIbeVJP/Eefovn/hnqIeS35h12ocqn8aUBL7HLu+JmrbgpIfCkmTr
+gkOnmIntdpdRZWJqNpyfEH6uFMpe+hPjpXx02e6LZrulMVVQvQvI+1IdCeAVChya
+SXNSdHD3PfpljPV4fziNldZRtBDINC8LTvBs1g66xH2BjSLeBFYbUXVWn8WTg1tO
+l93esE8tZpT7HYog+AjnH9p89BhMwqAEXsMRkpCHQfdY5fjT/X+NpfZDne/upYZm
+s59m3+DDu6Dav7rniiYzp2k3jNUp/xi7dl4wghyef5Jwd7u8yjyhiIQHysz0TO//
+tMUMg37/57jUJTDsnX55dw9P1SbDo7hzxb9ZG7vqM7PY69phCaQqSVNtQBAXHjm4
+ejyBuVfRfYZ9c6Q10VQFpcUacA5xN8nkXcdHMJxXpP7lJg7nLL4TmESjO1ay2JZb
+YdPRJLYXRRJd9IEC4k26wJZhCERcoifV9jknaRAYRF/dbQCq8vR/v/+iZmUojBd0
+GnvS6gZmCJra3OXC3bD5Kwt2EAtnT2GNkKrg4VBI6FppsoG731QRDIOiYWw1YORt
+8KHm1HKNWgdnSerYPG3B
+=bELs
+-----END PGP SIGNATURE-----
+
+--5iqIgv1kJHOiUX8DjMLmC58WfbLxCkcx9--
