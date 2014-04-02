@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078AbaDBHmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:42:10 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:42579 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335AbaDBHmH (ORCPT
+	id S1758075AbaDBHn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:43:28 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:60440 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478AbaDBHn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:42:07 -0400
-Date: Wed, 2 Apr 2014 09:42:03 +0200
+	Wed, 2 Apr 2014 03:43:26 -0400
+Date: Wed, 2 Apr 2014 09:43:22 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Jovi Zhangwei <jovi.zhangwei@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -20,65 +20,72 @@ Cc: Jovi Zhangwei <jovi.zhangwei@gmail.com>, Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>,
-        Geoff.Levand@huawei.com
+        Geoff Levand <geoff@infradead.org>
 Subject: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool for
  Linux
-Message-ID: <20140402074202.GB22680@gmail.com>
+Message-ID: <20140402074322.GA22744@gmail.com>
 References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
  <20140331071749.GA1252@gmail.com>
  <CAGdX0WEV5OEfk4vfMKYeEpHP_7XqpUKk2-iwTVoTup1ObYu3eg@mail.gmail.com>
  <CAMEtUuw24=+CkcdwDnJ4AbSCjGBBFx+8pTFzn5gXbQAy=KYWng@mail.gmail.com>
  <CAGdX0WEvsPqWjE8Uade5_i58AepKxGndM0eSg=viB+UYGOSkJw@mail.gmail.com>
  <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com>
+ <CAGdX0WE_xtUY7=CH7Qzxn9Oe8Mz=60wb6izD-APbF5d3caEthA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com>
+In-Reply-To: <CAGdX0WE_xtUY7=CH7Qzxn9Oe8Mz=60wb6izD-APbF5d3caEthA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Alexei Starovoitov <ast@plumgrid.com> wrote:
+* Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
 
-> [...]
+> So based on all these input, I suggest:
+> 
+> Put all these community efforts together, figure out the proper 
+> design implementation of dynamic tracing tool, ktap can be a good 
+> start to build upon it, evolve to a unified kernel script engine 
+> with ebpf together, finally service for dynamic tracing and 
+> network(if possible).
+> 
+> Our goal is same and very clearly, we really want a "simple & 
+> flexible & safe" dynamic scripting tracing tool for Linux, which 
+> could compare or even better than Dtrace, this is the motivation of 
+> ktap project.
+> 
+> Two solution may be take:
 >
-> It seems that your definition of 'safe ktap' is that user cannot break
-> kernel if he uses ktap scripting syntax.
-> In that sense ktap is not much different from stap.
+> 1). upstream ktap into core trace and evolve it step by step, and 
+>     finally make a integrated bytecode engine, it's a long process, 
+>     but I think it's worth.
 > 
-> Overall it seems you view ktap bytecode as a continuation
-> of ktap syntax.
-> ktap language allows to read pid,uid,tid, so they were added as
-> separate instructions to ktap bytecode...
-> ktap allows dump of a table, so kernel has to do tab_histdump()
-> including sorting of fields and printf formatting.
-> What if ktap user wants a different table dump?
-> or new features from the language?
-> keep extending bytecode for every printf tweak is not a great solution.
+> 2). move ktap back into staging, and graduate from staging after the
+>     code make tracing people and ebpf people both happy.
 > 
-> I think design approach to ktap needs to change.
-> What I'm proposing is the following:
-> - keep ktap syntax as-is, but remove loops
-> - ktap style of accessing tables is definitely less verbose then C,
->  so keep it, but don't let compiled program to own the memory
-> - keep table dump as-is, but do it in userspace instead
+> The benefit is the process will be under the eyes of community.
+> 
+> Ingo, steven, Greg, what do you think?
 
-I'd suggest using C syntax instead initially, because that's what the 
-kernel is using.
+For now I'm opting for a third option:
 
-The overwhelming majority of people probing the kernel are 
-programmers, so there's no point in inventing new syntax, we should 
-reuse existing syntax!
+  3) Maintain my NAK on the ktap patches until they address the 
+     fundamental design concerns outlined by Alexei and others in 
+     their review feedback:
 
-That is one reason why for example the (very simple!) ftrace filter 
-language tries to mimic C syntax.
+     NAKed-by: Ingo Molnar <mingo@kernel.org>
 
-Especially as C is simpler for an important category, filters:
+The thing is, I've outlined some of the concerns in my previous 
+review. Not much happened on that front, for example ktap did not get 
+any closer in integrating with BPF. Many months have passed since the 
+previous ktap submission, still I see no progress on the 'design' 
+front. That really needs to change.
 
-> Though I think C as a language to express filters is simpler,
-> ktap syntax is fine as well.
+Please keep me Cc:-ed to any and all future ktap submissions so I can 
+monitor ktap's progress and lift the NAK if the design concerns have 
+been addressed.
 
 Thanks,
 
