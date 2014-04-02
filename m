@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933474AbaDBU3x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:29:53 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42807 "EHLO
+	id S933458AbaDBU3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:29:51 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42808 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758825AbaDBUN2 (ORCPT
+	by vger.kernel.org with ESMTP id S1758822AbaDBUN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+Cc: linux-kernel@vger.kernel.org, Alexander Aring <alex.aring@gmail.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 36/40] make prepend_name() work correctly when called with negative *buflen
-Date: Wed,  2 Apr 2014 22:13:22 +0200
-Message-Id: <d01497237d210820a2153ae5ba5d3549ab1847cb.1396469191.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 12/40] nfs: fix dead code of ipv6_addr_scope
+Date: Wed,  2 Apr 2014 22:12:58 +0200
+Message-Id: <72e436e421d5f30533128c10c9e9711b2d991070.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -23,42 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Alexander Aring <alex.aring@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e825196d48d2b89a6ec3a8eff280098d2a78207e upstream.
+commit a8c2275493b866961f4429a741251c630c4fc6d7 upstream.
 
-In all callchains leading to prepend_name(), the value left in *buflen
-is eventually discarded unused if prepend_name() has returned a negative.
-So we are free to do what prepend() does, and subtract from *buflen
-*before* checking for underflow (which turns into checking the sign
-of subtraction result, of course).
+The correct way to check on IPV6_ADDR_SCOPE_LINKLOCAL is to check with
+the ipv6_addr_src_scope function.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Currently this can't be work, because ipv6_addr_scope returns a int with
+a mask of IPV6_ADDR_SCOPE_MASK (0x00f0U) and IPV6_ADDR_SCOPE_LINKLOCAL
+is 0x02. So the condition is always false.
+
+Signed-off-by: Alexander Aring <alex.aring@gmail.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/dcache.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4filelayoutdev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 4021e0172602..30b38e23caa7 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2846,9 +2846,9 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
- 	u32 dlen = ACCESS_ONCE(name->len);
- 	char *p;
+diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
+index c7c295e556ed..efac602edb37 100644
+--- a/fs/nfs/nfs4filelayoutdev.c
++++ b/fs/nfs/nfs4filelayoutdev.c
+@@ -95,7 +95,7 @@ same_sockaddr(struct sockaddr *addr1, struct sockaddr *addr2)
+ 		b6 = (struct sockaddr_in6 *)addr2;
  
--	if (*buflen < dlen + 1)
--		return -ENAMETOOLONG;
- 	*buflen -= dlen + 1;
-+	if (*buflen < 0)
-+		return -ENAMETOOLONG;
- 	p = *buffer -= dlen + 1;
- 	*p++ = '/';
- 	while (dlen--) {
+ 		/* LINKLOCAL addresses must have matching scope_id */
+-		if (ipv6_addr_scope(&a6->sin6_addr) ==
++		if (ipv6_addr_src_scope(&a6->sin6_addr) ==
+ 		    IPV6_ADDR_SCOPE_LINKLOCAL &&
+ 		    a6->sin6_scope_id != b6->sin6_scope_id)
+ 			return false;
 -- 
 1.9.1
 
