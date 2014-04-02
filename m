@@ -1,178 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932898AbaDBSJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 14:09:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932486AbaDBSJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 14:09:14 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
-        mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
-        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, riel@redhat.com
-Subject: [PATCH 1/4] hugetlb: add hstate_is_gigantic()
-Date: Wed,  2 Apr 2014 14:08:45 -0400
-Message-Id: <1396462128-32626-2-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
-References: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
+	id S932941AbaDBSJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 14:09:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57492 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932890AbaDBSJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 14:09:34 -0400
+Message-ID: <533C525C.3070909@codeaurora.org>
+Date: Wed, 02 Apr 2014 11:09:32 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Lei Wen <leiwen@marvell.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clocksource: register persistent clock for arm arch_timer
+References: <1396436557-29136-1-git-send-email-leiwen@marvell.com>
+In-Reply-To: <1396436557-29136-1-git-send-email-leiwen@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
----
- include/linux/hugetlb.h |  5 +++++
- mm/hugetlb.c            | 28 ++++++++++++++--------------
- 2 files changed, 19 insertions(+), 14 deletions(-)
+On 04/02/14 04:02, Lei Wen wrote:
+> Since arm's arch_timer's counter would keep accumulated even in the
+> low power mode, including suspend state, it is very suitable to be
+> the persistent clock instead of RTC.
+>
+> While read_persistent_clock calling place shall be rare, like only
+> suspend/resume place? So we shall don't care for its performance
+> very much, so use direclty divided by frequency should be accepted
+> for this reason. Actually archtimer's counter read performance already
+> be very good, since it is directly access from core's bus, not from
+> soc, so this is another reason why we choose use divide here.
+>
+> Final reason for why we don't use multi+shift way is for we may not
+> call read_persistent_clock for long time, like system long time
+> not enter into suspend, so that the accumulated cycle difference value
+> may larger than we used for calculate the multi+shift, thus precise
+> would be highly affected in such corner case.
+>
+> Signed-off-by: Lei Wen <leiwen@marvell.com>
+> ---
+>
+> I am not sure whether it is good to add something like
+> generic_persistent_clock_read in the new added kernel/time/sched_clock.c?
+> Since from arch timer's perspective, all it need to do is to pick
+> the suspend period from the place where sched_clock being stopped/restarted.
+>
+> Any idea for make the persistent clock reading as one generic function,
+> like current sched_clock do?
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 8c43cc4..8590134 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -333,6 +333,11 @@ static inline unsigned huge_page_shift(struct hstate *h)
- 	return h->order + PAGE_SHIFT;
- }
- 
-+static inline bool hstate_is_gigantic(struct hstate *h)
-+{
-+	return huge_page_order(h) >= MAX_ORDER;
-+}
-+
- static inline unsigned int pages_per_huge_page(struct hstate *h)
- {
- 	return 1 << h->order;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c01cb9f..8c50547 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -574,7 +574,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
- {
- 	int i;
- 
--	VM_BUG_ON(h->order >= MAX_ORDER);
-+	VM_BUG_ON(hstate_is_gigantic(h));
- 
- 	h->nr_huge_pages--;
- 	h->nr_huge_pages_node[page_to_nid(page)]--;
-@@ -627,7 +627,7 @@ static void free_huge_page(struct page *page)
- 	if (restore_reserve)
- 		h->resv_huge_pages++;
- 
--	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
-+	if (h->surplus_huge_pages_node[nid] && !hstate_is_gigantic(h)) {
- 		/* remove the page from active list */
- 		list_del(&page->lru);
- 		update_and_free_page(h, page);
-@@ -731,7 +731,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
- {
- 	struct page *page;
- 
--	if (h->order >= MAX_ORDER)
-+	if (hstate_is_gigantic(h))
- 		return NULL;
- 
- 	page = alloc_pages_exact_node(nid,
-@@ -925,7 +925,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
- 	struct page *page;
- 	unsigned int r_nid;
- 
--	if (h->order >= MAX_ORDER)
-+	if (hstate_is_gigantic(h))
- 		return NULL;
- 
- 	/*
-@@ -1118,7 +1118,7 @@ static void return_unused_surplus_pages(struct hstate *h,
- 	h->resv_huge_pages -= unused_resv_pages;
- 
- 	/* Cannot return gigantic pages currently */
--	if (h->order >= MAX_ORDER)
-+	if (hstate_is_gigantic(h))
- 		return;
- 
- 	nr_pages = min(unused_resv_pages, h->surplus_huge_pages);
-@@ -1328,7 +1328,7 @@ static void __init gather_bootmem_prealloc(void)
- 		 * fix confusing memory reports from free(1) and another
- 		 * side-effects, like CommitLimit going negative.
- 		 */
--		if (h->order > (MAX_ORDER - 1))
-+		if (hstate_is_gigantic(h))
- 			adjust_managed_page_count(page, 1 << h->order);
- 	}
- }
-@@ -1338,7 +1338,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
- 	unsigned long i;
- 
- 	for (i = 0; i < h->max_huge_pages; ++i) {
--		if (h->order >= MAX_ORDER) {
-+		if (hstate_is_gigantic(h)) {
- 			if (!alloc_bootmem_huge_page(h))
- 				break;
- 		} else if (!alloc_fresh_huge_page(h,
-@@ -1354,7 +1354,7 @@ static void __init hugetlb_init_hstates(void)
- 
- 	for_each_hstate(h) {
- 		/* oversize hugepages were init'ed in early boot */
--		if (h->order < MAX_ORDER)
-+		if (!hstate_is_gigantic(h))
- 			hugetlb_hstate_alloc_pages(h);
- 	}
- }
-@@ -1388,7 +1388,7 @@ static void try_to_free_low(struct hstate *h, unsigned long count,
- {
- 	int i;
- 
--	if (h->order >= MAX_ORDER)
-+	if (hstate_is_gigantic(h))
- 		return;
- 
- 	for_each_node_mask(i, *nodes_allowed) {
-@@ -1451,7 +1451,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
- {
- 	unsigned long min_count, ret;
- 
--	if (h->order >= MAX_ORDER)
-+	if (hstate_is_gigantic(h))
- 		return h->max_huge_pages;
- 
- 	/*
-@@ -1577,7 +1577,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
- 		goto out;
- 
- 	h = kobj_to_hstate(kobj, &nid);
--	if (h->order >= MAX_ORDER) {
-+	if (hstate_is_gigantic(h)) {
- 		err = -EINVAL;
- 		goto out;
- 	}
-@@ -1660,7 +1660,7 @@ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
- 	unsigned long input;
- 	struct hstate *h = kobj_to_hstate(kobj, NULL);
- 
--	if (h->order >= MAX_ORDER)
-+	if (hstate_is_gigantic(h))
- 		return -EINVAL;
- 
- 	err = kstrtoul(buf, 10, &input);
-@@ -2071,7 +2071,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
- 
- 	tmp = h->max_huge_pages;
- 
--	if (write && h->order >= MAX_ORDER)
-+	if (write && hstate_is_gigantic(h))
- 		return -EINVAL;
- 
- 	table->data = &tmp;
-@@ -2124,7 +2124,7 @@ int hugetlb_overcommit_handler(struct ctl_table *table, int write,
- 
- 	tmp = h->nr_overcommit_huge_pages;
- 
--	if (write && h->order >= MAX_ORDER)
-+	if (write && hstate_is_gigantic(h))
- 		return -EINVAL;
- 
- 	table->data = &tmp;
+Why do we need this? Don't we put the CLOCK_SOURCE_SUSPEND_NONSTOP flag
+on the arm_arch_timer clocksource to handle this? The only reason I can
+think of would be that you're calling read_persistent_clock() from
+somewhere else besides the timekeeping core. If that's why, please use
+the time functionality like ktime_get_boottime() or
+get_monotonic_boottime().
+
 -- 
-1.8.1.4
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
