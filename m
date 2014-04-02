@@ -1,123 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933531AbaDBXFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 19:05:15 -0400
-Received: from gerolde.archlinux.org ([66.211.214.132]:43776 "EHLO
-	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933450AbaDBXFL (ORCPT
+	id S1161037AbaDBXFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 19:05:33 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:39593 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933472AbaDBXF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 19:05:11 -0400
-Message-ID: <533C97A3.8080104@archlinux.org>
-Date: Thu, 03 Apr 2014 01:05:07 +0200
-From: =?windows-1252?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 2 Apr 2014 19:05:28 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Tarek Dakhran <t.dakhran@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
+Subject: Re: [PATCH v7 0/3] Exynos 5410 support
+References: <1393213435-20863-1-git-send-email-t.dakhran@samsung.com>
+Date: Wed, 02 Apr 2014 16:05:25 -0700
+In-Reply-To: <1393213435-20863-1-git-send-email-t.dakhran@samsung.com> (Tarek
+	Dakhran's message of "Mon, 24 Feb 2014 12:43:52 +0900")
+Message-ID: <7h7g772uyy.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
-References: <533C8F3C.6090306@archlinux.org> <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
-In-Reply-To: <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Tarek Dakhran <t.dakhran@samsung.com> writes:
 
-Am 03.04.2014 00:39, schrieb Marcel Holtmann:
-> Hi Thomas,
->=20
->> The culprit is USB autosuspend. When I explicitly disable it (echo 'on=
-'
->>> power/control), the mouse works fine again. However, due to the
->> aforementioned commit, I need to do this manually after every boot and=
+> The series of patches represent support of Exynos 5410 SoC
+>
+> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture
+>
+> Patches add new platform description, support of clock controller and device 
+> tree for Exynos 5410.
+>
+> Has been build on Linux Kernel v3.14-rc1 (Samsung kernel,
+> 	for-next branch,
+> 	commit aaeeda6f57833c7c0e16fef3d76205f36882c21b,
+> 	"Merge branch 'v3.15-next/cleanup-samsung' into for-next")
+> Has been tested on Exynos 5410 reference board (exynos_defconfig)
+>
+> I hope, this is enough clean and hasn't any dependencies to go through 
+> Samsung tree.
 
->> every resume, because btusb keeps setting it back to 'auto'. I have
->> found no way of overriding this behaviour.
->=20
-> what USB controller do you have your Bluetooth controller attached to. =
-I had the same issue, but it went away when some of the xHCI host control=
-ler fixes got merged. Some other reported issues with some USB 2 controll=
-ers.
+FWIW: boot tested on Exynos 5410 odroid-xu.
 
-Thanks for replying to me here and on IRC. In order for nothing to get
-lost, I am reposting what I mentioned on IRC here.
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-$ lspci|grep USB
-00:14.0 USB controller: Intel Corporation Lynx Point-LP USB xHCI HC (rev =
-04)
-00:1d.0 USB controller: Intel Corporation Lynx Point-LP USB EHCI #1 (rev =
-04)
+What's the status of this being queued up for upstream?  Looks like it
+just needs to be broken up in to a drivers/clk pull request and a
+arm-soc pull request.
 
-$ lsusb -t
-/:  Bus 03.Port 1: Dev 1, Class=3Droot_hub, Driver=3Dehci-pci/3p, 480M
-    |__ Port 1: Dev 2, If 0, Class=3DHub, Driver=3Dhub/8p, 480M
-        |__ Port 5: Dev 3, If 0, Class=3DChip/SmartCard, Driver=3D, 12M
-/:  Bus 02.Port 1: Dev 1, Class=3Droot_hub, Driver=3Dxhci_hcd/4p, 5000M
-/:  Bus 01.Port 1: Dev 1, Class=3Droot_hub, Driver=3Dxhci_hcd/9p, 480M
-    |__ Port 6: Dev 2, If 0, Class=3DVendor Specific Class, Driver=3D, 12=
-M
-    |__ Port 7: Dev 5, If 0, Class=3DWireless, Driver=3Dbtusb, 12M
-    |__ Port 7: Dev 5, If 1, Class=3DWireless, Driver=3Dbtusb, 12M
-    |__ Port 8: Dev 4, If 0, Class=3DVideo, Driver=3Duvcvideo, 480M
-    |__ Port 8: Dev 4, If 1, Class=3DVideo, Driver=3Duvcvideo, 480M
-
-This looks like it is attached to the xhci controller.
-
-Output from bluemoon is as follows:
-
-Bluemoon configuration utility ver 5.16
-Controller Version Information
-Hardware Platform: 55
-Hardware Variant: iBT 2.0 (0x07)
-Hardware Revision: 1.0
-Firmware Variant: BT IP 4.0 (0x01)
-Firmware Revision: 8.0
-Firmware Build Number: 2-3.2013
-Firmware Patch Number: 51
-
-> You can easily check by running the "Inquiry (LIAC)=94 test from tools/=
-hci-tester. Problem is that some of the HCI events are not making it to t=
-he host. They get delivered as soon as the device wakes up again. In this=
- test case it is the Inquiry Complete event. If you poke the controller a=
-nd send a new command, the even will be magically dequeued.
-
-I cannot figure out how to compile hci-tester. The Makefiles from
-bluez.git won't build it.
-
-
-
---No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTPJejAAoJEChPw0yOSxolWgEQAIGKngCFJhV3AT35LGTxQgZl
-ghzpG1yR364M6hvhsW92+ocUgAzV+LzENQYDmFMrYDkkx9daMB09oLN0xWdIX2n9
-rXUqd0JAJGaO0iQ9oC+wmPIuTlIhW0ZXsrZfYH73gtKQctXeW3q+WWb8DNZjztV2
-tk6NNfgoQLNXcpjAPOfMgoi8Vc80URum7s+xjHr4kvO4ZkDPm3GdRx3DSl6IVwsH
-6RndGdKPBT5b1PhiH47ePx9/kWrFUfh3Pnl8I3/RJfiVVjLs8MigIODcUMq4DIo3
-J5q6cTMFRAqztaLhkv6uZdoC6gqfYaL98stn0fBElV3oqjuSIf9RAYLMOiG7PI6v
-Kmg9G9iHnzxTROYggLY83xZxtI/amEDq0qVAWKG2kap34lSbSELG1vDil75uliJl
-LVCC49jaGOQBhp2SlrRuu20Gy8gsQR7Ygi4qeKsNX55T+o59yuhUMTv+BSmI8xoj
-EC+jNB+e7yAgH58obXCvOVkIlvhPS6DG778BCOhSLgxidExjknCzEltMWAUqRVVK
-tavaFS4s1/67Ml05hZpAY9kRKfE4loloBYeCNGrwyam+lXD75zRtqP00ed9RNyEi
-WvbW85wvuPj6sZOiMdXoRgrdBh+GXy7cgKoHnTxfgtqlFiVybS3OSSouJ+/CnlTA
-0PcEStMpMwddS2jlnAMH
-=KwoM
------END PGP SIGNATURE-----
-
---No2FvojEB9v8PXVlVC8tLLw77Xg2RV5a5--
+Kevin
