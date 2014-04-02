@@ -1,108 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654AbaDBMOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 08:14:49 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55550 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758614AbaDBMOq (ORCPT
+	id S1758681AbaDBMPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 08:15:44 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54703 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758663AbaDBMPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 08:14:46 -0400
-Date: Wed, 2 Apr 2014 13:14:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Alessandro Gardich <gremlin@gremlin.it>,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: Re: [PATCH] RFC: MFD: driver for Atmel Microcontroller on iPaq h3xxx
-Message-ID: <20140402121440.GF18518@lee--X1>
-References: <1391175275-27347-1-git-send-email-linus.walleij@linaro.org>
- <20140217092155.GB17875@lee--X1>
- <CACRpkdZ5YQoV3zxXiF5H-nxf-Kz_YiETvLsbJ9pkT=ueZ=VJSQ@mail.gmail.com>
+	Wed, 2 Apr 2014 08:15:42 -0400
+Message-ID: <533BFF69.1060701@monstr.eu>
+Date: Wed, 02 Apr 2014 14:15:37 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZ5YQoV3zxXiF5H-nxf-Kz_YiETvLsbJ9pkT=ueZ=VJSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+CC: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, chow.kim@samsung.com,
+        Young-Gun Jang <yg1004.jang@samsung.com>
+Subject: Re: [PATCH 06/10] ARM: EXYNOS: Add support for mapping PMU base address
+ via DT
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com> <533BF905.6070701@samsung.com>
+In-Reply-To: <533BF905.6070701@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Does it matter that you're using:
-> >
-> >   module_platform_driver();
-> >
-> > ... yet you can't build this as a module?
-> 
-> I think it's a conceptual thing. Module means two things (IIUC):
-> (a) it is a run-time loadable module
-> (b) it's a piece of compartmentalized code
-> 
-> In this case the macro refers to (b). module_platform_driver()
-> resolves to module_driver() from <linux/device.h>
-> and it's clearly a core part of the device core and available
-> no matter whether the file is used as module at runtime or not.
-> It just simplifies the initcalls and that's no different depending
-> on whether the code is compiled-in or used as module.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Fair enough.
+On 04/02/2014 01:48 PM, Sylwester Nawrocki wrote:
+> On 02/04/14 09:50, Pankaj Dubey wrote:
+>> From: Young-Gun Jang <yg1004.jang@samsung.com>
+>>
+>> Add support for mapping Exynos Power Management Unit (PMU) base addres=
+s
+>> from device tree. Code will use existing samsung pmu binding informati=
+on.
+>> This patch also adds "get_exynos_pmubase" a helper function to return =
+mapped base
+>> address to various other files under "mach-exynos".
+>>
+>> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> ---
+>>  arch/arm/mach-exynos/common.h |    2 ++
+>>  arch/arm/mach-exynos/exynos.c |   44 ++++++++++++++++++++++++++++++++=
++++++++++
+>>  2 files changed, 46 insertions(+)
+>>
+> [...]
+>>  #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
+>> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exyn=
+os.c
+>> index a5e1349..a5127fb 100644
+>> --- a/arch/arm/mach-exynos/exynos.c
+>> +++ b/arch/arm/mach-exynos/exynos.c
+>> @@ -35,6 +35,8 @@
+>>  #define L2_AUX_VAL 0x7C470001
+>>  #define L2_AUX_MASK 0xC200ffff
+>> =20
+>> +static void __iomem *exynos_pmu_base __initdata;
+>> +
+>>  static struct map_desc exynos4_iodesc[] __initdata =3D {
+>>  	{
+>>  		.virtual	=3D (unsigned long)S3C_VA_SYS,
+>> @@ -245,6 +247,47 @@ void __init exynos_init_late(void)
+>>  	exynos_pm_init();
+>>  }
+>> =20
+>> +static char const *exynos_dt_pmu_match[] __initconst =3D {
+>> +	"samsung,exynos4210-pmu",
+>> +	"samsung,exynos4212-pmu",
+>> +	"samsung,exynos4412-pmu",
+>> +	"samsung,exynos5250-pmu",
+>> +	NULL
+>> +};
+>> +
+>> +static int __init exynos_fdt_map_pmu(unsigned long node,
+>> +		const char *uname, int depth, void *data)
+>> +{
+>> +	struct map_desc iodesc;
+>> +	__be32 *reg;
+>> +	unsigned long len;
+>> +
+>> +	if (of_flat_dt_match(node, exynos_dt_pmu_match)) {
+>> +		phys_addr_t phys_addr;
+>> +		reg =3D of_get_flat_dt_prop(node, "reg", &len);
+>> +		if (reg =3D=3D NULL || len !=3D (sizeof(unsigned long) * 2))
+>> +			return 0;
+>> +
+>> +		phys_addr =3D be32_to_cpu(reg[0]);
+>> +		iodesc.pfn =3D __phys_to_pfn(phys_addr);
+>> +		iodesc.length =3D be32_to_cpu(reg[1]) - 1;
+>> +		iodesc.virtual =3D (unsigned long)S5P_VA_PMU;
+>> +		iodesc.type =3D MT_DEVICE;
+>> +		iotable_init(&iodesc, 1);
+>=20
+> Are you sure...you need this in addition to ioremap() below ?
+> Can't you just use the Linux syscon API ?
+> There were some patches posted for syscon to make it available in earli=
+er
+> system initialization stage: https://lkml.org/lkml/2014/2/19/218
 
-> >> +     case MSG_KEYBOARD:
-> >> +             if (micro->key != NULL)
-> >
-> > !micro->key
-> 
-> I guess you mean if (micro->key) {} rather than the !invert,
-> but I get it, changed everywhere we check for != NULL like this.
+I haven't finished this yet. I have to look at it again.
 
-Yes sorry, I'm so used to seeing (thing == NULL), but you knew what I
-meant.
+Thanks,
+Michal
 
-[...]
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-> >> +static int micro_suspend(struct device *dev)
-> >> +{
-> >> +     return 0;
-> >> +}
-> >
-> > Doesn't the PM framework check for NULL .suspend?
-> 
-> No it's just like:
-> 
-> #ifdef CONFIG_SUSPEND
->         case PM_EVENT_SUSPEND:
->                 return ops->suspend;
->         case PM_EVENT_RESUME:
->                 return ops->resume;
-> #endif /* CONFIG_SUSPEND */
-> 
-> (drivers/power/main.c)
 
-  base/ ---^
 
-Right, but a NULL return _is_ valid from here and is subsequently dealt
-with in the correct way.
+--9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-[...]
-        callback = pm_op(dev->type->pm, state);
-        goto Driver;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-[...]
+iEYEARECAAYFAlM7/2kACgkQykllyylKDCECUgCeJ3+bOw48VpTbeStAgsgY8XbV
+1xoAnRM5V6AfnKiFjb69OgmXhzepol/a
+=X/hw
+-----END PGP SIGNATURE-----
 
-Driver:
-       if (!callback && dev->driver && dev->driver->pm) {
-               info = "driver ";
-               callback = pm_op(dev->driver->pm, state);
-       }
-[...]
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--9FDrGSik0x3iHNLqXDosbrSCHjQdt3cB6--
