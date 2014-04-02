@@ -1,117 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759055AbaDBUSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:18:25 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42847 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758908AbaDBUNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:13:30 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 26/40] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-Date: Wed,  2 Apr 2014 22:13:12 +0200
-Message-Id: <f4cdea2f8685252b90148685868d868c0e2874e2.1396469191.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
-References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
-In-Reply-To: <cover.1396469191.git.jslaby@suse.cz>
-References: <cover.1396469191.git.jslaby@suse.cz>
+	id S1759117AbaDBUTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:19:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759099AbaDBUTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 16:19:01 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 2/2] nohz: Synchronize sleep time stats with memory barriers
+Date: Wed,  2 Apr 2014 22:17:52 +0200
+Message-Id: <1396469872-14877-2-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1396469872-14877-1-git-send-email-dvlasenk@redhat.com>
+References: <1396469872-14877-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
+When some call site uses get_cpu_*_time_us() to read a sleeptime
+stat, it deduces the total sleeptime by adding the pending time
+to the last sleeptime snapshot if the CPU target is idle.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+But this only works if idle_sleeptime, idle_entrytime and idle_active are
+read and updated under some disciplined order.
 
-===============
+This patch changes updaters to modify idle_entrytime,
+{idle,iowait}_sleeptime, and idle_active exactly in this order,
+with write barriers on SMP to ensure other CPUs see then in this order too.
+Readers are changed read them in the opposite order, with read barriers.
+When readers detect a race by seeing cleared idle_entrytime,
+they retry the reads.
 
-commit 00a1a053ebe5febcfc2ec498bd894f035ad2aa06 upstream.
+The "iowait-ness" of every idle period is decided at the moment it starts:
+if this CPU's run-queue had tasks waiting on I/O, then this idle
+period's duration will be added to iowait_sleeptime.
+This, along with proper SMP syncronization, fixes the bug where iowait
+counts could go backwards.
 
-Use cmpxchg() to atomically set i_flags instead of clearing out the
-S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
-EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
-where an immutable file has the immutable flag cleared for a brief
-window of time.
-
-Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- fs/ext4/inode.c        | 15 +++++++++------
- include/linux/bitops.h | 15 +++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
+ kernel/time/tick-sched.c | 79 +++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 62 insertions(+), 17 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 55fe412b2410..786bf0708904 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -38,6 +38,7 @@
- #include <linux/slab.h>
- #include <linux/ratelimit.h>
- #include <linux/aio.h>
-+#include <linux/bitops.h>
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 73ced0c4..ed0c1bd 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -409,10 +409,15 @@ static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
  
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -3922,18 +3923,20 @@ int ext4_get_inode_loc(struct inode *inode, struct ext4_iloc *iloc)
- void ext4_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT4_I(inode)->i_flags;
-+	unsigned int new_fl = 0;
- 
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
- 	if (flags & EXT4_SYNC_FL)
--		inode->i_flags |= S_SYNC;
-+		new_fl |= S_SYNC;
- 	if (flags & EXT4_APPEND_FL)
--		inode->i_flags |= S_APPEND;
-+		new_fl |= S_APPEND;
- 	if (flags & EXT4_IMMUTABLE_FL)
--		inode->i_flags |= S_IMMUTABLE;
-+		new_fl |= S_IMMUTABLE;
- 	if (flags & EXT4_NOATIME_FL)
--		inode->i_flags |= S_NOATIME;
-+		new_fl |= S_NOATIME;
- 	if (flags & EXT4_DIRSYNC_FL)
--		inode->i_flags |= S_DIRSYNC;
-+		new_fl |= S_DIRSYNC;
-+	set_mask_bits(&inode->i_flags,
-+		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
- }
- 
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index a3b6b82108b9..c1dde8e00d25 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -185,6 +185,21 @@ static inline unsigned long __ffs64(u64 word)
- 
- #ifdef __KERNEL__
- 
-+#ifndef set_mask_bits
-+#define set_mask_bits(ptr, _mask, _bits)	\
-+({								\
-+	const typeof(*ptr) mask = (_mask), bits = (_bits);	\
-+	typeof(*ptr) old, new;					\
-+								\
-+	do {							\
-+		old = ACCESS_ONCE(*ptr);			\
-+		new = (old & ~mask) | bits;			\
-+	} while (cmpxchg(ptr, old, new) != old);		\
-+								\
-+	new;							\
-+})
-+#endif
+ 	/* Updates the per cpu time idle statistics counters */
+ 	delta = ktime_sub(now, ts->idle_entrytime);
+-	if (nr_iowait_cpu(smp_processor_id()) > 0)
++	ts->idle_entrytime.tv64 = 0;
++	smp_wmb();
 +
- #ifndef find_last_bit
- /**
-  * find_last_bit - find the last set bit in a memory region
++	if (ts->idle_active == 2)
+ 		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+ 	else
+ 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
++
++	smp_wmb();
+ 	ts->idle_active = 0;
+ 
+ 	sched_clock_idle_wakeup_event(0);
+@@ -423,7 +428,8 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+ 	ktime_t now = ktime_get();
+ 
+ 	ts->idle_entrytime = now;
+-	ts->idle_active = 1;
++	smp_wmb();
++	ts->idle_active = nr_iowait_cpu(smp_processor_id()) ? 2 : 1;
+ 	sched_clock_idle_sleep_event();
+ 	return now;
+ }
+@@ -444,25 +450,44 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+  */
+ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+ {
+-	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-	ktime_t now, idle;
++	struct tick_sched *ts;
++	ktime_t now, count;
++	int active;
+ 
+ 	if (!tick_nohz_active)
+ 		return -1;
+ 
++	ts = &per_cpu(tick_cpu_sched, cpu);
++
+ 	now = ktime_get();
+ 	if (last_update_time)
+ 		*last_update_time = ktime_to_us(now);
+ 
+-	if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+-		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+-		idle = ktime_add(ts->idle_sleeptime, delta);
++ again:
++	active = ACCESS_ONCE(ts->idle_active);
++	smp_rmb();
++	count = ACCESS_ONCE(ts->idle_sleeptime);
++	if (active == 1) {
++		ktime_t delta, start;
++
++		smp_rmb();
++		start = ACCESS_ONCE(ts->idle_entrytime);
++		if (start.tv64 == 0)
++			/* Other CPU is updating the count.
++			 * We don't know whether fetched count is valid.
++			 */
++			goto again;
++
++		delta = ktime_sub(now, start);
++		count = ktime_add(count, delta);
+ 	} else {
+-		idle = ts->idle_sleeptime;
++		/* Possible concurrent tick_nohz_stop_idle() already
++		 * cleared idle_active. We fetched count *after*
++		 * we fetched idle_active, so count must be valid.
++		 */
+ 	}
+ 
+-	return ktime_to_us(idle);
+-
++	return ktime_to_us(count);
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
+ 
+@@ -482,24 +507,44 @@ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
+  */
+ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+ {
+-	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-	ktime_t now, iowait;
++	struct tick_sched *ts;
++	ktime_t now, count;
++	int active;
+ 
+ 	if (!tick_nohz_active)
+ 		return -1;
+ 
++	ts = &per_cpu(tick_cpu_sched, cpu);
++
+ 	now = ktime_get();
+ 	if (last_update_time)
+ 		*last_update_time = ktime_to_us(now);
+ 
+-	if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+-		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+-		iowait = ktime_add(ts->iowait_sleeptime, delta);
++ again:
++	active = ACCESS_ONCE(ts->idle_active);
++	smp_rmb();
++	count = ACCESS_ONCE(ts->iowait_sleeptime);
++	if (active == 2) {
++		ktime_t delta, start;
++
++		smp_rmb();
++		start = ACCESS_ONCE(ts->idle_entrytime);
++		if (start.tv64 == 0)
++			/* Other CPU is updating the count.
++			 * We don't know whether fetched count is valid.
++			 */
++			goto again;
++
++		delta = ktime_sub(now, start);
++		count = ktime_add(count, delta);
+ 	} else {
+-		iowait = ts->iowait_sleeptime;
++		/* Possible concurrent tick_nohz_stop_idle() already
++		 * cleared idle_active. We fetched count *after*
++		 * we fetched idle_active, so count must be valid.
++		 */
+ 	}
+ 
+-	return ktime_to_us(iowait);
++	return ktime_to_us(count);
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+ 
 -- 
-1.9.1
+1.8.1.4
 
