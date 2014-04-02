@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439AbaDBWen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 18:34:43 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:58097 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933158AbaDBWem (ORCPT
+	id S1161027AbaDBWh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 18:37:57 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:54283 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030655AbaDBWhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 18:34:42 -0400
-X-Sasl-enc: O9kWR84LRvqsWjUKqtVmr0FaaoAa/lCZRioUEE+ojKRU 1396478080
-Date: Wed, 2 Apr 2014 15:37:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-ID: <20140402223702.GA32068@kroah.com>
-References: <20140402144219.4cafbe37@gandalf.local.home>
- <20140402221212.GD16570@mguzik.redhat.com>
+	Wed, 2 Apr 2014 18:37:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402221212.GD16570@mguzik.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAF52+S6vqK_D7bAz9o65ATSZsg4MfqJgo+Qji8+4=OQJDSEJ7A@mail.gmail.com>
+References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com>
+ <1396391358-22367-1-git-send-email-mdempsky@chromium.org> <20140402145850.GB7332@redhat.com>
+ <CAF52+S6vqK_D7bAz9o65ATSZsg4MfqJgo+Qji8+4=OQJDSEJ7A@mail.gmail.com>
+From: Matthew Dempsky <mdempsky@chromium.org>
+Date: Wed, 2 Apr 2014 15:37:33 -0700
+X-Google-Sender-Auth: _hmdykTf5jUWzGCUPR2WLDVfeeU
+Message-ID: <CAF52+S4hs2oM_qw9Zo-6qiOp_-Cyt3ZpL+zU2_MUv=d7UKPqEA@mail.gmail.com>
+Subject: Re: [PATCH v3] ptrace: Fix fork event messages across pid namespaces
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 12:12:13AM +0200, Mateusz Guzik wrote:
-> On Wed, Apr 02, 2014 at 02:42:19PM -0400, Steven Rostedt wrote:
-> > It has come to our attention that a system running a specific user
-> > space init program will not boot if you add "debug" to the kernel
-> > command line. What happens is that the user space tool parses the
-> > kernel command line, and if it sees "debug" it will spit out so much
-> > information that the system fails to boot. This basically renders the
-> > "debug" option for the kernel useless.
-> > 
-> > This bug has been reported to the developers of said tool
-> > here:
-> > 
-> >   https://bugs.freedesktop.org/show_bug.cgi?id=76935
-> > 
-> > The response is:
-> > 
-> > "Generic terms are generic, not the first user owns them."
-> > 
-> > That is, the "debug" statement on the *kernel* command line is not
-> > owned by the kernel just because it was the first user of it, and
-> > they refuse to fix their bug.
-> > 
-> > Well, my response is, we OWN the kernel command line, and as such, we
-> > can keep the users from seeing stuff on it if we so choose. And with
-> > that, I propose this patch, which hides "debug" from /proc/cmdline,
-> > such that we don't have to worry about tools parsing for it and causing
-> > hardship for those trying to debug the kernel.
-> > 
-> 
-> Well, parsing kernel cmdline by systemd is a bad idea, and hiding
-> "debug" is even worse. What will happen when the next keyword clashes?
-> And how should I check the kernel is booted with "debug"?
-> 
-> If there is a real need to pass arguments to systemd, how about a
-> dedicated option (initargs= or whatever, where it has to be last in
-> cmdline), then systemd would be spawned with these arguments and would
-> just go over its argv.
+On Wed, Apr 2, 2014 at 2:58 PM, Matthew Dempsky <mdempsky@google.com> wrote:
+> Otherwise, it looks like (e.g.) the attempts to get the parent's pid
+> in fill_prstatus() and tomoyo_sys_getppid() are also theoretical races
+> of the same kind?
 
-Right now it looks like systemd relies on everything with a "systemd."
-namespace on the command line, with the exception of "quiet" and
-"debug".  I've just submitted a patch to systemd to fix up "debug", and
-odds are, "quiet" should be switched as well, but unless anyone runs
-into a problem with it, I'll leave that alone for now.
+Doh, nevermind, those functions would potentially be use null "struct
+pid" pointers, not "struct pid_namespace" pointers; and pid_nr_ns()
+guards against pid being null.
 
-thanks,
+Okay, I think I understand now why guarding against the
+task_parent_pid_ns() here is consistent with other RCU code.  I'll
+send a revised patch that does that.
 
-greg k-h
+Also, it looks like "0" is the conventional value for unrepresentable
+pid_t values, so I'll change to do that too.
