@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178AbaDBNPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 09:15:18 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:43341 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaDBNPQ (ORCPT
+	id S932189AbaDBNQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 09:16:30 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:5171
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932071AbaDBNQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 09:15:16 -0400
-X-IronPort-AV: E=Sophos;i="4.97,780,1389744000"; 
-   d="scan'208";a="116085106"
-Message-ID: <1396444512.8667.340.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH net-next v2 2/2] xen-netback: Grant copy the
- header instead of map and memcpy
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <jonathan.davies@citrix.com>,
-        <wei.liu2@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <paul.durrant@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-Date: Wed, 2 Apr 2014 14:15:12 +0100
-In-Reply-To: <533C0C9F.8030205@citrix.com>
-References: <1396278539-27639-1-git-send-email-zoltan.kiss@citrix.com>
-		<1396278539-27639-2-git-send-email-zoltan.kiss@citrix.com>
-	 <1396352440.8667.117.camel@kazak.uk.xensource.com>
-	 <533C0C9F.8030205@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Wed, 2 Apr 2014 09:16:29 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VPS2(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz1de098h8275bh1de097hz2fh95h839hc61hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
+From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <michal.simek@xilinx.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: [PATCH v7 2/2] can: Add xilinx CAN device tree bindings documentation
+Date: Wed, 2 Apr 2014 18:46:01 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: text/plain
+Message-ID: <048cb313-b822-43cc-8280-feec6a3af96b@CH1EHSMHS040.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 14:11 +0100, David Vrabel wrote:
+Add xilinx CAN bindings documentation.
 
-> I'd be in favour of a patch that:
-> 
-> - renamed gnttab_map_refs() to gnttab_batch_map_pages()
-> - refactored it to call gnttab_batch_map().
-> - added documentation
-> 
-> But I don't see why this would be a prerequisite for this series.
+Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+---
+ .../devicetree/bindings/net/can/xilinx_can.txt     |   44 ++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
 
-No, I think I misunderstoopd the API (because it is confusingly
-named...)
-> 
-> David
+diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+new file mode 100644
+index 0000000..450ee1f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+@@ -0,0 +1,44 @@
++Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
++---------------------------------------------------------
++
++Required properties:
++- compatible		: Should be "xlnx,zynq-can-1.0" for Zynq CAN
++			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
++			  controllers.
++- reg			: Physical base address and size of the Axi CAN/Zynq
++			  CANPS registers map.
++- interrupts		: Property with a value describing the interrupt
++			  number.
++- interrupt-parent	: Must be core interrupt controller
++- clock-names		: List of input clock names - "can_clk", "pclk"
++			  (For CANPS), "can_clk" , "s_axi_aclk"(For AXI CAN)
++			  (See clock bindings for details).
++- clocks		: Clock phandles (see clock bindings for details).
++- tx-fifo-depth		: Can Tx fifo depth.
++- rx-fifo-depth		: Can Rx fifo depth.
++
++
++Example:
++
++For Zynq CANPS Dts file:
++	zynq_can_0: can@e0008000 {
++			compatible = "xlnx,zynq-can-1.0";
++			clocks = <&clkc 19>, <&clkc 36>;
++			clock-names = "can_clk", "pclk";
++			reg = <0xe0008000 0x1000>;
++			interrupts = <0 28 4>;
++			interrupt-parent = <&intc>;
++			tx-fifo-depth = <0x40>;
++			rx-fifo-depth = <0x40>;
++		};
++For Axi CAN Dts file:
++	axi_can_0: axi-can@40000000 {
++			compatible = "xlnx,axi-can-1.00.a";
++			clocks = <&clkc 0>;
++			clock-names = "can_clk","s_axi_aclk" ;
++			reg = <0x40000000 0x10000>;
++			interrupt-parent = <&intc>;
++			interrupts = <0 59 1>;
++			tx-fifo-depth = <0x40>;
++			rx-fifo-depth = <0x40>;
++		};
+-- 
+1.7.4
 
 
