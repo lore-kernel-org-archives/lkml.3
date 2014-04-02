@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370AbaDBA6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:58:31 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60693 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaDBA63 (ORCPT
+	id S1757307AbaDBBDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 21:03:20 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41318 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaDBBDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:58:29 -0400
+	Tue, 1 Apr 2014 21:03:19 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <533B61AC.7090808@jp.fujitsu.com>
+Date: Wed, 02 Apr 2014 10:02:36 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 1 Apr 2014 17:57:48 -0700
-Message-ID: <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com>
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init) for
- Marvel 88E1116R PHYs
-To: Alexander Holler <holler@ahsoftware.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
+        chenhanxiao <chenhanxiao@cn.fujitsu.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>	<20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>	<1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>	<20140331170546.3b3e72f0.akpm@linux-foundation.org>	<533A5CB1.1@jp.fujitsu.com> <20140401121920.50d1dd96c2145acc81561b82@linux-foundation.org>
+In-Reply-To: <20140401121920.50d1dd96c2145acc81561b82@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
-> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
-> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
-> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
-> was broken such, that it used mdelay() instead of really waiting for a
-> reset to finish.
-
-So the only big difference before
-7cd1463664c2a15721ff4ccfb61d4d970815cb3d ("net: mv643xx_eth: use
-phy_init_hw to reset PHY") is that we waited potentially forever for
-the BMCR_RESET bit to get cleared, while now, we only wait for up to
-500 milliseconds.
-
-Could you verify the following two things before your patch gets merged:
-
-- how long does it take for your PHY to clear the BMCR_RESET bit, is
-it more than the allowed time out in
-drivers/net/phy/phy_device.c::phy_poll_reset
-- is your PHY powered down (check BMCR_PWRDOWN), if that is the case,
-we might be hitting some corner case where toggling BMCR_RESET will
-power it on, but at the expense of waiting longer
-
-Thanks
-
+(2014/04/02 4:19), Andrew Morton wrote:
+> On Tue, 01 Apr 2014 15:29:05 +0900 Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 >
-> The effect was that the ethernet on my Kirkwood 88F6281 based device didn't
-> come up anymore (no carrier).
+>>>
+>>> So their system will act as if they had set SHMMAX=enormous.  What
+>>> problems could that cause?
+>>>
+>>>
+>>> Look.  The 32M thing is causing problems.  Arbitrarily increasing the
+>>> arbitrary 32M to an arbitrary 128M won't fix anything - we still have
+>>> the problem.  Think bigger, please: how can we make this problem go
+>>> away for ever?
+>>>
+>>
+>> Our middleware engineers has been complaining about this sysctl limit.
+>> System administrator need to calculate required sysctl value by making sum
+>> of all planned middlewares, and middleware provider needs to write "please
+>> calculate systcl param by....." in their installation manuals.
 >
-> Fix this by waiting for a reset to finish before proceeding further.
->
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->
-> Cc: Michal Simek <michal.simek@xilinx.com>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: <stable@vger.kernel.org>
-> ---
->  drivers/net/phy/marvell.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
-> index bd37e45..5b84808 100644
-> --- a/drivers/net/phy/marvell.c
-> +++ b/drivers/net/phy/marvell.c
-> @@ -396,7 +396,9 @@ static int m88e1116r_config_init(struct phy_device *phydev)
->         if (err < 0)
->                 return err;
->
-> -       mdelay(500);
-> +       do
-> +               temp = phy_read(phydev, MII_BMCR);
-> +       while (temp & BMCR_RESET);
->
->         err = phy_write(phydev, MII_MARVELL_PHY_PAGE, 0);
->         if (err < 0)
-> @@ -429,7 +431,9 @@ static int m88e1116r_config_init(struct phy_device *phydev)
->         if (err < 0)
->                 return err;
->
-> -       mdelay(500);
-> +       do
-> +               temp = phy_read(phydev, MII_BMCR);
-> +       while (temp & BMCR_RESET);
->
->         return 0;
->  }
-> --
-> 1.8.3.1
+> Why aren't people just setting the sysctl to a petabyte?  What problems
+> would that lead to?
 >
 
+They(and admin) don't know the fact, setting petabytes won't cause any pain.
 
+In their thinking:
+==
+If there is a kernel's limit, it should have some (bad) side-effect and
+the trade-off which must be handled by admin is represented by the limit.
+In this case, they think setting this value large will consume tons of resource.
+==
+They don't care kernel's implemenation but takes care of what API says.
 
--- 
-Florian
+Of course, always I was asked, I answer set it to peta-bytes. But the fact
+*default is small* makes them doubtful.
+
+Thanks,
+-Kame
+
