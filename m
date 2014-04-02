@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305AbaDBOk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 10:40:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35646 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148AbaDBOkY (ORCPT
+	id S932337AbaDBOkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 10:40:42 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:61496 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183AbaDBOki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 10:40:24 -0400
-Date: Wed, 2 Apr 2014 10:39:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v8 10/10] pvqspinlock, x86: Enable qspinlock PV support
- for XEN
-Message-ID: <20140402143932.GA13097@phenom.dumpdata.com>
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com>
- <1396445259-27670-11-git-send-email-Waiman.Long@hp.com>
+	Wed, 2 Apr 2014 10:40:38 -0400
+Date: Wed, 2 Apr 2014 10:40:20 -0400
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Mark Brown <broonie@linaro.org>, Catalin Marinas <catalin.marinas@arm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] arm64: Fix duplicated Kconfig entries again
+Message-ID: <20140402144020.GA20438@zod>
+References: <CA+5PVA6awqaSHQboqdv9nynV9Xjp46VeqijDWxZX1v5wDK0NWQ@mail.gmail.com>
+ <CAKohpok3gKyOWD0=pSv0yQLNqJcNPNZagRGFXNFHW+3J7E=mOg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396445259-27670-11-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <CAKohpok3gKyOWD0=pSv0yQLNqJcNPNZagRGFXNFHW+3J7E=mOg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-> index a70fdeb..451e392 100644
-> --- a/kernel/Kconfig.locks
-> +++ b/kernel/Kconfig.locks
-> @@ -229,4 +229,4 @@ config ARCH_USE_QUEUE_SPINLOCK
->  
->  config QUEUE_SPINLOCK
->  	def_bool y if ARCH_USE_QUEUE_SPINLOCK
-> -	depends on SMP && (!PARAVIRT_SPINLOCKS || !XEN)
-> +	depends on SMP
+Commit 74397174989e5f70 attempted to clean up the power management options
+for arm64, but when things were merged it didn't fully take effect.  Fix
+it again.
 
-If I read this correctly that means you cannot select any more the old
-ticketlocks? As in, if you select CONFIG_PARAVIRT on X86 it will automatically
-select ARCH_USE_QUEUE_SPINLOCK which will then enable this by default?
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+---
+ arch/arm64/Kconfig | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Should the 'def_bool' be selectable?
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 07aa3556952c..8033b9b8a2df 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -321,12 +321,6 @@ menu "CPU Power Management"
+ 
+ source "drivers/cpuidle/Kconfig"
+ 
+-source "drivers/cpufreq/Kconfig"
+-
+-endmenu
+-
+-menu "Power management options"
+-
+ source "kernel/power/Kconfig"
+ 
+ source "drivers/cpufreq/Kconfig"
+-- 
+1.8.5.3
 
-> -- 
-> 1.7.1
-> 
