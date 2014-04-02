@@ -1,134 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261AbaDBJJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 05:09:50 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:59278 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758104AbaDBJJp (ORCPT
+	id S1758197AbaDBJMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 05:12:39 -0400
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:37711 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835AbaDBJMg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 05:09:45 -0400
-Message-ID: <533BD3CD.1010905@ahsoftware.de>
-Date: Wed, 02 Apr 2014 11:09:33 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 2 Apr 2014 05:12:36 -0400
+From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
+To: "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        Hiroshi Baba <h-baba@ax.jp.nec.com>
+Subject: RE: fail to add 64 VLANs or more when SR-IOV is enabled
+Thread-Topic: fail to add 64 VLANs or more when SR-IOV is enabled
+Thread-Index: Ac9JlO1ffB0oi4AYSwyNh+nra3OjGQErv7Xw
+Date: Wed, 2 Apr 2014 09:11:26 +0000
+Message-ID: <9DE5760509B7974286F38D93BF31DD62C7DF93@BPXM13GP.gisp.nec.co.jp>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.8.69]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
- for Marvel 88E1116R PHYs
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com>
-In-Reply-To: <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.04.2014 02:57, schrieb Florian Fainelli:
-> 2014-04-01 16:55 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
->> Commit 7cd1463664c2a15721ff4ccfb61d4d970815cb3d (introduced with 3.14)
->> changed the initialization of the mv643xx_eth driver to use phy_init_hw()
->> to reset the PHY. Unfortunately the initialization for the 88E1116R PHY
->> was broken such, that it used mdelay() instead of really waiting for a
->> reset to finish.
+
+>-----Original Message-----
+>From: Komatsubara Madoka(小松原 円) 
+>Sent: Thursday, March 27, 2014 6:11 PM
+>To: 'linux-kernel@vger.kernel.org'; 'e1000-devel@lists.sourceforge.net'; 'netdev@vger.kernel.org'
+>Cc: Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕司)
+>Subject: fail to add 64 VLANs or more when SR-IOV is enabled
 >
-> So the only big difference before
-> 7cd1463664c2a15721ff4ccfb61d4d970815cb3d ("net: mv643xx_eth: use
-> phy_init_hw to reset PHY") is that we waited potentially forever for
-> the BMCR_RESET bit to get cleared, while now, we only wait for up to
-> 500 milliseconds.
+>Hi all,
 >
-> Could you verify the following two things before your patch gets merged:
 >
-> - how long does it take for your PHY to clear the BMCR_RESET bit, is
-> it more than the allowed time out in
-> drivers/net/phy/phy_device.c::phy_poll_reset
-> - is your PHY powered down (check BMCR_PWRDOWN), if that is the case,
-> we might be hitting some corner case where toggling BMCR_RESET will
-> power it on, but at the expense of waiting longer
+>We're facing an issue that we cannot add 64 VLANs or more per VF.
+>When using SR-IOV, pass through a VF to the KVM guest and a lot of VLANs, we could add 63 VLANs using vconfig but we >failed to add 64th VLAN.
+>We'd like to use many VLANs on the guest with SR-IOV.
+>We're using Intel's 82599EB chip with ixgbe and ixgbevf driver.
+>
+>Has anyone seen the same issue?
+>Is there any idea to solve this?
+>
 
-I've  done two tests with pr_info before and after the two resets in 
-m88e1116r_config_init:
+Hi Donald,
 
-with my patch:
------------------------
-dmesg | grep -A1 -B1  AHO
-[    1.090099] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
-[    1.175916] AHO: before first reset
-[    1.179613] AHO: after first reset
-[    1.183743] AHO: before second reset
-[    1.187530] AHO: after second reset
-[    1.191905] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC 
-address xx
---
-[    1.426487] netpoll: netconsole: device eth0 not up yet, forcing it
-[    1.505986] AHO: before first reset
-[    1.509725] AHO: after first reset
-[    1.513899] AHO: before second reset
-[    1.517754] AHO: after second reset
-[    1.521802] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
---
-[   21.372591] Adding 2996116k swap on /dev/sda3.  Priority:-1 extents:1 
-across:2996116k
-[   28.305989] AHO: before first reset
-[   28.306200] AHO: after first reset
-[   28.306936] AHO: before second reset
-[   28.307153] AHO: after second reset
-[   31.509973] mv643xx_eth_port mv643xx_eth_port.0 eth0: link up, 1000 
-Mb/s, full duplex, flow control disabled
------------------------
+Do you also notice this problem?
+We're facing an issue that we can use only 64 VLANs per VF.
+We're using Intel's 82599EB chip with ixgbe and ixgbevf driver.
 
 
-with mdelay (the value after reset is what contains MII_BMCR):
+Is it subject to the specification restrictions only 64 VLAN can use per VF?
+We'd like to use about 2000 VLAN per VF.
 
------------------------
-dmesg | grep -A1 -B1  AHO
-[    1.090072] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
-[    1.175888] AHO: before first reset
-[    1.678806] AHO: after first reset 0x0
-[    1.683281] AHO: before second reset
-[    2.186288] AHO: after second reset 0x0
-[    2.191010] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC 
-address xx
---
-[    2.426349] netpoll: netconsole: device eth0 not up yet, forcing it
-[    2.505917] AHO: before first reset
-[    2.605824] usb 1-1: new high-speed USB device number 2 using orion-ehci
---
-[    2.829987] hub 1-1:1.0: 4 ports detected
-[    3.044502] AHO: after first reset 0x0
-[    3.049133] AHO: before second reset
-[    3.126110] usb 1-1.1: new high-speed USB device number 3 using 
-orion-ehci
---
-[    3.526107] usb 1-1.3: device descriptor read/64, error -32
-[    3.614264] AHO: after second reset 0x0
-[    3.618708] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
---
-[   21.335730] Adding 2996116k swap on /dev/sda3.  Priority:-1 extents:1 
-across:2996116k
-[   28.195942] AHO: before first reset
-[   28.696270] AHO: after first reset 0x800
-[   28.696958] AHO: before second reset
-[   29.197354] AHO: after second reset 0x800
-[  111.612263] RPC: Registered named UNIX socket transport module.
------------------------
+Does it come from hardware?
 
-So we see, the first reset in the last call of m88e1116r_config_init() 
-fails to complete in 500ms and the phy seems to be stuck afterwards, 
-but, for whatever reason, it doesn't need 500ms if mdelay isn't used (if 
-we can trust the timestamps).
 
-(You can also see, I have netconsole enabled using netconsole=... in the 
-kernel cmdline).
-
-That behaviour is reproducible. The first reset in the last call to
-m88e1116r_config_init() always fails if mdelay is used.
 
 Regards,
+Madoka Komatsubara
 
-Alexander Holler
+
+>The below instruction is a reproducing method.
+>Create hundred VLANs on the guest.
+>
+># for i in `seq 100 199`; do vconfig add eth2 $i; ifconfig 192.168.$i.1/24; done
+>
+># vconfig add eth2 100
+>Added VLAN with VID == 100 to IF -:eth2:-
+>
+># vconfig add eth2 101
+>Added VLAN with VID == 101 to IF -:eth2:-
+>
+># vconfig add eth2 102
+>Added VLAN with VID == 102 to IF -:eth2:-
+>
+>...
+>
+># vconfig add eth2 162
+>Added VLAN with VID == 162 to IF -:eth2:-
+>
+># vconfig add eth2 163
+>ERROR: trying to add VLAN #163 to IF -:eth2:-  error: Permission denied
+>SIOCSIFADDR: No such device
+>eth2.163: unknown interface: No such device
+>
+># vconfig add eth2 164
+>ERROR: trying to add VLAN #164 to IF -:eth2:-  error: Permission denied
+>SIOCSIFADDR: No such device
+>eth2.164: unknown interface: No such device
+>
+># vconfig add eth2 165
+>ERROR: trying to add VLAN #165 to IF -:eth2:-  error: Permission denied
+>SIOCSIFADDR: No such device
+>eth2.165: unknown interface: No such device
+>
+>
+>thanks,
+>Madoka Komatsubara
+
