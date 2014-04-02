@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646AbaDBQrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:47:10 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:49736 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932496AbaDBQrG (ORCPT
+	id S932525AbaDBQx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:53:58 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:42523 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932401AbaDBQx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:47:06 -0400
+	Wed, 2 Apr 2014 12:53:57 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Matthew Dempsky <mdempsky@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com>
+	<1396391358-22367-1-git-send-email-mdempsky@chromium.org>
+	<20140402145850.GB7332@redhat.com> <20140402154447.GA29857@redhat.com>
+	<20140402154505.GB29857@redhat.com>
+Date: Wed, 02 Apr 2014 09:53:33 -0700
+In-Reply-To: <20140402154505.GB29857@redhat.com> (Oleg Nesterov's message of
+	"Wed, 2 Apr 2014 17:45:05 +0200")
+Message-ID: <87eh1fisfm.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [92.17.186.38]
-In-Reply-To: <533C300E.7070109@ti.com>
-References: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
-	<1395707726-20437-4-git-send-email-m-karicheri2@ti.com>
-	<235376049.yyfljDtinu@wuerfel>
-	<20140325103525.GA14789@ulmo>
-	<CAPcvp5Gy8uNW3UULi8jYk7GNbmgTd2B_qOEAXnP4H4Wq3v9BCw@mail.gmail.com>
-	<533C300E.7070109@ti.com>
-Date: Wed, 2 Apr 2014 17:47:04 +0100
-Message-ID: <CAPcvp5FEFbP_Fwc47V=LppiZnfbTgPqaAAm-A9K17dVEZWwHQQ@mail.gmail.com>
-Subject: Re: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based on
- designware core driver
-From: Andrew Murray <amurray@embedded-bits.co.uk>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Richard Zhu <r65037@freescale.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19jvFdjvzhAeB5wE2wyDiFsHa1bSJ5In7w=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.5 XMGappySubj_01 Very gappy subject
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4980]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_05 8+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/1] pid_namespace: pidns_get() should check task_active_pid_ns() != NULL
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 April 2014 16:43, Murali Karicheri <m-karicheri2@ti.com> wrote:
+Oleg Nesterov <oleg@redhat.com> writes:
 
-> Keystone pcie driver is developed based on other dw based pcie drivers
+> pidns_get()->get_pid_ns() can hit ns == NULL. This task_struct can't
+> go away, but task_active_pid_ns(task) is NULL if release_task(task)
+> was already called. Alternatively we could change get_pid_ns(ns) to
+> check ns != NULL, but it seems that other callers are fine.
+
+get_pid_ns already has a ns == NULL check, so no code changes should be
+needed.
+
+Eric
+
 >
-> such as pci-exynos that uses subsys_initcall(). I am new to this list,
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 >
-> probably Jingoo (copied) has some history on why we can't use module.
-> For now I will keep it as is and can be re-visited in the next revisions.
-> Also I will experiment with PCIE port driver as well.
->
->
-> BTW, PCIE driver currently uses Legacy or MSI IRQ. Keystone PCI has
-> a platform IRQ. Is DT based irq configuration is the appropriate way
-> to add this capability?
-
-As far as I am aware - the PCI standards define a particular way for
-devices to describe which interrupt will be used for things like
-hotplug, AER and PME. These interrupts are always PCI interrupts (i.e.
-MSI/MSI-X/legacy). Thus the port services code in the kernel uses
-standard configuration space accesses to determine the interrupt to
-use. Also note that it's not just the host bridge that can provide
-these services but any PCIE device, I guess in this sense a host
-bridge is treated like any other device.
-
-If my understanding is correct I don't believe the current port
-services code allows exceptions to this, i.e. to say this host bridge
-actually uses a platform IRQ for AER rather than an MSI. Though this
-may be quite useful as I suspect many host bridges provide interrupts
-for things like PME through platform IRQs rather that PCI interrupts.
-
-Does the Keystone have platform IRQs for things like AER? Is that
-because the IP makes these events available through platform IRQs in
-addition to the standard PCI means?
-
-Andrew Murray
+> --- x/kernel/pid_namespace.c
+> +++ x/kernel/pid_namespace.c
+> @@ -318,7 +318,9 @@ static void *pidns_get(struct task_struct *task)
+>  	struct pid_namespace *ns;
+>  
+>  	rcu_read_lock();
+> -	ns = get_pid_ns(task_active_pid_ns(task));
+> +	ns = task_active_pid_ns(task);
+> +	if (ns)
+> +		get_pid_ns(ns);
+>  	rcu_read_unlock();
+>  
+>  	return ns;
