@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213AbaDBUSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:18:14 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42861 "EHLO
+	id S1759245AbaDBUWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:22:43 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42838 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758928AbaDBUNa (ORCPT
+	by vger.kernel.org with ESMTP id S1758903AbaDBUN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 16:13:30 -0400
+	Wed, 2 Apr 2014 16:13:29 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: linux-kernel@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 13/40] nfs: fix size updates for aio writes
-Date: Wed,  2 Apr 2014 22:12:59 +0200
-Message-Id: <aca53e4e90058d5c711efdce3ba00fd9ca7d52e3.1396469191.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 32/40] Revert "xen: properly account for _PAGE_NUMA during xen pte translations"
+Date: Wed,  2 Apr 2014 22:13:18 +0200
+Message-Id: <dac766e559ef7b3f3de7b9111dcf165d6355d3f6.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -25,94 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Hellwig <hch@infradead.org>
+From: David Vrabel <david.vrabel@citrix.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9811cd57f4c6b5b60ec104de68a88303717e3106 upstream.
+commit 5926f87fdaad4be3ed10cec563bf357915e55a86 upstream.
 
-nfs_file_direct_write only updates the inode size if it succeeded and
-returned the number of bytes written.  But in the AIO case nfs_direct_wait
-turns the return value into -EIOCBQUEUED and we skip the size update.
+This reverts commit a9c8e4beeeb64c22b84c803747487857fe424b68.
 
-Instead the aio completion path should updated it, which this patch
-does.  The implementation is a little hacky because there is no obvious
-way to find out we are called for a write in nfs_direct_complete.
+PTEs in Xen PV guests must contain machine addresses if _PAGE_PRESENT
+is set and pseudo-physical addresses is _PAGE_PRESENT is clear.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This is because during a domain save/restore (migration) the page
+table entries are "canonicalised" and uncanonicalised". i.e., MFNs are
+converted to PFNs during domain save so that on a restore the page
+table entries may be rewritten with the new MFNs on the destination.
+This canonicalisation is only done for PTEs that are present.
+
+This change resulted in writing PTEs with MFNs if _PAGE_PROTNONE (or
+_PAGE_NUMA) was set but _PAGE_PRESENT was clear.  These PTEs would be
+migrated as-is which would result in unexpected behaviour in the
+destination domain.  Either a) the MFN would be translated to the
+wrong PFN/page; b) setting the _PAGE_PRESENT bit would clear the PTE
+because the MFN is no longer owned by the domain; or c) the present
+bit would not get set.
+
+Symptoms include "Bad page" reports when munmapping after migrating a
+domain.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfs/direct.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/pgtable.h | 14 ++------------
+ arch/x86/xen/mmu.c             |  4 ++--
+ 2 files changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 91ff089d3412..df06e6b1952e 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -223,12 +223,23 @@ out:
-  * Synchronous I/O uses a stack-allocated iocb.  Thus we can't trust
-  * the iocb is still valid here if this is a synchronous request.
-  */
--static void nfs_direct_complete(struct nfs_direct_req *dreq)
-+static void nfs_direct_complete(struct nfs_direct_req *dreq, bool write)
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 5ad38ad07890..bbc8b12fa443 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -445,20 +445,10 @@ static inline int pte_same(pte_t a, pte_t b)
+ 	return a.pte == b.pte;
+ }
+ 
+-static inline int pteval_present(pteval_t pteval)
+-{
+-	/*
+-	 * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
+-	 * way clearly states that the intent is that protnone and numa
+-	 * hinting ptes are considered present for the purposes of
+-	 * pagetable operations like zapping, protection changes, gup etc.
+-	 */
+-	return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
+-}
+-
+ static inline int pte_present(pte_t a)
  {
-+	struct inode *inode = dreq->inode;
-+
- 	if (dreq->iocb) {
-+		loff_t pos = dreq->iocb->ki_pos + dreq->count;
- 		long res = (long) dreq->error;
- 		if (!res)
- 			res = (long) dreq->count;
-+
-+		if (write) {
-+			spin_lock(&inode->i_lock);
-+			if (i_size_read(inode) < pos)
-+				i_size_write(inode, pos);
-+			spin_unlock(&inode->i_lock);
-+		}
-+
- 		aio_complete(dreq->iocb, res, 0);
- 	}
- 	complete_all(&dreq->completion);
-@@ -273,7 +284,7 @@ static void nfs_direct_read_completion(struct nfs_pgio_header *hdr)
- 	}
- out_put:
- 	if (put_dreq(dreq))
--		nfs_direct_complete(dreq);
-+		nfs_direct_complete(dreq, false);
- 	hdr->release(hdr);
+-	return pteval_present(pte_flags(a));
++	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
++			       _PAGE_NUMA);
  }
  
-@@ -435,7 +446,7 @@ static ssize_t nfs_direct_read_schedule_iovec(struct nfs_direct_req *dreq,
- 	}
- 
- 	if (put_dreq(dreq))
--		nfs_direct_complete(dreq);
-+		nfs_direct_complete(dreq, false);
- 	return 0;
- }
- 
-@@ -595,7 +606,7 @@ static void nfs_direct_write_schedule_work(struct work_struct *work)
- 			break;
- 		default:
- 			nfs_inode_dio_write_done(dreq->inode);
--			nfs_direct_complete(dreq);
-+			nfs_direct_complete(dreq, true);
- 	}
- }
- 
-@@ -612,7 +623,7 @@ static void nfs_direct_write_schedule_work(struct work_struct *work)
- static void nfs_direct_write_complete(struct nfs_direct_req *dreq, struct inode *inode)
+ #define pte_accessible pte_accessible
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index d5af43af64dc..fdc3ba28ca38 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct *mm, unsigned long addr,
+ /* Assume pteval_t is equivalent to all the other *val_t types. */
+ static pteval_t pte_mfn_to_pfn(pteval_t val)
  {
- 	nfs_inode_dio_write_done(inode);
--	nfs_direct_complete(dreq);
-+	nfs_direct_complete(dreq, true);
- }
- #endif
+-	if (pteval_present(val)) {
++	if (val & _PAGE_PRESENT) {
+ 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		unsigned long pfn = mfn_to_pfn(mfn);
  
+@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
+ 
+ static pteval_t pte_pfn_to_mfn(pteval_t val)
+ {
+-	if (pteval_present(val)) {
++	if (val & _PAGE_PRESENT) {
+ 		unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+ 		pteval_t flags = val & PTE_FLAGS_MASK;
+ 		unsigned long mfn;
 -- 
 1.9.1
 
