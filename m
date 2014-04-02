@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030206AbaDBT6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 15:58:37 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36365 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaDBT6g (ORCPT
+	id S1030234AbaDBUBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:01:08 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:49362 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964779AbaDBUBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 15:58:36 -0400
-Subject: Re: [PATCH 0/7] uprobes/x86: introduce uprobe_xol_ops and
- arch_uprobe->ops
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140331194337.GA9257@redhat.com>
-References: <20140331194337.GA9257@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Apr 2014 12:58:31 -0700
-Message-ID: <1396468711.4659.63.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+	Wed, 2 Apr 2014 16:01:06 -0400
+Message-ID: <533C6C90.3000708@windriver.com>
+Date: Wed, 2 Apr 2014 16:01:20 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: "Brown, Len" <len.brown@intel.com>
+CC: "WYSOCKI, RAFAL" <rafael.j.wysocki@intel.com>,
+        Arne Bockholdt <linux-kernel@bockholdt.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression in intel_idle on Avaton/Rangely Mohon Peak board
+References: <533B0288.2020304@windriver.com> <1A7043D5F58CCB44A599DFD55ED4C948452FD582@FMSMSX106.amr.corp.intel.com>
+In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C948452FD582@FMSMSX106.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040219-7164-0000-0000-000000C02A57
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-31 at 21:43 +0200, Oleg Nesterov wrote:
-> Hello.
+On 14-04-01 05:59 PM, Brown, Len wrote:
+>> I've got an eval board with a 1.7GHz Avaton/C2000 that hangs at boot
+>> shortly after the idle driver registration -- typically 1/2 dozen
+>> dmesg lines later, around rtc init, or net stack init.
 > 
-> x86 can not handle the rip-relative jmp/call instrsuctions, the probed
-> task can be killed by general protection fault. I'll describe this in
-> more details when I send the fixes. Now I am sending the preparations
-> which (I hope) make sense anyway, please review.
+> Paul,
+> Please boot the failing board with "intel_idle.max_cstate=0"
+> to disable intel_idle entirely, and then show the C-states
+> exported by acpi_idle, that predumably, are stable on both boards:
 > 
-> My main concern is 3/7. I know absolutely nothing about instruction
-> decoding, so I can only guess what, for example, OPCODE1() == 0xff or
-> MODRM_REG() == 2 actually means. Please review.
+> dmesg | grep idle
+> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
 > 
-> Ananth, David, please ack/nack the first change, it affects powerpc/arm.
-> 
-> Oleg.
-> 
->  arch/x86/include/asm/uprobes.h |    7 +-
->  arch/x86/kernel/uprobes.c      |  343 ++++++++++++++++++++--------------------
->  kernel/events/uprobes.c        |   23 +---
->  3 files changed, 176 insertions(+), 197 deletions(-)
-> 
+> Then go back and boot with "intel_idle.max_cstate=N"
+> where N is incremented by 1 until when the system fails
+> and note the largest N that still works.
 
-I've reviewed all 7 patches.  Aside from a couple of nits (noted
-elsewhere) that Oleg inherited, it looks good so far.
+The dying board works for N=1, fails for N=2.
 
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+root@localhost:/sys/devices/system/cpu/cpuidle# grep . *
+current_driver:intel_idle
+current_governor_ro:menu
+root@localhost:/sys/devices/system/cpu/cpuidle# dmesg|grep idle
+[    0.000000] Command line: BOOT_IMAGE=/boot/bzImage-current console=tty0 noinitrd root=/dev/sda4 rw ip=dhcp selinux=0 enforcing=0 intel_idle.max_cstate=1
+[    0.000000] Kernel command line: BOOT_IMAGE=/boot/bzImage-current console=tty0 noinitrd root=/dev/sda4 rw ip=dhcp selinux=0 enforcing=0 intel_idle.max_cstate=1
+[    0.000000] 	RCU dyntick-idle grace-period acceleration is enabled.
+[    0.217203] cpuidle: using governor ladder
+[    0.217309] cpuidle: using governor menu
+[    0.840598] intel_idle: MWAIT substates: 0x33000020
+[    0.840662] intel_idle: v0.4 model 0x4D
+[    0.840668] intel_idle: lapic_timer_reliable_states 0x2
+[    0.840673] intel_idle: max_cstate 1 reached
+root@localhost:/sys/devices/system/cpu/cpuidle#
 
+Another interesting data point -- the dying board doesn't die if
+I boot 3.14's x86-64 defconfig.  Nothing immediately jumps out at
+me in the dying .config ; there are a few tweaks in there like
+RCU_NOCB etc. that I'll have to weed out with a pseudo .config
+bisect I guess....
+
+I'll go get the N=1 and N=2 data for the working board next.
+
+Paul.
+--
+
+> 
+>> The interesting part is that a nearly identical board, but with
+>> different (newer/faster) CPU and newer BIOS doesn't have the hang.
+> 
+> Possibly an electrical bug in the earlier board.
+> Maybe they worked around it by disabling a C-state in ACPI
+> and didn't test upstream Linux?
+> 
+> I'd be interested in the acpi_idle output above for both the
+> new and old boards to see if they are exporting different states
+> on the two boards.
+> 
+> dmidecode isn't useful in this case.  The CPUID in /proc/cpuinfo
+> may be useful if the problem turns out to be associated with
+> some stepping.
+> 
+> thanks,
+> -Len
+> 
