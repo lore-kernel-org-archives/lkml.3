@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959AbaDBHcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:32:25 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:5399 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574AbaDBHcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:32:23 -0400
-X-IronPort-AV: E=Sophos;i="4.97,778,1389744000"; 
-   d="scan'208";a="116002892"
-Message-ID: <1396423941.26869.64.camel@dagon.hellion.org.uk>
-Subject: Re: [PATCH net-next v2 2/2] xen-netback: Grant copy the header
- instead of map and memcpy
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Date: Wed, 2 Apr 2014 08:32:21 +0100
-In-Reply-To: <533B0EF8.6000900@citrix.com>
-References: <1396278539-27639-1-git-send-email-zoltan.kiss@citrix.com>
-		 <1396278539-27639-2-git-send-email-zoltan.kiss@citrix.com>
-	 <1396352440.8667.117.camel@kazak.uk.xensource.com>
-	 <533B0EF8.6000900@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S932081AbaDBHdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:33:14 -0400
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:55330
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756574AbaDBHdM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 03:33:12 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Guenter Roeck <linux@roeck-us.net>, "wim@iguana.be" <wim@iguana.be>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv2 2/2] watchdog: imx2_wdt: Add big-endian support
+Thread-Topic: [PATCHv2 2/2] watchdog: imx2_wdt: Add big-endian support
+Thread-Index: AQHPSKDVcbPU6SPqA024POxEUieEfpr6ko0AgAAGE3CAAW5SgIAAAFPggACyPgCAAUCM4A==
+Date: Wed, 2 Apr 2014 07:33:08 +0000
+Message-ID: <52646eae41aa44068a32201ae9c0fff3@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1395800500-22655-1-git-send-email-Li.Xiubo@freescale.com>
+ <1395800500-22655-3-git-send-email-Li.Xiubo@freescale.com>
+ <5338E1E8.4030700@roeck-us.net>
+ <28375308b05f4cf4bc7d1559f2524c1b@BY2PR03MB505.namprd03.prod.outlook.com>
+ <533A1A4B.2090503@roeck-us.net>
+ <1c79a81bbd7b4cc79689cb907e81e893@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140401122454.GS2269@sirena.org.uk>
+In-Reply-To: <20140401122454.GS2269@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0169092318
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(24454002)(199002)(189002)(99286001)(97336001)(51856001)(86362001)(87266001)(74876001)(54356001)(97186001)(87936001)(74706001)(94316002)(76482001)(19580405001)(83322001)(19580395003)(54316002)(81342001)(81816001)(85852003)(74502001)(83072002)(20776003)(81686001)(74316001)(76786001)(63696002)(47736001)(47976001)(47446002)(79102001)(50986001)(59766001)(77982001)(81542001)(98676001)(74366001)(53806001)(93136001)(95416001)(93516002)(76576001)(69226001)(49866001)(46102001)(95666003)(66066001)(65816001)(2656002)(92566001)(80976001)(31966008)(33646001)(74662001)(94946001)(85306002)(56816005)(80022001)(90146001)(99396002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:FF5745BE.9CF00C11.BAD17F40.64C4E2E1.20150;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 20:09 +0100, Zoltan Kiss wrote:
-> On 01/04/14 12:40, Ian Campbell wrote:
-> > On Mon, 2014-03-31 at 16:08 +0100, Zoltan Kiss wrote:
-> >>
-> >>   check_frags:
-> >> -	for (i = start; i < nr_frags; i++) {
-> >> +	for (i = 0; i < nr_frags; i++, gop_map++) {
-> >>   		int j, newerr;
-> >>
-> >>   		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
-> >> -		tx_info = &vif->pending_tx_info[pending_idx];
-> >>
-> >>   		/* Check error status: if okay then remember grant handle. */
-> >> -		newerr = (++gop_map)->status;
-> >> +		newerr = (gop_map)->status;
-> >
-> > You've reworked the handling of gop_map and when and where it is
-> > incremented, which might be a legit cleanup but does it relate to the
-> > bulk of this change somehow that I'm missing?
-> That original "++gop_map" assumed the header was also grant mapped, and 
-> incremented the pointer first here, which is wrong now.
+> Subject: Re: [PATCHv2 2/2] watchdog: imx2_wdt: Add big-endian support
+> 
+> On Tue, Apr 01, 2014 at 02:24:12AM +0000, Li.Xiubo@freescale.com wrote:
+> 
+> > Yes, I do think so too and there has already regmap-mmio version patch
+> > Series about the IMX2 Watchdog driver, but those regmap patches for
+> > supporting the 16-bit values are in Mark's tree and the IMX2 Watchdog
+> > will depend on them.
+> 
+> > How to deal with this situation ?
+> 
+> Well, anything that's already applied went to Linus already so is in
+> -rc1.  Anything else we can either do a cross tree merge or I can apply
+> the driver.
 
-OK, that makes sense.
+That's great.
 
-> >>   [...]
-> >>   		__skb_put(skb, data_len);
-> >> +		vif->tx_copy_ops[*copy_ops].source.u.ref = txreq.gref;
-> >> +		vif->tx_copy_ops[*copy_ops].source.domid = vif->domid;
-> >> +		vif->tx_copy_ops[*copy_ops].source.offset = txreq.offset;
-> >> +
-> >> +		vif->tx_copy_ops[*copy_ops].dest.u.gmfn =
-> >> +			virt_to_mfn(skb->data);
-> >> +		vif->tx_copy_ops[*copy_ops].dest.domid = DOMID_SELF;
-> >> +		vif->tx_copy_ops[*copy_ops].dest.offset =
-> >> +			offset_in_page(skb->data);
-> >> +
-> >> +		vif->tx_copy_ops[*copy_ops].len = data_len;
-> >> +		vif->tx_copy_ops[*copy_ops].flags = GNTCOPY_source_gref;
-> >
-> > We have gnttab_set_map_op. Should we have gnttap_set_copy_op too?
-> This is the only place at the moment when we do this, so I wouldn't 
-> bother to do it.
+Thanks very much,
 
-It's not only about multiple uses of the pattern but about code clarity
-and API consistency.
-
-> >> -	BUG_ON(ret);
-> >> +	else {
-> >> +		gnttab_batch_copy(vif->tx_copy_ops, nr_cops);
-> >> +		if (nr_mops != 0) {
-> >
-> >
-> > if (nr_mops) would do.
-> >
-> >> +			ret = gnttab_map_refs(vif->tx_map_ops,
-> >
-> > So we use gnttab_batch_copy and gnttab_map_refs.
-> >
-> > Shouldn't we either use gnttab_batch_copy and gnttab_batch_map or
-> > gnttab_copy gnttab_map_refs. (where gnttab_copy might be a bare
-> > GNTTABOP_copy or might be a helper wrapper).
-> >
-> > The point of the batch interface is to handle page unsharing etc, but
-> > doing it only for copies seems like a waste one way or another.
-> The difference between gnttab_batch_map and gnttab_map_refs is that the 
-> latter calls set_foreign_p2m_mapping, which we need for sure.
-> gnttab_batch_copy calls the hypercall and tries again if op->status == 
-> GNTST_eagain. I think that's exactly what we need here as well.
-> The naming might be confusing indeed, but that should be the topic of an 
-> another patch.
-
-Whether you choose to do it now or later this code should use a
-consistent set of ops, either gnttab_batch_* or gnttab_*_refs, from day
-one.
-
-Ian.
-
+BRs
+Xiubo
