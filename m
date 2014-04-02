@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878AbaDBAIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Apr 2014 20:08:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756550AbaDBAII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Apr 2014 20:08:08 -0400
-Date: Tue, 1 Apr 2014 20:07:58 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140402000758.GA1440@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140401150849.GA14757@redhat.com>
- <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
- <20140401180414.GA12326@redhat.com>
- <20140401183245.GA12473@linux.vnet.ibm.com>
- <20140401221616.GA961@redhat.com>
- <20140401231822.GC4284@linux.vnet.ibm.com>
- <20140401233130.GA25030@redhat.com>
- <20140401235724.GD4284@linux.vnet.ibm.com>
+	id S1756670AbaDBABy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Apr 2014 20:01:54 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:11724 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755224AbaDBABu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Apr 2014 20:01:50 -0400
+Date: Tue, 1 Apr 2014 20:01:45 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
+        Peter Anvin <hpa@zytor.com>, Jan Hubicka <hubicka@ucw.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jaroslav Kysela <perex@perex.cz>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 LTO changes for v3.15
+Message-ID: <20140401200145.05e0437e@gandalf.local.home>
+In-Reply-To: <533B0B5F.2040907@linux.intel.com>
+References: <201403312105.s2VL5AqX010173@terminus.zytor.com>
+	<CA+55aFwccMZNgHA_xS_+cLNPqEjAt4qm2LYK_WLU0XbeDOoa=g@mail.gmail.com>
+	<20140331230347.GH32556@tassilo.jf.intel.com>
+	<CA+55aFyOPkCO7Cpf7pG1wD3QL0CVwKrcf+zKVka51ROABFGn-w@mail.gmail.com>
+	<CA+55aFxCCOASxhgRfGmNRPgHwZQJ2Q0Oa9-vwpMdmTqx99m26g@mail.gmail.com>
+	<533B0B5F.2040907@linux.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140401235724.GD4284@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 04:57:24PM -0700, Paul E. McKenney wrote:
- 
- > > [  917.790265] INFO: rcu_preempt detected stalls on CPUs/tasks:
- > > [  917.791189] 	(detected by 0, t=6502 jiffies, g=21390, c=21389, q=0)
- > 
- > But the hang didn't happen until grace period #21390.  Sigh!  That means
- > that the trace doesn't tell me about the current grace period.
- > 
- > Thank you for getting this info, but it is beginning to look like
- > bisection is necessary here.  :-(
+On Tue, 01 Apr 2014 11:54:23 -0700
+"H. Peter Anvin" <hpa@linux.intel.com> wrote:
 
-ok, I was hoping that wouldn't be the case, but let's see what it turns up.
+> On 03/31/2014 05:33 PM, Linus Torvalds wrote:
+> > 
+> > I notice that there seems to be a handful of x86 system calls that
+> > don't use the SYSCALL_DEFINEx() macros to define the system call, some
+> > grepping finds at least ioperm(), modify_ldt(), sigreturn() and
+> > rt_sigreturn(). There are probably others. They should just be
+> > converted to SYSCALL_DEFINEx() while at it. No, x86 doesn't need the
+> > typecasting, but it won't hurt either, and it's good to be consistent.
+> > 
+> > I'm not sure why those system calls didn't get converted (other
+> > x86-specific ones like vm86() _have_ gotten converted), maybe there's
+> > some reason for it. But I *think* the reason is "nobody noticed".
+> > 
+> 
+> Pretty much.  If nothing else, it breaks tracing.
 
-	Dave
+Why would they break tracing? I remember there was a issue with compat
+calls, are these related to that?
 
+-- Steve
