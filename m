@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371AbaDBU1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 16:27:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42822 "EHLO
+	id S933354AbaDBU1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 16:27:32 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:42803 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758860AbaDBUN2 (ORCPT
+	by vger.kernel.org with ESMTP id S1758819AbaDBUN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Apr 2014 16:13:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 16/40] pnfs: fix BUG in filelayout_recover_commit_reqs
-Date: Wed,  2 Apr 2014 22:13:02 +0200
-Message-Id: <9de48201dab36dde64159f6fd7f8f66e3d7384c4.1396469191.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 27/40] Input: mousedev - fix race when creating mixed device
+Date: Wed,  2 Apr 2014 22:13:13 +0200
+Message-Id: <eb3473f8aac909e420b059798e1df3e371f6970c.1396469191.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
 References: <4c74007da904cc0411d788200034b2fb4c9e0d01.1396469191.git.jslaby@suse.cz>
@@ -24,90 +23,204 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Weston Andros Adamson <dros@primarydata.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 471252cd8b34b0609973740b25dcd1ff01dc1889 upstream.
+commit e4dbedc7eac7da9db363a36f2bd4366962eeefcc upstream.
 
-cond_resched_lock(cinfo->lock) is called everywhere else while holding
-the cinfo->lock spinlock.  Not holding this lock while calling
-transfer_commit_list in filelayout_recover_commit_reqs causes the BUG
-below.
+We should not be using static variable mousedev_mix in methods that can be
+called before that singleton gets assigned. While at it let's add open and
+close methods to mousedev structure so that we do not need to test if we
+are dealing with multiplexor or normal device and simply call appropriate
+method directly.
 
-It's true that we can't hold this lock while calling pnfs_put_lseg,
-because that might try to lock the inode lock - which might be the
-same lock as cinfo->lock.
+This fixes: https://bugzilla.kernel.org/show_bug.cgi?id=71551
 
-To reproduce, mount a 2 DS pynfs server and run an O_DIRECT command
-that crosses a stripe boundary and is not page aligned, such as:
-
- dd if=/dev/zero of=/mnt/f bs=17000 count=1 oflag=direct
-
-BUG: sleeping function called from invalid context at linux/fs/nfs/nfs4filelayout.c:1161
-in_atomic(): 0, irqs_disabled(): 0, pid: 27, name: kworker/0:1
-2 locks held by kworker/0:1/27:
- #0:  (events){.+.+.+}, at: [<ffffffff810501d7>] process_one_work+0x175/0x3a5
- #1:  ((&dreq->work)){+.+...}, at: [<ffffffff810501d7>] process_one_work+0x175/0x3a5
-CPU: 0 PID: 27 Comm: kworker/0:1 Not tainted 3.13.0-rc3-branch-dros_testing+ #21
-Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/31/2013
-Workqueue: events nfs_direct_write_schedule_work [nfs]
- 0000000000000000 ffff88007a39bbb8 ffffffff81491256 ffff88007b87a130  ffff88007a39bbd8 ffffffff8105f103 ffff880079614000 ffff880079617d40  ffff88007a39bc20 ffffffffa011603e ffff880078988b98 0000000000000000
-Call Trace:
- [<ffffffff81491256>] dump_stack+0x4d/0x66
- [<ffffffff8105f103>] __might_sleep+0x100/0x105
- [<ffffffffa011603e>] transfer_commit_list+0x94/0xf1 [nfs_layout_nfsv41_files]
- [<ffffffffa01160d6>] filelayout_recover_commit_reqs+0x3b/0x68 [nfs_layout_nfsv41_files]
- [<ffffffffa00ba53a>] nfs_direct_write_reschedule+0x9f/0x1d6 [nfs]
- [<ffffffff810705df>] ? mark_lock+0x1df/0x224
- [<ffffffff8106e617>] ? trace_hardirqs_off_caller+0x37/0xa4
- [<ffffffff8106e691>] ? trace_hardirqs_off+0xd/0xf
- [<ffffffffa00ba8f8>] nfs_direct_write_schedule_work+0x9d/0xb7 [nfs]
- [<ffffffff810501d7>] ? process_one_work+0x175/0x3a5
- [<ffffffff81050258>] process_one_work+0x1f6/0x3a5
- [<ffffffff810501d7>] ? process_one_work+0x175/0x3a5
- [<ffffffff8105187e>] worker_thread+0x149/0x1f5
- [<ffffffff81051735>] ? rescuer_thread+0x28d/0x28d
- [<ffffffff81056d74>] kthread+0xd2/0xda
- [<ffffffff81056ca2>] ? __kthread_parkme+0x61/0x61
- [<ffffffff8149e66c>] ret_from_fork+0x7c/0xb0
- [<ffffffff81056ca2>] ? __kthread_parkme+0x61/0x61
-
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reported-by: GiulioDP <depasquale.giulio@gmail.com>
+Tested-by: GiulioDP <depasquale.giulio@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfs/nfs4filelayout.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/input/mousedev.c | 73 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 42 insertions(+), 31 deletions(-)
 
-diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
-index b86464ba25e1..6e245d13de10 100644
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -1216,17 +1216,17 @@ static void filelayout_recover_commit_reqs(struct list_head *dst,
- 	struct pnfs_commit_bucket *b;
- 	int i;
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index 4c842c320c2e..b604564dec5c 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -67,7 +67,6 @@ struct mousedev {
+ 	struct device dev;
+ 	struct cdev cdev;
+ 	bool exist;
+-	bool is_mixdev;
  
--	/* NOTE cinfo->lock is NOT held, relying on fact that this is
--	 * only called on single thread per dreq.
--	 * Can't take the lock because need to do pnfs_put_lseg
--	 */
-+	spin_lock(cinfo->lock);
- 	for (i = 0, b = cinfo->ds->buckets; i < cinfo->ds->nbuckets; i++, b++) {
- 		if (transfer_commit_list(&b->written, dst, cinfo, 0)) {
-+			spin_unlock(cinfo->lock);
- 			pnfs_put_lseg(b->wlseg);
- 			b->wlseg = NULL;
-+			spin_lock(cinfo->lock);
+ 	struct list_head mixdev_node;
+ 	bool opened_by_mixdev;
+@@ -77,6 +76,9 @@ struct mousedev {
+ 	int old_x[4], old_y[4];
+ 	int frac_dx, frac_dy;
+ 	unsigned long touch;
++
++	int (*open_device)(struct mousedev *mousedev);
++	void (*close_device)(struct mousedev *mousedev);
+ };
+ 
+ enum mousedev_emul {
+@@ -116,9 +118,6 @@ static unsigned char mousedev_imex_seq[] = { 0xf3, 200, 0xf3, 200, 0xf3, 80 };
+ static struct mousedev *mousedev_mix;
+ static LIST_HEAD(mousedev_mix_list);
+ 
+-static void mixdev_open_devices(void);
+-static void mixdev_close_devices(void);
+-
+ #define fx(i)  (mousedev->old_x[(mousedev->pkt_count - (i)) & 03])
+ #define fy(i)  (mousedev->old_y[(mousedev->pkt_count - (i)) & 03])
+ 
+@@ -428,9 +427,7 @@ static int mousedev_open_device(struct mousedev *mousedev)
+ 	if (retval)
+ 		return retval;
+ 
+-	if (mousedev->is_mixdev)
+-		mixdev_open_devices();
+-	else if (!mousedev->exist)
++	if (!mousedev->exist)
+ 		retval = -ENODEV;
+ 	else if (!mousedev->open++) {
+ 		retval = input_open_device(&mousedev->handle);
+@@ -446,9 +443,7 @@ static void mousedev_close_device(struct mousedev *mousedev)
+ {
+ 	mutex_lock(&mousedev->mutex);
+ 
+-	if (mousedev->is_mixdev)
+-		mixdev_close_devices();
+-	else if (mousedev->exist && !--mousedev->open)
++	if (mousedev->exist && !--mousedev->open)
+ 		input_close_device(&mousedev->handle);
+ 
+ 	mutex_unlock(&mousedev->mutex);
+@@ -459,21 +454,29 @@ static void mousedev_close_device(struct mousedev *mousedev)
+  * stream. Note that this function is called with mousedev_mix->mutex
+  * held.
+  */
+-static void mixdev_open_devices(void)
++static int mixdev_open_devices(struct mousedev *mixdev)
+ {
+-	struct mousedev *mousedev;
++	int error;
++
++	error = mutex_lock_interruptible(&mixdev->mutex);
++	if (error)
++		return error;
+ 
+-	if (mousedev_mix->open++)
+-		return;
++	if (!mixdev->open++) {
++		struct mousedev *mousedev;
+ 
+-	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
+-		if (!mousedev->opened_by_mixdev) {
+-			if (mousedev_open_device(mousedev))
+-				continue;
++		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
++			if (!mousedev->opened_by_mixdev) {
++				if (mousedev_open_device(mousedev))
++					continue;
+ 
+-			mousedev->opened_by_mixdev = true;
++				mousedev->opened_by_mixdev = true;
++			}
  		}
  	}
- 	cinfo->ds->nwritten = 0;
-+	spin_unlock(cinfo->lock);
++
++	mutex_unlock(&mixdev->mutex);
++	return 0;
  }
  
- static unsigned int
+ /*
+@@ -481,19 +484,22 @@ static void mixdev_open_devices(void)
+  * device. Note that this function is called with mousedev_mix->mutex
+  * held.
+  */
+-static void mixdev_close_devices(void)
++static void mixdev_close_devices(struct mousedev *mixdev)
+ {
+-	struct mousedev *mousedev;
++	mutex_lock(&mixdev->mutex);
+ 
+-	if (--mousedev_mix->open)
+-		return;
++	if (!--mixdev->open) {
++		struct mousedev *mousedev;
+ 
+-	list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
+-		if (mousedev->opened_by_mixdev) {
+-			mousedev->opened_by_mixdev = false;
+-			mousedev_close_device(mousedev);
++		list_for_each_entry(mousedev, &mousedev_mix_list, mixdev_node) {
++			if (mousedev->opened_by_mixdev) {
++				mousedev->opened_by_mixdev = false;
++				mousedev_close_device(mousedev);
++			}
+ 		}
+ 	}
++
++	mutex_unlock(&mixdev->mutex);
+ }
+ 
+ 
+@@ -522,7 +528,7 @@ static int mousedev_release(struct inode *inode, struct file *file)
+ 	mousedev_detach_client(mousedev, client);
+ 	kfree(client);
+ 
+-	mousedev_close_device(mousedev);
++	mousedev->close_device(mousedev);
+ 
+ 	return 0;
+ }
+@@ -550,7 +556,7 @@ static int mousedev_open(struct inode *inode, struct file *file)
+ 	client->mousedev = mousedev;
+ 	mousedev_attach_client(mousedev, client);
+ 
+-	error = mousedev_open_device(mousedev);
++	error = mousedev->open_device(mousedev);
+ 	if (error)
+ 		goto err_free_client;
+ 
+@@ -861,16 +867,21 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
+ 
+ 	if (mixdev) {
+ 		dev_set_name(&mousedev->dev, "mice");
++
++		mousedev->open_device = mixdev_open_devices;
++		mousedev->close_device = mixdev_close_devices;
+ 	} else {
+ 		int dev_no = minor;
+ 		/* Normalize device number if it falls into legacy range */
+ 		if (dev_no < MOUSEDEV_MINOR_BASE + MOUSEDEV_MINORS)
+ 			dev_no -= MOUSEDEV_MINOR_BASE;
+ 		dev_set_name(&mousedev->dev, "mouse%d", dev_no);
++
++		mousedev->open_device = mousedev_open_device;
++		mousedev->close_device = mousedev_close_device;
+ 	}
+ 
+ 	mousedev->exist = true;
+-	mousedev->is_mixdev = mixdev;
+ 	mousedev->handle.dev = input_get_device(dev);
+ 	mousedev->handle.name = dev_name(&mousedev->dev);
+ 	mousedev->handle.handler = handler;
+@@ -919,7 +930,7 @@ static void mousedev_destroy(struct mousedev *mousedev)
+ 	device_del(&mousedev->dev);
+ 	mousedev_cleanup(mousedev);
+ 	input_free_minor(MINOR(mousedev->dev.devt));
+-	if (!mousedev->is_mixdev)
++	if (mousedev != mousedev_mix)
+ 		input_unregister_handle(&mousedev->handle);
+ 	put_device(&mousedev->dev);
+ }
 -- 
 1.9.1
 
