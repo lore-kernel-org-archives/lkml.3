@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594AbaDBQdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 12:33:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61306 "EHLO mga09.intel.com"
+	id S932512AbaDBQec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 12:34:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50564 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932330AbaDBQdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 12:33:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,780,1389772800"; 
-   d="scan'208";a="513412829"
-Message-ID: <533C362E.1020605@intel.com>
-Date: Wed, 02 Apr 2014 09:09:18 -0700
-From: Dave Hansen <dave.hansen@intel.com>
+	id S932250AbaDBQeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 12:34:31 -0400
+Message-ID: <533C3BB4.8020904@zytor.com>
+Date: Wed, 02 Apr 2014 09:32:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>
-CC: nfont@linux.vnet.ibm.com, gregkh@linuxfoundation.org
-Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index reflect
- the start/end section number
-References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
-In-Reply-To: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
+To: Johannes Weiner <hannes@cmpxchg.org>, John Stultz <john.stultz@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org> <533B8C2D.9010108@linaro.org> <20140402163013.GP14688@cmpxchg.org>
+In-Reply-To: <20140402163013.GP14688@cmpxchg.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 01:56 AM, Li Zhong wrote:
-> I noticed the phys_index and end_phys_index under 
-> /sys/devices/system/memory/memoryXXX/ have the same value, e.g.
-> (for the test machine, one memory block has 8 sections, that is 
->  sections_per_block equals 8)
+On 04/02/2014 09:30 AM, Johannes Weiner wrote:
 > 
-> # cd /sys/devices/system/memory/memory100/
-> # cat phys_index end_phys_index 
-> 00000064
-> 00000064
+> So between zero-fill and SIGBUS, I'd prefer the one which results in
+> the simpler user interface / fewer system calls.
 > 
-> Seems they should reflect the start/end section number respectively, which 
-> also matches what is said in Documentation/memory-hotplug.txt
 
-This changes a user-visible interface.  Won't this break userspace?
+The use cases are different; I believe this should be a user space option.
+
+	-hpa
+
