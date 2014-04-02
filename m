@@ -1,872 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaDBHFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 03:05:42 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43784 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757929AbaDBHFl (ORCPT
+	id S1758009AbaDBHGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 03:06:14 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:14192 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757453AbaDBHGM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 03:05:41 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: avagin@openvz.org, oleg@redhat.com, roland@redhat.com, mikey@neuling.org,
-        benh@kernel.crashing.org,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] powerpc, ptrace: Add new ptrace request macros for transactional memory
-Date: Wed,  2 Apr 2014 12:32:23 +0530
-Message-Id: <1396422144-11032-3-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040207-0260-0000-0000-000004A1861B
+	Wed, 2 Apr 2014 03:06:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 02 Apr 2014 00:01:43 -0700
+From: Songhee Baek <sbaek@nvidia.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Arun Shamanna Lakshmi <aruns@nvidia.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 2 Apr 2014 00:06:06 -0700
+Subject: RE: [PATCH] ASoC: DAPM: Add support for multi register mux
+Thread-Topic: [PATCH] ASoC: DAPM: Add support for multi register mux
+Thread-Index: Ac9OQVBzSgaQ4eLHSnqD7LAIpk/o8AAAEdpw
+Message-ID: <D6C615D3E4730340AE82D5BD856631C0A26CB32547@HQMAIL02.nvidia.com>
+References: <1396333288-19113-1-git-send-email-aruns@nvidia.com>
+ <533A6F4A.2060702@metafoo.de>
+ <781A12BB53C15A4BB37291FDE08C03F3A05CDCD63B@HQMAIL02.nvidia.com>
+ <781A12BB53C15A4BB37291FDE08C03F3A05CDCD659@HQMAIL02.nvidia.com>
+ <533BA779.9010005@metafoo.de>
+ <D6C615D3E4730340AE82D5BD856631C0A26CB3252F@HQMAIL02.nvidia.com>
+ <533BB26B.3020503@metafoo.de>
+ <D6C615D3E4730340AE82D5BD856631C0A26CB32541@HQMAIL02.nvidia.com>
+ <533BB5E6.7050004@metafoo.de>
+In-Reply-To: <533BB5E6.7050004@metafoo.de>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds following new sets of ptrace request macros for transactional
-memory expanding the existing ptrace ABI on PowerPC.
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Wednesday, April 02, 2014 12:02 AM
+> To: Songhee Baek
+> Cc: Arun Shamanna Lakshmi; lgirdwood@gmail.com; broonie@kernel.org;
+> swarren@wwwdotorg.org; perex@perex.cz; tiwai@suse.de; alsa-
+> devel@alsa-project.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
+> 
+> On 04/02/2014 08:56 AM, Songhee Baek wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> >> Sent: Tuesday, April 01, 2014 11:47 PM
+> >> To: Songhee Baek
+> >> Cc: Arun Shamanna Lakshmi; lgirdwood@gmail.com; broonie@kernel.org;
+> >> swarren@wwwdotorg.org; perex@perex.cz; tiwai@suse.de; alsa-
+> >> devel@alsa-project.org; linux-kernel@vger.kernel.org
+> >> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
+> >>
+> >> On 04/02/2014 08:17 AM, Songhee Baek wrote:
+> >>>> -----Original Message-----
+> >>>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> >>>> Sent: Tuesday, April 01, 2014 11:00 PM
+> >>>> To: Arun Shamanna Lakshmi
+> >>>> Cc: lgirdwood@gmail.com; broonie@kernel.org;
+> >> swarren@wwwdotorg.org;
+> >>>> perex@perex.cz; tiwai@suse.de; alsa-devel@alsa-project.org; linux-
+> >>>> kernel@vger.kernel.org; Songhee Baek
+> >>>> Subject: Re: [PATCH] ASoC: DAPM: Add support for multi register mux
+> >>>>
+> >>>> On 04/01/2014 08:26 PM, Arun Shamanna Lakshmi wrote:
+> >>>> [...]
+> >>>>>>> diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c index
+> >>>>>>> c8a780d..4d2b35c 100644
+> >>>>>>> --- a/sound/soc/soc-dapm.c
+> >>>>>>> +++ b/sound/soc/soc-dapm.c
+> >>>>>>> @@ -514,9 +514,9 @@ static int dapm_connect_mux(struct
+> >>>>>> snd_soc_dapm_context *dapm,
+> >>>>>>>      	unsigned int val, item;
+> >>>>>>>      	int i;
+> >>>>>>>
+> >>>>>>> -	if (e->reg != SND_SOC_NOPM) {
+> >>>>>>> -		soc_widget_read(dest, e->reg, &val);
+> >>>>>>> -		val = (val >> e->shift_l) & e->mask;
+> >>>>>>> +	if (e->reg[0] != SND_SOC_NOPM) {
+> >>>>>>> +		soc_widget_read(dest, e->reg[0], &val);
+> >>>>>>> +		val = (val >> e->shift_l) & e->mask[0];
+> >>>>>>>      		item = snd_soc_enum_val_to_item(e, val);
+> >>>>>>
+> >>>>>> This probably should handle the new enum type as well. You'll
+> >>>>>> probably need some kind of flag in the struct to distinguish
+> >>>>>> between the two enum types.
+> >>>>>
+> >>>>> Any suggestion on the flag name ?
+> >>>>>
+> >>>>
+> >>>> How about 'onehot'?
+> >>>>
+> >>>> [...]
+> >>>>>>> +		reg_val = BIT(bit_pos);
+> >>>>>>> +	}
+> >>>>>>> +
+> >>>>>>> +	for (i = 0; i < e->num_regs; i++) {
+> >>>>>>> +		if (i == reg_idx) {
+> >>>>>>> +			change = snd_soc_test_bits(codec, e->reg[i],
+> >>>>>>> +							e->mask[i],
+> >>>>>> reg_val);
+> >>>>>>> +
+> >>>>>>> +		} else {
+> >>>>>>> +			/* accumulate the change to update the
+> >> DAPM
+> >>>>>> path
+> >>>>>>> +			    when none is selected */
+> >>>>>>> +			change += snd_soc_test_bits(codec, e-
+> >>> reg[i],
+> >>>>>>> +							e->mask[i], 0);
+> >>>>>>
+> >>>>>> change |=
+> >>>>>>
+> >>>>>>> +
+> >>>>>>> +			/* clear the register when not selected */
+> >>>>>>> +			snd_soc_write(codec, e->reg[i], 0);
+> >>>>>>
+> >>>>>> I think this should happen as part of the DAPM update sequence
+> >>>>>> like you had earlier. Some special care should probably be take
+> >>>>>> to make sure that you de-select the previous mux input before
+> >>>>>> selecting the new one if the new one is in a different register than
+> the previous one.
+> >>>>>
+> >>>>> I am not sure I follow this part. We are clearing the 'not selected'
+> >>>>> registers before we set the one we want. Do you want us to loop
+> >>>>> the logic of soc_dapm_mux_update_power for each register ? or do
+> >>>>> you want to change the dapm_update structure so that it takes all
+> >>>>> the regs, masks, and values together ?
+> >>>>
+> >>>> The idea with the dapm_update struct is that the register updates
+> >>>> are done in the middle of the power-down and power-up sequence.
+> So
+> >>>> yes, change the dapm_update struct to be able to hold all register
+> >>>> updates and do all register updates in dapm_widget_update. I think
+> >>>> an earlier version of your patch already had this.
+> >>>
+> >>> Is the change similar to as shown below?
+> >>>
+> >>> for (reg_idx = 0; reg_idx < e->num_regs; reg_idx++) {
+> >>> 	val = e->values[item * e->num_regs + reg_idx];
+> >>> 	ret = snd_soc_update_bits_locked(codec, e->reg[reg_idx],
+> >>> 				e->mask[reg_idx], val);
+> >>> 	if (ret)
+> >>> 	return ret;
+> >>> }
+> >>>
+> >>> During updating of the register's value, the above change can create
+> >>> non-zero value in two different registers (very short transition) as
+> >>> Mark mentioned for that change so we need to clear register first
+> >>> before writing the desired value in the register.
+> >>>
+> >>> Should we add the clearing all registers and write the mux value in
+> >>> desired register in the update function?
+> >>>
+> >>
+> >> In dapm_update_widget() you have this line:
+> >>
+> >>    ret = soc_widget_update_bits(w, update->reg, update->mask, update-
+> >>> val);
+> >>
+> >> That needs to be done for every register update. When you setup the
+> >> update struct you need to make sure that the register clears come
+> >> before the register set.
+> >>
+> >> E.g. if you have register 0x3, 0x4, 0x5 and you select a bit in
+> >> register 0x4 it should look like this.
+> >>
+> >> update->reg[0] = 0x3;
+> >> update->val[0] = 0x0;
+> >> update->reg[1] = 0x5;
+> >> update->val[1] = 0x0;
+> >> update->reg[2] = 0x4;
+> >> update->val[2] = 0x8;
+> >>
+> >> When you set a bit in register 0x3 it should look like this:
+> >>
+> >> update->reg[0] = 0x4;
+> >> update->val[0] = 0x0;
+> >> update->reg[1] = 0x5;
+> >> update->val[1] = 0x0;
+> >> update->reg[2] = 0x3;
+> >> update->val[2] = 0x1;
+> >>
+> >> So basically the write operation goes into update->reg[e->num_regs-1]
+> >> the clear operations go into the other slots before that.
+> >
+> > Does update reg/val array have the writing sequence, is it correct?
+> > And can I assume that update struct has reg/val/mask arrays not pointers?
+> 
+> Right now the update struct does not have support for multiple register
+> writes. That's up to you to implement this. I guess making it an array for now
+> should be fine. But you need to add some safety checks to make sure that
+> num_regs is not larger or equal to the array size.
 
-	/* TM special purpose registers */
-	PTRACE_GETTM_SPRREGS
-	PTRACE_SETTM_SPRREGS
-
-	/* TM checkpointed GPR registers */
-	PTRACE_GETTM_CGPRREGS
-	PTRACE_SETTM_CGPRREGS
-
-	/* TM checkpointed FPR registers */
-	PTRACE_GETTM_CFPRREGS
-	PTRACE_SETTM_CFPRREGS
-
-	/* TM checkpointed VMX registers */
-	PTRACE_GETTM_CVMXREGS
-	PTRACE_SETTM_CVMXREGS
-
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/switch_to.h   |   8 +
- arch/powerpc/include/uapi/asm/ptrace.h |  51 +++
- arch/powerpc/kernel/process.c          |  24 ++
- arch/powerpc/kernel/ptrace.c           | 570 +++++++++++++++++++++++++++++++--
- 4 files changed, 625 insertions(+), 28 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
-index 0e83e7d..22095e2 100644
---- a/arch/powerpc/include/asm/switch_to.h
-+++ b/arch/powerpc/include/asm/switch_to.h
-@@ -80,6 +80,14 @@ static inline void flush_spe_to_thread(struct task_struct *t)
- }
- #endif
- 
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+extern void flush_tmreg_to_thread(struct task_struct *);
-+#else
-+static inline void flush_tmreg_to_thread(struct task_struct *t)
-+{
-+}
-+#endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
-+
- static inline void clear_task_ebb(struct task_struct *t)
- {
- #ifdef CONFIG_PPC_BOOK3S_64
-diff --git a/arch/powerpc/include/uapi/asm/ptrace.h b/arch/powerpc/include/uapi/asm/ptrace.h
-index 77d2ed3..1a12c36 100644
---- a/arch/powerpc/include/uapi/asm/ptrace.h
-+++ b/arch/powerpc/include/uapi/asm/ptrace.h
-@@ -190,6 +190,57 @@ struct pt_regs {
- #define PPC_PTRACE_SETHWDEBUG	0x88
- #define PPC_PTRACE_DELHWDEBUG	0x87
- 
-+/* Transactional memory */
-+
-+/*
-+ * TM specific SPR
-+ *
-+ * struct data {
-+ * 	u64		tm_tfhar;
-+ *	u64		tm_texasr;
-+ *	u64		tm_tfiar;
-+ *	unsigned long   tm_orig_msr;
-+ *	u64		tm_tar;
-+ *	u64		tm_ppr;
-+ *	u64		tm_dscr;
-+ * };
-+ */
-+#define PTRACE_GETTM_SPRREGS	0x70
-+#define PTRACE_SETTM_SPRREGS	0x71
-+
-+/*
-+ * TM Checkpointed GPR
-+ *
-+ * struct data {
-+ *	struct pt_regs	ckpt_regs;
-+ * };
-+ */
-+#define PTRACE_GETTM_CGPRREGS	0x72
-+#define PTRACE_SETTM_CGPRREGS	0x73
-+
-+/*
-+ * TM Checkpointed FPR
-+ *
-+ * struct data {
-+ * 	u64	fpr[32];
-+ * 	u64	fpscr;
-+ * };
-+ */
-+#define PTRACE_GETTM_CFPRREGS	0x74
-+#define PTRACE_SETTM_CFPRREGS	0x75
-+
-+/*
-+ * TM Checkpointed VMX
-+ *
-+ * struct data {
-+ *	vector128	vr[32];
-+ *	vector128	vscr;
-+ *	unsigned long	vrsave;
-+ *};
-+ */
-+#define PTRACE_GETTM_CVMXREGS	0x76
-+#define PTRACE_SETTM_CVMXREGS	0x77
-+
- #ifndef __ASSEMBLY__
- 
- struct ppc_debug_info {
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index af064d2..230a0ee 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -673,6 +673,30 @@ static inline void __switch_to_tm(struct task_struct *prev)
- 	}
- }
- 
-+void flush_tmreg_to_thread(struct task_struct *tsk)
-+{
-+	/*
-+ 	 * If task is not current, it should have been flushed
-+ 	 * already to it's thread_struct during __switch_to().
-+ 	 */
-+	if (tsk != current)
-+		return;
-+
-+	preempt_disable();
-+	if (tsk->thread.regs) {
-+		/*
-+ 		 * If we are still current, the TM state need to
-+ 		 * be flushed to thread_struct as it will be still
-+ 		 * present in the current cpu
-+ 		 */
-+		if (MSR_TM_ACTIVE(tsk->thread.regs->msr)) {
-+			__switch_to_tm(tsk);
-+			tm_recheckpoint_new_task(tsk);
-+		}
-+	}
-+	preempt_enable();
-+}
-+
- /*
-  * This is called if we are on the way out to userspace and the
-  * TIF_RESTORE_TM flag is set.  It checks if we need to reload
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 2e3d2bf..9fbcb6a 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -357,6 +357,17 @@ static int gpr_set(struct task_struct *target, const struct user_regset *regset,
- 	return ret;
- }
- 
-+/*
-+ * When any transaction is active, "thread_struct->transact_fp" holds
-+ * the current running value of all FPR registers and "thread_struct->
-+ * fp_state" holds the last checkpointed FPR registers state for the
-+ * current transaction.
-+ *
-+ * struct data {
-+ * 	u64	fpr[32];
-+ * 	u64	fpscr;
-+ * };
-+ */
- static int fpr_get(struct task_struct *target, const struct user_regset *regset,
- 		   unsigned int pos, unsigned int count,
- 		   void *kbuf, void __user *ubuf)
-@@ -365,21 +376,41 @@ static int fpr_get(struct task_struct *target, const struct user_regset *regset,
- 	u64 buf[33];
- 	int i;
- #endif
--	flush_fp_to_thread(target);
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		flush_fp_to_thread(target);
-+		flush_altivec_to_thread(target);
-+		flush_tmreg_to_thread(target);
-+	} else {
-+		flush_fp_to_thread(target);
-+	}
- 
- #ifdef CONFIG_VSX
- 	/* copy to local buffer then write that out */
--	for (i = 0; i < 32 ; i++)
--		buf[i] = target->thread.TS_FPR(i);
--	buf[32] = target->thread.fp_state.fpscr;
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		for (i = 0; i < 32 ; i++)
-+			buf[i] = target->thread.TS_TRANS_FPR(i);
-+		buf[32] = target->thread.transact_fp.fpscr;
-+	} else {
-+		for (i = 0; i < 32 ; i++)
-+			buf[i] = target->thread.TS_FPR(i);
-+		buf[32] = target->thread.fp_state.fpscr;
-+	}
- 	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
- 
- #else
--	BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
--		     offsetof(struct thread_fp_state, fpr[32][0]));
-+	if (MSR_TM_ACTIVE(tsk->thread.regs->msr)) {
-+		BUILD_BUG_ON(offsetof(struct transact_fp, fpscr) !=
-+				offsetof(struct transact_fp, fpr[32][0]));
- 
--	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+		return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				   &target->thread.transact_fp, 0, -1);
-+	} esle {
-+		BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
-+			     offsetof(struct thread_fp_state, fpr[32][0]));
-+
-+		return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
- 				   &target->thread.fp_state, 0, -1);
-+	}
- #endif
- }
- 
-@@ -391,23 +422,44 @@ static int fpr_set(struct task_struct *target, const struct user_regset *regset,
- 	u64 buf[33];
- 	int i;
- #endif
--	flush_fp_to_thread(target);
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		flush_fp_to_thread(target);
-+		flush_altivec_to_thread(target);
-+		flush_tmreg_to_thread(target);
-+	} else {
-+		flush_fp_to_thread(target);
-+	}
- 
- #ifdef CONFIG_VSX
- 	/* copy to local buffer then write that out */
- 	i = user_regset_copyin(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
- 	if (i)
- 		return i;
--	for (i = 0; i < 32 ; i++)
--		target->thread.TS_FPR(i) = buf[i];
--	target->thread.fp_state.fpscr = buf[32];
-+	for (i = 0; i < 32 ; i++) {
-+		if (MSR_TM_ACTIVE(target->thread.regs->msr))
-+			target->thread.TS_TRANS_FPR(i) = buf[i];
-+		else
-+			target->thread.TS_FPR(i) = buf[i];
-+	}
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr))
-+		target->thread.transact_fp.fpscr = buf[32];
-+	else
-+		target->thread.fp_state.fpscr = buf[32];
- 	return 0;
- #else
--	BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
--		     offsetof(struct thread_fp_state, fpr[32][0]));
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		BUILD_BUG_ON(offsetof(struct transact_fp, fpscr) !=
-+			     offsetof(struct transact_fp, fpr[32][0]));
- 
--	return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
--				  &target->thread.fp_state, 0, -1);
-+		return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+					  &target->thread.transact_fp, 0, -1);
-+	} else {
-+		BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
-+			     offsetof(struct thread_fp_state, fpr[32][0]));
-+
-+		return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				&target->thread.fp_state, 0, -1);
-+	}
- #endif
- }
- 
-@@ -432,20 +484,44 @@ static int vr_active(struct task_struct *target,
- 	return target->thread.used_vr ? regset->n : 0;
- }
- 
-+/*
-+ * When any transaction is active, "thread_struct->transact_vr" holds
-+ * the current running value of all VMX registers and "thread_struct->
-+ * vr_state" holds the last checkpointed value of VMX registers for the
-+ * current transaction.
-+ *
-+ * struct data {
-+ * 	vector128	vr[32];
-+ * 	vector128	vscr;
-+ * 	vector128	vrsave;
-+ * };
-+ */
- static int vr_get(struct task_struct *target, const struct user_regset *regset,
- 		  unsigned int pos, unsigned int count,
- 		  void *kbuf, void __user *ubuf)
- {
- 	int ret;
-+	struct thread_vr_state *addr;
- 
--	flush_altivec_to_thread(target);
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		flush_fp_to_thread(target);
-+		flush_altivec_to_thread(target);
-+		flush_tmreg_to_thread(target);
-+	} else {
-+		flush_altivec_to_thread(target);
-+	}
- 
- 	BUILD_BUG_ON(offsetof(struct thread_vr_state, vscr) !=
- 		     offsetof(struct thread_vr_state, vr[32]));
- 
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr))
-+		addr = &target->thread.transact_vr;
-+	else
-+		addr = &target->thread.vr_state;
-+
- 	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
--				  &target->thread.vr_state, 0,
--				  33 * sizeof(vector128));
-+				addr, 0, 33 * sizeof(vector128));
-+
- 	if (!ret) {
- 		/*
- 		 * Copy out only the low-order word of vrsave.
-@@ -455,11 +531,14 @@ static int vr_get(struct task_struct *target, const struct user_regset *regset,
- 			u32 word;
- 		} vrsave;
- 		memset(&vrsave, 0, sizeof(vrsave));
--		vrsave.word = target->thread.vrsave;
-+		if (MSR_TM_ACTIVE(target->thread.regs->msr))
-+			vrsave.word = target->thread.transact_vrsave;
-+		else
-+			vrsave.word = target->thread.vrsave;
-+
- 		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &vrsave,
- 					  33 * sizeof(vector128), -1);
- 	}
--
- 	return ret;
- }
- 
-@@ -467,16 +546,27 @@ static int vr_set(struct task_struct *target, const struct user_regset *regset,
- 		  unsigned int pos, unsigned int count,
- 		  const void *kbuf, const void __user *ubuf)
- {
-+	struct thread_vr_state *addr;
- 	int ret;
- 
--	flush_altivec_to_thread(target);
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
-+		flush_fp_to_thread(target);
-+		flush_altivec_to_thread(target);
-+		flush_tmreg_to_thread(target);
-+	} else {
-+		flush_altivec_to_thread(target);
-+	}
- 
- 	BUILD_BUG_ON(offsetof(struct thread_vr_state, vscr) !=
- 		     offsetof(struct thread_vr_state, vr[32]));
- 
-+	if (MSR_TM_ACTIVE(target->thread.regs->msr))
-+		addr = &target->thread.transact_vr;
-+	else
-+		addr = &target->thread.vr_state;
- 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
--				 &target->thread.vr_state, 0,
--				 33 * sizeof(vector128));
-+			addr, 0, 33 * sizeof(vector128));
-+
- 	if (!ret && count > 0) {
- 		/*
- 		 * We use only the first word of vrsave.
-@@ -486,13 +576,21 @@ static int vr_set(struct task_struct *target, const struct user_regset *regset,
- 			u32 word;
- 		} vrsave;
- 		memset(&vrsave, 0, sizeof(vrsave));
--		vrsave.word = target->thread.vrsave;
-+
-+		if (MSR_TM_ACTIVE(target->thread.regs->msr))
-+			vrsave.word = target->thread.transact_vrsave;
-+		else
-+			vrsave.word = target->thread.vrsave;
-+
- 		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &vrsave,
- 					 33 * sizeof(vector128), -1);
--		if (!ret)
--			target->thread.vrsave = vrsave.word;
-+		if (!ret) {
-+			if (MSR_TM_ACTIVE(target->thread.regs->msr))
-+				target->thread.transact_vrsave = vrsave.word;
-+			else
-+				target->thread.vrsave = vrsave.word;
-+		}
- 	}
--
- 	return ret;
- }
- #endif /* CONFIG_ALTIVEC */
-@@ -613,6 +711,347 @@ static int evr_set(struct task_struct *target, const struct user_regset *regset,
- }
- #endif /* CONFIG_SPE */
- 
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+
-+/*
-+ *  Transactional memory SPR
-+ *
-+ * struct {
-+ * 	u64		tm_tfhar;
-+ *	u64		tm_texasr;
-+ *	u64		tm_tfiar;
-+ *	unsigned long	tm_orig_msr;
-+ * 	unsigned long	tm_tar;
-+ *	unsigned long	tm_ppr;
-+ *	unsigned long	tm_dscr;
-+ * };
-+ */
-+static int tm_spr_get(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
-+{
-+	int ret;
-+
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+
-+	/* TFHAR register */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_tfhar, 0, sizeof(u64));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_tfhar) +
-+			sizeof(u64) != offsetof(struct thread_struct, tm_texasr));
-+
-+	/* TEXASR register */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_texasr, sizeof(u64), 2 * sizeof(u64));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_texasr) +
-+			sizeof(u64) != offsetof(struct thread_struct, tm_tfiar));
-+
-+	/* TFIAR register */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_tfiar, 2 * sizeof(u64), 3 * sizeof(u64));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_tfiar) +
-+			sizeof(u64) != offsetof(struct thread_struct, tm_orig_msr));
-+
-+	/* TM checkpointed original MSR */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_orig_msr, 3 * sizeof(u64),
-+				3 * sizeof(u64) + sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_orig_msr) +
-+			sizeof(unsigned long) + sizeof(struct pt_regs)
-+				!= offsetof(struct thread_struct, tm_tar));
-+
-+	/* TM checkpointed TAR register */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_tar, 3 * sizeof(u64) +
-+				sizeof(unsigned long) , 3 * sizeof(u64) +
-+					2 * sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_tar)
-+			+ sizeof(unsigned long) !=
-+				offsetof(struct thread_struct, tm_ppr));
-+
-+	/* TM checkpointed PPR register */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				&target->thread.tm_ppr, 3 * sizeof(u64) +
-+					2 * sizeof(unsigned long), 3 * sizeof(u64) +
-+						3 * sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_ppr) +
-+			sizeof(unsigned long) !=
-+				offsetof(struct thread_struct, tm_dscr));
-+
-+	/* TM checkpointed DSCR register */
-+	if (!ret)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_dscr, 3 * sizeof(u64)
-+				+ 3 * sizeof(unsigned long), 3 * sizeof(u64)
-+						+ 4 * sizeof(unsigned long));
-+	return ret;
-+}
-+
-+static int tm_spr_set(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
-+{
-+	int ret;
-+
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+
-+	/* TFHAR register */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				&target->thread.tm_tfhar, 0, sizeof(u64));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_tfhar)
-+		+ sizeof(u64) != offsetof(struct thread_struct, tm_texasr));
-+
-+	/* TEXASR register */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_texasr, sizeof(u64), 2 * sizeof(u64));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_texasr)
-+		+ sizeof(u64) != offsetof(struct thread_struct, tm_tfiar));
-+
-+	/* TFIAR register */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_tfiar, 2 * sizeof(u64), 3 * sizeof(u64));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_tfiar)
-+		+ sizeof(u64) != offsetof(struct thread_struct, tm_orig_msr));
-+
-+	/* TM checkpointed orig MSR */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_orig_msr, 3 * sizeof(u64),
-+				3 * sizeof(u64) + sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_orig_msr)
-+		+ sizeof(unsigned long) + sizeof(struct pt_regs) !=
-+			offsetof(struct thread_struct, tm_tar));
-+
-+	/* TM checkpointed TAR register */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.tm_tar, 3 * sizeof(u64) +
-+				sizeof(unsigned long), 3 * sizeof(u64) +
-+					2 * sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_tar)
-+			+ sizeof(unsigned long) != offsetof(struct thread_struct, tm_ppr));
-+
-+	/* TM checkpointed PPR register */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				&target->thread.tm_ppr, 3 * sizeof(u64)
-+					+ 2 * sizeof(unsigned long), 3 * sizeof(u64)
-+					+ 3 * sizeof(unsigned long));
-+
-+	BUILD_BUG_ON(offsetof(struct thread_struct, tm_ppr) +
-+			sizeof(unsigned long) !=
-+				offsetof(struct thread_struct, tm_dscr));
-+
-+	/* TM checkpointed DSCR register */
-+	if (!ret)
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				&target->thread.tm_dscr,
-+					3 * sizeof(u64) + 3 * sizeof(unsigned long),
-+					3 * sizeof(u64) + 4 * sizeof(unsigned long));
-+
-+	return ret;
-+}
-+
-+/*
-+ * TM Checkpointed GPR
-+ *
-+ * struct data {
-+ * 	struct pt_regs ckpt_regs;
-+ * };
-+ */
-+static int tm_cgpr_get(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
-+{
-+	int ret;
-+
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.ckpt_regs, 0,
-+				sizeof(struct pt_regs));
-+	return ret;
-+}
-+
-+static int tm_cgpr_set(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
-+{
-+	int ret;
-+
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+					&target->thread.ckpt_regs, 0,
-+						sizeof(struct pt_regs));
-+	return ret;
-+}
-+
-+/*
-+ * TM Checkpointed FPR
-+ *
-+ * struct data {
-+ * 	u64	fpr[32];
-+ * 	u64	fpscr;
-+ * };
-+ */
-+static int tm_cfpr_get(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
-+{
-+#ifdef CONFIG_VSX
-+	u64 buf[33];
-+	int i;
-+#endif
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+
-+#ifdef CONFIG_VSX
-+	/* copy to local buffer then write that out */
-+	for (i = 0; i < 32 ; i++)
-+		buf[i] = target->thread.TS_FPR(i);
-+	buf[32] = target->thread.fp_state.fpscr;
-+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
-+
-+#else
-+	BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
-+		offsetof(struct thread_fp_state, fpr[32][0]));
-+
-+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+			&target->thread.thread_fp_state, 0, -1);
-+#endif
-+}
-+
-+static int tm_cfpr_set(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
-+{
-+#ifdef CONFIG_VSX
-+	u64 buf[33];
-+	int i;
-+#endif
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+
-+#ifdef CONFIG_VSX
-+	/* copy to local buffer then write that out */
-+	i = user_regset_copyin(&pos, &count, &kbuf, &ubuf, buf, 0, -1);
-+	if (i)
-+		return i;
-+	for (i = 0; i < 32 ; i++)
-+		target->thread.TS_FPR(i) = buf[i];
-+	target->thread.fp_state.fpscr = buf[32];
-+        return 0;
-+#else
-+	BUILD_BUG_ON(offsetof(struct thread_fp_state, fpscr) !=
-+		      offsetof(struct thread_fp_state, fpr[32][0]));
-+
-+	return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				&target->thread.fp_state, 0, -1);
-+#endif
-+}
-+
-+/*
-+ * TM Checkpointed VMX
-+ *
-+ * struct data {
-+ * 	vector128	vr[32];
-+ * 	vector128	vscr;
-+ * 	vector128	vrsave;
-+ *};
-+ */
-+static int tm_cvmx_get(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
-+{
-+	int ret;
-+
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+
-+	BUILD_BUG_ON(offsetof(struct thread_vr_state, vscr) !=
-+		     offsetof(struct thread_vr_state, vr[32]));
-+
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  &target->thread.vr_state, 0,
-+				  33 * sizeof(vector128));
-+	if (!ret) {
-+		/*
-+		 * Copy out only the low-order word of vrsave.
-+		 */
-+		union {
-+			elf_vrreg_t reg;
-+			u32 word;
-+		} vrsave;
-+		memset(&vrsave, 0, sizeof(vrsave));
-+		vrsave.word = target->thread.vrsave;
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &vrsave,
-+					  33 * sizeof(vector128), -1);
-+	}
-+	return ret;
-+}
-+
-+static int tm_cvmx_set(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
-+{
-+	int ret;
-+
-+	flush_fp_to_thread(target);
-+	flush_altivec_to_thread(target);
-+	flush_tmreg_to_thread(target);
-+
-+	BUILD_BUG_ON(offsetof(struct thread_vr_state, vscr) !=
-+		offsetof(struct thread_vr_state, vr[32]));
-+
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &target->thread.vr_state, 0,
-+				 33 * sizeof(vector128));
-+	if (!ret && count > 0) {
-+		/*
-+		 * We use only the first word of vrsave.
-+		 */
-+		union {
-+			elf_vrreg_t reg;
-+			u32 word;
-+		} vrsave;
-+		memset(&vrsave, 0, sizeof(vrsave));
-+		vrsave.word = target->thread.vrsave;
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &vrsave,
-+					 33 * sizeof(vector128), -1);
-+		if (!ret)
-+			target->thread.vrsave = vrsave.word;
-+	}
-+	return ret;
-+}
-+#endif	/* CONFIG_PPC_TRANSACTIONAL_MEM */
- 
- /*
-  * These are our native regset flavors.
-@@ -629,6 +1068,12 @@ enum powerpc_regset {
- #ifdef CONFIG_SPE
- 	REGSET_SPE,
- #endif
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	REGSET_TM_SPR,		/* TM specific SPR */
-+	REGSET_TM_CGPR,		/* TM checkpointed GPR */
-+	REGSET_TM_CFPR,		/* TM checkpointed FPR */
-+	REGSET_TM_CVMX		/* TM checkpointed VMX */
-+#endif
- };
- 
- static const struct user_regset native_regsets[] = {
-@@ -663,6 +1108,28 @@ static const struct user_regset native_regsets[] = {
- 		.active = evr_active, .get = evr_get, .set = evr_set
- 	},
- #endif
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	[REGSET_TM_SPR] = {
-+		.core_note_type = NT_PPC_TM_SPR, .n = 7,
-+		.size = sizeof(u64), .align = sizeof(u64),
-+		.get = tm_spr_get, .set = tm_spr_set
-+	},
-+	[REGSET_TM_CGPR] = {
-+		.core_note_type = NT_PPC_TM_CGPR, .n = 14,
-+		.size = sizeof(u64), .align = sizeof(u64),
-+		.get = tm_cgpr_get, .set = tm_cgpr_set
-+	},
-+	[REGSET_TM_CFPR] = {
-+		.core_note_type = NT_PPC_TM_CFPR, .n = ELF_NFPREG,
-+		.size = sizeof(double), .align = sizeof(double),
-+		.get = tm_cfpr_get, .set = tm_cfpr_set
-+	},
-+	[REGSET_TM_CVMX] = {
-+		.core_note_type = NT_PPC_TM_CVMX, .n = 34,
-+		.size = sizeof(vector128), .align = sizeof(vector128),
-+		.get = tm_cvmx_get, .set = tm_cvmx_set
-+	},
-+#endif
- };
- 
- static const struct user_regset_view user_ppc_native_view = {
-@@ -831,6 +1298,28 @@ static const struct user_regset compat_regsets[] = {
- 		.active = evr_active, .get = evr_get, .set = evr_set
- 	},
- #endif
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	[REGSET_TM_SPR] = {
-+		.core_note_type = NT_PPC_TM_SPR, .n = 7,
-+		.size = sizeof(u64), .align = sizeof(u64),
-+		.get = tm_spr_get, .set = tm_spr_set
-+	},
-+	[REGSET_TM_CGPR] = {
-+		.core_note_type = NT_PPC_TM_CGPR, .n = 14,
-+		.size = sizeof(u64), .align = sizeof(u64),
-+		.get = tm_cgpr_get, .set = tm_cgpr_set
-+	},
-+	[REGSET_TM_CFPR] = {
-+		.core_note_type = NT_PPC_TM_CFPR, .n = ELF_NFPREG,
-+		.size = sizeof(double), .align = sizeof(double),
-+		.get = tm_cfpr_get, .set = tm_cfpr_set
-+	},
-+	[REGSET_TM_CVMX] = {
-+		.core_note_type = NT_PPC_TM_CVMX, .n = 34,
-+		.size = sizeof(vector128), .align = sizeof(vector128),
-+		.get = tm_cvmx_get, .set = tm_cvmx_set
-+	},
-+#endif
- };
- 
- static const struct user_regset_view user_ppc_compat_view = {
-@@ -1754,7 +2243,32 @@ long arch_ptrace(struct task_struct *child, long request,
- 					     REGSET_SPE, 0, 35 * sizeof(u32),
- 					     datavp);
- #endif
--
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	case PTRACE_GETTM_SPRREGS:
-+		return copy_regset_to_user(child, &user_ppc_native_view,
-+					   REGSET_TM_SPR, 0, 6 * sizeof(u64) + sizeof(unsigned long), datavp);
-+	case PTRACE_SETTM_SPRREGS:
-+		return copy_regset_from_user(child, &user_ppc_native_view,
-+					   REGSET_TM_SPR, 0, 6 * sizeof(u64) + sizeof(unsigned long), datavp);
-+	case PTRACE_GETTM_CGPRREGS:
-+		return copy_regset_to_user(child, &user_ppc_native_view,
-+					   REGSET_TM_CGPR, 0, sizeof(struct pt_regs), datavp);
-+	case PTRACE_SETTM_CGPRREGS:
-+		return copy_regset_from_user(child, &user_ppc_native_view,
-+					   REGSET_TM_CGPR, 0, sizeof(struct pt_regs), datavp);
-+	case PTRACE_GETTM_CFPRREGS:
-+		return copy_regset_to_user(child, &user_ppc_native_view,
-+					   REGSET_TM_CFPR, 0, sizeof(elf_fpregset_t), datavp);
-+	case PTRACE_SETTM_CFPRREGS:
-+		return copy_regset_from_user(child, &user_ppc_native_view,
-+					   REGSET_TM_CFPR, 0, sizeof(elf_fpregset_t), datavp);
-+	case PTRACE_GETTM_CVMXREGS:
-+		return copy_regset_to_user(child, &user_ppc_native_view,
-+					   REGSET_TM_CVMX, 0, (33 * sizeof(vector128) + sizeof(u32)), datavp);
-+	case PTRACE_SETTM_CVMXREGS:
-+		return copy_regset_from_user(child, &user_ppc_native_view,
-+					   REGSET_TM_CVMX, 0, (33 * sizeof(vector128) + sizeof(u32)), datavp);
-+#endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
- 	default:
- 		ret = ptrace_request(child, request, addr, data);
- 		break;
--- 
-1.7.11.7
-
+Thank you for the clarification. We will add this in dapm update struct.
