@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaDCTun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 15:50:43 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:3294 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496AbaDCTuk (ORCPT
+	id S1753621AbaDCTvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 15:51:18 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:64037 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469AbaDCTvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 15:50:40 -0400
-Message-ID: <1396554637.2550.11.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Greg Thelen <gthelen@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 03 Apr 2014 12:50:37 -0700
-In-Reply-To: <533DB03D.7010308@colorfullife.com>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
-	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
-	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
-	 <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
-	 <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
-	 <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
-	 <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
-	 <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com>
-	 <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com>
-	 <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
-	 <533DB03D.7010308@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Apr 2014 15:51:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396547967-19260-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1396547967-19260-1-git-send-email-soren.brinkmann@xilinx.com>
+Date: Thu, 3 Apr 2014 14:51:09 -0500
+Message-ID: <CAL_Jsq+vOHzca_wT9ADHRxhR9dT8FYGP-iTvd5=zKrRVBZz-cw@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] i2c: cadence: Document device tree bindings
+From: Rob Herring <robherring2@gmail.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Mike Looijmans <mike.looijmans@topic.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Harini Katakam <harinik@xilinx.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-03 at 21:02 +0200, Manfred Spraul wrote:
-> Hi Davidlohr,
-> 
-> On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
-> > The default size for shmmax is, and always has been, 32Mb.
-> > Today, in the XXI century, it seems that this value is rather small,
-> > making users have to increase it via sysctl, which can cause
-> > unnecessary work and userspace application workarounds[1].
-> >
-> > Instead of choosing yet another arbitrary value, larger than 32Mb,
-> > this patch disables the use of both shmmax and shmall by default,
-> > allowing users to create segments of unlimited sizes. Users and
-> > applications that already explicitly set these values through sysctl
-> > are left untouched, and thus does not change any of the behavior.
-> >
-> > So a value of 0 bytes or pages, for shmmax and shmall, respectively,
-> > implies unlimited memory, as opposed to disabling sysv shared memory.
-> > This is safe as 0 cannot possibly be used previously as SHMMIN is
-> > hardcoded to 1 and cannot be modified.
+On Thu, Apr 3, 2014 at 12:59 PM, Soren Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+> Add device tree binding documentation for the Cadence I2C controller.
+>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>
+> Changes in v4:
+>  - moved adding DT docs into this dedicated patch
+>
+> Changes in v3: None
+> Changes in v2: None
+>
+> ---
+>  .../devicetree/bindings/i2c/i2c-cadence.txt         | 21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+>
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-cadence.txt b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+> new file mode 100644
+> index 000000000000..685adf513111
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+> @@ -0,0 +1,21 @@
+> +Binding for the Cadence I2C controller
+> +
+> +Required properties:
+> +  compatible: Compatibility string. Must be 'cdns,i2c-r1p10'.
+> +  clocks: From common clock bindings. Phandle to input clock.
+> +
+> +Optional properties:
+> +  clock-frequency: Desired operating frequency, in Hz, of the bus (actual may
+> +                  be lower). Defaults to 400000 if not specified.
 
-> Are we sure that no user space apps uses shmctl(IPC_INFO) and prints a 
-> pretty error message if shmall is too small?
-> We would break these apps.
+Since not all devices support 400kHz, I would prefer that the default
+be 100kHz. Also, it would be good if what speed the default is
+consistent across i2c drivers.
 
-Good point. 0 bytes/pages would definitely trigger an unexpected error
-message if users did this. But on the other hand I'm not sure this
-actually is a _real_ scenario, since upon overflow the value can still
-end up being 0, which is totally bogus and would cause the same
-breakage.
-
-So I see two possible workarounds:
-(i) Use ULONG_MAX for the shmmax default instead. This would make shmall
-default to 1152921504606846720 and 268435456, for 64 and 32bit systems,
-respectively.
-
-(ii) Keep the 0 bytes, but add a new a "transition" tunable that, if set
-(default off), would allow 0 bytes to be unlimited. With time, users
-could hopefully update their applications and we could eventually get
-rid of it. This _seems_ to be the less aggressive way to go.
-
-Thoughts?
-
-Thanks,
-Davidlohr
-
+Rob
