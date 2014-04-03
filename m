@@ -1,168 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704AbaDCBNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 21:13:51 -0400
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:34223 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933675AbaDCBNu convert rfc822-to-8bit (ORCPT
+	id S1030712AbaDCBX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 21:23:29 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:24153 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030190AbaDCBX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 21:13:50 -0400
-From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
-To: "Fujinaka, Todd" <todd.fujinaka@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        Hiroshi Baba <h-baba@ax.jp.nec.com>
-Subject: RE: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
-	enabled
-Thread-Topic: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
-	enabled
-Thread-Index: AQHPTsqFyDvUbdvoI0aW//8qOsLbsJr/FZoQ
-Date: Thu, 3 Apr 2014 01:12:13 +0000
-Message-ID: <9DE5760509B7974286F38D93BF31DD62C7E125@BPXM13GP.gisp.nec.co.jp>
-References: <9DE5760509B7974286F38D93BF31DD62C7DF93@BPXM13GP.gisp.nec.co.jp>
- <9B4A1B1917080E46B64F07F2989DADD652978166@ORSMSX102.amr.corp.intel.com>
-In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD652978166@ORSMSX102.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.8.69]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 2 Apr 2014 21:23:27 -0400
+X-AuditID: cbfee690-b7f266d00000287c-e4-533cb80edfcc
+Message-id: <533CBC18.8050106@samsung.com>
+Date: Thu, 03 Apr 2014 10:40:40 +0900
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308
+ Thunderbird/17.0.4
+MIME-version: 1.0
+To: monstr@monstr.eu
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, chow.kim@samsung.com
+Subject: Re: [PATCH 02/10] ARM: EXYNOS: Correct file path in comment message
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
+ <1396425058-4012-3-git-send-email-pankaj.dubey@samsung.com>
+ <533BFC31.1080203@monstr.eu>
+In-reply-to: <533BFC31.1080203@monstr.eu>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zfV2+HTbBBpOfilssm3SXzaJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NaPPl4msWB3aOluYfNY/OSeo+/XVOYPfq2rGL0+LxJLoA1
+	issmJTUnsyy1SN8ugStj1oE9rAW3OCu2vzzL1sD4gr2LkZNDQsBE4uHp38wQtpjEhXvr2UBs
+	IYFljBJ7H5XD1Sx7xdrFyAUUn84o8fLENnYI5zWjxO5l95hAqngFtCSaN60Cm8oioCpxs7mN
+	BcRmE9CVePJ+LtgGUYEwiU3T+1gh6gUlfky+B1YjIiAiMePeFmaQocwCmxglrh2ewQiSEBbw
+	kej9vpIZYtsSoMTvr2AJTgFNiakb74PdyixgJvGoZR0zhC0vsXnNW7AGCYFz7BKv1i2FOklA
+	4tvkQ0DrOIASshKbDkD9LClxcMUNlgmMYrOQHDULydhZSMYuYGRexSiaWpBcUJyUXmSiV5yY
+	W1yal66XnJ+7iRESdxN2MN47YH2IMRlo5URmKdHkfGDc5pXEGxqbGVmYmpgaG5lbmpEmrCTO
+	q/YoKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY1N6fcWbSed4a8LVClvNDbilJXQsq8WX
+	7H9x777vBw9lk4Qt/y9kqe94NCm11ivX1l9Uec1rCW8V43m2wnlv92nd/r/1mrXoC+mEcqef
+	B8/aFu9Vzjg4fYu3dfZk+y9Gab0/TiS/vZ51Rj3n54Z6mw/r7+mJvL3N/9Hw6IvITPuHLunV
+	Px3tlViKMxINtZiLihMBZmJ6RNECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQV2+HTbBBqu2CVssm3SXzaJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NaPPl4msWB3aOluYfNY/OSeo+/XVOYPfq2rGL0+LxJLoA1
+	qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoCiWF
+	ssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxqwDe1gLbnFWbH95lq2B8QV7
+	FyMnh4SAicTDZa9YIWwxiQv31rN1MXJxCAlMZ5R4eWIbO4TzmlFi97J7TCBVvAJaEs2bVoF1
+	swioStxsbmMBsdkEdCWevJ/LDGKLCoRJbJrexwpRLyjxY/I9sBoRARGJGfe2MIMMZRbYxChx
+	7fAMRpCEsICPRO/3lcwQ25YAJX5/BUtwCmhKTN14nw3EZhYwk3jUso4ZwpaX2LzmLfMERoFZ
+	SJbMQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBcf1MegfjqgaLQ4wCHIxK
+	PLyWUjbBQqyJZcWVuYcYJTiYlUR4VaKAQrwpiZVVqUX58UWlOanFhxiTgWEwkVlKNDkfmHLy
+	SuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoFRdueGX56bJh0t
+	XHnuldIF3R2xlZfnL0kUvPmPf+Hl1wGbta6FPdu6J0R/84UPjfvMvn2c8qxabX31jMICCzbv
+	oJ5/2ZNjPr6W35in7dWmVrLJrCIqN6VbvUh5ncwVS/cJi8vl/oSeW31q9+WQh44pHgfnz7mn
+	v3DXifsmoZtWZ9cftZeesX8CsxJLcUaioRZzUXEiAI5/pYsvAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michal,
 
-> -----Original Message-----
-> From: Fujinaka, Todd [mailto:todd.fujinaka@intel.com]
-> Sent: Thursday, April 03, 2014 8:23 AM
-> To: Komatsubara Madoka(小松原 円); Skidmore, Donald C;
-> linux-kernel@vger.kernel.org; e1000-devel@lists.sourceforge.net;
-> netdev@vger.kernel.org
-> Cc: Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕司)
-> Subject: RE: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is enabled
-> 
-> I think you're running into the filter limit for VFs.
-> 
+On 04/02/2014 09:01 PM, Michal Simek wrote:
+> On 04/02/2014 09:50 AM, Pankaj Dubey wrote:
+>> This patch corrects file path mentioned in file comment message.
+>>
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> ---
+>>   arch/arm/mach-exynos/platsmp.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+>> index 03e5e9f..d8d1555 100644
+>> --- a/arch/arm/mach-exynos/platsmp.c
+>> +++ b/arch/arm/mach-exynos/platsmp.c
+>> @@ -1,4 +1,4 @@
+>> -/* linux/arch/arm/mach-exynos4/platsmp.c
+>> +/* linux/arch/arm/mach-exynos/platsmp.c
+>>    *
+>>    * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+>>    *		http://www.samsung.com
+>>
+> Shouldn't you just remove it entirely?
+> I had the same file names in the whole microblaze tree
+> and some months/years later this was just broken everywhere.
+> That's why it is just easier to remove it entirely.
 
-Hi Todd,
+Thanks for review and suggestion.
+Removing of file name makes more sense to me also.
+Will take care of this in some other files also under "mach-exynos"
+in next version of patch.
 
-Thank you for the quick response.
-How can I increase the limit？
+>
+> Thanks,
+> Michal
+>
+>
 
 
-Regards,
-Madoka Komatsubara
+-- 
+Best Regards,
+Pankaj Dubey
 
-
-
-> Todd Fujinaka
-> Software Application Engineer
-> Networking Division (ND)
-> Intel Corporation
-> todd.fujinaka@intel.com
-> (503) 712-4565
-> 
-> 
-> -----Original Message-----
-> From: Madoka Komatsubara [mailto:m-komatsubara@ab.jp.nec.com]
-> Sent: Wednesday, April 02, 2014 2:11 AM
-> To: Skidmore, Donald C; linux-kernel@vger.kernel.org;
-> e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org
-> Cc: Hiroshi Shimamoto; Hiroshi Baba
-> Subject: Re: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is enabled
-> 
-> 
-> >-----Original Message-----
-> >From: Komatsubara Madoka(小松原 円)
-> >Sent: Thursday, March 27, 2014 6:11 PM
-> >To: 'linux-kernel@vger.kernel.org'; 'e1000-devel@lists.sourceforge.net';
-> 'netdev@vger.kernel.org'
-> >Cc: Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕司)
-> >Subject: fail to add 64 VLANs or more when SR-IOV is enabled
-> >
-> >Hi all,
-> >
-> >
-> >We're facing an issue that we cannot add 64 VLANs or more per VF.
-> >When using SR-IOV, pass through a VF to the KVM guest and a lot of VLANs,
-> we could add 63 VLANs using vconfig but we >failed to add 64th VLAN.
-> >We'd like to use many VLANs on the guest with SR-IOV.
-> >We're using Intel's 82599EB chip with ixgbe and ixgbevf driver.
-> >
-> >Has anyone seen the same issue?
-> >Is there any idea to solve this?
-> >
-> 
-> Hi Donald,
-> 
-> Do you also notice this problem?
-> We're facing an issue that we can use only 64 VLANs per VF.
-> We're using Intel's 82599EB chip with ixgbe and ixgbevf driver.
-> 
-> 
-> Is it subject to the specification restrictions only 64 VLAN can use per VF?
-> We'd like to use about 2000 VLAN per VF.
-> 
-> Does it come from hardware?
-> 
-> 
-> 
-> Regards,
-> Madoka Komatsubara
-> 
-> 
-> >The below instruction is a reproducing method.
-> >Create hundred VLANs on the guest.
-> >
-> ># for i in `seq 100 199`; do vconfig add eth2 $i; ifconfig 192.168.$i.1/24;
-> done
-> >
-> ># vconfig add eth2 100
-> >Added VLAN with VID == 100 to IF -:eth2:-
-> >
-> ># vconfig add eth2 101
-> >Added VLAN with VID == 101 to IF -:eth2:-
-> >
-> ># vconfig add eth2 102
-> >Added VLAN with VID == 102 to IF -:eth2:-
-> >
-> >...
-> >
-> ># vconfig add eth2 162
-> >Added VLAN with VID == 162 to IF -:eth2:-
-> >
-> ># vconfig add eth2 163
-> >ERROR: trying to add VLAN #163 to IF -:eth2:-  error: Permission denied
-> >SIOCSIFADDR: No such device
-> >eth2.163: unknown interface: No such device
-> >
-> ># vconfig add eth2 164
-> >ERROR: trying to add VLAN #164 to IF -:eth2:-  error: Permission denied
-> >SIOCSIFADDR: No such device
-> >eth2.164: unknown interface: No such device
-> >
-> ># vconfig add eth2 165
-> >ERROR: trying to add VLAN #165 to IF -:eth2:-  error: Permission denied
-> >SIOCSIFADDR: No such device
-> >eth2.165: unknown interface: No such device
-> >
-> >
-> >thanks,
-> >Madoka Komatsubara
-> 
-> 
-> -------------------------------------------------------------------------
-> -----
-> _______________________________________________
-> E1000-devel mailing list
-> E1000-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/e1000-devel
-> To learn more about Intel&#174; Ethernet, visit
-> http://communities.intel.com/community/wired
