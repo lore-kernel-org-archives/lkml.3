@@ -1,40 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaDCP7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:59:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37278 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752603AbaDCP7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:59:11 -0400
-Message-ID: <533D8516.1040803@zytor.com>
-Date: Thu, 03 Apr 2014 08:58:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752851AbaDCP7o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:59:44 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:65480 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490AbaDCP7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 11:59:43 -0400
+Date: Thu, 3 Apr 2014 17:59:30 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 4/4] workqueue: Include ordered workqueues in anon
+ workqueue sysfs interface
+Message-ID: <20140403155917.GI23338@localhost.localdomain>
+References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
+ <1395940862-31428-5-git-send-email-fweisbec@gmail.com>
+ <533964AE.9070503@cn.fujitsu.com>
+ <53396A6E.4030607@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "Li, Aubrey" <aubrey.li@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-References: <20140403021411.6236996f@gandalf.local.home>	<070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>	<533D001A.5030802@linux.intel.com>	<20140403094155.04cc00bc@gandalf.local.home>	<533D6BE7.3020608@zytor.com>	<20140403104721.5f6c32b6@gandalf.local.home>	<20140403111711.5bed4ff7@gandalf.local.home>	<533D7C4F.4010504@zytor.com>	<533D7C93.7080105@zytor.com> <20140403113921.23dceb75@gandalf.local.home>
-In-Reply-To: <20140403113921.23dceb75@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53396A6E.4030607@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 08:39 AM, Steven Rostedt wrote:
+On Mon, Mar 31, 2014 at 09:15:26PM +0800, Lai Jiangshan wrote:
+> On 03/31/2014 08:50 PM, Lai Jiangshan wrote:
 > 
-> Hmm, I didn't see this email. Note, this box is an old development box
-> that Intel sent me years ago.
+> Sorry, I'm wrong.
+> Tejun had told there is only one default worker pool for ordered workqueues.
 > 
+> It is true. But this pool may share with other non-ordered workqueues which
+> maybe have WQ_SYSFS. we should split this pool into two pools.
+> one for ordered wqs, one for the rest.
 
-Preproduction system?
+Ah good point, there is a side effect here. Ok the idea of a low level unbound cpumask
+should solve that issue as we want every unbound workqueues to be concerned.
 
-	-hpa
+[...]
+> >> +/* Must be called with wq_unbound_mutex held */
+> >> +static int wq_anon_cpumask_set_all(cpumask_var_t cpumask)
+> >> +{
+> >>  	struct workqueue_struct *wq;
+> >>  	int ret;
+> >>  
+> >> @@ -3343,15 +3393,9 @@ static int wq_anon_cpumask_set(cpumask_var_t cpumask)
+> >>  			continue;
+> >>  		/* Ordered workqueues need specific treatment */
+> >>  		if (wq->flags & __WQ_ORDERED)
+> >> -			continue;
+> >> -
+> >> -		attrs = wq_sysfs_prep_attrs(wq);
+> >> -		if (!attrs)
+> >> -			return -ENOMEM;
+> >> -
+> >> -		cpumask_copy(attrs->cpumask, cpumask);
+> >> -		ret = apply_workqueue_attrs(wq, attrs);
+> >> -		free_workqueue_attrs(attrs);
+> >> +			ret = wq_ordered_cpumask_set(wq, cpumask);
+> 
+> 
+> 
+> After the pool is split. wq_ordered_cpumask_set() should only be called once.
+> once is enough for all ordered wqs.
 
+True. I was just worried that the implementation changes in the future and some
+ordered unbound workqueues get their own private pool in case we have problems
+with works of a workqueue blocking works of another workqueue while they wait on
+heavy resources.
 
+The workqueue subsystem usually deals with that by launching new workers on demand
+to handle waiting works in the queue. But it doesn't seem to apply on ordered unbound
+workqueues because they have max_active=1, so they can't spawn another worker if there
+is a work blocking the others. So I wouldn't be surprised if such an issue is resolved
+by using private pools on some ordered workqueues.
+
+IIUC.
