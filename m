@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262AbaDCRvX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:51:23 -0400
-Received: from mail1.start.ca ([64.140.120.57]:33835 "EHLO mail1.start.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957AbaDCRvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:51:17 -0400
-Message-ID: <533D9F8A.6030001@pobox.com>
-Date: Thu, 03 Apr 2014 13:51:06 -0400
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@redhat.com>
-CC: Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
+	id S1753269AbaDCRxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:53:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37589 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957AbaDCRxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 13:53:17 -0400
+Date: Thu, 3 Apr 2014 20:52:52 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: armand.bastien@laposte.net
+Cc: willy@meta-x.org, gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
+        jake.champlin.27@gmail.com, arnd@arndb.de, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-References: <533D8D73.1090603@pobox.com> <20140403171643.GB28790@pad.redhat.com>
-In-Reply-To: <20140403171643.GB28790@pad.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] staging : panel : fix checkpatch warnings (linux-next)
+Message-ID: <20140403175252.GN6991@mwanda>
+References: <20140403165859.GA10253@plop.dartybox.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403165859.GA10253@plop.dartybox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-04-03 01:16 PM, J. Bruce Fields wrote:
-> On Thu, Apr 03, 2014 at 12:33:55PM -0400, Mark Lord wrote:
->> This commit from linux-3.14 breaks our NFS-root clients here:
->>
->> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
->>
->>
->> - *p++ = htonl((u32) stat->mode);
->> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
->>
->>
->> Reverting the one-liner above (on the server) fixes it for us,
->> as does reverting back to linux-3.13.8 on the server.
->>
->> The NFS-root clients are on PowerPC (big-endian) architecture,
->> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
->>
->> ACL is completely disabled on server and client,
->> and we're using NFSv2/v3.  No support for v4.
->>
->> I instrumented the function to see what other bits were being cleared
->> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
+On Thu, Apr 03, 2014 at 06:59:09PM +0200, armand.bastien@laposte.net wrote:
+> This patch fixes "Missing a blank line after declarations" checkpatch warning in panel.c.
 > 
-> Hm, it sounds like a bug in the client if it's depending on those high
-> bits.
+> 
+> Signed-off-by: "Bastien Armand <armand.bastien@laposte.net>"
 
-But only for mounting / starting up from the nfsroot, it seems.
-I wonder if there's an unusual code path for that in there?
-The regular stuff looks mostly fine:
+Fix your email client to use the proper From header.  The signed-off-by
+format is wrong as well (extra quotes).  The subject should be:
 
-        p = xdr_decode_ftype3(p, &fmode);
-        fattr->mode = (be32_to_cpup(p++) & ~S_IFMT) | fmode;
+[PATCH] staging: panel: add blank lines after declarations
 
-Except perhaps that second line ought to use the same mask
-as the server side is using, just in case there are some other
-stray high (higher than S_IFMT) bits in there now/someday.
+The original had extra space characters.  Don't put "(linux-next)" in
+the permanent log.  Be as specific as you can in roughly 52 characters.
 
-> The original behavior was in practice harmless and changing it broke
-> something, so I think we should definitely just revert this patch.
+Otherwise it looks ok.
 
-Yup.  Who?
-
-> But the client may need fixing too.
-
-Probably a good thing in the longer term, for better compatibility
-with non-Linux servers.  But we'll still have to keep the revert
-on the server (nfsd) code for backward compatibility, I think.
-
-Cheers
-
+regards,
+dan carpenter
 
