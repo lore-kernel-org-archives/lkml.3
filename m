@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaDCRxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:53:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37589 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957AbaDCRxR (ORCPT
+	id S1753278AbaDCRxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:53:54 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:42844 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957AbaDCRxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:53:17 -0400
-Date: Thu, 3 Apr 2014 20:52:52 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: armand.bastien@laposte.net
-Cc: willy@meta-x.org, gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
-        jake.champlin.27@gmail.com, arnd@arndb.de, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging : panel : fix checkpatch warnings (linux-next)
-Message-ID: <20140403175252.GN6991@mwanda>
-References: <20140403165859.GA10253@plop.dartybox.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403165859.GA10253@plop.dartybox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 3 Apr 2014 13:53:51 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86, vdso: Make the vdso linker script compatible with Gold
+Date: Thu,  3 Apr 2014 10:53:43 -0700
+Message-Id: <243fa205098d112ec759c9b1b26785c09f399833.1396547532.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140403174339.GA284@x4>
+References: <20140403174339.GA284@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 06:59:09PM +0200, armand.bastien@laposte.net wrote:
-> This patch fixes "Missing a blank line after declarations" checkpatch warning in panel.c.
-> 
-> 
-> Signed-off-by: "Bastien Armand <armand.bastien@laposte.net>"
+Gold can't parse the script due to:
+https://sourceware.org/bugzilla/show_bug.cgi?id=16804
 
-Fix your email client to use the proper From header.  The signed-off-by
-format is wrong as well (extra quotes).  The subject should be:
+With a workaround in place for that issue, Gold 2.23 crashes due to:
+https://sourceware.org/bugzilla/show_bug.cgi?id=15355
 
-[PATCH] staging: panel: add blank lines after declarations
+This works around the former bug and avoids the second by removing
+the unnecessary vvar and hpet sections and segments.  The vdso and
+hpet symbols are still there, and nothing needed the sections or
+segments.
 
-The original had extra space characters.  Don't put "(linux-next)" in
-the permanent log.  Be as specific as you can in roughly 52 characters.
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/vdso/vdso-layout.lds.S | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-Otherwise it looks ok.
-
-regards,
-dan carpenter
+diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
+index 2e263f3..9df017a 100644
+--- a/arch/x86/vdso/vdso-layout.lds.S
++++ b/arch/x86/vdso/vdso-layout.lds.S
+@@ -9,12 +9,9 @@ SECTIONS
+ #ifdef BUILD_VDSO32
+ #include <asm/vdso32.h>
+ 
+-	.hpet_sect : {
+-		hpet_page = . - VDSO_OFFSET(VDSO_HPET_PAGE);
+-	} :text :hpet_sect
++	hpet_page = . - VDSO_OFFSET(VDSO_HPET_PAGE);
+ 
+-	.vvar_sect : {
+-		vvar = . - VDSO_OFFSET(VDSO_VVAR_PAGE);
++	vvar = . - VDSO_OFFSET(VDSO_VVAR_PAGE);
+ 
+ 	/* Place all vvars at the offsets in asm/vvar.h. */
+ #define EMIT_VVAR(name, offset) vvar_ ## name = vvar + offset;
+@@ -22,7 +19,6 @@ SECTIONS
+ #include <asm/vvar.h>
+ #undef __VVAR_KERNEL_LDS
+ #undef EMIT_VVAR
+-	} :text :vvar_sect
+ #endif
+ 	. = SIZEOF_HEADERS;
+ 
+@@ -61,7 +57,12 @@ SECTIONS
+ 	 */
+ 	. = ALIGN(0x100);
+ 
+-	.text		: { *(.text*) }			:text	=0x90909090
++	.text		: { *(.text*) }			:text	=0x90909090,
++
++	/*
++	 * The comma above works around a bug in gold:
++	 * https://sourceware.org/bugzilla/show_bug.cgi?id=16804
++	 */
+ 
+ 	/DISCARD/ : {
+ 		*(.discard)
+@@ -84,8 +85,4 @@ PHDRS
+ 	dynamic		PT_DYNAMIC	FLAGS(4);		/* PF_R */
+ 	note		PT_NOTE		FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+-#ifdef BUILD_VDSO32
+-	vvar_sect	PT_NULL		FLAGS(4);		/* PF_R */
+-	hpet_sect	PT_NULL		FLAGS(4);		/* PF_R */
+-#endif
+ }
+-- 
+1.9.0
 
