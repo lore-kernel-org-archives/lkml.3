@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025AbaDCFDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 01:03:10 -0400
-Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:22353 "EHLO
-	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaDCFC7 (ORCPT
+	id S1161574AbaDCF1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 01:27:12 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:22263
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1161512AbaDCF1C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 01:02:59 -0400
-From: Jayamohan Kallickal <Jayamohan.Kallickal@Emulex.Com>
-To: Rashika Kheria <rashika.kheria@gmail.com>,
+	Thu, 3 Apr 2014 01:27:02 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: RE: [PATCH 02/55] scsi: Mark function as static in
- be2iscsi/be_cmds.c
-Thread-Topic: [PATCH 02/55] scsi: Mark function as static in
- be2iscsi/be_cmds.c
-Thread-Index: AQHPS3ZfxvrI6WL7pEejRAM6EE1pl5r/W6+w
-Date: Thu, 3 Apr 2014 05:02:57 +0000
-Message-ID: <37724B2049F71D4C9B086F99DDB2DE11570D083C@CMEXMB1.ad.emulex.com>
-References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
- <e8c6c765e48ea867376850f1bc693f797fa14a53.1396114897.git.rashika.kheria@gmail.com>
-In-Reply-To: <e8c6c765e48ea867376850f1bc693f797fa14a53.1396114897.git.rashika.kheria@gmail.com>
+Subject: RE: [PATCHv2 3/3] regmap: add DT endianness binding support.
+Thread-Topic: [PATCHv2 3/3] regmap: add DT endianness binding support.
+Thread-Index: AQHPTmGivzgqZxqtXk2LP0z0kKtiUJr+vM6AgACe6FA=
+Date: Thu, 3 Apr 2014 05:26:57 +0000
+Message-ID: <aeccb18d5442446cac4030b86c3455c1@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
+ <1396433349-31470-4-git-send-email-Li.Xiubo@freescale.com>
+ <20140402195023.GL14763@sirena.org.uk>
+In-Reply-To: <20140402195023.GL14763@sirena.org.uk>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [138.239.125.170]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0170DAF08C
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(24454002)(164054003)(189002)(199002)(85306002)(95416001)(81816001)(86362001)(83072002)(85852003)(81686001)(80976001)(76786001)(76796001)(74366001)(93136001)(2656002)(76576001)(74316001)(79102001)(87266001)(92566001)(93516002)(87936001)(69226001)(97186001)(74876001)(81342001)(59766001)(77982001)(97336001)(20776003)(81542001)(51856001)(56816005)(90146001)(46102001)(99286001)(99396002)(98676001)(47976001)(50986001)(63696002)(74706001)(4396001)(47736001)(33646001)(49866001)(80022001)(65816001)(74662001)(74502001)(95666003)(31966008)(66066001)(47446002)(83322001)(94946001)(94316002)(76482001)(53806001)(54356001)(56776001)(54316002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:3C3A4770.D7A26819.33F1ABFE.48B499B1.2014D;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3353Y3E015501
 
-Looks good
 
-Acked-by: Jayamohan Kallickal <Jayamohan.Kallickal@emulex.com>
----
+> Subject: Re: [PATCHv2 3/3] regmap: add DT endianness binding support.
+> 
+> On Wed, Apr 02, 2014 at 06:09:09PM +0800, Xiubo Li wrote:
+> 
+> > +	ret = of_regmap_get_endian(dev, bus, config, "reg_endian", &reg_endian);
+> > +	if (ret)
+> > +		return ERR_PTR(ret);
+> > +
+> > +	ret = of_regmap_get_endian(dev, bus, config, "val_endian", &val_endian);
+> > +	if (ret)
+> > +		return ERR_PTR(ret);
+> 
+> Actually, if we're going to be doing this for all devices then we
+> probably need to namespace the properties too.  Not sure what to do for
+> a prefix though.  One for the DT folks.
 
------Original Message-----
-From: Rashika Kheria [mailto:rashika.kheria@gmail.com] 
-Sent: Saturday, March 29, 2014 10:44 AM
-To: linux-kernel@vger.kernel.org
-Cc: Jayamohan Kallickal; James E.J. Bottomley; linux-scsi@vger.kernel.org; josh@joshtriplett.org
-Subject: [PATCH 02/55] scsi: Mark function as static in be2iscsi/be_cmds.c
+How about using one prefix string of each regmap bus?
+Such as:
+Prefix 'regmap-mmio' for regmap-mmio,
+Prefix 'regmap-i2c' for regmap-i2c,
+Precix 'regmap-spi' for regmap-spi
+...
 
-Mark function as static in be2iscsi/be_cmds.c because it is not used outside this file.
+Or just using the same prefix 'regmap' for all of them ?
 
-This eliminates the following warning in be2iscsi/be_cmds.c:
-drivers/scsi/be2iscsi/be_cmds.c:401:5: warning: no previous prototype for ‚Äòbeiscsi_process_mcc‚Äô [-Wmissing-prototypes]
+Thanks,
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/scsi/be2iscsi/be_cmds.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c index 3338391..026c3e3 100644
---- a/drivers/scsi/be2iscsi/be_cmds.c
-+++ b/drivers/scsi/be2iscsi/be_cmds.c
-@@ -398,7 +398,7 @@ static void beiscsi_cq_notify(struct beiscsi_hba *phba, u16 qid, bool arm,  }
- 
- 
--int beiscsi_process_mcc(struct beiscsi_hba *phba)
-+static int beiscsi_process_mcc(struct beiscsi_hba *phba)
- {
- 	struct be_mcc_compl *compl;
- 	int num = 0, status = 0;
---
-1.7.9.5
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+BRs
+Xiubo
