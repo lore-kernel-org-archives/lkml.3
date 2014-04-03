@@ -1,100 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161100AbaDCAUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 20:20:05 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50374 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161049AbaDCAUD (ORCPT
+	id S1161109AbaDCAUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 20:20:52 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:41877 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933612AbaDCAUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 20:20:03 -0400
-From: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        silentquote@gmail.com,
-        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
-Subject: [PATCH] driver: staging: wlan-ng: Removed unnecessary typedefs from hfa384x_usb.c
-Date: Thu,  3 Apr 2014 02:19:57 +0200
-Message-Id: <1396484397-32434-1-git-send-email-shehabaldin.sherif@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 2 Apr 2014 20:20:51 -0400
+Message-ID: <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH] ipc,shm: disable shmmax and shmall by default
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 02 Apr 2014 17:20:47 -0700
+In-Reply-To: <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
+	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+	 <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+	 <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+	 <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+	 <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+	 <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com>
+	 <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net>
+	 <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed unnecessary typedefs from hfa384x_usb.c
+The default size for shmmax is, and always has been, 32Mb.
+Today, in the XXI century, it seems that this value is rather small,
+making users have to increase it via sysctl, which can cause
+unnecessary work and userspace application workarounds[1].
 
-Signed-off-by: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+Instead of choosing yet another arbitrary value, larger than 32Mb,
+this patch disables the use of both shmmax and shmall by default,
+allowing users to create segments of unlimited sizes. Users and
+applications that already explicitly set these values through sysctl
+are left untouched, and thus does not change any of the behavior.
+
+So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+implies unlimited memory, as opposed to disabling sysv shared memory.
+This is safe as 0 cannot possibly be used previously as SHMMIN is
+hardcoded to 1 and cannot be modified.
+
+This change allows Linux to treat shm just as regular anonymous memory.
+One important difference between them, though, is handling out-of-memory
+conditions: as opposed to regular anon memory, the OOM killer will not
+kill processes that are hogging memory through shm, allowing users to
+potentially abuse this. To overcome this situation, the shm_rmid_forced
+option must be enabled.
+
+Running this patch through LTP, everything passes, except the following,
+which, due to the nature of this change, is quite expected:
+
+shmget02    1  TFAIL  :  call succeeded unexpectedly
+
+[1]: http://rhaas.blogspot.com/2012/06/absurd-shared-memory-limits.html
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- drivers/staging/wlan-ng/hfa384x_usb.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ include/linux/shm.h      | 2 +-
+ include/uapi/linux/shm.h | 8 ++++----
+ ipc/shm.c                | 6 ++++--
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 5b8b094..4cfd074 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -745,14 +745,12 @@ static inline struct usbctlx_completor *init_rrid_completor(
- * Completor object:
- * Interprets the results of a synchronous RID-write
- ----------------------------------------------------------------*/
--typedef struct usbctlx_cmd_completor usbctlx_wrid_completor_t;
- #define init_wrid_completor  init_cmd_completor
+diff --git a/include/linux/shm.h b/include/linux/shm.h
+index 1e2cd2e..0ca06a3 100644
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -4,7 +4,7 @@
+ #include <asm/page.h>
+ #include <uapi/linux/shm.h>
+ 
+-#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
++#define SHMALL 0 /* max shm system wide (pages) */
+ #include <asm/shmparam.h>
+ struct shmid_kernel /* private to the kernel */
+ {	
+diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+index 78b6941..5f0ef28 100644
+--- a/include/uapi/linux/shm.h
++++ b/include/uapi/linux/shm.h
+@@ -9,14 +9,14 @@
+ 
+ /*
+  * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+- * be increased by sysctl
++ * be increased by sysctl. By default, disable SHMMAX and SHMALL with
++ * 0 bytes, thus allowing processes to have unlimited shared memory.
+  */
+-
+-#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
++#define SHMMAX 0		         /* max shared seg size (bytes) */
+ #define SHMMIN 1			 /* min shared seg size (bytes) */
+ #define SHMMNI 4096			 /* max num of segs system wide */
+ #ifndef __KERNEL__
+-#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
++#define SHMALL 0
+ #endif
+ #define SHMSEG SHMMNI			 /* max shared segs per process */
+ 
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 7645961..ae01ffa 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 	int id;
+ 	vm_flags_t acctflag = 0;
+ 
+-	if (size < SHMMIN || size > ns->shm_ctlmax)
++	if (ns->shm_ctlmax &&
++	    (size < SHMMIN || size > ns->shm_ctlmax))
+ 		return -EINVAL;
+ 
+-	if (ns->shm_tot + numpages > ns->shm_ctlall)
++	if (ns->shm_ctlall &&
++	    ns->shm_tot + numpages > ns->shm_ctlall)
+ 		return -ENOSPC;
+ 
+ 	shp = ipc_rcu_alloc(sizeof(*shp));
+-- 
+1.8.1.4
 
- /*----------------------------------------------------------------
- * Completor object:
- * Interprets the results of a synchronous memory-write
- ----------------------------------------------------------------*/
--typedef struct usbctlx_cmd_completor usbctlx_wmem_completor_t;
- #define init_wmem_completor  init_cmd_completor
 
- /*----------------------------------------------------------------
-@@ -766,11 +764,10 @@ struct usbctlx_rmem_completor {
- 	void *data;
- 	unsigned int len;
- };
--typedef struct usbctlx_rmem_completor usbctlx_rmem_completor_t;
-
- static int usbctlx_rmem_completor_fn(struct usbctlx_completor *head)
- {
--	usbctlx_rmem_completor_t *complete = (usbctlx_rmem_completor_t *) head;
-+	struct usbctlx_rmem_completor *complete = (struct usbctlx_rmem_completor *) head;
-
- 	pr_debug("rmemresp:len=%d\n", complete->rmemresp->frmlen);
- 	memcpy(complete->data, complete->rmemresp->data, complete->len);
-@@ -778,7 +775,7 @@ static int usbctlx_rmem_completor_fn(struct usbctlx_completor *head)
- }
-
- static inline struct usbctlx_completor *init_rmem_completor(
--						usbctlx_rmem_completor_t
-+						struct usbctlx_rmem_completor
- 							*completor,
- 						hfa384x_usb_rmemresp_t
- 							*rmemresp,
-@@ -1566,7 +1563,7 @@ hfa384x_dowrid(hfa384x_t *hw,
- 	if (result != 0) {
- 		kfree(ctlx);
- 	} else if (mode == DOWAIT) {
--		usbctlx_wrid_completor_t completor;
-+		struct usbctlx_cmd_completor completor;
- 		hfa384x_cmdresult_t wridresult;
-
- 		result = hfa384x_usbctlx_complete_sync(hw,
-@@ -1658,7 +1655,7 @@ hfa384x_dormem(hfa384x_t *hw,
- 	if (result != 0) {
- 		kfree(ctlx);
- 	} else if (mode == DOWAIT) {
--		usbctlx_rmem_completor_t completor;
-+		struct usbctlx_rmem_completor completor;
-
- 		result =
- 		    hfa384x_usbctlx_complete_sync(hw, ctlx,
-@@ -1748,7 +1745,7 @@ hfa384x_dowmem(hfa384x_t *hw,
- 	if (result != 0) {
- 		kfree(ctlx);
- 	} else if (mode == DOWAIT) {
--		usbctlx_wmem_completor_t completor;
-+		struct usbctlx_cmd_completor completor;
- 		hfa384x_cmdresult_t wmemresult;
-
- 		result = hfa384x_usbctlx_complete_sync(hw,
---
-1.7.9.5
 
