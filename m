@@ -1,111 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162644AbaDCItQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:49:16 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:44275 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162590AbaDCItJ (ORCPT
+	id S1162641AbaDCIvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:51:21 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:40162 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162526AbaDCIvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:49:09 -0400
-Message-ID: <533D207E.9020909@gmail.com>
-Date: Thu, 03 Apr 2014 10:49:02 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Alexander Holler <holler@ahsoftware.de>,
-        Florian Fainelli <f.fainelli@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
- for Marvel 88E1116R PHYs
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com> <533C721E.1080004@gmail.com> <533C8B49.8080704@ahsoftware.de> <533C8ECB.4090900@gmail.com> <533D0B09.9040602@ahsoftware.de>
-In-Reply-To: <533D0B09.9040602@ahsoftware.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Apr 2014 04:51:13 -0400
+Message-ID: <533D20E1.4000008@linux.vnet.ibm.com>
+Date: Thu, 03 Apr 2014 14:20:41 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        benh@kernel.crashing.org, paulus@samba.org, nfont@linux.vnet.ibm.com,
+        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
+        rcj@linux.vnet.ibm.com, jlarrew@linux.vnet.ibm.com,
+        alistair@popple.id.au, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] power, sched: stop updating inside arch_update_cpu_topology()
+ when nothing to be update
+References: <533B8431.8090507@linux.vnet.ibm.com>
+In-Reply-To: <533B8431.8090507@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040308-3864-0000-0000-00000D4C404F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 09:17 AM, Alexander Holler wrote:
-> Am 03.04.2014 00:27, schrieb Sebastian Hesselbarth:
->> On 04/03/2014 12:12 AM, Alexander Holler wrote:
->>>> I am curious, how you determined above commit to be the cause of the
->>>> regression you are seeing. Can you bisect, if you didn't already?
->>>
->>> There was no bisecting necessary. I've just looked at what changed in
->>> mv643xx_eth since 3.13 and the first commit I've reverted was already a
->>> hit. Reading a bit source revealed the differences between the old reset
->>> and the newly used one and ended up with my patch (first try) and was a
->>> hit too.
->>
->> Honestly, your own fix changes a different driver than mv643xx_eth.
+On 04/02/2014 08:59 AM, Michael wang wrote:
+> During the testing, we encounter below WARN followed by Oops:
 > 
-> It changes stuff which now (through the mentioned commit) gets used
-> through the change in mv643xx_eth.
-
-Sigh. You have proven youself that the commit isn't the root cause
-of the issue you are seeing. Nor is "fixing" 88e1116r init sequence
-a reasonable fix.
-
->> There is a lot of changes from v3.13 to v3.14 and bisecting really
->> helps to pin-point the one offending patch. As you can see from my
->> tests with Dockstar, poking in the PHY driver may not be the right
->> place to fix it.
->>
->>> Actually I assumed the reset needs longer than the 500ms, but as the
->>> printks revealed, the reset is much faster.
->>> So the problem seems to be the much increased time (1s) the newly used
->>> reset function idles in mdelay.
->>
->> You assume that the PHY issue comes from waiting for too long _after_
->> the reset? And again, the very same PHY on Dockstar is not affected.
+> 	WARNING: at kernel/sched/core.c:6218
+> 	...
+> 	NIP [c000000000101660] .build_sched_domains+0x11d0/0x1200
+> 	LR [c000000000101358] .build_sched_domains+0xec8/0x1200
+> 	PACATMSCRATCH [800000000000f032]
+> 	Call Trace:
+> 	[c00000001b103850] [c000000000101358] .build_sched_domains+0xec8/0x1200
+> 	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+> 	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+> 	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+> 	...
+> 	Oops: Kernel access of bad area, sig: 11 [#1]
+> 	...
+> 	NIP [c00000000045c000] .__bitmap_weight+0x60/0xf0
+> 	LR [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+> 	PACATMSCRATCH [8000000000029032]
+> 	Call Trace:
+> 	[c00000001b1037a0] [c000000000288ff4] .kmem_cache_alloc_node_trace+0x184/0x3a0
+> 	[c00000001b103850] [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+> 	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+> 	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+> 	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+> 	...
 > 
-> Guess with which hardware I'm experiencing this problem? Hint:
-> http://ahsoftware.de/dockstar/ ;)
-
-I don't know, but now I guess it is Dockstar.
-
->>> But I think I have found the real reason. and the change of the reset
->>> just increased the chance the problem is hit (here with 100% success or
->>> fail rate however you want to name it).
->>>
->>> Just give me a day or two to find the time to verify my assumption (I
->>> don't want to speculate) and maybe find a real fix for the problem. Of
->>> course, I still like my patch because it greatly decreases the time
->>> necessary for a reset (and the chance to hit the problem).
->>
->> Well, you can share your idea anytime. You already speculated that PHY
->> reset on 88e1116r is broken but it seems that is not true. The more
->> you share of your issue and the tries to fix it, the more likely is it
->> we can follow your patch immediately.
+> This was caused by that 'sd->groups == NULL' after building groups, which
+> was caused by the empty 'sd->span'.
 > 
-> Sorry, but wild speculating doesn't help always. Otherwise I could
-> mention several dozen possible reasons, starting from broken memory or
-> other hw up to some memory corruption elsewhere in the kernel.
+> The cpu's domain contain nothing because the cpu was assigned to wrong
+> node inside arch_update_cpu_topology() by calling update_lookup_table()
+> with the uninitialized param, in the case when there is nothing to be
+> update.
+>
+
+I think we need to verify this theory. Here are my thoughts:
+
+If we get a topology update notification from the hypervisor, and then the
+update happens to be nothing new (as in, new_node == old_node for the given
+cpu), then updated_cpus mask will not have any cpus set in it (like you noted
+below). In that scenario, the following sequence will take place:
+
+Inside arch_cpu_update_topology(), the 'updates' has been kzalloc()'ed.
+So updates[0] will have all its fields set to 0, such as ->cpu, ->new_nid etc.
+
+When we invoke stop_machine() the first time like this:
+
+stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
+
+stop-machine will notice that updated_cpus mask does not have any cpus set
+in it, so it will nominate cpumask_first(cpu_online_mask) to run the
+update_cpu_topology() function, which means that CPU0 will run it.
+
+So, when CPU0 runs update_cpu_topology(), it will find that cpu == update->cpu
+since both are 0, and will invoke unmap_cpu_from_node() and then calls
+map_cpu_to_node(), with update->new_nid == 0.
+
+Now, the interesting thing to note here is that, if CPU0's node was already
+set as node0, *nothing* should go wrong, since its just a redundant update.
+However, if CPU0's original node mapping was something different, or if
+node0 doesn't even exist in the machine, then the system can crash.
+
+Have you verified that CPU0's node mapping is different from node 0?
+That is, boot the kernel with "numa=debug" in the kernel command line and
+it will print out the cpu-to-node associativity during boot. That way you
+can figure out what was the original associativity that was set. This will
+confirm the theory that the hypervisor sent a redundant update, but because
+of the weird pre-allocation using kzalloc that we do inside
+arch_update_cpu_topology(), we wrongly updated CPU0's mapping as CPU0 <-> Node0.
+
+
+Regards,
+Srivatsa S. Bhat
+ 
+> Thus we should stop the updating in such cases, this patch will achieve
+> this and fix the issue.
 > 
-> But I already have given a hint before, try what happens if you enable
-> netconsole (compiled in) through the kernel commandline
-> (netconsole=...). Maybe the ethernet on your dockstar will get stuck too.
-
-If it is related to netconsole, I would guess it is more platforms
-affected than just Dockstar? If you share the idea, we can try to
-find a way to allow netconsole on more than just that
-mv643xx_eth/88e116r combination.
-
->> Again, if you really want to find the real patch breaking Sheevaplug,
->> use git bisect.
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+> CC: Stephen Rothwell <sfr@canb.auug.org.au>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Robert Jennings <rcj@linux.vnet.ibm.com>
+> CC: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+> CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> CC: Alistair Popple <alistair@popple.id.au>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/mm/numa.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
 > 
-> That's silly if I already know a/the change which brings the problem to
-> light. If I revert the mentioned commit the problem disapears. So why
-> should I go through the pain to bisect stuff? I already have found the
-> knob to kill the ethernet on that machine.
+> diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+> index 30a42e2..6757690 100644
+> --- a/arch/powerpc/mm/numa.c
+> +++ b/arch/powerpc/mm/numa.c
+> @@ -1591,6 +1591,14 @@ int arch_update_cpu_topology(void)
+>  		cpu = cpu_last_thread_sibling(cpu);
+>  	}
+> 
+> +	/*
+> +	 * The 'cpu_associativity_changes_mask' could be cleared if
+> +	 * all the cpus it indicates won't change their node, in
+> +	 * which case the 'updated_cpus' will be empty.
+> +	 */
+> +	if (!cpumask_weight(&updated_cpus))
+> +		goto out;
+> +
+>  	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
+> 
+>  	/*
+> @@ -1612,6 +1620,7 @@ int arch_update_cpu_topology(void)
+>  		changed = 1;
+>  	}
+> 
+> +out:
+>  	kfree(updates);
+>  	return changed;
+>  }
+> 
 
-Really, I can tell you two fixes for it right away: don't use netconsole
-or remove Marvell PHY support. But neither is really helping here.
-
-If you share your ideas early, it is at least two more who are looking
-at it. This is just a suggestion, you are free to take it though.
-
-Sebastian
