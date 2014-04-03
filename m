@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103AbaDCXgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 19:36:51 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2691 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753818AbaDCXgo (ORCPT
+	id S1753886AbaDCXkD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 19:40:03 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:40575 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443AbaDCXj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 19:36:44 -0400
-Date: Thu, 3 Apr 2014 16:38:44 -0700
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 1/9] crypto: qce: Add core driver implementation
-Message-ID: <20140403233844.GF17066@sonymobile.com>
-References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com>
- <1396541886-10966-2-git-send-email-svarbanov@mm-sol.com>
+	Thu, 3 Apr 2014 19:39:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1396541886-10966-2-git-send-email-svarbanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1396554637.2550.11.camel@buesod1.americas.hpqcorp.net>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+ <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+ <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+ <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+ <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+ <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+ <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+ <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+ <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com>
+ <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com>
+ <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net> <533DB03D.7010308@colorfullife.com>
+ <1396554637.2550.11.camel@buesod1.americas.hpqcorp.net>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 3 Apr 2014 19:39:38 -0400
+Message-ID: <CAHGf_=rT7WswD0LOxVeDDpae-Ahaz4wEcpE8HLmDwOBw598z8g@mail.gmail.com>
+Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 06:17:58PM +0200, Stanimir Varbanov wrote:
-> This adds core driver files. The core part is implementing a
-> platform driver probe and remove callbaks, the probe enables
-> clocks, checks crypto version, initialize and request dma
-> channels, create done tasklet and work queue and finally
-> register the algorithms into crypto subsystem.
-> 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
->  drivers/crypto/qce/core.c | 333 ++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/crypto/qce/core.h |  69 ++++++++++
->  2 files changed, 402 insertions(+)
->  create mode 100644 drivers/crypto/qce/core.c
->  create mode 100644 drivers/crypto/qce/core.h
-> 
-> diff --git a/drivers/crypto/qce/core.c b/drivers/crypto/qce/core.c
-[...]
-> +static struct qce_algo_ops qce_ops[] = {
-> +	{
-> +		.type = CRYPTO_ALG_TYPE_ABLKCIPHER,
-> +		.register_alg = qce_ablkcipher_register,
-> +	},
-> +	{
-> +		.type = CRYPTO_ALG_TYPE_AHASH,
-> +		.register_alg = qce_ahash_register,
-> +	},
-> +};
-> +
-> +static void qce_unregister_algs(struct qce_device *qce)
-> +{
-> +	struct qce_alg_template *tmpl, *n;
-> +
-> +	list_for_each_entry_safe(tmpl, n, &qce->alg_list, entry) {
-> +		if (tmpl->crypto_alg_type == CRYPTO_ALG_TYPE_AHASH)
-> +			crypto_unregister_ahash(&tmpl->alg.ahash);
-> +		else
-> +			crypto_unregister_alg(&tmpl->alg.crypto);
-> +
-> +		list_del(&tmpl->entry);
-> +		kfree(tmpl);
+On Thu, Apr 3, 2014 at 3:50 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> On Thu, 2014-04-03 at 21:02 +0200, Manfred Spraul wrote:
+>> Hi Davidlohr,
+>>
+>> On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
+>> > The default size for shmmax is, and always has been, 32Mb.
+>> > Today, in the XXI century, it seems that this value is rather small,
+>> > making users have to increase it via sysctl, which can cause
+>> > unnecessary work and userspace application workarounds[1].
+>> >
+>> > Instead of choosing yet another arbitrary value, larger than 32Mb,
+>> > this patch disables the use of both shmmax and shmall by default,
+>> > allowing users to create segments of unlimited sizes. Users and
+>> > applications that already explicitly set these values through sysctl
+>> > are left untouched, and thus does not change any of the behavior.
+>> >
+>> > So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+>> > implies unlimited memory, as opposed to disabling sysv shared memory.
+>> > This is safe as 0 cannot possibly be used previously as SHMMIN is
+>> > hardcoded to 1 and cannot be modified.
+>
+>> Are we sure that no user space apps uses shmctl(IPC_INFO) and prints a
+>> pretty error message if shmall is too small?
+>> We would break these apps.
+>
+> Good point. 0 bytes/pages would definitely trigger an unexpected error
+> message if users did this. But on the other hand I'm not sure this
+> actually is a _real_ scenario, since upon overflow the value can still
+> end up being 0, which is totally bogus and would cause the same
+> breakage.
+>
+> So I see two possible workarounds:
+> (i) Use ULONG_MAX for the shmmax default instead. This would make shmall
+> default to 1152921504606846720 and 268435456, for 64 and 32bit systems,
+> respectively.
+>
+> (ii) Keep the 0 bytes, but add a new a "transition" tunable that, if set
+> (default off), would allow 0 bytes to be unlimited. With time, users
+> could hopefully update their applications and we could eventually get
+> rid of it. This _seems_ to be the less aggressive way to go.
 
-I find this whole memory/list management to be very disorganised.
-ops->register_alg() is supposed to allocate this item--more precisely,
-multiple items--using something that must be able to be kfree'd
-directly, register it with the crypto core, and put it on this list
-manually.  Here we unregister/remove/free this in the core.  Josh's
-recommendation of a unregister_alg callback might help, but it all
-remains a bit unclear with register_alg/unregister_alg managing X
-algorithms per call. 
+Do you mean
 
-Additionally, above you have qce_ops, which clearly defines the
-operations for specific algorithms types/groups, which in later patches
-are shown to be seperated out into independent implementations.
+set 0: IPC_INFO return shmmax = 0.
+set 1: IPC_INFO return shmmax = ULONG_MAX.
 
->From what I can tell, this seems to be a framework with built-in yet
-independent crypto implementations which call the crypto API directly.
+?
 
-It would be more logical to me if this was seperated out into a
-"library/core" API, with the individual implementations as platform
-drivers of their own.  Then they can register with the core, managing
-memory how they please.
-
-What am I missing?
-
-> +	}
-> +}
-> +
-> +static int qce_register_algs(struct qce_device *qce)
-> +{
-> +	struct qce_algo_ops *ops;
-> +	int i, rc = -ENODEV;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(qce_ops); i++) {
-> +		ops = &qce_ops[i];
-> +		ops->async_req_queue = qce_async_request_queue;
-> +		ops->async_req_done = qce_async_request_done;
-> +		rc = ops->register_alg(qce, ops);
-> +		if (rc)
-> +			break;
-> +	}
-> +
-> +	if (rc)
-> +		qce_unregister_algs(qce);
-> +
-> +	return rc;
-> +}
-
--Courtney
+That makes sense.
