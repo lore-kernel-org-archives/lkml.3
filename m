@@ -1,80 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbaDCQRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:17:22 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:52973 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650AbaDCQRS (ORCPT
+	id S1752832AbaDCQR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 12:17:28 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:44337 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707AbaDCQRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:17:18 -0400
+	Thu, 3 Apr 2014 12:17:22 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@fb.com>,
         Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [GIT PULL v2] nohz: Move nohz kick out of scheduler IPI
-Date: Thu,  3 Apr 2014 18:17:10 +0200
-Message-Id: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/2] nohz: Move full nohz kick to its own IPI
+Date: Thu,  3 Apr 2014 18:17:12 +0200
+Message-Id: <1396541832-459-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
+References: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, Thomas,
+Now that we have smp_queue_function_single() which can be used to
+safely queue IPIs when interrupts are disabled and without worrying
+about concurrent callers, lets use it for the full dynticks kick to
+notify a CPU that it's exiting single task mode.
 
-Please pull the timers/nohz-ipi-for-tip-v3 branch that can be found at:
+This unbloats a bit the scheduler IPI that the nohz code was abusing
+for its cool "callable anywhere/anytime" properties.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/nohz-ipi-for-tip-v3
-
-It is based on 7a48837732f87a574ee3e1855927dc250117f565 
-("Merge branch 'for-3.15/core' of git://git.kernel.dk/linux-block")
-due to dependencies on the block tree containing IPI core changes.
-
-This v2 addresses Paul review and add his reviewed-by tags.
-
-I'm trying to get these 2 patches in before the merge window ends
-otherwise we'll have to do tricky branch split on the next cycle.
-
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jens Axboe <axboe@fb.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
-When a full dynticks CPU runs in single task mode then a new task gets
-enqueued, we notify it through an IPI such that it restarts its tick.
-
-The IPI used here is the scheduler IPI. There are a few reasons for that:
-it can be called when interrupts are disabled, it can be called
-concurrently... These convenient properties altogether aren't yet offered
-by the IPI subsystem.
-
-Meanwhile, bloating that way the scheduler IPI with scheduler unrelated
-code is an abuse of this fast path. We certainly don't want to start a
-big kernel IPI.
-
-So this patchset adds a small helper to the IPI subsystem that allows
-to queue an IPI from interrupt disabled code while handling concurrent
-callers as well. Eventually the nohz kick gets converted to this new facility.
-
-Partly inspired by a suggestion from Peter Zijlstra.
-
-* Patch 1/2 brings the IPI infrastructure to support this
-* Patch 2/2 does the nohz IPI conversion
-
-
-Thanks,
-	Frederic
----
-
-Frederic Weisbecker (2):
-      smp: Non busy-waiting IPI queue
-      nohz: Move full nohz kick to its own IPI
-
-
- include/linux/smp.h      | 11 +++++++++++
  include/linux/tick.h     |  2 ++
  kernel/sched/core.c      |  5 +----
  kernel/sched/sched.h     |  2 +-
- kernel/smp.c             | 42 ++++++++++++++++++++++++++++++++++++++++++
  kernel/time/tick-sched.c | 21 +++++++++++++++++++++
- 6 files changed, 78 insertions(+), 5 deletions(-)
+ 4 files changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index b84773c..9d3fcc2 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -182,6 +182,7 @@ static inline bool tick_nohz_full_cpu(int cpu)
+ extern void tick_nohz_init(void);
+ extern void __tick_nohz_full_check(void);
+ extern void tick_nohz_full_kick(void);
++extern void tick_nohz_full_kick_cpu(int cpu);
+ extern void tick_nohz_full_kick_all(void);
+ extern void __tick_nohz_task_switch(struct task_struct *tsk);
+ #else
+@@ -190,6 +191,7 @@ static inline bool tick_nohz_full_enabled(void) { return false; }
+ static inline bool tick_nohz_full_cpu(int cpu) { return false; }
+ static inline void __tick_nohz_full_check(void) { }
+ static inline void tick_nohz_full_kick(void) { }
++static inline void tick_nohz_full_kick_cpu(int cpu) { }
+ static inline void tick_nohz_full_kick_all(void) { }
+ static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
+ #endif
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9cae286..e4b344e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1499,9 +1499,7 @@ void scheduler_ipi(void)
+ 	 */
+ 	preempt_fold_need_resched();
+ 
+-	if (llist_empty(&this_rq()->wake_list)
+-			&& !tick_nohz_full_cpu(smp_processor_id())
+-			&& !got_nohz_idle_kick())
++	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
+ 		return;
+ 
+ 	/*
+@@ -1518,7 +1516,6 @@ void scheduler_ipi(void)
+ 	 * somewhat pessimize the simple resched case.
+ 	 */
+ 	irq_enter();
+-	tick_nohz_full_check();
+ 	sched_ttwu_pending();
+ 
+ 	/*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c9007f2..4771063 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1225,7 +1225,7 @@ static inline void inc_nr_running(struct rq *rq)
+ 		if (tick_nohz_full_cpu(rq->cpu)) {
+ 			/* Order rq->nr_running write against the IPI */
+ 			smp_wmb();
+-			smp_send_reschedule(rq->cpu);
++			tick_nohz_full_kick_cpu(rq->cpu);
+ 		}
+        }
+ #endif
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 9f8af69..582d3f6 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -230,6 +230,27 @@ void tick_nohz_full_kick(void)
+ 		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
+ }
+ 
++static void nohz_full_kick_queue(struct queue_single_data *qsd)
++{
++	__tick_nohz_full_check();
++}
++
++static DEFINE_PER_CPU(struct queue_single_data, nohz_full_kick_qsd) = {
++	.func = nohz_full_kick_queue,
++};
++
++void tick_nohz_full_kick_cpu(int cpu)
++{
++	if (!tick_nohz_full_cpu(cpu))
++		return;
++
++	if (cpu == smp_processor_id()) {
++		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
++	} else {
++		smp_queue_function_single(cpu, &per_cpu(nohz_full_kick_qsd, cpu));
++	}
++}
++
+ static void nohz_full_kick_ipi(void *info)
+ {
+ 	__tick_nohz_full_check();
+-- 
+1.8.3.1
+
