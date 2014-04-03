@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162667AbaDCIvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:51:49 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51558 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1162636AbaDCIvp (ORCPT
+	id S1162685AbaDCIxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:53:39 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:43876 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1162578AbaDCIxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:51:45 -0400
-Date: Thu, 3 Apr 2014 09:51:20 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Mark Brown <broonie@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: Re: [PATCH] arm64: Fix duplicated Kconfig entries again
-Message-ID: <20140403085120.GB17022@arm.com>
-References: <1395738060-18489-1-git-send-email-hanjun.guo@linaro.org>
- <5334078A.9010408@arm.com>
- <53341ADF.2050904@linaro.org>
- <2765234.k5FCzWzCDz@vostro.rjw.lan>
- <533D1D5E.20208@linaro.org>
- <CAOh2x=nYWjB+Org6eNjQAT93ZX2DRHNYSJWgWTo8vS2AmdrAbA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOh2x=nYWjB+Org6eNjQAT93ZX2DRHNYSJWgWTo8vS2AmdrAbA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Apr 2014 04:53:35 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Bockholdt Arne <a.bockholdt@precitec-optronik.de>,
+        Arne Bockholdt <linux-kernel@bockholdt.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 04/41] intel_idle: Fixed C6 state on Avoton/Rangeley processors
+Date: Thu,  3 Apr 2014 10:53:30 +0200
+Message-Id: <34bf8801b2b4f6205a4f9e0045fbcf035c709e76.1396514932.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1396469191.git.jslaby@suse.cz>
+References: <cover.1396469191.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 09:41:57AM +0100, Viresh Kumar wrote:
-> On Thu, Apr 3, 2014 at 2:05 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > How about the following patch? if it is ok, I will resend it.
-> 
-> http://www.spinics.net/lists/arm-kernel/msg319545.html
+From: Bockholdt Arne <a.bockholdt@precitec-optronik.de>
 
-I can see commit 62d1a3ba5adc5653d43f6cd3a90758bb6ad5d5bd (arm64: Fix
-duplicated Kconfig entries again) already in mainline, so problem
-solved.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks Josh ;)
+===============
 
+commit 22e580d07f6529a395c129575127ea6d860aed3a upstream.
+
+Corrected the MWAIT flag for C-State C6 on Intel Avoton/Rangeley processors.
+
+Signed-off-by: Arne Bockholdt <linux-kernel@bockholdt.com>
+Acked-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/idle/intel_idle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 000d370519d9..53235814ea0f 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -329,7 +329,7 @@ static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] = {
+ 	{
+ 		.enter = NULL }
+ };
+-static struct cpuidle_state avn_cstates[CPUIDLE_STATE_MAX] = {
++static struct cpuidle_state avn_cstates[] __initdata = {
+ 	{
+ 		.name = "C1-AVN",
+ 		.desc = "MWAIT 0x00",
+@@ -340,7 +340,7 @@ static struct cpuidle_state avn_cstates[CPUIDLE_STATE_MAX] = {
+ 	{
+ 		.name = "C6-AVN",
+ 		.desc = "MWAIT 0x51",
+-		.flags = MWAIT2flg(0x58) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT2flg(0x51) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 15,
+ 		.target_residency = 45,
+ 		.enter = &intel_idle },
 -- 
-Catalin
+1.9.1
+
