@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaDCVCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 17:02:10 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50923 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737AbaDCVCD (ORCPT
+	id S1753924AbaDCVCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 17:02:20 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:64098 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753737AbaDCVCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 17:02:03 -0400
-Date: Thu, 3 Apr 2014 22:01:35 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, michal.simek@xilinx.com, kpc528@gmail.com,
-        kalluripunnaiahchoudary@gmail.com, harinik@xilinx.com,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Message-ID: <20140403210135.GX14763@sirena.org.uk>
-References: <ee057d8c-50d9-4d4b-ac86-d7c5fc44b1b0@TX2EHSMHS034.ehs.local>
+	Thu, 3 Apr 2014 17:02:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=Vim8vG
+	q4a3Ysw2PagZE0j/kE9m960mlvRDniYCXrmofrEqRkeozfVBVi47iEs9cFlyo98Y
+	eIGAYlEkjnkYxOLrhMlAGkt/AjWlqmk8ew+W2y2oV8PGjgqrPgdY/0XE0fHiEm3G
+	ScBbbOrREB/c90oJHxi9RcEbagmkiFWr9Osng=
+Message-ID: <533DC90B.8050906@pobox.com>
+Date: Thu, 03 Apr 2014 16:48:11 -0400
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LvnU4bbuCGLV8PtK"
-Content-Disposition: inline
-In-Reply-To: <ee057d8c-50d9-4d4b-ac86-d7c5fc44b1b0@TX2EHSMHS034.ehs.local>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] devicetree: Add devicetree bindings documentation
- for Zynq Quad SPI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: "J. Bruce Fields" <bfields@redhat.com>
+CC: Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-3.14 nfsd regression
+References: <533D8D73.1090603@pobox.com> <20140403171643.GB28790@pad.redhat.com> <533D9F8A.6030001@pobox.com> <20140403193024.GC28790@pad.redhat.com>
+In-Reply-To: <20140403193024.GC28790@pad.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: 4523783A-BB71-11E3-8060-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14-04-03 03:30 PM, J. Bruce Fields wrote:
+> On Thu, Apr 03, 2014 at 01:51:06PM -0400, Mark Lord wrote:
+>> On 14-04-03 01:16 PM, J. Bruce Fields wrote:
+>>> On Thu, Apr 03, 2014 at 12:33:55PM -0400, Mark Lord wrote:
+>>>> This commit from linux-3.14 breaks our NFS-root clients here:
+>>>>
+>>>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
+>>>>
+>>>>
+>>>> - *p++ = htonl((u32) stat->mode);
+>>>> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
+>>>>
+>>>>
+>>>> Reverting the one-liner above (on the server) fixes it for us,
+>>>> as does reverting back to linux-3.13.8 on the server.
+>>>>
+>>>> The NFS-root clients are on PowerPC (big-endian) architecture,
+>>>> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
+>>>>
+>>>> ACL is completely disabled on server and client,
+>>>> and we're using NFSv2/v3.  No support for v4.
+>>>>
+>>>> I instrumented the function to see what other bits were being cleared
+>>>> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
+>>>
+>>> Hm, it sounds like a bug in the client if it's depending on those high
+>>> bits.
+>>
+>> But only for mounting / starting up from the nfsroot, it seems.
+>> I wonder if there's an unusual code path for that in there?
+>> The regular stuff looks mostly fine:
+>>
+>>         p = xdr_decode_ftype3(p, &fmode);
+>>         fattr->mode = (be32_to_cpup(p++) & ~S_IFMT) | fmode;
+> 
+> Hm, but that's in nfs3xdr.c; in nfs2xdr.c we have just
+> 
+> 	fattr->mode = be32_to_cpup(p+);
+> 
+> and NFSv2 is the default for nfsroot.  Do you have some reason to
+> believe you're not using NFSv2?
 
---LvnU4bbuCGLV8PtK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh, the client here was using NFS2, absolutely.
+I just don't know my way around the code very well yet.  :)
 
-On Thu, Apr 03, 2014 at 10:33:06PM +0530, Punnaiah Choudary Kalluri wrote:
-
-> +Optional properties:
-> +- num-cs		: Number of chip selects used.
-
-What does this translate into?
-
-> +		num-cs = /bits/ 16 <1>;
-
-Why the odd specification in the example - why not just specify it as a
-number?
-
---LvnU4bbuCGLV8PtK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPcwsAAoJELSic+t+oim93CoP/1PVC5uFm8g2siiedwBT/i6/
-bxn9DwUFSjSfKJw17ChAec0HEczUq/VEM4b43aMQmgpOvfHtXaHLOvQQlF6naPp4
-nBq7qG2zBEm0EnWnVXKonhVfbEvt1Dlf/SwuIfJNBZFZilFB13hHJaNC9twVaNdq
-FxLHYBNvHv4i5gHJWtIue6f31HnVQptamx7KrOr+2eg/DAy2qBUdO4jUzZdOwBWu
-o48997SECtfbhZ+FbUsmcNLSK4ClqiaiwCDA5712iNJV41UW3SlHgEsdr1AEnvVH
-YPFslDOwE0VUH8ZhTLxRijToYFBhzQU0vk7m6VkrU1pKFIO1f1C59+03IOgEgcfA
-AoDjs33c+/PKRuB92n8BckzZL8q3gYO+ugUqvNOQYId+HYKEv90SKlSkE/tkVgMQ
-AkY+ke+DxjmfTUOMdpTG0fM+rhnJkTCwpSC5dGtk/STlK+Z8rU6wp43ZH0YFJ++Q
-BvVxpwKNzL10ZltYzB8qbQR5cldAs1vyY45JlPDeXRzpFJpu1NcXaRtqMfM8y0ML
-ZXBl9ZhHQ4tYsleKVclv3E3JZL2Id7gzJPrIHIPDt0gQAk3HaeLe6sKJndMpvaFE
-sb3EEec4Wd4rLOZH3K5oi40WbVNWjC/87i4Vp2MptWoA8UOU9n9b2FYN4l46yTWh
-SgqEGvfCx7mS7f+amF1s
-=eYZ1
------END PGP SIGNATURE-----
-
---LvnU4bbuCGLV8PtK--
+But that mask in nfs3xdr.c (client) doesn't match what the server side is using.
+-- 
+Mark Lord
+Real-Time Remedies Inc.
+mlord@pobox.com
