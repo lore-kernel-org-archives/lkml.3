@@ -1,99 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaDCRGX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:06:23 -0400
-Received: from imap.thunk.org ([74.207.234.97]:49609 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211AbaDCRGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:06:12 -0400
-Date: Thu, 3 Apr 2014 13:05:42 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-ID: <20140403170541.GA19010@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Joerg Roedel <joro@8bytes.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Jiri Kosina <jkosina@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mateusz Guzik <mguzik@redhat.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-	Kay Sievers <kay@vrfy.org>
-References: <20140402144219.4cafbe37@gandalf.local.home>
- <20140402221212.GD16570@mguzik.redhat.com>
- <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
- <alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
- <20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
- <CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
- <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
- <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
- <CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
- <20140403104308.GP13491@8bytes.org>
+	id S1753241AbaDCRHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:07:10 -0400
+Received: from smtpout5.laposte.net ([193.253.67.230]:48354 "EHLO
+	smtpout.laposte.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915AbaDCRHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 13:07:06 -0400
+X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 13:07:05 EDT
+Date: Thu, 3 Apr 2014 18:59:09 +0200
+From: armand.bastien@laposte.net
+To: willy@meta-x.org, gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
+        jake.champlin.27@gmail.com, arnd@arndb.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging : panel : fix checkpatch warnings (linux-next)
+Message-ID: <20140403165859.GA10253@plop.dartybox.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140403104308.GP13491@8bytes.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 12:43:08PM +0200, Joerg Roedel wrote:
-> 
-> How about just ignoring writes to /dev/kmsg altogether by default
-> (unless explicitly enabled in Kconfig or on the kernel cmdline)? Maybe I
-> am missing something but what are the legitimate use-cases for generally
-> allowing user-space to write into the kernel-log?
+This patch fixes "Missing a blank line after declarations" checkpatch warning in panel.c.
 
-I'll give you one example which where /dev/kmesg is useful --- if you
-are running automated kernel tests, echoing "running test shared/127"
-.... several minutes later .... "running test shared/128", is very
-useful since if the kernel starts spewing warnings, or even
-oops/panics/livelocks, you know what test was running at the time of
-the failure.
 
-So in general, most of the valid use cases I can see for /dev/kmesg
-are small amounts of information where understanding the relationship
-between what is going in userspace can help understand the kernel
-warnings, errors, or other printk messages.  Which is why I think rate
-limiting, even with a very low threshold, is a perfectly good alternative.
+Signed-off-by: "Bastien Armand <armand.bastien@laposte.net>"
+---
+ drivers/staging/panel/panel.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-If you need to do bulk logging, and the problem is you want to make
-sure the information doesn't get lost because syslogd/journald hasn't
-started up yet, or the file system hasn't been remounted read/write
-yet, there is a simple answer to this, and it doesn't involve spamming
-the kernel ring buffer (because kernel memory is non-swappable).
-
-The answer is logsave(8), which I developed to solve this specific
-problem.  I wanted to make sure distributions could capture the output
-of fsck, even when checking the read-only root file system.  Note that
-I did not even *consider* spamming the dmesg log with e2fsck output.
-Instead, I created a userspace logsave process which could buffer the
-output (which of course was still displayed on the console) until the
-root file system was writeable (and/or /var was mounted), at which
-point the contents could be saved to a file in /var/log.
-
-So there are so many other ways of solving this problem without trying
-to abuse the kernel logging facilities (which were never intended to
-be a general-purpose syslog replacement).  I suspect some systemd
-developer was being lazy....
-
-					- Ted
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 08f9a48..7b390ea 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -867,6 +867,7 @@ static void lcd_print(char c)
+ static void lcd_clear_fast_s(void)
+ {
+ 	int pos;
++
+ 	lcd_addr_x = lcd_addr_y = 0;
+ 	lcd_gotoxy();
+ 
+@@ -887,6 +888,7 @@ static void lcd_clear_fast_s(void)
+ static void lcd_clear_fast_p8(void)
+ {
+ 	int pos;
++
+ 	lcd_addr_x = lcd_addr_y = 0;
+ 	lcd_gotoxy();
+ 
+@@ -922,6 +924,7 @@ static void lcd_clear_fast_p8(void)
+ static void lcd_clear_fast_tilcd(void)
+ {
+ 	int pos;
++
+ 	lcd_addr_x = lcd_addr_y = 0;
+ 	lcd_gotoxy();
+ 
+@@ -1092,6 +1095,7 @@ static inline int handle_lcd_special_code(void)
+ 		break;
+ 	case 'k': {	/* kill end of line */
+ 		int x;
++
+ 		for (x = lcd_addr_x; x < lcd_bwidth; x++)
+ 			lcd_write_data(' ');
+ 
+@@ -1747,16 +1751,20 @@ static inline int input_state_high(struct logical_input *input)
+ 
+ 			if (input->high_timer == 0) {
+ 				char *press_str = input->u.kbd.press_str;
++
+ 				if (press_str[0]) {
+ 					int s = sizeof(input->u.kbd.press_str);
++
+ 					keypad_send_key(press_str, s);
+ 				}
+ 			}
+ 
+ 			if (input->u.kbd.repeat_str[0]) {
+ 				char *repeat_str = input->u.kbd.repeat_str;
++
+ 				if (input->high_timer >= KEYPAD_REP_START) {
+ 					int s = sizeof(input->u.kbd.repeat_str);
++
+ 					input->high_timer -= KEYPAD_REP_DELAY;
+ 					keypad_send_key(repeat_str, s);
+ 				}
+@@ -1794,8 +1802,10 @@ static inline void input_state_falling(struct logical_input *input)
+ 
+ 			if (input->u.kbd.repeat_str[0]) {
+ 				char *repeat_str = input->u.kbd.repeat_str;
++
+ 				if (input->high_timer >= KEYPAD_REP_START) {
+ 					int s = sizeof(input->u.kbd.repeat_str);
++
+ 					input->high_timer -= KEYPAD_REP_DELAY;
+ 					keypad_send_key(repeat_str, s);
+ 				}
+@@ -1811,12 +1821,15 @@ static inline void input_state_falling(struct logical_input *input)
+ 		/* call release event */
+ 		if (input->type == INPUT_TYPE_STD) {
+ 			void (*release_fct)(int) = input->u.std.release_fct;
++
+ 			if (release_fct != NULL)
+ 				release_fct(input->u.std.release_data);
+ 		} else if (input->type == INPUT_TYPE_KBD) {
+ 			char *release_str = input->u.kbd.release_str;
++
+ 			if (release_str[0]) {
+ 				int s = sizeof(input->u.kbd.release_str);
++
+ 				keypad_send_key(release_str, s);
+ 			}
+ 		}
+@@ -1933,6 +1946,7 @@ static int input_name2mask(const char *name, pmask_t *mask, pmask_t *value,
+ 	om = im = m = v = 0ULL;
+ 	while (*name) {
+ 		int in, out, bit, neg;
++
+ 		for (in = 0; (in < sizeof(sigtab)) &&
+ 			     (sigtab[in] != *name); in++)
+ 			;
+@@ -2040,6 +2054,7 @@ static struct logical_input *panel_bind_callback(char *name,
+ static void keypad_init(void)
+ {
+ 	int keynum;
++
+ 	init_waitqueue_head(&keypad_read_wait);
+ 	keypad_buflen = 0;	/* flushes any eventual noisy keystroke */
+ 
