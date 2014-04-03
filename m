@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaDCLsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 07:48:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39559 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751832AbaDCLst (ORCPT
+	id S1751980AbaDCLtG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 07:49:06 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49904 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918AbaDCLsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 07:48:49 -0400
-Date: Thu, 3 Apr 2014 12:48:47 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] regulator: core: Get and put regulator of_node
-Message-ID: <20140403114847.GQ1665@opensource.wolfsonmicro.com>
-References: <1396447614-3048-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140402142356.GE2269@sirena.org.uk> <20140402160438.GO1665@opensource.wolfsonmicro.com> <20140402165354.GG2269@sirena.org.uk> <20140403105804.GP1665@opensource.wolfsonmicro.com> <20140403111431.GU14763@sirena.org.uk>
+	Thu, 3 Apr 2014 07:48:51 -0400
+From: =?UTF-8?q?Jos=C3=A9=20Bollo?= <jose.bollo@open.eurogiciel.org>
+To: Casey Schaufler <casey@schaufler-ca.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: jobol@nonadev.net,
+        =?UTF-8?q?Jos=C3=A9=20Bollo?= <jose.bollo@open.eurogiciel.org>
+Subject: [PATCH 1/1] SMACK: Fix handling value==NULL in post setxattr
+Date: Thu,  3 Apr 2014 13:48:41 +0200
+Message-Id: <1396525721-17307-1-git-send-email-jose.bollo@open.eurogiciel.org>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403111431.GU14763@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 12:14:31PM +0100, Mark Brown wrote:
-> On Thu, Apr 03, 2014 at 11:58:04AM +0100, Charles Keepax wrote:
-> > The main issue I have is that devm_regualtor_register is a bit
-> > awkward. With regulator_register you will always be calling
-> > regulator_unregister so you can put the of_node there but with
-> > devm there isn't really a good place to put the of_node.
-> 
-> That's why I suggested it might be OK to take a reference in the core -
-> this would allow the device probe to safely drop its reference before it
-> returns.
-> 
-> > Would perhaps a sensible thing here be to add an of_node_get to
-> > of_regulator_match, since we seem to be expecting that to
-> > increase the ref count. And then just add an of_node_put to
-> > regulator_unregister. And for anything directly using
-> > regulator_register/devm_regulator_register they should add a
-> > manual of_node_get?
-> 
-> That seems very ugly.
+The function `smack_inode_post_setxattr` is called each
+time that a setxattr is done, for any value of name.
+The kernel allow to put value==NULL when size==0
+to set an empty attribute value. The systematic
+call to smk_import_entry was causing the dereference
+of a NULL pointer hence a KERNEL PANIC!
 
-Agreed, it is not exactly made of clean interface success. So I
-guess the sensible thing is to add a helper to clean up the
-of_regulator_match results and add the node get in the regulator
-core as per my original patch. I will fix up the commit message
-for it and do patches for the other bits.
+The problem can be produced easily by issuing the
+command `setfattr -n user.data file` under bash prompt
+when SMACK is active.
 
-Thanks,
-Charles
+Moving the call to smk_import_entry as proposed by this
+patch is correcting the behaviour because the function
+smack_inode_post_setxattr is called for the SMACK's
+attributes only if the function smack_inode_setxattr validated
+the value and its size (what will not be the case when size==0).
+
+It also has a benefical effect to not fill the smack hash
+with garbage values coming from any extended attribute
+write.
+
+Change-Id: Iaf0039c2be9bccb6cee11c24a3b44d209101fe47
+Signed-off-by: José Bollo <jose.bollo@open.eurogiciel.org>
+---
+ security/smack/smack_lsm.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 3f01cf5..28d482c 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -893,18 +893,20 @@ static void smack_inode_post_setxattr(struct dentry *dentry, const char *name,
+ 		return;
+ 	}
+ 
+-	skp = smk_import_entry(value, size);
+ 	if (strcmp(name, XATTR_NAME_SMACK) == 0) {
++		skp = smk_import_entry(value, size);
+ 		if (skp != NULL)
+ 			isp->smk_inode = skp->smk_known;
+ 		else
+ 			isp->smk_inode = smack_known_invalid.smk_known;
+ 	} else if (strcmp(name, XATTR_NAME_SMACKEXEC) == 0) {
++		skp = smk_import_entry(value, size);
+ 		if (skp != NULL)
+ 			isp->smk_task = skp;
+ 		else
+ 			isp->smk_task = &smack_known_invalid;
+ 	} else if (strcmp(name, XATTR_NAME_SMACKMMAP) == 0) {
++		skp = smk_import_entry(value, size);
+ 		if (skp != NULL)
+ 			isp->smk_mmap = skp;
+ 		else
+-- 
+1.8.1.4
+
