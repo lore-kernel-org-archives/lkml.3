@@ -1,126 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaDCPEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:04:12 -0400
-Received: from relay.parallels.com ([195.214.232.42]:32781 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaDCPEI (ORCPT
+	id S1752493AbaDCPFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:05:31 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:63950 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaDCPF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:04:08 -0400
-Message-ID: <533D7864.7080907@parallels.com>
-Date: Thu, 3 Apr 2014 19:04:04 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Thu, 3 Apr 2014 11:05:27 -0400
+Date: Thu, 3 Apr 2014 17:05:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 3/4] workqueue: Add anon workqueue sysfs hierarchy
+Message-ID: <20140403150521.GF23338@localhost.localdomain>
+References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
+ <1395940862-31428-4-git-send-email-fweisbec@gmail.com>
+ <20140330130139.GD8942@htj.dyndns.org>
+ <20140403144250.GD23338@localhost.localdomain>
+ <20140403145805.GC24119@htj.dyndns.org>
 MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>
-CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <glommer@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <devel@openvz.org>
-Subject: Re: [PATCH -mm v2.1] mm: get rid of __GFP_KMEMCG
-References: <c50644c5c979fbe21e72cc2751876ceaff6ef495.1396335798.git.vdavydov@parallels.com> <1396419365-351-1-git-send-email-vdavydov@parallels.com> <xr934n2bjuec.fsf@gthelen.mtv.corp.google.com>
-In-Reply-To: <xr934n2bjuec.fsf@gthelen.mtv.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403145805.GC24119@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 01:25 AM, Greg Thelen wrote:
-> On Tue, Apr 01 2014, Vladimir Davydov <vdavydov@parallels.com> wrote:
->
->> Currently to allocate a page that should be charged to kmemcg (e.g.
->> threadinfo), we pass __GFP_KMEMCG flag to the page allocator. The page
->> allocated is then to be freed by free_memcg_kmem_pages. Apart from
->> looking asymmetrical, this also requires intrusion to the general
->> allocation path. So let's introduce separate functions that will
->> alloc/free pages charged to kmemcg.
->>
->> The new functions are called alloc_kmem_pages and free_kmem_pages. They
->> should be used when the caller actually would like to use kmalloc, but
->> has to fall back to the page allocator for the allocation is large. They
->> only differ from alloc_pages and free_pages in that besides allocating
->> or freeing pages they also charge them to the kmem resource counter of
->> the current memory cgroup.
->>
->> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> One comment nit below, otherwise looks good to me.
->
-> Acked-by: Greg Thelen <gthelen@google.com>
->
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Michal Hocko <mhocko@suse.cz>
->> Cc: Glauber Costa <glommer@gmail.com>
->> Cc: Christoph Lameter <cl@linux-foundation.org>
->> Cc: Pekka Enberg <penberg@kernel.org>
->> ---
->> Changes in v2.1:
->>  - add missing kmalloc_order forward declaration; lacking it caused
->>    compilation breakage with CONFIG_TRACING=n
->>
->>  include/linux/gfp.h             |   10 ++++---
->>  include/linux/memcontrol.h      |    2 +-
->>  include/linux/slab.h            |   11 +-------
->>  include/linux/thread_info.h     |    2 --
->>  include/trace/events/gfpflags.h |    1 -
->>  kernel/fork.c                   |    6 ++---
->>  mm/page_alloc.c                 |   56 ++++++++++++++++++++++++---------------
->>  mm/slab_common.c                |   12 +++++++++
->>  mm/slub.c                       |    6 ++---
->>  9 files changed, 61 insertions(+), 45 deletions(-)
->>
->> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
->> index 39b81dc7d01a..d382db71e300 100644
->> --- a/include/linux/gfp.h
->> +++ b/include/linux/gfp.h
->> @@ -31,7 +31,6 @@ struct vm_area_struct;
->>  #define ___GFP_HARDWALL		0x20000u
->>  #define ___GFP_THISNODE		0x40000u
->>  #define ___GFP_RECLAIMABLE	0x80000u
->> -#define ___GFP_KMEMCG		0x100000u
->>  #define ___GFP_NOTRACK		0x200000u
->>  #define ___GFP_NO_KSWAPD	0x400000u
->>  #define ___GFP_OTHER_NODE	0x800000u
->> @@ -91,7 +90,6 @@ struct vm_area_struct;
->>  
->>  #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
->>  #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
->> -#define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
->>  #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
->>  
->>  /*
->> @@ -353,6 +351,10 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
->>  #define alloc_page_vma_node(gfp_mask, vma, addr, node)		\
->>  	alloc_pages_vma(gfp_mask, 0, vma, addr, node)
->>  
->> +extern struct page *alloc_kmem_pages(gfp_t gfp_mask, unsigned int order);
->> +extern struct page *alloc_kmem_pages_node(int nid, gfp_t gfp_mask,
->> +					  unsigned int order);
->> +
->>  extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
->>  extern unsigned long get_zeroed_page(gfp_t gfp_mask);
->>  
->> @@ -372,8 +374,8 @@ extern void free_pages(unsigned long addr, unsigned int order);
->>  extern void free_hot_cold_page(struct page *page, int cold);
->>  extern void free_hot_cold_page_list(struct list_head *list, int cold);
->>  
->> -extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
->> -extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
->> +extern void __free_kmem_pages(struct page *page, unsigned int order);
->> +extern void free_kmem_pages(unsigned long addr, unsigned int order);
->>  
->>  #define __free_page(page) __free_pages((page), 0)
->>  #define free_page(addr) free_pages((addr), 0)
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 29068dd26c3d..13acdb5259f5 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -543,7 +543,7 @@ memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
->>  	 * res_counter_charge_nofail, but we hope those allocations are rare,
->>  	 * and won't be worth the trouble.
->>  	 */
-> Just a few lines higher in first memcg_kmem_newpage_charge() comment,
-> there is a leftover reference to GFP_KMEMCG which should be removed.
+On Thu, Apr 03, 2014 at 10:58:05AM -0400, Tejun Heo wrote:
+> Hello, Frederic.
+> 
+> On Thu, Apr 03, 2014 at 04:42:55PM +0200, Frederic Weisbecker wrote:
+> > > I'm not really sure this is the good approach.  I think I wrote this
+> > > way back but wouldn't it make more sense to allow userland to restrict
+> > > the cpus which are allowed to all unbound cpus.  As currently
+> > > implemented, setting WQ_SYSFS to give userland more control would
+> > > escape that workqueue from this global mask as a side effect, which is
+> > > a surprising behavior and doesn't make much sense to me.
+> > 
+> > I just considered that anon workqueues shouldn't be that different from
+> > another WQ_SYSFS workqueue. This way we don't have suprising side effect.
+> > Touching a WQ_SYSFS doesn't impact anon workqueues, and touching anon workqueues
+> > doesn't impact WQ_SYSFS workqueues.
+> 
+> I really think it'd be a lot better to perceive the default attributes
+> to be layered below explicit WQ_SYSFS attributes; otherwise, we have
+> two disjoint sets and the workqueues would jump between the two
+> depending on WQ_SYSFS.  A system tool which wants to configure all
+> workqueues would have to scan and manipulate all of them not knowing
+> what specific one's requirements are and tools which want to configure
+> specific ones likely won't know what the overruling condition is and
+> violate the global contraints.  It'd be clearer to have the layering
+> pre-defined and enforced.
 
-Good catch, will resend.
+Ok, works for me.
 
-Thank you for the review!
+> 
+> > In fact this is simply the current way we do it, just extended.
+> 
+> Yes, in term of mechanics, it is but I don't think that's what we
+> want.  We want to be able to say "unbound workqueues in general are
+> confined to these cpus" and it's weird to just provide knobs for wqs
+> which don't have knobs.
+
+Yeah I like the simplicity of that.
+
+> 
+> > Yeah I like this. So the right place for this cpumask would be in
+> > the root of /sys/devices/virtual/workqueue/ , right?
+> 
+> Yes, I think that'd make more sense.
+
+Ok, I'll try this. Thanks!
+
+> 
+> Thanks.
+> 
+> -- 
+> tejun
