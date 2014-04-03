@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaDCXkD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 19:40:03 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:40575 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443AbaDCXj6 (ORCPT
+	id S1754040AbaDCXkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 19:40:25 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:51883 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753933AbaDCXkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 19:39:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1396554637.2550.11.camel@buesod1.americas.hpqcorp.net>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
- <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
- <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
- <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
- <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
- <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
- <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
- <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
- <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com>
- <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com>
- <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net> <533DB03D.7010308@colorfullife.com>
- <1396554637.2550.11.camel@buesod1.americas.hpqcorp.net>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Thu, 3 Apr 2014 19:39:38 -0400
-Message-ID: <CAHGf_=rT7WswD0LOxVeDDpae-Ahaz4wEcpE8HLmDwOBw598z8g@mail.gmail.com>
-Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
+	Thu, 3 Apr 2014 19:40:21 -0400
+Date: Thu, 3 Apr 2014 19:40:18 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Greg Thelen <gthelen@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+        Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [BUG] x86: reboot doesn't reboot
+Message-ID: <20140403194018.7c67aec7@gandalf.local.home>
+In-Reply-To: <533DED74.6050202@linux.intel.com>
+References: <20140403021411.6236996f@gandalf.local.home>
+	<070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>
+	<533D001A.5030802@linux.intel.com>
+	<20140403094155.04cc00bc@gandalf.local.home>
+	<533D6BE7.3020608@zytor.com>
+	<20140403104721.5f6c32b6@gandalf.local.home>
+	<20140403111711.5bed4ff7@gandalf.local.home>
+	<533D7C4F.4010504@zytor.com>
+	<533D7C93.7080105@zytor.com>
+	<20140403113921.23dceb75@gandalf.local.home>
+	<533D8516.1040803@zytor.com>
+	<20140403121314.246b03a7@gandalf.local.home>
+	<533DED74.6050202@linux.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 3, 2014 at 3:50 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Thu, 2014-04-03 at 21:02 +0200, Manfred Spraul wrote:
->> Hi Davidlohr,
->>
->> On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
->> > The default size for shmmax is, and always has been, 32Mb.
->> > Today, in the XXI century, it seems that this value is rather small,
->> > making users have to increase it via sysctl, which can cause
->> > unnecessary work and userspace application workarounds[1].
->> >
->> > Instead of choosing yet another arbitrary value, larger than 32Mb,
->> > this patch disables the use of both shmmax and shmall by default,
->> > allowing users to create segments of unlimited sizes. Users and
->> > applications that already explicitly set these values through sysctl
->> > are left untouched, and thus does not change any of the behavior.
->> >
->> > So a value of 0 bytes or pages, for shmmax and shmall, respectively,
->> > implies unlimited memory, as opposed to disabling sysv shared memory.
->> > This is safe as 0 cannot possibly be used previously as SHMMIN is
->> > hardcoded to 1 and cannot be modified.
->
->> Are we sure that no user space apps uses shmctl(IPC_INFO) and prints a
->> pretty error message if shmall is too small?
->> We would break these apps.
->
-> Good point. 0 bytes/pages would definitely trigger an unexpected error
-> message if users did this. But on the other hand I'm not sure this
-> actually is a _real_ scenario, since upon overflow the value can still
-> end up being 0, which is totally bogus and would cause the same
-> breakage.
->
-> So I see two possible workarounds:
-> (i) Use ULONG_MAX for the shmmax default instead. This would make shmall
-> default to 1152921504606846720 and 268435456, for 64 and 32bit systems,
-> respectively.
->
-> (ii) Keep the 0 bytes, but add a new a "transition" tunable that, if set
-> (default off), would allow 0 bytes to be unlimited. With time, users
-> could hopefully update their applications and we could eventually get
-> rid of it. This _seems_ to be the less aggressive way to go.
+On Fri, 04 Apr 2014 07:23:32 +0800
+"Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
 
-Do you mean
+> Can you please send the dmi table out?
 
-set 0: IPC_INFO return shmmax = 0.
-set 1: IPC_INFO return shmmax = ULONG_MAX.
+I already did as a gz attachment to H. Peter. You were on the Cc, did
+you not receive it?
 
-?
-
-That makes sense.
+-- Steve
