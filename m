@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaDCPq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:46:59 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45879 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaDCPqx convert rfc822-to-8bit (ORCPT
+	id S1752982AbaDCPsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:48:55 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41695 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727AbaDCPsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:46:53 -0400
+	Thu, 3 Apr 2014 11:48:54 -0400
+Date: Thu, 3 Apr 2014 08:48:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] hwmon updates for v3.15 (part 2)
+Message-ID: <20140403154848.GA5588@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <20140403173701.75c1f497@north>
-References: <1396534327-12971-1-git-send-email-richard.genoud@gmail.com> <20140403173701.75c1f497@north>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Thu, 3 Apr 2014 17:46:30 +0200
-Message-ID: <CACQ1gAg8N+Y1=dvkZcA_KyLudfSB_ueL1+LS4F=2F2TE_JwtGA@mail.gmail.com>
-Subject: Re: [PATCH] rt2x00: BUG: remove double loop on REGISTER_BUSY_COUNT
-To: =?UTF-8?Q?Jakub_Kici=C5=84ski?= <moorray3@wp.pl>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-03 17:37 GMT+02:00 Jakub Kiciński <moorray3@wp.pl>:
-> On Thu,  3 Apr 2014 16:12:07 +0200, Richard Genoud wrote:
->> rt2x00usb_register_read_lock() calls rt2x00usb_vendor_req_buff_lock()
->> that calls rt2x00usb_vendor_request() which is already looping up to
->> REGISTER_BUSY_COUNT times.
->>
->> So this loop is not needed.
->
-> Not true.  rt2x00usb_vendor_request() busy-waits for usb_control_msg()
-> to succeed, rt2x00usb_register_read_lock() busy-waits for the register
-> field itself to become 0.
->
-> Also, how would this be a BUG?
 
-Ok, you're right.
-Just forget about this patch...
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Richard
+Hi Linus,
+
+Please pull the second part of hwmon updates for Linux v3.15 from signed tag:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+This adds one more patch which had secondary dependencies. The branch point
+is arbitrary, but I did run a full set of build and qemu tests on it. While
+there are some new build failures (6 out of 122 in my builds), none are due
+to this commit.
+
+Build results are available at http://server.roeck-us.net:8010/builders.
+
+Thanks,
+Guenter
+------
+
+The following changes since commit 0f1b1e6d73cb989ce2c071edc57deade3b084dfe:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid (2014-04-02 16:24:28 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to ec0159503ae74aeb834e78366bdf4b9663ca1129:
+
+  hwmon: (k10temp) Add support for AMD F16 M30h processor (2014-04-02 22:09:14 -0700)
+
+----------------------------------------------------------------
+Add support for AMD F16 M30h processor to k10temp driver
+
+----------------------------------------------------------------
+Aravind Gopalakrishnan (1):
+      hwmon: (k10temp) Add support for AMD F16 M30h processor
+
+ Documentation/hwmon/k10temp |    6 +++---
+ drivers/hwmon/Kconfig       |    4 ++--
+ drivers/hwmon/k10temp.c     |    1 +
+ 3 files changed, 6 insertions(+), 5 deletions(-)
+
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPYLgAAoJEMsfJm/On5mBpO8P/0ukoGhmnf14h0rjl8ES3B5R
+l+c42fIboLUqFlK4kv0dOKtz3iKfGWR5CeF0ZYuZySrz4YizfPyTEr1n5kirU84y
+uJc62zn6Cjlt1bt69BMsP59aXcjAn3LQqejZNrYulO95iXD2Tt8pJhzQCaJbMmve
+ZQ7G+dICx4PtaNpktmdfCdAFF0T41kMFEItnIn7o+ttdw3PJ19Fva4tliRTWTRBv
+tgqcJ2kmO16h2gzvFCFNXJ1dVN9mGnT4ktZLroiT+PH2PmrmZDAnskOvQcePEtwB
+pSc77PfE0VADNjyVBrdtwMidAqiEI8m9m0ndrQFpmIY1eizAYpwA6BHA13Nz+eyX
+7Rsr34L65nXSgdH6EFUDikVG1McTAEvOSSIuKDvsZmWXkuCIB3MXOgWzXw9gSvEf
+WSzUz1tQgnVgU0ewySNvl2ro72pZQ6xijoaTRvFE8Zggwr2zqe6yS2DTuHvLRprg
+rO5nSjjmBW+GMyRoehCLe9cv0AQ5nQtiRGbFMY9uisCF4lFLCUB3tkbGigoSy42F
+9YWTeU/n9mleILdYIiRHkv15YO02Qrzxyx2amWbHTR3n0QofxnjiggYu0gPZNynE
+zmYiDpiCRxEd2pBCUE3dsf1Pl/Y0yqzk6D+5VwxEvSkey/VQuHPIpQszPFlmhCQv
+KUsx1iuOoo8b4wNVIAKh
+=KteO
+-----END PGP SIGNATURE-----
+
+--vtzGhvizbBRQ85DL--
