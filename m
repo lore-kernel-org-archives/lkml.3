@@ -1,110 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731AbaDCUwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:52:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46298 "EHLO mx2.suse.de"
+	id S1753809AbaDCUyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:54:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46376 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaDCUwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:52:39 -0400
-Date: Thu, 3 Apr 2014 22:52:36 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
-        daniel@veillard.com, Christoph Hellwig <hch@infradead.org>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        inotify-tools-general@lists.sourceforge.net
-Subject: Re: Things I wish I'd known about Inotify
-Message-ID: <20140403205236.GE14107@quack.suse.cz>
-References: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com>
+	id S1753733AbaDCUyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 16:54:33 -0400
+Date: Thu, 3 Apr 2014 22:54:31 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Chandler Paul <thatslyude@gmail.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@intel.com>,
+        Adam Williamson <awilliam@redhat.com>
+Subject: Re: [PATCH] Add sensor hub quirk for ThinkPad Helix
+In-Reply-To: <1396556875-31108-1-git-send-email-thatslyude@gmail.com>
+Message-ID: <alpine.LNX.2.00.1404032254210.32122@pobox.suse.cz>
+References: <1396556875-31108-1-git-send-email-thatslyude@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 03-04-14 08:34:44, Michael Kerrisk (man-pages) wrote:
->    Limitations and caveats
->        The inotify API provides no information about the user or process
->        that triggered the inotify event.  In  particular,  there  is  no
->        easy  way  for a process that is monitoring events via inotify to
->        distinguish events that it triggers itself from  those  that  are
->        triggered by other processes.
-> 
->        The  inotify API identifies affected files by filename.  However,
->        by the time an application processes an inotify event, the  file‐
->        name may already have been deleted or renamed.
-> 
->        The  inotify  API identifies events via watch descriptors.  It is
->        the application's responsibility to cache a mapping  (if  one  is
->        needed)  between  watch descriptors and pathnames.  Be aware that
->        directory renamings may affect multiple cached pathnames.
-> 
->        Inotify monitoring of directories is not  recursive:  to  monitor
->        subdirectories under a directory, additional watches must be cre‐
->        ated.  This can take a significant amount time for  large  direc‐
->        tory trees.
-  And also there's a problem with the limit on the number of watches a user
-can have.
+On Thu, 3 Apr 2014, Stephen Chandler Paul wrote:
 
->        If monitoring an entire directory subtree, and a new subdirectory
->        is created in that tree or an existing directory is renamed  into
->        that  tree,  be aware that by the time you create a watch for the
->        new subdirectory, new  files  (and  subdirectories)  may  already
->        exist  inside  the subdirectory.  Therefore, you may want to scan
->        the contents of the subdirectory  immediately  after  adding  the
->        watch (and, if desired, recursively add watches for any subdirec‐
->        tories that it contains).
+> Just like some of the other laptops/tablets on the market with ultrabook
+> sensors, the ThinkPad Helix's sensor hub requires a special quirk in
+> order for it to power on properly. Without it the sensors are detected
+> by the kernel and set up as usual, but they won't output any data. This
+> will also fix the sensors on any other laptops with the same model of
+> sensor hub.
 > 
->        Note that the event queue can overflow.  In this case, events are
->        lost.   Robust applications should handle the possibility of lost
->        events gracefully.  For example, it may be necessary  to  rebuild
->        part  or all of the application cache.  (One simple, but possibly
->        expensive, approach is to  close  the  inotify  file  descriptor,
->        empty  the  cache, create a new inotify file descriptor, and then
->        re-create watches and cache entries for the objects to  be  moni‐
->        tored.)
-> 
->    Dealing with rename() events
->        The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
->        rename(2) are usually available as consecutive events when  read‐
->        ing from the inotify file descriptor.  However, this is not guar‐
->        anteed.  If multiple processes are triggering  events  for  moni‐
->        tored  objects,  then  (on rare occasions) an arbitrary number of
->        other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
->        events.
-> 
->        Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‐
->        ated by rename(2) is thus inherently racy.  (Don't forget that if
->        an  object is renamed outside of a monitored directory, there may
->        not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
->        assume the events are always consecutive) can be used to ensure a
->        match in most cases, but will inevitably miss some cases, causing
->        the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
->        events as being unrelated.  If watch  descriptors  are  destroyed
->        and  re-created as a result, then those watch descriptors will be
->        inconsistent with the watch descriptors in  any  pending  events.
->        (Re-creating the inotify file descriptor and rebuilding the cache
->        may be useful to deal with this scenario.)
-  Well, but there's 'cookie' value meant exactly for matching up
-IN_MOVED_FROM and IN_MOVED_TO events. And 'cookie' is guaranteed to be
-unique at least within the inotify instance (in fact currently it is unique
-within the whole system but I don't think we want to give that promise).
- 
->        Applications should also  allow  for  the  possibility  that  the
->        IN_MOVED_FROM event was the last event that could fit in the buf‐
->        fer returned by the current call to read(2), and the accompanying
->        IN_MOVED_TO event might be fetched only on the next read(2).
+> Signed-off-by: Stephen Chandler Paul <thatslyude@gmail.com>
 
-								Honza
+Queued for 3.15, thanks.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jiri Kosina
+SUSE Labs
