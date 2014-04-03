@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaDCQZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:25:24 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59304 "EHLO
+	id S1753055AbaDCQ0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 12:26:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59371 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaDCQZA convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752804AbaDCQ0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:25:00 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 2/9] crypto: qce: Add register defines
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1396541886-10966-3-git-send-email-svarbanov@mm-sol.com>
-Date: Thu, 3 Apr 2014 11:24:55 -0500
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <69C277DD-FAB2-4102-BA97-8C1985E099CB@codeaurora.org>
-References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com> <1396541886-10966-3-git-send-email-svarbanov@mm-sol.com>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-X-Mailer: Apple Mail (2.1874)
+	Thu, 3 Apr 2014 12:26:15 -0400
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Rabin Vincent <rabin@rab.in>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: ftrace: work with CONFIG_DEBUG_SET_MODULE_RONX
+References: <1396476619-15386-1-git-send-email-rabin@rab.in>
+	<533CB39D.2030509@codeaurora.org>
+Date: Thu, 03 Apr 2014 09:26:17 -0700
+In-Reply-To: <533CB39D.2030509@codeaurora.org> (Laura Abbott's message of
+	"Wed, 02 Apr 2014 18:04:29 -0700")
+Message-ID: <vnkwppky1is6.fsf@mitchelh-linux.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 02 2014 at 06:04:29 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> I think Mitch tested this on our internal targets. I'll let him reply with his Tested-by
+>
+> Laura
 
-On Apr 3, 2014, at 11:17 AM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+Indeed:
 
-> Here are all register addresses and bit/masks used by the driver.
-> 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
-> drivers/crypto/qce/regs-v5.h | 327 +++++++++++++++++++++++++++++++++++++++++++
-> 1 file changed, 327 insertions(+)
-> create mode 100644 drivers/crypto/qce/regs-v5.h
-
-This should be part of the first patch in the series, you shouldn’t have any patch that doesn’t build.
-
-- k
+Tested-by: Mitchel Humpherys <mitchelh@codeaurora.org>
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
