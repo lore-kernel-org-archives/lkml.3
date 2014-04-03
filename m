@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaDCNpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 09:45:44 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36636 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbaDCNpl (ORCPT
+	id S1752267AbaDCNqM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 09:46:12 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:61043 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246AbaDCNqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 09:45:41 -0400
-Date: Thu, 3 Apr 2014 14:45:26 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Thu, 3 Apr 2014 09:46:09 -0400
+Date: Thu, 3 Apr 2014 21:45:42 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, riel@redhat.com, hughd@google.com,
+        mgorman@suse.de, torvalds@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-Message-ID: <20140403134526.GA25186@srcf.ucam.org>
-References: <20140403021411.6236996f@gandalf.local.home>
- <070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>
- <533D001A.5030802@linux.intel.com>
- <20140403094155.04cc00bc@gandalf.local.home>
+Subject: Re: [patch] x86: clearing access bit don't flush tlb
+Message-ID: <20140403134542.GA3371@kernel.org>
+References: <20140403004250.GA14597@kernel.org>
+ <20140403113537.GA543@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140403094155.04cc00bc@gandalf.local.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20140403113537.GA543@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 09:41:55AM -0400, Steven Rostedt wrote:
-> On Thu, 03 Apr 2014 14:30:50 +0800
-> "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
+On Thu, Apr 03, 2014 at 01:35:37PM +0200, Ingo Molnar wrote:
 > 
+> * Shaohua Li <shli@kernel.org> wrote:
 > 
-> > May I know if "reboot=t" make any difference on your system with the change?
+> > Add a few acks and resend this patch.
+> > 
+> > We use access bit to age a page at page reclaim. When clearing pte access bit,
+> > we could skip tlb flush in X86. The side effect is if the pte is in tlb and pte
+> > access bit is unset in page table, when cpu access the page again, cpu will not
+> > set page table pte's access bit. Next time page reclaim will think this hot
+> > page is yong and reclaim it wrongly, but this doesn't corrupt data.
+> > 
+> > And according to intel manual, tlb has less than 1k entries, which covers < 4M
+> > memory. In today's system, several giga byte memory is normal. After page
+> > reclaim clears pte access bit and before cpu access the page again, it's quite
+> > unlikely this page's pte is still in TLB. And context swich will flush tlb too.
+> > The chance skiping tlb flush to impact page reclaim should be very rare.
+> > 
+> > Originally (in 2.5 kernel maybe), we didn't do tlb flush after clear access bit.
+> > Hugh added it to fix some ARM and sparc issues. Since I only change this for
+> > x86, there should be no risk.
+> > 
+> > And in some workloads, TLB flush overhead is very heavy. In my simple
+> > multithread app with a lot of swap to several pcie SSD, removing the tlb flush
+> > gives about 20% ~ 30% swapout speedup.
+> > 
+> > Signed-off-by: Shaohua Li <shli@fusionio.com>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Acked-by: Mel Gorman <mgorman@suse.de>
+> > Acked-by: Hugh Dickins <hughd@google.com>
+> > ---
+> >  arch/x86/mm/pgtable.c |   13 ++++++-------
+> >  1 file changed, 6 insertions(+), 7 deletions(-)
+> > 
+> > Index: linux/arch/x86/mm/pgtable.c
+> > ===================================================================
+> > --- linux.orig/arch/x86/mm/pgtable.c	2014-03-27 05:22:08.572100549 +0800
+> > +++ linux/arch/x86/mm/pgtable.c	2014-03-27 05:46:12.456131121 +0800
+> > @@ -399,13 +399,12 @@ int pmdp_test_and_clear_young(struct vm_
+> >  int ptep_clear_flush_young(struct vm_area_struct *vma,
+> >  			   unsigned long address, pte_t *ptep)
+> >  {
+> > -	int young;
+> > -
+> > -	young = ptep_test_and_clear_young(vma, address, ptep);
+> > -	if (young)
+> > -		flush_tlb_page(vma, address);
+> > -
+> > -	return young;
+> > +	/*
+> > +	 * In X86, clearing access bit without TLB flush doesn't cause data
+> > +	 * corruption. Doing this could cause wrong page aging and so hot pages
+> > +	 * are reclaimed, but the chance should be very rare.
 > 
-> Is this the future fix? Or do you have patches for me to test. I'll be
-> happy to test any patches you have on this box. If you need to know
-> anything about this box, let me know and I'll run any command that
-> would help you.
+> So, beyond the spelling mistakes, I guess this explanation should also 
+> be a bit more explanatory - how about something like:
+> 
+> 	/*
+> 	 * On x86 CPUs, clearing the accessed bit without a TLB flush 
+> 	 * doesn't cause data corruption. [ It could cause incorrect
+> 	 * page aging and the (mistaken) reclaim of hot pages, but the
+> 	 * chance of that should be relatively low. ]
+> 	 *
+> 	 * So as a performance optimization don't flush the TLB when 
+> 	 * clearing the accessed bit, it will eventually be flushed by 
+> 	 * a context switch or a VM operation anyway. [ In the rare 
+> 	 * event of it not getting flushed for a long time the delay 
+> 	 * shouldn't really matter because there's no real memory 
+> 	 * pressure for swapout to react to. ]
+> 	 */
+> 
+> Agreed?
 
-I think what this tells us is we should revert the patch and never try 
-0xcf9 by default.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Sure, that's better, thanks!
