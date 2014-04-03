@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbaDCRmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:42:42 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32213 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865AbaDCRmj (ORCPT
+	id S1753220AbaDCRoO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:44:14 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:56460 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038AbaDCRoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:42:39 -0400
-Date: Thu, 3 Apr 2014 20:42:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jimmy Li <coder.liss@gmail.com>
-Cc: Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Teodora Baluta <teobaluta@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>,
-        Lisa Nguyen <lisa@xenapiadmin.com>,
-        Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        =?us-ascii?Q?=3D=3Futf-8=3FB=3FVMO8bGluIMSwemVy=3F=3D?= 
-	<tulinizer@gmail.com>,
-        Archana kumari <archanakumari959@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drivers/staging/vt6655/iwctl.c fix a sparse warning
-Message-ID: <20140403174208.GM6991@mwanda>
-References: <20140403163229.GA21383@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403163229.GA21383@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 3 Apr 2014 13:44:11 -0400
+Message-ID: <533D9DE5.3000605@gmail.com>
+Date: Thu, 03 Apr 2014 19:44:05 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Alexander Holler <holler@ahsoftware.de>,
+        Florian Fainelli <f.fainelli@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
+ for Marvel 88E1116R PHYs
+References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com> <533C721E.1080004@gmail.com> <533C8B49.8080704@ahsoftware.de> <533C8ECB.4090900@gmail.com> <533D0B09.9040602@ahsoftware.de> <533D207E.9020909@gmail.com> <533D790C.5000104@ahsoftware.de>
+In-Reply-To: <533D790C.5000104@ahsoftware.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 12:32:29AM +0800, Jimmy Li wrote:
-> Signed-off-by: Jimmy Li <coder.liss@gmail.com>
+On 04/03/2014 05:06 PM, Alexander Holler wrote:
+> Am 03.04.2014 10:49, schrieb Sebastian Hesselbarth:
+>> On 04/03/2014 09:17 AM, Alexander Holler wrote:
+>>> Am 03.04.2014 00:27, schrieb Sebastian Hesselbarth:
+>>>> On 04/03/2014 12:12 AM, Alexander Holler wrote:
+>>>>>> I am curious, how you determined above commit to be the cause of the
+>>>>>> regression you are seeing. Can you bisect, if you didn't already?
+>>>>>
+>>>>> There was no bisecting necessary. I've just looked at what changed in
+>>>>> mv643xx_eth since 3.13 and the first commit I've reverted was
+>>>>> already a
+>>>>> hit. Reading a bit source revealed the differences between the old
+>>>>> reset
+>>>>> and the newly used one and ended up with my patch (first try) and
+>>>>> was a
+>>>>> hit too.
+>>>>
+> 
+> Sorry, continuing this discussion doesn't make sense. You have the same
+> hw, so just try enabling netconsole with 3.14 and use dhcpcd from
+> userland (this does the final reset here which hangs.
+> 
+> But don't suggest me (or insist on) a time consuming and totally useless
+> bisect when I already know what makes the problem to appear (100%
+> reliable here).
 
-You dropped the commit message which said which sparse warnings were
-fixed.  It should say something about the other cleanups as well. Also
-the subject prefix isn't right.  Use:
+Alexander,
 
-[PATCH v3] Staging: vt6655: iwctl.c: fix a sparse warning
+I tried to reproduce the regression on Dockstar with 3.14.0 and
+3.14.0-07247-gcd6362be, netconsole enabled, DHCP (dhclient).
 
-Or something.  "drivers/" doesn't add any information.
+I can neither reproduce any issues with ethernet before nor after
+dhclient kicks in. I can also use netconsole just fine and see
+plenty of kernel bootlog messages sent to netconsole receiver.
 
-regards,
-dan carpenter
+Can you _please_ share a full report how to properly reproduce it?
+
+Sebastian
+
 
