@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaDCLZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 07:25:46 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:51846 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890AbaDCLZm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751908AbaDCLZm (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Apr 2014 07:25:42 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
-Date: Thu, 03 Apr 2014 12:25:40 +0100
-In-Reply-To: <alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz> (Jiri
-	Kosina's message of "Thu, 3 Apr 2014 01:23:15 +0200 (CEST)")
-Message-ID: <yw1x7g76k62z.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Received: from mga11.intel.com ([192.55.52.93]:61261 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743AbaDCLZi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 07:25:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,786,1389772800"; 
+   d="scan'208";a="513630732"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: How to pass I2C platform_data under ACPI
+Thread-Topic: How to pass I2C platform_data under ACPI
+Thread-Index: Ac9PFCVxc1BkxaEVQoqK2pGHEHD28f//1sIA//+iCPA=
+Date: Thu, 3 Apr 2014 11:25:34 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD57463D21@BGSMSX104.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD57463568@BGSMSX104.gar.corp.intel.com>
+ <20140403111240.GC19349@intel.com>
+In-Reply-To: <20140403111240.GC19349@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Kosina <jkosina@suse.cz> writes:
-
-> On Wed, 2 Apr 2014, Linus Torvalds wrote:
+>> In non ACPI environment I used to initialize the platform_data under 
+>> board or platforms files. Under ACPI how do I do that?
 >
->> Steven, Borislav, one thing that strikes me might be a good idea is to 
->> limit the amount of non-kernel noise in dmesg. We already have the 
->> concept of rate-limiting various spammy internal kernel messages for 
->> when device drivers misbehave etc. Maybe we can just add rate-limiting 
->> to the interfaces that add messages to the kernel buffers, and work 
->> around this problem that way instead while waiting for Gregs fix to 
->> percolate? Or are the systemd debug messages going to so many other 
->> places too that that wouldn't really help?
+>If you can't extract that information from ACPI namespace, then one option is to pass platform data along with the device ACPI ID:
 >
-> I think that it's in principle a good idea, however ... the in-kernel 
-> ratelimiting always happens per sourcecode location, but this will be 
-> rather hard to achieve with interface such as /dev/kmsg.
->
-> If /dev/kmsg is going to be ratelimited as a whole, it might potentially 
-> create a severely unfair situation between individual userspace programs 
-> trying to do logging (although there is apparently only one userspace 
-> service doing any logging through this interface whatsoever, right?).
+>static const struct acpi_device_id my_acpi_match[] = {
+>	{ "MYID0001", (kernel_ulong_t)&my_platform_data }
+>	...
+>	{ },
+>};
 
-The point is that /dev/kmsg is *not* intended as a syslog replacement.
+Thanks for the Quick reply.
 
--- 
-Måns Rullgård
-mans@mansr.com
+So If I  want to use different platform_data for different boards can I do something like below?
+And initialize the platform data in either driver or in separate module which gets compiled along with driver?
+
+static const struct acpi_device_id my_acpi_match[] = {
+	{ "MYID0001", (kernel_ulong_t)&my_platform_data1 }
+	{ "MYID0002", (kernel_ulong_t)&my_platform_data2 }
+	...
+	{ },
+
+Thanks,
+Ram
