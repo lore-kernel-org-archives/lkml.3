@@ -1,75 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaDCTLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 15:11:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45206 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321AbaDCTLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 15:11:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,789,1389772800"; 
-   d="scan'208";a="514312306"
-Date: Thu, 3 Apr 2014 12:11:03 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
+	id S1753447AbaDCTK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 15:10:27 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:48267 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419AbaDCTJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 15:09:58 -0400
+Message-Id: <20140403190952.661204455@openvz.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 03 Apr 2014 22:48:46 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@kernel.org, gnomes@lxorguk.ukuu.org.uk,
-        hpa@zytor.com
-Subject: Re: Soft lockup regression since kernel 3.13
-Message-ID: <20140403191103.GA17226@psi-dev26.jf.intel.com>
-References: <20140402232948.GA4725@psi-dev26.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402232948.GA4725@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Cc: gorcunov@openvz.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Noonan <steven@uplinklabs.net>,
+        Rik van Riel <riel@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [rfc 2/3] mm: pgtable -- Require X86_64 for soft-dirty tracker
+References: <20140403184844.260532690@openvz.org>
+Content-Disposition: inline; filename=pgbits-drop-softdirty-non-x86-64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 04:29:48PM -0700, David Cohen wrote:
-> Hi,
-> 
-> I've detected a regression from upstream (using an Intel Merrifield
-> device) since 3.13 (still exists in 3.14) which I never had much time
-> to start to investigate until now. The symptoms are: the device boots
-> and works fine for while until it silently hangs.
-> 
-> I finally bisected v3.12..v3.13 and found exactly which commit created
-> the issue:
-> 
-> commit f27dde8deef33c9e58027df11ceab2198601d6a6
-> Author: Peter Zijlstra <peterz@infradead.org>
-> Date:   Wed Aug 14 14:55:31 2013 +0200
-> 
->     sched: Add NEED_RESCHED to the preempt_count
+Tracking dirty status on 2 level pages requires very ugly macros
+and taking into account how old the machines who can operate
+without PAE mode only are, lets drop soft dirty tracker from
+them for code simplicity (note I can't drop all the macros
+from 2 level pages by now since _PAGE_BIT_PROTNONE and
+_PAGE_BIT_FILE are still used even without tracker).
 
-FWIW I did further investigation and made the issue to go away with this
-hack:
+Linus proposed to completely rip off softdirty support on
+x86-32 (even with PAE) and since for CRIU we're not planning
+to support native x86-32 mode, lets do that.
 
-diff --git a/arch/x86/include/asm/preempt.h
-b/arch/x86/include/asm/preempt.h
-index c8b051933b1b..41744d99c88f 100644
---- a/arch/x86/include/asm/preempt.h
-+++ b/arch/x86/include/asm/preempt.h
-@@ -95,7 +95,7 @@ static __always_inline bool
-__preempt_count_dec_and_test(void)
-  */
-   static __always_inline bool should_resched(void)
-    {
-    -       return unlikely(!__this_cpu_read_4(__preempt_count));
-    +       return unlikely(tif_need_resched());
-     }
-      
-       #ifdef CONFIG_PREEMPT
---
+(Softdirty tracker is relatively new feature which mostly used
+ by CRIU so I don't expect if such API change would cause problems
+ on userspace).
 
-I extended part of this patch to x86:
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>
+CC: Peter Anvin <hpa@zytor.com>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Steven Noonan <steven@uplinklabs.net>
+CC: Rik van Riel <riel@redhat.com>
+CC: David Vrabel <david.vrabel@citrix.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ arch/x86/Kconfig                      |    2 -
+ arch/x86/include/asm/pgtable-2level.h |   49 ----------------------------------
+ 2 files changed, 1 insertion(+), 50 deletions(-)
 
-commit ba1f14fbe70965ae0fb1655a5275a62723f65b77
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Thu Nov 28 14:26:41 2013 +0100
+Index: linux-2.6.git/arch/x86/Kconfig
+===================================================================
+--- linux-2.6.git.orig/arch/x86/Kconfig
++++ linux-2.6.git/arch/x86/Kconfig
+@@ -104,7 +104,7 @@ config X86
+ 	select HAVE_ARCH_SECCOMP_FILTER
+ 	select BUILDTIME_EXTABLE_SORT
+ 	select GENERIC_CMOS_UPDATE
+-	select HAVE_ARCH_SOFT_DIRTY
++	select HAVE_ARCH_SOFT_DIRTY if X86_64
+ 	select CLOCKSOURCE_WATCHDOG
+ 	select GENERIC_CLOCKEVENTS
+ 	select ARCH_CLOCKSOURCE_DATA if X86_64
+Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
+===================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
++++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
+@@ -62,53 +62,6 @@ static inline unsigned long pte_bitop(un
+ 	return ((value >> rightshift) & mask) << leftshift;
+ }
+ 
+-#ifdef CONFIG_MEM_SOFT_DIRTY
+-
+-/*
+- * Bits _PAGE_BIT_PRESENT, _PAGE_BIT_FILE, _PAGE_BIT_SOFT_DIRTY and
+- * _PAGE_BIT_PROTNONE are taken, split up the 28 bits of offset
+- * into this range.
+- */
+-#define PTE_FILE_MAX_BITS	28
+-#define PTE_FILE_SHIFT1		(_PAGE_BIT_PRESENT + 1)
+-#define PTE_FILE_SHIFT2		(_PAGE_BIT_FILE + 1)
+-#define PTE_FILE_SHIFT3		(_PAGE_BIT_PROTNONE + 1)
+-#define PTE_FILE_SHIFT4		(_PAGE_BIT_SOFT_DIRTY + 1)
+-#define PTE_FILE_BITS1		(PTE_FILE_SHIFT2 - PTE_FILE_SHIFT1 - 1)
+-#define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
+-#define PTE_FILE_BITS3		(PTE_FILE_SHIFT4 - PTE_FILE_SHIFT3 - 1)
+-
+-#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
+-#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
+-#define PTE_FILE_MASK3		((1U << PTE_FILE_BITS3) - 1)
+-
+-#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
+-#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
+-#define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
+-
+-static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
+-{
+-	return (pgoff_t)
+-		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
+-		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
+-		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3,  PTE_FILE_LSHIFT3) +
+-		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT4,           -1UL,  PTE_FILE_LSHIFT4));
+-}
+-
+-static __always_inline pte_t pgoff_to_pte(pgoff_t off)
+-{
+-	return (pte_t){
+-		.pte_low =
+-			pte_bitop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
+-			pte_bitop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
+-			pte_bitop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3,  PTE_FILE_SHIFT3) +
+-			pte_bitop(off, PTE_FILE_LSHIFT4,           -1UL,  PTE_FILE_SHIFT4) +
+-			_PAGE_FILE,
+-	};
+-}
+-
+-#else /* CONFIG_MEM_SOFT_DIRTY */
+-
+ /*
+  * Bits _PAGE_BIT_PRESENT, _PAGE_BIT_FILE and _PAGE_BIT_PROTNONE are taken,
+  * split up the 29 bits of offset into this range.
+@@ -145,8 +98,6 @@ static __always_inline pte_t pgoff_to_pt
+ 	};
+ }
+ 
+-#endif /* CONFIG_MEM_SOFT_DIRTY */
+-
+ /* Encode and de-code a swap entry */
+ #define SWP_TYPE_BITS (_PAGE_BIT_FILE - _PAGE_BIT_PRESENT - 1)
+ #define SWP_OFFSET_SHIFT (_PAGE_BIT_PROTNONE + 1)
 
-    sched: Remove PREEMPT_NEED_RESCHED from generic code
---
-
-Br, David Cohen
