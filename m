@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaDCQer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:34:47 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:58313 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713AbaDCQei (ORCPT
+	id S1753229AbaDCQfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 12:35:14 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:52228 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200AbaDCQfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:34:38 -0400
-Date: Thu, 3 Apr 2014 22:04:30 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] uprobes/x86: move the UPROBE_FIX_{RIP,IP,CALL} code
- at the end of pre/post hooks
-Message-ID: <20140403163430.GD4882@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20140331194337.GA9257@redhat.com>
- <20140331194412.GA9304@redhat.com>
+	Thu, 3 Apr 2014 12:35:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20140331194412.GA9304@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040316-6102-0000-0000-00000540B308
+In-Reply-To: <20140403.123219.186974875530426005.davem@davemloft.net>
+References: <20140403160843.GD15134@hansolo.jdub.homelinux.org>
+	<20140403.123219.186974875530426005.davem@davemloft.net>
+Date: Thu, 3 Apr 2014 12:35:10 -0400
+X-Google-Sender-Auth: q5y_6nUsSvPFMTYTQ-Po9uuNo1Y
+Message-ID: <CA+5PVA4FG3HEcM3xSbbdy9tFp16uPCdA9zLmz=xAeD+C1EA=9w@mail.gmail.com>
+Subject: Re: [PATCH] net: cpts: Add includes for ETH_HLEN and VLAN_HLEN definitions
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: David Miller <davem@davemloft.net>
+Cc: mugunthanvnm@ti.com, netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2014-03-31 21:44:12]:
+On Thu, Apr 3, 2014 at 12:32 PM, David Miller <davem@davemloft.net> wrote:
+> From: Josh Boyer <jwboyer@fedoraproject.org>
+> Date: Thu, 3 Apr 2014 12:08:43 -0400
+>
+>> If CONFIG_TI_CPTS is enabled, the ti_cpsw driver will fail to build with:
+>>
+>> drivers/net/ethernet/ti/cpts.c: In function 'cpts_match':
+>> drivers/net/ethernet/ti/cpts.c:266:12: error: 'ETH_HLEN' undeclared (first use in this function)
+>>    offset = ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
+>>             ^
+>> drivers/net/ethernet/ti/cpts.c:266:12: note: each undeclared identifier is reported only once for each function it appears in
+>> drivers/net/ethernet/ti/cpts.c:276:23: error: 'VLAN_HLEN' undeclared (first use in this function)
+>>    offset = ETH_HLEN + VLAN_HLEN;
+>>                        ^
+>>
+>> Add includes of if_ether.h and if_vlan.h to bring in the appropriate defines.
+>>
+>> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+>
+> A patch for this was already submitted to netdev and applied to the 'net'
+> GIT tree earlier today.
 
-> No functional changes. Preparation to simplify the review of the next
-> change. Just reorder the code in arch_uprobe_pre/post_xol() functions
-> so that UPROBE_FIX_{RIP_*,IP,CALL} logic goes to the end.
-> 
-> Also change arch_uprobe_pre_xol() to use utask instead of autask, to
-> make the code more symmetrical with arch_uprobe_post_xol().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Ah, great.  Glad it's covered.  Thanks.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
--- 
-Thanks and Regards
-Srikar Dronamraju
-
+josh
