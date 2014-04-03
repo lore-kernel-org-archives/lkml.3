@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaDCJlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 05:41:06 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:46834 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbaDCJkr (ORCPT
+	id S1752029AbaDCJlS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 05:41:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50599 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaDCJlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 05:40:47 -0400
-Message-ID: <533D2C9A.6010302@gmail.com>
-Date: Thu, 03 Apr 2014 09:40:42 +0000
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        Jisheng Zhang <jszhang@marvell.com>
-CC: "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: dts: document the berlin enable-method property
-References: <1396512496-8030-1-git-send-email-antoine.tenart@free-electrons.com>	<1396512496-8030-3-git-send-email-antoine.tenart@free-electrons.com> <20140403162202.79b63729@xhacker> <533D21AF.2070508@free-electrons.com> <533D268E.7070502@free-electrons.com>
-In-Reply-To: <533D268E.7070502@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 3 Apr 2014 05:41:14 -0400
+Date: Thu, 3 Apr 2014 10:40:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: gregkh@linuxfoundation.org, grant.likely@secretlab.ca, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140403094059.GR14763@sirena.org.uk>
+References: <1396509127-23819-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DzFMwNuU1QL7hgxO"
+Content-Disposition: inline
+In-Reply-To: <1396509127-23819-1-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: To make an enemy, do someone a favor.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RESEND] drivercore: deferral race condition fix
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 09:14 AM, Antoine Ténart wrote:
-> On 03/04/2014 10:54, Antoine Ténart wrote:
->> On 03/04/2014 10:22, Jisheng Zhang wrote:
->>> On Thu, 3 Apr 2014 01:08:15 -0700
->>> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
->>>
->>>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
->>>> ---
->>>>   Documentation/devicetree/bindings/arm/cpus.txt | 2 ++
->>>>   1 file changed, 2 insertions(+)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt
->>>> b/Documentation/devicetree/bindings/arm/cpus.txt index
->>>> 333f4aea3029..a9e42a2dbc99 100644 ---
->>>> a/Documentation/devicetree/bindings/arm/cpus.txt +++
->>>> b/Documentation/devicetree/bindings/arm/cpus.txt @@ -185,6 +185,8 @@
->>>> nodes
->>>> to be present and contain the properties described below.
->>>> "qcom,gcc-msm8660"
->>>>                   "qcom,kpss-acc-v1"
->>>>                   "qcom,kpss-acc-v2"
->>>> +                "marvell,88de31-smp" - cpu-core handling for
->>>
->>> why not "marvell,berlin-smp"?
->>
->> We have SMP on the BG2 and the BG2Q currently. Future boards may not be
->> compatible with this method (BG3 ?), I think "marvell,berlin-smp" is too
->> generic.
->>
->> We could use "marvell,88de31xx-smp" as Alexandre suggested.
->
-> "marvell,88de31xx-smp" is not a good choice too, since futur SoC may
-> match the "xx" and not use this method. A better way should be to use
-> the first SoC implementing the feature, so "marvell,88de3100".
 
-Never introduce the SoC numbers, we have chosen to stick with
-berlin2{,cd,q} so use that.
+--DzFMwNuU1QL7hgxO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Given the comment from Mark Rutland and Russell King here[1], I'd rather
-concentrate on a proper SMP implementation. Unfortunately, I haven't
-found a good documentation about the requirements nor call sequence -
-but I haven't looked hard.
+On Thu, Apr 03, 2014 at 10:12:07AM +0300, Peter Ujfalusi wrote:
+> When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
+> when all modules loaded but some driver still stuck in the deferred list
+> and there is a need for external event to kick the deferred queue to probe
+> these drivers.
 
-Having said that, can we postpone the DT enable method patches until
-we agreed on a better SMP implementation?
+Acked-by: Mark Brown <broonie@linaro.org>
 
-Sebastian
+--DzFMwNuU1QL7hgxO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[1] http://www.spinics.net/lists/arm-kernel/msg318585.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTPSynAAoJELSic+t+oim9DwoP/R0mL/nr+BnHv+F0EPFXuJxV
+gbBXKRTyjMu+T5GZRagH0vq2dU4Nmsk6um5CuvtaY+ARYW8JLK9fB7lzYbA9LxzL
+J1Fcxz6n8e4bgHAs4l6HXC1xt1/vxw5iwW53b6R0kXAqzaPwupB/GYOZi+eWIols
+dtIxAptt7p/3ZFbsG7/TPBrkHjfu3ct1XvdedGzs6aUrqnKTdIoq3IVPjpwUipqh
+zVvHEG7qIhWDpnJYdsEg6xOVT11ITmdmVXqOILWzKOzilFvwGUJIPRui0zUD0Aui
+g/mJ5WEZRFmmEifnY6aH2XXvSWv0nB8Cse5W5lqrHraIM6F0HTH64UzoqMbjXT5L
+jE7aeMcg+gRJpX72e+WV+JnkxCsJM4u7HZl+SPGjiS/NAmA6DixYyCm7Z4j6z8xN
+kUfE8KQYWEL2hiwwIIF3tCVcKfrqS3Kemll9u08M6CGML2rvwh+9nKrYuJGz3VHm
+QKp4Fxp8PjSCxiqW6KgorpB5+BMTJeEGz1fxuTIQur+yshkDSKlEXm4/aZZTasQL
+zV3GjsYseen5tROrrngsLUtRfSHPNRVmLoBrYt79IpRkMDkPfORFAGeLKBVxl3xL
+Gs4vlgCqhhUvPn3jFYkHx2MnI5cvPQ8h4g93B3cX7ccO5WXFnzx5nifdIEas/jNR
+srKbuKbL3qzBQkgOAtwr
+=ftJa
+-----END PGP SIGNATURE-----
+
+--DzFMwNuU1QL7hgxO--
