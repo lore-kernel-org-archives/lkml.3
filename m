@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaDCPyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:54:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36133 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636AbaDCPyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:54:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,787,1389772800"; 
-   d="scan'208";a="506254868"
-Message-ID: <1396540149.6955.12.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBIFS changes for 3.15-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 03 Apr 2014 18:49:09 +0300
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752775AbaDCP5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:57:32 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:33624 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566AbaDCP52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 11:57:28 -0400
+X-AuditID: cbfec37b-b7f8f6d000007030-76-533d84e6705d
+Message-id: <533D84DC.2050604@samsung.com>
+Date: Thu, 03 Apr 2014 09:57:16 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.12 00/40] 3.12.17-stable review
+References: <cover.1396469191.git.jslaby@suse.cz>
+In-reply-to: <cover.1396469191.git.jslaby@suse.cz>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.219]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9hX91nLbbBBjs+qlt8/r2L1eLyrjls
+	Fgs2PmJ0YPY4s+AIu8fnTXIBTFFcNimpOZllqUX6dglcGUe3T2IvOMFW8Wn1T+YGxnmsXYyc
+	HBICJhJtMxvZIGwxiQv31gPZXBxCAssYJdYeWcsO4fQySWzb3c0M4WxjlHj3sp0dpIVXQEti
+	4Yo9TCA2i4CqxNHrN8DGsgmoS3x+vQOsRkhATqJpyWpmEFtUIELi1dmJLBC9ghI/Jt8Ds0UE
+	zCUe3DkAVs8s4Cwx991jsDnCAqYS69auY4WYYyjx5eBVMJtTwEjixbd9bBD11hIrJ21jhLDl
+	JTavecsMUa8s8efyKSaI15Ql3vdOZprAKDILyepZSNpnIWlfwMi8ilGstDi5oDgpPbXCSK84
+	Mbe4NC9dLzk/dxMjJAqqdzDe/WpziFGAg1GJh5cj3TZYiDWxrLgy9xCjBAezkgjvsUSgEG9K
+	YmVValF+fFFpTmrxIUYmDk6pBka5192/BcKqTi92rV3svt/FTCVEqdPKLdnotZTqDYYVbacC
+	lny7Lu93S/bnRceMO3yzZlw3My++PWNu+omdxyL9vJ/pvu+IV217F3Oq9ZHkmarLAs/yzl64
+	fEd7mZ699eL2w+1PD6rGH7BZWZ/TVPhStPVx/uGdYhxhpoG7NnC6ShvU6D7hm6fEUpyRaKjF
+	XFScCABqWQEFYAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/02/2014 02:12 PM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.17 release.
+> There are 40 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Fri Apr  4 20:06:31 2014
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.17-rc1.xz
+> and the diffstat can be found below.
+>
+> thanks,
+> js
+>
 
-The following changes since commit 5547fec74a566e1f5e00a937b9a367f7c6a94a8b:
+Compiled and booted on all my test systems. No dmesg regressions.
 
-  UBI: fix some use after free bugs (2014-02-04 09:44:30 +0200)
-
-are available in the git repository at:
-
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.15-rc1
-
-for you to fetch changes up to d56030ac25d383218045c5d87e98e0494d6af3ad:
-
-  UBI: block: Remove __initdata from ubiblock_param_ops (2014-03-21 19:37:03 +0200)
-
-----------------------------------------------------------------
-This pull request includes the 'ubiblock' driver which provides R/O block
-access to UBI volumes. It is useful for those who want to use squashfs on top
-of raw flash devices. UBI will provide bit-flip handling and wear-levelling in
-this case (e.g., if there are other UBI volumes with R/W UBIFS too).
-
-The driver is actually pretty small and it is part of the UBI kernel subsystem.
-Delivered by Ezequiel Garcia, along with a piece of documentation on the MTD
-web site and the user-space tool for creating and removing block devices.
-
-----------------------------------------------------------------
-Artem Bityutskiy (2):
-      UBI: block: do not use term "attach"
-      UBI: rename block device ioctls
-
-Ezequiel Garcia (6):
-      UBI: R/O block driver on top of UBI volumes
-      UBI: block: Mark init-only symbol as __initdata
-      UBI: block: Use 'u64' for the 64-bit dividend
-      UBI: block: Add CONFIG_BLOCK dependency
-      UBI: block: Use ENOSYS as return value when CONFIG_UBIBLOCK=n
-      UBI: make UBI_IOCVOLCRBLK take a parameter for future usage
-
-Richard Weinberger (1):
-      UBI: block: Remove __initdata from ubiblock_param_ops
-
- drivers/mtd/ubi/Kconfig     |  16 +++++
- drivers/mtd/ubi/Makefile    |   1 +
- drivers/mtd/ubi/block.c     | 647 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/mtd/ubi/build.c     |  11 ++++
- drivers/mtd/ubi/cdev.c      |  20 ++++++
- drivers/mtd/ubi/ubi.h       |  20 ++++++
- include/uapi/mtd/ubi-user.h |  22 +++++++
- 7 files changed, 737 insertions(+)
- create mode 100644 drivers/mtd/ubi/block.c
-
-
-P.S. The pull request was generated with this command:
-$ git request-pull "$(git merge-base linus/master origin/linux-next)"  git://git.infradead.org/linux-ubifs.git upstream-3.15-rc1
-
-Thanks!
+-- Shuah
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
