@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaDCJfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 05:35:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59505 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489AbaDCJfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 05:35:00 -0400
-Date: Thu, 3 Apr 2014 11:34:57 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] mfd: timberdale: Depend on X86_32
-Message-ID: <20140403113457.57f9df81@endymion.delvare>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
+	id S1751868AbaDCJi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 05:38:28 -0400
+Received: from 200-44-119-53.genericrev.cantv.net ([200.44.119.53]:53507 "EHLO
+	correo.milicia.mil.ve" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaDCJiY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 05:38:24 -0400
+X-Greylist: delayed 4684 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 05:38:24 EDT
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Attn
+To: Recipients <admin@milicia.mil.ve>
+From: Charitable goal <admin@milicia.mil.ve>
+Date: Thu, 03 Apr 2014 07:57:27 -0700
+Reply-To: barristermao_robinson@aol.com
+Message-Id: <20140403045726.5DC7D16637EF@correo.milicia.mil.ve>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As far as I know the Timberdale chip was only used as a companion for
-Intel Atom E600 series processors. As such, its drivers are only
-useful on X86_32.
+Attn
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I got your details after an extensive on-line search Via (Network
+Power Charitable Trust) for a reliable person. 
+I am 57 years old and was diagnosed for cancer about 4 years ago,
+kindly Contact my lawyer through this email address or you can call is
+private Line :(+855-070-769-519)(barristermao_robinson@aol.com)
 
---- linux-3.14.orig/drivers/mfd/Kconfig	2014-04-03 09:16:01.741554631 +0200
-+++ linux-3.14/drivers/mfd/Kconfig	2014-04-03 09:57:44.438396779 +0200
-@@ -1014,7 +1014,7 @@ config MFD_LM3533
- config MFD_TIMBERDALE
- 	tristate "Timberdale FPGA"
- 	select MFD_CORE
--	depends on PCI && GPIOLIB
-+	depends on PCI && GPIOLIB && (X86_32 || COMPILE_TEST)
- 	---help---
- 	This is the core driver for the timberdale FPGA. This device is a
- 	multifunction device which exposes numerous platform devices.
+He Is A God fearing Person work with Him, if you are interested in
+carrying out this task, so that He can arrange the release of the funds
+(10,5M)USD to you.
 
-
--- 
-Jean Delvare
-SUSE L3 Support
+Mrs.Samantha Fu
