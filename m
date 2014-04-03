@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162528AbaDCIAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:00:32 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56381 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162430AbaDCIAa (ORCPT
+	id S1162540AbaDCIB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:01:26 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:62500 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162421AbaDCIBY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:00:30 -0400
-Message-ID: <533D151A.9070808@suse.cz>
-Date: Thu, 03 Apr 2014 10:00:26 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 3 Apr 2014 04:01:24 -0400
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Samo Pogacnik <samo_pogacnik@t-2.net>, Jean Delvare <jdelvare@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Struan Bartlett <struan.bartlett@gmail.com>,
-        Andreas Schwab <schwab@linux-m68k.org>, gnomes@lxorguk.ukuu.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ttyprintk: Fix wrong tty_unregister_driver() call
- in the error path
-References: <1396434582-30799-1-git-send-email-tiwai@suse.de>	<1396441473.10789.23.camel@chaos.site> <s5hbnwjdjtf.wl%tiwai@suse.de>
-In-Reply-To: <s5hbnwjdjtf.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.6
+In-Reply-To: <20140402181354.GB13479@quack.suse.cz>
+References: <1396451946-13924-1-git-send-email-nasa4836@gmail.com> <20140402181354.GB13479@quack.suse.cz>
+From: Zhan Jianyu <nasa4836@gmail.com>
+Date: Thu, 3 Apr 2014 16:00:44 +0800
+Message-ID: <CAHz2CGWd70k+eSzcdMdAkjwpYZB1BQ8mKT3f2EfpMM2NsFtn-A@mail.gmail.com>
+Subject: Re: [PATCH] blkdev: use an efficient way to check merge flags
+To: Jan Kara <jack@suse.cz>
+Cc: axboe@kernel.dk, hch@lst.de, viro@zeniv.linux.org.uk, kmo@daterainc.com,
+        namjae.jeon@samsung.com, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 08:10 AM, Takashi Iwai wrote:
-> At Wed, 02 Apr 2014 14:24:33 +0200,
-> Jean Delvare wrote:
->>
->> Le Wednesday 02 April 2014 à 12:29 +0200, Takashi Iwai a écrit :
->>> ttyprintk driver calls tty_unregister_driver() wrongly in the error
->>> path of tty_register_driver().  Also, setting ttyprintk_driver to NULL
->>> is utterly superfluous, so let's get rid of it, too.
->>>
->>> Reported-by: Jean Delvare <jdelvare@suse.de>
->>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>> ---
->>>  drivers/char/ttyprintk.c | 2 --
->>>  1 file changed, 2 deletions(-)
->>>
->>> diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
->>> index daea84c41743..2a39c5790364 100644
->>> --- a/drivers/char/ttyprintk.c
->>> +++ b/drivers/char/ttyprintk.c
->>> @@ -210,10 +210,8 @@ static int __init ttyprintk_init(void)
->>>  	return 0;
->>>  
->>>  error:
->>> -	tty_unregister_driver(ttyprintk_driver);
->>>  	put_tty_driver(ttyprintk_driver);
->>>  	tty_port_destroy(&tpk_port.port);
->>> -	ttyprintk_driver = NULL;
->>>  	return ret;
->>>  }
->>>  device_initcall(ttyprintk_init);
->>
->> Reviewed-by: Jean Delvare <jdelvare@suse.de>
-> 
-> Meanwhile, I found that tty_unregister_driver() was added
-> intentionally in the commit f06fb543c1d0,
->     TTY: ttyprintk, unregister tty driver on failure
->     
->     When the tty_printk driver fails to create a node in sysfs, the
->     system
->     crashes. It is because the driver registers a tty driver and frees
->     it
->     without deregistering it first. The fix is easy: add a call to
->     tty_unregister_driver to the fail path.
-> 
-> But, I failed to see why this is needed in the current code.
-> 
-> Jiri, is your fix still valid at all?
+On Thu, Apr 3, 2014 at 2:13 AM, Jan Kara <jack@suse.cz> wrote:
+>   OK, but have you checked the generated code is actually any better? This
+> is something I'd expect a compiler might be able to optimize anyway. And the
+> original code looks more readable to me.
 
-The code was different. There was also device_create after
-tty_register_driver. I must admit that I don't know why I didn't change
-'goto error' in the tty_register_driver fail path.
+Hi, Jan,
 
-        ret = tty_register_driver(ttyprintk_driver);
-        if (ret < 0) {
-                printk(KERN_ERR "Couldn't register ttyprintk driver\n");
-                goto error;
-        }
+I've disassemble the code on my x86_64 box
+(it's inline though, I just look at its call site),
+and found that this patch DOES make it more efficient.
 
-        /* create our unnumbered device */
-        rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
-                                ttyprintk_driver->name);
-        if (IS_ERR(rp)) {
-                printk(KERN_ERR "Couldn't create ttyprintk device\n");
-                ret = PTR_ERR(rp);
-                goto error;
-        }
+Orig asm snippt                                               with
+patch asm snippt
+============                                              ================
+
+mov    %edx,%ecx                                          mov    %rdx,%r9
+xor    %r8d,%ecx                                             xor    %r8d,%r8d
+test   $0x80,%cl                                              and    $0x380,%r9d
+jne    14c5 <blk_rq_merge_ok+0x15>                test   $0x380,%ecx
+and    $0x3,%ch                                              sete   %r8b
+jne    14c5 <blk_rq_merge_ok+0x15>                cmp    %r8,%r9
+
+je     14b5 <blk_rq_merge_ok+0x15>
+
+This saves a branch.
+
+Furthermore,  I found that gcc is smart enough to try to optimize the
+code, so if we do
+like this, it will generate the most optimal and smallest code :
+
+
+static inline bool blk_check_merge_flags(unsigned int flags1,
+                                        ¦unsigned int flags2)
+{
+        return ((flags1 ^ flags2) &
+                (REQ_DISCARD | REQ_SECURE | REQ_WRITE_SAME))
+                == 0;
+}
+
+this gives out  :
+
+mov    %edx,%r8d
+xor    %ecx,%r8d
+and    $0x380,%r8d
+jne    14a5 <blk_rq_merge_ok+0x15>
+
+But yes, it compromises readibility.
 
 
 
-So yes, there should be no tty_unregister_driver in the fail path when
-device_create is gone now.
-
-thanks,
--- 
-js
-suse labs
+Regards,
+Jianyu Zhan
