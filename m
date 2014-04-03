@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883AbaDCCFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 22:05:35 -0400
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:51068 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423AbaDCCFd convert rfc822-to-8bit (ORCPT
+	id S964801AbaDCCKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 22:10:52 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:9839 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443AbaDCCKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 22:05:33 -0400
-From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
-To: David Miller <davem@davemloft.net>,
-        "todd.fujinaka@intel.com" <todd.fujinaka@intel.com>,
-        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        Hiroshi Baba <h-baba@ax.jp.nec.com>
-Subject: RE: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
- enabled
-Thread-Topic: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
- enabled
-Thread-Index: AQHPTt1gvAUZA3aa9kCshbi+iImnxJr/Io0g
-Date: Thu, 3 Apr 2014 02:03:43 +0000
-Message-ID: <9DE5760509B7974286F38D93BF31DD62C7E200@BPXM13GP.gisp.nec.co.jp>
-References: <9DE5760509B7974286F38D93BF31DD62C7DF93@BPXM13GP.gisp.nec.co.jp>
-	<9B4A1B1917080E46B64F07F2989DADD652978166@ORSMSX102.amr.corp.intel.com>
-	<9DE5760509B7974286F38D93BF31DD62C7E125@BPXM13GP.gisp.nec.co.jp>
- <20140402.213941.1530194697006154708.davem@davemloft.net>
-In-Reply-To: <20140402.213941.1530194697006154708.davem@davemloft.net>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.8.69]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Apr 2014 22:10:50 -0400
+Message-ID: <533CC309.3020607@hp.com>
+Date: Wed, 02 Apr 2014 22:10:17 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV support
+References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <20140402143201.GF12188@phenom.dumpdata.com> <533C7485.3030203@hp.com>
+In-Reply-To: <533C7485.3030203@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/02/2014 04:35 PM, Waiman Long wrote:
+> On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
+>> On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
+>>> N.B. Sorry for the duplicate. This patch series were resent as the
+>>>       original one was rejected by the vger.kernel.org list server
+>>>       due to long header. There is no change in content.
+>>>
+>>> v7->v8:
+>>>    - Remove one unneeded atomic operation from the slowpath, thus
+>>>      improving performance.
+>>>    - Simplify some of the codes and add more comments.
+>>>    - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
+>>>      unfair lock.
+>>>    - Reduce unfair lock slowpath lock stealing frequency depending
+>>>      on its distance from the queue head.
+>>>    - Add performance data for IvyBridge-EX CPU.
+>> FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
+>> HVM guest under Xen after a while stops working. The workload
+>> is doing 'make -j32' on the Linux kernel.
+>>
+>> Completely unresponsive. Thoughts?
+>>
+>
+> Thank for reporting that. I haven't done that much testing on Xen. My 
+> focus was in KVM. I will perform more test on Xen to see if I can 
+> reproduce the problem.
+>
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Thursday, April 03, 2014 10:40 AM
-> To: Komatsubara Madoka(小松原 円)
-> Cc: todd.fujinaka@intel.com; donald.c.skidmore@intel.com;
-> linux-kernel@vger.kernel.org; e1000-devel@lists.sourceforge.net;
-> netdev@vger.kernel.org; Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕
-> 司)
-> Subject: Re: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is enabled
-> 
-> From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
-> Date: Thu, 3 Apr 2014 01:12:13 +0000
-> 
-> > Thank you for the quick response.
-> > How can I increase the limit？
-> 
-> It's a hardware limit, you cannot increase it.
+BTW, does the halting and sending IPI mechanism work in HVM? I saw that 
+in RHEL7, PV spinlock was explicitly disabled when in HVM mode. However, 
+this piece of code isn't in upstream code. So I wonder if there is 
+problem with that.
 
-
-Thank you for your information.
-Does it mean disabling filter is the only way to use over 64 VLANs and is it possible?
-
-Regards,
-Madoka
-
+-Longman
