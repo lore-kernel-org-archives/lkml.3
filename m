@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331AbaDCI7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:59:08 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:52818 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751215AbaDCI67 (ORCPT
+	id S1758934AbaDCI73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:59:29 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56784 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796AbaDCI7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:58:59 -0400
-Date: Thu, 3 Apr 2014 09:58:35 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Joe Sylve <joe.sylve@gmail.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] AArch64: TCR_TG1_64K incorrectly sets TCR_EL1 bits
- [31:30]
-Message-ID: <20140403085835.GC17022@arm.com>
-References: <CAHWCVW+cH6MwhQj-JGWN63AqseFYuDPoftv+zGJU8UDfAgueEQ@mail.gmail.com>
- <20140402123844.GE31892@arm.com>
- <20140402170747.GC24018@arm.com>
- <CAHWCVWJKiQxBBR43A3beG9f7dEw4JpkFGZ6V-Es8EAn0uW3WJw@mail.gmail.com>
+	Thu, 3 Apr 2014 04:59:25 -0400
+Message-ID: <533D22E6.4000607@hitachi.com>
+Date: Thu, 03 Apr 2014 17:59:18 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHWCVWJKiQxBBR43A3beG9f7dEw4JpkFGZ6V-Es8EAn0uW3WJw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] tracing: Add 'hash' event trigger command
+References: <cover.1395894625.git.tom.zanussi@linux.intel.com> <b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 06:21:29PM +0100, Joe Sylve wrote:
-> That makes sense and I agree, it's better to fix it now so that it
-> will be easier to add 16K paging later (on a side note is there any
-> reason not to add it now if someone was willing to do the work?).
+Hi Tom,
 
-See another thread with the Samsung folks about the adding 4-levels of
-page tables. We need a bit of refactoring first to decouple the page
-size from the number of levels, after that 16K would be relatively easy
-(it's easy now as well but I don't see the point on doing it before the
-refactoring).
-
-> There was talk in another thread about the possibility of adding a
-> pagetable-4K-hwdef.h and pagetable-64K-hwdef.h.  I think this is
-> another example of why that might be a good idea as this stuff could
-> be moved out of proc.S as to be bit more clean:
+(2014/03/27 13:54), Tom Zanussi wrote:
+> Hash triggers allow users to continually hash events which can then be
+> dumped later by simply reading the trigger file.  This is done
+> strictly via one-liners and without any kind of programming language.
 > 
-> +#ifdef CONFIG_ARM64_64K_PAGES
-> +#define TCR_TG_FLAGS   TCR_TG0_64K | TCR_TG1_64K
-> +#else
-> +#define TCR_TG_FLAGS   TCR_TG0_4K | TCR_TG1_4K
-> +#endif
+> The syntax follows the existing trigger syntax:
+> 
+>   # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
+> 
+> The values used as keys and values are just the fields that define the
+> trace event and available in the event's 'format' file.  For example,
+> the kmalloc event:
+> 
+> root@ie:/sys/kernel/debug/tracing/events/kmem/kmalloc# cat format
+> name: kmalloc
+> ID: 370
+> format:
+>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
+>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+>         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
+>         field:int common_pid;   offset:4;       size:4; signed:1;
+> 
+>         field:unsigned long call_site;  offset:8;       size:4; signed:0;
+>         field:const void * ptr; offset:12;      size:4; signed:0;
+>         field:size_t bytes_req; offset:16;      size:4; signed:0;
+>         field:size_t bytes_alloc;       offset:20;      size:4; signed:0;
+>         field:gfp_t gfp_flags;  offset:24;      size:4; signed:0;
+> 
+> The key can be made up of one or more of these fields and any number of
+> values can specified - these are automatically tallied in the hash entry
+> any time the event is hit.  Stacktraces can also be used as keys.
+> 
+> For example, the following uses the stacktrace leading up to a kmalloc
+> as the key for hashing kmalloc events.  For each hash entry a tally of
+> the bytes_alloc field is kept.  Dumping out the trigger shows the sum
+> of bytes allocated for each execution path that led to a kmalloc:
+> 
+>   # echo 'hash:call_site:bytes_alloc' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+>   # cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
 
-Yes, we could do this when we create the pgtable-*k-hwdef.h files.
+I like the basic idea :) but I'm confused the interface what you're introduced.
+I suppose that the "trigger" file is for control triggers on the event, so that
+user can check what trigger rules are set on the event and remove it.
+But in this patch, that is also used for a data path.
+
+I'd like to suggest adding new "hash" file under events/GROUP/EVENT/, which is
+only for dumping the hash data, and keep the "trigger" as a control path.
+This makes users easier to build their own tools on the ftrace facility.
+
+Thank you,
+
 
 -- 
-Catalin
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
