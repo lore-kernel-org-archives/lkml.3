@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaDCTB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 15:01:29 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:33457 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281AbaDCTBY (ORCPT
+	id S1753434AbaDCTCc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 15:02:32 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:45271 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258AbaDCTC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 15:01:24 -0400
+	Thu, 3 Apr 2014 15:02:28 -0400
+Message-ID: <533DB03D.7010308@colorfullife.com>
+Date: Thu, 03 Apr 2014 21:02:21 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAOS58YMckmoCocguf9BC_Wxbn3D2Rx3MArhgozO9qCj4g=5aDw@mail.gmail.com>
-References: <20140403164911.GE24119@htj.dyndns.org>
-	<CA+55aFy1dm_CoTv+tihQ+m54G3gR9siOngurHsuKf9W3k1sKKw@mail.gmail.com>
-	<CA+55aFwBm202pchEH9A6vbJVdar9-T35pBF44cCt7FNjmno9sQ@mail.gmail.com>
-	<CAOS58YMckmoCocguf9BC_Wxbn3D2Rx3MArhgozO9qCj4g=5aDw@mail.gmail.com>
-Date: Thu, 3 Apr 2014 12:01:23 -0700
-X-Google-Sender-Auth: 2KPzw29RVff1xMSG3Okx4YFCAEE
-Message-ID: <CA+55aFw2+VKojzoF2aDaruOMKHikTO8J0HeK9DoDLZr+HqTWbg@mail.gmail.com>
-Subject: Re: [GIT PULL] cgroup changes for v3.15-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Miller <davem@davemloft.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        cgroups@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Davidlohr Bueso <davidlohr@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com> <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com> <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com> <20140401142947.927642a408d84df27d581e36@linux-foundation.org> <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com> <20140401144801.603c288674ab8f417b42a043@linux-foundation.org> <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com> <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com> <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Extending the participants list a bit ]
+Hi Davidlohr,
 
-On Thu, Apr 3, 2014 at 11:34 AM, Tejun Heo <tj@kernel.org> wrote:
-> On the road so sending from phone. Iirc the param is necessary to
-> distinguishe when a new sb is created so that it can be put properly later.
-> I think cgroup is leaking super ref now and li was planning to send a fix
-> once things are merged.
+On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
+> The default size for shmmax is, and always has been, 32Mb.
+> Today, in the XXI century, it seems that this value is rather small,
+> making users have to increase it via sysctl, which can cause
+> unnecessary work and userspace application workarounds[1].
+>
+> Instead of choosing yet another arbitrary value, larger than 32Mb,
+> this patch disables the use of both shmmax and shmall by default,
+> allowing users to create segments of unlimited sizes. Users and
+> applications that already explicitly set these values through sysctl
+> are left untouched, and thus does not change any of the behavior.
+>
+> So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+> implies unlimited memory, as opposed to disabling sysv shared memory.
+> This is safe as 0 cannot possibly be used previously as SHMMIN is
+> hardcoded to 1 and cannot be modified.
+Are we sure that no user space apps uses shmctl(IPC_INFO) and prints a 
+pretty error message if shmall is too small?
+We would break these apps.
 
-So as far as I can tell, cgroup is fine, because the superblock itself
-is properly refcounted by the mounting code. It's the magic hidden
-"namespace" pointer that isn't properly refcounted, because that
-stupid sucker is typeless and depends on the namespace kind (so to
-drop a namespace pointer you need to pass in not just the pointer, but
-also the right "KOBJ_NS_TYPE_xxx" type, which right now is always
-KOBJ_NS_TYPE_NET).
-
-Quite frankly, the whole "let's make the 'ns' pointer be a 'const void
-*' and rely on people passing the right type along" is some seriously
-crazy sh*t. Couldn't we force it to be a pointer to a union where the
-first member is the type, so that
-
- (a) we don't use "const void *" that casts silently a bit too well to
-*anything* (the "const" helps a bit, thankfully)
-
- (b) we don't have to pass both pointer and type along, we can just
-pass the pointer, and the type can be looked up from it?
-
-Hmm? It *looks* like the only thing that generates namespace pointers
-right now is "net_namespace()", which just returns a "struct net *".
-Could we just add that "type" as the first member of that struct, and
-make the rule be (for any future namespaces) that the first member has
-to be an "int type" field?
-
-I might well have missed some other source that generates namespace
-pointers, but it really looks like right now all those namespace()
-things end up calling ->class->namespace(), and the only class that
-then implements a namespace pointer function is networking and that
-"net_namespace()". And I don't *think* that the networking code would
-mind having that "int type" at the head of the "struct net" it uses.
-
-The reason I'd like to have the type accessible from the pointer is
-that then we *could* use that type to index into the namespace ops,
-and grab reference counts etc. Instead of having that "const void *ns"
-pointer that you can't do anything about, and have to expect that the
-caller (that knows the type of it) will do the right thing wrt
-refcounting etc.
-
-Is there something I'm missing?
-
-            Linus
+--
+     Manfred
