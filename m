@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933626AbaDBX54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 19:57:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52906 "EHLO mx2.suse.de"
+	id S933601AbaDCAEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 20:04:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41066 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933423AbaDBX5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 19:57:55 -0400
-Date: Thu, 3 Apr 2014 01:57:52 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-In-Reply-To: <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1404030155240.32122@pobox.suse.cz>
-References: <20140402144219.4cafbe37@gandalf.local.home> <20140402221212.GD16570@mguzik.redhat.com> <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com> <alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz> <20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
- <CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com> <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz> <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933004AbaDCAEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 20:04:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,783,1389772800"; 
+   d="scan'208";a="486148432"
+Date: Wed, 2 Apr 2014 17:02:18 -0700
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/platforms for v3.15
+Message-ID: <20140403000218.GA27709@linux.intel.com>
+References: <20140401082757.GA23451@gmail.com>
+ <CA+55aFzKCVnqYussDpt8Fkoi28SthKRd3oKnSW4GnED+s6QdVQ@mail.gmail.com>
+ <533AF612.8020505@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533AF612.8020505@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Apr 2014, Linus Torvalds wrote:
+Hi Linus,
 
-> > Which doesn't really protect you from tasks that do open()/write()/close()
-> > cycle for /dev/kmsg write every 2ms though.
+My apologies for not getting to address hpa's issues sooner. FWIW I simply
+didn't want to force a dependancy on the mbi driver for those drivers that run
+on both big core and soc systems, risking that the driver wouldn't run on big
+core systems that don't have the mbi compiled in. Luckily we should be able to
+make the mbi modular and simply default m and avoid this issue.
+
+David Box
+
+On Tue, Apr 01, 2014 at 10:23:30AM -0700, H. Peter Anvin wrote:
+> Hi Linus,
 > 
-> I don't think we should try to protect against wilful bad behavior
-> unless that is shown to be necessary. Yeah, if it turns out that
-> systemd really does that just to mess with us, we'd need to extend it,
-> but in the absence of proof to the contrary, maybe this simple
-> attached patch works?
+> This one is largely my fault, but it is not for not asking the questions.
 > 
-> TOTALLY UNTESTED. But it really isn't complex.
-
-[ ... snip ... [
-@@ -483,6 +484,8 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 
- 	if (!user)
- 		return -EBADF;
-+	if (!___ratelimit(&user->rs, current->comm))
-+		return 0;
-
-I am admittedly rather new to this 'abuse the hell out of kernel 
-ringbuffer' thing, but shouldn't we better be limiting the 
-devkmsg_writev()?
-
--- 
-Jiri Kosina
-SUSE Labs
+> This patch is part of the work of modularizing the IOSF drivers, because
+> of course standard distros don't want to compile them in.  However, this
+> results in odd problems when IOSF-aware drivers (some of which are
+> present on non-IOSF hardware, as there are drivers that operate on both
+> PCI and IOSF, some of which are still coming down the pipe toward mainline.)
+> 
+> It is these dual-mode drivers that make things a bit more complicated
+> than it ought to be.
+> 
+> I have explicitly asked David to work on modularizing the IOSF core,
+> even though it is small, exactly to avoid this mess.  However, that
+> change didn't make it in time, and I guess I should just have said "no"
+> at that point.
+> 
+> I did not want to not have an option to disable it for EXPERT
+> configurations, because we also have people working very hard at shaving
+> down the size of the x86 kernel so that Linux rather than "random RTOS
+> of the month" can be used in deep embedded configurations.
+> 
+> On this issue:
+> 
+> >  (a) people don't know about, so asking people about it is f*cking
+> > retarded to begin with
+> 
+> Well, that is why it is an EXPERT option.
+> 
+> +	bool "IOSF MBI support" if EXPERT
+> 
+> 	-hpa
