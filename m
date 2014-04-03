@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbaDCU1B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:27:01 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:54890 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612AbaDCU06 (ORCPT
+	id S1753603AbaDCUa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:30:28 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:33639 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537AbaDCUa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:26:58 -0400
-From: Stephen Chandler Paul <thatslyude@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@intel.com>,
-        Adam Williamson <awilliam@redhat.com>
-Subject: [PATCH] Add sensor hub quirk for ThinkPad Helix
-Date: Thu,  3 Apr 2014 16:27:55 -0400
-Message-Id: <1396556875-31108-1-git-send-email-thatslyude@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 3 Apr 2014 16:30:26 -0400
+From: Alex Elder <elder@linaro.org>
+To: bcm@fixthebug.org, mporter@linaro.org
+Cc: bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mach-bcm: clean up config and build targets
+Date: Thu,  3 Apr 2014 15:30:52 -0500
+Message-Id: <1396557052-24029-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just like some of the other laptops/tablets on the market with ultrabook
-sensors, the ThinkPad Helix's sensor hub requires a special quirk in
-order for it to power on properly. Without it the sensors are detected
-by the kernel and set up as usual, but they won't output any data. This
-will also fix the sensors on any other laptops with the same model of
-sensor hub.
+Currently CONFIG_ARCH_BCM_MOBILE is used to select all Broadcom
+mobile SoCs.  Instead, use that only as a config menu switch, and
+define specific symbols like CONFIG_ARCH_BCM_281XX to select a
+particular SoC family.  If ARCH_BCM_MOBILE is selected, all of the
+SoCs will be selected by default, but this way each can be disabled
+individually as well.
 
-Signed-off-by: Stephen Chandler Paul <thatslyude@gmail.com>
+This allows more precision in controlling what gets built under
+mach-bcm.  Another benefit to doing this is that it makes it obvious
+that the code that implements SMC calls to control L2 cache is only
+used for BCM281XX (for example).
+
+Also use Kbuild's $(<modulename>-y) variable mechanism to build a
+single object file containing everything used for the bcm281xx board
+in arch/arm/mach-bcm.
+
+Note:  This patch is based on the current arm-soc/for-next branch:
+    e98cd72 arm-soc: document samsung merges
+
+The patch is available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/mach-bcm-cleanup
+
+Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- drivers/hid/hid-ids.h        | 3 ++-
- drivers/hid/hid-sensor-hub.c | 7 +++++--
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ arch/arm/mach-bcm/Kconfig  |   28 ++++++++++++++++++++++++----
+ arch/arm/mach-bcm/Makefile |   16 ++++++++++++----
+ 2 files changed, 36 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index bd22126..3312f1b5 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -455,7 +455,8 @@
+diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+index 21f97f7..183fdef 100644
+--- a/arch/arm/mach-bcm/Kconfig
++++ b/arch/arm/mach-bcm/Kconfig
+@@ -10,7 +10,7 @@ if ARCH_BCM
+ menu "Broadcom SoC Selection"
  
- #define USB_VENDOR_ID_INTEL_0		0x8086
- #define USB_VENDOR_ID_INTEL_1		0x8087
--#define USB_DEVICE_ID_INTEL_HID_SENSOR	0x09fa
-+#define USB_DEVICE_ID_INTEL_HID_SENSOR_0	0x09fa
-+#define USB_DEVICE_ID_INTEL_HID_SENSOR_1	0x0a04
+ config ARCH_BCM_MOBILE
+-	bool "Broadcom Mobile SoC" if ARCH_MULTI_V7
++	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
+ 	depends on MMU
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_ERRATA_754322
+@@ -23,9 +23,29 @@ config ARCH_BCM_MOBILE
+ 	select PINCTRL
+ 	help
+ 	  This enables support for systems based on Broadcom mobile SoCs.
+-	  It currently supports the 'BCM281XX' family, which includes
+-	  BCM11130, BCM11140, BCM11351, BCM28145 and
+-	  BCM28155 variants.
++
++if ARCH_BCM_MOBILE
++
++menu "Broadcom Mobile SoC Selection"
++
++config ARCH_BCM_281XX
++	bool "Broadcom BCM281XX SoC family"
++	default y
++	help
++	  Enable support for the the BCM281XX family, which includes
++	  BCM11130, BCM11140, BCM11351, BCM28145 and BCM28155
++	  variants.
++
++config ARCH_BCM_21664
++	bool "Broadcom BCM21664 SoC family"
++	default y
++	help
++	  Enable support for the the BCM21664 family, which includes
++	  BCM21663 and BCM21664 variants.
++
++endmenu
++
++endif
  
- #define USB_VENDOR_ID_STM_0             0x0483
- #define USB_DEVICE_ID_STM_HID_SENSOR    0x91d1
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index 5182031..af8244b 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -697,10 +697,13 @@ static void sensor_hub_remove(struct hid_device *hdev)
  
- static const struct hid_device_id sensor_hub_devices[] = {
- 	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_INTEL_0,
--			USB_DEVICE_ID_INTEL_HID_SENSOR),
-+			USB_DEVICE_ID_INTEL_HID_SENSOR_0),
- 			.driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
- 	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_INTEL_1,
--			USB_DEVICE_ID_INTEL_HID_SENSOR),
-+			USB_DEVICE_ID_INTEL_HID_SENSOR_0),
-+			.driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
-+	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_INTEL_1,
-+			USB_DEVICE_ID_INTEL_HID_SENSOR_1),
- 			.driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
- 	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_STM_0,
- 			USB_DEVICE_ID_STM_HID_SENSOR),
+ config ARCH_BCM2835
+diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
+index a326b28..08e63c1 100644
+--- a/arch/arm/mach-bcm/Makefile
++++ b/arch/arm/mach-bcm/Makefile
+@@ -10,10 +10,18 @@
+ # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ 
+-obj-$(CONFIG_ARCH_BCM_MOBILE)	:= board_bcm281xx.o board_bcm21664.o \
+-				bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
+-obj-$(CONFIG_ARCH_BCM2835)	+= board_bcm2835.o
+-
++# BCM281XX
++obj-$(CONFIG_ARCH_BCM_281XX)	+= bcm281xx.o
++bcm281xx-y			:= board_bcm281xx.o
++bcm281xx-y			+= bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
+ plus_sec := $(call as-instr,.arch_extension sec,+sec)
+ AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
++
++# BCM21664
++obj-$(CONFIG_ARCH_BCM_21664)	+= board_bcm21664.o
++
++# BCM2835
++obj-$(CONFIG_ARCH_BCM2835)	+= board_bcm2835.o
++
++# BCM5301X
+ obj-$(CONFIG_ARCH_BCM_5301X)	+= bcm_5301x.o
 -- 
-1.8.3.2
+1.7.9.5
 
