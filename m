@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbaDCSDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 14:03:46 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45915 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaDCSDk (ORCPT
+	id S1753475AbaDCSE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 14:04:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58750 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228AbaDCSEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 14:03:40 -0400
-Date: Thu, 03 Apr 2014 14:05:13 -0400 (EDT)
-Message-Id: <20140403.140513.2264055788689960268.davem@davemloft.net>
-To: jwboyer@fedoraproject.org
-Cc: himanshu.madhani@qlogic.com, rajesh.borundia@qlogic.com,
-        shahed.shaikh@qlogic.com, linux-driver@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: qlcnic: include irq.h for irq definitions
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140402152547.GD20438@zod>
-References: <20140402152547.GD20438@zod>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 03 Apr 2014 11:03:39 -0700 (PDT)
+	Thu, 3 Apr 2014 14:04:21 -0400
+Date: Thu, 3 Apr 2014 11:06:44 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tim Bird <tbird20d@gmail.com>
+Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-ID: <20140403180644.GD21565@kroah.com>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+ <20140402221212.GD16570@mguzik.redhat.com>
+ <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+ <alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
+ <yw1x7g76k62z.fsf@unicorn.mansr.com>
+ <CA+bK7J57f8mHC0=UWrFG1MyyURb2hU6p2K1RTsHoWRNUz9LWLw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+bK7J57f8mHC0=UWrFG1MyyURb2hU6p2K1RTsHoWRNUz9LWLw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Boyer <jwboyer@fedoraproject.org>
-Date: Wed, 2 Apr 2014 11:25:47 -0400
+On Thu, Apr 03, 2014 at 08:17:33AM -0700, Tim Bird wrote:
+> 
+> I had no idea systemd was so verbose and was abusing the kernel
+> log buffers so badly.  I'm not a big fan of the rate-limiting, as this just
+> seems to encourage this kind of abuse.
 
-> The qlcnic driver fails to build on ARM with errors like:
-> 
-> In file included from drivers/net/ethernet/qlogic/qlcnic/qlcnic.h:36:0,
->                  from drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c:8:
-> drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.h:585:1: error: unknown type name 'irqreturn_t'
->  irqreturn_t qlcnic_83xx_clear_legacy_intr(struct qlcnic_adapter *);
->  ^
-> 
-> Nothing in the driver is explicitly including the irq definitions, so we
-> add an include of linux/irq.h to pick them up.
-> 
-> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+That was a bug in systemd, and has been fixed up in the latest versions,
+so it shouldn't happen anymore, even with debugging enabled.
 
-Applied, thanks Josh.
+thanks,
+
+greg k-h
