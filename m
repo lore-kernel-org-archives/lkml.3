@@ -1,88 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaDCRYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:24:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22018 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875AbaDCRYb (ORCPT
+	id S1752992AbaDCRag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:30:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45722 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801AbaDCRac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:24:31 -0400
-Date: Thu, 3 Apr 2014 13:23:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV
- support
-Message-ID: <20140403172333.GA3877@localhost.localdomain>
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com>
- <20140402143201.GF12188@phenom.dumpdata.com>
- <533C7485.3030203@hp.com>
- <533CC309.3020607@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533CC309.3020607@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 3 Apr 2014 13:30:32 -0400
+Date: Thu, 03 Apr 2014 13:32:03 -0400 (EDT)
+Message-Id: <20140403.133203.1056561986987869608.davem@davemloft.net>
+To: Max.Nekludov@elster.com
+Cc: torvalds@linux-foundation.org, netdev@vger.kernel.org,
+        sboyd@codeaurora.org, mjr@cs.wisc.edu, jiri@resnulli.us,
+        linux-kernel@vger.kernel.org, trivial@rustcorp.com.au
+Subject: Re: ks8851: reset on RX failure and TX timeout
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <e095559e0b69441eb44fecc7e8639a71@DB3PR02MB202.eurprd02.prod.outlook.com>
+References: <b703c70840da4780bc93beed79a8503b@DB3PR02MB202.eurprd02.prod.outlook.com>
+	<20140401.181355.1375673242692769955.davem@davemloft.net>
+	<e095559e0b69441eb44fecc7e8639a71@DB3PR02MB202.eurprd02.prod.outlook.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 03 Apr 2014 10:30:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 10:10:17PM -0400, Waiman Long wrote:
-> On 04/02/2014 04:35 PM, Waiman Long wrote:
-> >On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
-> >>On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
-> >>>N.B. Sorry for the duplicate. This patch series were resent as the
-> >>>      original one was rejected by the vger.kernel.org list server
-> >>>      due to long header. There is no change in content.
-> >>>
-> >>>v7->v8:
-> >>>   - Remove one unneeded atomic operation from the slowpath, thus
-> >>>     improving performance.
-> >>>   - Simplify some of the codes and add more comments.
-> >>>   - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
-> >>>     unfair lock.
-> >>>   - Reduce unfair lock slowpath lock stealing frequency depending
-> >>>     on its distance from the queue head.
-> >>>   - Add performance data for IvyBridge-EX CPU.
-> >>FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
-> >>HVM guest under Xen after a while stops working. The workload
-> >>is doing 'make -j32' on the Linux kernel.
-> >>
-> >>Completely unresponsive. Thoughts?
-> >>
-> >
-> >Thank for reporting that. I haven't done that much testing on Xen.
-> >My focus was in KVM. I will perform more test on Xen to see if I
-> >can reproduce the problem.
-> >
+From: "Nekludov, Max" <Max.Nekludov@elster.com>
+Date: Wed, 2 Apr 2014 06:31:23 +0000
+
+> Electromagnetic noise can make device to not send TX interrupts.
+> As result outgoing queue will be suspended forever.
+> Also EMI can raise RX interrupt with zero value in KS_RXFC register.
 > 
-> BTW, does the halting and sending IPI mechanism work in HVM? I saw
+> Signed-off-by: Max Nekludov <Max.Nekludov@elster.com>
 
-Yes.
-> that in RHEL7, PV spinlock was explicitly disabled when in HVM mode.
-> However, this piece of code isn't in upstream code. So I wonder if
-> there is problem with that.
+We have a watchdog facility for TX timeouts, don't reinvent the wheel.
 
-The PV ticketlock fixed it for HVM. It was disabled before because
-the PV guests were using bytelocks while the HVM were using ticketlocks
-and you couldnt' swap in PV bytelocks for ticketlocks during startup.
-
-> 
-> -Longman
+Implement ->ndo_tx_timeout() and set dev->watchdog_timeo appropriately.
