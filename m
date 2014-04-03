@@ -1,190 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162595AbaDCIZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:25:28 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:52988 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162470AbaDCIZW convert rfc822-to-8bit (ORCPT
+	id S1162610AbaDCI0e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:26:34 -0400
+Received: from smtp-out-102.synserver.de ([212.40.185.102]:1066 "EHLO
+	smtp-out-019.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1162498AbaDCI03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:25:22 -0400
+	Thu, 3 Apr 2014 04:26:29 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 19617
+Message-ID: <533D1B65.3030405@metafoo.de>
+Date: Thu, 03 Apr 2014 10:27:17 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <533CA0F6.2070100@bbn.com>
-References: <533B04A9.6090405@bbn.com> <20140402111032.GA27551@infradead.org>
- <1396439119.2726.29.camel@menhir> <533CA0F6.2070100@bbn.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 3 Apr 2014 10:25:01 +0200
-Message-ID: <CAKgNAki8U+j0mvYCg99j7wJ2Z7ve-gxusVbM3zdog=hKGPdidQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: msync: require either MS_ASYNC or MS_SYNC
-To: Richard Hansen <rhansen@bbn.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Greg Troxel <gdt@ir.bbn.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Arun Shamanna Lakshmi <aruns@nvidia.com>
+CC: lgirdwood@gmail.com, broonie@kernel.org, swarren@wwwdotorg.org,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Songhee Baek <sbaek@nvidia.com>
+Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
+References: <1396494710-20944-1-git-send-email-aruns@nvidia.com>
+In-Reply-To: <1396494710-20944-1-git-send-email-aruns@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC += Peter Zijlstra]
-[CC += bug-readline@gnu.org -- maintainers, it _may_ be desirable to
-fix your msync() call]
+On 04/03/2014 05:11 AM, Arun Shamanna Lakshmi wrote:
 
-Richard,
+This looks essentially good to me. A few minor issues, once those are fixed 
+things should be good to go.
 
-On Thu, Apr 3, 2014 at 1:44 AM, Richard Hansen <rhansen@bbn.com> wrote:
-> On 2014-04-02 07:45, Steven Whitehouse wrote:
->> Hi,
->>
->> On Wed, 2014-04-02 at 04:10 -0700, Christoph Hellwig wrote:
->>> On Tue, Apr 01, 2014 at 02:25:45PM -0400, Richard Hansen wrote:
->>>> For the flags parameter, POSIX says "Either MS_ASYNC or MS_SYNC shall
->>>> be specified, but not both." [1]  There was already a test for the
->>>> "both" condition.  Add a test to ensure that the caller specified one
->>>> of the flags; fail with EINVAL if neither are specified.
->>>
->>> This breaks various (sloppy) existing userspace
->
-> Agreed, but this shouldn't be a strong consideration.  The kernel should
-> let userspace apps worry about their own bugs, not provide crutches.
->
->>> for no gain.
->
-> I disagree.  Here is what we gain from this patch (expanded from my
-> previous email):
->
->   * Clearer intentions.  Looking at the existing code and the code
->     history, the fact that flags=0 behaves like flags=MS_ASYNC appears
->     to be a coincidence, not the result of an intentional choice.
+[...]
+>   struct snd_soc_dapm_update {
+>   	struct snd_kcontrol *kcontrol;
+> -	int reg;
+> -	int mask;
+> -	int val;
+> +	int reg[3];
+> +	int mask[3];
+> +	int val[3];
 
-Maybe. You earlier asserted that the semantics when flags==0 may have
-been different, prior to Peter Zijstra's patch,
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=204ec841fbea3e5138168edbc3a76d46747cc987
-.
-It's not clear to me that that is the case. But, it would be wise to
-CC the developer, in case he has an insight.
+Make the 3 a define and check against it in the put handler.
 
->   * Clearer semantics.  What does it mean for msync() to be neither
->     synchronous nor asynchronous?
->
->   * Met expectations.  An average reader of the POSIX spec or the
->     Linux man page would expect msync() to fail if neither flag is
->     specified.
->
->   * Defense against potential future security vulnerabilities.  By
->     explicitly requiring one of the flags, a future change to msync()
->     is less likely to expose an unintended code path to userspace.
->
->   * flags=0 is reserved.  By making it illegal to omit both flags
->     we have the option of making it legal in the future for some
->     expanded purpose.  (Unlikely, but still.)
->
->   * Forced app portability.  Other operating systems (e.g., NetBSD)
->     enforce POSIX, so an app developer using Linux might not notice the
->     non-conformance.  This is really the app developer's problem, not
->     the kernel's, but it's worth considering given msync()'s behavior
->     is currently unspecified.
+> +	int num_regs;
 
-There is no doubt that the situation on Linux is an unfortunate mess
-from history (and is far from the only one, see
-https://lwn.net/Articles/588444/).
+unsigned int
 
-And I think everyone would agree that all of the above would be nice
-to have, if there was no cost to having them. But, there is a major
-cost: the pain of breaking those sloppy user-space applications. And
-in fact some casual grepping suggests that many applications would
-break, since, for example, libreadline contains (in histfile.c) an
-msync() call that omits both MS_SYNC and MS_ASYNC (I have not looked
-into the details of what that piece of code does).
-
-But, even if you could find and fix every application that misuses
-msync(), new kernels with your proposed changes would still break old
-binaries. Linus has made it clear on numerous occasions that kernel
-changes must not break user space. So, the change you suggest is never
-going to fly (and Christoph's NAK at least saves Linus yelling at you
-;-).)
-
->     Here is a link to a discussion on the bup mailing list about
->     msync() portability.  This is the conversation that motivated this
->     patch.
->
->       http://article.gmane.org/gmane.comp.sysutils.backup.bup/3005
->
-> Alternatives:
->
->   * Do nothing.  Leave the behavior of flags=0 unspecified and let
->     sloppy userspace continue to be sloppy.  Easiest, but the intended
->     behavior remains unclear and it risks unintended behavior changes
->     the next time msync() is overhauled.
->
->   * Leave msync()'s current behavior alone, but document that MS_ASYNC
->     is the default if neither is specified.  This is backward-
->     compatible with sloppy userspace, but encourages non-portable uses
->     of msync() and would preclude using flags=0 for some other future
->     purpose.
->
->   * Change the default to MS_SYNC and document this.  This is perhaps
->     the most conservative option, but it alters the behavior of existing
->     sloppy userspace and also has the disadvantages of the previous
->     alternative.
->
-> Overall, I believe the advantages of this patch outweigh the
-> disadvantages, given the alternatives.
-
-I think the only reasonable solution is to better document existing
-behavior and what the programmer should do. With that in mind, I've
-drafted the following text for the msync(2) man page:
-
-    NOTES
-       According to POSIX, exactly one of MS_SYNC and MS_ASYNC  must  be
-       specified  in  flags.   However,  Linux permits a call to msync()
-       that specifies neither of these flags, with  semantics  that  are
-       (currently)  equivalent  to  specifying  MS_ASYNC.   (Since Linux
-       2.6.19, MS_ASYNC is in fact a no-op, since  the  kernel  properly
-       tracks  dirty  pages  and  flushes them to storage as necessary.)
-       Notwithstanding the Linux behavior, portable, future-proof appli‐
-       cations  should  ensure  that they specify exactly one of MS_SYNC
-       and MS_ASYNC in flags.
-
-Comments on this draft welcome.
-
-Cheers,
-
-Michael
+>   };
+[...]
+> +/*
+> + * Soc Enum Type
+> + *
+> + * @NONE:    soc_enum type for SINGLE, DOUBLE or VIRTUAL mux
+> + * @ONEHOT:  soc_enum type for one hot encoding mux
+> + */
 
 
-> Perhaps I should include the above bullets in the commit message.
->
->>>
->>> NAK.
->>>
->> Agreed. It might be better to have something like:
->>
->> if (flags == 0)
->>       flags = MS_SYNC;
->>
->> That way applications which don't set the flags (and possibly also don't
->> check the return value, so will not notice an error return) will get the
->> sync they desire. Not that either of those things is desirable, but at
->> least we can make the best of the situation. Probably better to be slow
->> than to potentially lose someone's data in this case,
->
-> This is a conservative alternative, but I'd rather not condone flags=0.
->  Other than compatibility with broken apps, there is little value in
-> supporting flags=0.  Portable apps will have to specify one of the flags
-> anyway, and the behavior of flags=0 is already accessible via other means.
->
-> Thanks,
-> Richard
->
->
->>
->> Steve.
+This should be kernel doc style so
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+/**
+  * enum snd_soc_enum_type - Type of the ASoC enum control
+  * @SND_SOC_ENUM_NONE: ...
+  * ...
+  */
+
+
+> +enum snd_soc_enum_type {
+> +	SND_SOC_ENUM_NONE = 0,
+
+I'm not sure if NONE is the right term. Maybe BINARY is better.
+
+> +	SND_SOC_ENUM_ONEHOT = 1,
+> +};
+> +
+[...]
+> diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+> index c8a780d..19b004a 100644
+> --- a/sound/soc/soc-dapm.c
+> +++ b/sound/soc/soc-dapm.c
+> @@ -511,13 +511,26 @@ static int dapm_connect_mux(struct snd_soc_dapm_context *dapm,
+>   	const struct snd_kcontrol_new *kcontrol)
+>   {
+>   	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+> -	unsigned int val, item;
+> +	unsigned int val, item, bit_pos = -1;
+
+default for bit_pos should probably be 0.
+
+[...]
+> @@ -1575,8 +1588,12 @@ static void dapm_widget_update(struct snd_soc_card *card)
+>   	if (!w)
+>   		return;
+>
+> -	ret = soc_widget_update_bits_locked(w, update->reg, update->mask,
+> -				  update->val);
+> +	/* dapm update for multiple registers */
+> +	for (i = 0; i < update->num_regs; i++) {
+> +		ret |= soc_widget_update_bits_locked(w, update->reg[i],
+> +					update->mask[i], update->val[i]);
+
+I'd prefer
+	ret = soc_widget_update_bits_locked(...);
+	if (ret < 0)
+		break;
+
+> +	}
+> +
+>   	if (ret < 0)
+>   		dev_err(w->dapm->dev, "ASoC: %s DAPM update failed: %d\n",
+>   			w->name, ret);
+[...]
+> @@ -2984,6 +3002,112 @@ int snd_soc_dapm_put_enum_double(struct snd_kcontrol *kcontrol,
+>   EXPORT_SYMBOL_GPL(snd_soc_dapm_put_enum_double);
+>
+>   /**
+> + * snd_soc_dapm_get_enum_onehot - dapm enumerated onehot mixer get callback
+> + * @kcontrol: mixer control
+> + * @ucontrol: control element information
+> + *
+> + * Callback to get the value of a dapm enumerated onehot encoded mixer control
+> + *
+> + * Returns 0 for success.
+> + */
+> +int snd_soc_dapm_get_enum_onehot(struct snd_kcontrol *kcontrol,
+> +			struct snd_ctl_elem_value *ucontrol)
+> +{
+> +	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
+> +	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+> +	unsigned int reg_val, val, bit_pos = -1, reg_idx;
+
+Here as well, default for bit_pos should be 0.
+
+> +
+> +	for (reg_idx = 0; reg_idx < e->num_regs; reg_idx++) {
+> +		reg_val = snd_soc_read(codec, e->reg[reg_idx]);
+> +		val = reg_val & e->mask[reg_idx];
+> +		if (val != 0) {
+> +			bit_pos = __ffs(val) + (8 * codec->val_bytes * reg_idx);
+> +			break;
+> +		}
+> +	}
+> +
+> +	ucontrol->value.enumerated.item[0] =
+> +			snd_soc_enum_val_to_item(e, bit_pos);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(snd_soc_dapm_get_enum_onehot);
+> +
+> +/**
+> + * snd_soc_dapm_put_enum_onehot - dapm enumerated onehot mixer put callback
+> + * @kcontrol: mixer control
+> + * @ucontrol: control element information
+> + *
+> + * Callback to put the value of a dapm enumerated onehot encoded mixer control
+> + *
+> + * Returns 0 for success.
+> + */
+> +int snd_soc_dapm_put_enum_onehot(struct snd_kcontrol *kcontrol,
+> +			struct snd_ctl_elem_value *ucontrol)
+> +{
+> +	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
+> +	struct snd_soc_card *card = codec->card;
+> +	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+> +	unsigned int *item = ucontrol->value.enumerated.item;
+> +	unsigned int change = 0, reg_idx = 0, value, bit_pos;
+> +	struct snd_soc_dapm_update update;
+> +	int ret = 0, reg_val = 0, i, update_idx = 0;
+> +
+> +	if (item[0] >= e->items)
+> +		return -EINVAL;
+> +
+> +	value = snd_soc_enum_item_to_val(e, item[0]);
+> +
+> +	if (value >= 0) {
+
+value is unsigned int, so this is never false.
+
+> +		/* get the register index and value to set */
+> +		reg_idx = value / (8 * codec->val_bytes);
+> +		bit_pos = value % (8 * codec->val_bytes);
+> +		reg_val = BIT(bit_pos);
+> +	}
+> +
+> +	for (i = 0; i < e->num_regs; i++) {
+> +		if (i == reg_idx) {
+> +			change = snd_soc_test_bits(codec, e->reg[i],
+> +							e->mask[i], reg_val);
+
+change |=
+
+> +			/* set the selected register */
+> +			update.reg[e->num_regs - 1] = e->reg[reg_idx];
+> +			update.mask[e->num_regs - 1] = e->mask[reg_idx];
+> +			update.val[e->num_regs - 1] = reg_val;
+> +		} else {
+> +			/* accumulate the change to update the DAPM path
+> +			    when none is selected */
+> +			change |= snd_soc_test_bits(codec, e->reg[i],
+> +							e->mask[i], 0);
+> +
+> +			/* clear the register when not selected */
+> +			update.reg[update_idx] = e->reg[i];
+> +			update.mask[update_idx] = e->mask[i];
+> +			update.val[update_idx++] = 0;
+> +		}
+> +	}
+> +
+> +	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+> +
+> +	if (change) {
+> +		update.kcontrol = kcontrol;
+> +		update.num_regs = 3;
+
+Should be e->num_regs;
+
+> +		card->update = &update;
+> +
+> +		ret = soc_dapm_mux_update_power(card, kcontrol, item[0], e);
+> +
+> +		card->update = NULL;
+> +	}
+> +
+
