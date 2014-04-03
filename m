@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaDCBuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 21:50:25 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:52871 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295AbaDCBuY (ORCPT
+	id S932656AbaDCBwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 21:52:14 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:7635
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932530AbaDCBwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 21:50:24 -0400
-Message-ID: <1396489816.2913.25.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index
- reflect the start/end section number
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
-        gregkh@linuxfoundation.org
-Date: Thu, 03 Apr 2014 09:50:16 +0800
-In-Reply-To: <533C362E.1020605@intel.com>
-References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
-	 <533C362E.1020605@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040301-3864-0000-0000-00000D4AD719
+	Wed, 2 Apr 2014 21:52:12 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
+Date: Thu, 3 Apr 2014 09:52:00 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: <stefan@agner.ch>
+CC: <kernel@pengutronix.de>, <viresh.linux@gmail.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] ARM: dts: mx5: fix wrong stmpe-ts bindings
+Message-ID: <20140403015158.GB2786@dragon>
+References: <cover.1396457876.git.stefan@agner.ch>
+ <94a8b96fe30ce97ec89e49ef6470271888024256.1396457876.git.stefan@agner.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <94a8b96fe30ce97ec89e49ef6470271888024256.1396457876.git.stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 09:09 -0700, Dave Hansen wrote:
-> On 04/02/2014 01:56 AM, Li Zhong wrote:
-> > I noticed the phys_index and end_phys_index under 
-> > /sys/devices/system/memory/memoryXXX/ have the same value, e.g.
-> > (for the test machine, one memory block has 8 sections, that is 
-> >  sections_per_block equals 8)
-> > 
-> > # cd /sys/devices/system/memory/memory100/
-> > # cat phys_index end_phys_index 
-> > 00000064
-> > 00000064
-> > 
-> > Seems they should reflect the start/end section number respectively, which 
-> > also matches what is said in Documentation/memory-hotplug.txt
+On Wed, Apr 02, 2014 at 07:05:37PM +0200, stefan@agner.ch wrote:
+> From: Stefan Agner <stefan@agner.ch>
 > 
-> This changes a user-visible interface.  Won't this break userspace?
-
-Hi Dave, 
-
-Hmm, I think so... Thank you for the reminder
-
-Do you have some better ideas to fix this? Maybe we should leave the
-code unchanged, just change the corresponding document (just it seems
-that the end_phys_index will always be the same as phys_index)? And if
-the section numbers are really needed, then we could create two new
-files later, e.g. start_section_nr, end_section_nr? 
-
-Thanks, 
-Zhong
+> Fix bindings for STMPE touchscreen controller to match the documented
+> bindings and the actual bindings used by the driver.
 > 
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> Reviewed-by: Marek Vasut <marex@denx.de>
 
+Applied, thanks.
 
