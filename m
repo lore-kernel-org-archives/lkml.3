@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659AbaDCUCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:02:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30955 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605AbaDCUB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:01:57 -0400
-Date: Thu, 3 Apr 2014 22:01:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/7] uprobes/x86: Teach arch_uprobe_post_xol() to restart
-	if possible
-Message-ID: <20140403200155.GE12639@redhat.com>
-References: <20140331194337.GA9257@redhat.com> <20140403200015.GC12639@redhat.com>
+	id S1753704AbaDCUCt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:02:49 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:57025 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498AbaDCUCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 16:02:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403200015.GC12639@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140403194335.GC2472@mtj.dyndns.org>
+References: <20140403164911.GE24119@htj.dyndns.org>
+	<CA+55aFy1dm_CoTv+tihQ+m54G3gR9siOngurHsuKf9W3k1sKKw@mail.gmail.com>
+	<CA+55aFwBm202pchEH9A6vbJVdar9-T35pBF44cCt7FNjmno9sQ@mail.gmail.com>
+	<CAOS58YMckmoCocguf9BC_Wxbn3D2Rx3MArhgozO9qCj4g=5aDw@mail.gmail.com>
+	<CA+55aFw2+VKojzoF2aDaruOMKHikTO8J0HeK9DoDLZr+HqTWbg@mail.gmail.com>
+	<20140403194335.GC2472@mtj.dyndns.org>
+Date: Thu, 3 Apr 2014 13:02:45 -0700
+X-Google-Sender-Auth: xJ0esLxCJM4GXNp0UxXE1wzQj3w
+Message-ID: <CA+55aFw+jFdmmi6eZ6+RpLM9heyowfXsZxb6Y91GNkPU677PmA@mail.gmail.com>
+Subject: Re: [GIT PULL] cgroup changes for v3.15-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        cgroups@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SIGILL after the failed arch_uprobe_post_xol() should only be used as
-a last resort, we should try to restart the probed insn if possible.
+On Thu, Apr 3, 2014 at 12:43 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+> Ah, I remembered the other way around.  We could leak cgroup_root
+> reference, not the other way around.  cgroup_mount() can be called
+> multiple times for the same sb and we inc cgroup_root's ref each time
+> but cgroup_kill_sb() only happens when the sb is released, so if we do
+> the following,
 
-Currently only adjust_ret_addr() can fail, and this can only happen if
-another thread unmapped our stack after we executed "call" out-of-line.
-Most probably the application if buggy, but even in this case it can
-have a handler for SIGSEGV/etc. And in theory it can be even correct
-and do something non-trivial with its memory.
+Oh, Christ, I see what you are talking about.
 
-Of course we can't restart unconditionally, so arch_uprobe_post_xol()
-does this only if ->post_xol() returns -ERESTART even if currently this
-is the only possible error.
+That interface is all kinds of crazy.
 
-Note: this is not "perfect" because handler_chain() we actually do not
-want the extra handler_chain() after restart, but I think this is the
-best solution we can realistically do without too much uglifications.
+> The cgroup_root should be destroyed but it isn't, I think.  We'd need
+> to bump cgroup_root's refcnt only when a new sb is created.  It's
+> kinda ugly.  Hmmm...
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+Ok, so I guess we can use that "new_sb_created" thing, and I'll redo
+my merge resolution to reflect that. I do find this incredibly ugly.
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 3bdfb6e..78c4bb3 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -443,16 +443,17 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
- {
- 	struct uprobe_task *utask = current->utask;
- 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
--	int ret = 0;
- 
- 	handle_riprel_post_xol(auprobe, regs, &correction);
- 	if (auprobe->fixups & UPROBE_FIX_IP)
- 		regs->ip += correction;
- 
--	if (auprobe->fixups & UPROBE_FIX_CALL)
--		ret = adjust_ret_addr(regs->sp, correction);
-+	if (auprobe->fixups & UPROBE_FIX_CALL) {
-+		if (adjust_ret_addr(regs->sp, correction))
-+			return -ERESTART;
-+	}
- 
--	return ret;
-+	return 0;
- }
- 
- static struct uprobe_xol_ops default_xol_ops = {
-@@ -599,6 +600,12 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		int err = auprobe->ops->post_xol(auprobe, regs);
- 		if (err) {
- 			arch_uprobe_abort_xol(auprobe, regs);
-+			/*
-+			 * Restart the probed insn. ->post_xol() must ensure
-+			 * this is really possible if it returns -ERESTART.
-+			 */
-+			if (err == -ERESTART)
-+				return 0;
- 			return err;
- 		}
- 	}
--- 
-1.5.5.1
-
-
+              Linus
