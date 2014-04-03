@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaDCNub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 09:50:31 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:63309 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbaDCNu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 09:50:28 -0400
-Message-ID: <1396533026.12330.9.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: 3.14 regression: huge latency in read/select on tun
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ortwin =?ISO-8859-1?Q?Gl=FCck?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Thu, 03 Apr 2014 06:50:26 -0700
-In-Reply-To: <1396531176.12330.6.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <533C381E.9090103@odi.ch>
-	 <1396456973.3989.41.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <533D133A.3090008@odi.ch>
-	 <1396531176.12330.6.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752472AbaDCNvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 09:51:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23560 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752320AbaDCNvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 09:51:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,787,1389772800"; 
+   d="scan'208";a="513702944"
+Date: Thu, 3 Apr 2014 16:58:26 +0300
+From: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-acpi@lists.linaro.org,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Linaro-acpi] How to pass I2C platform_data under ACPI
+Message-ID: <20140403135826.GF19349@intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD57463568@BGSMSX104.gar.corp.intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD57463D21@BGSMSX104.gar.corp.intel.com>
+ <20140403113832.GD19349@intel.com>
+ <4539649.rsMWK1FkZ6@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4539649.rsMWK1FkZ6@wuerfel>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-03 at 06:19 -0700, Eric Dumazet wrote:
+On Thu, Apr 03, 2014 at 03:34:30PM +0200, Arnd Bergmann wrote:
+> On Thursday 03 April 2014 14:38:33 mika.westerberg@linux.intel.com wrote:
+> > On Thu, Apr 03, 2014 at 11:25:34AM +0000, Pallala, Ramakrishna wrote:
+> > > >> In non ACPI environment I used to initialize the platform_data under 
+> > > >> board or platforms files. Under ACPI how do I do that?
+> > > >
+> > > >If you can't extract that information from ACPI namespace, then one option is to pass platform data along with the device ACPI ID:
+> > > >
+> > > >static const struct acpi_device_id my_acpi_match[] = {
+> > > >     { "MYID0001", (kernel_ulong_t)&my_platform_data }
+> > > >     ...
+> > > >     { },
+> > > >};
+> > > 
+> > > Thanks for the Quick reply.
+> > > 
+> > > So If I  want to use different platform_data for different boards can I
+> > > do something like below?
+> > 
+> > Exactly.
+> > 
+> > > And initialize the platform data in either driver or in separate module
+> > > which gets compiled along with driver?
+> > 
+> > Typically it has been done in the same driver but I don't see any problems
+> > having a separate module as well.
+> > 
+> > > static const struct acpi_device_id my_acpi_match[] = {
+> > >       { "MYID0001", (kernel_ulong_t)&my_platform_data1 }
+> > >       { "MYID0002", (kernel_ulong_t)&my_platform_data2 }
+> > >       ...
+> > >       { },
+> 
+> We definitely don't want per-board match entries, that does not scale.
+> The driver should be reasonably generic and get all the necessary data
+> out of well-defined tables. You can have different IDs when there
+> are only a few cases that are actually relevant, but it has to be
+> conceivable that the same driver get used on future hardware without
+> changes.
 
-> It seems TSO support is broken.
+Yes, I meant that when the platform data information is not available in
+ACPI namespace, then (and only then) pass the data by means of different
+IDs.
 
-If bug is in tun.c you have this list of changes  you could bisect
-from :
-
-# git log --oneline v3.13..v3.14 drivers/net/tun.c
-6671b2240c54 tun: remove bogus hardware vlan acceleration flags from vlan_features
-99932d4fc03a netdevice: add queue selection fallback handler for ndo_select_queue
-93e14b6d776e tun: add device name(iff) field to proc fdinfo entry
-fa35864e0bb7 tuntap: Fix for a race in accessing numqueues
-0a379e21c503 Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-fbe4d4565bad tun, rfs: fix the incorrect hash value
-9bc8893937c8 tun: Add support for RFS on tun flows
-143c90549494 Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-3958afa1b272 net: Change skb_get_rxhash to skb_get_hash
-42404c091510 Revert "tun: remove useless codes in tun_chr_aio_read() and tun_recvmsg()"
-73713357ab58 tun: remove useless codes in tun_chr_aio_read() and tun_recvmsg()
-34f9f437104b Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-f96eb74c84eb tun: remove unused parameter in tun_do_read()
-92d4ea6e412a tun: spelling fixes
-
-
+Preferably this information is included in the ACPI namespace.
