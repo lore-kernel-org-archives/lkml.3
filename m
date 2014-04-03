@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162540AbaDCIB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:01:26 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:62500 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162421AbaDCIBY convert rfc822-to-8bit (ORCPT
+	id S1162556AbaDCIC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:02:27 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36505 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162417AbaDCICV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:01:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140402181354.GB13479@quack.suse.cz>
-References: <1396451946-13924-1-git-send-email-nasa4836@gmail.com> <20140402181354.GB13479@quack.suse.cz>
-From: Zhan Jianyu <nasa4836@gmail.com>
-Date: Thu, 3 Apr 2014 16:00:44 +0800
-Message-ID: <CAHz2CGWd70k+eSzcdMdAkjwpYZB1BQ8mKT3f2EfpMM2NsFtn-A@mail.gmail.com>
-Subject: Re: [PATCH] blkdev: use an efficient way to check merge flags
-To: Jan Kara <jack@suse.cz>
-Cc: axboe@kernel.dk, hch@lst.de, viro@zeniv.linux.org.uk, kmo@daterainc.com,
-        namjae.jeon@samsung.com, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Apr 2014 04:02:21 -0400
+Message-ID: <1396512138.5404.32.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 03 Apr 2014 10:02:18 +0200
+In-Reply-To: <20140401095548.GB1299@gmail.com>
+References: <1396164244.28950.15.camel@marge.simpson.net>
+	 <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
+	 <1396239636.5361.57.camel@marge.simpson.net>
+	 <CA+55aFywHpvUfghS4GFc3UC1WGZx3Of+zeKHxmRNcMQMoKoiJQ@mail.gmail.com>
+	 <1396290426.5261.80.camel@marge.simpson.net>
+	 <CA+55aFwdosGtoh8=krpx9C-fT-H7OHsC0UVyXc8aNE7h=W1RxQ@mail.gmail.com>
+	 <1396322880.5324.37.camel@marge.simpson.net>
+	 <20140401095548.GB1299@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 3, 2014 at 2:13 AM, Jan Kara <jack@suse.cz> wrote:
->   OK, but have you checked the generated code is actually any better? This
-> is something I'd expect a compiler might be able to optimize anyway. And the
-> original code looks more readable to me.
+On Tue, 2014-04-01 at 11:55 +0200, Ingo Molnar wrote: 
+> * Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> 
+> > On Mon, 2014-03-31 at 11:37 -0700, Linus Torvalds wrote: 
+> > > On Mon, Mar 31, 2014 at 11:27 AM, Mike Galbraith
+> > > <umgwanakikbuti@gmail.com> wrote:
+> > > >
+> > > > Oh, I didn't cc you because I wanted it applied instantly as ultra
+> > > > critical, only because the chain of events might be of interest.
+> > > 
+> > > Ok. That was my main worry, since I was in the process or releasing
+> > > 3.14, and I just couldn't tell if the patch was something I should
+> > > worry about or not.
+> > > 
+> > > And it seems that not applying it was the right thing, which is all
+> > > that matters by now.
+> > 
+> > Yes.  Jocular red flag was to Peter and Ingo.  I don't try to bypass 
+> > them, that would be plain rude.  I've been known to help maintainers 
+> > a little, but I don't ever try to call the shots.  They do that 
+> > well.
+> 
+> Btw., in general feel free to Cc: Linus if a fix looks truly urgent, 
+> as neither Peter nor me might be around on a weekend, shortly before a 
+> release.
 
-Hi, Jan,
+Still not urgent, but now verified to have fixed the large IO beast boot
+problem.  'course that implies that disk discovery may generate truly
+magnificent wakeup latency.. for the throttle to helpfully double.
 
-I've disassemble the code on my x86_64 box
-(it's inline though, I just look at its call site),
-and found that this patch DOES make it more efficient.
+---cut here---
 
-Orig asm snippt                                               with
-patch asm snippt
-============                                              ================
+Prevent large wakeup latencies from being accounted to the wrong task.
 
-mov    %edx,%ecx                                          mov    %rdx,%r9
-xor    %r8d,%ecx                                             xor    %r8d,%r8d
-test   $0x80,%cl                                              and    $0x380,%r9d
-jne    14c5 <blk_rq_merge_ok+0x15>                test   $0x380,%ecx
-and    $0x3,%ch                                              sete   %r8b
-jne    14c5 <blk_rq_merge_ok+0x15>                cmp    %r8,%r9
+Cc: <stable@vger.kernel.org>
+Signed-off-by: 	Mike Galbraith <umgwanakikbuti@gmail.com>
+---
+ kernel/sched/core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-je     14b5 <blk_rq_merge_ok+0x15>
-
-This saves a branch.
-
-Furthermore,  I found that gcc is smart enough to try to optimize the
-code, so if we do
-like this, it will generate the most optimal and smallest code :
-
-
-static inline bool blk_check_merge_flags(unsigned int flags1,
-                                        ¦unsigned int flags2)
-{
-        return ((flags1 ^ flags2) &
-                (REQ_DISCARD | REQ_SECURE | REQ_WRITE_SAME))
-                == 0;
-}
-
-this gives out  :
-
-mov    %edx,%r8d
-xor    %ecx,%r8d
-and    $0x380,%r8d
-jne    14a5 <blk_rq_merge_ok+0x15>
-
-But yes, it compromises readibility.
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -118,7 +118,12 @@ void update_rq_clock(struct rq *rq)
+ {
+ 	s64 delta;
+ 
+-	if (rq->skip_clock_update > 0)
++	/*
++	 * Set during wakeup to indicate we are on the way to schedule().
++	 * Decrement to ensure that a very large latency is not accounted
++	 * to the wrong task.
++	 */
++	if (rq->skip_clock_update-- > 0)
+ 		return;
+ 
+ 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
 
 
-
-Regards,
-Jianyu Zhan
