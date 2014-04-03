@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794AbaDCKyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 06:54:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60087 "EHLO bear.ext.ti.com"
+	id S1751863AbaDCKzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 06:55:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60090 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398AbaDCKys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 06:54:48 -0400
+	id S1751565AbaDCKyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 06:54:50 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <lee.jones@linaro.org>
 CC: <sameo@linux.intel.com>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Subject: [PATCH] mfd: twl6040: Optional clk32k clock handling
-Date: Thu, 3 Apr 2014 13:54:41 +0300
-Message-ID: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com>
+Date: Thu, 3 Apr 2014 13:54:42 +0300
+Message-ID: <1396522482-32036-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
