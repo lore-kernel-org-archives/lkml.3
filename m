@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601AbaDCAEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 20:04:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41066 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933004AbaDCAEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 20:04:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,783,1389772800"; 
-   d="scan'208";a="486148432"
-Date: Wed, 2 Apr 2014 17:02:18 -0700
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/platforms for v3.15
-Message-ID: <20140403000218.GA27709@linux.intel.com>
-References: <20140401082757.GA23451@gmail.com>
- <CA+55aFzKCVnqYussDpt8Fkoi28SthKRd3oKnSW4GnED+s6QdVQ@mail.gmail.com>
- <533AF612.8020505@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533AF612.8020505@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933630AbaDCAJf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 20:09:35 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:39861 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933590AbaDCAJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Apr 2014 20:09:34 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 0/2] nohz: Move nohz kick out of scheduler IPI v2
+Date: Thu,  3 Apr 2014 02:09:25 +0200
+Message-Id: <1396483767-28607-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Paul,
 
-My apologies for not getting to address hpa's issues sooner. FWIW I simply
-didn't want to force a dependancy on the mbi driver for those drivers that run
-on both big core and soc systems, risking that the driver wouldn't run on big
-core systems that don't have the mbi compiled in. Luckily we should be able to
-make the mbi modular and simply default m and avoid this issue.
+Here's an updated version of the patches with your review addressed.
+I ripped the function parameter and let it be setup on queued IPI object
+initialization time so that people don't get confused and always use the
+same function for a given queued object.
 
-David Box
+Please tell me if you find other issues.
 
-On Tue, Apr 01, 2014 at 10:23:30AM -0700, H. Peter Anvin wrote:
-> Hi Linus,
-> 
-> This one is largely my fault, but it is not for not asking the questions.
-> 
-> This patch is part of the work of modularizing the IOSF drivers, because
-> of course standard distros don't want to compile them in.  However, this
-> results in odd problems when IOSF-aware drivers (some of which are
-> present on non-IOSF hardware, as there are drivers that operate on both
-> PCI and IOSF, some of which are still coming down the pipe toward mainline.)
-> 
-> It is these dual-mode drivers that make things a bit more complicated
-> than it ought to be.
-> 
-> I have explicitly asked David to work on modularizing the IOSF core,
-> even though it is small, exactly to avoid this mess.  However, that
-> change didn't make it in time, and I guess I should just have said "no"
-> at that point.
-> 
-> I did not want to not have an option to disable it for EXPERT
-> configurations, because we also have people working very hard at shaving
-> down the size of the x86 kernel so that Linux rather than "random RTOS
-> of the month" can be used in deep embedded configurations.
-> 
-> On this issue:
-> 
-> >  (a) people don't know about, so asking people about it is f*cking
-> > retarded to begin with
-> 
-> Well, that is why it is an EXPERT option.
-> 
-> +	bool "IOSF MBI support" if EXPERT
-> 
-> 	-hpa
+Thanks.
+
+Frederic Weisbecker (2):
+  smp: Non busy-waiting IPI queue
+  nohz: Move full nohz kick to its own IPI
+
+ include/linux/smp.h      | 11 +++++++++++
+ include/linux/tick.h     |  2 ++
+ kernel/sched/core.c      |  5 +----
+ kernel/sched/sched.h     |  2 +-
+ kernel/smp.c             | 42 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/time/tick-sched.c | 21 +++++++++++++++++++++
+ 6 files changed, 78 insertions(+), 5 deletions(-)
+
+-- 
+1.8.3.1
+
