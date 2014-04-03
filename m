@@ -1,92 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162556AbaDCIC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:02:27 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36505 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162417AbaDCICV (ORCPT
+	id S1162507AbaDCIH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:07:28 -0400
+Received: from smtp.ctxuk.citrix.com ([185.25.65.24]:33289 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162421AbaDCIHL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:02:21 -0400
-Message-ID: <1396512138.5404.32.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: update_rq_clock() must skip ONE update
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 03 Apr 2014 10:02:18 +0200
-In-Reply-To: <20140401095548.GB1299@gmail.com>
-References: <1396164244.28950.15.camel@marge.simpson.net>
-	 <CA+55aFzGVLTiD5QVqZ6YK41b9n0SUxDGD3+yE9CuGJek2U-+MQ@mail.gmail.com>
-	 <1396239636.5361.57.camel@marge.simpson.net>
-	 <CA+55aFywHpvUfghS4GFc3UC1WGZx3Of+zeKHxmRNcMQMoKoiJQ@mail.gmail.com>
-	 <1396290426.5261.80.camel@marge.simpson.net>
-	 <CA+55aFwdosGtoh8=krpx9C-fT-H7OHsC0UVyXc8aNE7h=W1RxQ@mail.gmail.com>
-	 <1396322880.5324.37.camel@marge.simpson.net>
-	 <20140401095548.GB1299@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 3 Apr 2014 04:07:11 -0400
+X-IronPort-AV: E=Sophos;i="4.97,785,1389744000"; 
+   d="scan'208";a="13059211"
+From: Paul Durrant <Paul.Durrant@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jonathan Davies" <Jonathan.Davies@citrix.com>
+Subject: RE: [PATCH net-next v3 2/2] xen-netback: Grant copy the header
+ instead of map and memcpy
+Thread-Topic: [PATCH net-next v3 2/2] xen-netback: Grant copy the header
+ instead of map and memcpy
+Thread-Index: AQHPTpW0cdQcqkwKtEKLONTA3Ncpdpr/ijZA
+Date: Thu, 3 Apr 2014 08:07:07 +0000
+Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD02BB0E1@AMSPEX01CL01.citrite.net>
+References: <1396458298-30041-1-git-send-email-zoltan.kiss@citrix.com>
+ <1396458298-30041-2-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1396458298-30041-2-git-send-email-zoltan.kiss@citrix.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.80.2.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-DLP: AMS1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 11:55 +0200, Ingo Molnar wrote: 
-> * Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> -----Original Message-----
+> From: Zoltan Kiss
+> Sent: 02 April 2014 18:05
+> To: Ian Campbell; Wei Liu; xen-devel@lists.xenproject.org
+> Cc: Paul Durrant; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Jonathan Davies; Zoltan Kiss
+> Subject: [PATCH net-next v3 2/2] xen-netback: Grant copy the header
+> instead of map and memcpy
 > 
-> > On Mon, 2014-03-31 at 11:37 -0700, Linus Torvalds wrote: 
-> > > On Mon, Mar 31, 2014 at 11:27 AM, Mike Galbraith
-> > > <umgwanakikbuti@gmail.com> wrote:
-> > > >
-> > > > Oh, I didn't cc you because I wanted it applied instantly as ultra
-> > > > critical, only because the chain of events might be of interest.
-> > > 
-> > > Ok. That was my main worry, since I was in the process or releasing
-> > > 3.14, and I just couldn't tell if the patch was something I should
-> > > worry about or not.
-> > > 
-> > > And it seems that not applying it was the right thing, which is all
-> > > that matters by now.
-> > 
-> > Yes.  Jocular red flag was to Peter and Ingo.  I don't try to bypass 
-> > them, that would be plain rude.  I've been known to help maintainers 
-> > a little, but I don't ever try to call the shots.  They do that 
-> > well.
+> An old inefficiency of the TX path that we are grant mapping the first slot,
+> and then copy the header part to the linear area. Instead, doing a grant copy
+> for that header straight on is more reasonable. Especially because there are
+> ongoing efforts to make Xen avoiding TLB flush after unmap when the page
+> were
+> not touched in Dom0. In the original way the memcpy ruined that.
+> The key changes:
+> - the vif has a tx_copy_ops array again
+> - xenvif_tx_build_gops sets up the grant copy operations
+> - we don't have to figure out whether the header and first frag are on the
+> same
+>   grant mapped page or not
+> Note, we only grant copy PKT_PROT_LEN bytes from the first slot, the rest (if
+> any) will be on the first frag, which is grant mapped. If the first slot is
+> smaller than PKT_PROT_LEN, then we grant copy that, and later
+> __pskb_pull_tail
+> will pull more from the frags (if any)
 > 
-> Btw., in general feel free to Cc: Linus if a fix looks truly urgent, 
-> as neither Peter nor me might be around on a weekend, shortly before a 
-> release.
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-Still not urgent, but now verified to have fixed the large IO beast boot
-problem.  'course that implies that disk discovery may generate truly
-magnificent wakeup latency.. for the throttle to helpfully double.
+Looks good to me.
 
----cut here---
+Reviewed-by: Paul Durrant <paul.durrant@citrix.com>
 
-Prevent large wakeup latencies from being accounted to the wrong task.
-
-Cc: <stable@vger.kernel.org>
-Signed-off-by: 	Mike Galbraith <umgwanakikbuti@gmail.com>
----
- kernel/sched/core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -118,7 +118,12 @@ void update_rq_clock(struct rq *rq)
- {
- 	s64 delta;
- 
--	if (rq->skip_clock_update > 0)
-+	/*
-+	 * Set during wakeup to indicate we are on the way to schedule().
-+	 * Decrement to ensure that a very large latency is not accounted
-+	 * to the wrong task.
-+	 */
-+	if (rq->skip_clock_update-- > 0)
- 		return;
- 
- 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
-
-
+> ---
+> v2:
+> - extend commit message
+> - add patch to rename map ops
+> 
+> v3:
+> - remove unrelated refactoring
+> - remove stale newline
+> - fix sanity check at the end of build_gops
+> - change debug message in tx_submit
+> - remove unnecessary 'else' from tx_action
+> 
+> diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-
+> netback/common.h
+> index 89b2d42..c995532 100644
+> --- a/drivers/net/xen-netback/common.h
+> +++ b/drivers/net/xen-netback/common.h
+> @@ -119,6 +119,7 @@ struct xenvif {
+>  	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
+>  	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
+> 
+> +	struct gnttab_copy tx_copy_ops[MAX_PENDING_REQS];
+>  	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
+>  	struct gnttab_unmap_grant_ref
+> tx_unmap_ops[MAX_PENDING_REQS];
+>  	/* passed to gnttab_[un]map_refs with pages under (un)mapping */
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-
+> netback/netback.c
+> index 8ce93ff..a6cacf1 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -939,35 +939,37 @@ static inline void xenvif_grant_handle_reset(struct
+> xenvif *vif,
+> 
+>  static int xenvif_tx_check_gop(struct xenvif *vif,
+>  			       struct sk_buff *skb,
+> -			       struct gnttab_map_grant_ref **gopp_map)
+> +			       struct gnttab_map_grant_ref **gopp_map,
+> +			       struct gnttab_copy **gopp_copy)
+>  {
+>  	struct gnttab_map_grant_ref *gop_map = *gopp_map;
+>  	u16 pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+>  	struct skb_shared_info *shinfo = skb_shinfo(skb);
+> -	struct pending_tx_info *tx_info;
+>  	int nr_frags = shinfo->nr_frags;
+> -	int i, err, start;
+> +	int i, err;
+>  	struct sk_buff *first_skb = NULL;
+> 
+>  	/* Check status of header. */
+> -	err = gop_map->status;
+> -	if (unlikely(err))
+> +	err = (*gopp_copy)->status;
+> +	(*gopp_copy)++;
+> +	if (unlikely(err)) {
+> +		if (net_ratelimit())
+> +			netdev_dbg(vif->dev,
+> +				   "Grant copy of header failed! status: %d
+> pending_idx% %u ref: %u\n",
+> +				   (*gopp_copy)->status,
+> +				   pending_idx,
+> +				   (*gopp_copy)->source.u.ref);
+>  		xenvif_idx_release(vif, pending_idx,
+> XEN_NETIF_RSP_ERROR);
+> -	else
+> -		xenvif_grant_handle_set(vif, pending_idx , gop_map-
+> >handle);
+> -
+> -	/* Skip first skb fragment if it is on same page as header fragment. */
+> -	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+> +	}
+> 
+>  check_frags:
+> -	for (i = start; i < nr_frags; i++) {
+> +	for (i = 0; i < nr_frags; i++, gop_map++) {
+>  		int j, newerr;
+> 
+>  		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
+> -		tx_info = &vif->pending_tx_info[pending_idx];
+> 
+>  		/* Check error status: if okay then remember grant handle.
+> */
+> -		newerr = (++gop_map)->status;
+> +		newerr = gop_map->status;
+> 
+>  		if (likely(!newerr)) {
+>  			xenvif_grant_handle_set(vif,
+> @@ -980,18 +982,20 @@ check_frags:
+>  		}
+> 
+>  		/* Error on this fragment: respond to client with an error. */
+> +		if (net_ratelimit())
+> +			netdev_dbg(vif->dev,
+> +				   "Grant map of %d. frag failed! status: %d
+> pending_idx% %u ref: %u\n",
+> +				   i,
+> +				   gop_map->status,
+> +				   pending_idx,
+> +				   gop_map->ref);
+>  		xenvif_idx_release(vif, pending_idx,
+> XEN_NETIF_RSP_ERROR);
+> 
+>  		/* Not the first error? Preceding frags already invalidated. */
+>  		if (err)
+>  			continue;
+> -		/* First error: invalidate header and preceding fragments. */
+> -		if (!first_skb)
+> -			pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+> -		else
+> -			pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+> -		xenvif_idx_unmap(vif, pending_idx);
+> -		for (j = start; j < i; j++) {
+> +		/* First error: invalidate preceding fragments. */
+> +		for (j = 0; j < i; j++) {
+>  			pending_idx = frag_get_pending_idx(&shinfo-
+> >frags[j]);
+>  			xenvif_idx_unmap(vif, pending_idx);
+>  		}
+> @@ -1005,7 +1009,6 @@ check_frags:
+>  		skb = shinfo->frag_list;
+>  		shinfo = skb_shinfo(skb);
+>  		nr_frags = shinfo->nr_frags;
+> -		start = 0;
+> 
+>  		goto check_frags;
+>  	}
+> @@ -1016,15 +1019,13 @@ check_frags:
+>  	if (first_skb && err) {
+>  		int j;
+>  		shinfo = skb_shinfo(first_skb);
+> -		pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+> -		start = (frag_get_pending_idx(&shinfo->frags[0]) ==
+> pending_idx);
+> -		for (j = start; j < shinfo->nr_frags; j++) {
+> +		for (j = 0; j < shinfo->nr_frags; j++) {
+>  			pending_idx = frag_get_pending_idx(&shinfo-
+> >frags[j]);
+>  			xenvif_idx_unmap(vif, pending_idx);
+>  		}
+>  	}
+> 
+> -	*gopp_map = gop_map + 1;
+> +	*gopp_map = gop_map;
+>  	return err;
+>  }
+> 
+> @@ -1035,9 +1036,6 @@ static void xenvif_fill_frags(struct xenvif *vif, struct
+> sk_buff *skb)
+>  	int i;
+>  	u16 prev_pending_idx = INVALID_PENDING_IDX;
+> 
+> -	if (skb_shinfo(skb)->destructor_arg)
+> -		prev_pending_idx = XENVIF_TX_CB(skb)->pending_idx;
+> -
+>  	for (i = 0; i < nr_frags; i++) {
+>  		skb_frag_t *frag = shinfo->frags + i;
+>  		struct xen_netif_tx_request *txp;
+> @@ -1047,10 +1045,10 @@ static void xenvif_fill_frags(struct xenvif *vif,
+> struct sk_buff *skb)
+>  		pending_idx = frag_get_pending_idx(frag);
+> 
+>  		/* If this is not the first frag, chain it to the previous*/
+> -		if (unlikely(prev_pending_idx == INVALID_PENDING_IDX))
+> +		if (prev_pending_idx == INVALID_PENDING_IDX)
+>  			skb_shinfo(skb)->destructor_arg =
+>  				&callback_param(vif, pending_idx);
+> -		else if (likely(pending_idx != prev_pending_idx))
+> +		else
+>  			callback_param(vif, prev_pending_idx).ctx =
+>  				&callback_param(vif, pending_idx);
+> 
+> @@ -1190,7 +1188,10 @@ static bool tx_credit_exceeded(struct xenvif *vif,
+> unsigned size)
+>  	return false;
+>  }
+> 
+> -static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+> +static void xenvif_tx_build_gops(struct xenvif *vif,
+> +				     int budget,
+> +				     unsigned *copy_ops,
+> +				     unsigned *map_ops)
+>  {
+>  	struct gnttab_map_grant_ref *gop = vif->tx_map_ops,
+> *request_gop;
+>  	struct sk_buff *skb;
+> @@ -1293,22 +1294,36 @@ static unsigned xenvif_tx_build_gops(struct
+> xenvif *vif, int budget)
+>  			}
+>  		}
+> 
+> -		xenvif_tx_create_map_op(vif, pending_idx, &txreq, gop);
+> -
+> -		gop++;
+> -
+>  		XENVIF_TX_CB(skb)->pending_idx = pending_idx;
+> 
+>  		__skb_put(skb, data_len);
+> +		vif->tx_copy_ops[*copy_ops].source.u.ref = txreq.gref;
+> +		vif->tx_copy_ops[*copy_ops].source.domid = vif->domid;
+> +		vif->tx_copy_ops[*copy_ops].source.offset = txreq.offset;
+> +
+> +		vif->tx_copy_ops[*copy_ops].dest.u.gmfn =
+> +			virt_to_mfn(skb->data);
+> +		vif->tx_copy_ops[*copy_ops].dest.domid = DOMID_SELF;
+> +		vif->tx_copy_ops[*copy_ops].dest.offset =
+> +			offset_in_page(skb->data);
+> +
+> +		vif->tx_copy_ops[*copy_ops].len = data_len;
+> +		vif->tx_copy_ops[*copy_ops].flags =
+> GNTCOPY_source_gref;
+> +
+> +		(*copy_ops)++;
+> 
+>  		skb_shinfo(skb)->nr_frags = ret;
+>  		if (data_len < txreq.size) {
+>  			skb_shinfo(skb)->nr_frags++;
+>  			frag_set_pending_idx(&skb_shinfo(skb)->frags[0],
+>  					     pending_idx);
+> +			xenvif_tx_create_map_op(vif, pending_idx, &txreq,
+> gop);
+> +			gop++;
+>  		} else {
+>  			frag_set_pending_idx(&skb_shinfo(skb)->frags[0],
+>  					     INVALID_PENDING_IDX);
+> +			memcpy(&vif->pending_tx_info[pending_idx].req,
+> &txreq,
+> +			       sizeof(txreq));
+>  		}
+> 
+>  		vif->pending_cons++;
+> @@ -1325,11 +1340,13 @@ static unsigned xenvif_tx_build_gops(struct
+> xenvif *vif, int budget)
+> 
+>  		vif->tx.req_cons = idx;
+> 
+> -		if ((gop-vif->tx_map_ops) >= ARRAY_SIZE(vif-
+> >tx_map_ops))
+> +		if (((gop-vif->tx_map_ops) >= ARRAY_SIZE(vif-
+> >tx_map_ops)) ||
+> +		    (*copy_ops >= ARRAY_SIZE(vif->tx_copy_ops)))
+>  			break;
+>  	}
+> 
+> -	return gop - vif->tx_map_ops;
+> +	(*map_ops) = gop - vif->tx_map_ops;
+> +	return;
+>  }
+> 
+>  /* Consolidate skb with a frag_list into a brand new one with local pages on
+> @@ -1401,6 +1418,7 @@ static int xenvif_handle_frag_list(struct xenvif *vif,
+> struct sk_buff *skb)
+>  static int xenvif_tx_submit(struct xenvif *vif)
+>  {
+>  	struct gnttab_map_grant_ref *gop_map = vif->tx_map_ops;
+> +	struct gnttab_copy *gop_copy = vif->tx_copy_ops;
+>  	struct sk_buff *skb;
+>  	int work_done = 0;
+> 
+> @@ -1413,27 +1431,22 @@ static int xenvif_tx_submit(struct xenvif *vif)
+>  		txp = &vif->pending_tx_info[pending_idx].req;
+> 
+>  		/* Check the remap error code. */
+> -		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map))) {
+> -			netdev_dbg(vif->dev, "netback grant failed.\n");
+> +		if (unlikely(xenvif_tx_check_gop(vif, skb, &gop_map,
+> &gop_copy))) {
+>  			skb_shinfo(skb)->nr_frags = 0;
+>  			kfree_skb(skb);
+>  			continue;
+>  		}
+> 
+>  		data_len = skb->len;
+> -		memcpy(skb->data,
+> -		       (void *)(idx_to_kaddr(vif, pending_idx)|txp->offset),
+> -		       data_len);
+>  		callback_param(vif, pending_idx).ctx = NULL;
+>  		if (data_len < txp->size) {
+>  			/* Append the packet payload as a fragment. */
+>  			txp->offset += data_len;
+>  			txp->size -= data_len;
+> -			skb_shinfo(skb)->destructor_arg =
+> -				&callback_param(vif, pending_idx);
+>  		} else {
+>  			/* Schedule a response immediately. */
+> -			xenvif_idx_unmap(vif, pending_idx);
+> +			xenvif_idx_release(vif, pending_idx,
+> +					   XEN_NETIF_RSP_OKAY);
+>  		}
+> 
+>  		if (txp->flags & XEN_NETTXF_csum_blank)
+> @@ -1612,22 +1625,25 @@ static inline void xenvif_tx_dealloc_action(struct
+> xenvif *vif)
+>  /* Called after netfront has transmitted */
+>  int xenvif_tx_action(struct xenvif *vif, int budget)
+>  {
+> -	unsigned nr_mops;
+> +	unsigned nr_mops, nr_cops = 0;
+>  	int work_done, ret;
+> 
+>  	if (unlikely(!tx_work_todo(vif)))
+>  		return 0;
+> 
+> -	nr_mops = xenvif_tx_build_gops(vif, budget);
+> +	xenvif_tx_build_gops(vif, budget, &nr_cops, &nr_mops);
+> 
+> -	if (nr_mops == 0)
+> +	if (nr_cops == 0)
+>  		return 0;
+> 
+> -	ret = gnttab_map_refs(vif->tx_map_ops,
+> -			      NULL,
+> -			      vif->pages_to_map,
+> -			      nr_mops);
+> -	BUG_ON(ret);
+> +	gnttab_batch_copy(vif->tx_copy_ops, nr_cops);
+> +	if (nr_mops != 0) {
+> +		ret = gnttab_map_refs(vif->tx_map_ops,
+> +				      NULL,
+> +				      vif->pages_to_map,
+> +				      nr_mops);
+> +		BUG_ON(ret);
+> +	}
+> 
+>  	work_done = xenvif_tx_submit(vif);
+> 
