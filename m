@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbaDCXxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 19:53:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19580 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753681AbaDCXw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 19:52:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,791,1389772800"; 
-   d="scan'208";a="514476852"
-Message-ID: <533DF455.4040908@linux.intel.com>
-Date: Fri, 04 Apr 2014 07:52:53 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
+	id S1754066AbaDCX4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 19:56:33 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:51444 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753681AbaDCX4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 19:56:31 -0400
+Date: Thu, 3 Apr 2014 19:56:28 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
 To: Steven Rostedt <rostedt@goodmis.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-References: <20140403021411.6236996f@gandalf.local.home>	<070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>	<533D001A.5030802@linux.intel.com>	<20140403094155.04cc00bc@gandalf.local.home>	<533D6BE7.3020608@zytor.com>	<20140403104721.5f6c32b6@gandalf.local.home>	<20140403111711.5bed4ff7@gandalf.local.home>	<533D7C4F.4010504@zytor.com>	<533D7C93.7080105@zytor.com>	<20140403113921.23dceb75@gandalf.local.home>	<533D8516.1040803@zytor.com>	<20140403121314.246b03a7@gandalf.local.home>	<533DED74.6050202@linux.intel.com> <20140403194018.7c67aec7@gandalf.local.home>
-In-Reply-To: <20140403194018.7c67aec7@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
+Subject: Re: [GIT PULL] ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
+Message-ID: <20140403195628.369f3469@gandalf.local.home>
+In-Reply-To: <20140401121412.24945d54@gandalf.local.home>
+References: <20140401121412.24945d54@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/4 7:40, Steven Rostedt wrote:
-> On Fri, 04 Apr 2014 07:23:32 +0800
-> "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
+Hi Linus,
+
+Thanks for pulling in the tracing code. But I'm wonder if this simple
+pull request got lost in the mix too, or hidden in your spam folder.
+
+-- Steve
+
+
+On Tue, 1 Apr 2014 12:14:12 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
 > 
->> Can you please send the dmi table out?
+> Linus,
 > 
-> I already did as a gz attachment to H. Peter. You were on the Cc, did
-> you not receive it?
+> This just contains a single update by Satoru Takeuchi, which adds
+> CLOSE_CONSOLE_SIGNAL to the kvm.conf file, as the kvm guest requires
+> a different signal than a normal console uses.
 > 
-Oh, I got it. This is a Preproduction machine.
-When reboot failed via a method (=e or =p), there are two case.
-
-Case 1: this method do nothing, pass the attempt chance to the next method
-Case 2: this method hangs the system
-
-I want to know if CF9 is case 1 or case 2. Could you please try the following
-patch *without* any reboot parameters?
-
-(1) If we didn't see any string, then EFI hangs your box.
-(2) if we see the first string but not the second one, CF9 hangs your box
-(3) if we see both, couldn't be, because BIOS works on your box.
-
-Thanks,
--Aubrey
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 654b465..4de3027 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -547,11 +547,13 @@ static void native_machine_emergency_restart(void)
- 				u8 reboot_code = reboot_mode == REBOOT_WARM ?
- 					0x06 : 0x0E;
- 				u8 cf9 = inb(0xcf9) & ~reboot_code;
-+				pr_info("reboot via CF9...\n");
- 				outb(cf9|2, 0xcf9); /* Request hard reset */
- 				udelay(50);
- 				/* Actually do the reset */
- 				outb(cf9|reboot_code, 0xcf9);
- 				udelay(50);
-+				pr_info("reboot via CF9 done...\n");
- 			}
- 			reboot_type = BOOT_BIOS;
- 			break;
-
-
+> Please pull the latest ktest-v3.15 tree, which can be found at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+> ktest-v3.15
+> 
+> Tag SHA1: 13497aad499b1d051de60c988fdbe8bcecf2fa4a
+> Head SHA1: 62183dcac539a14ed0a820b8392db353d72a7d7e
+> 
+> 
+> Satoru Takeuchi (1):
+>       ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
+> 
+> ----
+>  tools/testing/ktest/examples/kvm.conf | 4 ++++
+>  1 file changed, 4 insertions(+)
+> ---------------------------
+> commit 62183dcac539a14ed0a820b8392db353d72a7d7e
+> Author: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+> Date:   Sun Feb 23 10:19:28 2014 +0900
+> 
+>     ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
+>     
+>     As mentioned at commit 5a5d8e48449, we can't terminate 'virsh console'
+>     with the default signal(INT). So it's better to set CLOSE_CONSOLE_SIGNAL
+>     in the kvm.conf.
+>     
+>     Link: http://lkml.kernel.org/r/8738jatylb.wl%satoru.takeuchi@gmail.com
+>     
+>     Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+>     [ Typo fixed by ]
+>     Signed-off-by: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
+>     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/tools/testing/ktest/examples/kvm.conf b/tools/testing/ktest/examples/kvm.conf
+> index 831c7c5..fbc134f 100644
+> --- a/tools/testing/ktest/examples/kvm.conf
+> +++ b/tools/testing/ktest/examples/kvm.conf
+> @@ -10,6 +10,10 @@ MACHINE = Guest
+>  # Use virsh to read the serial console of the guest
+>  CONSOLE =  virsh console ${MACHINE}
+>  
+> +# Use SIGKILL to terminate virsh console. We can't kill virsh console
+> +# by the default signal, SIGINT.
+> +CLOSE_CONSOLE_SIGNAL = KILL
+> +
+>  #*************************************#
+>  # This part is the same as test.conf  #
+>  #*************************************#
 
