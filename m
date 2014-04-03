@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743AbaDCJku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 05:40:50 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50592 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378AbaDCJkp (ORCPT
+	id S1751999AbaDCJlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 05:41:06 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:46834 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaDCJkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 05:40:45 -0400
-Date: Thu, 3 Apr 2014 10:40:16 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Arun Shamanna Lakshmi <aruns@nvidia.com>, lgirdwood@gmail.com,
-        swarren@wwwdotorg.org, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Songhee Baek <sbaek@nvidia.com>
-Message-ID: <20140403094016.GQ14763@sirena.org.uk>
-References: <1396494710-20944-1-git-send-email-aruns@nvidia.com>
- <533D1B65.3030405@metafoo.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FmdPcZLZZW6lDAYm"
-Content-Disposition: inline
-In-Reply-To: <533D1B65.3030405@metafoo.de>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 3 Apr 2014 05:40:47 -0400
+Message-ID: <533D2C9A.6010302@gmail.com>
+Date: Thu, 03 Apr 2014 09:40:42 +0000
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        Jisheng Zhang <jszhang@marvell.com>
+CC: "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ARM: dts: document the berlin enable-method property
+References: <1396512496-8030-1-git-send-email-antoine.tenart@free-electrons.com>	<1396512496-8030-3-git-send-email-antoine.tenart@free-electrons.com> <20140403162202.79b63729@xhacker> <533D21AF.2070508@free-electrons.com> <533D268E.7070502@free-electrons.com>
+In-Reply-To: <533D268E.7070502@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/03/2014 09:14 AM, Antoine Ténart wrote:
+> On 03/04/2014 10:54, Antoine Ténart wrote:
+>> On 03/04/2014 10:22, Jisheng Zhang wrote:
+>>> On Thu, 3 Apr 2014 01:08:15 -0700
+>>> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+>>>
+>>>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>>>> ---
+>>>>   Documentation/devicetree/bindings/arm/cpus.txt | 2 ++
+>>>>   1 file changed, 2 insertions(+)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt
+>>>> b/Documentation/devicetree/bindings/arm/cpus.txt index
+>>>> 333f4aea3029..a9e42a2dbc99 100644 ---
+>>>> a/Documentation/devicetree/bindings/arm/cpus.txt +++
+>>>> b/Documentation/devicetree/bindings/arm/cpus.txt @@ -185,6 +185,8 @@
+>>>> nodes
+>>>> to be present and contain the properties described below.
+>>>> "qcom,gcc-msm8660"
+>>>>                   "qcom,kpss-acc-v1"
+>>>>                   "qcom,kpss-acc-v2"
+>>>> +                "marvell,88de31-smp" - cpu-core handling for
+>>>
+>>> why not "marvell,berlin-smp"?
+>>
+>> We have SMP on the BG2 and the BG2Q currently. Future boards may not be
+>> compatible with this method (BG3 ?), I think "marvell,berlin-smp" is too
+>> generic.
+>>
+>> We could use "marvell,88de31xx-smp" as Alexandre suggested.
+>
+> "marvell,88de31xx-smp" is not a good choice too, since futur SoC may
+> match the "xx" and not use this method. A better way should be to use
+> the first SoC implementing the feature, so "marvell,88de3100".
 
---FmdPcZLZZW6lDAYm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Never introduce the SoC numbers, we have chosen to stick with
+berlin2{,cd,q} so use that.
 
-On Thu, Apr 03, 2014 at 10:27:17AM +0200, Lars-Peter Clausen wrote:
-> On 04/03/2014 05:11 AM, Arun Shamanna Lakshmi wrote:
+Given the comment from Mark Rutland and Russell King here[1], I'd rather
+concentrate on a proper SMP implementation. Unfortunately, I haven't
+found a good documentation about the requirements nor call sequence -
+but I haven't looked hard.
 
-> >+enum snd_soc_enum_type {
-> >+	SND_SOC_ENUM_NONE = 0,
+Having said that, can we postpone the DT enable method patches until
+we agreed on a better SMP implementation?
 
-> I'm not sure if NONE is the right term. Maybe BINARY is better.
+Sebastian
 
-Yes, it's definitely not none.
+[1] http://www.spinics.net/lists/arm-kernel/msg318585.html
 
---FmdPcZLZZW6lDAYm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPSx9AAoJELSic+t+oim9yRIQAJZVoxnGGYZbJf30PHwLCyfi
-FPgD0T6dOwQMTvXLYS/KM+vzKLGybOehspU1op1JnNPZEMCQZ1P2mGg/A8sZyGuy
-YN7GwACLNRKR6G7q+nkoniQM5epqWgUmlDOeGV4rwkyQrN21YYFyl3zCtL767y3p
-3toXyTaqhidMrcS5dyXzAse7evDSYxCRxvV/BVPQ+ZKTiZ04JwT+psWI4ywnjhWL
-Bz2Cfw5NIqbq+uBEXisLb+SXJtsXVhL3EJa+w9EFFZu14ZIt6AeBUMuuB7A57S/R
-AbVJ5NG7O7+j8h2zCJEJPLH7NdmvzkzZPRYf8iGePm3RZMnmZrVFXMFr6yWlsD6J
-WiVcIJAMzXhFUqLWDX4mkvt6hTQKi4d4FQd0N7H4VjnrkbUj9JRU9rCImI807ePd
-rZ725JiaSLOZdveL5ku+EBDEulE2saHPzd3ZM01dn/b5pAmHJO13HOQ4hRwjv20H
-RdnTzGFMFxGGaJxNYzEdzj2Fj2Y5/3v4JnwVCXvAQ/CpUnaduam//0M2FT6pwDn3
-K54VvRb7afrWy/btvGO6aqw3aPw+4GHDEQyo+J0bXhklb6qTWi9bzOyM/9sCYAkJ
-Exx7sCL+/BQDjMcYtOKOR7UXHa4PVKmTNCqpHQM9gVXFceY4RZ3M3hoW8dRZs+MJ
-T951ZJSIeZZuer2IVKhZ
-=x3WF
------END PGP SIGNATURE-----
-
---FmdPcZLZZW6lDAYm--
