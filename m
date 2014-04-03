@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaDCQom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:44:42 -0400
-Received: from mail1.start.ca ([64.140.120.57]:44347 "EHLO mail1.start.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679AbaDCQoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:44:37 -0400
-X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 12:44:36 EDT
-Message-ID: <533D8FE9.80309@pobox.com>
-Date: Thu, 03 Apr 2014 12:44:25 -0400
-From: Mark Lord <mlord@pobox.com>
+	id S1753071AbaDCQpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 12:45:19 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:52622 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035AbaDCQpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 12:45:14 -0400
+Message-ID: <533D9017.4070609@bjorling.me>
+Date: Thu, 03 Apr 2014 09:45:11 -0700
+From: Matias Bjorling <m@bjorling.me>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Albert Fluegel <af@muc.de>, "J. Bruce Fields" <bfields@redhat.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-References: <533D8D73.1090603@pobox.com>
-In-Reply-To: <533D8D73.1090603@pobox.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Hellwig <hch@lst.de>
+CC: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [RFC] blk-mq: support for shared tags
+References: <1396277175-21382-1-git-send-email-hch@lst.de> <533B56D5.5070803@bjorling.me> <20140402074632.GA11359@lst.de> <533CDF24.9030902@bjorling.me> <20140403073631.GA26921@lst.de>
+In-Reply-To: <20140403073631.GA26921@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-04-03 12:33 PM, Mark Lord wrote:
-> This commit from linux-3.14 breaks our NFS-root clients here:
+On 04/03/2014 12:36 AM, Christoph Hellwig wrote:
+> On Wed, Apr 02, 2014 at 09:10:12PM -0700, Matias Bjorling wrote:
+>> For the nvme driver, there's a single admin queue, which is outside
+>> blk-mq's control, and the X normal queues. Should we allow the shared
+>> tags structure to be used (get/put) for the admin queue, without
+>> initializing blk-mq? or should the drivers simply implement their own
+>> tags for their admin queue?
 > 
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
+> I'd still create a request_queue for the internal queue, just not register
+> a block device for it.  For example SCSI sets up queues for each LUN
+> found, but only a subset actually is exposed as a block device.
 > 
-> 
-> - *p++ = htonl((u32) stat->mode);
-> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
-> 
-> 
-> Reverting the one-liner above (on the server) fixes it for us,
-> as does reverting back to linux-3.13.8 on the server.
-> 
-> The NFS-root clients are on PowerPC (big-endian) architecture,
-> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
-> 
-> ACL is completely disabled on server and client,
-> and we're using NFSv2/v3.  No support for v4.
-> 
-> I instrumented the function to see what other bits were being cleared
-> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
-..
 
+Ok. That is good enough for now. A little heavy on the overhead side, if
+only the tag logic is needed.
 
-Looking into the (previously attached) trace, the bits that seem to be
-getting chopped most often are S_IFREG (0x8000) and S_IFDIR (0x4000).
-It appears that one/both of those are needed for mounting nfsroot.
+What about the following suggestions for shared tags:
 
+1. Rename it from blk_mq_shared_tags to blk_mq_tag_group. A driver can
+have several tag groups that it maintains.
+2. Instead of blk_mq_shared_tags structure in blk_mq_reg. Have  function
+pointer for getting the tags structure during hctx initialization. This
+is interesting for nvme, because it has as set of tags for each hardware
+queue it exposes.
 
-[ 2733.823753] encode_fattr: mode=0x000041ed mask=0x00000fff
-[ 2733.824217] encode_fattr: mode=0x000041ed mask=0x00000fff
-[ 2733.838769] encode_fattr: mode=0x000041ed mask=0x00000fff
-[ 2733.839175] encode_fattr: mode=0x0000a1ff mask=0x00000fff
-[ 2733.839895] encode_fattr: mode=0x000081ed mask=0x00000fff
-[ 2733.840388] encode_fattr: mode=0x000081ed mask=0x00000fff
-[ 2733.840431] encode_fattr: mode=0x000081ed mask=0x00000fff
-[ 2733.841256] encode_fattr: mode=0x000041ed mask=0x00000fff
-[ 2733.841659] encode_fattr: mode=0x0000a1ff mask=0x00000fff
-[ 2733.842379] encode_fattr: mode=0x000081ed mask=0x00000fff
-[ 2733.842825] encode_fattr: mode=0x000081ed mask=0x00000fff
-[ 2733.842879] encode_fattr: mode=0x000081ed mask=0x00000fff
-[ 2733.843876] encode_fattr: mode=0x000081ed mask=0x00000fff
-[ 2733.843924] encode_fattr: mode=0x000081ed mask=0x00000fff
-...
+Thanks,
+Matias
