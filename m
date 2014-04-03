@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840AbaDCWhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 18:37:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751577AbaDCWhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 18:37:11 -0400
-Date: Thu, 3 Apr 2014 18:37:00 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140403223700.GA18353@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
- <20140401180414.GA12326@redhat.com>
- <20140401183245.GA12473@linux.vnet.ibm.com>
- <20140402162043.GA11090@linux.vnet.ibm.com>
- <20140402224840.GA5385@redhat.com>
- <20140403200143.GA8119@redhat.com>
- <20140403204656.GI4284@linux.vnet.ibm.com>
- <20140403214430.GA20249@redhat.com>
+	id S1754019AbaDCWmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 18:42:13 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:35814 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724AbaDCWmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 18:42:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403214430.GA20249@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <533C362E.1020605@intel.com>
+References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com> <533C362E.1020605@intel.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 3 Apr 2014 18:41:48 -0400
+Message-ID: <CAHGf_=r-zMMuTLy7QKw7K63A29xXd2fY3bqKRPp-wOvHXWU4AA@mail.gmail.com>
+Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index reflect
+ the start/end section number
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        nfont@linux.vnet.ibm.com, Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 05:44:30PM -0400, Dave Jones wrote:
- > On Thu, Apr 03, 2014 at 01:46:56PM -0700, Paul E. McKenney wrote:
- >  > 	git merge anti-fixes
- >  > 
- >  > Then bisect through these reverts.
- >  > 
- >  > I am assuming, perhaps naively, that changes under Documentation and
- >  > to torture testing should not be affecting you.
- >  > 
- >  > Does this make sense?
- > 
- > I tried reverting every one of those and could still hit it, which
- > seems to indicate the bug is elsewhere, and rcu is just a victim of it.
- > I'm going to start trying to revert the lockdep changes, given this seems
- > to happen after that has warned..
+On Wed, Apr 2, 2014 at 12:09 PM, Dave Hansen <dave.hansen@intel.com> wrote:
+> On 04/02/2014 01:56 AM, Li Zhong wrote:
+>> I noticed the phys_index and end_phys_index under
+>> /sys/devices/system/memory/memoryXXX/ have the same value, e.g.
+>> (for the test machine, one memory block has 8 sections, that is
+>>  sections_per_block equals 8)
+>>
+>> # cd /sys/devices/system/memory/memory100/
+>> # cat phys_index end_phys_index
+>> 00000064
+>> 00000064
+>>
+>> Seems they should reflect the start/end section number respectively, which
+>> also matches what is said in Documentation/memory-hotplug.txt
+>
+> This changes a user-visible interface.  Won't this break userspace?
 
-And that was also without any success.
-Tomorrow I'll try a bisect on just arch/x86.
-
-	Dave
-
+But who uses this? This is totally broken and I think nobody can use
+meaningfully.
+I bet we can fix this right now.
