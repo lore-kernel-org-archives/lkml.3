@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaDCTjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 15:39:48 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:33778 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaDCTjo (ORCPT
+	id S1753486AbaDCTnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 15:43:45 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:63692 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334AbaDCTnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 15:39:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140403191558.GA8745@thunk.org>
-References: <20140403191558.GA8745@thunk.org>
-Date: Thu, 3 Apr 2014 12:39:42 -0700
-X-Google-Sender-Auth: vQ3oTb2TvtnBqQ-LqUkL_7CJHsM
-Message-ID: <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Theodore Ts'o" <tytso@mit.edu>,
+	Thu, 3 Apr 2014 15:43:43 -0400
+Date: Thu, 3 Apr 2014 15:43:35 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Miller <davem@davemloft.net>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+        Li Zefan <lizefan@huawei.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        cgroups@vger.kernel.org
+Subject: Re: [GIT PULL] cgroup changes for v3.15-rc1
+Message-ID: <20140403194335.GC2472@mtj.dyndns.org>
+References: <20140403164911.GE24119@htj.dyndns.org>
+ <CA+55aFy1dm_CoTv+tihQ+m54G3gR9siOngurHsuKf9W3k1sKKw@mail.gmail.com>
+ <CA+55aFwBm202pchEH9A6vbJVdar9-T35pBF44cCt7FNjmno9sQ@mail.gmail.com>
+ <CAOS58YMckmoCocguf9BC_Wxbn3D2Rx3MArhgozO9qCj4g=5aDw@mail.gmail.com>
+ <CA+55aFw2+VKojzoF2aDaruOMKHikTO8J0HeK9DoDLZr+HqTWbg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw2+VKojzoF2aDaruOMKHikTO8J0HeK9DoDLZr+HqTWbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, since I'm planning on getting to the filesystem pulls later today
-(or perhaps tomorrow), I wanted to check: are you ok with the ext4
-parts of the cross-rename patches from Miklos?
+Hello,
 
-They are currently at
+On Thu, Apr 03, 2014 at 12:01:23PM -0700, Linus Torvalds wrote:
+> [ Extending the participants list a bit ]
+> 
+> On Thu, Apr 3, 2014 at 11:34 AM, Tejun Heo <tj@kernel.org> wrote:
+> > On the road so sending from phone. Iirc the param is necessary to
+> > distinguishe when a new sb is created so that it can be put properly later.
+> > I think cgroup is leaking super ref now and li was planning to send a fix
+> > once things are merged.
+> 
+> So as far as I can tell, cgroup is fine, because the superblock itself
+> is properly refcounted by the mounting code. It's the magic hidden
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
+Ah, I remembered the other way around.  We could leak cgroup_root
+reference, not the other way around.  cgroup_mount() can be called
+multiple times for the same sb and we inc cgroup_root's ref each time
+but cgroup_kill_sb() only happens when the sb is released, so if we do
+the following,
 
-in case you want to refresh your memory.
+ # mkdir cpuset cpuset1
+ # mount -t cgroup -o cpuset cgroup cpuset
+ # mount -t cgroup -o cpuset cgroup cpuset1
+ # umount cpuset
+ # umount cpuset1
 
-I have this memory of having seen an acked-by from you last time they
-flew past, but looking at Miklos branch that isn't in the commit logs
-at least, so maybe my memory is crap. It wouldn't be the first time.
+The cgroup_root should be destroyed but it isn't, I think.  We'd need
+to bump cgroup_root's refcnt only when a new sb is created.  It's
+kinda ugly.  Hmmm...
 
-I think the concerns about renameat2() got all sorted out, and I'm
-planning on pulling them, but I want to make sure that there aren't
-any objections to them.
+As for using specific type for ns tag, yeah, that'd be better
+regardless of this.  The opaqueness is a bit extreme now.
 
-Al added to the cc for the same reason.
+Thanks.
 
-              Linus
+-- 
+tejun
