@@ -1,198 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaDCTQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 15:16:11 -0400
-Received: from imap.thunk.org ([74.207.234.97]:49658 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828AbaDCTQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 15:16:03 -0400
-Date: Thu, 3 Apr 2014 15:15:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: [GIT PULL] ext4 changes for 3.15
-Message-ID: <20140403191558.GA8745@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+	id S1753505AbaDCTQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 15:16:27 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:52501 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaDCTQX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 15:16:23 -0400
+Date: Thu, 3 Apr 2014 15:16:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: Dave Reisner <d@falconindy.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, thomas@archlinux.org,
+        P@draigbrady.com, alexandre.f.demers@gmail.com
+Subject: Re: Initramfs FSID altered in 3.14
+Message-ID: <20140403191617.GB2472@mtj.dyndns.org>
+References: <20140403175744.GE585@rampage>
+ <533DA4DE.40408@archlinux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <533DA4DE.40408@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: there will be a minor patch conflict since you included an
-earlier version of the"atomically set inode->i_flags in
-ext4_set_inode_flags()" in 3.14 bbefore you decided that
-set_mask_bits() wasn't a good interface to be exposing because people
-could too easily misuse it.  The merge conflict is pretty obvious.
+Hello,
 
-Let me know if you want me to send a separate cleanup patch which
-removes set_mask_bits(), or whether you just want to drop it from
-include/linux/bitops.h while fixing up the merge conflict.
+On Thu, Apr 03, 2014 at 08:13:50PM +0200, Thomas Bächler wrote:
+> Most of these bugs were not caused by rootfs' FSID being different from
+> 1, but rather because there was a file system with FSID 0.
+> 
+> Only util-linux/switch_root assumed that rootfs always had exactly FSID
+> 1 - which is IMO a wrong assumption.
+> 
+> However, tt seems that people have been assuming that st_dev > 0 for a
+> while. If we want to revert this in the kernel, this patch (untested)
+> should be sufficient:
+> 
+> diff --git a/fs/super.c b/fs/super.c
+> index 80d5cf2..d9fddde 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -802,7 +802,7 @@ void emergency_remount(void)
+>  static DEFINE_IDA(unnamed_dev_ida);
+>  static DEFINE_SPINLOCK(unnamed_dev_lock);/* protects the above */
+> -static int unnamed_dev_start = 0; /* don't bother trying below it */
+> +static int unnamed_dev_start = 1; /* don't bother trying below it */
+>  int get_anon_bdev(dev_t *p)
+>  {
 
-Cheers,
+Alexandre, this is the one line change that should fix it.  Can you
+please test it?
 
-						- Ted
+Thomas, can you please write proper patch description with reference
+to the following thread and stable # 3.14 tag?
 
-The following changes since commit 92e3b40537707001d17bbad800d150ab04e53bf4:
+ http://lkml.kernel.org/g/CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com
 
-  jbd2: fix use after free in jbd2_journal_start_reserved() (2014-02-17 20:33:01 -0500)
+Thanks.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
-
-for you to fetch changes up to ad6599ab3ac98a4474544086e048ce86ec15a4d1:
-
-  ext4: fix premature freeing of partial clusters split across leaf blocks (2014-04-01 19:49:30 -0400)
-
-----------------------------------------------------------------
-Major changes for 3.14 include support for the newly added ZERO_RANGE
-and COLLAPSE_RANGE fallocate operations, and scalability improvements
-in the jbd2 layer and in xattr handling when the extended attributes
-spill over into an external block.
-
-Other than that, the usual clean ups and minor bug fixes.
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      ext4: remove an unneeded check in mext_page_mkuptodate()
-
-Darrick J. Wong (1):
-      ext4: merge uninitialized extents
-
-Eric Sandeen (1):
-      ext4: remove unused ac_ex_scanned
-
-Eric Whitney (5):
-      ext4: fix error return from ext4_ext_handle_uninitialized_extents()
-      ext4: silence warnings in extent status tree debugging code
-      ext4: delete path dealloc code in ext4_ext_handle_uninitialized_extents
-      ext4: fix partial cluster handling for bigalloc file systems
-      ext4: fix premature freeing of partial clusters split across leaf blocks
-
-Fabian Frederick (1):
-      ext4: Add __init marking to init_inodecache
-
-Jan Kara (1):
-      ext4: Speedup WB_SYNC_ALL pass called from sync(2)
-
-Lukas Czerner (5):
-      ext4: translate fallocate mode bits to strings
-      ext4: Update inode i_size after the preallocation
-      ext4: refactor ext4_fallocate code
-      ext4: Introduce FALLOC_FL_ZERO_RANGE flag for fallocate
-      ext4: remove unneeded test of ret variable
-
-Matthew Wilcox (2):
-      ext4: make ext4_block_zero_page_range static
-      ext4: fix comment typo
-
-Maxim Patlasov (1):
-      ext4: avoid exposure of stale data in ext4_punch_hole()
-
-Namjae Jeon (1):
-      ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-
-Patrick Palka (1):
-      ext4: address a benign compiler warning
-
-Rashika Kheria (1):
-      jbd2: mark file-local functions as static
-
-T Makphaibulchoke (3):
-      fs/mbcache.c: change block and index hash chain to hlist_bl_node
-      fs/mbcache.c: doucple the locking of local from global data
-      ext4: each filesystem creates and uses its own mb_cache
-
-Theodore Ts'o (18):
-      ext4: clean up error handling in swap_inode_boot_loader()
-      ext4: add ext4_es_store_pblock_status()
-      ext4: don't calculate total xattr header size unless needed
-      ext4: make sure ex.fe_logical is initialized
-      ext4: avoid possible overflow in ext4_map_blocks()
-      jbd2: don't unplug after writing revoke records
-      jbd2: don't hold j_state_lock while calling wake_up()
-      jbd2: calculate statistics without holding j_state_lock and j_list_lock
-      jbd2: add transaction to checkpoint list earlier
-      jbd2: check jh->b_transaction without taking j_list_lock
-      jbd2: minimize region locked by j_list_lock in journal_get_create_access()
-      jbd2: minimize region locked by j_list_lock in jbd2_journal_forget()
-      jbd2: improve error messages for inconsistent journal heads
-      fs: push sync_filesystem() down to the file system's remount_fs()
-      ext4: only call sync_filesystm() when remounting read-only
-      ext4: kill i_version support for Hurd-castrated file systems
-      ext4: optimize Hurd tests when reading/writing inodes
-      ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-
- fs/adfs/super.c             |   1 +
- fs/affs/super.c             |   1 +
- fs/befs/linuxvfs.c          |   1 +
- fs/btrfs/super.c            |   1 +
- fs/cifs/cifsfs.c            |   1 +
- fs/coda/inode.c             |   1 +
- fs/cramfs/inode.c           |   1 +
- fs/debugfs/inode.c          |   1 +
- fs/devpts/inode.c           |   1 +
- fs/efs/super.c              |   1 +
- fs/ext2/super.c             |   1 +
- fs/ext3/super.c             |   2 +
- fs/ext4/ext4.h              |  11 +-
- fs/ext4/ext4_jbd2.c         |  10 +
- fs/ext4/extents.c           | 818 ++++++++++++++++++++++++++++++++++++++++++++++++++--------
- fs/ext4/extents_status.c    |  28 +-
- fs/ext4/extents_status.h    |   9 +
- fs/ext4/inode.c             | 130 ++++++----
- fs/ext4/ioctl.c             |  24 +-
- fs/ext4/mballoc.c           |   7 +-
- fs/ext4/mballoc.h           |   4 +-
- fs/ext4/move_extent.c       |   5 +-
- fs/ext4/super.c             |  40 ++-
- fs/ext4/xattr.c             |  59 +++--
- fs/ext4/xattr.h             |   6 +-
- fs/f2fs/super.c             |   2 +
- fs/fat/inode.c              |   2 +
- fs/freevxfs/vxfs_super.c    |   1 +
- fs/fuse/inode.c             |   1 +
- fs/gfs2/super.c             |   2 +
- fs/hfs/super.c              |   1 +
- fs/hfsplus/super.c          |   1 +
- fs/hpfs/super.c             |   2 +
- fs/inode.c                  |  31 +++
- fs/isofs/inode.c            |   1 +
- fs/jbd2/commit.c            |  77 +++---
- fs/jbd2/journal.c           |  10 +-
- fs/jbd2/transaction.c       |  46 ++--
- fs/jffs2/super.c            |   1 +
- fs/jfs/super.c              |   1 +
- fs/mbcache.c                | 540 +++++++++++++++++++++++++++-----------
- fs/minix/inode.c            |   1 +
- fs/ncpfs/inode.c            |   1 +
- fs/nfs/super.c              |   2 +
- fs/nilfs2/super.c           |   1 +
- fs/ntfs/super.c             |   2 +
- fs/ocfs2/super.c            |   2 +
- fs/openpromfs/inode.c       |   1 +
- fs/proc/root.c              |   2 +
- fs/pstore/inode.c           |   1 +
- fs/qnx4/inode.c             |   1 +
- fs/qnx6/inode.c             |   1 +
- fs/reiserfs/super.c         |   1 +
- fs/romfs/super.c            |   1 +
- fs/squashfs/super.c         |   1 +
- fs/super.c                  |   2 -
- fs/sysv/inode.c             |   1 +
- fs/ubifs/super.c            |   1 +
- fs/udf/super.c              |   1 +
- fs/ufs/super.c              |   1 +
- fs/xfs/xfs_super.c          |   1 +
- include/linux/fs.h          |   3 +
- include/linux/mbcache.h     |  12 +-
- include/trace/events/ext4.h | 102 +++++---
- 64 files changed, 1520 insertions(+), 505 deletions(-)
+-- 
+tejun
