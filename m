@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaDCU5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:57:16 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:54349 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbaDCU5M (ORCPT
+	id S1753840AbaDCVBk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 17:01:40 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:32884 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761AbaDCVBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:57:12 -0400
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 16:57:12 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=sasl; b=yUolWZ
-	FQUuXNnAVuMP+wAJiWAgLS3t2AJub2RLhhyUb1wlda8gTIGkJwD2Qd4dwW/QlEzJ
-	O77/dwavxAszM6mZ75lr1xuvDHzl0xO2KJdszT+xvws4Tv/2X3fKtHdFnPvcFakL
-	4JMmPhvUeil7H6Dz2tCTU+U2p0JJl6/RH9XcA=
-Message-ID: <533DC9CA.6030508@pobox.com>
-Date: Thu, 03 Apr 2014 16:51:22 -0400
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 3 Apr 2014 17:01:37 -0400
+Message-ID: <533DCC4E.4000303@linaro.org>
+Date: Thu, 03 Apr 2014 16:02:06 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "J. Bruce Fields" <bfields@redhat.com>, Albert Fluegel <af@muc.de>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-References: <533D8D73.1090603@pobox.com> <20140403171643.GB28790@pad.redhat.com> <533D9F8A.6030001@pobox.com> <20140403201533.GB8343@fieldses.org>
-In-Reply-To: <20140403201533.GB8343@fieldses.org>
-X-Enigmail-Version: 1.6
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: bcm@fixthebug.org, mporter@linaro.org,
+        bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mach-bcm: clean up config and build targets
+References: <1396557052-24029-1-git-send-email-elder@linaro.org> <1396558159.21212.4.camel@x220>
+In-Reply-To: <1396558159.21212.4.camel@x220>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: B70131F4-BB71-11E3-B845-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-04-03 04:15 PM, J. Bruce Fields wrote:
-> On Thu, Apr 03, 2014 at 01:51:06PM -0400, Mark Lord wrote:
->> On 14-04-03 01:16 PM, J. Bruce Fields wrote:
->>> The original behavior was in practice harmless and changing it broke
->>> something, so I think we should definitely just revert this patch.
+On 04/03/2014 03:49 PM, Paul Bolle wrote:
+> On Thu, 2014-04-03 at 15:30 -0500, Alex Elder wrote:
+>> Currently CONFIG_ARCH_BCM_MOBILE is used to select all Broadcom
+>> mobile SoCs.  Instead, use that only as a config menu switch, and
+>> define specific symbols like CONFIG_ARCH_BCM_281XX to select a
+>> particular SoC family.  If ARCH_BCM_MOBILE is selected, all of the
+>> SoCs will be selected by default, but this way each can be disabled
+>> individually as well.
 >>
->> Yup.  Who?
+>> This allows more precision in controlling what gets built under
+>> mach-bcm.  Another benefit to doing this is that it makes it obvious
+>> that the code that implements SMC calls to control L2 cache is only
+>> used for BCM281XX (for example).
+>>
+>> Also use Kbuild's $(<modulename>-y) variable mechanism to build a
+>> single object file containing everything used for the bcm281xx board
+>> in arch/arm/mach-bcm.
+>>
+>> Note:  This patch is based on the current arm-soc/for-next branch:
+>>     e98cd72 arm-soc: document samsung merges
+>>
+>> The patch is available here:
+>>     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+>>     Branch review/mach-bcm-cleanup
 > 
-> I'll submit this soon.
-..
+> It seems the last two paragraphs should actually be below the "---"
+> marker. There's no need to include them in the commit explanation, is
+> there?
 
-Thanks, Bruce!
+You're right.  Sorry about that.
 
--- 
-Mark Lord
-Real-Time Remedies Inc.
-mlord@pobox.com
+I got another comment too and will be doing a v2 shortly.
+
+					-Alex
+> 
+>> Signed-off-by: Alex Elder <elder@linaro.org>
+>> ---
+> 
+> 
+> Paul Bolle
+> 
+
