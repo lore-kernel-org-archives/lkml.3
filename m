@@ -1,163 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaDCW26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 18:28:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753751AbaDCW22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 18:28:28 -0400
-From: Bandan Das <bsd@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [RFC PATCH 2/2] KVM: emulate: clean up initializations in init_decode_cache
-Date: Thu,  3 Apr 2014 18:27:50 -0400
-Message-Id: <1396564070-5586-3-git-send-email-bsd@redhat.com>
-In-Reply-To: <1396564070-5586-1-git-send-email-bsd@redhat.com>
-References: <1396564070-5586-1-git-send-email-bsd@redhat.com>
+	id S1754043AbaDCWaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 18:30:16 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:46574 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393AbaDCWaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 18:30:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+ <20140331143217.c6ff958e1fd9944d78507418@linux-foundation.org>
+ <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net> <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+ <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org>
+ <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+ <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+ <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+ <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+ <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+ <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+ <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com>
+ <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com>
+ <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 3 Apr 2014 18:29:49 -0400
+Message-ID: <CAHGf_=r2=LEEW=ZcxQcCWVdEnLWPTkKhSgKBaRA01ge9Dk3FeQ@mail.gmail.com>
+Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A lot of initializations are unnecessary as they get set to
-appropriate values before actually being used. Remove some
-of them and rework some others if the conditions that set
-them are not true
+On Wed, Apr 2, 2014 at 8:20 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> The default size for shmmax is, and always has been, 32Mb.
+> Today, in the XXI century, it seems that this value is rather small,
+> making users have to increase it via sysctl, which can cause
+> unnecessary work and userspace application workarounds[1].
+>
+> Instead of choosing yet another arbitrary value, larger than 32Mb,
+> this patch disables the use of both shmmax and shmall by default,
+> allowing users to create segments of unlimited sizes. Users and
+> applications that already explicitly set these values through sysctl
+> are left untouched, and thus does not change any of the behavior.
+>
+> So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+> implies unlimited memory, as opposed to disabling sysv shared memory.
+> This is safe as 0 cannot possibly be used previously as SHMMIN is
+> hardcoded to 1 and cannot be modified.
+>
+> This change allows Linux to treat shm just as regular anonymous memory.
+> One important difference between them, though, is handling out-of-memory
+> conditions: as opposed to regular anon memory, the OOM killer will not
+> kill processes that are hogging memory through shm, allowing users to
+> potentially abuse this. To overcome this situation, the shm_rmid_forced
+> option must be enabled.
 
-Signed-off-by: Bandan Das <bsd@redhat.com>
----
- arch/x86/include/asm/kvm_emulate.h | 16 +++++++------
- arch/x86/kvm/emulate.c             | 46 +++++++++++++++++++++++++++++++++-----
- 2 files changed, 50 insertions(+), 12 deletions(-)
+I'm very slightly against this sentence.
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index ad4cca8..ccb7911 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -315,30 +315,32 @@ struct x86_emulate_ctxt {
- 	u8 opcode_len;
- 	u8 b;
- 	u8 intercept;
--	u8 lock_prefix;
--	u8 rep_prefix;
- 	u8 op_bytes;
- 	u8 ad_bytes;
- 	u8 rex_prefix;
- 	struct operand src;
- 	struct operand src2;
- 	struct operand dst;
-+	int (*execute)(struct x86_emulate_ctxt *ctxt);
-+	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
-+	u8 lock_prefix;
-+	u8 rep_prefix;
- 	bool has_seg_override;
- 	u8 seg_override;
- 	u64 d;
--	int (*execute)(struct x86_emulate_ctxt *ctxt);
--	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
-+	bool rip_relative;
-+	/* bitmaps of registers in _regs[] that can be read */
-+	u32 regs_valid;
-+	/* bitmaps of registers in _regs[] that have been written */
-+	u32 regs_dirty;
- 	/* modrm */
- 	u8 modrm;
- 	u8 modrm_mod;
- 	u8 modrm_reg;
- 	u8 modrm_rm;
- 	u8 modrm_seg;
--	bool rip_relative;
- 	unsigned long _eip;
- 	struct operand memop;
--	u32 regs_valid;  /* bitmaps of registers in _regs[] that can be read */
--	u32 regs_dirty;  /* bitmaps of registers in _regs[] that have been written */
- 	/* Fields above regs are cleared together. */
- 	unsigned long _regs[NR_VCPU_REGS];
- 	struct operand *memopp;
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 8e2b866..eac488b 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1072,6 +1072,9 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
- 		ctxt->modrm_reg = (ctxt->rex_prefix & 4) << 1;	/* REX.R */
- 		index_reg = (ctxt->rex_prefix & 2) << 2; /* REX.X */
- 		ctxt->modrm_rm = base_reg = (ctxt->rex_prefix & 1) << 3; /* REG.B */
-+	} else {
-+		ctxt->modrm_reg = 0;
-+		ctxt->modrm_rm = 0;
- 	}
- 
- 	ctxt->modrm_mod |= (ctxt->modrm & 0xc0) >> 6;
-@@ -4357,6 +4360,8 @@ done_prefixes:
- 
- 	if (ctxt->d & ModRM)
- 		ctxt->modrm = insn_fetch(u8, ctxt);
-+	else
-+		ctxt->modrm = 0;
- 
- 	while (ctxt->d & GroupMask) {
- 		switch (ctxt->d & GroupMask) {
-@@ -4435,10 +4440,14 @@ done_prefixes:
- 			ctxt->op_bytes = 16;
- 		else if (ctxt->d & Mmx)
- 			ctxt->op_bytes = 8;
-+	} else {
-+		ctxt->intercept = 0;
-+		ctxt->check_perm = NULL;
- 	}
- 
- 	/* ModRM and SIB bytes. */
- 	if (ctxt->d & ModRM) {
-+		ctxt->modrm_mod = 0;
- 		rc = decode_modrm(ctxt, &ctxt->memop);
- 		if (!ctxt->has_seg_override)
- 			set_seg_override(ctxt, ctxt->modrm_seg);
-@@ -4552,14 +4561,41 @@ static int fastop(struct x86_emulate_ctxt *ctxt, void (*fop)(struct fastop *))
- 
- void init_decode_cache(struct x86_emulate_ctxt *ctxt)
- {
--	memset(&ctxt->opcode_len, 0,
--	       (void *)&ctxt->_regs - (void *)&ctxt->opcode_len);
- 
--	ctxt->fetch.start = 0;
--	ctxt->fetch.end = 0;
-+	/*
-+	 * Variables that don't require initializing to 0
-+	 * opcode_len - set in x86_decode_insn
-+	 * b - set in x86_decode_insn
-+	 * intercept - conditionally set in x86_decode_insn, added
-+	 *             else set to 0
-+	 * op_bytes - initialized in x86_decode_insn
-+	 * ad_bytes - initialized in x86_decode_insn
-+	 * rex_prefix - conditionally set in x86_decode_isn
-+	 * struct operands src,src2,dst - set by calling decode_operand
-+	 *                                in x86_decode_insn,
-+	 *                                default.type = OP_NONE
-+	 * (*execute) - set in x86_decode_insn
-+	 * (*check_perm) - conditionally set in x86_decode_insn, added
-+	 *                 else set to 0
-+	 * d - set in x86_decode_insn
-+	 * modrm - conditionally set in x86_decode_insn, added else set to 0
-+	 * modrm_mod - or'ed in decode_modrm which is conditionally called in
-+	 *             in x86_decode_insn, added initialization to 0 before call
-+	 * modrm_reg - set in decode_modrm or else decode_register_operand
-+	 * modrm_rm - set in decode_modrm, added else set to 0
-+	 * modrm_seg - set in decode_modrm
-+	 * _eip - set in x86_decode_insn
-+	 * memop - .type set to OP_NONE in x86_decode_insn
-+	 * ctxt->fetch.start - set in x86_decode_insn
-+	 * ctxt->fetch.end
-+	 * ctxt->mem_read.pos - set in x86_emulate_insn
-+	 */
-+
-+	memset(&ctxt->lock_prefix, 0,
-+	       (void *)&ctxt->modrm - (void *)&ctxt->lock_prefix);
-+
- 	ctxt->io_read.pos = 0;
- 	ctxt->io_read.end = 0;
--	ctxt->mem_read.pos = 0;
- 	ctxt->mem_read.end = 0;
- }
- 
--- 
-1.8.3.1
+OOM killer WILL kill the process because shm touching increase RSS anyway.
+But the killing doesn't make memory freeing because it's shmem.
 
+>
+> Running this patch through LTP, everything passes, except the following,
+> which, due to the nature of this change, is quite expected:
+>
+> shmget02    1  TFAIL  :  call succeeded unexpectedly
+>
+> [1]: http://rhaas.blogspot.com/2012/06/absurd-shared-memory-limits.html
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/linux/shm.h      | 2 +-
+>  include/uapi/linux/shm.h | 8 ++++----
+>  ipc/shm.c                | 6 ++++--
+>  3 files changed, 9 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/shm.h b/include/linux/shm.h
+> index 1e2cd2e..0ca06a3 100644
+> --- a/include/linux/shm.h
+> +++ b/include/linux/shm.h
+> @@ -4,7 +4,7 @@
+>  #include <asm/page.h>
+>  #include <uapi/linux/shm.h>
+>
+> -#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
+> +#define SHMALL 0 /* max shm system wide (pages) */
+>  #include <asm/shmparam.h>
+>  struct shmid_kernel /* private to the kernel */
+>  {
+> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> index 78b6941..5f0ef28 100644
+> --- a/include/uapi/linux/shm.h
+> +++ b/include/uapi/linux/shm.h
+> @@ -9,14 +9,14 @@
+>
+>  /*
+>   * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> - * be increased by sysctl
+> + * be increased by sysctl. By default, disable SHMMAX and SHMALL with
+> + * 0 bytes, thus allowing processes to have unlimited shared memory.
+>   */
+> -
+> -#define SHMMAX 0x2000000                /* max shared seg size (bytes) */
+> +#define SHMMAX 0                        /* max shared seg size (bytes) */
+>  #define SHMMIN 1                        /* min shared seg size (bytes) */
+>  #define SHMMNI 4096                     /* max num of segs system wide */
+>  #ifndef __KERNEL__
+> -#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
+> +#define SHMALL 0
+>  #endif
+>  #define SHMSEG SHMMNI                   /* max shared segs per process */
+>
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7645961..ae01ffa 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>         int id;
+>         vm_flags_t acctflag = 0;
+>
+> -       if (size < SHMMIN || size > ns->shm_ctlmax)
+> +       if (ns->shm_ctlmax &&
+> +           (size < SHMMIN || size > ns->shm_ctlmax))
+>                 return -EINVAL;
+>
+> -       if (ns->shm_tot + numpages > ns->shm_ctlall)
+> +       if (ns->shm_ctlall &&
+> +           ns->shm_tot + numpages > ns->shm_ctlall)
+>                 return -ENOSPC;
+>
+>         shp = ipc_rcu_alloc(sizeof(*shp));
+
+Looks good.
+
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
