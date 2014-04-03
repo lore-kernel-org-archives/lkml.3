@@ -1,132 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaDCR6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:58:21 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:33924 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaDCR6T (ORCPT
+	id S1753318AbaDCR7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:59:50 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:50818 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194AbaDCR7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:58:19 -0400
-Message-ID: <533DA12B.8090904@ahsoftware.de>
-Date: Thu, 03 Apr 2014 19:58:03 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Florian Fainelli <f.fainelli@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        David Miller <davem@davemloft.net>
-Subject: Bug(s) with netconsole (using mv643xx_eth on Kirkwood)
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com> <533C721E.1080004@gmail.com> <533C8B49.8080704@ahsoftware.de> <533C8ECB.4090900@gmail.com> <533D0B09.9040602@ahsoftware.de> <533D207E.9020909@gmail.com> <533D790C.5000104@ahsoftware.de> <533D8207.2050108@gmail.com> <533D8518.1010306@ahsoftware.de>
-In-Reply-To: <533D8518.1010306@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Apr 2014 13:59:47 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: Mike Looijmans <mike.looijmans@topic.nl>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Harini Katakam <harinik@xilinx.com>, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-i2c@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>
+Subject: [PATCH v4 1/3] i2c: cadence: Document device tree bindings
+Date: Thu,  3 Apr 2014 10:59:25 -0700
+Message-Id: <1396547967-19260-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.9.1.1.gbb9f595
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I've changed the topic and removed stable@ from the cc-list to reflect 
-the current status)
+Add device tree binding documentation for the Cadence I2C controller.
 
-(Long mail, but hopefully a good problem description)
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
 
-I already knew about problems with netconsole and mv643xx_eth since
-4 years, but didn't care a lot because everything else worked flawless,
-I even had forgotten that I've enabled netconsole. (But the bugs I've
-experienced 4 years ago, seeing no msgs remotely from netconsole seem to
-have disappeared).
+Changes in v4:
+ - moved adding DT docs into this dedicated patch
 
-But now, using 3.14, I hit a bug which killed the ethernet with a 100%
-success rate, and, after digging a bit, I've come to the conclusion
-that netconsole (together with a maybe broken initialization of the PHY) 
-is the source of the problem.
+Changes in v3: None
+Changes in v2: None
 
-The kernel is 3.14 (mainline) with one reverted patch (7cd1463). This 
-patch changed the initialization of the PHY such, that the ethernet dies 
-100% reproducible on a Kirkwood 88F6281 based machine. Reverting that 
-patch gives me a oneline bug-enabler:
+---
+ .../devicetree/bindings/i2c/i2c-cadence.txt         | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-cadence.txt
 
-------
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c 
-b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index e891b48..246f065 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2095,7 +2095,8 @@ static void port_start(struct mv643xx_eth_private *mp)
-                 struct ethtool_cmd cmd;
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-cadence.txt b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+new file mode 100644
+index 000000000000..685adf513111
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+@@ -0,0 +1,21 @@
++Binding for the Cadence I2C controller
++
++Required properties:
++  compatible: Compatibility string. Must be 'cdns,i2c-r1p10'.
++  clocks: From common clock bindings. Phandle to input clock.
++
++Optional properties:
++  clock-frequency: Desired operating frequency, in Hz, of the bus (actual may
++		   be lower). Defaults to 400000 if not specified.
++
++Example:
++
++	i2c@e0004000 {
++		compatible = "cdns,i2c-r1p10";
++		clocks = <&clkc 38>;
++		interrupts = <0 25 4>;
++		reg = <0xE0004000 0x1000>;
++		clock-frequency = <400000>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
+-- 
+1.9.1.1.gbb9f595
 
-                 mv643xx_eth_get_settings(mp->dev, &cmd);
--               phy_reset(mp);
-+               //phy_reset(mp);
-+               phy_init_hw(mp->phy);
-                 mv643xx_eth_set_settings(mp->dev, &cmd);
-                 phy_start(mp->phy);
-         }
-------
-
-First I describe what happens at boot:
-
-- Bootloader (U-Boot) enables (somehow) the network such that is usable 
-as a console for the bootloader,
-- Kernel is loaded and started with netconsole enabled through the 
-kernel command line (netconsole=...),
-- eth driver probe => PHY reset
-- netconsole initializes the network (netpoll_setup) => PHY reset,
-- userland starts,
-- userland configures network (ip addr add fixedIP ..., a hack used for 
-a very early ntpdate before the rootfs becomes rw), I'm not sure if 
-that's end up again in a PHY reset.
-- userland starts network by using dhcpcd => PHY reset
-
-Now several use cases:
-
-Case 1:
-Using plain 3.14 the last step fails with no carrier, because the PHY 
-ends up in a never ending reset (BMCR_RESET always set) in 
-m88e1111_config_init() called by phy_init_hw() in port_start() in 
-mv643xx_eth.
-
-Case 2:
-Without enabling netconsole through the kernel command line, I see no 
-problems.
-
-Case 3:
-If I enable the old phy_reset() in mv643xx_eth, I see no problems.
-
-Case 4:
-If I reduce the time the newly used reset in phy_init_hw() spends in
-calling mdelay(500) twice to some milliseconds m88e1111_config_init by 
-polling for a cleared BMCR_RESET, I see no problems.
-
-Case 5:
-If I disable the initialization of the network in the bootloader, 
-netconsole even worked 4 years ago. But I haven't looked into that case 
-further, because I always want to use the network as a console for the 
-bootloader.
-
-
-Current assumption:
-
-So, after having spend too much time into diagnosing the above stuff (so 
-I was right in ignoring the non-working netconsole for 4 years), I've 
-comed to the conclusion that some synchronization between 
-netconsole/netpoll and the normal network stack or mv643xx_eth is 
-missing. That would explain why the PHY ends up in a never ending reset 
-and why this only happens reproducible if the PHY reset needs a whole 
-second by using mdelay(500) twice (which likely is used to switch
-the task to netconsole inbetween). It might be a hw problem too (I 
-haven't read the datasheet or looked for any erratas).
-
-I hope everyone who missed some more information is happy now, otherwise
-I (again) wasted time to type a problem description (not to speak about 
-the already spent time trying to diagnose the problem)
-
-So go on and try to take the almost low hanging fruit. I'm not sure if I
-will spend more time on that topic as I already have a working 
-patch/workaround and the discussion has become a bit tiresome. Sorry.
-
-Regards,
-
-Alexander Holler
