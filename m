@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaDCN76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 09:59:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9983 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126AbaDCN74 convert rfc822-to-8bit (ORCPT
+	id S1752184AbaDCOI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 10:08:29 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43928 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131AbaDCOI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 09:59:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,787,1389772800"; 
-   d="scan'208";a="506180528"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
-        "Arnd Bergmann" <arnd@arndb.de>
-CC: "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [Linaro-acpi] How to pass I2C platform_data under ACPI
-Thread-Topic: [Linaro-acpi] How to pass I2C platform_data under ACPI
-Thread-Index: Ac9PFCVxc1BkxaEVQoqK2pGHEHD28f//1sIA//+iCPCAAOZ2Gv///osQ
-Date: Thu, 3 Apr 2014 13:59:18 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD57464000@BGSMSX104.gar.corp.intel.com>
-References: <D854C92F57B1B347B57E531E78D05EAD57463568@BGSMSX104.gar.corp.intel.com>
- <D854C92F57B1B347B57E531E78D05EAD57463D21@BGSMSX104.gar.corp.intel.com>
- <20140403113832.GD19349@intel.com> <4539649.rsMWK1FkZ6@wuerfel>
- <20140403135826.GF19349@intel.com>
-In-Reply-To: <20140403135826.GF19349@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Apr 2014 10:08:28 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <533D6B28.6070305@jp.fujitsu.com>
+Date: Thu, 03 Apr 2014 23:07:36 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>	 <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>	 <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>	 <20140401142947.927642a408d84df27d581e36@linux-foundation.org>	 <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>	 <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>	 <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com>	 <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net>	 <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com> <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > > And initialize the platform data in either driver or in separate 
->> > > module which gets compiled along with driver?
->> > 
->> > Typically it has been done in the same driver but I don't see any 
->> > problems having a separate module as well.
->> > 
->> > > static const struct acpi_device_id my_acpi_match[] = {
->> > >       { "MYID0001", (kernel_ulong_t)&my_platform_data1 }
->> > >       { "MYID0002", (kernel_ulong_t)&my_platform_data2 }
->> > >       ...
->> > >       { },
->> 
->> We definitely don't want per-board match entries, that does not scale.
->> The driver should be reasonably generic and get all the necessary data 
->> out of well-defined tables. You can have different IDs when there are 
->> only a few cases that are actually relevant, but it has to be 
->> conceivable that the same driver get used on future hardware without 
->> changes.
+(2014/04/03 9:20), Davidlohr Bueso wrote:
+> The default size for shmmax is, and always has been, 32Mb.
+> Today, in the XXI century, it seems that this value is rather small,
+> making users have to increase it via sysctl, which can cause
+> unnecessary work and userspace application workarounds[1].
 >
->Yes, I meant that when the platform data information is not available in ACPI namespace, then (and only then) pass the data by means of different IDs.
+> Instead of choosing yet another arbitrary value, larger than 32Mb,
+> this patch disables the use of both shmmax and shmall by default,
+> allowing users to create segments of unlimited sizes. Users and
+> applications that already explicitly set these values through sysctl
+> are left untouched, and thus does not change any of the behavior.
 >
->Preferably this information is included in the ACPI namespace.
+> So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+> implies unlimited memory, as opposed to disabling sysv shared memory.
+> This is safe as 0 cannot possibly be used previously as SHMMIN is
+> hardcoded to 1 and cannot be modified.
+>
+> This change allows Linux to treat shm just as regular anonymous memory.
+> One important difference between them, though, is handling out-of-memory
+> conditions: as opposed to regular anon memory, the OOM killer will not
+> kill processes that are hogging memory through shm, allowing users to
+> potentially abuse this. To overcome this situation, the shm_rmid_forced
+> option must be enabled.
+>
+> Running this patch through LTP, everything passes, except the following,
+> which, due to the nature of this change, is quite expected:
+>
+> shmget02    1  TFAIL  :  call succeeded unexpectedly
+>
+> [1]: http://rhaas.blogspot.com/2012/06/absurd-shared-memory-limits.html
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 
-The idea is use the single platform_data struct  and initiaze it accordingly from the driver's __init call based on the board/platform.
+looks good to me
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thanks for your inputs.
-Ram.
+When this goes mainline, updating a man page of ipcs may be required.
+
+Thanks,
+-Kame
+
+> ---
+>   include/linux/shm.h      | 2 +-
+>   include/uapi/linux/shm.h | 8 ++++----
+>   ipc/shm.c                | 6 ++++--
+>   3 files changed, 9 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/shm.h b/include/linux/shm.h
+> index 1e2cd2e..0ca06a3 100644
+> --- a/include/linux/shm.h
+> +++ b/include/linux/shm.h
+> @@ -4,7 +4,7 @@
+>   #include <asm/page.h>
+>   #include <uapi/linux/shm.h>
+>
+> -#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
+> +#define SHMALL 0 /* max shm system wide (pages) */
+>   #include <asm/shmparam.h>
+>   struct shmid_kernel /* private to the kernel */
+>   {	
+> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> index 78b6941..5f0ef28 100644
+> --- a/include/uapi/linux/shm.h
+> +++ b/include/uapi/linux/shm.h
+> @@ -9,14 +9,14 @@
+>
+>   /*
+>    * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> - * be increased by sysctl
+> + * be increased by sysctl. By default, disable SHMMAX and SHMALL with
+> + * 0 bytes, thus allowing processes to have unlimited shared memory.
+>    */
+> -
+> -#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
+> +#define SHMMAX 0		         /* max shared seg size (bytes) */
+>   #define SHMMIN 1			 /* min shared seg size (bytes) */
+>   #define SHMMNI 4096			 /* max num of segs system wide */
+>   #ifndef __KERNEL__
+> -#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
+> +#define SHMALL 0
+>   #endif
+>   #define SHMSEG SHMMNI			 /* max shared segs per process */
+>
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7645961..ae01ffa 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>   	int id;
+>   	vm_flags_t acctflag = 0;
+>
+> -	if (size < SHMMIN || size > ns->shm_ctlmax)
+> +	if (ns->shm_ctlmax &&
+> +	    (size < SHMMIN || size > ns->shm_ctlmax))
+>   		return -EINVAL;
+>
+> -	if (ns->shm_tot + numpages > ns->shm_ctlall)
+> +	if (ns->shm_ctlall &&
+> +	    ns->shm_tot + numpages > ns->shm_ctlall)
+>   		return -ENOSPC;
+>
+>   	shp = ipc_rcu_alloc(sizeof(*shp));
+>
+
+
