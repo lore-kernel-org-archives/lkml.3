@@ -1,66 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaDCPFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:05:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:64636 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaDCPFn (ORCPT
+	id S1752682AbaDCPGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:06:14 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33020 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570AbaDCPGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:05:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Cc: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Linaro-acpi] How to pass I2C platform_data under ACPI
-Date: Thu, 03 Apr 2014 17:05:33 +0200
-Message-ID: <13098525.yKYfGA04Ut@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD57464000@BGSMSX104.gar.corp.intel.com>
-References: <D854C92F57B1B347B57E531E78D05EAD57463568@BGSMSX104.gar.corp.intel.com> <20140403135826.GF19349@intel.com> <D854C92F57B1B347B57E531E78D05EAD57464000@BGSMSX104.gar.corp.intel.com>
+	Thu, 3 Apr 2014 11:06:04 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH -mm v2.2] mm: get rid of __GFP_KMEMCG
+Date: Thu, 3 Apr 2014 19:05:59 +0400
+Message-ID: <1396537559-17453-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1396419365-351-1-git-send-email-vdavydov@parallels.com>
+References: <1396419365-351-1-git-send-email-vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8nKjK5C3isFCHGV33dRJAFA/SNWS8sbdyJsllMmG8PC
- ZtCGDq6Et5GmINxjMEg5YYWmdyN4g1xZkXtKa1+LTNiMXndwQ2
- hkLD2TctaoL8oZfxCMrTKuWnKYLxSI1nQ4Q0nT+AJf0NjIWwf9
- pkOcirYdjbctH8jNZ6iFtr2R3j1IxDBGZUPSYkRnpW3jYd7A9g
- aUnejzOi+EgehxtKOvsO+VDMfW2VWBANccf8IzpzRZK+6q9TUf
- Hri4TNsMjcp4mZ0CSQ7W3b4VoNRepDkrKRUL2IK8z4buv1jVtt
- XU3o2lddjW7jbrC0pQjfZKIgoperFHY70HmuQLMXIaYQOXP89b
- 1GA8QzgJcZEzTDfXbB5c=
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 April 2014 13:59:18 Pallala, Ramakrishna wrote:
-> >> We definitely don't want per-board match entries, that does not scale.
-> >> The driver should be reasonably generic and get all the necessary data 
-> >> out of well-defined tables. You can have different IDs when there are 
-> >> only a few cases that are actually relevant, but it has to be 
-> >> conceivable that the same driver get used on future hardware without 
-> >> changes.
-> >
-> >Yes, I meant that when the platform data information is not available
-> >in ACPI namespace, then (and only then) pass the data by means of different IDs.
-> >
-> >Preferably this information is included in the ACPI namespace.
-> 
-> The idea is use the single platform_data struct  and initiaze it 
-> accordingly from the driver's __init call based on the board/platform.
+Currently to allocate a page that should be charged to kmemcg (e.g.
+threadinfo), we pass __GFP_KMEMCG flag to the page allocator. The page
+allocated is then to be freed by free_memcg_kmem_pages. Apart from
+looking asymmetrical, this also requires intrusion to the general
+allocation path. So let's introduce separate functions that will
+alloc/free pages charged to kmemcg.
 
-In general, you should think of it as being isolated from the board or
-platform question, and not rely on an an initcall to do this for you.
-A device driver, in particular for a device on something like an i2c
-bus, should be able to figure out all the dependencies in its own
-probe() function, without code on the platform side or in a specific
-driver initcall.
+The new functions are called alloc_kmem_pages and free_kmem_pages. They
+should be used when the caller actually would like to use kmalloc, but
+has to fall back to the page allocator for the allocation is large. They
+only differ from alloc_pages and free_pages in that besides allocating
+or freeing pages they also charge them to the kmem resource counter of
+the current memory cgroup.
 
-What information it needs of course depends on the specific device,
-but if you boot using FDT or ACPI, all the information you need should
-be encoded in the data passed from the boot loader in a generic and
-documented fashion. What data specifically do you want to pass here
-that was previously encoded in platform data?
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Acked-by: Greg Thelen <gthelen@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+---
+Changes in v2.2:
+ - remove mentioning of GFP_KMEMCG in the comment to
+   __memcg_kmem_newpage_charge
+Changes in v2.1:
+ - add missing kmalloc_order forward declaration; lacking it caused
+   compilation breakage with CONFIG_TRACING=n
 
-	Arnd
+ include/linux/gfp.h             |   10 ++++---
+ include/linux/memcontrol.h      |    2 +-
+ include/linux/slab.h            |   11 +-------
+ include/linux/thread_info.h     |    2 --
+ include/trace/events/gfpflags.h |    1 -
+ kernel/fork.c                   |    6 ++---
+ mm/memcontrol.c                 |   11 ++++----
+ mm/page_alloc.c                 |   56 ++++++++++++++++++++++++---------------
+ mm/slab_common.c                |   12 +++++++++
+ mm/slub.c                       |    6 ++---
+ 10 files changed, 67 insertions(+), 50 deletions(-)
+
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 39b81dc7d01a..d382db71e300 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -31,7 +31,6 @@ struct vm_area_struct;
+ #define ___GFP_HARDWALL		0x20000u
+ #define ___GFP_THISNODE		0x40000u
+ #define ___GFP_RECLAIMABLE	0x80000u
+-#define ___GFP_KMEMCG		0x100000u
+ #define ___GFP_NOTRACK		0x200000u
+ #define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+@@ -91,7 +90,6 @@ struct vm_area_struct;
+ 
+ #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+-#define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
+ 
+ /*
+@@ -353,6 +351,10 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
+ #define alloc_page_vma_node(gfp_mask, vma, addr, node)		\
+ 	alloc_pages_vma(gfp_mask, 0, vma, addr, node)
+ 
++extern struct page *alloc_kmem_pages(gfp_t gfp_mask, unsigned int order);
++extern struct page *alloc_kmem_pages_node(int nid, gfp_t gfp_mask,
++					  unsigned int order);
++
+ extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
+ extern unsigned long get_zeroed_page(gfp_t gfp_mask);
+ 
+@@ -372,8 +374,8 @@ extern void free_pages(unsigned long addr, unsigned int order);
+ extern void free_hot_cold_page(struct page *page, int cold);
+ extern void free_hot_cold_page_list(struct list_head *list, int cold);
+ 
+-extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
+-extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
++extern void __free_kmem_pages(struct page *page, unsigned int order);
++extern void free_kmem_pages(unsigned long addr, unsigned int order);
+ 
+ #define __free_page(page) __free_pages((page), 0)
+ #define free_page(addr) free_pages((addr), 0)
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 29068dd26c3d..13acdb5259f5 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -543,7 +543,7 @@ memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
+ 	 * res_counter_charge_nofail, but we hope those allocations are rare,
+ 	 * and won't be worth the trouble.
+ 	 */
+-	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
++	if (gfp & __GFP_NOFAIL)
+ 		return true;
+ 	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
+ 		return true;
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 3dd389aa91c7..eaaf2f69c54d 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -358,16 +358,7 @@ kmem_cache_alloc_node_trace(struct kmem_cache *s,
+ #include <linux/slub_def.h>
+ #endif
+ 
+-static __always_inline void *
+-kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+-{
+-	void *ret;
+-
+-	flags |= (__GFP_COMP | __GFP_KMEMCG);
+-	ret = (void *) __get_free_pages(flags, order);
+-	kmemleak_alloc(ret, size, 1, flags);
+-	return ret;
+-}
++extern void *kmalloc_order(size_t size, gfp_t flags, unsigned int order);
+ 
+ #ifdef CONFIG_TRACING
+ extern void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order);
+diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+index fddbe2023a5d..1807bb194816 100644
+--- a/include/linux/thread_info.h
++++ b/include/linux/thread_info.h
+@@ -61,8 +61,6 @@ extern long do_no_restart_syscall(struct restart_block *parm);
+ # define THREADINFO_GFP		(GFP_KERNEL | __GFP_NOTRACK)
+ #endif
+ 
+-#define THREADINFO_GFP_ACCOUNTED (THREADINFO_GFP | __GFP_KMEMCG)
+-
+ /*
+  * flag set/clear/test wrappers
+  * - pass TIF_xxxx constants to these functions
+diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+index 1eddbf1557f2..d6fd8e5b14b7 100644
+--- a/include/trace/events/gfpflags.h
++++ b/include/trace/events/gfpflags.h
+@@ -34,7 +34,6 @@
+ 	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
+ 	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
+ 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+-	{(unsigned long)__GFP_KMEMCG,		"GFP_KMEMCG"},		\
+ 	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
+ 	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
+ 	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"},	\
+diff --git a/kernel/fork.c b/kernel/fork.c
+index f4b09bc15f3a..a1632c878037 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -150,15 +150,15 @@ void __weak arch_release_thread_info(struct thread_info *ti)
+ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+ 						  int node)
+ {
+-	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
+-					     THREAD_SIZE_ORDER);
++	struct page *page = alloc_kmem_pages_node(node, THREADINFO_GFP,
++						  THREAD_SIZE_ORDER);
+ 
+ 	return page ? page_address(page) : NULL;
+ }
+ 
+ static inline void free_thread_info(struct thread_info *ti)
+ {
+-	free_memcg_kmem_pages((unsigned long)ti, THREAD_SIZE_ORDER);
++	free_kmem_pages((unsigned long)ti, THREAD_SIZE_ORDER);
+ }
+ # else
+ static struct kmem_cache *thread_info_cache;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 71e1e11ab6a2..ba30b26fc483 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3531,11 +3531,12 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
+ 	/*
+ 	 * Disabling accounting is only relevant for some specific memcg
+ 	 * internal allocations. Therefore we would initially not have such
+-	 * check here, since direct calls to the page allocator that are marked
+-	 * with GFP_KMEMCG only happen outside memcg core. We are mostly
+-	 * concerned with cache allocations, and by having this test at
+-	 * memcg_kmem_get_cache, we are already able to relay the allocation to
+-	 * the root cache and bypass the memcg cache altogether.
++	 * check here, since direct calls to the page allocator that are
++	 * accounted to kmemcg (alloc_kmem_pages and friends) only happen
++	 * outside memcg core. We are mostly concerned with cache allocations,
++	 * and by having this test at memcg_kmem_get_cache, we are already able
++	 * to relay the allocation to the root cache and bypass the memcg cache
++	 * altogether.
+ 	 *
+ 	 * There is one exception, though: the SLUB allocator does not create
+ 	 * large order caches, but rather service large kmallocs directly from
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 0327f9d5a8c0..41378986a1e6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2723,7 +2723,6 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	int migratetype = allocflags_to_migratetype(gfp_mask);
+ 	unsigned int cpuset_mems_cookie;
+ 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+-	struct mem_cgroup *memcg = NULL;
+ 
+ 	gfp_mask &= gfp_allowed_mask;
+ 
+@@ -2742,13 +2741,6 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	if (unlikely(!zonelist->_zonerefs->zone))
+ 		return NULL;
+ 
+-	/*
+-	 * Will only have any effect when __GFP_KMEMCG is set.  This is
+-	 * verified in the (always inline) callee
+-	 */
+-	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
+-		return NULL;
+-
+ retry_cpuset:
+ 	cpuset_mems_cookie = read_mems_allowed_begin();
+ 
+@@ -2810,8 +2802,6 @@ out:
+ 	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+ 		goto retry_cpuset;
+ 
+-	memcg_kmem_commit_charge(page, memcg, order);
+-
+ 	if (page)
+ 		set_page_owner(page, order, gfp_mask);
+ 
+@@ -2868,27 +2858,51 @@ void free_pages(unsigned long addr, unsigned int order)
+ EXPORT_SYMBOL(free_pages);
+ 
+ /*
+- * __free_memcg_kmem_pages and free_memcg_kmem_pages will free
+- * pages allocated with __GFP_KMEMCG.
++ * alloc_kmem_pages charges newly allocated pages to the kmem resource counter
++ * of the current memory cgroup.
+  *
+- * Those pages are accounted to a particular memcg, embedded in the
+- * corresponding page_cgroup. To avoid adding a hit in the allocator to search
+- * for that information only to find out that it is NULL for users who have no
+- * interest in that whatsoever, we provide these functions.
+- *
+- * The caller knows better which flags it relies on.
++ * It should be used when the caller would like to use kmalloc, but since the
++ * allocation is large, it has to fall back to the page allocator.
++ */
++struct page *alloc_kmem_pages(gfp_t gfp_mask, unsigned int order)
++{
++	struct page *page;
++	struct mem_cgroup *memcg = NULL;
++
++	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
++		return NULL;
++	page = alloc_pages(gfp_mask, order);
++	memcg_kmem_commit_charge(page, memcg, order);
++	return page;
++}
++
++struct page *alloc_kmem_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
++{
++	struct page *page;
++	struct mem_cgroup *memcg = NULL;
++
++	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
++		return NULL;
++	page = alloc_pages_node(nid, gfp_mask, order);
++	memcg_kmem_commit_charge(page, memcg, order);
++	return page;
++}
++
++/*
++ * __free_kmem_pages and free_kmem_pages will free pages allocated with
++ * alloc_kmem_pages.
+  */
+-void __free_memcg_kmem_pages(struct page *page, unsigned int order)
++void __free_kmem_pages(struct page *page, unsigned int order)
+ {
+ 	memcg_kmem_uncharge_pages(page, order);
+ 	__free_pages(page, order);
+ }
+ 
+-void free_memcg_kmem_pages(unsigned long addr, unsigned int order)
++void free_kmem_pages(unsigned long addr, unsigned int order)
+ {
+ 	if (addr != 0) {
+ 		VM_BUG_ON(!virt_addr_valid((void *)addr));
+-		__free_memcg_kmem_pages(virt_to_page((void *)addr), order);
++		__free_kmem_pages(virt_to_page((void *)addr), order);
+ 	}
+ }
+ 
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 6673597ac967..cab4c49b3e8c 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -573,6 +573,18 @@ void __init create_kmalloc_caches(unsigned long flags)
+ }
+ #endif /* !CONFIG_SLOB */
+ 
++void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
++{
++	void *ret;
++	struct page *page;
++
++	flags |= __GFP_COMP;
++	page = alloc_kmem_pages(flags, order);
++	ret = page ? page_address(page) : NULL;
++	kmemleak_alloc(ret, size, 1, flags);
++	return ret;
++}
++
+ #ifdef CONFIG_TRACING
+ void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
+ {
+diff --git a/mm/slub.c b/mm/slub.c
+index b203cfceff95..fa7a1817835e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3335,8 +3335,8 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
+ 	struct page *page;
+ 	void *ptr = NULL;
+ 
+-	flags |= __GFP_COMP | __GFP_NOTRACK | __GFP_KMEMCG;
+-	page = alloc_pages_node(node, flags, get_order(size));
++	flags |= __GFP_COMP | __GFP_NOTRACK;
++	page = alloc_kmem_pages_node(node, flags, get_order(size));
+ 	if (page)
+ 		ptr = page_address(page);
+ 
+@@ -3405,7 +3405,7 @@ void kfree(const void *x)
+ 	if (unlikely(!PageSlab(page))) {
+ 		BUG_ON(!PageCompound(page));
+ 		kfree_hook(x);
+-		__free_memcg_kmem_pages(page, compound_order(page));
++		__free_kmem_pages(page, compound_order(page));
+ 		return;
+ 	}
+ 	slab_free(page->slab_cache, page, object, _RET_IP_);
+-- 
+1.7.10.4
+
