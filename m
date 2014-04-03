@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaDCU5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:57:21 -0400
-Received: from mail.lang.hm ([64.81.33.126]:58660 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830AbaDCU5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:57:13 -0400
-Date: Thu, 3 Apr 2014 13:57:04 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Jason Cooper <jason@lakedaemon.net>
-cc: Levente Kurusa <levex@linux.com>,
-        =?ISO-8859-2?Q?Teodora_B=E3lu=FE=E3?= <teobaluta@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-In-Reply-To: <20140401142051.GO28304@titan.lakedaemon.net>
-Message-ID: <alpine.DEB.2.02.1404031353280.14073@nftneq.ynat.uz>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com> <20140319201838.GA11403@redhat.com> <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com> <20140321132816.GW15608@titan.lakedaemon.net> <532DC3D3.9060008@linux.com>
- <CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com> <20140323193839.GY15608@titan.lakedaemon.net> <CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com> <20140401142051.GO28304@titan.lakedaemon.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753996AbaDCU5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:57:16 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:54349 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888AbaDCU5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 16:57:12 -0400
+X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 16:57:12 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=yUolWZ
+	FQUuXNnAVuMP+wAJiWAgLS3t2AJub2RLhhyUb1wlda8gTIGkJwD2Qd4dwW/QlEzJ
+	O77/dwavxAszM6mZ75lr1xuvDHzl0xO2KJdszT+xvws4Tv/2X3fKtHdFnPvcFakL
+	4JMmPhvUeil7H6Dz2tCTU+U2p0JJl6/RH9XcA=
+Message-ID: <533DC9CA.6030508@pobox.com>
+Date: Thu, 03 Apr 2014 16:51:22 -0400
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "J. Bruce Fields" <bfields@redhat.com>, Albert Fluegel <af@muc.de>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-3.14 nfsd regression
+References: <533D8D73.1090603@pobox.com> <20140403171643.GB28790@pad.redhat.com> <533D9F8A.6030001@pobox.com> <20140403201533.GB8343@fieldses.org>
+In-Reply-To: <20140403201533.GB8343@fieldses.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: B70131F4-BB71-11E3-B845-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Apr 2014, Jason Cooper wrote:
+On 14-04-03 04:15 PM, J. Bruce Fields wrote:
+> On Thu, Apr 03, 2014 at 01:51:06PM -0400, Mark Lord wrote:
+>> On 14-04-03 01:16 PM, J. Bruce Fields wrote:
+>>> The original behavior was in practice harmless and changing it broke
+>>> something, so I think we should definitely just revert this patch.
+>>
+>> Yup.  Who?
+> 
+> I'll submit this soon.
+..
 
->> Now I guess we need to think how to make it work without a
->> framebuffer. I already suggested using the ASCII characters,
->> but seeing the resolution of this QR code for example (147x147),
->> made me realize that we can't shuffle that into a 80x25 textmode
->> display. Any ideas how to fix that or should we just simply depend
->> on a framebuffer being present?
->
-> I think depending on the framebuffer being present (via kconfig) is
-> sane.  Folks running old systems know what they're in for, like missing
-> shiny new features. ;-)
+Thanks, Bruce!
 
-First get it working and into acceptable form, but after that, take a look at 
-the various ASCII-art tools out there. While the display may be limited to 
-80x25, that's not a hard requirement (and I'd happily run systems with a smaller 
-text console if this was an option), and then you can look at the possibility of 
-using characters that represent more than one pixel per character. While this 
-may not be able to render everything perfectly, remember that qr codes can 
-include redundancy to correct for bad pixels, you may be able to get something 
-working.
-
-David Lang
+-- 
+Mark Lord
+Real-Time Remedies Inc.
+mlord@pobox.com
