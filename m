@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaDCSXp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 14:23:45 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:37525 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaDCSXi (ORCPT
+	id S1753451AbaDCSYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 14:24:07 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:62724 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267AbaDCSYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 14:23:38 -0400
-Message-ID: <533DA723.3030000@ahsoftware.de>
-Date: Thu, 03 Apr 2014 20:23:31 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 3 Apr 2014 14:24:02 -0400
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Florian Fainelli <f.fainelli@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: Bug(s) with netconsole (using mv643xx_eth on Kirkwood)
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de> <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com> <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com> <533C721E.1080004@gmail.com> <533C8B49.8080704@ahsoftware.de> <533C8ECB.4090900@gmail.com> <533D0B09.9040602@ahsoftware.de> <533D207E.9020909@gmail.com> <533D790C.5000104@ahsoftware.de> <533D8207.2050108@gmail.com> <533D8518.1010306@ahsoftware.de> <533DA12B.8090904@ahsoftware.de> <533DA69A.2010402@gmail.com>
-In-Reply-To: <533DA69A.2010402@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFy1dm_CoTv+tihQ+m54G3gR9siOngurHsuKf9W3k1sKKw@mail.gmail.com>
+References: <20140403164911.GE24119@htj.dyndns.org>
+	<CA+55aFy1dm_CoTv+tihQ+m54G3gR9siOngurHsuKf9W3k1sKKw@mail.gmail.com>
+Date: Thu, 3 Apr 2014 11:24:00 -0700
+X-Google-Sender-Auth: MNykvTvzG-qUj3LOxA30UqldDkU
+Message-ID: <CA+55aFwBm202pchEH9A6vbJVdar9-T35pBF44cCt7FNjmno9sQ@mail.gmail.com>
+Subject: Re: [GIT PULL] cgroup changes for v3.15-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        cgroups@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.04.2014 20:21, schrieb Sebastian Hesselbarth:
-> On 04/03/2014 07:58 PM, Alexander Holler wrote:
-> [...]
->> I already knew about problems with netconsole and mv643xx_eth since
->> 4 years, but didn't care a lot because everything else worked flawless,
->> I even had forgotten that I've enabled netconsole. (But the bugs I've
->> experienced 4 years ago, seeing no msgs remotely from netconsole seem to
->> have disappeared).
+On Thu, Apr 3, 2014 at 11:11 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Alexander,
->
-> you need to be more specific. You cannot just say "problems" and "bugs".
+> And the "bool *new_sb_created" argument really makes *zero* sense to
+> kernfs_mount(). It was added to fix a namespace refcount leak, BUT
+> kernfs_mount() DOES NOT TAKE A NAMESPACE PARAMETER!
 
-I can. Full stop. Thanks.
+Let me clarify that: the only reason I can see for why you'd care
+about whether a new sb has been created is because the new sb needs a
+namespace refcount.
 
+Now, *if* there is some other reason to care, then the
+"new_sb_created" argument may make sense even for kernfs_mount(). I
+just don't see it. But if I'm wrong about that, then my alternate
+resolution is wrong. However, as far as I can tell, anything else
+should be properly refcounted by the mounting logic, and the "ns"
+parameter is the only thing that needs to be handled by the caller
+because it has that stupid opaque pointer that doesn't know its own
+type.
+
+Could that perhaps be fixed? If kernfs_mount_ns() could just do the
+proper "grab" on the "void *ns" directly, all of the stupid
+"new_sb_created" crud could just go away, even for kernfs_mount_ns().
+
+                  Linus
