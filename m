@@ -1,66 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaDCTQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 15:16:27 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52501 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaDCTQX (ORCPT
+	id S1753541AbaDCTQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 15:16:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39339 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaDCTQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 15:16:23 -0400
-Date: Thu, 3 Apr 2014 15:16:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
-Cc: Dave Reisner <d@falconindy.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, thomas@archlinux.org,
-        P@draigbrady.com, alexandre.f.demers@gmail.com
-Subject: Re: Initramfs FSID altered in 3.14
-Message-ID: <20140403191617.GB2472@mtj.dyndns.org>
-References: <20140403175744.GE585@rampage>
- <533DA4DE.40408@archlinux.org>
+	Thu, 3 Apr 2014 15:16:51 -0400
+Date: Thu, 3 Apr 2014 12:16:18 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-378ed3ccd2a0404d031e771b65aa3af221ea8aea@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, markus@trippelsdorf.de, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, markus@trippelsdorf.de,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <243fa205098d112ec759c9b1b26785c09f399833.1396547532.git.luto@amacapital.net>
+References: <243fa205098d112ec759c9b1b26785c09f399833.1396547532.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso:
+  Make the vdso linker script compatible with Gold
+Git-Commit-ID: 378ed3ccd2a0404d031e771b65aa3af221ea8aea
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <533DA4DE.40408@archlinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit-ID:  378ed3ccd2a0404d031e771b65aa3af221ea8aea
+Gitweb:     http://git.kernel.org/tip/378ed3ccd2a0404d031e771b65aa3af221ea8aea
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Thu, 3 Apr 2014 10:53:43 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 3 Apr 2014 12:03:59 -0700
 
-On Thu, Apr 03, 2014 at 08:13:50PM +0200, Thomas Bächler wrote:
-> Most of these bugs were not caused by rootfs' FSID being different from
-> 1, but rather because there was a file system with FSID 0.
-> 
-> Only util-linux/switch_root assumed that rootfs always had exactly FSID
-> 1 - which is IMO a wrong assumption.
-> 
-> However, tt seems that people have been assuming that st_dev > 0 for a
-> while. If we want to revert this in the kernel, this patch (untested)
-> should be sufficient:
-> 
-> diff --git a/fs/super.c b/fs/super.c
-> index 80d5cf2..d9fddde 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -802,7 +802,7 @@ void emergency_remount(void)
->  static DEFINE_IDA(unnamed_dev_ida);
->  static DEFINE_SPINLOCK(unnamed_dev_lock);/* protects the above */
-> -static int unnamed_dev_start = 0; /* don't bother trying below it */
-> +static int unnamed_dev_start = 1; /* don't bother trying below it */
->  int get_anon_bdev(dev_t *p)
->  {
+x86, vdso: Make the vdso linker script compatible with Gold
 
-Alexandre, this is the one line change that should fix it.  Can you
-please test it?
+Gold can't parse the script due to:
+https://sourceware.org/bugzilla/show_bug.cgi?id=16804
 
-Thomas, can you please write proper patch description with reference
-to the following thread and stable # 3.14 tag?
+With a workaround in place for that issue, Gold 2.23 crashes due to:
+https://sourceware.org/bugzilla/show_bug.cgi?id=15355
 
- http://lkml.kernel.org/g/CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com
+This works around the former bug and avoids the second by removing
+the unnecessary vvar and hpet sections and segments.  The vdso and
+hpet symbols are still there, and nothing needed the sections or
+segments.
 
-Thanks.
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/243fa205098d112ec759c9b1b26785c09f399833.1396547532.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/vdso/vdso-layout.lds.S | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
--- 
-tejun
+diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
+index 2e263f3..9df017a 100644
+--- a/arch/x86/vdso/vdso-layout.lds.S
++++ b/arch/x86/vdso/vdso-layout.lds.S
+@@ -9,12 +9,9 @@ SECTIONS
+ #ifdef BUILD_VDSO32
+ #include <asm/vdso32.h>
+ 
+-	.hpet_sect : {
+-		hpet_page = . - VDSO_OFFSET(VDSO_HPET_PAGE);
+-	} :text :hpet_sect
++	hpet_page = . - VDSO_OFFSET(VDSO_HPET_PAGE);
+ 
+-	.vvar_sect : {
+-		vvar = . - VDSO_OFFSET(VDSO_VVAR_PAGE);
++	vvar = . - VDSO_OFFSET(VDSO_VVAR_PAGE);
+ 
+ 	/* Place all vvars at the offsets in asm/vvar.h. */
+ #define EMIT_VVAR(name, offset) vvar_ ## name = vvar + offset;
+@@ -22,7 +19,6 @@ SECTIONS
+ #include <asm/vvar.h>
+ #undef __VVAR_KERNEL_LDS
+ #undef EMIT_VVAR
+-	} :text :vvar_sect
+ #endif
+ 	. = SIZEOF_HEADERS;
+ 
+@@ -61,7 +57,12 @@ SECTIONS
+ 	 */
+ 	. = ALIGN(0x100);
+ 
+-	.text		: { *(.text*) }			:text	=0x90909090
++	.text		: { *(.text*) }			:text	=0x90909090,
++
++	/*
++	 * The comma above works around a bug in gold:
++	 * https://sourceware.org/bugzilla/show_bug.cgi?id=16804
++	 */
+ 
+ 	/DISCARD/ : {
+ 		*(.discard)
+@@ -84,8 +85,4 @@ PHDRS
+ 	dynamic		PT_DYNAMIC	FLAGS(4);		/* PF_R */
+ 	note		PT_NOTE		FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+-#ifdef BUILD_VDSO32
+-	vvar_sect	PT_NULL		FLAGS(4);		/* PF_R */
+-	hpet_sect	PT_NULL		FLAGS(4);		/* PF_R */
+-#endif
+ }
