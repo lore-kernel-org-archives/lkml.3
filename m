@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaDCPRk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:17:40 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:61968 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaDCPRe convert rfc822-to-8bit (ORCPT
+	id S1752716AbaDCPSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:18:48 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:57955 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440AbaDCPSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:17:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <yw1x7g76k62z.fsf@unicorn.mansr.com>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
-	<yw1x7g76k62z.fsf@unicorn.mansr.com>
-Date: Thu, 3 Apr 2014 08:17:33 -0700
-Message-ID: <CA+bK7J57f8mHC0=UWrFG1MyyURb2hU6p2K1RTsHoWRNUz9LWLw@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Tim Bird <tbird20d@gmail.com>
-To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Apr 2014 11:18:46 -0400
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        christophe.barnichon@st.com, Eric Auger <eric.auger@linaro.org>
+Subject: [PATCH] ARM: KVM: Handle IPA unmapping on memory region deletion
+Date: Thu,  3 Apr 2014 17:17:46 +0200
+Message-Id: <1396538266-13245-1-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 3, 2014 at 4:25 AM, Måns Rullgård <mans@mansr.com> wrote:
-> Jiri Kosina <jkosina@suse.cz> writes:
->
->> On Wed, 2 Apr 2014, Linus Torvalds wrote:
->>
->>> Steven, Borislav, one thing that strikes me might be a good idea is to
->>> limit the amount of non-kernel noise in dmesg. We already have the
->>> concept of rate-limiting various spammy internal kernel messages for
->>> when device drivers misbehave etc. Maybe we can just add rate-limiting
->>> to the interfaces that add messages to the kernel buffers, and work
->>> around this problem that way instead while waiting for Gregs fix to
->>> percolate? Or are the systemd debug messages going to so many other
->>> places too that that wouldn't really help?
->>
->> I think that it's in principle a good idea, however ... the in-kernel
->> ratelimiting always happens per sourcecode location, but this will be
->> rather hard to achieve with interface such as /dev/kmsg.
->>
->> If /dev/kmsg is going to be ratelimited as a whole, it might potentially
->> create a severely unfair situation between individual userspace programs
->> trying to do logging (although there is apparently only one userspace
->> service doing any logging through this interface whatsoever, right?).
->
-> The point is that /dev/kmsg is *not* intended as a syslog replacement.
+Currently when a KVM region is removed using
+kvm_vm_ioctl_set_memory_region (with memory region size equal to 0), the
+corresponding intermediate physical memory is not unmapped.
 
-Agreed in general for many systems.  I'll just point out that for ultra-tiny
-(i.e. embedded) systems, it's nice to only have one logging implementation
-in the system.
+This patch unmaps the region's IPA range in
+kvm_arch_commit_memory_region using unmap_stage2_range.
 
-I had no idea systemd was so verbose and was abusing the kernel
-log buffers so badly.  I'm not a big fan of the rate-limiting, as this just
-seems to encourage this kind of abuse.
+The patch was tested on QEMU VFIO based use case where RAM memory region
+creation/deletion frequently happens for IRQ handling.
 
- -- Tim Bird
+Notes:
+- the KVM_MR_MOVE case shall request some similar addition but I cannot test
+  this currently
+
+Signed-off-by: Eric Auger <eric.auger@linaro.org>
+---
+ arch/arm/include/asm/kvm_mmu.h | 2 ++
+ arch/arm/kvm/arm.c             | 8 ++++++++
+ arch/arm/kvm/mmu.c             | 2 +-
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/kvm_mmu.h b/arch/arm/include/asm/kvm_mmu.h
+index 2d122ad..a91c863 100644
+--- a/arch/arm/include/asm/kvm_mmu.h
++++ b/arch/arm/include/asm/kvm_mmu.h
+@@ -52,6 +52,8 @@ void kvm_free_stage2_pgd(struct kvm *kvm);
+ int kvm_phys_addr_ioremap(struct kvm *kvm, phys_addr_t guest_ipa,
+ 			  phys_addr_t pa, unsigned long size);
+ 
++void unmap_stage2_range(struct kvm *kvm, phys_addr_t guest_ipa, u64 size);
++
+ int kvm_handle_guest_abort(struct kvm_vcpu *vcpu, struct kvm_run *run);
+ 
+ void kvm_mmu_free_memory_caches(struct kvm_vcpu *vcpu);
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index bd18bb8..9a4bc10 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -241,6 +241,14 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+ 				   const struct kvm_memory_slot *old,
+ 				   enum kvm_mr_change change)
+ {
++	if (change == KVM_MR_DELETE) {
++		gpa_t gpa = old->base_gfn << PAGE_SHIFT;
++		u64 size = old->npages << PAGE_SHIFT;
++
++		spin_lock(&kvm->mmu_lock);
++		unmap_stage2_range(kvm, gpa, size);
++		spin_unlock(&kvm->mmu_lock);
++	}
+ }
+ 
+ void kvm_arch_flush_shadow_all(struct kvm *kvm)
+diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
+index 7789857..e8580e2 100644
+--- a/arch/arm/kvm/mmu.c
++++ b/arch/arm/kvm/mmu.c
+@@ -443,7 +443,7 @@ int kvm_alloc_stage2_pgd(struct kvm *kvm)
+  * destroying the VM), otherwise another faulting VCPU may come in and mess
+  * with things behind our backs.
+  */
+-static void unmap_stage2_range(struct kvm *kvm, phys_addr_t start, u64 size)
++void unmap_stage2_range(struct kvm *kvm, phys_addr_t start, u64 size)
+ {
+ 	unmap_range(kvm, kvm->arch.pgd, start, size);
+ }
+-- 
+1.9.1
+
