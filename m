@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaDCSo6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 14:44:58 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37501 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaDCSoz (ORCPT
+	id S1753361AbaDCSpX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 14:45:23 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:38185 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812AbaDCSpS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 14:44:55 -0400
+	Thu, 3 Apr 2014 14:45:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <533DAAD7.40000@ahsoftware.de>
-References: <1396396559-6971-1-git-send-email-holler@ahsoftware.de>
- <CAGVrzcZd9tBtcTY_2PRHVb9kJAjVHqn+EubUy4NGL66M_UuCDg@mail.gmail.com>
- <533BD3CD.1010905@ahsoftware.de> <CAGVrzcZi5aNq8fR795fKhu2TAc1tQCa2YEorErZRLf2n9DPZuw@mail.gmail.com>
- <533C721E.1080004@gmail.com> <533C8B49.8080704@ahsoftware.de>
- <533C8ECB.4090900@gmail.com> <533D0B09.9040602@ahsoftware.de>
- <533D207E.9020909@gmail.com> <533D790C.5000104@ahsoftware.de>
- <533D8207.2050108@gmail.com> <533D8518.1010306@ahsoftware.de>
- <533DA12B.8090904@ahsoftware.de> <533DA69A.2010402@gmail.com> <533DAAD7.40000@ahsoftware.de>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 3 Apr 2014 11:44:14 -0700
-Message-ID: <CAGVrzcbLt9Cn=vBP0TFT5Wri7gzxmoVcezYNMfb92xcSZrmndQ@mail.gmail.com>
-Subject: Re: Bug(s) with netconsole (using mv643xx_eth on Kirkwood)
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+In-Reply-To: <46a3a23e-786e-4acf-aa42-c3808b1a46d3@CH1EHSMHS028.ehs.local>
+References: <ee057d8c-50d9-4d4b-ac86-d7c5fc44b1b0@TX2EHSMHS034.ehs.local>
+	<46a3a23e-786e-4acf-aa42-c3808b1a46d3@CH1EHSMHS028.ehs.local>
+Date: Fri, 4 Apr 2014 00:15:17 +0530
+Message-ID: <CAFcVECLoB8BR0PVfV=1EVQub8weOOYustg-1DqOevaihCT3JqQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] devicetree: Add devicetree bindings documentation for
+ Zynq Quad SPI
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
+        broonie@kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         Michal Simek <michal.simek@xilinx.com>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+        Punnaiah Choudary <kpc528@gmail.com>,
+        kalluripunnaiahchoudary@gmail.com,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>,
+        Harini Katakam <harinik@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-03 11:39 GMT-07:00 Alexander Holler <holler@ahsoftware.de>:
-> Am 03.04.2014 20:21, schrieb Sebastian Hesselbarth:
->>
->> On 04/03/2014 07:58 PM, Alexander Holler wrote:
->
->
->>> I hope everyone who missed some more information is happy now, otherwise
->>> I (again) wasted time to type a problem description (not to speak about
->>> the already spent time trying to diagnose the problem)
->>>
->>> So go on and try to take the almost low hanging fruit. I'm not sure if I
->>> will spend more time on that topic as I already have a working
->>> patch/workaround and the discussion has become a bit tiresome. Sorry.
->>
->>
->> Alexander, please stop f*cking around here. Florian, David, and me
->> already showed a lot patience. None of your patches deals with the
->> real issue. Either help others to properly reproduce it or leave it.
->
->
-> I haven't requested help.
->
-> I've send a patch which fixed a problem here I had with a new reset. The
-> problem appears inside the reset (the reset doesn't end), so the patch
-> looked very reasonable. That's all.
+Hi Soren
 
-You said so yourself, your patch is a workaround. What Sebastian is
-asking for, which is perfectly reasonable is for you to root cause
-this, since 1) he is not able to reproduce the problem, 2) the initial
-patch is not acceptable as-is because it lacks too many critical
-pieces of information.
--- 
-Florian
+On Thu, Apr 3, 2014 at 11:20 PM, Sören Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+> Hi Punnaiah,
+>
+> On Thu, 2014-04-03 at 10:33PM +0530, Punnaiah Choudary Kalluri wrote:
+>> Add bindings documentation for Zynq Quad SPI driver.
+>>
+>> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+>> ---
+>>  .../devicetree/bindings/spi/spi-zynq-qspi.txt      |   26 ++++++++++++++++++++
+>>  1 file changed, 26 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt b/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+>> new file mode 100644
+>> index 0000000..88e00f8
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+>> @@ -0,0 +1,26 @@
+>> +Xilinx Zynq QSPI controller Device Tree Bindings
+>> +-------------------------------------------------
+>> +
+>> +Required properties:
+>> +- compatible         : Should be "xlnx,zynq-qspi-1.0".
+>> +- reg                        : Physical base address and size of QSPI registers map.
+>> +- interrupts         : Property with a value describing the interrupt
+>> +                       number.
+>> +- interrupt-parent   : Must be core interrupt controller
+>> +- clock-names                : List of input clock names - "ref_clk", "aper_clk"
+>> +                       (See clock bindings for details).
+>> +- clocks             : Clock phandles (see clock bindings for details).
+>> +
+>> +Optional properties:
+>> +- num-cs             : Number of chip selects used.
+>> +
+>> +Example:
+>> +     qspi@e000d000 {
+>> +             compatible = "xlnx,zynq-qspi-1.0";
+>> +             clock-names = "ref_clk", "aper_clk";
+>
+> These seem to be the SOC names of the clocks. Doesn't have the IP its
+> own naming for these clock inputs?
+>
+
+The IP design spec uses the name ref_clk.
+There is no particular clock name used for for APB clock.
+So I think aper_clk is a valid name to use.
+
+Regards,
+Harini
