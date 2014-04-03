@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988AbaDCQZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:25:01 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:56322 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669AbaDCQYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:24:49 -0400
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
-Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH 9/9] ARM: DT: qcom: Add Qualcomm crypto driver binding document
-Date: Thu,  3 Apr 2014 19:18:06 +0300
-Message-Id: <1396541886-10966-10-git-send-email-svarbanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com>
-References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com>
+	id S1752995AbaDCQZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 12:25:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59304 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997AbaDCQZA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 12:25:00 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH 2/9] crypto: qce: Add register defines
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1396541886-10966-3-git-send-email-svarbanov@mm-sol.com>
+Date: Thu, 3 Apr 2014 11:24:55 -0500
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <69C277DD-FAB2-4102-BA97-8C1985E099CB@codeaurora.org>
+References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com> <1396541886-10966-3-git-send-email-svarbanov@mm-sol.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is Qualcomm crypto driver device tree binding documentation
-to used as a reference example.
 
-Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
----
- .../devicetree/bindings/crypto/qcom-qce.txt        | 25 ++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/crypto/qcom-qce.txt
+On Apr 3, 2014, at 11:17 AM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
 
-diff --git a/Documentation/devicetree/bindings/crypto/qcom-qce.txt b/Documentation/devicetree/bindings/crypto/qcom-qce.txt
-new file mode 100644
-index 000000000000..7ec67c90d2d1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/crypto/qcom-qce.txt
-@@ -0,0 +1,25 @@
-+Qualcomm crypto engine driver
-+
-+Required properties:
-+
-+- compatible  : should be "qcom,crypto-v5.1"
-+- reg         : specifies base physical address and size of the registers map
-+- clocks      : phandle to clock-controller plus clock-specifier pair
-+- clock-names : "iface" clocks register interface
-+		"bus" clocks data transfer interface
-+		"core" clocks reset of the crypto block
-+- dmas        : DMA specifiers for tx and rx dma channels. For more see
-+		Documentation/devicetree/bindings/dma/dma.txt
-+- dma-names   : DMA request names should be "rx" and "tx"
-+
-+Example:
-+	crypto@fd45a000 {
-+		compatible = "qcom,crypto-v5.1";
-+		reg = <0xfd45a000 0x6000>;
-+		clocks = <&gcc GCC_CE2_AHB_CLK>,
-+			 <&gcc GCC_CE2_AXI_CLK>,
-+			 <&gcc GCC_CE2_CLK>;
-+		clock-names = "iface", "bus", "core";
-+		dmas = <&cryptobam 2>, <&cryptobam 3>;
-+		dma-names = "rx", "tx";
-+	};
+> Here are all register addresses and bit/masks used by the driver.
+> 
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> ---
+> drivers/crypto/qce/regs-v5.h | 327 +++++++++++++++++++++++++++++++++++++++++++
+> 1 file changed, 327 insertions(+)
+> create mode 100644 drivers/crypto/qce/regs-v5.h
+
+This should be part of the first patch in the series, you shouldn’t have any patch that doesn’t build.
+
+- k
+
 -- 
-1.8.4.4
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
