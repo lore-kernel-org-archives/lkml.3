@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656AbaDCBwO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 21:52:14 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:7635
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932530AbaDCBwM (ORCPT
+	id S932740AbaDCCCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 22:02:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20993 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932373AbaDCCCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 21:52:12 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
-Date: Thu, 3 Apr 2014 09:52:00 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: <stefan@agner.ch>
-CC: <kernel@pengutronix.de>, <viresh.linux@gmail.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] ARM: dts: mx5: fix wrong stmpe-ts bindings
-Message-ID: <20140403015158.GB2786@dragon>
-References: <cover.1396457876.git.stefan@agner.ch>
- <94a8b96fe30ce97ec89e49ef6470271888024256.1396457876.git.stefan@agner.ch>
+	Wed, 2 Apr 2014 22:02:22 -0400
+Message-ID: <533CC461.4070209@oracle.com>
+Date: Thu, 03 Apr 2014 10:16:01 +0800
+From: "zheng.li" <zheng.x.li@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <94a8b96fe30ce97ec89e49ef6470271888024256.1396457876.git.stefan@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: j.vosburgh@gmail.com
+CC: Zheng Li <zheng.x.li@oracle.com>, netdev@vger.kernel.org, fubar@us.ibm.com,
+        andy@greyhouse.net, vfalico@redhat.com, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, joe.jin@oracle.com
+Subject: Re: [PATCH v3] bonding: Inactive slaves should keep inactive flag's
+ value
+References: <1396407708-4056-1-git-send-email-zheng.x.li@oracle.com>
+In-Reply-To: <1396407708-4056-1-git-send-email-zheng.x.li@oracle.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 07:05:37PM +0200, stefan@agner.ch wrote:
-> From: Stefan Agner <stefan@agner.ch>
-> 
-> Fix bindings for STMPE touchscreen controller to match the documented
-> bindings and the actual bindings used by the driver.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> Reviewed-by: Marek Vasut <marex@denx.de>
+Hi Jay,
+How do you think about the new patch used USES_PRIMARY, can it be merged
+to upstream?
 
-Applied, thanks.
+Thanks,
+Zheng Li
+
+
+于 2014年04月02日 11:01, Zheng Li 写道:
+> bond_open is not setting the inactive flag correctly for some modes (alb and
+> tlb), resulting in error behavior if the bond has been administratively set
+> down and then back up. This effect should not occur when slaves are added while
+> the bond is up; it's something that only happens after a down/up bounce of the
+> bond.
+> 
+> For example, in bond tlb or alb mode, domu send some ARP request which go out
+> from dom0 bond's active slave, then the ARP broadcast request packets go back to
+> inactive slave from switch, because the inactive slave's inactive flag is zero,
+> kernel will receive the packets and pass them to bridge that cause dom0's bridge
+> map domu's MAC address to port of bond, bridge should map domu's MAC to port of
+> vif.
+> 
+> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+> Signed-off-by: Jay Vosburgh <j.vosburgh@gmail.com>
+> ---
+>  drivers/net/bonding/bond_main.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index e5628fc..b42758f 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -3058,7 +3058,7 @@ static int bond_open(struct net_device *bond_dev)
+>  	if (bond_has_slaves(bond)) {
+>  		read_lock(&bond->curr_slave_lock);
+>  		bond_for_each_slave(bond, slave, iter) {
+> -			if ((bond->params.mode == BOND_MODE_ACTIVEBACKUP)
+> +			if (USES_PRIMARY(bond->params.mode)
+>  				&& (slave != bond->curr_active_slave)) {
+>  				bond_set_slave_inactive_flags(slave,
+>  							      BOND_SLAVE_NOTIFY_NOW);
+> 
+
 
