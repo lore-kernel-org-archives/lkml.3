@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaDCEua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 00:50:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25603 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932759AbaDCEtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 00:49:50 -0400
-Date: Thu, 3 Apr 2014 00:49:30 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: neelegup@linux.vnet.ibm.com, benh@kernel.crashing.org
-Subject: Re: powerpc/powernv: Enable reading and updating of system parameters
-Message-ID: <20140403044930.GA10707@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	neelegup@linux.vnet.ibm.com, benh@kernel.crashing.org
-References: <20140402205401.9031B660EE0@gitolite.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402205401.9031B660EE0@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932900AbaDCEu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 00:50:28 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:61226 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaDCEtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 00:49:35 -0400
+From: jon@ringle.org
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Jon Ringle <jringle@gridpoint.com>
+Subject: [PATCH v4 2/2] serial: sc16is7xx: Add bindings documentation for the SC16IS7XX UARTs
+Date: Thu,  3 Apr 2014 00:49:15 -0400
+Message-Id: <1396500555-28873-2-git-send-email-jon@ringle.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1396500555-28873-1-git-send-email-jon@ringle.org>
+References: <1396500555-28873-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 08:54:01PM +0000, Linux Kernel wrote:
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=4029cd66545f0a45258eda5313b7559bfeaaaae4
- > Commit:     4029cd66545f0a45258eda5313b7559bfeaaaae4
- > Parent:     8d724823220862ce289be3b50119235e03537597
- > Author:     Neelesh Gupta <neelegup@linux.vnet.ibm.com>
- > AuthorDate: Fri Mar 7 11:02:09 2014 +0530
- > Committer:  Benjamin Herrenschmidt <benh@kernel.crashing.org>
- > CommitDate: Mon Mar 24 09:47:30 2014 +1100
- > 
- >     powerpc/powernv: Enable reading and updating of system parameters
- >     
- >     This patch enables reading and updating of system parameters through
- >     OPAL call.
- >     
- 
- ...
+From: Jon Ringle <jringle@gridpoint.com>
 
- > +		/* If the parameter is read-only or read-write */
- > +		switch (perm[i] & 3) {
- > +		case OPAL_SYSPARAM_READ:
- > +			attr[i].kobj_attr.attr.mode = S_IRUGO;
- > +			break;
- > +		case OPAL_SYSPARAM_WRITE:
- > +			attr[i].kobj_attr.attr.mode = S_IWUGO;
- > +			break;
- > +		case OPAL_SYSPARAM_RW:
- > +			attr[i].kobj_attr.attr.mode = S_IRUGO | S_IWUGO;
- > +			break;
- > +		default:
- > +			break;
- 
-Is world-writable really appropriate for this ?
+This patch adds the devicetree documentation for the NXP SC16IS7XX UARTs.
 
-	Dave
- 
+Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+---
+ .../devicetree/bindings/serial/nxp,sc16is7xx.txt   | 33 ++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+
+diff --git a/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+new file mode 100644
+index 0000000..246c795
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+@@ -0,0 +1,33 @@
++* NXP SC16IS7xx advanced Universal Asynchronous Receiver-Transmitter (UART)
++
++Required properties:
++- compatible: Should be one of the following:
++  - "nxp,sc16is740" for NXP SC16IS740,
++  - "nxp,sc16is741" for NXP SC16IS741,
++  - "nxp,sc16is750" for NXP SC16IS750,
++  - "nxp,sc16is752" for NXP SC16IS752,
++  - "nxp,sc16is760" for NXP SC16IS760,
++  - "nxp,sc16is762" for NXP SC16IS762.
++- reg: I2C address of the SC16IS7xx device.
++- interrupt-parent: The phandle for the interrupt controller that
++  services interrupts for this IC.
++- interrupts: Should contain the UART interrupt
++- clocks: Reference to the IC source clock.
++
++Optional properties:
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be two. The first cell is the GPIO number and
++  the second cell is used to specify the GPIO polarity:
++    0 = active high,
++    1 = active low.
++
++Example:
++        sc16is750: sc16is750@51 {
++                compatible = "nxp,sc16is750";
++                reg = <0x51>;
++                clocks = <&clk20m>;
++                interrupt-parent = <&gpio3>;
++                interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
+-- 
+1.8.5.4
+
