@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623AbaDCUCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:02:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18477 "EHLO mx1.redhat.com"
+	id S1753659AbaDCUCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:02:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30955 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409AbaDCUBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:01:53 -0400
-Date: Thu, 3 Apr 2014 16:01:43 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140403200143.GA8119@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140331233552.GB30019@redhat.com>
- <20140401004801.GQ4284@linux.vnet.ibm.com>
- <20140401150849.GA14757@redhat.com>
- <20140401153032.GT4284@linux.vnet.ibm.com>
- <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
- <20140401180414.GA12326@redhat.com>
- <20140401183245.GA12473@linux.vnet.ibm.com>
- <20140402162043.GA11090@linux.vnet.ibm.com>
- <20140402224840.GA5385@redhat.com>
+	id S1753605AbaDCUB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 16:01:57 -0400
+Date: Thu, 3 Apr 2014 22:01:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 9/7] uprobes/x86: Teach arch_uprobe_post_xol() to restart
+	if possible
+Message-ID: <20140403200155.GE12639@redhat.com>
+References: <20140331194337.GA9257@redhat.com> <20140403200015.GC12639@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140402224840.GA5385@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140403200015.GC12639@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 06:48:40PM -0400, Dave Jones wrote:
+SIGILL after the failed arch_uprobe_post_xol() should only be used as
+a last resort, we should try to restart the probed insn if possible.
+
+Currently only adjust_ret_addr() can fail, and this can only happen if
+another thread unmapped our stack after we executed "call" out-of-line.
+Most probably the application if buggy, but even in this case it can
+have a handler for SIGSEGV/etc. And in theory it can be even correct
+and do something non-trivial with its memory.
+
+Of course we can't restart unconditionally, so arch_uprobe_post_xol()
+does this only if ->post_xol() returns -ERESTART even if currently this
+is the only possible error.
+
+Note: this is not "perfect" because handler_chain() we actually do not
+want the extra handler_chain() after restart, but I think this is the
+best solution we can realistically do without too much uglifications.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/uprobes.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 3bdfb6e..78c4bb3 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -443,16 +443,17 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+ {
+ 	struct uprobe_task *utask = current->utask;
+ 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
+-	int ret = 0;
  
- >  > > >  > Waiting uninterruptibly.  Presumably blocked on mutex_lock().  But
- >  > > >  > you have CONFIG_PROVE_LOCKING(), so any deadlocks should have been
- >  > > >  > reported.
- >  > > > 
- >  > > > Lockdep had reported something a little earlier (timestamped at 1108.xxxxxx)
- >  > > > but that's a known false-positive in xfs.
- >  > > 
- >  > > Yep, I would be very surprised if that was related to the grace-period hang.
- >  > 
- >  > Ah, but it could be suppressing later lockdep splats.  So if this can be
- >  > reproduced without xfs, we might get additional information from lockdep.
- > 
- > Hrmph.
- > 
- > $ git bisect bad
- > The merge base 5cb480f6b488128140c940abff3c36f524a334a8 is bad.
- > This means the bug has been fixed between 5cb480f6b488128140c940abff3c36f524a334a8 and [455c6fdbd219161bd09b1165f11699d6d73de11c 62c206bd514600d4d73751ade00dca8e488390a3 e086481baf9d0436bdd6e9b739bfa4a83fb89ef5].
- > 
- > Not sure where to go from here..
- > 
- > The 'good' news is I can reproduce it pretty reliably now.
- > I start my fuzz tester, and immediately do a git diff in my working tree,
- > and then boom..
-
-Even better, now I realise I don't even need my fuzzer in the mix. Just doing
-a fair amount of disk io (like a git diff on a dirty tree) will trigger it.
-
-I've tried adding a show_state() call when the stall happens, but another stall
-seems to occur before it gets a chance to even dump everything over the usb-serial console.
-And of course nothing ever makes it to disk, even though I can sysrq-sync, on the
-next reboot systemd has stuffed a bunch of ^@ in the log where the interesting
-stuff should be.
-
-Any other ideas ?
-
-	Dave
+ 	handle_riprel_post_xol(auprobe, regs, &correction);
+ 	if (auprobe->fixups & UPROBE_FIX_IP)
+ 		regs->ip += correction;
+ 
+-	if (auprobe->fixups & UPROBE_FIX_CALL)
+-		ret = adjust_ret_addr(regs->sp, correction);
++	if (auprobe->fixups & UPROBE_FIX_CALL) {
++		if (adjust_ret_addr(regs->sp, correction))
++			return -ERESTART;
++	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static struct uprobe_xol_ops default_xol_ops = {
+@@ -599,6 +600,12 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		int err = auprobe->ops->post_xol(auprobe, regs);
+ 		if (err) {
+ 			arch_uprobe_abort_xol(auprobe, regs);
++			/*
++			 * Restart the probed insn. ->post_xol() must ensure
++			 * this is really possible if it returns -ERESTART.
++			 */
++			if (err == -ERESTART)
++				return 0;
+ 			return err;
+ 		}
+ 	}
+-- 
+1.5.5.1
 
 
