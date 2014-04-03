@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaDCPCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:02:39 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:42469 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaDCPCf (ORCPT
+	id S1752658AbaDCPEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:04:12 -0400
+Received: from relay.parallels.com ([195.214.232.42]:32781 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302AbaDCPEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:02:35 -0400
-Message-ID: <533D7806.8070002@monstr.eu>
-Date: Thu, 03 Apr 2014 17:02:30 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 3 Apr 2014 11:04:08 -0400
+Message-ID: <533D7864.7080907@parallels.com>
+Date: Thu, 3 Apr 2014 19:04:04 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-CC: dougthompson@xmission.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
-        michal.simek@xilinx.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, kpc528@gmail.com,
-        kalluripunnaiahchoudary@gmail.com, punnaia@xilinx.com,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
-References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com> <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
-In-Reply-To: <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="3VIAqalIl7Td69EB54RgdsveHTotW6KOS"
+To: Greg Thelen <gthelen@google.com>
+CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <glommer@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <devel@openvz.org>
+Subject: Re: [PATCH -mm v2.1] mm: get rid of __GFP_KMEMCG
+References: <c50644c5c979fbe21e72cc2751876ceaff6ef495.1396335798.git.vdavydov@parallels.com> <1396419365-351-1-git-send-email-vdavydov@parallels.com> <xr934n2bjuec.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr934n2bjuec.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---3VIAqalIl7Td69EB54RgdsveHTotW6KOS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 04/03/2014 01:25 AM, Greg Thelen wrote:
+> On Tue, Apr 01 2014, Vladimir Davydov <vdavydov@parallels.com> wrote:
+>
+>> Currently to allocate a page that should be charged to kmemcg (e.g.
+>> threadinfo), we pass __GFP_KMEMCG flag to the page allocator. The page
+>> allocated is then to be freed by free_memcg_kmem_pages. Apart from
+>> looking asymmetrical, this also requires intrusion to the general
+>> allocation path. So let's introduce separate functions that will
+>> alloc/free pages charged to kmemcg.
+>>
+>> The new functions are called alloc_kmem_pages and free_kmem_pages. They
+>> should be used when the caller actually would like to use kmalloc, but
+>> has to fall back to the page allocator for the allocation is large. They
+>> only differ from alloc_pages and free_pages in that besides allocating
+>> or freeing pages they also charge them to the kmem resource counter of
+>> the current memory cgroup.
+>>
+>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> One comment nit below, otherwise looks good to me.
+>
+> Acked-by: Greg Thelen <gthelen@google.com>
+>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Michal Hocko <mhocko@suse.cz>
+>> Cc: Glauber Costa <glommer@gmail.com>
+>> Cc: Christoph Lameter <cl@linux-foundation.org>
+>> Cc: Pekka Enberg <penberg@kernel.org>
+>> ---
+>> Changes in v2.1:
+>>  - add missing kmalloc_order forward declaration; lacking it caused
+>>    compilation breakage with CONFIG_TRACING=n
+>>
+>>  include/linux/gfp.h             |   10 ++++---
+>>  include/linux/memcontrol.h      |    2 +-
+>>  include/linux/slab.h            |   11 +-------
+>>  include/linux/thread_info.h     |    2 --
+>>  include/trace/events/gfpflags.h |    1 -
+>>  kernel/fork.c                   |    6 ++---
+>>  mm/page_alloc.c                 |   56 ++++++++++++++++++++++++---------------
+>>  mm/slab_common.c                |   12 +++++++++
+>>  mm/slub.c                       |    6 ++---
+>>  9 files changed, 61 insertions(+), 45 deletions(-)
+>>
+>> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+>> index 39b81dc7d01a..d382db71e300 100644
+>> --- a/include/linux/gfp.h
+>> +++ b/include/linux/gfp.h
+>> @@ -31,7 +31,6 @@ struct vm_area_struct;
+>>  #define ___GFP_HARDWALL		0x20000u
+>>  #define ___GFP_THISNODE		0x40000u
+>>  #define ___GFP_RECLAIMABLE	0x80000u
+>> -#define ___GFP_KMEMCG		0x100000u
+>>  #define ___GFP_NOTRACK		0x200000u
+>>  #define ___GFP_NO_KSWAPD	0x400000u
+>>  #define ___GFP_OTHER_NODE	0x800000u
+>> @@ -91,7 +90,6 @@ struct vm_area_struct;
+>>  
+>>  #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
+>>  #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+>> -#define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
+>>  #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
+>>  
+>>  /*
+>> @@ -353,6 +351,10 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
+>>  #define alloc_page_vma_node(gfp_mask, vma, addr, node)		\
+>>  	alloc_pages_vma(gfp_mask, 0, vma, addr, node)
+>>  
+>> +extern struct page *alloc_kmem_pages(gfp_t gfp_mask, unsigned int order);
+>> +extern struct page *alloc_kmem_pages_node(int nid, gfp_t gfp_mask,
+>> +					  unsigned int order);
+>> +
+>>  extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
+>>  extern unsigned long get_zeroed_page(gfp_t gfp_mask);
+>>  
+>> @@ -372,8 +374,8 @@ extern void free_pages(unsigned long addr, unsigned int order);
+>>  extern void free_hot_cold_page(struct page *page, int cold);
+>>  extern void free_hot_cold_page_list(struct list_head *list, int cold);
+>>  
+>> -extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
+>> -extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
+>> +extern void __free_kmem_pages(struct page *page, unsigned int order);
+>> +extern void free_kmem_pages(unsigned long addr, unsigned int order);
+>>  
+>>  #define __free_page(page) __free_pages((page), 0)
+>>  #define free_page(addr) free_pages((addr), 0)
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 29068dd26c3d..13acdb5259f5 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -543,7 +543,7 @@ memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
+>>  	 * res_counter_charge_nofail, but we hope those allocations are rare,
+>>  	 * and won't be worth the trouble.
+>>  	 */
+> Just a few lines higher in first memcg_kmem_newpage_charge() comment,
+> there is a leftover reference to GFP_KMEMCG which should be removed.
 
-Hi Borislav,
+Good catch, will resend.
 
-On 03/02/2014 03:32 PM, Punnaiah Choudary Kalluri wrote:
-> Add support for ARM Pl310 L2 cache controller parity error
->=20
-> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-> ---
->  .../devicetree/bindings/edac/pl310_edac_l2.txt     |   19 ++
->  drivers/edac/Kconfig                               |    7 +
->  drivers/edac/Makefile                              |    1 +
->  drivers/edac/pl310_edac_l2.c                       |  236 ++++++++++++=
-++++++++
->  4 files changed, 263 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/edac/pl310_edac_l=
-2.txt
->  create mode 100644 drivers/edac/pl310_edac_l2.c
-
-Any comment about this driver?
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---3VIAqalIl7Td69EB54RgdsveHTotW6KOS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlM9eAYACgkQykllyylKDCFrWwCgkfN56ZwczSkGT8I8TWxw1xpD
-MaUAnR7yeU8hp7Pof8dJ7QuPm9N+m1/o
-=QK4T
------END PGP SIGNATURE-----
-
---3VIAqalIl7Td69EB54RgdsveHTotW6KOS--
+Thank you for the review!
