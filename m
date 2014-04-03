@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209AbaDGLyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 07:54:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45407 "EHLO mx2.suse.de"
+	id S1755235AbaDGLyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 07:54:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45409 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754652AbaDGLyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754699AbaDGLyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Apr 2014 07:54:15 -0400
 From: Jan Moskyto Matejka <mq@suse.cz>
 To: Daniel Vetter <daniel.vetter@ffwll.ch>,
         Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Jan Moskyto Matejka <mq@suse.cz>
 Subject: [PATCH] Revert "drm/i915: fix build warning on 32-bit (v2)"
-Date: Mon,  7 Apr 2014 13:07:56 +0200
-Message-Id: <1396868876-7372-1-git-send-email-mq@suse.cz>
+Date: Thu,  3 Apr 2014 14:53:57 +0200
+Message-Id: <1396529637-15395-1-git-send-email-mq@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,8 +30,6 @@ long to ptrdiff_t.
 
 The other commit fixes the original warning the better way so I'm reverting
 this commit now.
-
-Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
 ---
  drivers/gpu/drm/i915/i915_cmd_parser.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
