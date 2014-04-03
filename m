@@ -1,173 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaDCWXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 18:23:14 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:46137 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850AbaDCWRf (ORCPT
+	id S1753803AbaDCWRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 18:17:30 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:47042 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaDCWR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 18:17:35 -0400
+	Thu, 3 Apr 2014 18:17:26 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 07/20] mips: convert fdt pointers to opaque pointers
-Date: Thu,  3 Apr 2014 17:16:50 -0500
-Message-Id: <1396563423-30893-8-git-send-email-robherring2@gmail.com>
+        Aurelien Jacquiot <a-jacquiot@ti.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Chris Zankel <chris@zankel.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, James Hogan <james.hogan@imgtec.com>,
+        Jonas Bonn <jonas@southpole.se>, linux-arm-kernel@lists.infradead.org,
+        linux-c6x-dev@linux-c6x.org, linux@openrisc.net,
+        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux-xtensa@linux-xtensa.org,
+        Mark Salter <msalter@redhat.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Michal Simek <monstr@monstr.eu>, Paul Mackerras <paulus@samba.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vineet Gupta <vgupta@synopsys.com>, x86@kernel.org
+Subject: [PATCH 00/20] FDT clean-ups and libfdt support
+Date: Thu,  3 Apr 2014 17:16:43 -0500
+Message-Id: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
-References: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-The architecture code does not need to access the internals of the FDT
-blob, so make the pointer to it void *.
+This is a series of clean-ups of architecture FDT code and converts the
+core FDT code over to using libfdt functions. This is in preparation
+to add FDT based address translation parsing functions for early
+console support. 
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
----
- arch/mips/include/asm/mips-boards/generic.h | 4 +---
- arch/mips/include/asm/prom.h                | 6 +++---
- arch/mips/kernel/prom.c                     | 2 +-
- arch/mips/lantiq/prom.c                     | 2 +-
- arch/mips/lantiq/prom.h                     | 2 +-
- arch/mips/mti-sead3/sead3-setup.c           | 8 ++++----
- arch/mips/ralink/of.c                       | 4 ++--
- 7 files changed, 13 insertions(+), 15 deletions(-)
+The current MIPS lantiq and xlp DT code is buggy as built-in DTBs need
+to be copied out of init section. Patches 2 and 3 should be applied to
+3.15.
 
-diff --git a/arch/mips/include/asm/mips-boards/generic.h b/arch/mips/include/asm/mips-boards/generic.h
-index 4861681..b969491 100644
---- a/arch/mips/include/asm/mips-boards/generic.h
-+++ b/arch/mips/include/asm/mips-boards/generic.h
-@@ -67,9 +67,7 @@
- 
- extern int mips_revision_sconid;
- 
--#ifdef CONFIG_OF
--extern struct boot_param_header __dtb_start;
--#endif
-+extern char __dtb_start[];
- 
- #ifdef CONFIG_PCI
- extern void mips_pcibios_init(void);
-diff --git a/arch/mips/include/asm/prom.h b/arch/mips/include/asm/prom.h
-index ccd2b75..a9494c0 100644
---- a/arch/mips/include/asm/prom.h
-+++ b/arch/mips/include/asm/prom.h
-@@ -21,13 +21,13 @@ extern void device_tree_init(void);
- 
- struct boot_param_header;
- 
--extern void __dt_setup_arch(struct boot_param_header *bph);
-+extern void __dt_setup_arch(void *bph);
- 
- #define dt_setup_arch(sym)						\
- ({									\
--	extern struct boot_param_header __dtb_##sym##_begin;		\
-+	extern char __dtb_##sym##_begin[];				\
- 									\
--	__dt_setup_arch(&__dtb_##sym##_begin);				\
-+	__dt_setup_arch(__dtb_##sym##_begin);				\
- })
- 
- #else /* CONFIG_OF */
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index 3c3b0df..5d39bb8 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -47,7 +47,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
- 	return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
- }
- 
--void __init __dt_setup_arch(struct boot_param_header *bph)
-+void __init __dt_setup_arch(void *bph)
- {
- 	if (!early_init_dt_scan(bph))
- 		return;
-diff --git a/arch/mips/lantiq/prom.c b/arch/mips/lantiq/prom.c
-index cdea687..7447d32 100644
---- a/arch/mips/lantiq/prom.c
-+++ b/arch/mips/lantiq/prom.c
-@@ -71,7 +71,7 @@ void __init plat_mem_setup(void)
- 	 * Load the builtin devicetree. This causes the chosen node to be
- 	 * parsed resulting in our memory appearing
- 	 */
--	__dt_setup_arch(&__dtb_start);
-+	__dt_setup_arch(__dtb_start);
- }
- 
- void __init device_tree_init(void)
-diff --git a/arch/mips/lantiq/prom.h b/arch/mips/lantiq/prom.h
-index 8e07b5f..69a4c58 100644
---- a/arch/mips/lantiq/prom.h
-+++ b/arch/mips/lantiq/prom.h
-@@ -26,6 +26,6 @@ struct ltq_soc_info {
- extern void ltq_soc_detect(struct ltq_soc_info *i);
- extern void ltq_soc_init(void);
- 
--extern struct boot_param_header __dtb_start;
-+extern char __dtb_start[];
- 
- #endif
-diff --git a/arch/mips/mti-sead3/sead3-setup.c b/arch/mips/mti-sead3/sead3-setup.c
-index bf7fe48..e43f480 100644
---- a/arch/mips/mti-sead3/sead3-setup.c
-+++ b/arch/mips/mti-sead3/sead3-setup.c
-@@ -69,17 +69,17 @@ static void __init parse_memsize_param(void)
- 	if (!memsize)
- 		return;
- 
--	offset = fdt_path_offset(&__dtb_start, "/memory");
-+	offset = fdt_path_offset(__dtb_start, "/memory");
- 	if (offset > 0) {
- 		uint64_t new_value;
- 		/*
- 		 * reg contains 2 32-bits BE values, offset and size. We just
- 		 * want to replace the size value without affecting the offset
- 		 */
--		prop_value = fdt_getprop(&__dtb_start, offset, "reg", &prop_len);
-+		prop_value = fdt_getprop(__dtb_start, offset, "reg", &prop_len);
- 		new_value = be64_to_cpu(*prop_value);
- 		new_value =  (new_value & ~0xffffffffllu) | memsize;
--		fdt_setprop_inplace_u64(&__dtb_start, offset, "reg", new_value);
-+		fdt_setprop_inplace_u64(__dtb_start, offset, "reg", new_value);
- 	}
- }
- 
-@@ -92,7 +92,7 @@ void __init plat_mem_setup(void)
- 	 * Load the builtin devicetree. This causes the chosen node to be
- 	 * parsed resulting in our memory appearing
- 	 */
--	__dt_setup_arch(&__dtb_start);
-+	__dt_setup_arch(__dtb_start);
- }
- 
- void __init device_tree_init(void)
-diff --git a/arch/mips/ralink/of.c b/arch/mips/ralink/of.c
-index 0170d82..91d7060 100644
---- a/arch/mips/ralink/of.c
-+++ b/arch/mips/ralink/of.c
-@@ -28,7 +28,7 @@
- __iomem void *rt_sysc_membase;
- __iomem void *rt_memc_membase;
- 
--extern struct boot_param_header __dtb_start;
-+extern char __dtb_start[];
- 
- __iomem void *plat_of_remap_node(const char *node)
- {
-@@ -63,7 +63,7 @@ void __init plat_mem_setup(void)
- 	 * Load the builtin devicetree. This causes the chosen node to be
- 	 * parsed resulting in our memory appearing
- 	 */
--	__dt_setup_arch(&__dtb_start);
-+	__dt_setup_arch(__dtb_start);
- 
- 	if (soc_info.mem_size)
- 		add_memory_region(soc_info.mem_base, soc_info.mem_size * SZ_1M,
+A branch is available here[1]. Please test! I've compiled on arm,
+arm64, mips, microblaze, and powerpc and booted on arm and arm64.
+
+Rob
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git libfdt
+
+Rob Herring (20):
+  mips: octeon: convert to use unflatten_and_copy_device_tree
+  mips: lantiq: copy built-in DTB out of init section
+  mips: xlp: copy built-in DTB out of init section
+  mips: ralink: convert to use unflatten_and_copy_device_tree
+  ARM: dt: use default early_init_dt_alloc_memory_arch
+  c6x: convert fdt pointers to opaque pointers
+  mips: convert fdt pointers to opaque pointers
+  of/fdt: consolidate built-in dtb section variables
+  of/fdt: create common debugfs
+  of/fdt: remove some unneeded includes
+  of/fdt: remove unused of_scan_flat_dt_by_path
+  of/fdt: update of_get_flat_dt_prop in prep for libfdt
+  of/fdt: Convert FDT functions to use libfdt
+  of/fdt: use libfdt accessors for header data
+  of/fdt: move memreserve and dtb memory reservations into core
+  build: add libfdt include path globally
+  powerpc: use libfdt accessors for header data
+  x86: use libfdt accessors for header data
+  of/fdt: convert initial_boot_params to opaque pointer
+  of: push struct boot_param_header and defines into powerpc
+
+ Makefile                                    |   5 +
+ arch/arc/include/asm/sections.h             |   1 -
+ arch/arc/kernel/devtree.c                   |   2 +-
+ arch/arm/include/asm/prom.h                 |   2 -
+ arch/arm/kernel/devtree.c                   |  34 +--
+ arch/arm/mach-exynos/exynos.c               |   2 +-
+ arch/arm/mach-vexpress/platsmp.c            |   2 +-
+ arch/arm/mm/init.c                          |   1 -
+ arch/arm/plat-samsung/s5p-dev-mfc.c         |   4 +-
+ arch/arm64/mm/init.c                        |  21 --
+ arch/c6x/kernel/setup.c                     |   4 +-
+ arch/metag/kernel/setup.c                   |   4 -
+ arch/microblaze/kernel/prom.c               |  37 +--
+ arch/mips/cavium-octeon/Makefile            |   3 -
+ arch/mips/cavium-octeon/setup.c             |  18 +-
+ arch/mips/include/asm/mips-boards/generic.h |   4 -
+ arch/mips/include/asm/prom.h                |   6 +-
+ arch/mips/kernel/prom.c                     |   2 +-
+ arch/mips/lantiq/prom.c                     |  15 +-
+ arch/mips/lantiq/prom.h                     |   2 -
+ arch/mips/mti-sead3/Makefile                |   2 -
+ arch/mips/mti-sead3/sead3-setup.c           |   8 +-
+ arch/mips/netlogic/xlp/dt.c                 |  17 +-
+ arch/mips/ralink/of.c                       |  29 +--
+ arch/openrisc/kernel/vmlinux.h              |   2 -
+ arch/powerpc/include/asm/prom.h             |  39 +++
+ arch/powerpc/kernel/epapr_paravirt.c        |   2 +-
+ arch/powerpc/kernel/fadump.c                |   4 +-
+ arch/powerpc/kernel/prom.c                  |  77 ++----
+ arch/powerpc/kernel/rtas.c                  |   2 +-
+ arch/powerpc/mm/hash_utils_64.c             |  22 +-
+ arch/powerpc/platforms/52xx/efika.c         |   4 +-
+ arch/powerpc/platforms/chrp/setup.c         |   4 +-
+ arch/powerpc/platforms/powernv/opal.c       |  12 +-
+ arch/powerpc/platforms/pseries/setup.c      |   4 +-
+ arch/x86/kernel/devicetree.c                |   7 +-
+ arch/xtensa/kernel/setup.c                  |   3 +-
+ drivers/of/Kconfig                          |   1 +
+ drivers/of/fdt.c                            | 379 +++++++++-------------------
+ drivers/of/of_reserved_mem.c                |   4 +-
+ include/linux/of_fdt.h                      |  64 +----
+ lib/Makefile                                |   2 -
+ 42 files changed, 261 insertions(+), 596 deletions(-)
+
 -- 
 1.8.3.2
 
