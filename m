@@ -1,149 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaDCQRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:17:51 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43697 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaDCQRU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:17:20 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@fb.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/2] smp: Non busy-waiting IPI queue
-Date: Thu,  3 Apr 2014 18:17:11 +0200
-Message-Id: <1396541832-459-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
-References: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
+	id S1752927AbaDCQTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 12:19:08 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:55959 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752891AbaDCQTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 12:19:02 -0400
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH 0/9] Add Qualcomm crypto driver
+Date: Thu,  3 Apr 2014 19:17:57 +0300
+Message-Id: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some IPI users, such as the nohz subsystem, need to be able to send
-an async IPI (async = non waiting for any other IPI completion) on
-contexts with disabled interrupts. And we want the IPI subsystem to handle
-concurrent calls by itself.
+Hi,
 
-Currently the nohz machinery uses the scheduler IPI for this purpose
-because it can be triggered from any context and doesn't need any
-serialization from the caller. But this is an abuse of a scheduler
-fast path. We are bloating it with a job that should use its own IPI.
+The following patch set implements support for Qualcomm
+crypto hardware accelerator driver. It registers itself
+to the crypto subsystem and adds the following operations
+for encryption/decription - AES with ECB CBC CTR XTS modes,
+DES with ECB CBC modes, and 3DES ECB CBC modes.
+For hashing and MAC it adds support for sha1 sha256,
+hmac(sha1) hmac(sha256).
 
-The current set of IPI functions can't be called when interrupts are
-disabled otherwise we risk a deadlock when two CPUs wait for each
-other's IPI completion.
+The version of the driver is reworked by me and it is based
+on Codeaurora's qcrypto driver. The proposed version has many
+coding style fixes, re-factored files, separated by
+functionality. I wanted to make the driver more readable and
+easier for review, hope I done well. I'll appreciate any review
+comments which will help me to make this code clear and ready
+for mainline kernel.
 
-OTOH smp_call_function_single_async() can be called when interrupts
-are disabled. But then it's up to the caller to serialize the given
-IPI. This can't be called concurrently without special care.
+regards,
+Stan
 
-So we need a version of the async IPI that takes care of concurrent
-calls.
+Stanimir Varbanov (9):
+  crypto: qce: Add core driver implementation
+  crypto: qce: Add register defines
+  crypto: qce: Add dma and sg helpers
+  crypto: qce: Add ablkcipher algorithms
+  crypto: qce: Adds sha and hmac transforms
+  crypto: qce: Adds infrastructure to setup the crypto block
+  crypto: qce: Adds Makefile to build the driver
+  crypto: qce: Build Qualcomm qce driver
+  ARM: DT: qcom: Add Qualcomm crypto driver binding document
 
-The proposed solution is to synchronize the IPI with a specific flag
-that prevents the IPI from being sent if it is already pending but not
-yet executed. Ordering is maintained such that, if the IPI is not sent
-because it's already pending, we guarantee it will see the new state of
-the data we expect it to when it will execute.
+ .../devicetree/bindings/crypto/qcom-qce.txt        |  25 +
+ drivers/crypto/Kconfig                             |  10 +
+ drivers/crypto/Makefile                            |   1 +
+ drivers/crypto/qce/Makefile                        |   6 +
+ drivers/crypto/qce/ablkcipher.c                    | 397 ++++++++++++++
+ drivers/crypto/qce/cipher.h                        |  62 +++
+ drivers/crypto/qce/common.c                        | 424 +++++++++++++++
+ drivers/crypto/qce/common.h                        | 111 ++++
+ drivers/crypto/qce/core.c                          | 333 ++++++++++++
+ drivers/crypto/qce/core.h                          |  69 +++
+ drivers/crypto/qce/dma.c                           | 201 +++++++
+ drivers/crypto/qce/dma.h                           |  57 ++
+ drivers/crypto/qce/regs-v5.h                       | 327 +++++++++++
+ drivers/crypto/qce/sha.c                           | 595 +++++++++++++++++++++
+ drivers/crypto/qce/sha.h                           |  74 +++
+ 15 files changed, 2692 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/crypto/qcom-qce.txt
+ create mode 100644 drivers/crypto/qce/Makefile
+ create mode 100644 drivers/crypto/qce/ablkcipher.c
+ create mode 100644 drivers/crypto/qce/cipher.h
+ create mode 100644 drivers/crypto/qce/common.c
+ create mode 100644 drivers/crypto/qce/common.h
+ create mode 100644 drivers/crypto/qce/core.c
+ create mode 100644 drivers/crypto/qce/core.h
+ create mode 100644 drivers/crypto/qce/dma.c
+ create mode 100644 drivers/crypto/qce/dma.h
+ create mode 100644 drivers/crypto/qce/regs-v5.h
+ create mode 100644 drivers/crypto/qce/sha.c
+ create mode 100644 drivers/crypto/qce/sha.h
 
-This model is close to the irq_work design. It's also partly inspired by
-suggestions from Peter Zijlstra.
-
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jens Axboe <axboe@fb.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/linux/smp.h | 11 +++++++++++
- kernel/smp.c        | 42 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+)
-
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 633f5ed..0de1eff 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -29,6 +29,17 @@ extern unsigned int total_cpus;
- int smp_call_function_single(int cpuid, smp_call_func_t func, void *info,
- 			     int wait);
- 
-+struct queue_single_data;
-+typedef void (*smp_queue_func_t)(struct queue_single_data *qsd);
-+
-+struct queue_single_data {
-+	struct call_single_data data;
-+	smp_queue_func_t func;
-+	int pending;
-+};
-+
-+int smp_queue_function_single(int cpu, struct queue_single_data *qsd);
-+
- /*
-  * Call a function on all processors
-  */
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 06d574e..7589be5 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -265,6 +265,48 @@ int smp_call_function_single_async(int cpu, struct call_single_data *csd)
- }
- EXPORT_SYMBOL_GPL(smp_call_function_single_async);
- 
-+void generic_smp_queue_function_single_interrupt(void *info)
-+{
-+	struct queue_single_data *qsd = info;
-+
-+	WARN_ON_ONCE(xchg(&qsd->pending, 0) != 1);
-+	qsd->func(qsd);
-+}
-+
-+/**
-+ * smp_queue_function_single - Queue an asynchronous function to run on a
-+ * 				specific CPU unless it's already pending.
-+ * @cpu: The CPU to run on.
-+ * @qsd: Pre-allocated and setup data structure
-+ *
-+ * Like smp_call_function_single_async() but the call to the function is
-+ * serialized and won't be queued if it is already pending. In the latter case,
-+ * ordering is still guaranteed such that the pending call will see the new
-+ * data we expect it to.
-+ *
-+ * This must not be called on offline CPUs.
-+ *
-+ * Returns 0 when function is successfully queued or already pending, else a
-+ * negative status code.
-+ */
-+int smp_queue_function_single(int cpu, struct queue_single_data *qsd)
-+{
-+	int err;
-+
-+	if (cmpxchg(&qsd->pending, 0, 1))
-+		return 0;
-+
-+	preempt_disable();
-+	err = generic_exec_single(cpu, &qsd->data, generic_smp_queue_function_single_interrupt, qsd, 0);
-+	preempt_enable();
-+
-+	/* Reset in case of error. This must not be called on offline CPUs */
-+	if (err)
-+		qsd->pending = 0;
-+
-+	return err;
-+}
-+
- /*
-  * smp_call_function_any - Run a function on any of the given cpus
-  * @mask: The mask of cpus it can run on.
 -- 
-1.8.3.1
+1.8.4.4
 
