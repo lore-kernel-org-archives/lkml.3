@@ -1,268 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaDCJND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 05:13:03 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57596 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775AbaDCJM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 05:12:57 -0400
-Message-ID: <533D25D4.4000607@gmail.com>
-Date: Thu, 03 Apr 2014 17:11:48 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752015AbaDCJON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 05:14:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18593 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751422AbaDCJOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 05:14:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,785,1389772800"; 
+   d="scan'208";a="506035093"
+Message-ID: <533D262A.2040602@intel.com>
+Date: Thu, 03 Apr 2014 17:13:14 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: sandeep.kumar@freescale.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Tao, Yue" <Yue.Tao@windriver.com>,
-        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
-        guang.yang@windriver.com, joe@perches.com, festevam@gmail.com,
-        linuxppc-dev@lists.ozlabs.org, richardcochran@gmail.com,
-        clarocq@gmail.com, yongjun_wei@trendmicro.com.cn,
-        Claudiu Manoil <claudiu.manoil@freescale.com>, w@1wt.eu,
-        zhuyj <zyjzyj2000@gmail.com>
-Subject: Re: on kernel 2.6.34.15, vlan and raw packets can not be received
- with gfar-enet nic
-References: <53310F4E.4080104@gmail.com>
-In-Reply-To: <53310F4E.4080104@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------000409010002020204030804"
+To: Michal Marek <mmarek@suse.cz>, "Wu, Fengguang" <fengguang.wu@intel.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [mtd/sbc_gxx] kernel BUG at include/linux/mtd/map.h:148!
+References: <20140327140140.GA9083@localhost> <CAErSpo7b+OJUoRcMY0edZPgEKG6DbwdLcq5M0-9B6JKALpm+QQ@mail.gmail.com> <20140331113412.GA13548@localhost> <20140331143543.GA9764@sepie.suse.cz>
+In-Reply-To: <20140331143543.GA9764@sepie.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000409010002020204030804
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Hi Michal,
 
-Hi, Claudiu
+Your patch fixes the problem.
 
-Please help to review this patch. This patch is for kernel 2.6.x. Thanks 
-a lot.
+Tested-by: Jet Chen <jet.chen@intel.com>
 
-Hi, Willy
+Thanks,
+-Jet
 
-Please help to merge this patch to longterm: 2.6.32.61 since this 
-problem also occurs on this kernel. Thanks a lot.
-
-Based on kernel 2.6.x, gianfar nic driver can not work well. The root 
-cause is that tx vlan of gianfar can not handle VLAN tag 0. So on kernel 
-3.0+, this tx vlan feature is disabled. But on kernel 2.6.x, this 
-feature is still enabled. This patch will disable this feature of 
-gianfar nic driver. If this feature is enabled, gianfar nic can not 
-support vlan packets and non-vlan packets at the same time. The 
-following steps will reproduce this problem.
-
-The steps are as below.
-
-1. boot two freescale-p2020 boards with linux kernel 2.6.x, then 
-connected 2 gfar-enet nic cards with a direct network line;
-
-2. On board 1, checked the driver of eth0
-
-ethtool -i eth0
-
-driver: gfar-enet
-version: 1.3
-firmware-version: N/A
-bus-info: N/A
-
-On board 2, I checked the driver of eth1
-
-ethtool -i eth1
-
-driver: gfar-enet
-version: 1.3
-firmware-version: N/A
-bus-info: N/A
-
-3. Then configure the ip address on the above 2 nic cards.
-
-On board 1,
-
-ifconfig eth0 192.168.1.13/24 up
-
-On board 2,
-
-ifconfig eth1 192.168.1.196/24 up
-
-4. We can access the other board on one board.
-For example, on board 1, we can ping board 2.
-
-root@p2020rdb:/root> ping 192.168.1.196
-PING 192.168.1.196 (192.168.1.196) 56(84) bytes of data.
-64 bytes from 192.168.1.196: icmp_req=1 ttl=64 time=2.92 ms
-64 bytes from 192.168.1.196: icmp_req=2 ttl=64 time=0.096 ms
-
-5. We configure vlan on these 2 boards. VLAN tag 0
-On board 1,
-
-modprobe 8021q
-vconfig add eth0 4091
-ifconfig eth0.4091 10.1.1.13/24 up
-
-On board 2,
-
-modprobe 8021q
-vconfig add eth1 4091
-ifconfig eth1.4091 10.1.1.196/24 up
-
-6. We can access the other board on one board through vlan.
-For example, on board 1, we can ping board 2 through vlan nic.
-
-root@p2020rdb:/root> ping 10.1.1.196
-PING 10.1.1.196 (10.1.1.196) 56(84) bytes of data.
-64 bytes from 10.1.1.196: icmp_req=1 ttl=64 time=2.92 ms
-64 bytes from 10.1.1.196: icmp_req=2 ttl=64 time=0.096 ms
-
-But we can not access the other board on one board through raw nic.
-For example, on board, we can not ping board 2.
-
-root@p2020rdb:/root> ping 192.168.1.196
- From 192.168.1.196 icmp_seq=1 Destination Host Unreachable
- From 192.168.1.196 icmp_seq=2 Destination Host Unreachable
- From 192.168.1.196 icmp_seq=3 Destination Host Unreachable
-
-Best Regards!
-Zhu Yanjun
-
-On 03/25/2014 01:08 PM, zhuyj wrote:
-> Hi, Sandeep Gopalpet
+On 03/31/2014 10:35 PM, Michal Marek wrote:
+> On Mon, Mar 31, 2014 at 07:34:12PM +0800, Fengguang Wu wrote:
+>> CC Michal and kbuild list.
+>>
+>> On Thu, Mar 27, 2014 at 04:51:53PM -0600, Bjorn Helgaas wrote:
+>>> [+cc David, Brian]
+>>>
+>>> On Thu, Mar 27, 2014 at 8:01 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>>>> FYI, here is a very old warning, too old to be bisected.
+>>>>
+>>>> [    5.282127] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, supports DPO and FUA
+>>>> [    5.286079] SBC-GXx flash: IO:0x258-0x259 MEM:0xdc000-0xdffff
+>>>> [    5.288723] ------------[ cut here ]------------
+>>>> [    5.289649] kernel BUG at include/linux/mtd/map.h:148!
+>>>
+>>> I think the problem is that your randconfig happens to have none of
+>>> CONFIG_MTD_MAP_BANK_WIDTH_* set (you should have played the lottery
+>>> today!), and the default implementation of map_bankwidth() in that
+>>> case is just "BUG()":
+>>>
+>>>    $ grep MTD_MAP config-3.14.0-rc8-wl-03045-gdf16ea4
+>>>    # CONFIG_MTD_MAP_BANK_WIDTH_1 is not set
+>>>    # CONFIG_MTD_MAP_BANK_WIDTH_2 is not set
+>>>    # CONFIG_MTD_MAP_BANK_WIDTH_4 is not set
+>>>    # CONFIG_MTD_MAP_BANK_WIDTH_8 is not set
+>>>    # CONFIG_MTD_MAP_BANK_WIDTH_16 is not set
+>>>    # CONFIG_MTD_MAP_BANK_WIDTH_32 is not set
+>>>
+>>> I don't know enough Kconfig or MTD to fix this.
+>>
+>> Michal, the problem we run into is, how to select one of the above
+>> CONFIG_MTD_MAP_BANK_WIDTH_xx in "make randconfig".
 >
-> I am a developer. Now I confronted an interesting phenomena. When I 
-> used linux kernel 2.6.34.15 on freescale-p2020, I can not receive raw 
-> and vlan packets on gfar-enet nic. But with e1000e nic, we can make 
-> vlan and raw packets work well. I looked into the source code and find 
-> that maybe it is related with hardware insert and remove vlan head. 
-> But I have no the specifications of gfar-enet nic. Would you like to 
-> give some document or some guides?
->
-> Thanks a lot.
-> Zhu Yanjun
->
-> The steps are as below.
->
-> 1. I boot two freescale-p2020 boards with linux kernel 2.6.34.15, then 
-> I connected 2 gfar-enet nic cards with a direct network line;
->
-> 2. On board 1, I checked the driver of eth0
->
-> ethtool -i eth0
->
-> driver: gfar-enet
-> version: 1.3
-> firmware-version: N/A
-> bus-info: N/A
->
-> On board 2, I checked the driver of eth1
->
-> ethtool -i eth1
->
-> driver: gfar-enet
-> version: 1.3
-> firmware-version: N/A
-> bus-info: N/A
->
-> 3. Then I configure the ip address on the above 2 nic cards.
->
-> On board 1,
->
-> ifconfig eth0 192.168.1.13/24 up
->
-> On board 2,
->
-> ifconfig eth1 192.168.1.196/24 up
->
-> 4. We can access the other board on one board.
-> For example, on board 1, we can ping board 2.
->
-> root@p2020rdb:/root> ping 192.168.1.196
-> PING 192.168.1.196 (192.168.1.196) 56(84) bytes of data.
-> 64 bytes from 192.168.1.196: icmp_req=1 ttl=64 time=2.92 ms
-> 64 bytes from 192.168.1.196: icmp_req=2 ttl=64 time=0.096 ms
->
-> 5. We configure vlan on these 2 boards. VLAN tag 0
-> On board 1,
->
-> modprobe 8021q
-> vconfig add eth0 4091
-> ifconfig eth0.4091 10.1.1.13/24 up
->
-> On board 2,
->
-> modprobe 8021q
-> vconfig add eth1 4091
-> ifconfig eth1.4091 10.1.1.196/24 up
->
-> 6. We can access the other board on one board through vlan.
-> For example, on board 1, we can ping board 2 through vlan nic.
->
-> root@p2020rdb:/root> ping 10.1.1.196
-> PING 10.1.1.196 (10.1.1.196) 56(84) bytes of data.
-> 64 bytes from 10.1.1.196: icmp_req=1 ttl=64 time=2.92 ms
-> 64 bytes from 10.1.1.196: icmp_req=2 ttl=64 time=0.096 ms
->
-> But we can not access the other board on one board through raw nic.
-> For example, on board, we can not ping board 2.
->
-> root@p2020rdb:/root> ping 192.168.1.196
-> From 192.168.1.196 icmp_seq=1 Destination Host Unreachable
-> From 192.168.1.196 icmp_seq=2 Destination Host Unreachable
-> From 192.168.1.196 icmp_seq=3 Destination Host Unreachable
+> You can't enforce this in Kconfig. What you can do is to make the logic
+> more fool-proof and fall back to some sensible default if none of the
+> CONFIG_MTD_MAP_BANK_WIDTH_* options is enabled. Like this
 >
 >
-
-
---------------000409010002020204030804
-Content-Type: text/x-patch;
- name="0001-gianfar-disable-TX-vlan-based-on-kernel-2.6.x.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-gianfar-disable-TX-vlan-based-on-kernel-2.6.x.patch"
-
->From afd48fa3ad5b15d519adeb19b2a9c00051327c68 Mon Sep 17 00:00:00 2001
-From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Date: Thu, 3 Apr 2014 16:41:13 +0800
-Subject: [PATCH 1/1] gianfar: disable TX vlan based on kernel 2.6.x
-
-Since there is something wrong with tx vlan of gianfar nic driver,
-on kernel(3.0+), tx vlan is disabled. But on kernel 2.6.x, tx vlan
-is still enabled. Thus,gianfar nic driver can not support vlan
-packets and non-vlan packets.
-
-Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
----
- drivers/net/gianfar.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
-
-diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
-index 934a28f..8aa2cf6 100644
---- a/drivers/net/gianfar.c
-+++ b/drivers/net/gianfar.c
-@@ -365,7 +365,7 @@ static int gfar_probe(struct of_device *ofdev,
- 	priv->vlgrp = NULL;
- 
- 	if (priv->device_flags & FSL_GIANFAR_DEV_HAS_VLAN)
--		dev->features |= NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX;
-+		dev->features |= NETIF_F_HW_VLAN_RX;
- 
- 	if (priv->device_flags & FSL_GIANFAR_DEV_HAS_EXTENDED_HASH) {
- 		priv->extended_hash = 1;
-@@ -1451,12 +1451,6 @@ static void gfar_vlan_rx_register(struct net_device *dev,
- 	priv->vlgrp = grp;
- 
- 	if (grp) {
--		/* Enable VLAN tag insertion */
--		tempval = gfar_read(&priv->regs->tctrl);
--		tempval |= TCTRL_VLINS;
--
--		gfar_write(&priv->regs->tctrl, tempval);
--
- 		/* Enable VLAN tag extraction */
- 		tempval = gfar_read(&priv->regs->rctrl);
- 		tempval |= (RCTRL_VLEX | RCTRL_PRSDEP_INIT);
--- 
-1.7.9.5
-
-
---------------000409010002020204030804--
+>  From 76e66ceea7e2ffbb1d39c01af2eaf6f2b66c2be3 Mon Sep 17 00:00:00 2001
+> From: Michal Marek <mmarek@suse.cz>
+> Date: Mon, 31 Mar 2014 16:25:32 +0200
+> Subject: [PATCH] mtd: Fall back to MTD_MAP_BANK_WIDTH_1 if none is specified
+>
+> This is mainly to fix make randconfig errors.
+>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>   drivers/mtd/chips/Kconfig | 8 ++++++++
+>   include/linux/mtd/map.h   | 4 ++--
+>   2 files changed, 10 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mtd/chips/Kconfig b/drivers/mtd/chips/Kconfig
+> index e4696b3..219de49 100644
+> --- a/drivers/mtd/chips/Kconfig
+> +++ b/drivers/mtd/chips/Kconfig
+> @@ -115,6 +115,14 @@ config MTD_MAP_BANK_WIDTH_32
+>   	  If you wish to support CFI devices on a physical bus which is
+>   	  256 bits wide, say 'Y'.
+>
+> +config HAVE_MTD_MAP_BANK_WIDTH_1
+> +	bool
+> +	default MTD_MAP_BANK_WIDTH_1 || (!MTD_MAP_BANK_WIDTH_2 && !MTD_MAP_BANK_WIDTH_4 && !MTD_MAP_BANK_WIDTH_8 && !MTD_MAP_BANK_WIDTH_16 && !MTD_MAP_BANK_WIDTH_32)
+> +
+> +if HAVE_MTD_MAP_BANK_WIDTH_1 && !MTD_MAP_BANK_WIDTH_1
+> +comment "no buswidth selected, using 8-bit as a fallback "
+> +endif
+> +
+>   config MTD_CFI_I1
+>   	bool "Support 1-chip flash interleave" if MTD_CFI_GEOMETRY
+>   	default y
+> diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
+> index 5f487d7..d4f4f49 100644
+> --- a/include/linux/mtd/map.h
+> +++ b/include/linux/mtd/map.h
+> @@ -32,7 +32,7 @@
+>   #include <asm/io.h>
+>   #include <asm/barrier.h>
+>
+> -#ifdef CONFIG_MTD_MAP_BANK_WIDTH_1
+> +#ifdef CONFIG_HAVE_MTD_MAP_BANK_WIDTH_1
+>   #define map_bankwidth(map) 1
+>   #define map_bankwidth_is_1(map) (map_bankwidth(map) == 1)
+>   #define map_bankwidth_is_large(map) (0)
+> @@ -156,7 +156,7 @@ static inline int map_bankwidth(void *map)
+>   static inline int map_bankwidth_supported(int w)
+>   {
+>   	switch (w) {
+> -#ifdef CONFIG_MTD_MAP_BANK_WIDTH_1
+> +#ifdef CONFIG_HAVE_MTD_MAP_BANK_WIDTH_1
+>   	case 1:
+>   #endif
+>   #ifdef CONFIG_MTD_MAP_BANK_WIDTH_2
+>
