@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587AbaDCPMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:12:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50520 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaDCPMV (ORCPT
+	id S1752636AbaDCPMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:12:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44823 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455AbaDCPMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:12:21 -0400
-Message-ID: <533D7A4D.3090900@oracle.com>
-Date: Thu, 03 Apr 2014 11:12:13 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] liblockdep fixes for v3.15
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Apr 2014 11:12:31 -0400
+Date: Thu, 03 Apr 2014 11:14:01 -0400 (EDT)
+Message-Id: <20140403.111401.1679730754008116799.davem@davemloft.net>
+To: holler@ahsoftware.de
+Cc: sebastian.hesselbarth@gmail.com, f.fainelli@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        michal.simek@xilinx.com, stable@vger.kernel.org
+Subject: Re: [PATCH regression] net: phy: fix initialization (config_init)
+ for Marvel 88E1116R PHYs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <533D790C.5000104@ahsoftware.de>
+References: <533D0B09.9040602@ahsoftware.de>
+	<533D207E.9020909@gmail.com>
+	<533D790C.5000104@ahsoftware.de>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 03 Apr 2014 08:12:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Alexander Holler <holler@ahsoftware.de>
+Date: Thu, 03 Apr 2014 17:06:52 +0200
 
-There are two patches from liblockdep this time around:
+> But don't suggest me (or insist on) a time consuming
 
- 1. There was a build breakage caused by marking a function 'asmlinkage'
-in lockdep.h. Fix that by ignoring asmlinkage and visible annotations.
-
- 2. Josh Boyer mentioned that Fedora would like to include liblockdep
-as a package, so we had to fix our versioning methods from being dumb
-and pointless to something actually usable. So now liblockdep.so tracks
-the kernel version which makes lives of distro folks much easier.
-
-==
-
-The following changes since commit 01d5f3b598b18a5035426c30801adf65822dbd0c:
-
-  Merge branch 'for-3.15' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata (2014-03-31 15:27:37 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/sashal/linux.git liblockdep-fixes
-
-for you to fetch changes up to be227b45fb228adff4371b8de9e3989904209ff4:
-
-  tools/liblockdep: Add proper versioning to the shared obj (2014-04-01 11:46:10 -0400)
-
-----------------------------------------------------------------
-Sasha Levin (2):
-      tools/liblockdep: Ignore asmlinkage and visible
-      tools/liblockdep: Add proper versioning to the shared obj
-
- tools/lib/lockdep/Makefile                 | 15 ++++-----------
- tools/lib/lockdep/uinclude/linux/lockdep.h |  3 +++
- 2 files changed, 7 insertions(+), 11 deletions(-)
+Bisects are not time consuming, and help developers analyze your
+issue tremendously.
