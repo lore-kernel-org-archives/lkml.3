@@ -1,180 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162362AbaDCGpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 02:45:46 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:51092 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162303AbaDCGpo (ORCPT
+	id S1162398AbaDCHEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 03:04:32 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:34730
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1162382AbaDCHEG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 02:45:44 -0400
-Message-ID: <1396507532.2913.45.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index
- reflect the start/end section number
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
-        gregkh@linuxfoundation.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave.hansen@intel.com>
-Date: Thu, 03 Apr 2014 14:45:32 +0800
-In-Reply-To: <533CD04F.8060003@cn.fujitsu.com>
-References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
-	 <533CBB46.4050800@cn.fujitsu.com>
-	 <1396492623.2913.31.camel@ThinkPad-T5421.cn.ibm.com>
-	 <533CD04F.8060003@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040306-0260-0000-0000-000004A31A1F
+	Thu, 3 Apr 2014 03:04:06 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv2 2/3] regmap: Add the DT binding documentation for
+ endianness
+Thread-Topic: [PATCHv2 2/3] regmap: Add the DT binding documentation for
+ endianness
+Thread-Index: AQHPTmGjdrGV9rYnBkeeS8Q3q4yK7Zr+vDIAgAB8PNA=
+Date: Thu, 3 Apr 2014 07:04:00 +0000
+Message-ID: <bebf1cf679014e62b1f4ad3fa970b52f@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1396433349-31470-1-git-send-email-Li.Xiubo@freescale.com>
+ <1396433349-31470-3-git-send-email-Li.Xiubo@freescale.com>
+ <20140402194812.GK14763@sirena.org.uk>
+In-Reply-To: <20140402194812.GK14763@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0170DAF08C
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(199002)(164054003)(189002)(51704005)(95416001)(81686001)(93516002)(93136001)(80976001)(51856001)(86362001)(85852003)(2656002)(94316002)(94946001)(97186001)(95666003)(56816005)(90146001)(81816001)(87266001)(97336001)(19580405001)(46102001)(92566001)(87936001)(74706001)(85306002)(76482001)(83072002)(54356001)(99286001)(4396001)(47976001)(81342001)(47446002)(98676001)(49866001)(33646001)(74316001)(76786001)(54316002)(56776001)(76796001)(76576001)(65816001)(50986001)(31966008)(69226001)(74502001)(53806001)(20776003)(74366001)(83322001)(81542001)(74876001)(47736001)(74662001)(99396002)(66066001)(63696002)(79102001)(77982001)(80022001)(59766001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:BE59FBA6.1F325E19.33C5B77E.48E5A971.20246;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-03 at 11:06 +0800, Zhang Yanfei wrote:
-> On 04/03/2014 10:37 AM, Li Zhong wrote:
-> > On Thu, 2014-04-03 at 09:37 +0800, Zhang Yanfei wrote:
-> >> Add ccing
-> >>
-> >> On 04/02/2014 04:56 PM, Li Zhong wrote:
-> >>> I noticed the phys_index and end_phys_index under 
-> >>> /sys/devices/system/memory/memoryXXX/ have the same value, e.g.
-> >>> (for the test machine, one memory block has 8 sections, that is 
-> >>>  sections_per_block equals 8)
-> >>>
-> >>> # cd /sys/devices/system/memory/memory100/
-> >>> # cat phys_index end_phys_index 
-> >>> 00000064
-> >>> 00000064
-> >>>
-> >>> Seems they should reflect the start/end section number respectively, which 
-> >>> also matches what is said in Documentation/memory-hotplug.txt
-> >>
-> > Hi Yanfei, 
-> > 
-> > Thanks for the review. 
-> > 
-> >> Indeed. I've noticed this before. The value in 'end_phys_index' doesn't
-> >> match what it really means. But, the name itself is vague, it looks like
-> >> it is the index of some page frame. (we keep this name for compatibility?)
-> > 
-> > I guess so, Dave just reminded me that the RFC would also break
-> > userspace..
-> > 
-> > And now my plan is: 
-> >  leave the code unchanged
-> >  update the document, state the end_phys_index/phys_index are the same,
-> > and means the memory block index
+> Subject: Re: [PATCHv2 2/3] regmap: Add the DT binding documentation for
+> endianness
 > 
-> Ah. I doubt whether there is userspace tool which is using the two sysfiles?
-> for example, the memory100 directory itself can tell us which block it is.
-> So why there is the two files under it give the same meaning.
+> On Wed, Apr 02, 2014 at 06:09:08PM +0800, Xiubo Li wrote:
 > 
-> If there is userspace tool using the two files, does it use 'end_phys_index'
-> in the correct way? That said, if a userspace tool knows what the 'end_phys_index'
-> really mean, does it still need it since we have 'phys_index' with the same value?
-
-For the end_phys_index, I totally agree with you. If somebody tries to
-use it, say as the end section number, he should finally be able to find
-that the value is not what he expects. But who knows ...
-
-For phys_index, I guess it is also reasonable for some userspace tool to
-just loop for each memoryXXX directory under /sys/devices/system/memory,
-and use the phys_index as the memory block index for the directory,
-instead of extracting the XXX from the directory name memoryXXX
-
-Don't know whether there are some generic rules for handling such kind
-of compatibility issues...
-
-
-> >  [optional] create two new files start_sec_nr, end_sec_nr if needed
+> > +sai2: sai@40031000 {
+> > +	      compatible = "fsl,vf610-sai";
+> > +	      reg = <0x40031000 0x1000>;
+> > +	      ...
+> > +	      val-endian = 'LE';
+> > +};
 > 
-> These two are the really meaningful sysfiles for userspace, IMO.
+> This is mostly OK as a binding (though it should be CCed to the DT list
+> and maintiners as all DT bindings should) except using upper case
+> doesn't really seem idiomatic for DT - lower case is more normal - 
 
-OK, I see. 
+I will your advices.
+
+
+> and I
+> don't think we can make these properties mandatory in themselves.
+> Individual bindings would need to make them mandatory.  It's also odd to
+> have a mandatory property which may be absent!
+
+Well, yes, It is.
+
+The absent one is just to compatible with the old drivers.
+
+
 
 > 
-> > 
-> > Do you have any other suggestions? 
-> 
-> No. I think we should wait for other guys to comment more.
+> It'd probably be better if the binding defined what the default
+> endianess was too, or just didn't say what happens in cases where
+> nothing is specified, the latter seems better.  
 
-OK, let's wait.
+I will think it over carefully.
 
-Thanks, Zhong
 
-> 
-> Thanks.
-> 
-> > 
-> > Thanks, Zhong
-> > 
-> >>
-> >> The corresponding member in struct memory_block is:
-> >>
-> >> struct memory_block {
-> >>         unsigned long start_section_nr;
-> >>         unsigned long end_section_nr;
-> >> ...
-> >>
-> >> The two members seem to have the right name, and have the right value in kernel.
-> >>
-> >>
-> >>>
-> >>> This patch tries to modify that so the two files could show the start/end
-> >>> section number of the memory block.
-> >>>
-> >>> After this change, output of the above example looks like:
-> >>>
-> >>> # cat phys_index end_phys_index 
-> >>> 00000320
-> >>> 00000327
-> >>>
-> >>> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> >>> ---
-> >>>  drivers/base/memory.c | 4 ++--
-> >>>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>>
-> >>> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> >>> index bece691..b10f2fa 100644
-> >>> --- a/drivers/base/memory.c
-> >>> +++ b/drivers/base/memory.c
-> >>> @@ -114,7 +114,7 @@ static ssize_t show_mem_start_phys_index(struct device *dev,
-> >>>  	struct memory_block *mem = to_memory_block(dev);
-> >>>  	unsigned long phys_index;
-> >>>  
-> >>> -	phys_index = mem->start_section_nr / sections_per_block;
-> >>> +	phys_index = mem->start_section_nr;
-> >>>  	return sprintf(buf, "%08lx\n", phys_index);
-> >>>  }
-> >>>  
-> >>> @@ -124,7 +124,7 @@ static ssize_t show_mem_end_phys_index(struct device *dev,
-> >>>  	struct memory_block *mem = to_memory_block(dev);
-> >>>  	unsigned long phys_index;
-> >>>  
-> >>> -	phys_index = mem->end_section_nr / sections_per_block;
-> >>> +	phys_index = mem->end_section_nr;
-> >>>  	return sprintf(buf, "%08lx\n", phys_index);
-> >>>  }
-> >>>  
-> >>>
-> >>>
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>> Please read the FAQ at  http://www.tux.org/lkml/
-> >>>
-> >>
-> >>
-> > 
-> > 
-> > .
-> > 
-> 
-> 
+> Generally just not
+> mentioning regmap is better for a binding definition, the binding should
+> be usable by all OSs and not just Linux.
+
+How about move the endianness OF parsing to the driver/of/ ?
+Is this will be better ?
+
+Thanks,
+
+BRs
+Xiubo
+
 
 
