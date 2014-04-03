@@ -1,192 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162470AbaDCHMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 03:12:09 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:42759 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162368AbaDCHME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 03:12:04 -0400
-From: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        silentquote@gmail.com,
-        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
-Subject: [PATCH 2/9] driver: staging: wlan-ng: Removed unnecessary typedefs from hfa384x_usb.c
-Date: Thu,  3 Apr 2014 09:11:59 +0200
-Message-Id: <1396509119-2894-1-git-send-email-shehabaldin.sherif@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1162487AbaDCHMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 03:12:19 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50863 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1162368AbaDCHMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 03:12:15 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <gregkh@linuxfoundation.org>, <grant.likely@secretlab.ca>
+CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [RESEND] drivercore: deferral race condition fix
+Date: Thu, 3 Apr 2014 10:12:07 +0300
+Message-ID: <1396509127-23819-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed unnecessary typedefs from hfa384x_usb.c
+When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
+when all modules loaded but some driver still stuck in the deferred list
+and there is a need for external event to kick the deferred queue to probe
+these drivers.
 
-Signed-off-by: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
+audio support built as modules and using nfsroot for root filesystem.
+
+The following log fragment shows such sequence when all audio modules
+were loaded but the sound card is not present since the machine driver has
+failed to probe due to missing dependency during it's probe.
+The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
+machine driver:
+
+...
+[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
+[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
+[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
+[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
+[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
+[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
+[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
+[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
+[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
+[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
+[   13.346755] davinci_mcasp_driver_init: LEAVE
+[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
+[   13.592527] platform sound.3: really_probe: probe_count = 0
+
+In the log the machine driver enters it's probe at 12.719969 (this point it
+has been removed from the deferred lists). McASP driver already executing
+it's probing (since 12.615118).
+The machine driver tries to construct the sound card (12.950839) but did
+not found one of the components so it fails. After this McASP driver
+registers all the ASoC components (the machine driver still in it's probe
+function after it failed to construct the card) and the deferred work is
+prepared at 13.099026 (note that this time the machine driver is not in the
+lists so it is not going to be handled when the work is executing).
+Lastly the machine driver exit from it's probe and the core places it to
+the deferred list but there will be no other driver going to load and the
+deferred queue is not going to be kicked again - till we have external event
+like connecting USB stick, etc.
+
+The proposed solution is to try the deferred queue once more when the last
+driver is asking for deferring and we had drivers loaded while this last
+driver was probing.
+
+This way we can avoid drivers stuck in the deferred queue.
+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/staging/wlan-ng/hfa384x_usb.c |   38 ++++++++++++++++-----------------
- 1 file changed, 18 insertions(+), 20 deletions(-)
+ drivers/base/dd.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 4c828c2..2a44c79 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -643,8 +643,8 @@ usbctlx_get_status(const hfa384x_usb_cmdresp_t *cmdresp,
- 	result->resp2 = le16_to_cpu(cmdresp->resp2);
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 06051767393f..80703de6e6ad 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -53,6 +53,10 @@ static LIST_HEAD(deferred_probe_pending_list);
+ static LIST_HEAD(deferred_probe_active_list);
+ static struct workqueue_struct *deferred_wq;
  
- 	pr_debug("cmdresult:status=0x%04x resp0=0x%04x resp1=0x%04x resp2=0x%04x\n",
--			result->status, result->resp0,
--			result->resp1, result->resp2);
-+		 result->status, result->resp0,
-+		 result->resp1, result->resp2);
++static atomic_t probe_count = ATOMIC_INIT(0);
++static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
++static bool deferral_retry;
++
+ /**
+  * deferred_probe_work_func() - Retry probing devices in the active list.
+  */
+@@ -141,6 +145,11 @@ static void driver_deferred_probe_trigger(void)
+ 	if (!driver_deferred_probe_enable)
+ 		return;
  
- 	return result->status & HFA384x_STATUS_RESULT;
++	if (atomic_read(&probe_count) > 1)
++		deferral_retry = true;
++	else
++		deferral_retry = false;
++
+ 	/*
+ 	 * A successful probe means that all the devices in the pending list
+ 	 * should be triggered to be reprobed.  Move all the deferred devices
+@@ -259,9 +268,6 @@ int device_bind_driver(struct device *dev)
  }
-@@ -745,14 +745,12 @@ static inline struct usbctlx_completor *init_rrid_completor(
- * Completor object:
- * Interprets the results of a synchronous RID-write
- ----------------------------------------------------------------*/
--typedef struct usbctlx_cmd_completor usbctlx_wrid_completor_t;
- #define init_wrid_completor  init_cmd_completor
+ EXPORT_SYMBOL_GPL(device_bind_driver);
  
- /*----------------------------------------------------------------
- * Completor object:
- * Interprets the results of a synchronous memory-write
- ----------------------------------------------------------------*/
--typedef struct usbctlx_cmd_completor usbctlx_wmem_completor_t;
- #define init_wmem_completor  init_cmd_completor
- 
- /*----------------------------------------------------------------
-@@ -766,11 +764,11 @@ struct usbctlx_rmem_completor {
- 	void *data;
- 	unsigned int len;
- };
--typedef struct usbctlx_rmem_completor usbctlx_rmem_completor_t;
- 
- static int usbctlx_rmem_completor_fn(struct usbctlx_completor *head)
+-static atomic_t probe_count = ATOMIC_INIT(0);
+-static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
+-
+ static int really_probe(struct device *dev, struct device_driver *drv)
  {
--	usbctlx_rmem_completor_t *complete = (usbctlx_rmem_completor_t *) head;
-+	struct usbctlx_rmem_completor *complete =
-+		(struct usbctlx_rmem_completor *)head;
- 
- 	pr_debug("rmemresp:len=%d\n", complete->rmemresp->frmlen);
- 	memcpy(complete->data, complete->rmemresp->data, complete->len);
-@@ -778,7 +776,7 @@ static int usbctlx_rmem_completor_fn(struct usbctlx_completor *head)
- }
- 
- static inline struct usbctlx_completor *init_rmem_completor(
--						usbctlx_rmem_completor_t
-+						struct usbctlx_rmem_completor
- 							*completor,
- 						hfa384x_usb_rmemresp_t
- 							*rmemresp,
-@@ -1380,7 +1378,7 @@ hfa384x_docmd(hfa384x_t *hw,
- 	ctlx->outbufsize = sizeof(ctlx->outbuf.cmdreq);
- 
- 	pr_debug("cmdreq: cmd=0x%04x parm0=0x%04x parm1=0x%04x parm2=0x%04x\n",
--			cmd->cmd, cmd->parm0, cmd->parm1, cmd->parm2);
-+		 cmd->cmd, cmd->parm0, cmd->parm1, cmd->parm2);
- 
- 	ctlx->reapable = mode;
- 	ctlx->cmdcb = cmdcb;
-@@ -1563,7 +1561,7 @@ hfa384x_dowrid(hfa384x_t *hw,
- 	if (result != 0) {
- 		kfree(ctlx);
- 	} else if (mode == DOWAIT) {
--		usbctlx_wrid_completor_t completor;
-+		struct usbctlx_cmd_completor completor;
- 		hfa384x_cmdresult_t wridresult;
- 
- 		result = hfa384x_usbctlx_complete_sync(hw,
-@@ -1655,7 +1653,7 @@ hfa384x_dormem(hfa384x_t *hw,
- 	if (result != 0) {
- 		kfree(ctlx);
- 	} else if (mode == DOWAIT) {
--		usbctlx_rmem_completor_t completor;
-+		struct usbctlx_rmem_completor completor;
- 
- 		result =
- 		    hfa384x_usbctlx_complete_sync(hw, ctlx,
-@@ -1745,7 +1743,7 @@ hfa384x_dowmem(hfa384x_t *hw,
- 	if (result != 0) {
- 		kfree(ctlx);
- 	} else if (mode == DOWAIT) {
--		usbctlx_wmem_completor_t completor;
-+		struct usbctlx_cmd_completor completor;
- 		hfa384x_cmdresult_t wmemresult;
- 
- 		result = hfa384x_usbctlx_complete_sync(hw,
-@@ -2016,7 +2014,7 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
- 		return -EINVAL;
- 
- 	netdev_info(hw->wlandev->netdev,
--			"Download %d bytes to flash @0x%06x\n", len, daddr);
-+		    "Download %d bytes to flash @0x%06x\n", len, daddr);
- 
- 	/* Convert to flat address for arithmetic */
- 	/* NOTE: dlbuffer RID stores the address in AUX format */
-@@ -2027,8 +2025,8 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
- 
- #if 0
- 	netdev_warn(hw->wlandev->netdev,
--			"dlbuf@0x%06lx len=%d to=%d\n", dlbufaddr,
--			hw->bufinfo.len, hw->dltimeout);
-+		    "dlbuf@0x%06lx len=%d to=%d\n", dlbufaddr,
-+		    hw->bufinfo.len, hw->dltimeout);
- #endif
- 	/* Calculations to determine how many fills of the dlbuffer to do
- 	 * and how many USB wmemreq's to do for each fill.  At this point
-@@ -2062,7 +2060,7 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
- 					      burnlo, burnhi, burnlen);
- 		if (result) {
- 			netdev_err(hw->wlandev->netdev,
--					"download(NV,lo=%x,hi=%x,len=%x) cmd failed, result=%d. Aborting d/l\n",
-+				   "download(NV,lo=%x,hi=%x,len=%x) cmd failed, result=%d. Aborting d/l\n",
- 					burnlo, burnhi, burnlen, result);
- 			goto exit_proc;
- 		}
-@@ -2351,7 +2349,7 @@ int hfa384x_drvr_ramdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
- 		return -EINVAL;
- 
- 	netdev_info(hw->wlandev->netdev, "Writing %d bytes to ram @0x%06x\n",
--			len, daddr);
-+		    len, daddr);
- 
- 	/* How many dowmem calls?  */
- 	nwrites = len / HFA384x_USB_RWMEM_MAXLEN;
-@@ -2462,7 +2460,7 @@ int hfa384x_drvr_readpda(hfa384x_t *hw, void *buf, unsigned int len)
- 			/* Test the record length */
- 			if (pdrlen > HFA384x_PDR_LEN_MAX || pdrlen == 0) {
- 				netdev_err(hw->wlandev->netdev,
--						"pdrlen invalid=%d\n", pdrlen);
-+					   "pdrlen invalid=%d\n", pdrlen);
- 				pdaok = 0;
- 				break;
- 			}
-@@ -2785,7 +2783,7 @@ int hfa384x_drvr_txframe(hfa384x_t *hw, struct sk_buff *skb,
- 	ret = submit_tx_urb(hw, &hw->tx_urb, GFP_ATOMIC);
- 	if (ret != 0) {
- 		netdev_err(hw->wlandev->netdev,
--				"submit_tx_urb() failed, error=%d\n", ret);
-+			   "submit_tx_urb() failed, error=%d\n", ret);
- 		result = 3;
- 	}
- 
-@@ -4140,12 +4138,12 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
- 		if (pdrcode < 0x1000) {
- 			/* code is OK, but we don't know exactly what it is */
- 			pr_debug("Encountered unknown PDR#=0x%04x, assuming it's ok.\n",
--					pdrcode);
-+				 pdrcode);
- 			return 1;
- 		} else {
- 			/* bad code */
- 			pr_debug("Encountered unknown PDR#=0x%04x, (>=0x1000), assuming it's bad.\n",
--					pdrcode);
-+				 pdrcode);
- 			return 0;
- 		}
- 		break;
+ 	int ret = 0;
+@@ -310,6 +316,16 @@ probe_failed:
+ 		/* Driver requested deferred probing */
+ 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
+ 		driver_deferred_probe_add(dev);
++		/*
++		 * This is the last driver to load and asking to be deferred.
++		 * If other driver(s) loaded while this driver was loading, we
++		 * should try the deferred modules again to avoid missing
++		 * dependency for this driver.
++		 */
++		if (atomic_read(&probe_count) == 1 && deferral_retry) {
++			deferral_retry = false;
++			driver_deferred_probe_trigger();
++		}
+ 	} else if (ret != -ENODEV && ret != -ENXIO) {
+ 		/* driver matched but the probe failed */
+ 		printk(KERN_WARNING
 -- 
-1.7.9.5
+1.9.1
 
