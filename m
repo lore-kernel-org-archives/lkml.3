@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162694AbaDCIyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:54:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60104 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1162578AbaDCIyJ (ORCPT
+	id S1162700AbaDCI5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:57:38 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:59446 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162584AbaDCI5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:54:09 -0400
-Message-ID: <533D21AF.2070508@free-electrons.com>
-Date: Thu, 03 Apr 2014 10:54:07 +0200
-From: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jisheng Zhang <jszhang@marvell.com>
-CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: dts: document the berlin enable-method property
-References: <1396512496-8030-1-git-send-email-antoine.tenart@free-electrons.com>	<1396512496-8030-3-git-send-email-antoine.tenart@free-electrons.com> <20140403162202.79b63729@xhacker>
-In-Reply-To: <20140403162202.79b63729@xhacker>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 3 Apr 2014 04:57:32 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-34-533d226286b0
+From: Heesub Shin <heesub.shin@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Heesub Shin <heesub.shin@samsung.com>,
+        Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>
+Subject: [PATCH 2/2] mm/compaction: fix to initialize free scanner properly
+Date: Thu, 03 Apr 2014 17:57:04 +0900
+Message-id: <1396515424-18794-2-git-send-email-heesub.shin@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+In-reply-to: <1396515424-18794-1-git-send-email-heesub.shin@samsung.com>
+References: <1396515424-18794-1-git-send-email-heesub.shin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t8zHd0kJdtggye/tC3mrF/DZnHiYq3F
+	wdlLmCwu75rDZnFvzX9Wi8nvnjFanO5YxOrA7rHp0yR2jxMzfrN49G1Zxeix+XS1x+dNcgGs
+	UVw2Kak5mWWpRfp2CVwZ7bM3MxXs5qz4OuccSwPjB/YuRk4OCQETiWXLjzFB2GISF+6tZ+ti
+	5OIQEljGKDFj5SSgIg6wom/vYyHi0xkl1vb0skM47UwS3/8uYQUpYhPQlji0LRhkkIiArsSq
+	57uYQWqYBU4zSkzuuMYKkhAW8JboWHiaGcRmEVCVeN11nQXE5hVwl9jzYQHUFQoSy76sBavh
+	FPCQeP1gNlivEFDN51PzWSFq5rFLTHxQADFHQOLb5EMsEIfKSmw6wAxRIilxcMUNlgmMwgsY
+	GVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525ihAR4/w7GuwesDzEmA42byCwlmpwPjJC8knhD
+	YzMjC1MTU2Mjc0sz0oSVxHnvP0wKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDo9ZF9usZM
+	sQU3tLvWP5CS3G+pajP1/sL1ARys372S++a1mh7LnSlXdG7SLPOW9f3ND08tcz7MV1USk8ye
+	s/L7mg1bO9umJt13ZkqIXb7yjotDzOX5b5rc7rOZ5e3qlaj+kz3jg3BS9LnXVh4qkycI3//+
+	4OZU37t7PUK92nlTV/ZJlZi/5eZVYinOSDTUYi4qTgQAE+rrF4YCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jQd0kJdtgg6W7NSzmrF/DZnHiYq3F
+	wdlLmCwu75rDZnFvzX9Wi8nvnjFanO5YxOrA7rHp0yR2jxMzfrN49G1Zxeix+XS1x+dNcgGs
+	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
+	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM9pnb2Yq2M1Z8XXOOZYGxg/s
+	XYwcHBICJhLf3sd2MXICmWISF+6tZ+ti5OIQEpjOKLG2p5cdwmlnkvj+dwkrSAObgLbEoW3B
+	IA0iAroSq57vYgapYRY4zSgxueMaK0hCWMBbomPhaWYQm0VAVeJ113UWEJtXwF1iz4cFTBDb
+	FCSWfVkLVsMp4CHx+sFssF4hoJrPp+azTmDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/
+	dxMjOIKeSe1gXNlgcYhRgINRiYfXQsomWIg1say4MvcQowQHs5II78UvQCHelMTKqtSi/Pii
+	0pzU4kOMyUBXTWSWEk3OB0Z3Xkm8obGJmZGlkZmxibmxMWnCSuK8B1qtA4UE0hNLUrNTUwtS
+	i2C2MHFwSjUw+r19cH/Wgu+8oZW21469rVZ1WsPw4H53leJRxs0hipUrJ8UrXDLMcnwS+v/9
+	gatFUsvUdpmVJLTGbliTyB/AfO7vi+oQ56vr41don4jeFbUmR/Nc1+P7p4WybfLXtH7xv7f1
+	Wwp/rmOt875JRnUzFvGzaxfuthPJ+Bnt+jhD4/fviWYCvCKvlFiKMxINtZiLihMB3Ey0MuQC	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jisheng,
+Free scanner does not works well on systems having zones which do not
+span to pageblock-aligned boundary.
 
-On 03/04/2014 10:22, Jisheng Zhang wrote:
-> Hi,
->
-> On Thu, 3 Apr 2014 01:08:15 -0700
-> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
->
->> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
->> ---
->>   Documentation/devicetree/bindings/arm/cpus.txt | 2 ++
->>   1 file changed, 2 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt
->> b/Documentation/devicetree/bindings/arm/cpus.txt index
->> 333f4aea3029..a9e42a2dbc99 100644 ---
->> a/Documentation/devicetree/bindings/arm/cpus.txt +++
->> b/Documentation/devicetree/bindings/arm/cpus.txt @@ -185,6 +185,8 @@ nodes
->> to be present and contain the properties described below. "qcom,gcc-msm8660"
->>   			    "qcom,kpss-acc-v1"
->>   			    "qcom,kpss-acc-v2"
->> +			    "marvell,88de31-smp" - cpu-core handling for
->
-> why not "marvell,berlin-smp"?
+zone->compact_cached_free_pfn is reset when the migration and free
+scanner across or compaction restarts. After the reset, if end_pfn of
+the zone was not aligned to pageblock_nr_pages, free scanner tries to
+isolate free pages from the middle of pageblock to the end, which can
+be very small range.
 
-We have SMP on the BG2 and the BG2Q currently. Future boards may not be 
-compatible with this method (BG3 ?), I think "marvell,berlin-smp" is too 
-generic.
+Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+---
+ mm/compaction.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-We could use "marvell,88de31xx-smp" as Alexandre suggested.
-
-Antoine
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 1ef9144..fefe1da 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -983,7 +983,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 	 */
+ 	cc->migrate_pfn = zone->compact_cached_migrate_pfn;
+ 	cc->free_pfn = zone->compact_cached_free_pfn;
+-	if (cc->free_pfn < start_pfn || cc->free_pfn > end_pfn) {
++	if (cc->free_pfn < start_pfn || cc->free_pfn >= end_pfn) {
+ 		cc->free_pfn = end_pfn & ~(pageblock_nr_pages-1);
+ 		zone->compact_cached_free_pfn = cc->free_pfn;
+ 	}
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.8.3.2
+
