@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaDCQ5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:57:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33309 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844AbaDCQ5K (ORCPT
+	id S1752946AbaDCRDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:03:30 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:43698 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752787AbaDCRDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:57:10 -0400
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Joe Perches <joe@perches.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm: convert some level-less printks to pr_*
-References: <1395942859-11611-1-git-send-email-mitchelh@codeaurora.org>
-	<1395942859-11611-2-git-send-email-mitchelh@codeaurora.org>
-	<alpine.DEB.2.10.1403311334060.3313@nuc>
-	<1396291441.21529.52.camel@joe-AO722>
-	<alpine.DEB.2.10.1404031132310.21658@nuc>
-Date: Thu, 03 Apr 2014 09:57:11 -0700
-In-Reply-To: <alpine.DEB.2.10.1404031132310.21658@nuc> (Christoph Lameter's
-	message of "Thu, 3 Apr 2014 11:33:15 -0500 (CDT)")
-Message-ID: <vnkwha6a1hco.fsf@mitchelh-linux.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 3 Apr 2014 13:03:23 -0400
+X-Sasl-enc: JxWNuHZJasKE+e9SBkq9fYQrGhGmOYnO51NIFBBU7rQg 1396544594
+Date: Thu, 3 Apr 2014 14:03:08 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Shuduo Sang <shuduo.sang@canonical.com>
+Cc: matthew.garrett@nebula.com, ibm-acpi@hmh.eng.br,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net,
+        Bruce Ma <bruce.ma@canonical.com>
+Subject: Re: [ibm-acpi-devel] [PATCH] support thinkpad HKEY interface version
+ 0x200
+Message-ID: <20140403170308.GC14936@khazad-dum.debian.net>
+References: <531F0073.7060103@canonical.com>
+ <20140403154427.GB32027@khazad-dum.debian.net>
+ <CA+BAWBQcu4KBG3hmuqBMmWeqE1k9itgXyDtMRibZZOLvvAdwHQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+BAWBQcu4KBG3hmuqBMmWeqE1k9itgXyDtMRibZZOLvvAdwHQ@mail.gmail.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03 2014 at 09:33:15 AM, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 31 Mar 2014, Joe Perches wrote:
->
->> On Mon, 2014-03-31 at 13:35 -0500, Christoph Lameter wrote:
->> > On Thu, 27 Mar 2014, Mitchel Humpherys wrote:
->> >
->> > > diff --git a/mm/slub.c b/mm/slub.c
->> []
->> > > @@ -9,6 +9,8 @@
->> > >   * (C) 2011 Linux Foundation, Christoph Lameter
->> > >   */
->> > >
->> > > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> >
->> > This is implicitly used by some macros? If so then please define this
->> > elsewhere. I do not see any use in slub.c of this one.
->>
->> Hi Christoph
->>
->> All the pr_<level> macros use it.
->>
->> from include/linux/printk.h:
->
-> Ok then why do you add the definition to slub.c?
+On Fri, 04 Apr 2014, Shuduo Sang wrote:
+> On Thu, Apr 3, 2014 at 11:44 PM, Henrique de Moraes Holschuh <hmh@hmh.eng.br
+> > wrote:
+> 
+> > On Tue, 11 Mar 2014, Shuduo Sang wrote:
+> > > Please kindly review following patch. It support new BIOS which shiped
+> > > with Thinkpad X1 Carbon 2nd generation. Without it, hotkey mask be
+> > > routed to wrong branch and some hot key will not work.
+> >
+> > Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> >
+> > Can you guys get documentation on the new mode from Lenovo?
+> >
+> 
+> Yes, actually it's a joint-effort to officially enable X1 carbon 2nd
+> generation by Canonical and Lenovo.
 
-Ah that was an oversight on my part after changing to pr_cont. I'll send
-a v3 that removes the pr_fmt. Or I could send a v3 that leaves the
-pr_fmt but changes the printk that the pr_cont's are continuing (at the
-top of note_cmpxchg_failure) to pr_info, but that wouldn't be consistent
-with the rest of the file, which is using hand-tagged printk's.
-
-I don't know if it's worthwhile to convert all of the hand-tagged
-printk's to the pr_ macros, but if so I can do that in a separate patch.
+Ok. Feel free to contact me over private email if required.
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
