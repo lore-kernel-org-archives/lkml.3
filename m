@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaDCKnT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 06:43:19 -0400
-Received: from 8bytes.org ([85.214.48.195]:44421 "EHLO mail.8bytes.org"
+	id S1751856AbaDCKo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 06:44:29 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38442 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674AbaDCKnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 06:43:13 -0400
-Date: Thu, 3 Apr 2014 12:43:08 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-ID: <20140403104308.GP13491@8bytes.org>
-References: <20140402144219.4cafbe37@gandalf.local.home>
- <20140402221212.GD16570@mguzik.redhat.com>
- <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
- <alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
- <20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
- <CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
- <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
- <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
- <CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
+	id S1751186AbaDCKo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 06:44:27 -0400
+Message-ID: <533D3A97.1030809@linux.vnet.ibm.com>
+Date: Thu, 03 Apr 2014 16:10:23 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Apr  3 12:43:11 2014
-X-DSPAM-Confidence: 0.9995
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 533d3b3f20861768916966
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC 1/4] sched: extend the usage of cpu_power_orig
+References: <1396012949-6227-1-git-send-email-vincent.guittot@linaro.org> <1396012949-6227-2-git-send-email-vincent.guittot@linaro.org> <533A9768.6060006@linux.vnet.ibm.com> <CAKfTPtD7Qp4yUoZ+3jV-Me2Xn53zbi8cHRrWyO7X+COzwcy3Tg@mail.gmail.com>
+In-Reply-To: <CAKfTPtD7Qp4yUoZ+3jV-Me2Xn53zbi8cHRrWyO7X+COzwcy3Tg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040310-5806-0000-0000-000024821A78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 06:47:57PM -0700, Linus Torvalds wrote:
-> Whether it actually fixes the problem that Borislav had is
-> questionable, of course. For all I know, systemd debug mode generates
-> so much data in *other* ways and then causes feedback loops with the
-> kernel debugging that this patch is totally immaterial, and dmesg was
-> never the main issue. But unlike the "hide 'debug' from
-> /proc/cmdline", I think this patch at least _conceptually_ makes a lot
-> of sense, even if systemd gets fixed, so ...
+On 04/01/2014 04:50 PM, Vincent Guittot wrote:
+> On 1 April 2014 12:39, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>> Hi Vincent,
+>>
+>> On 03/28/2014 06:52 PM, Vincent Guittot wrote:
+>>> cpu_power_orig is only changed for SMT system in order to reflect the lower
+>>> capacity of CPUs. Heterogenous system also have to reflect an original
+>>> capacity that is different from the default value.
+>>
+>> There is no parameter 'cpu_power_orig' till your fourth patch right?
+>> Why is this term being used in this patch?
+> 
+> It looks like that i have mixed power_orig and cpu_power_orig in my
+> commit messages
+> 
+>>
+>> Besides, both parameters power and power_orig are changed for SMT
+>> systems to reflect the lower capacity of the CPUs.Why is there a mention
+>> of only power_orig?
+> 
+> Only SMT system is able to change power_orig from default value
+> whereas all systems can already change power field with
+> arch_scale_freq_power function. The goal of this patch is to change
 
-How about just ignoring writes to /dev/kmsg altogether by default
-(unless explicitly enabled in Kconfig or on the kernel cmdline)? Maybe I
-am missing something but what are the legitimate use-cases for generally
-allowing user-space to write into the kernel-log?
+I am unable to understand this. arch_scale_freq_power() is not doing the
+same job as arch_scale_smt_power() right? While the former allows the
+arch to set a power value per cpu different from the default value, the
+latter allows arch to adjust the power for hyper threads.
+
+For example in big.LITTLE, the big cores would be required to have a
+higher cpu power than what is currently being used as default. This is
+done by arch_scale_freq_power(). Whereas for an SMT system, the power of
+a core could perhaps be the same as default value, but needs to be
+divided among the hyper threads. This is done by arch_scale_smt_power().
+They have different purposes right?
+
+So I do not understand why you mention "all systems can already change
+power field with arch_scale_freq_power()."
+
+Actually I was assuming this patch would introduce
+arch_scale_smt_power() and arch_scale_freq_power(), two functions that
+would *enable all archs and not just ARCH_POWER* as is found today, to
+adjust their smt power and non-smt power respectively.
+
+For the same reasons, I am also unclear as to why power_orig is not
+initialized *after* default/arch_scale_freq_power(). For big cores for
+instance you would want the power_orig to be set not to a default value
+but to what the arch says as the frequency of a core scaled over the
+default value.
+
+> the function name that is used to set power_orig value to a more
+> generic one and to extend the possibility of setting power_orig for
+> any kind of system. The behavior of the power field is not changed
+> with this patchset.
+> 
+>>
+>> IMO, the subject of the patch is not clearly reflecting the main
+>> intention of the patch. There is nothing done to change the way
+>> cpu_power is used; rather you are changing the way the cpu_power is
+>> being set to be flexible, thus allowing for the right power value to be
+>> set on heterogeneous systems.
+>>
+>> 'Allow archs to set the cpu_power instead of falling to default value'
+>> or something similar would be more appropriate. What do you think?
+> 
+> I can change with : "Allow all archs to set the power_orig"
+
+Ok, but for the reasons mentioned above I was thinking the power_orig
+should be avoided since archs should be able to scale both power and
+power_orig per thread and not just ARCH_POWER.
+
+Regards
+Preeti U Murthy
 
 
-	Joerg
-
+> 
+> Thanks
+> 
+>>
+>> Regards
+>> Preeti U Murthy
 
