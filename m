@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaDCPFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:05:31 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63950 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaDCPF1 (ORCPT
+	id S1752662AbaDCPFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:05:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:64636 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543AbaDCPFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:05:27 -0400
-Date: Thu, 3 Apr 2014 17:05:24 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 3/4] workqueue: Add anon workqueue sysfs hierarchy
-Message-ID: <20140403150521.GF23338@localhost.localdomain>
-References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
- <1395940862-31428-4-git-send-email-fweisbec@gmail.com>
- <20140330130139.GD8942@htj.dyndns.org>
- <20140403144250.GD23338@localhost.localdomain>
- <20140403145805.GC24119@htj.dyndns.org>
+	Thu, 3 Apr 2014 11:05:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Linaro-acpi] How to pass I2C platform_data under ACPI
+Date: Thu, 03 Apr 2014 17:05:33 +0200
+Message-ID: <13098525.yKYfGA04Ut@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD57464000@BGSMSX104.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD57463568@BGSMSX104.gar.corp.intel.com> <20140403135826.GF19349@intel.com> <D854C92F57B1B347B57E531E78D05EAD57464000@BGSMSX104.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403145805.GC24119@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8nKjK5C3isFCHGV33dRJAFA/SNWS8sbdyJsllMmG8PC
+ ZtCGDq6Et5GmINxjMEg5YYWmdyN4g1xZkXtKa1+LTNiMXndwQ2
+ hkLD2TctaoL8oZfxCMrTKuWnKYLxSI1nQ4Q0nT+AJf0NjIWwf9
+ pkOcirYdjbctH8jNZ6iFtr2R3j1IxDBGZUPSYkRnpW3jYd7A9g
+ aUnejzOi+EgehxtKOvsO+VDMfW2VWBANccf8IzpzRZK+6q9TUf
+ Hri4TNsMjcp4mZ0CSQ7W3b4VoNRepDkrKRUL2IK8z4buv1jVtt
+ XU3o2lddjW7jbrC0pQjfZKIgoperFHY70HmuQLMXIaYQOXP89b
+ 1GA8QzgJcZEzTDfXbB5c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 10:58:05AM -0400, Tejun Heo wrote:
-> Hello, Frederic.
+On Thursday 03 April 2014 13:59:18 Pallala, Ramakrishna wrote:
+> >> We definitely don't want per-board match entries, that does not scale.
+> >> The driver should be reasonably generic and get all the necessary data 
+> >> out of well-defined tables. You can have different IDs when there are 
+> >> only a few cases that are actually relevant, but it has to be 
+> >> conceivable that the same driver get used on future hardware without 
+> >> changes.
+> >
+> >Yes, I meant that when the platform data information is not available
+> >in ACPI namespace, then (and only then) pass the data by means of different IDs.
+> >
+> >Preferably this information is included in the ACPI namespace.
 > 
-> On Thu, Apr 03, 2014 at 04:42:55PM +0200, Frederic Weisbecker wrote:
-> > > I'm not really sure this is the good approach.  I think I wrote this
-> > > way back but wouldn't it make more sense to allow userland to restrict
-> > > the cpus which are allowed to all unbound cpus.  As currently
-> > > implemented, setting WQ_SYSFS to give userland more control would
-> > > escape that workqueue from this global mask as a side effect, which is
-> > > a surprising behavior and doesn't make much sense to me.
-> > 
-> > I just considered that anon workqueues shouldn't be that different from
-> > another WQ_SYSFS workqueue. This way we don't have suprising side effect.
-> > Touching a WQ_SYSFS doesn't impact anon workqueues, and touching anon workqueues
-> > doesn't impact WQ_SYSFS workqueues.
-> 
-> I really think it'd be a lot better to perceive the default attributes
-> to be layered below explicit WQ_SYSFS attributes; otherwise, we have
-> two disjoint sets and the workqueues would jump between the two
-> depending on WQ_SYSFS.  A system tool which wants to configure all
-> workqueues would have to scan and manipulate all of them not knowing
-> what specific one's requirements are and tools which want to configure
-> specific ones likely won't know what the overruling condition is and
-> violate the global contraints.  It'd be clearer to have the layering
-> pre-defined and enforced.
+> The idea is use the single platform_data struct  and initiaze it 
+> accordingly from the driver's __init call based on the board/platform.
 
-Ok, works for me.
+In general, you should think of it as being isolated from the board or
+platform question, and not rely on an an initcall to do this for you.
+A device driver, in particular for a device on something like an i2c
+bus, should be able to figure out all the dependencies in its own
+probe() function, without code on the platform side or in a specific
+driver initcall.
 
-> 
-> > In fact this is simply the current way we do it, just extended.
-> 
-> Yes, in term of mechanics, it is but I don't think that's what we
-> want.  We want to be able to say "unbound workqueues in general are
-> confined to these cpus" and it's weird to just provide knobs for wqs
-> which don't have knobs.
+What information it needs of course depends on the specific device,
+but if you boot using FDT or ACPI, all the information you need should
+be encoded in the data passed from the boot loader in a generic and
+documented fashion. What data specifically do you want to pass here
+that was previously encoded in platform data?
 
-Yeah I like the simplicity of that.
-
-> 
-> > Yeah I like this. So the right place for this cpumask would be in
-> > the root of /sys/devices/virtual/workqueue/ , right?
-> 
-> Yes, I think that'd make more sense.
-
-Ok, I'll try this. Thanks!
-
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+	Arnd
