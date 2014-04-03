@@ -1,122 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162412AbaDCHKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 03:10:30 -0400
-Received: from sauhun.de ([89.238.76.85]:44899 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162361AbaDCHK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 03:10:27 -0400
-Date: Thu, 3 Apr 2014 09:10:04 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mike Looijmans <mike.looijmans@topic.nl>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Harini Katakam <harinik@xilinx.com>
-Subject: Re: [PATCH v3 1/2] i2c: Add driver for Cadence I2C controller
-Message-ID: <20140403071004.GA2571@katana>
-References: <1394556613-11692-1-git-send-email-soren.brinkmann@xilinx.com>
- <533CF913.4020308@monstr.eu>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
-Content-Disposition: inline
-In-Reply-To: <533CF913.4020308@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1162442AbaDCHLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 03:11:55 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:39978 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162368AbaDCHLy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 03:11:54 -0400
+From: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        silentquote@gmail.com,
+        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+Subject: [PATCH 1/9] driver: staging: wlan-ng: Fixed Breaking long lines and strings style rule
+Date: Thu,  3 Apr 2014 09:11:41 +0200
+Message-Id: <1396509101-2856-1-git-send-email-shehabaldin.sherif@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixed coding style rule "Breaking long lines and strings" for hfa384x_usb.c
 
---ikeVEW9yuYc//A+q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+---
+ drivers/staging/wlan-ng/hfa384x_usb.c |   52 ++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 26 deletions(-)
 
+diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
+index 5b8b094..4c828c2 100644
+--- a/drivers/staging/wlan-ng/hfa384x_usb.c
++++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+@@ -642,9 +642,9 @@ usbctlx_get_status(const hfa384x_usb_cmdresp_t *cmdresp,
+ 	result->resp1 = le16_to_cpu(cmdresp->resp1);
+ 	result->resp2 = le16_to_cpu(cmdresp->resp2);
+ 
+-	pr_debug("cmdresult:status=0x%04x "
+-		 "resp0=0x%04x resp1=0x%04x resp2=0x%04x\n",
+-		 result->status, result->resp0, result->resp1, result->resp2);
++	pr_debug("cmdresult:status=0x%04x resp0=0x%04x resp1=0x%04x resp2=0x%04x\n",
++			result->status, result->resp0,
++			result->resp1, result->resp2);
+ 
+ 	return result->status & HFA384x_STATUS_RESULT;
+ }
+@@ -991,9 +991,7 @@ int hfa384x_cmd_initialize(hfa384x_t *hw)
+ 
+ 	result = hfa384x_docmd_wait(hw, &cmd);
+ 
+-	pr_debug("cmdresp.init: "
+-		 "status=0x%04x, resp0=0x%04x, "
+-		 "resp1=0x%04x, resp2=0x%04x\n",
++	pr_debug("cmdresp.init: status=0x%04x, resp0=0x%04x, resp1=0x%04x, resp2=0x%04x\n",
+ 		 cmd.result.status,
+ 		 cmd.result.resp0, cmd.result.resp1, cmd.result.resp2);
+ 	if (result == 0) {
+@@ -1381,9 +1379,8 @@ hfa384x_docmd(hfa384x_t *hw,
+ 
+ 	ctlx->outbufsize = sizeof(ctlx->outbuf.cmdreq);
+ 
+-	pr_debug("cmdreq: cmd=0x%04x "
+-		 "parm0=0x%04x parm1=0x%04x parm2=0x%04x\n",
+-		 cmd->cmd, cmd->parm0, cmd->parm1, cmd->parm2);
++	pr_debug("cmdreq: cmd=0x%04x parm0=0x%04x parm1=0x%04x parm2=0x%04x\n",
++			cmd->cmd, cmd->parm0, cmd->parm1, cmd->parm2);
+ 
+ 	ctlx->reapable = mode;
+ 	ctlx->cmdcb = cmdcb;
+@@ -2018,7 +2015,8 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
+ 	if (hw->dlstate != HFA384x_DLSTATE_FLASHENABLED)
+ 		return -EINVAL;
+ 
+-	netdev_info(hw->wlandev->netdev, "Download %d bytes to flash @0x%06x\n", len, daddr);
++	netdev_info(hw->wlandev->netdev,
++			"Download %d bytes to flash @0x%06x\n", len, daddr);
+ 
+ 	/* Convert to flat address for arithmetic */
+ 	/* NOTE: dlbuffer RID stores the address in AUX format */
+@@ -2028,8 +2026,9 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
+ 		 hw->bufinfo.page, hw->bufinfo.offset, dlbufaddr);
+ 
+ #if 0
+-	netdev_warn(hw->wlandev->netdev, "dlbuf@0x%06lx len=%d to=%d\n", dlbufaddr,
+-	       hw->bufinfo.len, hw->dltimeout);
++	netdev_warn(hw->wlandev->netdev,
++			"dlbuf@0x%06lx len=%d to=%d\n", dlbufaddr,
++			hw->bufinfo.len, hw->dltimeout);
+ #endif
+ 	/* Calculations to determine how many fills of the dlbuffer to do
+ 	 * and how many USB wmemreq's to do for each fill.  At this point
+@@ -2062,9 +2061,9 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
+ 		result = hfa384x_cmd_download(hw, HFA384x_PROGMODE_NV,
+ 					      burnlo, burnhi, burnlen);
+ 		if (result) {
+-			netdev_err(hw->wlandev->netdev, "download(NV,lo=%x,hi=%x,len=%x) "
+-			       "cmd failed, result=%d. Aborting d/l\n",
+-			       burnlo, burnhi, burnlen, result);
++			netdev_err(hw->wlandev->netdev,
++					"download(NV,lo=%x,hi=%x,len=%x) cmd failed, result=%d. Aborting d/l\n",
++					burnlo, burnhi, burnlen, result);
+ 			goto exit_proc;
+ 		}
+ 
+@@ -2095,8 +2094,7 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
+ 					      0, 0, 0);
+ 		if (result) {
+ 			netdev_err(hw->wlandev->netdev,
+-			       "download(NVWRITE,lo=%x,hi=%x,len=%x) "
+-			       "cmd failed, result=%d. Aborting d/l\n",
++			       "download(NVWRITE,lo=%x,hi=%x,len=%x) cmd failed, result=%d. Aborting d/l\n",
+ 			       burnlo, burnhi, burnlen, result);
+ 			goto exit_proc;
+ 		}
+@@ -2352,7 +2350,8 @@ int hfa384x_drvr_ramdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
+ 	if (hw->dlstate != HFA384x_DLSTATE_RAMENABLED)
+ 		return -EINVAL;
+ 
+-	netdev_info(hw->wlandev->netdev, "Writing %d bytes to ram @0x%06x\n", len, daddr);
++	netdev_info(hw->wlandev->netdev, "Writing %d bytes to ram @0x%06x\n",
++			len, daddr);
+ 
+ 	/* How many dowmem calls?  */
+ 	nwrites = len / HFA384x_USB_RWMEM_MAXLEN;
+@@ -2462,7 +2461,8 @@ int hfa384x_drvr_readpda(hfa384x_t *hw, void *buf, unsigned int len)
+ 			pdrcode = le16_to_cpu(pda[currpdr + 1]);
+ 			/* Test the record length */
+ 			if (pdrlen > HFA384x_PDR_LEN_MAX || pdrlen == 0) {
+-				netdev_err(hw->wlandev->netdev, "pdrlen invalid=%d\n", pdrlen);
++				netdev_err(hw->wlandev->netdev,
++						"pdrlen invalid=%d\n", pdrlen);
+ 				pdaok = 0;
+ 				break;
+ 			}
+@@ -2784,7 +2784,8 @@ int hfa384x_drvr_txframe(hfa384x_t *hw, struct sk_buff *skb,
+ 	result = 1;
+ 	ret = submit_tx_urb(hw, &hw->tx_urb, GFP_ATOMIC);
+ 	if (ret != 0) {
+-		netdev_err(hw->wlandev->netdev, "submit_tx_urb() failed, error=%d\n", ret);
++		netdev_err(hw->wlandev->netdev,
++				"submit_tx_urb() failed, error=%d\n", ret);
+ 		result = 3;
+ 	}
+ 
+@@ -3397,8 +3398,7 @@ retry:
+ 			 * Throw this CTLX away ...
+ 			 */
+ 			netdev_err(hw->wlandev->netdev,
+-			       "Matched IN URB, CTLX[%d] in invalid state(%s)."
+-			       " Discarded.\n",
++			       "Matched IN URB, CTLX[%d] in invalid state(%s). Discarded.\n",
+ 			       le16_to_cpu(ctlx->outbuf.type),
+ 			       ctlxstr(ctlx->state));
+ 			if (unlocked_usbctlx_cancel_async(hw, ctlx) == 0)
+@@ -4139,13 +4139,13 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
+ 	default:
+ 		if (pdrcode < 0x1000) {
+ 			/* code is OK, but we don't know exactly what it is */
+-			pr_debug("Encountered unknown PDR#=0x%04x, "
+-				 "assuming it's ok.\n", pdrcode);
++			pr_debug("Encountered unknown PDR#=0x%04x, assuming it's ok.\n",
++					pdrcode);
+ 			return 1;
+ 		} else {
+ 			/* bad code */
+-			pr_debug("Encountered unknown PDR#=0x%04x, "
+-				 "(>=0x1000), assuming it's bad.\n", pdrcode);
++			pr_debug("Encountered unknown PDR#=0x%04x, (>=0x1000), assuming it's bad.\n",
++					pdrcode);
+ 			return 0;
+ 		}
+ 		break;
+-- 
+1.7.9.5
 
-Please don't quote large parts of the message f you are not referring to
-it.
-
-> > +#ifdef CONFIG_PM_SLEEP
-> > +/**
-> > + * cdns_i2c_suspend - Suspend method for the driver
-> > + * @_dev:	Address of the platform_device structure
-> > + * Return: 0 always
-> > + *
-> > + * Put the driver into low power mode.
-> > + */
-> > +static int cdns_i2c_suspend(struct device *_dev)
-> > +{
-> > +	struct platform_device *pdev =3D container_of(_dev,
-> > +			struct platform_device, dev);
-> > +	struct cdns_i2c *xi2c =3D platform_get_drvdata(pdev);
-> > +
-> > +	clk_disable(xi2c->clk);
-> > +	xi2c->suspended =3D 1;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> > + * cdns_i2c_resume - Resume from suspend
-> > + * @_dev:	Address of the platform_device structure
-> > + * Return: 0 on success and error value on error
-> > + *
-> > + * Resume operation after suspend.
-> > + */
-> > +static int cdns_i2c_resume(struct device *_dev)
-> > +{
-> > +	struct platform_device *pdev =3D container_of(_dev,
-> > +			struct platform_device, dev);
-> > +	struct cdns_i2c *xi2c =3D platform_get_drvdata(pdev);
-> > +	int ret;
-> > +
-> > +	ret =3D clk_enable(xi2c->clk);
-> > +	if (ret) {
-> > +		dev_err(_dev, "Cannot enable clock.\n");
-> > +		return ret;
-> > +	}
-> > +
-> > +	xi2c->suspended =3D 0;
-> > +
-> > +	return 0;
-> > +}
-> > +#endif
->=20
-> Can you also please remove this #ifdef and use __maybe_used
-> instead? Better not to have any ifdef in the code.
-
-Is this a new pattern? For PM_SLEEP, #ifdef seems to be quite common.
-
-
---ikeVEW9yuYc//A+q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPQlMAAoJEBQN5MwUoCm2bfwP/2QR+0NWXZUdp0aCJkqHX89N
-07bsE6M3U72uo4TIX22dDwx98k35H8V5xW9Rwv9xQ9dR4TKkoF4M3sDoOt66HIJ9
-aYOYHu2XxmDihjM8VwqTK3/ha2XAQzQGNHw7H7FSZE4qea6t8ydMQyH7NsRGSW7o
-ladSlAGUB2aU5zs4PbAvzkV6Xwlok78wMn/jwjSyVf9yWDh1zoWFnJQoHrmMmVj4
-REuqgWkQxyfBaeCK10RJtNcMXXCEUkxPnCMOIlQDQGBB4fGMRL+vVfwmyH0zNvWC
-CrtLdGbiJfCevMvGeps3XrmxLjZWYsG2bpQijnq2EdLbajA/n5OK8nyY6CaofOO4
-IpQGUoGry5o7liMCmUe9Pd0pGqt+qMqpPfDsIQ1oRyj1Hjap6xty511LeyUiTOyg
-WAcyBnerCccr4Jjxu8zVBnByLHYhIMf/3MyJw0BmeLC+ezUr18un3Y29lvAbZOGb
-+BLUfk++DdMH54BwbJ2gRLtMYSkrc3cUtxqwRgaZ7nRbOsPcDz006pHZjdRTLcrS
-k3wWQVSDwMUszxn8ajH68wgeWkD+cvnZfUGEmFl0HaJrDwR+ukwv+Y3buvSR55tg
-IEGK+n7GF68DG03ZZ0tRuAzRt4hVz0KEtHqXYxR4nh47ewNMm+LuZ964KqSSA8UE
-sf8cvy6ARjYSnk7KqHiu
-=4VTZ
------END PGP SIGNATURE-----
-
---ikeVEW9yuYc//A+q--
