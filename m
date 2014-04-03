@@ -1,125 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162339AbaDCGfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 02:35:10 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:34141 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162295AbaDCGfG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 02:35:06 -0400
+	id S1162359AbaDCGhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 02:37:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33576 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1162301AbaDCGhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 02:37:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,784,1389772800"; 
+   d="scan'208";a="513888097"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [HELP] How to use ftrace to learn how a function is ivoked?
+Thread-Topic: [HELP] How to use ftrace to learn how a function is ivoked?
+Thread-Index: Ac9PBgAhos6+ZE8TTkmGFV4GZKg9Hg==
+Date: Thu, 3 Apr 2014 06:36:57 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01AA980B@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 3 Apr 2014 08:34:44 +0200
-Message-ID: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com>
-Subject: Things I wish I'd known about Inotify
-To: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
-        daniel@veillard.com
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        inotify-tools-general@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s336bBd4015794
 
-(To: == [the set of people I believe know a lot about inotify])
+Hi, All,
+I have a question for ftrace usage. It is that if I have a function A, then I want to 
+know how function A is ivoked?
+I know ftrace can show me what sub-functions that A called by below steps:
+	# echo function_graph > current_tracer
+°°°°# echo function_A > set_graph_function
+	# cat trace
+Then a call stack will show what functions A has called. But sometimes I want to 
+know how A is called. Is there a method to do this? Please help me!
 
-Hello all,
+Regards and Thanks!
+Du, Changbin
 
-Lately, I've been studying the inotify API fairly thoroughly and
-realized that there's a very big gap between knowing what the system
-calls do versus using them to reliably and efficiently monitor the
-state of a set of filesystem objects.
-
-With that in mind, I've drafted some substantial additions to the
-inotify(7) man page. I would be very happy if folk on the "To:" list
-could comment on the text below, since I believe you all have a lot of
-practical experience with Inotify. (Of course, I also welcome comments
-from anyone else.) In particular, I would like comments on the
-accuracy of the various technical points (especially those relating to
-matching up related IN_MOVED_FROM and IN_MOVED_TO events), as well as
-pointers on any other pitfalls that the programmers should be wary of
-that should be added to the page.
-
-Thanks,
-
-Michael
-
-   Limitations and caveats
-       The inotify API provides no information about the user or process
-       that triggered the inotify event.  In  particular,  there  is  no
-       easy  way  for a process that is monitoring events via inotify to
-       distinguish events that it triggers itself from  those  that  are
-       triggered by other processes.
-
-       The  inotify API identifies affected files by filename.  However,
-       by the time an application processes an inotify event, the  file‚Äê
-       name may already have been deleted or renamed.
-
-       The  inotify  API identifies events via watch descriptors.  It is
-       the application's responsibility to cache a mapping  (if  one  is
-       needed)  between  watch descriptors and pathnames.  Be aware that
-       directory renamings may affect multiple cached pathnames.
-
-       Inotify monitoring of directories is not  recursive:  to  monitor
-       subdirectories under a directory, additional watches must be cre‚Äê
-       ated.  This can take a significant amount time for  large  direc‚Äê
-       tory trees.
-
-       If monitoring an entire directory subtree, and a new subdirectory
-       is created in that tree or an existing directory is renamed  into
-       that  tree,  be aware that by the time you create a watch for the
-       new subdirectory, new  files  (and  subdirectories)  may  already
-       exist  inside  the subdirectory.  Therefore, you may want to scan
-       the contents of the subdirectory  immediately  after  adding  the
-       watch (and, if desired, recursively add watches for any subdirec‚Äê
-       tories that it contains).
-
-       Note that the event queue can overflow.  In this case, events are
-       lost.   Robust applications should handle the possibility of lost
-       events gracefully.  For example, it may be necessary  to  rebuild
-       part  or all of the application cache.  (One simple, but possibly
-       expensive, approach is to  close  the  inotify  file  descriptor,
-       empty  the  cache, create a new inotify file descriptor, and then
-       re-create watches and cache entries for the objects to  be  moni‚Äê
-       tored.)
-
-   Dealing with rename() events
-       The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
-       rename(2) are usually available as consecutive events when  read‚Äê
-       ing from the inotify file descriptor.  However, this is not guar‚Äê
-       anteed.  If multiple processes are triggering  events  for  moni‚Äê
-       tored  objects,  then  (on rare occasions) an arbitrary number of
-       other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
-       events.
-
-       Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‚Äê
-       ated by rename(2) is thus inherently racy.  (Don't forget that if
-       an  object is renamed outside of a monitored directory, there may
-       not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
-       assume the events are always consecutive) can be used to ensure a
-       match in most cases, but will inevitably miss some cases, causing
-       the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
-       events as being unrelated.  If watch  descriptors  are  destroyed
-       and  re-created as a result, then those watch descriptors will be
-       inconsistent with the watch descriptors in  any  pending  events.
-       (Re-creating the inotify file descriptor and rebuilding the cache
-       may be useful to deal with this scenario.)
-
-       Applications should also  allow  for  the  possibility  that  the
-       IN_MOVED_FROM event was the last event that could fit in the buf‚Äê
-       fer returned by the current call to read(2), and the accompanying
-       IN_MOVED_TO event might be fetched only on the next read(2).
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
