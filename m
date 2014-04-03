@@ -1,46 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaDCOUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 10:20:41 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:40730 "EHLO gloria.sntech.de"
+	id S1752333AbaDCOXB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 10:23:01 -0400
+Received: from mail.lenera.ru ([195.2.241.190]:50011 "EHLO mail.lenera.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132AbaDCOUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 10:20:39 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Beniamino Galvani <b.galvani@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl: rockchip: fix offset of mux registers for rk3188
-Date: Thu, 03 Apr 2014 16:20:45 +0200
-Message-ID: <1810753.STDdFhitt6@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CACRpkda9Lh19sfkxs3=dNWbg4FgkAtY2tJdMQik=TGs8wUkYfA@mail.gmail.com>
-References: <1395700561-3793-1-git-send-email-b.galvani@gmail.com> <CACRpkda9Lh19sfkxs3=dNWbg4FgkAtY2tJdMQik=TGs8wUkYfA@mail.gmail.com>
+	id S1752160AbaDCOW6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 10:22:58 -0400
+X-Greylist: delayed 9576 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 10:22:58 EDT
+Message-Id: <201404031141.s33BeXgO069994@s1.portpc-design.spb.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Re:ATTENTION
+To: Recipients <info@chevro.com>
+From: "DR ANDERSON WAYNE" <info@chevro.com>
+Date: Thu, 03 Apr 2014 17:10:29 +0530
+Reply-To: chevr@live.co.uk
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (s1.portpc-design.spb.ru [195.2.241.190]); Thu, 03 Apr 2014 15:42:00 +0400 (MSK)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 3. April 2014, 16:10:46 schrieb Linus Walleij:
-> On Mon, Mar 24, 2014 at 11:36 PM, Beniamino Galvani <b.galvani@gmail.com> 
-wrote:
-> > The correct value of .mux_offset for rk3188 seems to be 0x60
-> > instead of 0x68.
-> > 
-> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> 
-> Patch applied to fixes with Heiko's Review tag and also
-> copied some info from the conversation into the commit message.
+Your Email Address has won(£ 1,000,000.00 GBP)in CHEVROLET MOTORS UK Draw.To Claim your Prize, Send: Name,Address,Age,Mobil Number via Emial :chevr@live.co.uk
 
-small protest note
-
-"Heikki adds:" - sounds somehow finish or swedish, but who is this guy? ;-)
-
-
-But it doesn't really matter, so no need to roll it back
-
-Heiko
