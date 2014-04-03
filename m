@@ -1,36 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaDCUO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:14:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46640 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440AbaDCUOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:14:23 -0400
-Date: Thu, 03 Apr 2014 16:15:51 -0400 (EDT)
-Message-Id: <20140403.161551.122482244018928134.davem@davemloft.net>
-To: p.zabel@pengutronix.de
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, frdrc66@gmail.com,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v2] net: Micrel KSZ8864RMN 4-port managed switch support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1396517290-4123-1-git-send-email-p.zabel@pengutronix.de>
-References: <1396517290-4123-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 03 Apr 2014 13:14:18 -0700 (PDT)
+	id S1753707AbaDCUPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:15:39 -0400
+Received: from fieldses.org ([174.143.236.118]:60876 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753509AbaDCUPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 16:15:36 -0400
+Date: Thu, 3 Apr 2014 16:15:33 -0400
+To: Mark Lord <mlord@pobox.com>
+Cc: "J. Bruce Fields" <bfields@redhat.com>, Albert Fluegel <af@muc.de>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-3.14 nfsd regression
+Message-ID: <20140403201533.GB8343@fieldses.org>
+References: <533D8D73.1090603@pobox.com>
+ <20140403171643.GB28790@pad.redhat.com>
+ <533D9F8A.6030001@pobox.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533D9F8A.6030001@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philipp Zabel <p.zabel@pengutronix.de>
-Date: Thu,  3 Apr 2014 11:28:10 +0200
-
-> This patch adds support for the Micrel KSZ8864RMN switch to the spi_ks8995
-> driver. The KSZ8864RMN switch has a wider 256-byte register space.
+On Thu, Apr 03, 2014 at 01:51:06PM -0400, Mark Lord wrote:
+> On 14-04-03 01:16 PM, J. Bruce Fields wrote:
+> > The original behavior was in practice harmless and changing it broke
+> > something, so I think we should definitely just revert this patch.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Yup.  Who?
 
-Applied, thanks.
+I'll submit this soon.
+
+--b.
+
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Thu Apr 3 15:10:35 2014 -0400
+
+    nfsd: revert v2 half of "nfsd: don't return high mode bits"
+    
+    This reverts the part of commit 6e14b46b91fee8a049b0940333ce13a820beaaa5
+    that changes NFSv2 behavior.
+    
+    Mark Lord found that it broke nfs-root for Linux clients, because it
+    broke NFSv2.
+    
+    In fact, from RFC 1094:
+    
+    	"Notice that the file type is specified both in the mode bits
+    	and in the file type.  This is really a bug in the protocol and
+    	will be fixed in future versions."
+    
+    So NFSv2 clients really are expected to depend on the high bits of the
+    mode.
+    
+    Cc: stable@kernel.org
+    Reported-by: Mark Lord <mlord@pobox.com>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
+index b17d932..9c769a4 100644
+--- a/fs/nfsd/nfsxdr.c
++++ b/fs/nfsd/nfsxdr.c
+@@ -152,7 +152,7 @@ encode_fattr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp,
+ 	type = (stat->mode & S_IFMT);
+ 
+ 	*p++ = htonl(nfs_ftypes[type >> 12]);
+-	*p++ = htonl((u32) (stat->mode & S_IALLUGO));
++	*p++ = htonl((u32) stat->mode);
+ 	*p++ = htonl((u32) stat->nlink);
+ 	*p++ = htonl((u32) from_kuid(&init_user_ns, stat->uid));
+ 	*p++ = htonl((u32) from_kgid(&init_user_ns, stat->gid));
