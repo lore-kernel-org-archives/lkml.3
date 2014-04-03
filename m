@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168AbaDCRQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:16:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752801AbaDCRQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:16:48 -0400
-Date: Thu, 3 Apr 2014 13:16:44 -0400
-From: "J. Bruce Fields" <bfields@redhat.com>
-To: Mark Lord <mlord@pobox.com>
-Cc: Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-Message-ID: <20140403171643.GB28790@pad.redhat.com>
-References: <533D8D73.1090603@pobox.com>
+	id S1753178AbaDCRSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:18:38 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:33947 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752801AbaDCRSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 13:18:33 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 8
+X-BigFish: VPS8(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdch5ck70kz1de098h8275bh1de097hz2fh95h839hc61hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
+From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+To: <broonie@kernel.org>, <grant.likely@linaro.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <michal.simek@xilinx.com>
+CC: <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
+        <harinik@xilinx.com>, Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: [PATCH 1/2] devicetree: Add devicetree bindings documentation for Zynq Quad SPI
+Date: Thu, 3 Apr 2014 22:33:06 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533D8D73.1090603@pobox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+Message-ID: <ee057d8c-50d9-4d4b-ac86-d7c5fc44b1b0@TX2EHSMHS034.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 12:33:55PM -0400, Mark Lord wrote:
-> This commit from linux-3.14 breaks our NFS-root clients here:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
-> 
-> 
-> - *p++ = htonl((u32) stat->mode);
-> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
-> 
-> 
-> Reverting the one-liner above (on the server) fixes it for us,
-> as does reverting back to linux-3.13.8 on the server.
-> 
-> The NFS-root clients are on PowerPC (big-endian) architecture,
-> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
-> 
-> ACL is completely disabled on server and client,
-> and we're using NFSv2/v3.  No support for v4.
-> 
-> I instrumented the function to see what other bits were being cleared
-> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
+Add bindings documentation for Zynq Quad SPI driver.
 
-Hm, it sounds like a bug in the client if it's depending on those high
-bits.
+Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+---
+ .../devicetree/bindings/spi/spi-zynq-qspi.txt      |   26 ++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
 
-The original behavior was in practice harmless and changing it broke
-something, so I think we should definitely just revert this patch.
+diff --git a/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt b/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+new file mode 100644
+index 0000000..88e00f8
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi-zynq-qspi.txt
+@@ -0,0 +1,26 @@
++Xilinx Zynq QSPI controller Device Tree Bindings
++-------------------------------------------------
++
++Required properties:
++- compatible		: Should be "xlnx,zynq-qspi-1.0".
++- reg			: Physical base address and size of QSPI registers map.
++- interrupts		: Property with a value describing the interrupt
++			  number.
++- interrupt-parent	: Must be core interrupt controller
++- clock-names		: List of input clock names - "ref_clk", "aper_clk"
++			  (See clock bindings for details).
++- clocks		: Clock phandles (see clock bindings for details).
++
++Optional properties:
++- num-cs		: Number of chip selects used.
++
++Example:
++	qspi@e000d000 {
++		compatible = "xlnx,zynq-qspi-1.0";
++		clock-names = "ref_clk", "aper_clk";
++		clocks = <&clkc 10>, <&clkc 43>;
++		interrupt-parent = <&ps7_scugic_0>;
++		interrupts = <0 19 4>;
++		num-cs = /bits/ 16 <1>;
++		reg = <0xe000d000 0x1000>;
++	};
+-- 
+1.7.9.5
 
-But the client may need fixing too.
 
---b.
