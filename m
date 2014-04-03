@@ -1,66 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaDCPiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:38:08 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55434 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaDCPiE (ORCPT
+	id S1752729AbaDCPjT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:39:19 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:39278 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471AbaDCPjN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:38:04 -0400
-Date: Thu, 3 Apr 2014 08:38:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/2] nohz: Move nohz kick out of scheduler IPI v2
-Message-ID: <20140403153800.GA4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1396483767-28607-1-git-send-email-fweisbec@gmail.com>
+	Thu, 3 Apr 2014 11:39:13 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: mtk.manpages@gmail.com
+Cc: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
+        daniel@veillard.com, Christoph Hellwig <hch@infradead.org>,
+        Vegard Nossum <vegard.nossum@oracle.com>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        inotify-tools-general@lists.sourceforge.net
+References: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com>
+Date: Thu, 03 Apr 2014 08:38:40 -0700
+In-Reply-To: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com>
+	(Michael Kerrisk's message of "Thu, 3 Apr 2014 08:34:44 +0200")
+Message-ID: <871txeifsv.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396483767-28607-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040315-7164-0000-0000-000000CC060A
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-AID: U2FsdGVkX1+ea3acWjJ5fpvdgPVncFnJzzLkg1LDXW8=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  2.5 XMGppyBdWords BODY: Gappy or l33t words
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4986]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;mtk.manpages@gmail.com
+X-Spam-Relay-Country: 
+Subject: Re: Things I wish I'd known about Inotify
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 02:09:25AM +0200, Frederic Weisbecker wrote:
-> Hi Paul,
-> 
-> Here's an updated version of the patches with your review addressed.
-> I ripped the function parameter and let it be setup on queued IPI object
-> initialization time so that people don't get confused and always use the
-> same function for a given queued object.
-> 
-> Please tell me if you find other issues.
+"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
 
-For the set:
+> (To: == [the set of people I believe know a lot about inotify])
+>
+> Hello all,
+>
+> Lately, I've been studying the inotify API fairly thoroughly and
+> realized that there's a very big gap between knowing what the system
+> calls do versus using them to reliably and efficiently monitor the
+> state of a set of filesystem objects.
+>
+> With that in mind, I've drafted some substantial additions to the
+> inotify(7) man page. I would be very happy if folk on the "To:" list
+> could comment on the text below, since I believe you all have a lot of
+> practical experience with Inotify. (Of course, I also welcome comments
+> from anyone else.) In particular, I would like comments on the
+> accuracy of the various technical points (especially those relating to
+> matching up related IN_MOVED_FROM and IN_MOVED_TO events), as well as
+> pointers on any other pitfalls that the programmers should be wary of
+> that should be added to the page.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> Thanks.
-> 
-> Frederic Weisbecker (2):
->   smp: Non busy-waiting IPI queue
->   nohz: Move full nohz kick to its own IPI
-> 
->  include/linux/smp.h      | 11 +++++++++++
->  include/linux/tick.h     |  2 ++
->  kernel/sched/core.c      |  5 +----
->  kernel/sched/sched.h     |  2 +-
->  kernel/smp.c             | 42 ++++++++++++++++++++++++++++++++++++++++++
->  kernel/time/tick-sched.c | 21 +++++++++++++++++++++
->  6 files changed, 78 insertions(+), 5 deletions(-)
-> 
-> -- 
-> 1.8.3.1
-> 
+Other pitfalls.
 
+Inotify only report events that a user space program triggers through
+the filesystem API.  Which means inotify is limited for remote
+filesystems, and filesystems like proc and sys have no monitorable
+events.
+
+Eric
+
+
+> Thanks,
+>
+> Michael
+>
+>    Limitations and caveats
+>        The inotify API provides no information about the user or process
+>        that triggered the inotify event.  In  particular,  there  is  no
+>        easy  way  for a process that is monitoring events via inotify to
+>        distinguish events that it triggers itself from  those  that  are
+>        triggered by other processes.
+>
+>        The  inotify API identifies affected files by filename.  However,
+>        by the time an application processes an inotify event, the  file‐
+>        name may already have been deleted or renamed.
+>
+>        The  inotify  API identifies events via watch descriptors.  It is
+>        the application's responsibility to cache a mapping  (if  one  is
+>        needed)  between  watch descriptors and pathnames.  Be aware that
+>        directory renamings may affect multiple cached pathnames.
+>
+>        Inotify monitoring of directories is not  recursive:  to  monitor
+>        subdirectories under a directory, additional watches must be cre‐
+>        ated.  This can take a significant amount time for  large  direc‐
+>        tory trees.
+>
+>        If monitoring an entire directory subtree, and a new subdirectory
+>        is created in that tree or an existing directory is renamed  into
+>        that  tree,  be aware that by the time you create a watch for the
+>        new subdirectory, new  files  (and  subdirectories)  may  already
+>        exist  inside  the subdirectory.  Therefore, you may want to scan
+>        the contents of the subdirectory  immediately  after  adding  the
+>        watch (and, if desired, recursively add watches for any subdirec‐
+>        tories that it contains).
+>
+>        Note that the event queue can overflow.  In this case, events are
+>        lost.   Robust applications should handle the possibility of lost
+>        events gracefully.  For example, it may be necessary  to  rebuild
+>        part  or all of the application cache.  (One simple, but possibly
+>        expensive, approach is to  close  the  inotify  file  descriptor,
+>        empty  the  cache, create a new inotify file descriptor, and then
+>        re-create watches and cache entries for the objects to  be  moni‐
+>        tored.)
+>
+>    Dealing with rename() events
+>        The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
+>        rename(2) are usually available as consecutive events when  read‐
+>        ing from the inotify file descriptor.  However, this is not guar‐
+>        anteed.  If multiple processes are triggering  events  for  moni‐
+>        tored  objects,  then  (on rare occasions) an arbitrary number of
+>        other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
+>        events.
+>
+>        Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‐
+>        ated by rename(2) is thus inherently racy.  (Don't forget that if
+>        an  object is renamed outside of a monitored directory, there may
+>        not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
+>        assume the events are always consecutive) can be used to ensure a
+>        match in most cases, but will inevitably miss some cases, causing
+>        the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
+>        events as being unrelated.  If watch  descriptors  are  destroyed
+>        and  re-created as a result, then those watch descriptors will be
+>        inconsistent with the watch descriptors in  any  pending  events.
+>        (Re-creating the inotify file descriptor and rebuilding the cache
+>        may be useful to deal with this scenario.)
+>
+>        Applications should also  allow  for  the  possibility  that  the
+>        IN_MOVED_FROM event was the last event that could fit in the buf‐
+>        fer returned by the current call to read(2), and the accompanying
+>        IN_MOVED_TO event might be fetched only on the next read(2).
