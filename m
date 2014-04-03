@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaDCOum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 10:50:42 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:37525 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaDCOuk (ORCPT
+	id S1752633AbaDCOuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 10:50:55 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:60713 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612AbaDCOuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 10:50:40 -0400
-Date: Thu, 3 Apr 2014 15:50:22 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-Message-ID: <20140403145022.GA31056@srcf.ucam.org>
-References: <20140403021411.6236996f@gandalf.local.home>
- <070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>
- <533D001A.5030802@linux.intel.com>
- <20140403094155.04cc00bc@gandalf.local.home>
- <533D6BE7.3020608@zytor.com>
- <20140403104721.5f6c32b6@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403104721.5f6c32b6@gandalf.local.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 3 Apr 2014 10:50:46 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        egtvedt@samfundet.no, lxoliva@fsfla.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: at32ap: don't declare local variable as static
+Date: Thu,  3 Apr 2014 20:20:36 +0530
+Message-Id: <e71944f195507806ad06d0fe60615486dd2c1757.1396536599.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 10:47:21AM -0400, Steven Rostedt wrote:
-> > reboot=a
-> 
-> Passed
+Earlier commit:
+	commit 652ed95d5fa6074b3c4ea245deb0691f1acb6656
+	Author: Viresh Kumar <viresh.kumar@linaro.org>
+	Date:   Thu Jan 9 20:38:43 2014 +0530
 
-Huh. We should be trying the acpi method twice before we try PCI at all, 
-unless something's gone very wrong.
+	    cpufreq: introduce cpufreq_generic_get() routine
 
+did some changes to driver and by mistake made cpuclk as a 'static' local
+variable, which wasn't actually required. Fix it.
+
+Reported-by: Alexandre Oliva <lxoliva@fsfla.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/at32ap-cpufreq.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/at32ap-cpufreq.c b/drivers/cpufreq/at32ap-cpufreq.c
+index a1c79f5..7b612c8 100644
+--- a/drivers/cpufreq/at32ap-cpufreq.c
++++ b/drivers/cpufreq/at32ap-cpufreq.c
+@@ -52,7 +52,7 @@ static int at32_set_target(struct cpufreq_policy *policy, unsigned int index)
+ static int at32_cpufreq_driver_init(struct cpufreq_policy *policy)
+ {
+ 	unsigned int frequency, rate, min_freq;
+-	static struct clk *cpuclk;
++	struct clk *cpuclk;
+ 	int retval, steps, i;
+ 
+ 	if (policy->cpu != 0)
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.12.rc2.18.g61b472e
+
