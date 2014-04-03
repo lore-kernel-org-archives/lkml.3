@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaDCWYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 18:24:17 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:65211 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798AbaDCWR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 18:17:29 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [PATCH 02/20] mips: lantiq: copy built-in DTB out of init section
-Date: Thu,  3 Apr 2014 17:16:45 -0500
-Message-Id: <1396563423-30893-3-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
-References: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
+	id S1753989AbaDCW2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 18:28:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64619 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753725AbaDCW2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 18:28:13 -0400
+From: Bandan Das <bsd@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [RFC PATCH 0/2] Emulator speedups - avoid initializations where possible
+Date: Thu,  3 Apr 2014 18:27:48 -0400
+Message-Id: <1396564070-5586-1-git-send-email-bsd@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+While initializing emulation context structure, kvm memsets to 0 a 
+number of fields some of which are redundant since they get set eventually.
+This patch attempts at avoiding some of them.
 
-The existing code is buggy because built-in DTBs are in init memory.
-Fix this by using the unflatten_and_copy_device_tree function.
+Here are some before/after numbers on a Haswell host
+Note : The before numbers already include Paolo's RFC posted here :
+http://comments.gmane.org/gmane.linux.kernel/1676101
 
-This removes all accesses to FDT header data by the arch code.
+Before:
+667 cycles/emulated jump instruction
+839 cycles/emulated move instruction
+892 cycles/emulated arithmetic instruction
+995 cycles/emulated memory load instruction
+1026 cycles/emulated memory store instruction
+1022 cycles/emulated memory RMW instruction
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
----
- arch/mips/lantiq/prom.c | 13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+After:
+639 cycles/emulated jump instruction
+786 cycles/emulated move instruction
+802 cycles/emulated arithmetic instruction
+936 cycles/emulated memory load instruction
+970 cycles/emulated memory store instruction
+1000 cycles/emulated memory RMW instruction
 
-diff --git a/arch/mips/lantiq/prom.c b/arch/mips/lantiq/prom.c
-index 19686c5..cdea687 100644
---- a/arch/mips/lantiq/prom.c
-+++ b/arch/mips/lantiq/prom.c
-@@ -76,18 +76,7 @@ void __init plat_mem_setup(void)
- 
- void __init device_tree_init(void)
- {
--	unsigned long base, size;
--
--	if (!initial_boot_params)
--		return;
--
--	base = virt_to_phys((void *)initial_boot_params);
--	size = be32_to_cpu(initial_boot_params->totalsize);
--
--	/* Before we do anything, lets reserve the dt blob */
--	reserve_bootmem(base, size, BOOTMEM_DEFAULT);
--
--	unflatten_device_tree();
-+	unflatten_and_copy_device_tree();
- }
- 
- void __init prom_init(void)
+Bandan Das (2):
+  KVM: emulate: move init_decode_cache to emulate.c
+  KVM: emulate: clean up initializations in init_decode_cache
+
+ arch/x86/include/asm/kvm_emulate.h | 17 +++++++------
+ arch/x86/kvm/emulate.c             | 49 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kvm/x86.c                 | 13 ----------
+ 3 files changed, 59 insertions(+), 20 deletions(-)
+
 -- 
-1.8.3.2
+1.8.3.1
 
