@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840AbaDCCDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 22:03:06 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:2089 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932373AbaDCCDA (ORCPT
+	id S932883AbaDCCFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 22:05:35 -0400
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:51068 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932423AbaDCCFd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 22:03:00 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz8275ch1de098h8275bh8275dh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <wim@iguana.be>, <linux@roeck-us.net>, <shawn.guo@linaro.org>,
-        <linux-watchdog@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv4 1/2] watchdog: imx2_wdt: Sort the header files alphabetically
-Date: Thu, 3 Apr 2014 09:04:18 +0800
-Message-ID: <1396487059-15298-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1396487059-15298-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1396487059-15298-1-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 2 Apr 2014 22:05:33 -0400
+From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
+To: David Miller <davem@davemloft.net>,
+        "todd.fujinaka@intel.com" <todd.fujinaka@intel.com>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        Hiroshi Baba <h-baba@ax.jp.nec.com>
+Subject: RE: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
+ enabled
+Thread-Topic: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
+ enabled
+Thread-Index: AQHPTt1gvAUZA3aa9kCshbi+iImnxJr/Io0g
+Date: Thu, 3 Apr 2014 02:03:43 +0000
+Message-ID: <9DE5760509B7974286F38D93BF31DD62C7E200@BPXM13GP.gisp.nec.co.jp>
+References: <9DE5760509B7974286F38D93BF31DD62C7DF93@BPXM13GP.gisp.nec.co.jp>
+	<9B4A1B1917080E46B64F07F2989DADD652978166@ORSMSX102.amr.corp.intel.com>
+	<9DE5760509B7974286F38D93BF31DD62C7E125@BPXM13GP.gisp.nec.co.jp>
+ <20140402.213941.1530194697006154708.davem@davemloft.net>
+In-Reply-To: <20140402.213941.1530194697006154708.davem@davemloft.net>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.8.69]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Shawn Guo <shawn.guo@linaro.org>
----
- drivers/watchdog/imx2_wdt.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-index dd51d95..1795922 100644
---- a/drivers/watchdog/imx2_wdt.c
-+++ b/drivers/watchdog/imx2_wdt.c
-@@ -21,19 +21,19 @@
-  * Halt on suspend:	Manual		Can be automatic
-  */
- 
-+#include <linux/clk.h>
-+#include <linux/fs.h>
- #include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/jiffies.h>
- #include <linux/kernel.h>
- #include <linux/miscdevice.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/platform_device.h>
--#include <linux/watchdog.h>
--#include <linux/clk.h>
--#include <linux/fs.h>
--#include <linux/io.h>
--#include <linux/uaccess.h>
- #include <linux/timer.h>
--#include <linux/jiffies.h>
-+#include <linux/uaccess.h>
-+#include <linux/watchdog.h>
- 
- #define DRIVER_NAME "imx2-wdt"
- 
--- 
-1.8.4
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Thursday, April 03, 2014 10:40 AM
+> To: Komatsubara Madoka(小松原 円)
+> Cc: todd.fujinaka@intel.com; donald.c.skidmore@intel.com;
+> linux-kernel@vger.kernel.org; e1000-devel@lists.sourceforge.net;
+> netdev@vger.kernel.org; Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕
+> 司)
+> Subject: Re: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is enabled
+> 
+> From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
+> Date: Thu, 3 Apr 2014 01:12:13 +0000
+> 
+> > Thank you for the quick response.
+> > How can I increase the limit？
+> 
+> It's a hardware limit, you cannot increase it.
 
+
+Thank you for your information.
+Does it mean disabling filter is the only way to use over 64 VLANs and is it possible?
+
+Regards,
+Madoka
 
