@@ -1,160 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbaDCUVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:21:46 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:38506 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440AbaDCUVl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:21:41 -0400
+	id S1753619AbaDCUWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:22:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39914 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753581AbaDCUV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 16:21:58 -0400
+Message-ID: <533DC2CC.5090408@zytor.com>
+Date: Thu, 03 Apr 2014 13:21:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-	<20140319201838.GA11403@redhat.com>
-	<CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
-	<20140321132816.GW15608@titan.lakedaemon.net>
-	<532DC3D3.9060008@linux.com>
-	<CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
-	<20140323193839.GY15608@titan.lakedaemon.net>
-	<CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
-	<20140401142051.GO28304@titan.lakedaemon.net>
-	<CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com>
-Date: Thu, 3 Apr 2014 22:21:39 +0200
-X-Google-Sender-Auth: cn_0lUfYPkkGxXglw-A1RoDHRzc
-Message-ID: <CAAsK9AGW+L4GswAEAZeZEcqUDb+H9b=qu98znsM6XSU3B2fuGw@mail.gmail.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-From: Levente Kurusa <levex@linux.com>
-To: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+To: =?UTF-8?B?VGhvbWFzIELDpGNobGVy?= <thomas@archlinux.org>, tj@kernel.org
+CC: d@falconindy.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        P@draigbrady.com, alexandre.f.demers@gmail.com,
+        "3.14" <stable@vger.kernel.org>
+Subject: Re: [PATCH] fs: Don't return 0 from get_anon_bdev
+References: <20140403191617.GB2472@mtj.dyndns.org> <1396554595-11796-1-git-send-email-thomas@archlinux.org>
+In-Reply-To: <1396554595-11796-1-git-send-email-thomas@archlinux.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/03/2014 12:49 PM, Thomas BÃ¤chler wrote:
+> Commit 9e30cc9595303b27b48 removed an internal mount. This
+> has the side-effect that rootfs now has FSID 0. Many
+> userspace utilities assume that st_dev in struct stat
+> is never 0, so this change breaks a number of tools in
+> early userspace.
+> 
+> Since we don't know how many userspace programs are affected,
+> make sure that FSID is at least 1.
+> 
+> References: http://article.gmane.org/gmane.linux.kernel/1666905
+> References: http://permalink.gmane.org/gmane.linux.utilities.util-linux-ng/8557
+> Cc: 3.14 <stable@vger.kernel.org>
+> Signed-off-by: Thomas BÃ¤chler <thomas@archlinux.org>
+> ---
+>  fs/super.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
 
-2014-04-01 23:07 GMT+02:00 Teodora Bãluþã <teobaluta@gmail.com>:
-> On Tue, Apr 1, 2014 at 5:20 PM, Jason Cooper <jason@lakedaemon.net> wrote:
->> On Sun, Mar 30, 2014 at 12:17:17PM +0200, Levente Kurusa wrote:
->>> Hi all,
->>>
->>> (sorry for the late reply, looks like this mail has ran away from my clients)
->
-> same here.
->
->>>
->>> 2014-03-23 20:38 GMT+01:00 Jason Cooper <jason@lakedaemon.net>:
->>> > All,
->>> >
->>> > On Sat, Mar 22, 2014 at 08:20:01PM +0200, Teodora Bãluþã wrote:
->>> >> On Sat, Mar 22, 2014 at 7:09 PM, Levente Kurusa <levex@linux.com> wrote:
->>> >> > On 03/21/2014 02:28 PM, Jason Cooper wrote:
->>> > ...
->>> >> >> I would definitely like to see the QR output incorporated into a
->>> >> >> kernel.org url.  That would remove the need for installing another app,
->>> >> >> and would ease bug reporting.
->>> >> >
->>> >> > I still struggle to understand how could that be done. We can encode the
->>> >> > QR code as ASCII. Okay, that's fine, however it is very long. Encoding
->>> >> > 'Unable to handle kernel paging request at 0000000f' gave a 449 character
->>> >> > long sequence with very strange characters [0]. We should try to shorten
->>> >> > it, imho. Not sure how to do that though.
->>> >
->>> > The man page for qrencode says you can have up to 4000 characters in a
->>> > qrcode.  However, I've seen readers have trouble with a 2048bit ascii
->>> > armored PGP public key (3929 characters).
->>> >
->>> > I grabbed a random oops from oops.kernel.org, it weighed in at 1544
->>> > bytes, not too bad.  I then did:
->>> >
->>> > $ echo "https://oops.kernel.org/?qr=`cat oops.txt | gzip -9 | base64 -wrap=0`" | wc -c
->>> > 993
->>>
->>> I did the same with another OOPS and it had 1953 characters. That's quite a big
->>> a big difference! :-)
->>>
->>> I created a QR image from the URL then, and it was 147x147, which is
->>> pretty small.
->>> It took me quite a long time to make my phone recognize it, but it
->>> worked nicely.
->>>
->>> Result of work is in this directory:
->>>
->>> http://levex.fedorapeople.org/kernel/qr/
->>
->> nice!
->>
->>> > The benefit of a url is that any QR reader can automagically report an
->>> > oops.  While a specific app could parse the URL/oops locally if the
->>> > user desires.
->>> >
->>> >> it misses the point of having a QR code in the first place. The way I
->>> >> see it, having a QR decoder app installed that can do an offline
->>> >> decoding is a less greater effort than popping out a browser on the
->>> >> machine you're working on.
->>> >
->>> > I think you're selling the advantage of the QR code short.  Automated
->>> > reporting (via the url) is a _huge_ plus.  The app you conceive of could
->>> > still parse it in place if the user desires.
->>> >
->>> > My point for the URL isn't to use the internet/server to automate oops
->>> > parsing for the user.  Rather it's to make it easy to report oopses to
->>> > developers.  While still preserving the ability of your app to parse it
->>> > for the user.
->>>
->>> Ah I see now. oops.kernel.org/?qr=<QR> would simply parse the
->>> base64'd+gzip'd oops message and then report it.
->>
->> If you mean the server behind oops.k.o would parse it, then yes.  No
->> special app should be required other than a QR code scanner for the
->> usecase of reporting oopses to developers.
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-Yup, clear now.
+It is worth noting that zero has been documented as a null device number
+since at least 1995, probably more like 1993.
 
->>
->>> Now I guess we need to think how to make it work without a
->>> framebuffer. I already suggested using the ASCII characters,
->>> but seeing the resolution of this QR code for example (147x147),
->>> made me realize that we can't shuffle that into a 80x25 textmode
->>> display. Any ideas how to fix that or should we just simply depend
->>> on a framebuffer being present?
->>
->> I think depending on the framebuffer being present (via kconfig) is
->> sane.  Folks running old systems know what they're in for, like missing
->> shiny new features. ;-)
->
-> Ok, this may work. I agree that doing this with the help of the frame
-> buffer is more natural.
+	-hpa
 
-Okay, Teodora I'll send you a commit ASAP and then
-we should start working on getting libqr into an acceptable
-state. I am not sure if we can shuffle it into staging though,
-it's not a driver and AFAIK staging.git is for drivers which aren't
-yet finished. So, I would say, let's start working on fixing the
-OOPness of libqr first. If we were to rework that, then
-we can as well avoid having GFP_ATOMIC in library code
-by using the more conventional kmalloc(struct); init_struct(ptr);
-scheme.
 
-Oh and I had an idea of adding a new kernel parameter, something
-like 'qr_oops.*'. (Looking for a better name! :-) )
-Basically, I thought of the following options so far:
-
-*  qr_oops.disable=1  - disable it
-*  qr_oops.scale=600x600 - scale the qr code so its easier to read
-   with a phone. In my testing I had huge difficulties reading the
-   QR codes, but when scaled to be a bit bigger it worked magically.
-   This might not be so easy to implement this way, but with preset
-   values, i.e. 4x4 squares instead of a pixel, it could work.
-
-Objections, ideas are welcome!
-
-Teodora, have you worked on anything recently in qr-linux-kernel?
-Just to make sure we aren't working on the same.
-
-Thanks,
-Levente Kurusa
