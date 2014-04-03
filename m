@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740AbaDCCCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 22:02:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20993 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373AbaDCCCW (ORCPT
+	id S932840AbaDCCDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 22:03:06 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:2089 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932373AbaDCCDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 22:02:22 -0400
-Message-ID: <533CC461.4070209@oracle.com>
-Date: Thu, 03 Apr 2014 10:16:01 +0800
-From: "zheng.li" <zheng.x.li@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Wed, 2 Apr 2014 22:03:00 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz8275ch1de098h8275bh8275dh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <wim@iguana.be>, <linux@roeck-us.net>, <shawn.guo@linaro.org>,
+        <linux-watchdog@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv4 1/2] watchdog: imx2_wdt: Sort the header files alphabetically
+Date: Thu, 3 Apr 2014 09:04:18 +0800
+Message-ID: <1396487059-15298-2-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1396487059-15298-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1396487059-15298-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: j.vosburgh@gmail.com
-CC: Zheng Li <zheng.x.li@oracle.com>, netdev@vger.kernel.org, fubar@us.ibm.com,
-        andy@greyhouse.net, vfalico@redhat.com, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH v3] bonding: Inactive slaves should keep inactive flag's
- value
-References: <1396407708-4056-1-git-send-email-zheng.x.li@oracle.com>
-In-Reply-To: <1396407708-4056-1-git-send-email-zheng.x.li@oracle.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jay,
-How do you think about the new patch used USES_PRIMARY, can it be merged
-to upstream?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+---
+ drivers/watchdog/imx2_wdt.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Thanks,
-Zheng Li
-
-
-于 2014年04月02日 11:01, Zheng Li 写道:
-> bond_open is not setting the inactive flag correctly for some modes (alb and
-> tlb), resulting in error behavior if the bond has been administratively set
-> down and then back up. This effect should not occur when slaves are added while
-> the bond is up; it's something that only happens after a down/up bounce of the
-> bond.
-> 
-> For example, in bond tlb or alb mode, domu send some ARP request which go out
-> from dom0 bond's active slave, then the ARP broadcast request packets go back to
-> inactive slave from switch, because the inactive slave's inactive flag is zero,
-> kernel will receive the packets and pass them to bridge that cause dom0's bridge
-> map domu's MAC address to port of bond, bridge should map domu's MAC to port of
-> vif.
-> 
-> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
-> Signed-off-by: Jay Vosburgh <j.vosburgh@gmail.com>
-> ---
->  drivers/net/bonding/bond_main.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index e5628fc..b42758f 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -3058,7 +3058,7 @@ static int bond_open(struct net_device *bond_dev)
->  	if (bond_has_slaves(bond)) {
->  		read_lock(&bond->curr_slave_lock);
->  		bond_for_each_slave(bond, slave, iter) {
-> -			if ((bond->params.mode == BOND_MODE_ACTIVEBACKUP)
-> +			if (USES_PRIMARY(bond->params.mode)
->  				&& (slave != bond->curr_active_slave)) {
->  				bond_set_slave_inactive_flags(slave,
->  							      BOND_SLAVE_NOTIFY_NOW);
-> 
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index dd51d95..1795922 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -21,19 +21,19 @@
+  * Halt on suspend:	Manual		Can be automatic
+  */
+ 
++#include <linux/clk.h>
++#include <linux/fs.h>
+ #include <linux/init.h>
++#include <linux/io.h>
++#include <linux/jiffies.h>
+ #include <linux/kernel.h>
+ #include <linux/miscdevice.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/platform_device.h>
+-#include <linux/watchdog.h>
+-#include <linux/clk.h>
+-#include <linux/fs.h>
+-#include <linux/io.h>
+-#include <linux/uaccess.h>
+ #include <linux/timer.h>
+-#include <linux/jiffies.h>
++#include <linux/uaccess.h>
++#include <linux/watchdog.h>
+ 
+ #define DRIVER_NAME "imx2-wdt"
+ 
+-- 
+1.8.4
 
 
