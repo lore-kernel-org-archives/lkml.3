@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713AbaDCCMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 22:12:14 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:61137 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443AbaDCCMM (ORCPT
+	id S932711AbaDCC1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 22:27:17 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:59186 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932512AbaDCC1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 22:12:12 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-71-533cc37b30f5
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Pankaj Dubey'" <pankaj.dubey@samsung.com>, monstr@monstr.eu
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
-        chow.kim@samsung.com
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
- <1396425058-4012-3-git-send-email-pankaj.dubey@samsung.com>
- <533BFC31.1080203@monstr.eu> <533CBC18.8050106@samsung.com>
-In-reply-to: <533CBC18.8050106@samsung.com>
-Subject: RE: [PATCH 02/10] ARM: EXYNOS: Correct file path in comment message
-Date: Thu, 03 Apr 2014 11:12:08 +0900
-Message-id: <00f301cf4ee2$1f2445c0$5d6cd140$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQEcUoZuZz85M0GdUsocYYERgqrHUAGddHyMAlEclIcCjq07p5wxNKTg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zQ93qwzbBBqvOy1gsm3SXzWLT42us
-	Fpd3zWGzmHF+H5PF7cu8Fk8+nmaxWLT1C7sDu0dLcw+bx+Yl9R5/u6Ywe/RtWcXo8XmTXABr
-	FJdNSmpOZllqkb5dAlfGgbYtbAVvuSqObr3B3MB4nqOLkZNDQsBE4s2xjWwQtpjEhXvrgWwu
-	DiGBZYwSDz72ssEUfX39khEisYhRYmH/FnYI5y+jxONHu5lBqtgENCQOv3/GDmKLCNhL9E74
-	wAxSxCwwk1Fi8tEWqLmHGSXW7FnMClLFKaAtce3gFUYQW1jAR2L77CtgcRYBVYkpkyaC7eYV
-	sJT4cfkqlC0o8WPyPRYQm1lAXWLSvEXMELa8xOY1b5khblWQ2HH2NSPEFW4S30/8gqoRkdj3
-	4h0jRM1LdonHH8ogdglIfJt8CGgmB1BcVmLTAagxkhIHV9xgmcAoMQvJ5llINs9CsnkWkg0L
-	GFlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+duYoTEb/8OxrsHrA8xJgOtn8gsJZqcD4z/vJJ4
-	Q2MzIwtTE1NjI3NLM9KElcR57z9MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAOHfLv2Jv
-	tVf9YROmnYhQ+/F4mWZHp7zCQkmn7IRV/ow3ti4scd3A+anx+660JW6+Bw5/yTfO97g4WcdY
-	5KG9v/dEsRW1tY93i7WsCn4eVdYU8ePxqTn2/8yX2x92j9sZo7nIgO2Fu5SniZJyhGH+JI93
-	k+fdqzmf+vHhZ6anDX0eF1XD2FbPVWIpzkg01GIuKk4EADx7LsX1AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jAd3qwzbBBkvWSFgsm3SXzWLT42us
-	Fpd3zWGzmHF+H5PF7cu8Fk8+nmaxWLT1C7sDu0dLcw+bx+Yl9R5/u6Ywe/RtWcXo8XmTXABr
-	VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QFUoK
-	ZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjANtW9gK3nJVHN16g7mB8TxH
-	FyMnh4SAicTX1y8ZIWwxiQv31rN1MXJxCAksYpRY2L+FHcL5yyjx+NFuZpAqNgENicPvn7GD
-	2CIC9hK9Ez4wgxQxC8xklJh8tAWq/TCjxJo9i1lBqjgFtCWuHbwCtkNYwEdi++wrYHEWAVWJ
-	KZMmsoHYvAKWEj8uX4WyBSV+TL7HAmIzC6hLTJq3iBnClpfYvOYtM8StChI7zr5mhLjCTeL7
-	iV9QNSIS+168Y5zAKDQLyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNz
-	NzGC08MzqR2MKxssDjEKcDAq8fBaSNkEC7EmlhVX5h5ilOBgVhLhddkHFOJNSaysSi3Kjy8q
-	zUktPsSYDPTpRGYp0eR8YOrKK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFq
-	EcwWJg5OqQbGwKS/gq/CBV2vVFX4fXxywfrgh00X94dLlBlvs/z2buobqcUH1wq7ncnbzZZU
-	ZSoou2eWq7mD9ivzwwcMtxR0TqhdUdJUwaw1u2NB0/tadu74Z5Kpyu8fpneX37z4R2NzrGH7
-	g18rX997e+bz913pEkovg6vT80Nr9E7v1jwm5fdgqejCTh95JZbijERDLeai4kQAK8V9a1MD	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 2 Apr 2014 22:27:16 -0400
+From: Matthew Dempsky <mdempsky@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Dempsky <mdempsky@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4] ptrace: Fix fork event messages across pid namespaces
+Date: Wed,  2 Apr 2014 19:26:45 -0700
+Message-Id: <1396492005-23811-1-git-send-email-mdempsky@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1396391358-22367-1-git-send-email-mdempsky@chromium.org>
+References: <1396391358-22367-1-git-send-email-mdempsky@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pankaj Dubey wrote:
-> 
-> Hi Michal,
-> 
-> On 04/02/2014 09:01 PM, Michal Simek wrote:
-> > On 04/02/2014 09:50 AM, Pankaj Dubey wrote:
-> >> This patch corrects file path mentioned in file comment message.
-> >>
-> >> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> >> ---
-> >>   arch/arm/mach-exynos/platsmp.c |    2 +-
-> >>   1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-
-> exynos/platsmp.c
-> >> index 03e5e9f..d8d1555 100644
-> >> --- a/arch/arm/mach-exynos/platsmp.c
-> >> +++ b/arch/arm/mach-exynos/platsmp.c
-> >> @@ -1,4 +1,4 @@
-> >> -/* linux/arch/arm/mach-exynos4/platsmp.c
-> >> +/* linux/arch/arm/mach-exynos/platsmp.c
-> >>    *
-> >>    * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-> >>    *		http://www.samsung.com
-> >>
-> > Shouldn't you just remove it entirely?
-> > I had the same file names in the whole microblaze tree
-> > and some months/years later this was just broken everywhere.
-> > That's why it is just easier to remove it entirely.
-> 
-> Thanks for review and suggestion.
-> Removing of file name makes more sense to me also.
-> Will take care of this in some other files also under "mach-exynos"
-> in next version of patch.
-> 
-No, basically don't need it.
+v4:
+	- Refactor out ptrace_event_pid() to dedup FIXME code
+	- Handle task_active_pid_ns() returning NULL
+	- Use rcu_dereference() for accessing current->parent
 
-And Sachin/Tushar have posted it before, I didn't agree at that time though.
+v3:
+        - Respond to Oleg feedback about p possibly already exiting
+          and adding proper locking
+        - Add comment warning that race condition still exists
+        - Removed selftest to instead be included with other ptrace tests
+        - Removed ptrace_message zero'ing; to be handled in followup patch
 
-- Kukjin
+v2:
+        - Moved selftests/ptrace-pidns into selftests/ptrace as pidns-events
+          per feedback from Kees.
 
+8>--------------------------------------------------------------------<8
+
+When tracing a process in another pid namespace, it's important for
+fork event messages to contain the child's pid as seen from the
+tracer's pid namespace, not the parent's.  Otherwise, the tracer won't
+be able to correlate the fork event with later SIGTRAP signals it
+receives from the child.
+
+We still risk a race condition if a ptracer from a different pid
+namespace attaches after we compute the pid_t value.  However, sending
+a bogus fork event message in this unlikely scenario is still a vast
+improvement over the status quo where we always send bogus fork event
+messages to debuggers in a different pid namespace than the forking
+process.
+
+Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
+---
+ include/linux/ptrace.h | 31 +++++++++++++++++++++++++++++++
+ kernel/fork.c          | 10 +++++++---
+ 2 files changed, 38 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 07d0df6..219c52c 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -5,6 +5,7 @@
+ #include <linux/sched.h>		/* For struct task_struct.  */
+ #include <linux/err.h>			/* for IS_ERR_VALUE */
+ #include <linux/bug.h>			/* For BUG_ON.  */
++#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
+ #include <uapi/linux/ptrace.h>
+ 
+ /*
+@@ -129,6 +130,36 @@ static inline void ptrace_event(int event, unsigned long message)
+ }
+ 
+ /**
++ * ptrace_event_pid - possibly stop for a ptrace event notification
++ * @event:	%PTRACE_EVENT_* value to report
++ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
++ *
++ * Check whether @event is enabled and, if so, report @event and @pid
++ * to the ptrace parent.  @pid is reported as the pid_t seen from the
++ * the ptrace parent's pid namespace.
++ *
++ * Called without locks.
++ */
++static inline void ptrace_event_pid(int event, struct pid *pid)
++{
++	/*
++	 * FIXME: There's a potential race if a ptracer in a different pid
++	 * namespace than parent attaches between computing message below and
++	 * and when we acquire tasklist_lock in ptrace_stop().
++	 */
++	unsigned long message = 0;
++	struct pid_namespace *ns;
++
++	rcu_read_lock();
++	ns = task_active_pid_ns(rcu_dereference(current->parent));
++	if (ns)
++		message = pid_nr_ns(pid, ns);
++	rcu_read_unlock();
++
++	ptrace_event(event, message);
++}
++
++/**
+  * ptrace_init_task - initialize ptrace state for a new child
+  * @child:		new child task
+  * @ptrace:		true if child should be ptrace'd by parent's tracer
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 332688e..881cfe8 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1605,10 +1605,12 @@ long do_fork(unsigned long clone_flags,
+ 	 */
+ 	if (!IS_ERR(p)) {
+ 		struct completion vfork;
++		struct pid *pid;
+ 
+ 		trace_sched_process_fork(current, p);
+ 
+-		nr = task_pid_vnr(p);
++		pid = get_task_pid(p, PIDTYPE_PID);
++		nr = pid_vnr(pid);
+ 
+ 		if (clone_flags & CLONE_PARENT_SETTID)
+ 			put_user(nr, parent_tidptr);
+@@ -1623,12 +1625,14 @@ long do_fork(unsigned long clone_flags,
+ 
+ 		/* forking complete and child started to run, tell ptracer */
+ 		if (unlikely(trace))
+-			ptrace_event(trace, nr);
++			ptrace_event_pid(trace, pid);
+ 
+ 		if (clone_flags & CLONE_VFORK) {
+ 			if (!wait_for_vfork_done(p, &vfork))
+-				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
++				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
+ 		}
++
++		put_pid(pid);
+ 	} else {
+ 		nr = PTR_ERR(p);
+ 	}
+-- 
+1.9.1.423.g4596e3a
