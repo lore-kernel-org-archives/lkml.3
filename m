@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaDCTzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 15:55:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348AbaDCTzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 15:55:17 -0400
-Date: Thu, 3 Apr 2014 15:30:24 -0400
-From: "J. Bruce Fields" <bfields@redhat.com>
-To: Mark Lord <mlord@pobox.com>
-Cc: Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-Message-ID: <20140403193024.GC28790@pad.redhat.com>
-References: <533D8D73.1090603@pobox.com>
- <20140403171643.GB28790@pad.redhat.com>
- <533D9F8A.6030001@pobox.com>
+	id S1753556AbaDCTzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 15:55:51 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:48161 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316AbaDCTzs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 15:55:48 -0400
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 15:55:48 EDT
+From: =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>
+To: tj@kernel.org
+Cc: d@falconindy.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        P@draigbrady.com, alexandre.f.demers@gmail.com,
+        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
+        "3.14" <stable@vger.kernel.org>
+Subject: [PATCHv2] fs: Don't return 0 from get_anon_bdev
+Date: Thu,  3 Apr 2014 21:55:37 +0200
+Message-Id: <1396554937-11952-1-git-send-email-thomas@archlinux.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20140403195154.GD2472@mtj.dyndns.org>
+References: <20140403195154.GD2472@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533D9F8A.6030001@pobox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 01:51:06PM -0400, Mark Lord wrote:
-> On 14-04-03 01:16 PM, J. Bruce Fields wrote:
-> > On Thu, Apr 03, 2014 at 12:33:55PM -0400, Mark Lord wrote:
-> >> This commit from linux-3.14 breaks our NFS-root clients here:
-> >>
-> >> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
-> >>
-> >>
-> >> - *p++ = htonl((u32) stat->mode);
-> >> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
-> >>
-> >>
-> >> Reverting the one-liner above (on the server) fixes it for us,
-> >> as does reverting back to linux-3.13.8 on the server.
-> >>
-> >> The NFS-root clients are on PowerPC (big-endian) architecture,
-> >> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
-> >>
-> >> ACL is completely disabled on server and client,
-> >> and we're using NFSv2/v3.  No support for v4.
-> >>
-> >> I instrumented the function to see what other bits were being cleared
-> >> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
-> > 
-> > Hm, it sounds like a bug in the client if it's depending on those high
-> > bits.
-> 
-> But only for mounting / starting up from the nfsroot, it seems.
-> I wonder if there's an unusual code path for that in there?
-> The regular stuff looks mostly fine:
-> 
->         p = xdr_decode_ftype3(p, &fmode);
->         fattr->mode = (be32_to_cpup(p++) & ~S_IFMT) | fmode;
+Commit 9e30cc9595303b27b48 removed an internal mount. This
+has the side-effect that rootfs now has FSID 0. Many
+userspace utilities assume that st_dev in struct stat
+is never 0, so this change breaks a number of tools in
+early userspace.
 
-Hm, but that's in nfs3xdr.c; in nfs2xdr.c we have just
+Since we don't know how many userspace programs are affected,
+make sure that FSID is at least 1.
 
-	fattr->mode = be32_to_cpup(p+);
+References: http://article.gmane.org/gmane.linux.kernel/1666905
+References: http://permalink.gmane.org/gmane.linux.utilities.util-linux-ng/8557
+Cc: 3.14 <stable@vger.kernel.org>
+Signed-off-by: Thomas Bächler <thomas@archlinux.org>
+---
+ fs/super.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-and NFSv2 is the default for nfsroot.  Do you have some reason to
-believe you're not using NFSv2?
+diff --git a/fs/super.c b/fs/super.c
+index 80d5cf2..7624267 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -802,7 +802,10 @@ void emergency_remount(void)
+ 
+ static DEFINE_IDA(unnamed_dev_ida);
+ static DEFINE_SPINLOCK(unnamed_dev_lock);/* protects the above */
+-static int unnamed_dev_start = 0; /* don't bother trying below it */
++/* Many userspace utilities consider an FSID of 0 invalid.
++ * Always return at least 1 from get_anon_bdev.
++ */
++static int unnamed_dev_start = 1;
+ 
+ int get_anon_bdev(dev_t *p)
+ {
+-- 
+1.9.1
 
---b.
-
-> 
-> Except perhaps that second line ought to use the same mask
-> as the server side is using, just in case there are some other
-> stray high (higher than S_IFMT) bits in there now/someday.
-> 
-> > The original behavior was in practice harmless and changing it broke
-> > something, so I think we should definitely just revert this patch.
-> 
-> Yup.  Who?
-> 
-> > But the client may need fixing too.
-> 
-> Probably a good thing in the longer term, for better compatibility
-> with non-Linux servers.  But we'll still have to keep the revert
-> on the server (nfsd) code for backward compatibility, I think.
-> 
-> Cheers
-> 
-> 
