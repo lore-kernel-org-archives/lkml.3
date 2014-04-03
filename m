@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933770AbaDCG3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 02:29:02 -0400
-Received: from fallback7.mail.ru ([94.100.176.135]:56024 "EHLO
-	fallback7.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933511AbaDCG26 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 02:28:58 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: jon@ringle.org
-Cc: =?UTF-8?B?Sm9uIFJpbmdsZQ==?= <jringle@gridpoint.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2NCAxLzJdIHNlcmlhbDogc2MxNmlzN3h4?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [217.119.30.118]
-Date: Thu, 03 Apr 2014 10:28:37 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1396506517.887689599@f401.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1396500555-28873-1-git-send-email-jon@ringle.org>
-References: <1396500555-28873-1-git-send-email-jon@ringle.org>
+	id S1162347AbaDCG3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 02:29:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56329 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933511AbaDCG3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 02:29:12 -0400
+Message-ID: <533CFFB3.9070201@ti.com>
+Date: Thu, 3 Apr 2014 09:29:07 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
+References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com>
+In-Reply-To: <533C1AC2.1000307@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s336TAkL015765
 
-Thu,  3 Apr 2014 00:49:14 -0400 Ğ¾Ñ‚ jon@ringle.org:
-> From: Jon Ringle <jringle@gridpoint.com>
+On 04/02/2014 05:12 PM, Tero Kristo wrote:
+> On 04/02/2014 04:48 PM, Peter Ujfalusi wrote:
+>> ABE DPLL frequency need to be lowered from 361267200
+>> to 180633600 to facilitate the ATL requironments.
+>> The dpll_abe_m2x2_ck clock need to be set to double
+>> of ABE DPLL rate in order to have correct clocks
+>> for audio.
 > 
-> The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
-> high performance UART. The SC16IS7xxâ€™s internal register set is
-> backward-compatible with the widely used and widely popular 16C450.
+> Do you have some sort of TRM reference for this?
+
+The ATL's max divider is 32.
+For audio purpose the clock coming out from the ATL instance should be
+128 * fs. It is only possible to have 44.1KHz sampling rate with ABE DPLL set
+to 361267200 or 180633600. Which means:
+The atl generated clock should be 128 * 44100 = 5644800
+>From ABE_DPLL 361267200 we would need to have 64 as divider (ATL can't do this).
+>From the suggested ABE_DPLL of 180633600 we can use ATL divider of 32, which
+is the maximum it can do.
+
+So the reason for the change is to have ATLPCLK clock which can be used for
+audio in the future, the 361267200 is just too high.
+
 > 
-> The SC16IS7xx also provides additional advanced features such as
-> auto hardware and software flow control, automatic RS-485 support, and
-> software reset.
+> -Tero
 > 
-> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
-> ---
-...
-> +	tristate "SC16IS7xx serial support"
-> +	select SERIAL_CORE
-> +	select REGMAP_I2C if I2C
-> +	default n
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>   drivers/clk/ti/clk-7xx.c | 7 ++++++-
+>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+>> index f7e40734c819..19a55bf407dd 100644
+>> --- a/drivers/clk/ti/clk-7xx.c
+>> +++ b/drivers/clk/ti/clk-7xx.c
+>> @@ -16,7 +16,7 @@
+>>   #include <linux/clkdev.h>
+>>   #include <linux/clk/ti.h>
+>>
+>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
+>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
+>>   #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
+>>
+>>
+>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
+>>       if (rc)
+>>           pr_err("%s: failed to configure ABE DPLL!\n", __func__);
+>>
+>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
+>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
+>> +    if (rc)
+>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
+>> +
+>>       dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
+>>       rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
+>>       if (rc)
+>>
+> 
 
-"n" is already default choice. There is no need to specify this.
 
-...
-> +#include <linux/serial.h>
-> +#include <linux/spi/spi.h>
-
-What a reason to include SPI header?
-
-...
-> + * The programmer must program the TCR such that TCR[3:0] > TCR[7:4]. There is
-> + * no built-in hardware check to make sure this condition is met. Also, the TCR
-> + * must be programmed with this condition before auto RTS or software flow
-> + * control is enabled to avoid spurious operation of the device.
-> + */
-> +#define SC16IS7XX_TCR_RX_HALT(words)	(((words / 4) & 0x0f) << 0)
-> +#define SC16IS7XX_TCR_RX_RESUME(words)	(((words / 4) & 0x0f) << 4)
-
-"words" on the right side should be framed by brackets.
-
-...
-> + * When TLR is used for RX trigger level control, FCR[7:6] should be left at the
-> + * default state, that is, â€˜00â€™.
-> + */
-> +#define SC16IS7XX_TLR_TX_TRIGGER(words)	(((words / 4) & 0x0f) << 0)
-> +#define SC16IS7XX_TLR_RX_TRIGGER(words)	(((words / 4) & 0x0f) << 4)
-
-Ditto.
-
-...
-> +static void sc16is7xx_config_rs485(struct uart_port *port,
-> +				   struct serial_rs485 *rs485)
-> +{
-> +	struct sc16is7xx_one *one = to_sc16is7xx_one(port, port);
-> +
-> +	one->rs485 = *rs485;
-> +
-> +	if (one->rs485.flags & SER_RS485_ENABLED) {
-> +		sc16is7xx_port_update(port, SC16IS7XX_EFCR_REG,
-> +				      SC16IS7XX_EFCR_AUTO_RS485_BIT,
-> +				      SC16IS7XX_EFCR_AUTO_RS485_BIT);
-> +	} else {
-> +		sc16is7xx_port_update(port, SC16IS7XX_EFCR_REG,
-> +				      SC16IS7XX_EFCR_AUTO_RS485_BIT,
-> +				      0);
-> +	}
-> +}
-
-This function will get "unused" warning if TIOCSRS485 and
-TIOCGRS485 is not defined.
-
-...
-> +static int sc16is7xx_startup(struct uart_port *port)
-> +{
-...
-> +	sc16is7xx_port_update(port, SC16IS7XX_EFCR_REG,
-> +			      SC16IS7XX_EFCR_AUTO_RS485_BIT,
-> +			      SC16IS7XX_EFCR_AUTO_RS485_BIT);
-
-You should do not set optional RS485 mode unconditionally.
-Since IOCTL for RS485 is used, this should be enough.
-
----
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Péter
