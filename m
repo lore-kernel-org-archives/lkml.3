@@ -1,149 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711AbaDCC1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 22:27:17 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:59186 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932512AbaDCC1Q (ORCPT
+	id S932829AbaDCC3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 22:29:12 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:32849 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932735AbaDCC3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 22:27:16 -0400
-From: Matthew Dempsky <mdempsky@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Matthew Dempsky <mdempsky@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4] ptrace: Fix fork event messages across pid namespaces
-Date: Wed,  2 Apr 2014 19:26:45 -0700
-Message-Id: <1396492005-23811-1-git-send-email-mdempsky@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1396391358-22367-1-git-send-email-mdempsky@chromium.org>
-References: <1396391358-22367-1-git-send-email-mdempsky@chromium.org>
+	Wed, 2 Apr 2014 22:29:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <533C525C.3070909@codeaurora.org>
+References: <1396436557-29136-1-git-send-email-leiwen@marvell.com>
+	<533C525C.3070909@codeaurora.org>
+Date: Thu, 3 Apr 2014 10:29:08 +0800
+Message-ID: <CALZhoSSgt+xJ27cxadmaqHdDAqnLKiZ7Su3nLAyUDk1txqgrug@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: register persistent clock for arm arch_timer
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Lei Wen <leiwen@marvell.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v4:
-	- Refactor out ptrace_event_pid() to dedup FIXME code
-	- Handle task_active_pid_ns() returning NULL
-	- Use rcu_dereference() for accessing current->parent
+Hi Stephen,
 
-v3:
-        - Respond to Oleg feedback about p possibly already exiting
-          and adding proper locking
-        - Add comment warning that race condition still exists
-        - Removed selftest to instead be included with other ptrace tests
-        - Removed ptrace_message zero'ing; to be handled in followup patch
+On Thu, Apr 3, 2014 at 2:09 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 04/02/14 04:02, Lei Wen wrote:
+>> Since arm's arch_timer's counter would keep accumulated even in the
+>> low power mode, including suspend state, it is very suitable to be
+>> the persistent clock instead of RTC.
+>>
+>> While read_persistent_clock calling place shall be rare, like only
+>> suspend/resume place? So we shall don't care for its performance
+>> very much, so use direclty divided by frequency should be accepted
+>> for this reason. Actually archtimer's counter read performance already
+>> be very good, since it is directly access from core's bus, not from
+>> soc, so this is another reason why we choose use divide here.
+>>
+>> Final reason for why we don't use multi+shift way is for we may not
+>> call read_persistent_clock for long time, like system long time
+>> not enter into suspend, so that the accumulated cycle difference value
+>> may larger than we used for calculate the multi+shift, thus precise
+>> would be highly affected in such corner case.
+>>
+>> Signed-off-by: Lei Wen <leiwen@marvell.com>
+>> ---
+>>
+>> I am not sure whether it is good to add something like
+>> generic_persistent_clock_read in the new added kernel/time/sched_clock.c?
+>> Since from arch timer's perspective, all it need to do is to pick
+>> the suspend period from the place where sched_clock being stopped/restarted.
+>>
+>> Any idea for make the persistent clock reading as one generic function,
+>> like current sched_clock do?
+>
+> Why do we need this? Don't we put the CLOCK_SOURCE_SUSPEND_NONSTOP flag
+> on the arm_arch_timer clocksource to handle this? The only reason I can
+> think of would be that you're calling read_persistent_clock() from
+> somewhere else besides the timekeeping core. If that's why, please use
+> the time functionality like ktime_get_boottime() or
+> get_monotonic_boottime().
 
-v2:
-        - Moved selftests/ptrace-pidns into selftests/ptrace as pidns-events
-          per feedback from Kees.
+You are right for the CLOCK_SOURCE_SUSPEND_NONSTOP flag.
+I haven't noticed that latest kernel already has such patch for arch_timer,
+so provide additional such implementation shall no need then.
 
-8>--------------------------------------------------------------------<8
+Another question may not related with this patch:
+After 3.10, seem sched_clock also would get suspend by default during
+suspend, and thus printk message's timestamp would get freezed
+during the suspend, and later resume print message appears suspend
+never happen, for the sched_clock already deduce the suspend period.
 
-When tracing a process in another pid namespace, it's important for
-fork event messages to contain the child's pid as seen from the
-tracer's pid namespace, not the parent's.  Otherwise, the tracer won't
-be able to correlate the fork event with later SIGTRAP signals it
-receives from the child.
+It makes the kernel log hard to align with other cores' generated message.
+For other cores, I mean like communication processor.
+So it make the debug process painful...
+Any idea to solve it? Replace the local_clock to ktime_get_boottime in printk.c?
 
-We still risk a race condition if a ptracer from a different pid
-namespace attaches after we compute the pid_t value.  However, sending
-a bogus fork event message in this unlikely scenario is still a vast
-improvement over the status quo where we always send bogus fork event
-messages to debuggers in a different pid namespace than the forking
-process.
-
-Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
----
- include/linux/ptrace.h | 31 +++++++++++++++++++++++++++++++
- kernel/fork.c          | 10 +++++++---
- 2 files changed, 38 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 07d0df6..219c52c 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -5,6 +5,7 @@
- #include <linux/sched.h>		/* For struct task_struct.  */
- #include <linux/err.h>			/* for IS_ERR_VALUE */
- #include <linux/bug.h>			/* For BUG_ON.  */
-+#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
- #include <uapi/linux/ptrace.h>
- 
- /*
-@@ -129,6 +130,36 @@ static inline void ptrace_event(int event, unsigned long message)
- }
- 
- /**
-+ * ptrace_event_pid - possibly stop for a ptrace event notification
-+ * @event:	%PTRACE_EVENT_* value to report
-+ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
-+ *
-+ * Check whether @event is enabled and, if so, report @event and @pid
-+ * to the ptrace parent.  @pid is reported as the pid_t seen from the
-+ * the ptrace parent's pid namespace.
-+ *
-+ * Called without locks.
-+ */
-+static inline void ptrace_event_pid(int event, struct pid *pid)
-+{
-+	/*
-+	 * FIXME: There's a potential race if a ptracer in a different pid
-+	 * namespace than parent attaches between computing message below and
-+	 * and when we acquire tasklist_lock in ptrace_stop().
-+	 */
-+	unsigned long message = 0;
-+	struct pid_namespace *ns;
-+
-+	rcu_read_lock();
-+	ns = task_active_pid_ns(rcu_dereference(current->parent));
-+	if (ns)
-+		message = pid_nr_ns(pid, ns);
-+	rcu_read_unlock();
-+
-+	ptrace_event(event, message);
-+}
-+
-+/**
-  * ptrace_init_task - initialize ptrace state for a new child
-  * @child:		new child task
-  * @ptrace:		true if child should be ptrace'd by parent's tracer
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 332688e..881cfe8 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1605,10 +1605,12 @@ long do_fork(unsigned long clone_flags,
- 	 */
- 	if (!IS_ERR(p)) {
- 		struct completion vfork;
-+		struct pid *pid;
- 
- 		trace_sched_process_fork(current, p);
- 
--		nr = task_pid_vnr(p);
-+		pid = get_task_pid(p, PIDTYPE_PID);
-+		nr = pid_vnr(pid);
- 
- 		if (clone_flags & CLONE_PARENT_SETTID)
- 			put_user(nr, parent_tidptr);
-@@ -1623,12 +1625,14 @@ long do_fork(unsigned long clone_flags,
- 
- 		/* forking complete and child started to run, tell ptracer */
- 		if (unlikely(trace))
--			ptrace_event(trace, nr);
-+			ptrace_event_pid(trace, pid);
- 
- 		if (clone_flags & CLONE_VFORK) {
- 			if (!wait_for_vfork_done(p, &vfork))
--				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
-+				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
- 		}
-+
-+		put_pid(pid);
- 	} else {
- 		nr = PTR_ERR(p);
- 	}
--- 
-1.9.1.423.g4596e3a
+Thanks,
+Lei
