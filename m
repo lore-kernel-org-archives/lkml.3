@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162508AbaDCH7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 03:59:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45944 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162492AbaDCH7j (ORCPT
+	id S1162528AbaDCIAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:00:32 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56381 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162430AbaDCIAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 03:59:39 -0400
-Date: Thu, 3 Apr 2014 09:59:38 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        kernel list <linux-kernel@vger.kernel.org>
-Cc: Greg KH <greg@kroah.com>
-Subject: 3.15-rc0: warn_on in suspend_test.c
-Message-ID: <20140403075938.GA10355@amd.pavel.ucw.cz>
+	Thu, 3 Apr 2014 04:00:30 -0400
+Message-ID: <533D151A.9070808@suse.cz>
+Date: Thu, 03 Apr 2014 10:00:26 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Samo Pogacnik <samo_pogacnik@t-2.net>, Jean Delvare <jdelvare@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Struan Bartlett <struan.bartlett@gmail.com>,
+        Andreas Schwab <schwab@linux-m68k.org>, gnomes@lxorguk.ukuu.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ttyprintk: Fix wrong tty_unregister_driver() call
+ in the error path
+References: <1396434582-30799-1-git-send-email-tiwai@suse.de>	<1396441473.10789.23.camel@chaos.site> <s5hbnwjdjtf.wl%tiwai@suse.de>
+In-Reply-To: <s5hbnwjdjtf.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 04/03/2014 08:10 AM, Takashi Iwai wrote:
+> At Wed, 02 Apr 2014 14:24:33 +0200,
+> Jean Delvare wrote:
+>>
+>> Le Wednesday 02 April 2014 à 12:29 +0200, Takashi Iwai a écrit :
+>>> ttyprintk driver calls tty_unregister_driver() wrongly in the error
+>>> path of tty_register_driver().  Also, setting ttyprintk_driver to NULL
+>>> is utterly superfluous, so let's get rid of it, too.
+>>>
+>>> Reported-by: Jean Delvare <jdelvare@suse.de>
+>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>> ---
+>>>  drivers/char/ttyprintk.c | 2 --
+>>>  1 file changed, 2 deletions(-)
+>>>
+>>> diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
+>>> index daea84c41743..2a39c5790364 100644
+>>> --- a/drivers/char/ttyprintk.c
+>>> +++ b/drivers/char/ttyprintk.c
+>>> @@ -210,10 +210,8 @@ static int __init ttyprintk_init(void)
+>>>  	return 0;
+>>>  
+>>>  error:
+>>> -	tty_unregister_driver(ttyprintk_driver);
+>>>  	put_tty_driver(ttyprintk_driver);
+>>>  	tty_port_destroy(&tpk_port.port);
+>>> -	ttyprintk_driver = NULL;
+>>>  	return ret;
+>>>  }
+>>>  device_initcall(ttyprintk_init);
+>>
+>> Reviewed-by: Jean Delvare <jdelvare@suse.de>
+> 
+> Meanwhile, I found that tty_unregister_driver() was added
+> intentionally in the commit f06fb543c1d0,
+>     TTY: ttyprintk, unregister tty driver on failure
+>     
+>     When the tty_printk driver fails to create a node in sysfs, the
+>     system
+>     crashes. It is because the driver registers a tty driver and frees
+>     it
+>     without deregistering it first. The fix is easy: add a call to
+>     tty_unregister_driver to the fail path.
+> 
+> But, I failed to see why this is needed in the current code.
+> 
+> Jiri, is your fix still valid at all?
 
-Wakeup took longer than usual, and then I got: 
+The code was different. There was also device_create after
+tty_register_driver. I must admit that I don't know why I didn't change
+'goto error' in the tty_register_driver fail path.
 
-usb 2-1: reset low-speed USB device number 2 using uhci_hcd
-usb 5-1: reset low-speed USB device number 2 using uhci_hcd
-usb 1-8: reset high-speed USB device number 6 using ehci-pci
-usb 1-8: device descriptor read/64, error -110
-usb 1-8: device descriptor read/64, error -110
-usb 1-8: reset high-speed USB device number 6 using ehci-pci
-PM: resume of devices complete after 43288.193 msecs
-PM: resume devices took 43.392 seconds
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 7045 at kernel/power/suspend_test.c:53
-suspend_test_finish+0x84/0x90()
-Component: resume devices, time: 43392
-Modules linked in:
-CPU: 1 PID: 7045 Comm: pm-suspend Tainted: G        W    3.14.0+ #332
-Hardware name:                  /DG41MJ, BIOS
-MJG4110H.86A.0006.2009.1223.1155 12/23/2009
- 00000035 c08a9e30 c47dd48b c49d015e c08a9e60 c40384ea c49d0145
- c08a9e8c
- 00001b85 c49d015e 00000035 c407b734 c407b734 0000a980 c49d00ea
- c08a9eb0
- c08a9e78 c403858e 00000009 c08a9e70 c49d0145 c08a9e8c c08a9e9c
- c407b734
-Call Trace:
- [<c47dd48b>] dump_stack+0x41/0x52
- [<c40384ea>] warn_slowpath_common+0x7a/0xa0
- [<c407b734>] ? suspend_test_finish+0x84/0x90
- [<c407b734>] ? suspend_test_finish+0x84/0x90
- [<c403858e>] warn_slowpath_fmt+0x2e/0x30
- [<c407b734>] suspend_test_finish+0x84/0x90
- [<c407b259>] suspend_devices_and_enter+0x159/0x2e0
- [<c47dd33a>] ? printk+0x38/0x3a
- [<c407b5e1>] pm_suspend+0x201/0x240
- [<c407a7bd>] state_store+0x8d/0x90
- [<c407a730>] ? wakeup_count_show+0x40/0x40
- [<c42703a0>] kobj_attr_store+0x20/0x30
- [<c414615b>] sysfs_kf_write+0x3b/0x50
- [<c4149395>] kernfs_fop_write+0xb5/0x110
- [<c4146120>] ? sysfs_file_ops+0x50/0x50
- [<c40eddee>] vfs_write+0x9e/0x190
- [<c41492e0>] ? kernfs_vma_page_mkwrite+0x80/0x80
- [<c410680d>] ? __fdget+0xd/0x10
- [<c40edfd6>] SyS_write+0x56/0xc0
- [<c4106d1b>] ? __close_fd+0x6b/0x90
- [<c47e27ff>] sysenter_do_call+0x12/0x31
----[ end trace df8f3e773ca202a7 ]---
+        ret = tty_register_driver(ttyprintk_driver);
+        if (ret < 0) {
+                printk(KERN_ERR "Couldn't register ttyprintk driver\n");
+                goto error;
+        }
 
-Now.. usb-to-video convertor was plugged in, so maybe that's
-responsible?
+        /* create our unnumbered device */
+        rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
+                                ttyprintk_driver->name);
+        if (IS_ERR(rp)) {
+                printk(KERN_ERR "Couldn't create ttyprintk device\n");
+                ret = PTR_ERR(rp);
+                goto error;
+        }
 
-									Pavel
+
+
+So yes, there should be no tty_unregister_driver in the fail path when
+device_create is gone now.
+
+thanks,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+js
+suse labs
