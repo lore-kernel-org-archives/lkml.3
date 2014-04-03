@@ -1,96 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778AbaDCUQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 16:16:32 -0400
-Received: from fieldses.org ([174.143.236.118]:60881 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749AbaDCUQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 16:16:29 -0400
-Date: Thu, 3 Apr 2014 16:16:27 -0400
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Mark Lord <mlord@pobox.com>, "J. Bruce Fields" <bfields@redhat.com>,
-        Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-Message-ID: <20140403201627.GC8343@fieldses.org>
-References: <533D8D73.1090603@pobox.com>
- <20140403171643.GB28790@pad.redhat.com>
- <533D9F8A.6030001@pobox.com>
- <20140403145504.3b04170e@tlielax.poochiereds.net>
+	id S1753556AbaDCUVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 16:21:46 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:38506 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440AbaDCUVl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 16:21:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403145504.3b04170e@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com>
+References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
+	<20140319201838.GA11403@redhat.com>
+	<CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
+	<20140321132816.GW15608@titan.lakedaemon.net>
+	<532DC3D3.9060008@linux.com>
+	<CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
+	<20140323193839.GY15608@titan.lakedaemon.net>
+	<CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
+	<20140401142051.GO28304@titan.lakedaemon.net>
+	<CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com>
+Date: Thu, 3 Apr 2014 22:21:39 +0200
+X-Google-Sender-Auth: cn_0lUfYPkkGxXglw-A1RoDHRzc
+Message-ID: <CAAsK9AGW+L4GswAEAZeZEcqUDb+H9b=qu98znsM6XSU3B2fuGw@mail.gmail.com>
+Subject: Re: [RFC] QR encoding for Oops messages
+From: Levente Kurusa <levex@linux.com>
+To: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 02:55:04PM -0400, Jeff Layton wrote:
-> On Thu, 03 Apr 2014 13:51:06 -0400
-> Mark Lord <mlord@pobox.com> wrote:
-> 
-> > On 14-04-03 01:16 PM, J. Bruce Fields wrote:
-> > > On Thu, Apr 03, 2014 at 12:33:55PM -0400, Mark Lord wrote:
-> > >> This commit from linux-3.14 breaks our NFS-root clients here:
-> > >>
-> > >> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
-> > >>
-> > >>
-> > >> - *p++ = htonl((u32) stat->mode);
-> > >> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
-> > >>
-> > >>
-> > >> Reverting the one-liner above (on the server) fixes it for us,
-> > >> as does reverting back to linux-3.13.8 on the server.
-> > >>
-> > >> The NFS-root clients are on PowerPC (big-endian) architecture,
-> > >> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
-> > >>
-> > >> ACL is completely disabled on server and client,
-> > >> and we're using NFSv2/v3.  No support for v4.
-> > >>
-> > >> I instrumented the function to see what other bits were being cleared
-> > >> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
-> > > 
-> > > Hm, it sounds like a bug in the client if it's depending on those high
-> > > bits.
-> > 
-> > But only for mounting / starting up from the nfsroot, it seems.
-> > I wonder if there's an unusual code path for that in there?
-> > The regular stuff looks mostly fine:
-> > 
-> >         p = xdr_decode_ftype3(p, &fmode);
-> >         fattr->mode = (be32_to_cpup(p++) & ~S_IFMT) | fmode;
-> > 
-> > Except perhaps that second line ought to use the same mask
-> > as the server side is using, just in case there are some other
-> > stray high (higher than S_IFMT) bits in there now/someday.
-> > 
-> > > The original behavior was in practice harmless and changing it broke
-> > > something, so I think we should definitely just revert this patch.
-> > 
-> > Yup.  Who?
-> > 
-> > > But the client may need fixing too.
-> > 
-> > Probably a good thing in the longer term, for better compatibility
-> > with non-Linux servers.  But we'll still have to keep the revert
-> > on the server (nfsd) code for backward compatibility, I think.
-> > 
-> > Cheers
-> > 
-> 
-> It would be good to understand where this is broken in the client.
-> 
-> It's incorrect for the client to interpret those bits, as I think that
-> there's no guarantee that other OS's implement the type bits in the
-> same way that Linux does. So if you end up mounting a different OS,
-> it's possible that the client will get that wrong...
+Hi,
 
-It turns out these bits actually are defined in rfc 1094, so this is
-just an odd NFSv2-specific wart, and the nfsd change was just flat-out
-wrong.
+2014-04-01 23:07 GMT+02:00 Teodora Bãluþã <teobaluta@gmail.com>:
+> On Tue, Apr 1, 2014 at 5:20 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+>> On Sun, Mar 30, 2014 at 12:17:17PM +0200, Levente Kurusa wrote:
+>>> Hi all,
+>>>
+>>> (sorry for the late reply, looks like this mail has ran away from my clients)
+>
+> same here.
+>
+>>>
+>>> 2014-03-23 20:38 GMT+01:00 Jason Cooper <jason@lakedaemon.net>:
+>>> > All,
+>>> >
+>>> > On Sat, Mar 22, 2014 at 08:20:01PM +0200, Teodora Bãluþã wrote:
+>>> >> On Sat, Mar 22, 2014 at 7:09 PM, Levente Kurusa <levex@linux.com> wrote:
+>>> >> > On 03/21/2014 02:28 PM, Jason Cooper wrote:
+>>> > ...
+>>> >> >> I would definitely like to see the QR output incorporated into a
+>>> >> >> kernel.org url.  That would remove the need for installing another app,
+>>> >> >> and would ease bug reporting.
+>>> >> >
+>>> >> > I still struggle to understand how could that be done. We can encode the
+>>> >> > QR code as ASCII. Okay, that's fine, however it is very long. Encoding
+>>> >> > 'Unable to handle kernel paging request at 0000000f' gave a 449 character
+>>> >> > long sequence with very strange characters [0]. We should try to shorten
+>>> >> > it, imho. Not sure how to do that though.
+>>> >
+>>> > The man page for qrencode says you can have up to 4000 characters in a
+>>> > qrcode.  However, I've seen readers have trouble with a 2048bit ascii
+>>> > armored PGP public key (3929 characters).
+>>> >
+>>> > I grabbed a random oops from oops.kernel.org, it weighed in at 1544
+>>> > bytes, not too bad.  I then did:
+>>> >
+>>> > $ echo "https://oops.kernel.org/?qr=`cat oops.txt | gzip -9 | base64 -wrap=0`" | wc -c
+>>> > 993
+>>>
+>>> I did the same with another OOPS and it had 1953 characters. That's quite a big
+>>> a big difference! :-)
+>>>
+>>> I created a QR image from the URL then, and it was 147x147, which is
+>>> pretty small.
+>>> It took me quite a long time to make my phone recognize it, but it
+>>> worked nicely.
+>>>
+>>> Result of work is in this directory:
+>>>
+>>> http://levex.fedorapeople.org/kernel/qr/
+>>
+>> nice!
+>>
+>>> > The benefit of a url is that any QR reader can automagically report an
+>>> > oops.  While a specific app could parse the URL/oops locally if the
+>>> > user desires.
+>>> >
+>>> >> it misses the point of having a QR code in the first place. The way I
+>>> >> see it, having a QR decoder app installed that can do an offline
+>>> >> decoding is a less greater effort than popping out a browser on the
+>>> >> machine you're working on.
+>>> >
+>>> > I think you're selling the advantage of the QR code short.  Automated
+>>> > reporting (via the url) is a _huge_ plus.  The app you conceive of could
+>>> > still parse it in place if the user desires.
+>>> >
+>>> > My point for the URL isn't to use the internet/server to automate oops
+>>> > parsing for the user.  Rather it's to make it easy to report oopses to
+>>> > developers.  While still preserving the ability of your app to parse it
+>>> > for the user.
+>>>
+>>> Ah I see now. oops.kernel.org/?qr=<QR> would simply parse the
+>>> base64'd+gzip'd oops message and then report it.
+>>
+>> If you mean the server behind oops.k.o would parse it, then yes.  No
+>> special app should be required other than a QR code scanner for the
+>> usecase of reporting oopses to developers.
 
---b.
+Yup, clear now.
+
+>>
+>>> Now I guess we need to think how to make it work without a
+>>> framebuffer. I already suggested using the ASCII characters,
+>>> but seeing the resolution of this QR code for example (147x147),
+>>> made me realize that we can't shuffle that into a 80x25 textmode
+>>> display. Any ideas how to fix that or should we just simply depend
+>>> on a framebuffer being present?
+>>
+>> I think depending on the framebuffer being present (via kconfig) is
+>> sane.  Folks running old systems know what they're in for, like missing
+>> shiny new features. ;-)
+>
+> Ok, this may work. I agree that doing this with the help of the frame
+> buffer is more natural.
+
+Okay, Teodora I'll send you a commit ASAP and then
+we should start working on getting libqr into an acceptable
+state. I am not sure if we can shuffle it into staging though,
+it's not a driver and AFAIK staging.git is for drivers which aren't
+yet finished. So, I would say, let's start working on fixing the
+OOPness of libqr first. If we were to rework that, then
+we can as well avoid having GFP_ATOMIC in library code
+by using the more conventional kmalloc(struct); init_struct(ptr);
+scheme.
+
+Oh and I had an idea of adding a new kernel parameter, something
+like 'qr_oops.*'. (Looking for a better name! :-) )
+Basically, I thought of the following options so far:
+
+*  qr_oops.disable=1  - disable it
+*  qr_oops.scale=600x600 - scale the qr code so its easier to read
+   with a phone. In my testing I had huge difficulties reading the
+   QR codes, but when scaled to be a bit bigger it worked magically.
+   This might not be so easy to implement this way, but with preset
+   values, i.e. 4x4 squares instead of a pixel, it could work.
+
+Objections, ideas are welcome!
+
+Teodora, have you worked on anything recently in qr-linux-kernel?
+Just to make sure we aren't working on the same.
+
+Thanks,
+Levente Kurusa
