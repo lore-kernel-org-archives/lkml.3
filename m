@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796AbaDCEVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 00:21:45 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:37630 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468AbaDCEVm (ORCPT
+	id S1758946AbaDCEV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 00:21:57 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:47769 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758907AbaDCEVw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 00:21:42 -0400
+	Thu, 3 Apr 2014 00:21:52 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1396465624-21661-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1396465624-21661-1-git-send-email-aaro.koskinen@iki.fi>
-Date: Thu, 3 Apr 2014 09:51:41 +0530
-Message-ID: <CAKohpokxg=UsiXyq1kJAqgVyj6qYoiQfryfpXGebPtB4f253FQ@mail.gmail.com>
-Subject: Re: [PATCH] MIPS/loongson2_cpufreq: fix CPU clock rate setting
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-mips@linux-mips.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1393213435-20863-3-git-send-email-t.dakhran@samsung.com>
+Cc: "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, "Rob Landley" <rob@landley.net>,
+        "Kukjin Kim" <kgene.kim@samsung.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Ben Dooks" <ben-linux@fluff.org>, "Tomasz Figa" <t.figa@samsung.com>,
+        "Vyacheslav Tyrtov" <v.tyrtov@samsung.com>,
+        "Thomas Abraham" <thomas.abraham@linaro.org>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Heiko Stuebner" <heiko@sntech.de>,
+        "Romain Naour" <romain.naour@openwide.fr>,
+        "Chander Kashyap" <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "Tarek Dakhran" <t.dakhran@gmail.com>,
+        "Tarek Dakhran" <t.dakhran@samsung.com>
+References: <1393213435-20863-1-git-send-email-t.dakhran@samsung.com>
+ <1393213435-20863-3-git-send-email-t.dakhran@samsung.com>
+Message-ID: <20140403042139.5762.23354@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v7 2/3] clk: exynos5410: register clocks using common clock
+ framework
+Date: Wed, 02 Apr 2014 21:21:39 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 April 2014 00:37, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> Loongson2 has been using (incorrectly) kHz for cpu_clk rate. This has
-> been unnoticed, as loongson2_cpufreq was the only place where the rate
-> was set/get. After commit 652ed95d5fa6074b3c4ea245deb0691f1acb6656
-> (cpufreq: introduce cpufreq_generic_get() routine) things however broke,
-> and now loops_per_jiffy adjustments are incorrect (1000 times too long).
-> The patch fixes this by changing cpu_clk rate to Hz.
->
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Cc: stable@vger.kernel.org
-> ---
->  arch/mips/loongson/lemote-2f/clock.c | 7 +++++--
->  drivers/cpufreq/loongson2_cpufreq.c  | 4 ++--
->  2 files changed, 7 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/mips/loongson/lemote-2f/clock.c b/arch/mips/loongson/lemote-2f/clock.c
-> index aed32b8..699f388 100644
-> --- a/arch/mips/loongson/lemote-2f/clock.c
-> +++ b/arch/mips/loongson/lemote-2f/clock.c
-> @@ -91,6 +91,7 @@ EXPORT_SYMBOL(clk_put);
->
->  int clk_set_rate(struct clk *clk, unsigned long rate)
->  {
-> +       unsigned int rate_khz;
-
-Initialize rate_khz here only instead of doing it separately..
-
->         int ret = 0;
->         int regval;
->         int i;
-> @@ -106,15 +107,17 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
->         if (unlikely(clk->flags & CLK_RATE_PROPAGATES))
->                 propagate_rate(clk);
->
-> +       rate_khz = rate / 1000;
+Quoting Tarek Dakhran (2014-02-23 19:43:54)
+> +External clock:
 > +
+> +There is clock that is generated outside the SoC. It is expected
+> +that it is defined using standard clock bindings with following
+> +clock-output-name:
+> + - "fin_pll" - PLL input clock - required.
 
->From here:
+<snip>
 
->         for (i = 0; loongson2_clockmod_table[i].frequency != CPUFREQ_TABLE_END;
->              i++) {
->                 if (loongson2_clockmod_table[i].frequency ==
->                     CPUFREQ_ENTRY_INVALID)
->                         continue;
-> -               if (rate == loongson2_clockmod_table[i].frequency)
-> +               if (rate_khz == loongson2_clockmod_table[i].frequency)
->                         break;
->         }
-> -       if (rate != loongson2_clockmod_table[i].frequency)
-> +       if (rate_khz != loongson2_clockmod_table[i].frequency)
->                 return -ENOTSUPP;
+> +Example 2: Required external clock.
+> +
+> +       fin_pll: clock-fin-pll {
+> +               compatible = "fixed-clock";
+> +               reg = <0>;
+> +               #clock-cells = <0>;
+> +               clock-frequency = <24000000>;
+> +               clock-output-names = "fin_pll";
+> +       };
 
-To here:
+I guess this part is a little strange for a binding definition.
+Basically this is DTS data specific to 5410; not sure why it belongs in
+the DT binding definition.
 
-All this code is junk and not required anymore as rate is guaranteed
-to be in loongson2_clockmod_table[].. Probably you need value of
-'i' here and you can pass that directly from loongson2_cpufreq_target().
+Rest of the clock driver appears OK to me.
+
+Regards,
+Mike
