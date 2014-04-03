@@ -1,1229 +1,793 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaDCOev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 10:34:51 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:58155 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaDCOen convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 10:34:43 -0400
-MIME-Version: 1.0
-X-Originating-IP: [190.2.108.249]
-In-Reply-To: <04cb5d02-db4c-4a4c-ba3c-3a5958e42324@VA3EHSMHS036.ehs.local>
-References: <1395944467-26291-1-git-send-email-punnaia@xilinx.com>
-	<04cb5d02-db4c-4a4c-ba3c-3a5958e42324@VA3EHSMHS036.ehs.local>
-Date: Thu, 3 Apr 2014 11:34:41 -0300
-Message-ID: <CAAEAJfCxP_Adk5=Jdi6c4PrrQuj8p_tUJPv2tJyC96hXZMMD1w@mail.gmail.com>
-Subject: Re: [PATCH RFC 3/3] nand: pl353: Add driver for arm pl353 smc nand interface
-From: =?ISO-8859-1?Q?Ezequiel_Garc=EDa?= <ezequiel@vanguardiasur.com.ar>
-To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com,
-        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, michal.simek@xilinx.com,
-        grant.likely@linaro.org, Greg KH <gregkh@linuxfoundation.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>, arnd@arndb.de,
-        dwmw2@infradead.org, computersforpeace@gmail.com,
-        artem.bityutskiy@linux.intel.com, Pekon Gupta <pekon@ti.com>,
-        jussi.kivilinna@iki.fi, acourbot@nvidia.com, ivan.khoronzhuk@ti.com,
-        joern@logfs.org, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        kalluripunnaiahchoudary@gmail.com, kpc528@gmail.com,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752471AbaDCOgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 10:36:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34131 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752091AbaDCOgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 10:36:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,787,1389772800"; 
+   d="scan'208";a="514126815"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <linux-usb@vger.kernel.org>
+Cc: <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
+        <sebastien.dufour@intel.com>, <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFC v5 4/4] xhci: rework command timeout and cancellation,
+Date: Thu,  3 Apr 2014 17:42:54 +0300
+Message-Id: <1396536174-20471-5-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396536174-20471-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1396536174-20471-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 March 2014 15:21, Punnaiah Choudary Kalluri
-<punnaiah.choudary.kalluri@xilinx.com> wrote:
-> Add driver for arm pl353 static memory controller nand interface.
-> This controller is used in xilinx zynq soc for interfacing the nand
-> flash memory.
->
-> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-> ---
->  drivers/mtd/nand/Kconfig      |    8 +
->  drivers/mtd/nand/Makefile     |    1 +
->  drivers/mtd/nand/pl353_nand.c | 1122 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 1131 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/mtd/nand/pl353_nand.c
->
-> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-> index 90ff447..31c1d0c 100644
-> --- a/drivers/mtd/nand/Kconfig
-> +++ b/drivers/mtd/nand/Kconfig
-> @@ -510,4 +510,12 @@ config MTD_NAND_XWAY
->           Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is attached
->           to the External Bus Unit (EBU).
->
-> +config MTD_NAND_PL353
-> +       tristate "ARM Pl353 NAND flash driver"
-> +       depends on MTD_NAND && ARM
-> +       select PL353_SMC
-> +       help
-> +         This enables access to the NAND flash device on PL353 SMC
-> +         controller.
-> +
->  endif # MTD_NAND
-> diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
-> index 542b568..a4c2679 100644
-> --- a/drivers/mtd/nand/Makefile
-> +++ b/drivers/mtd/nand/Makefile
-> @@ -49,5 +49,6 @@ obj-$(CONFIG_MTD_NAND_JZ4740)         += jz4740_nand.o
->  obj-$(CONFIG_MTD_NAND_GPMI_NAND)       += gpmi-nand/
->  obj-$(CONFIG_MTD_NAND_XWAY)            += xway_nand.o
->  obj-$(CONFIG_MTD_NAND_BCM47XXNFLASH)   += bcm47xxnflash/
-> +obj-$(CONFIG_MTD_NAND_PL353)           += pl353_nand.o
->
->  nand-objs := nand_base.o nand_bbt.o
-> diff --git a/drivers/mtd/nand/pl353_nand.c b/drivers/mtd/nand/pl353_nand.c
-> new file mode 100644
-> index 0000000..ee74545
-> --- /dev/null
-> +++ b/drivers/mtd/nand/pl353_nand.c
-> @@ -0,0 +1,1122 @@
-> +/*
-> + * ARM PL353 NAND Flash Controller Driver
-> + *
-> + * Copyright (C) 2009 - 2014 Xilinx, Inc.
-> + *
-> + * This driver is based on plat_nand.c and mxc_nand.c drivers
-> + *
-> + * This program is free software; you can redistribute it and/or modify it under
-> + * the terms of the GNU General Public License version 2 as published by the
-> + * Free Software Foundation; either version 2 of the License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/ioport.h>
-> +#include <linux/irq.h>
-> +#include <linux/memory/pl353-smc.h>
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/mtd/mtd.h>
-> +#include <linux/mtd/nand.h>
-> +#include <linux/mtd/nand_ecc.h>
-> +#include <linux/mtd/partitions.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +
-> +#define PL353_NAND_DRIVER_NAME "pl353-nand"
-> +
-> +/* NAND flash driver defines */
-> +#define PL353_NAND_CMD_PHASE   1       /* End command valid in command phase */
-> +#define PL353_NAND_DATA_PHASE  2       /* End command valid in data phase */
-> +#define PL353_NAND_ECC_SIZE    512     /* Size of data for ECC operation */
-> +
-> +/* Flash memory controller operating parameters */
-> +
-> +#define PL353_NAND_ECC_CONFIG  (BIT(4)  |      /* ECC read at end of page */ \
-> +                                (0 << 5))      /* No Jumping */
-> +
-> +/* AXI Address definitions */
-> +#define START_CMD_SHIFT                3
-> +#define END_CMD_SHIFT          11
-> +#define END_CMD_VALID_SHIFT    20
-> +#define ADDR_CYCLES_SHIFT      21
-> +#define CLEAR_CS_SHIFT         21
-> +#define ECC_LAST_SHIFT         10
-> +#define COMMAND_PHASE          (0 << 19)
-> +#define DATA_PHASE             BIT(19)
-> +
-> +#define PL353_NAND_ECC_LAST    BIT(ECC_LAST_SHIFT)     /* Set ECC_Last */
-> +#define PL353_NAND_CLEAR_CS    BIT(CLEAR_CS_SHIFT)     /* Clear chip select */
-> +
-> +#define ONDIE_ECC_FEATURE_ADDR 0x90
-> +#define PL353_NAND_ECC_BUSY_TIMEOUT    (1 * HZ)
-> +#define PL353_NAND_DEV_BUSY_TIMEOUT    (1 * HZ)
-> +#define PL353_NAND_LAST_TRANSFER_LENGTH        4
-> +
-> +/* Inline function for the NAND controller register write */
-> +static inline void pl353_nand_write32(void __iomem *addr, u32 val)
-> +{
-> +       writel_relaxed((val), (addr));
-> +}
-> +
+Use one timer to control command timeout.
 
-Hm... you can just use writel_relaxed instead of this dummy helper.
+start/kick the timer every time a command is completed and a
+new command is waiting, or a new command is added to a empty list.
 
-> +/**
-> + * struct pl353_nand_command_format - Defines NAND flash command format
-> + * @start_cmd:         First cycle command (Start command)
-> + * @end_cmd:           Second cycle command (Last command)
-> + * @addr_cycles:       Number of address cycles required to send the address
-> + * @end_cmd_valid:     The second cycle command is valid for cmd or data phase
-> + */
-> +struct pl353_nand_command_format {
-> +       int start_cmd;
-> +       int end_cmd;
-> +       u8 addr_cycles;
-> +       u8 end_cmd_valid;
-> +};
-> +
-> +/**
-> + * struct pl353_nand_info - Defines the NAND flash driver instance
-> + * @chip:              NAND chip information structure
-> + * @mtd:               MTD information structure
-> + * @parts:             Pointer to the mtd_partition structure
-> + * @nand_base:         Virtual address of the NAND flash device
-> + * @end_cmd_pending:   End command is pending
-> + * @end_cmd:           End command
-> + */
-> +struct pl353_nand_info {
-> +       struct nand_chip chip;
-> +       struct mtd_info mtd;
-> +       struct mtd_partition *parts;
+If the timer runs out, then tag the current command as "aborted", and
+start the xhci command abortion process.
 
-I can't see this "parts" field being used anywhere. What am I missing?
+Previously each function that submitted a command had its own timer.
+If that command timed out, a new command structure for the
+command was created and it was put on a cancel_cmd_list list,
+then a pci write to abort the command ring was issued.
 
-> +       void __iomem *nand_base;
-> +       unsigned long end_cmd_pending;
-> +       unsigned long end_cmd;
-> +};
-> +
-> +/*
-> + * The NAND flash operations command format
-> + */
-> +static const struct pl353_nand_command_format pl353_nand_commands[] = {
-> +       {NAND_CMD_READ0, NAND_CMD_READSTART, 5, PL353_NAND_CMD_PHASE},
-> +       {NAND_CMD_RNDOUT, NAND_CMD_RNDOUTSTART, 2, PL353_NAND_CMD_PHASE},
-> +       {NAND_CMD_READID, NAND_CMD_NONE, 1, NAND_CMD_NONE},
-> +       {NAND_CMD_STATUS, NAND_CMD_NONE, 0, NAND_CMD_NONE},
-> +       {NAND_CMD_SEQIN, NAND_CMD_PAGEPROG, 5, PL353_NAND_DATA_PHASE},
-> +       {NAND_CMD_RNDIN, NAND_CMD_NONE, 2, NAND_CMD_NONE},
-> +       {NAND_CMD_ERASE1, NAND_CMD_ERASE2, 3, PL353_NAND_CMD_PHASE},
-> +       {NAND_CMD_RESET, NAND_CMD_NONE, 0, NAND_CMD_NONE},
-> +       {NAND_CMD_PARAM, NAND_CMD_NONE, 1, NAND_CMD_NONE},
-> +       {NAND_CMD_GET_FEATURES, NAND_CMD_NONE, 1, NAND_CMD_NONE},
-> +       {NAND_CMD_SET_FEATURES, NAND_CMD_NONE, 1, NAND_CMD_NONE},
-> +       {NAND_CMD_NONE, NAND_CMD_NONE, 0, 0},
-> +       /* Add all the flash commands supported by the flash device and Linux */
-> +       /*
-> +        * The cache program command is not supported by driver because driver
-> +        * cant differentiate between page program and cached page program from
-> +        * start command, these commands can be differentiated through end
-> +        * command, which doesn't fit in to the driver design. The cache program
-> +        * command is not supported by NAND subsystem also, look at 1612 line
-> +        * number (in nand_write_page function) of nand_base.c file.
-> +        * {NAND_CMD_SEQIN, NAND_CMD_CACHEDPROG, 5, PL353_NAND_YES},
-> +        */
-> +};
-> +
-> +/* Define default oob placement schemes for large and small page devices */
-> +static struct nand_ecclayout nand_oob_16 = {
-> +       .eccbytes = 3,
-> +       .eccpos = {0, 1, 2},
-> +       .oobfree = {
-> +               {.offset = 8,
-> +                . length = 8} }
-> +};
-> +
-> +static struct nand_ecclayout nand_oob_64 = {
-> +       .eccbytes = 12,
-> +       .eccpos = {
-> +                  52, 53, 54, 55, 56, 57,
-> +                  58, 59, 60, 61, 62, 63},
-> +       .oobfree = {
-> +               {.offset = 2,
-> +                .length = 50} }
-> +};
-> +
-> +static struct nand_ecclayout ondie_nand_oob_64 = {
-> +       .eccbytes = 32,
-> +
-> +       .eccpos = {
-> +               8, 9, 10, 11, 12, 13, 14, 15,
-> +               24, 25, 26, 27, 28, 29, 30, 31,
-> +               40, 41, 42, 43, 44, 45, 46, 47,
-> +               56, 57, 58, 59, 60, 61, 62, 63
-> +       },
-> +
-> +       .oobfree = {
-> +               { .offset = 4, .length = 4 },
-> +               { .offset = 20, .length = 4 },
-> +               { .offset = 36, .length = 4 },
-> +               { .offset = 52, .length = 4 }
-> +       }
-> +};
-> +
-> +/* Generic flash bbt decriptors */
-> +static uint8_t bbt_pattern[] = { 'B', 'b', 't', '0' };
-> +static uint8_t mirror_pattern[] = { '1', 't', 'b', 'B' };
-> +
-> +static struct nand_bbt_descr bbt_main_descr = {
-> +       .options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
-> +               | NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-> +       .offs = 4,
-> +       .len = 4,
-> +       .veroffs = 20,
-> +       .maxblocks = 4,
-> +       .pattern = bbt_pattern
-> +};
-> +
-> +static struct nand_bbt_descr bbt_mirror_descr = {
-> +       .options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
-> +               | NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-> +       .offs = 4,
-> +       .len = 4,
-> +       .veroffs = 20,
-> +       .maxblocks = 4,
-> +       .pattern = mirror_pattern
-> +};
-> +
-> +/**
-> + * pl353_nand_calculate_hwecc - Calculate Hardware ECC
-> + * @mtd:       Pointer to the mtd_info structure
-> + * @data:      Pointer to the page data
-> + * @ecc_code:  Pointer to the ECC buffer where ECC data needs to be stored
-> + *
-> + * This function retrieves the Hardware ECC data from the controller and returns
-> + * ECC data back to the MTD subsystem.
-> + *
-> + * Return:     0 on success or error value on failure
-> + */
-> +static int pl353_nand_calculate_hwecc(struct mtd_info *mtd,
-> +                               const u8 *data, u8 *ecc_code)
-> +{
-> +       u32 ecc_value, ecc_status;
-> +       u8 ecc_reg, ecc_byte;
-> +       unsigned long timeout = jiffies + PL353_NAND_ECC_BUSY_TIMEOUT;
-> +
-> +       /* Wait till the ECC operation is complete or timeout */
-> +       do {
-> +               if (pl353_smc_ecc_is_busy())
-> +                       cpu_relax();
-> +               else
-> +                       break;
-> +       } while (!time_after_eq(jiffies, timeout));
-> +
-> +       if (time_after_eq(jiffies, timeout)) {
-> +               pr_err("%s timed out\n", __func__);
-> +               return -ETIMEDOUT;
-> +       }
-> +
-> +       for (ecc_reg = 0; ecc_reg < 4; ecc_reg++) {
-> +               /* Read ECC value for each block */
-> +               ecc_value = pl353_smc_get_ecc_val(ecc_reg);
-> +               ecc_status = (ecc_value >> 24) & 0xFF;
-> +               /* ECC value valid */
-> +               if (ecc_status & 0x40) {
-> +                       for (ecc_byte = 0; ecc_byte < 3; ecc_byte++) {
-> +                               /* Copy ECC bytes to MTD buffer */
-> +                               *ecc_code = ecc_value & 0xFF;
-> +                               ecc_value = ecc_value >> 8;
-> +                               ecc_code++;
-> +                       }
-> +               } else {
-> +                       pr_warn("%s status failed\n", __func__);
-> +                       return -1;
-> +               }
-> +       }
-> +       return 0;
-> +}
-> +
-> +/**
-> + * onehot - onehot function
-> + * @value:     Value to check for onehot
-> + *
-> + * This function checks whether a value is onehot or not.
-> + * onehot is if and only if onebit is set.
-> + *
-> + * Return:     1 if it is onehot else 0
-> + */
-> +static int onehot(unsigned short value)
-> +{
-> +       return (value & (value - 1)) == 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_correct_data - ECC correction function
-> + * @mtd:       Pointer to the mtd_info structure
-> + * @buf:       Pointer to the page data
-> + * @read_ecc:  Pointer to the ECC value read from spare data area
-> + * @calc_ecc:  Pointer to the calculated ECC value
-> + *
-> + * This function corrects the ECC single bit errors & detects 2-bit errors.
-> + *
-> + * Return:     0 if no ECC errors found
-> + *             1 if single bit error found and corrected.
-> + *             -1 if multiple ECC errors found.
-> + */
-> +static int pl353_nand_correct_data(struct mtd_info *mtd, unsigned char *buf,
-> +                               unsigned char *read_ecc,
-> +                               unsigned char *calc_ecc)
-> +{
-> +       unsigned char bit_addr;
-> +       unsigned int byte_addr;
-> +       unsigned short ecc_odd, ecc_even, read_ecc_lower, read_ecc_upper;
-> +       unsigned short calc_ecc_lower, calc_ecc_upper;
-> +
-> +       read_ecc_lower = (read_ecc[0] | (read_ecc[1] << 8)) & 0xfff;
-> +       read_ecc_upper = ((read_ecc[1] >> 4) | (read_ecc[2] << 4)) & 0xfff;
-> +
-> +       calc_ecc_lower = (calc_ecc[0] | (calc_ecc[1] << 8)) & 0xfff;
-> +       calc_ecc_upper = ((calc_ecc[1] >> 4) | (calc_ecc[2] << 4)) & 0xfff;
-> +
-> +       ecc_odd = read_ecc_lower ^ calc_ecc_lower;
-> +       ecc_even = read_ecc_upper ^ calc_ecc_upper;
-> +
-> +       if ((ecc_odd == 0) && (ecc_even == 0))
-> +               return 0;       /* no error */
-> +
-> +       if (ecc_odd == (~ecc_even & 0xfff)) {
-> +               /* bits [11:3] of error code is byte offset */
-> +               byte_addr = (ecc_odd >> 3) & 0x1ff;
-> +               /* bits [2:0] of error code is bit offset */
-> +               bit_addr = ecc_odd & 0x7;
-> +               /* Toggling error bit */
-> +               buf[byte_addr] ^= (1 << bit_addr);
-> +               return 1;
-> +       }
-> +
-> +       if (onehot(ecc_odd | ecc_even) == 1)
-> +               return 1; /* one error in parity */
-> +
-> +       return -1; /* Uncorrectable error */
-> +}
-> +
-> +/**
-> + * pl353_nand_read_oob - [REPLACABLE] the most common OOB data read function
-> + * @mtd:       Pointer to the mtd info structure
-> + * @chip:      Pointer to the NAND chip info structure
-> + * @page:      Page number to read
-> + *
-> + * Return:     Always return zero
-> + */
-> +static int pl353_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip,
-> +                           int page)
-> +{
-> +       unsigned long data_phase_addr;
-> +       uint8_t *p;
-> +
-> +       chip->cmdfunc(mtd, NAND_CMD_READOOB, 0, page);
-> +
-> +       p = chip->oob_poi;
-> +       chip->read_buf(mtd, p,
-> +                       (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +       p += (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_R;
-> +       data_phase_addr |= PL353_NAND_CLEAR_CS;
-> +       chip->IO_ADDR_R = (void __iomem * __force)data_phase_addr;
-> +       chip->read_buf(mtd, p, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_write_oob - [REPLACABLE] the most common OOB data write function
-> + * @mtd:       Pointer to the mtd info structure
-> + * @chip:      Pointer to the NAND chip info structure
-> + * @page:      Page number to write
-> + *
-> + * Return:     Zero on success and EIO on failure
-> + */
-> +static int pl353_nand_write_oob(struct mtd_info *mtd, struct nand_chip *chip,
-> +                            int page)
-> +{
-> +       int status = 0;
-> +       const uint8_t *buf = chip->oob_poi;
-> +       unsigned long data_phase_addr;
-> +
-> +       chip->cmdfunc(mtd, NAND_CMD_SEQIN, mtd->writesize, page);
-> +
-> +       chip->write_buf(mtd, buf,
-> +                       (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +       buf += (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_W;
-> +       data_phase_addr |= PL353_NAND_CLEAR_CS;
-> +       data_phase_addr |= (1 << END_CMD_VALID_SHIFT);
-> +       chip->IO_ADDR_W = (void __iomem * __force)data_phase_addr;
-> +       chip->write_buf(mtd, buf, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       /* Send command to program the OOB data */
-> +       chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
-> +       status = chip->waitfunc(mtd, chip);
-> +
-> +       return status & NAND_STATUS_FAIL ? -EIO : 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_read_page_raw - [Intern] read raw page data without ecc
-> + * @mtd:               Pointer to the mtd info structure
-> + * @chip:              Pointer to the NAND chip info structure
-> + * @buf:               Pointer to the data buffer
-> + * @oob_required:      Caller requires OOB data read to chip->oob_poi
-> + * @page:              Page number to read
-> + *
-> + * Return:     Always return zero
-> + */
-> +static int pl353_nand_read_page_raw(struct mtd_info *mtd,
-> +                               struct nand_chip *chip,
-> +                               uint8_t *buf, int oob_required, int page)
-> +{
-> +       unsigned long data_phase_addr;
-> +       uint8_t *p;
-> +
-> +       chip->read_buf(mtd, buf, mtd->writesize);
-> +
-> +       p = chip->oob_poi;
-> +       chip->read_buf(mtd, p,
-> +                       (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +       p += (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_R;
-> +       data_phase_addr |= PL353_NAND_CLEAR_CS;
-> +       chip->IO_ADDR_R = (void __iomem * __force)data_phase_addr;
-> +
-> +       chip->read_buf(mtd, p, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_write_page_raw - [Intern] raw page write function
-> + * @mtd:               Pointer to the mtd info structure
-> + * @chip:              Pointer to the NAND chip info structure
-> + * @buf:               Pointer to the data buffer
-> + * @oob_required:      Caller requires OOB data read to chip->oob_poi
-> + *
-> + * Return:     Always return zero
-> + */
-> +static int pl353_nand_write_page_raw(struct mtd_info *mtd,
-> +                                   struct nand_chip *chip,
-> +                                   const uint8_t *buf, int oob_required)
-> +{
-> +       unsigned long data_phase_addr;
-> +       uint8_t *p;
-> +
-> +       chip->write_buf(mtd, buf, mtd->writesize);
-> +
-> +       p = chip->oob_poi;
-> +       chip->write_buf(mtd, p,
-> +                       (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +       p += (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_W;
-> +       data_phase_addr |= PL353_NAND_CLEAR_CS;
-> +       data_phase_addr |= (1 << END_CMD_VALID_SHIFT);
-> +       chip->IO_ADDR_W = (void __iomem * __force)data_phase_addr;
-> +
-> +       chip->write_buf(mtd, p, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       return 0;
-> +}
-> +
-> +/**
-> + * nand_write_page_hwecc - Hardware ECC based page write function
-> + * @mtd:               Pointer to the mtd info structure
-> + * @chip:              Pointer to the NAND chip info structure
-> + * @buf:               Pointer to the data buffer
-> + * @oob_required:      Caller requires OOB data read to chip->oob_poi
-> + *
-> + * This functions writes data and hardware generated ECC values in to the page.
-> + *
-> + * Return:     Always return zero
-> + */
-> +static int pl353_nand_write_page_hwecc(struct mtd_info *mtd,
-> +                                   struct nand_chip *chip, const uint8_t *buf,
-> +                                   int oob_required)
-> +{
-> +       int i, eccsize = chip->ecc.size;
-> +       int eccsteps = chip->ecc.steps;
-> +       uint8_t *ecc_calc = chip->buffers->ecccalc;
-> +       const uint8_t *p = buf;
-> +       uint32_t *eccpos = chip->ecc.layout->eccpos;
-> +       unsigned long data_phase_addr;
-> +       uint8_t *oob_ptr;
-> +
-> +       for ( ; (eccsteps - 1); eccsteps--) {
-> +               chip->write_buf(mtd, p, eccsize);
-> +               p += eccsize;
-> +       }
-> +       chip->write_buf(mtd, p, (eccsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +       p += (eccsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       /* Set ECC Last bit to 1 */
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_W;
-> +       data_phase_addr |= PL353_NAND_ECC_LAST;
-> +       chip->IO_ADDR_W = (void __iomem * __force)data_phase_addr;
-> +       chip->write_buf(mtd, p, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       /* Wait for ECC to be calculated and read the error values */
-> +       p = buf;
-> +       chip->ecc.calculate(mtd, p, &ecc_calc[0]);
-> +
-> +       for (i = 0; i < chip->ecc.total; i++)
-> +               chip->oob_poi[eccpos[i]] = ~(ecc_calc[i]);
-> +
-> +       /* Clear ECC last bit */
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_W;
-> +       data_phase_addr &= ~PL353_NAND_ECC_LAST;
-> +       chip->IO_ADDR_W = (void __iomem * __force)data_phase_addr;
-> +
-> +       /* Write the spare area with ECC bytes */
-> +       oob_ptr = chip->oob_poi;
-> +       chip->write_buf(mtd, oob_ptr,
-> +                       (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_W;
-> +       data_phase_addr |= PL353_NAND_CLEAR_CS;
-> +       data_phase_addr |= (1 << END_CMD_VALID_SHIFT);
-> +       chip->IO_ADDR_W = (void __iomem * __force)data_phase_addr;
-> +       oob_ptr += (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +       chip->write_buf(mtd, oob_ptr, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_write_page_swecc - [REPLACABLE] software ecc based page write function
-> + * @mtd:               Pointer to the mtd info structure
-> + * @chip:              Pointer to the NAND chip info structure
-> + * @buf:               Pointer to the data buffer
-> + * @oob_required:      Caller requires OOB data read to chip->oob_poi
-> + *
-> + * Return:     Always return zero
-> + */
-> +static int pl353_nand_write_page_swecc(struct mtd_info *mtd,
-> +                                   struct nand_chip *chip, const uint8_t *buf,
-> +                                   int oob_required)
-> +{
-> +       int i, eccsize = chip->ecc.size;
-> +       int eccbytes = chip->ecc.bytes;
-> +       int eccsteps = chip->ecc.steps;
-> +       uint8_t *ecc_calc = chip->buffers->ecccalc;
-> +       const uint8_t *p = buf;
-> +       uint32_t *eccpos = chip->ecc.layout->eccpos;
-> +
-> +       /* Software ecc calculation */
-> +       for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize)
-> +               chip->ecc.calculate(mtd, p, &ecc_calc[i]);
-> +
-> +       for (i = 0; i < chip->ecc.total; i++)
-> +               chip->oob_poi[eccpos[i]] = ecc_calc[i];
-> +
-> +       chip->ecc.write_page_raw(mtd, chip, buf, 1);
-> +
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_read_page_hwecc - Hardware ECC based page read function
-> + * @mtd:               Pointer to the mtd info structure
-> + * @chip:              Pointer to the NAND chip info structure
-> + * @buf:               Pointer to the buffer to store read data
-> + * @oob_required:      Caller requires OOB data read to chip->oob_poi
-> + * @page:              Page number to read
-> + *
-> + * This functions reads data and checks the data integrity by comparing hardware
-> + * generated ECC values and read ECC values from spare area.
-> + *
-> + * Return:     0 always and updates ECC operation status in to MTD structure
-> + */
-> +static int pl353_nand_read_page_hwecc(struct mtd_info *mtd,
-> +                                    struct nand_chip *chip,
-> +                                    uint8_t *buf, int oob_required, int page)
-> +{
-> +       int i, stat, eccsize = chip->ecc.size;
-> +       int eccbytes = chip->ecc.bytes;
-> +       int eccsteps = chip->ecc.steps;
-> +       uint8_t *p = buf;
-> +       uint8_t *ecc_calc = chip->buffers->ecccalc;
-> +       uint8_t *ecc_code = chip->buffers->ecccode;
-> +       uint32_t *eccpos = chip->ecc.layout->eccpos;
-> +       unsigned long data_phase_addr;
-> +       uint8_t *oob_ptr;
-> +
-> +       for ( ; (eccsteps - 1); eccsteps--) {
-> +               chip->read_buf(mtd, p, eccsize);
-> +               p += eccsize;
-> +       }
-> +       chip->read_buf(mtd, p, (eccsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +       p += (eccsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       /* Set ECC Last bit to 1 */
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_R;
-> +       data_phase_addr |= PL353_NAND_ECC_LAST;
-> +       chip->IO_ADDR_R = (void __iomem * __force)data_phase_addr;
-> +       chip->read_buf(mtd, p, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       /* Read the calculated ECC value */
-> +       p = buf;
-> +       chip->ecc.calculate(mtd, p, &ecc_calc[0]);
-> +
-> +       /* Clear ECC last bit */
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_R;
-> +       data_phase_addr &= ~PL353_NAND_ECC_LAST;
-> +       chip->IO_ADDR_R = (void __iomem * __force)data_phase_addr;
-> +
-> +       /* Read the stored ECC value */
-> +       oob_ptr = chip->oob_poi;
-> +       chip->read_buf(mtd, oob_ptr,
-> +                       (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH));
-> +
-> +       /* de-assert chip select */
-> +       data_phase_addr = (unsigned long __force)chip->IO_ADDR_R;
-> +       data_phase_addr |= PL353_NAND_CLEAR_CS;
-> +       chip->IO_ADDR_R = (void __iomem * __force)data_phase_addr;
-> +
-> +       oob_ptr += (mtd->oobsize - PL353_NAND_LAST_TRANSFER_LENGTH);
-> +       chip->read_buf(mtd, oob_ptr, PL353_NAND_LAST_TRANSFER_LENGTH);
-> +
-> +       for (i = 0; i < chip->ecc.total; i++)
-> +               ecc_code[i] = ~(chip->oob_poi[eccpos[i]]);
-> +
-> +       eccsteps = chip->ecc.steps;
-> +       p = buf;
-> +
-> +       /* Check ECC error for all blocks and correct if it is correctable */
-> +       for (i = 0 ; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
-> +               stat = chip->ecc.correct(mtd, p, &ecc_code[i], &ecc_calc[i]);
-> +               if (stat < 0)
-> +                       mtd->ecc_stats.failed++;
-> +               else
-> +                       mtd->ecc_stats.corrected += stat;
-> +       }
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_read_page_swecc - [REPLACABLE] software ecc based page read function
-> + * @mtd:               Pointer to the mtd info structure
-> + * @chip:              Pointer to the NAND chip info structure
-> + * @buf:               Pointer to the buffer to store read data
-> + * @oob_required:      Caller requires OOB data read to chip->oob_poi
-> + * @page:              Page number to read
-> + *
-> + * Return:     Always return zero
-> + */
-> +static int pl353_nand_read_page_swecc(struct mtd_info *mtd,
-> +                                    struct nand_chip *chip,
-> +                                    uint8_t *buf,  int oob_required, int page)
-> +{
-> +       int i, eccsize = chip->ecc.size;
-> +       int eccbytes = chip->ecc.bytes;
-> +       int eccsteps = chip->ecc.steps;
-> +       uint8_t *p = buf;
-> +       uint8_t *ecc_calc = chip->buffers->ecccalc;
-> +       uint8_t *ecc_code = chip->buffers->ecccode;
-> +       uint32_t *eccpos = chip->ecc.layout->eccpos;
-> +
-> +       chip->ecc.read_page_raw(mtd, chip, buf, page, 1);
-> +
-> +       for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize)
-> +               chip->ecc.calculate(mtd, p, &ecc_calc[i]);
-> +
-> +       for (i = 0; i < chip->ecc.total; i++)
-> +               ecc_code[i] = chip->oob_poi[eccpos[i]];
-> +
-> +       eccsteps = chip->ecc.steps;
-> +       p = buf;
-> +
-> +       for (i = 0 ; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
-> +               int stat;
-> +
-> +               stat = chip->ecc.correct(mtd, p, &ecc_code[i], &ecc_calc[i]);
-> +               if (stat < 0)
-> +                       mtd->ecc_stats.failed++;
-> +               else
-> +                       mtd->ecc_stats.corrected += stat;
-> +       }
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_select_chip - Select the flash device
-> + * @mtd:       Pointer to the mtd info structure
-> + * @chip:      Pointer to the NAND chip info structure
-> + *
-> + * This function is empty as the NAND controller handles chip select line
-> + * internally based on the chip address passed in command and data phase.
-> + */
-> +static void pl353_nand_select_chip(struct mtd_info *mtd, int chip)
-> +{
-> +       return;
-> +}
-> +
-> +/**
-> + * pl353_nand_cmd_function - Send command to NAND device
-> + * @mtd:       Pointer to the mtd_info structure
-> + * @command:   The command to be sent to the flash device
-> + * @column:    The column address for this command, -1 if none
-> + * @page_addr: The page address for this command, -1 if none
-> + */
-> +static void pl353_nand_cmd_function(struct mtd_info *mtd, unsigned int command,
-> +                                int column, int page_addr)
-> +{
-> +       struct nand_chip *chip = mtd->priv;
-> +       const struct pl353_nand_command_format *curr_cmd = NULL;
-> +       struct pl353_nand_info *xnand =
-> +               container_of(mtd, struct pl353_nand_info, mtd);
-> +       void __iomem *cmd_addr;
-> +       unsigned long cmd_data = 0, end_cmd_valid = 0;
-> +       unsigned long cmd_phase_addr, data_phase_addr, end_cmd, i;
-> +       unsigned long timeout = jiffies + PL353_NAND_DEV_BUSY_TIMEOUT;
-> +
-> +       if (xnand->end_cmd_pending) {
-> +               /*
-> +                * Check for end command if this command request is same as the
-> +                * pending command then return
-> +                */
-> +               if (xnand->end_cmd == command) {
-> +                       xnand->end_cmd = 0;
-> +                       xnand->end_cmd_pending = 0;
-> +                       return;
-> +               }
-> +       }
-> +
-> +       /* Emulate NAND_CMD_READOOB for large page device */
-> +       if ((mtd->writesize > PL353_NAND_ECC_SIZE) &&
-> +           (command == NAND_CMD_READOOB)) {
-> +               column += mtd->writesize;
-> +               command = NAND_CMD_READ0;
-> +       }
-> +
-> +       /* Get the command format */
-> +       for (i = 0; (pl353_nand_commands[i].start_cmd != NAND_CMD_NONE ||
-> +                    pl353_nand_commands[i].end_cmd != NAND_CMD_NONE); i++)
-> +               if (command == pl353_nand_commands[i].start_cmd)
-> +                       curr_cmd = &pl353_nand_commands[i];
-> +
-> +       if (curr_cmd == NULL)
-> +               return;
-> +
-> +       /* Clear interrupt */
-> +       pl353_smc_clr_nand_int();
-> +
-> +       /* Get the command phase address */
-> +       if (curr_cmd->end_cmd_valid == PL353_NAND_CMD_PHASE)
-> +               end_cmd_valid = 1;
-> +
-> +       if (curr_cmd->end_cmd == NAND_CMD_NONE)
-> +               end_cmd = 0x0;
-> +       else
-> +               end_cmd = curr_cmd->end_cmd;
-> +
-> +       cmd_phase_addr = (unsigned long __force)xnand->nand_base        |
-> +                        (curr_cmd->addr_cycles << ADDR_CYCLES_SHIFT)    |
-> +                        (end_cmd_valid << END_CMD_VALID_SHIFT)          |
-> +                        (COMMAND_PHASE)                                 |
-> +                        (end_cmd << END_CMD_SHIFT)                      |
-> +                        (curr_cmd->start_cmd << START_CMD_SHIFT);
-> +
-> +       cmd_addr = (void __iomem * __force)cmd_phase_addr;
-> +
-> +       /* Get the data phase address */
-> +       end_cmd_valid = 0;
-> +
-> +       data_phase_addr = (unsigned long __force)xnand->nand_base       |
-> +                         (0x0 << CLEAR_CS_SHIFT)                         |
-> +                         (end_cmd_valid << END_CMD_VALID_SHIFT)          |
-> +                         (DATA_PHASE)                                    |
-> +                         (end_cmd << END_CMD_SHIFT)                      |
-> +                         (0x0 << ECC_LAST_SHIFT);
-> +
-> +       chip->IO_ADDR_R = (void __iomem * __force)data_phase_addr;
-> +       chip->IO_ADDR_W = chip->IO_ADDR_R;
-> +
-> +       /* Command phase AXI write */
-> +       /* Read & Write */
-> +       if (column != -1 && page_addr != -1) {
-> +               /* Adjust columns for 16 bit bus width */
-> +               if (chip->options & NAND_BUSWIDTH_16)
-> +                       column >>= 1;
-> +               cmd_data = column;
-> +               if (mtd->writesize > PL353_NAND_ECC_SIZE) {
-> +                       cmd_data |= page_addr << 16;
-> +                       /* Another address cycle for devices > 128MiB */
-> +                       if (chip->chipsize > (128 << 20)) {
-> +                               pl353_nand_write32(cmd_addr, cmd_data);
-> +                               cmd_data = (page_addr >> 16);
-> +                       }
-> +               } else {
-> +                       cmd_data |= page_addr << 8;
-> +               }
-> +       } else if (page_addr != -1) {
-> +               /* Erase */
-> +               cmd_data = page_addr;
-> +       } else if (column != -1) {
-> +               /*
-> +                * Change read/write column, read id etc
-> +                * Adjust columns for 16 bit bus width
-> +                */
-> +               if ((chip->options & NAND_BUSWIDTH_16) &&
-> +                       ((command == NAND_CMD_READ0) ||
-> +                       (command == NAND_CMD_SEQIN) ||
-> +                       (command == NAND_CMD_RNDOUT) ||
-> +                       (command == NAND_CMD_RNDIN)))
-> +                               column >>= 1;
-> +               cmd_data = column;
-> +       }
-> +
-> +       pl353_nand_write32(cmd_addr, cmd_data);
-> +
-> +       if (curr_cmd->end_cmd_valid) {
-> +               xnand->end_cmd = curr_cmd->end_cmd;
-> +               xnand->end_cmd_pending = 1;
-> +       }
-> +
-> +       ndelay(100);
-> +
-> +       if ((command == NAND_CMD_READ0) ||
-> +           (command == NAND_CMD_RESET) ||
-> +           (command == NAND_CMD_PARAM) ||
-> +           (command == NAND_CMD_GET_FEATURES)) {
-> +
-> +               /* Wait till the device is ready or timeout */
-> +               do {
-> +                       if (chip->dev_ready(mtd))
-> +                               break;
-> +                       else
-> +                               cpu_relax();
-> +               } while (!time_after_eq(jiffies, timeout));
-> +
-> +               if (time_after_eq(jiffies, timeout))
-> +                       pr_err("%s timed out\n", __func__);
-> +               return;
-> +       }
-> +}
-> +
-> +/**
-> + * pl353_nand_read_buf - read chip data into buffer
-> + * @mtd:       Pointer to the mtd info structure
-> + * @buf:       Pointer to the buffer to store read data
-> + * @len:       Number of bytes to read
-> + */
-> +static void pl353_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
-> +{
-> +       int i;
-> +       struct nand_chip *chip = mtd->priv;
-> +       unsigned long *ptr = (unsigned long *)buf;
-> +
-> +       len >>= 2;
-> +       for (i = 0; i < len; i++)
-> +               ptr[i] = readl(chip->IO_ADDR_R);
-> +}
-> +
-> +/**
-> + * pl353_nand_write_buf - write buffer to chip
-> + * @mtd:       Pointer to the mtd info structure
-> + * @buf:       Pointer to the buffer to store read data
-> + * @len:       Number of bytes to write
-> + */
-> +static void pl353_nand_write_buf(struct mtd_info *mtd, const uint8_t *buf,
-> +                               int len)
-> +{
-> +       int i;
-> +       struct nand_chip *chip = mtd->priv;
-> +       unsigned long *ptr = (unsigned long *)buf;
-> +
-> +       len >>= 2;
-> +
-> +       for (i = 0; i < len; i++)
-> +               writel(ptr[i], chip->IO_ADDR_W);
-> +}
-> +
-> +/**
-> + * pl353_nand_device_ready - Check device ready/busy line
-> + * @mtd:       Pointer to the mtd_info structure
-> + *
-> + * Return:     0 on busy or 1 on ready state
-> + */
-> +static int pl353_nand_device_ready(struct mtd_info *mtd)
-> +{
-> +       if (pl353_smc_get_nand_int_status_raw()) {
-> +               pl353_smc_clr_nand_int();
-> +               return 1;
-> +       }
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_detect_ondie_ecc - Get the flash ondie ecc state
-> + * @mtd:       Pointer to the mtd_info structure
-> + *
-> + * This function enables the ondie ecc for the Micron ondie ecc capable devices
-> + *
-> + * Return:     1 on detect, 0 if fail to detect
-> + */
-> +static int pl353_nand_detect_ondie_ecc(struct mtd_info *mtd)
-> +{
-> +       struct nand_chip *nand_chip = mtd->priv;
-> +       u8 maf_id, dev_id, i, get_feature;
-> +       u8 set_feature[4] = { 0x08, 0x00, 0x00, 0x00 };
-> +
-> +       /* Check if On-Die ECC flash */
-> +       nand_chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
-> +       nand_chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
-> +
-> +       /* Read manufacturer and device IDs */
-> +       maf_id = readb(nand_chip->IO_ADDR_R);
-> +       dev_id = readb(nand_chip->IO_ADDR_R);
-> +
-> +       if ((maf_id == NAND_MFR_MICRON) &&
-> +           ((dev_id == 0xf1) || (dev_id == 0xa1) ||
-> +            (dev_id == 0xb1) || (dev_id == 0xaa) ||
-> +            (dev_id == 0xba) || (dev_id == 0xda) ||
-> +            (dev_id == 0xca) || (dev_id == 0xac) ||
-> +            (dev_id == 0xbc) || (dev_id == 0xdc) ||
-> +            (dev_id == 0xcc) || (dev_id == 0xa3) ||
-> +            (dev_id == 0xb3) ||
-> +            (dev_id == 0xd3) || (dev_id == 0xc3))) {
-> +
-> +               nand_chip->cmdfunc(mtd, NAND_CMD_GET_FEATURES,
-> +                                  ONDIE_ECC_FEATURE_ADDR, -1);
-> +               get_feature = readb(nand_chip->IO_ADDR_R);
-> +
-> +               if (get_feature & 0x08) {
-> +                       return 1;
-> +               } else {
-> +                       nand_chip->cmdfunc(mtd, NAND_CMD_SET_FEATURES,
-> +                                          ONDIE_ECC_FEATURE_ADDR, -1);
-> +                       for (i = 0; i < 4; i++)
-> +                               writeb(set_feature[i], nand_chip->IO_ADDR_W);
-> +
-> +                       ndelay(1000);
-> +
-> +                       nand_chip->cmdfunc(mtd, NAND_CMD_GET_FEATURES,
-> +                                          ONDIE_ECC_FEATURE_ADDR, -1);
-> +                       get_feature = readb(nand_chip->IO_ADDR_R);
-> +
-> +                       if (get_feature & 0x08)
-> +                               return 1;
-> +
-> +               }
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_ecc_init - Initialize the ecc information as per the ecc mode
-> + * @mtd:       Pointer to the mtd_info structure
-> + * @ondie_ecc_state:   ondie ecc status
-> + *
-> + * This function initializes the ecc block and functional pointers as per the
-> + * ecc mode
-> + */
-> +static void pl353_nand_ecc_init(struct mtd_info *mtd, int ondie_ecc_state)
-> +{
-> +       struct nand_chip *nand_chip = mtd->priv;
-> +
-> +       nand_chip->ecc.mode = NAND_ECC_HW;
-> +       nand_chip->ecc.read_oob = pl353_nand_read_oob;
-> +       nand_chip->ecc.read_page_raw = pl353_nand_read_page_raw;
-> +       nand_chip->ecc.strength = 1;
-> +       nand_chip->ecc.write_oob = pl353_nand_write_oob;
-> +       nand_chip->ecc.write_page_raw = pl353_nand_write_page_raw;
-> +
-> +       if (ondie_ecc_state) {
-> +               /* bypass the controller ECC block */
-> +               pl353_smc_set_ecc_mode(PL353_SMC_ECCMODE_BYPASS);
-> +
-> +               /*
-> +                * The software ECC routines won't work with the
-> +                * SMC controller
-> +                */
-> +               nand_chip->ecc.bytes = 0;
-> +               nand_chip->ecc.layout = &ondie_nand_oob_64;
-> +               nand_chip->ecc.read_page = pl353_nand_read_page_raw;
-> +               nand_chip->ecc.write_page = pl353_nand_write_page_raw;
-> +               nand_chip->ecc.size = mtd->writesize;
-> +               /*
-> +                * On-Die ECC spare bytes offset 8 is used for ECC codes
-> +                * Use the BBT pattern descriptors
-> +                */
-> +               nand_chip->bbt_td = &bbt_main_descr;
-> +               nand_chip->bbt_md = &bbt_mirror_descr;
-> +       } else {
-> +               /* Hardware ECC generates 3 bytes ECC code for each 512 bytes */
-> +               nand_chip->ecc.bytes = 3;
-> +               nand_chip->ecc.calculate = pl353_nand_calculate_hwecc;
-> +               nand_chip->ecc.correct = pl353_nand_correct_data;
-> +               nand_chip->ecc.hwctl = NULL;
-> +               nand_chip->ecc.read_page = pl353_nand_read_page_hwecc;
-> +               nand_chip->ecc.size = PL353_NAND_ECC_SIZE;
-> +               nand_chip->ecc.write_page = pl353_nand_write_page_hwecc;
-> +
-> +               pl353_smc_set_ecc_pg_size(mtd->writesize);
-> +               switch (mtd->writesize) {
-> +               case 512:
-> +               case 1024:
-> +               case 2048:
-> +                       pl353_smc_set_ecc_mode(PL353_SMC_ECCMODE_APB);
-> +                       break;
-> +               default:
-> +                       /*
-> +                        * The software ECC routines won't work with the
-> +                        * SMC controller
-> +                        */
-> +                       nand_chip->ecc.calculate = nand_calculate_ecc;
-> +                       nand_chip->ecc.correct = nand_correct_data;
-> +                       nand_chip->ecc.read_page = pl353_nand_read_page_swecc;
-> +                       nand_chip->ecc.write_page = pl353_nand_write_page_swecc;
-> +                       nand_chip->ecc.size = 256;
-> +                       break;
-> +               }
-> +
-> +               if (mtd->oobsize == 16)
-> +                       nand_chip->ecc.layout = &nand_oob_16;
-> +               else if (mtd->oobsize == 64)
-> +                       nand_chip->ecc.layout = &nand_oob_64;
-> +       }
-> +}
-> +
-> +/**
-> + * pl353_nand_probe - Probe method for the NAND driver
-> + * @pdev:      Pointer to the platform_device structure
-> + *
-> + * This function initializes the driver data structures and the hardware.
-> + *
-> + * Return:     0 on success or error value on failure
-> + */
-> +static int pl353_nand_probe(struct platform_device *pdev)
-> +{
-> +       struct pl353_nand_info *xnand;
-> +       struct mtd_info *mtd;
-> +       struct nand_chip *nand_chip;
-> +       struct resource *res;
-> +       struct mtd_part_parser_data ppdata;
-> +       int ondie_ecc_state;
-> +
-> +       xnand = devm_kzalloc(&pdev->dev, sizeof(*xnand), GFP_KERNEL);
-> +       if (!xnand)
-> +               return -ENOMEM;
-> +
-> +       /* Map physical address of NAND flash */
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       xnand->nand_base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(xnand->nand_base))
-> +               return PTR_ERR(xnand->nand_base);
-> +
-> +       /* Link the private data with the MTD structure */
-> +       mtd = &xnand->mtd;
-> +       nand_chip = &xnand->chip;
-> +
-> +       nand_chip->priv = xnand;
-> +       mtd->priv = nand_chip;
-> +       mtd->owner = THIS_MODULE;
-> +       mtd->name = PL353_NAND_DRIVER_NAME;
-> +
-> +       /* Set address of NAND IO lines */
-> +       nand_chip->IO_ADDR_R = xnand->nand_base;
-> +       nand_chip->IO_ADDR_W = xnand->nand_base;
-> +
-> +       /* Set the driver entry points for MTD */
-> +       nand_chip->cmdfunc = pl353_nand_cmd_function;
-> +       nand_chip->dev_ready = pl353_nand_device_ready;
-> +       nand_chip->select_chip = pl353_nand_select_chip;
-> +
-> +       /* If we don't set this delay driver sets 20us by default */
-> +       nand_chip->chip_delay = 30;
-> +
-> +       /* Buffer read/write routines */
-> +       nand_chip->read_buf = pl353_nand_read_buf;
-> +       nand_chip->write_buf = pl353_nand_write_buf;
-> +
-> +       /* Set the device option and flash width */
-> +       nand_chip->options = NAND_BUSWIDTH_AUTO;
-> +       nand_chip->bbt_options = NAND_BBT_USE_FLASH;
-> +
-> +       platform_set_drvdata(pdev, xnand);
-> +
-> +       ondie_ecc_state = pl353_nand_detect_ondie_ecc(mtd);
-> +
-> +       /* first scan to find the device and get the page size */
-> +       if (nand_scan_ident(mtd, 1, NULL)) {
-> +               dev_err(&pdev->dev, "nand_scan_ident for NAND failed\n");
-> +               return -ENXIO;
-> +       }
-> +
-> +       pl353_nand_ecc_init(mtd, ondie_ecc_state);
-> +       if (nand_chip->options & NAND_BUSWIDTH_16)
-> +               pl353_smc_set_buswidth(PL353_SMC_MEM_WIDTH_16);
-> +
-> +       /* second phase scan */
-> +       if (nand_scan_tail(mtd)) {
-> +               dev_err(&pdev->dev, "nand_scan_tail for NAND failed\n");
-> +               return -ENXIO;
-> +       }
-> +
-> +       ppdata.of_node = pdev->dev.of_node;
-> +
-> +       mtd_device_parse_register(&xnand->mtd, NULL, &ppdata, NULL, 0);
-> +
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pl353_nand_remove - Remove method for the NAND driver
-> + * @pdev:      Pointer to the platform_device structure
-> + *
-> + * This function is called if the driver module is being unloaded. It frees all
-> + * resources allocated to the device.
-> + *
-> + * Return:     0 on success or error value on failure
-> + */
-> +static int pl353_nand_remove(struct platform_device *pdev)
-> +{
-> +       struct pl353_nand_info *xnand = platform_get_drvdata(pdev);
-> +
-> +       /* Release resources, unregister device */
-> +       nand_release(&xnand->mtd);
-> +       /* kfree(NULL) is safe */
-> +       kfree(xnand->parts);
-> +
-> +       return 0;
-> +}
-> +
-> +/* Match table for device tree binding */
-> +static const struct of_device_id pl353_nand_of_match[] = {
-> +       { .compatible = "arm,pl353-nand-r2p1" },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, pl353_nand_of_match);
-> +
-> +/*
-> + * pl353_nand_driver - This structure defines the NAND subsystem platform driver
-> + */
-> +static struct platform_driver pl353_nand_driver = {
-> +       .probe          = pl353_nand_probe,
-> +       .remove         = pl353_nand_remove,
-> +       .driver         = {
-> +               .name   = PL353_NAND_DRIVER_NAME,
-> +               .owner  = THIS_MODULE,
-> +               .of_match_table = pl353_nand_of_match,
-> +       },
-> +};
-> +
-> +module_platform_driver(pl353_nand_driver);
-> +
-> +MODULE_AUTHOR("Xilinx, Inc.");
-> +MODULE_ALIAS("platform:" PL353_NAND_DRIVER_NAME);
-> +MODULE_DESCRIPTION("ARM PL353 NAND Flash Driver");
-> +MODULE_LICENSE("GPL");
-> --
-> 1.7.4
->
->
->
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+when the ring was aborted, it checked if the current command
+was the one to be canceled, later when the ring was stopped the
+driver got ownership of the TRBs in the command ring,
+compared then to the TRBs in the cancel_cmd_list,
+and turned them into No-ops.
 
+Now, instead, at timeout we tag the status of the command in the
+command queue to be aborted, and start the ring abortion.
+Ring abortion stops the command ring and gives control of the
+commands to us.
+All the aborted commands are now turned into No-ops.
 
+If the ring is already stopped when the command times outs its not possible
+to start the ring abortion, in this case the command is turnd to No-op
+right away.
 
+All these changes allows us to remove the entire cancel_cmd_list code.
+
+The functions waiting for a command to finish no longer have their own timeouts.
+They will wait either until the command completes normally,
+or until the whole command abortion is done.
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci-hub.c  |  11 +-
+ drivers/usb/host/xhci-mem.c  |  14 +-
+ drivers/usb/host/xhci-ring.c | 378 +++++++++++++++----------------------------
+ drivers/usb/host/xhci.c      |  78 +++------
+ drivers/usb/host/xhci.h      |   8 +-
+ 5 files changed, 169 insertions(+), 320 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 12871b5..6231ce6 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -271,7 +271,6 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 	struct xhci_virt_device *virt_dev;
+ 	struct xhci_command *cmd;
+ 	unsigned long flags;
+-	int timeleft;
+ 	int ret;
+ 	int i;
+ 
+@@ -304,12 +303,10 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* Wait for last stop endpoint command to finish */
+-	timeleft = wait_for_completion_interruptible_timeout(
+-			cmd->completion,
+-			XHCI_CMD_DEFAULT_TIMEOUT);
+-	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for stop endpoint command\n",
+-				timeleft == 0 ? "Timeout" : "Signal");
++	wait_for_completion(cmd->completion);
++
++	if (cmd->status == COMP_CMD_ABORT || cmd->status == COMP_CMD_STOP) {
++		xhci_warn(xhci, "Timeout while waiting for stop endpoint command\n");
+ 		ret = -ETIME;
+ 	}
+ 	xhci_free_command(xhci, cmd);
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 38dc721..6a57e81 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1793,10 +1793,11 @@ void xhci_free_command(struct xhci_hcd *xhci,
+ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ {
+ 	struct device	*dev = xhci_to_hcd(xhci)->self.controller;
+-	struct xhci_cd  *cur_cd, *next_cd;
+ 	int size;
+ 	int i, j, num_ports;
+ 
++	del_timer_sync(&xhci->cmd_timer);
++
+ 	/* Free the Event Ring Segment Table and the actual Event Ring */
+ 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
+ 	if (xhci->erst.entries)
+@@ -1815,11 +1816,6 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 		xhci_ring_free(xhci, xhci->cmd_ring);
+ 	xhci->cmd_ring = NULL;
+ 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Freed command ring");
+-	list_for_each_entry_safe(cur_cd, next_cd,
+-			&xhci->cancel_cmd_list, cancel_cmd_list) {
+-		list_del(&cur_cd->cancel_cmd_list);
+-		kfree(cur_cd);
+-	}
+ 	xhci_cleanup_command_queue(xhci);
+ 
+ 	for (i = 1; i < MAX_HC_SLOTS; ++i)
+@@ -2323,7 +2319,6 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
+ 	u32 page_size, temp;
+ 	int i;
+ 
+-	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
+ 	INIT_LIST_HEAD(&xhci->cmd_list);
+ 
+ 	page_size = readl(&xhci->op_regs->page_size);
+@@ -2510,6 +2505,11 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
+ 			"Wrote ERST address to ir_set 0.");
+ 	xhci_print_ir_set(xhci, 0);
+ 
++	/* init command timeout timer */
++	init_timer(&xhci->cmd_timer);
++	xhci->cmd_timer.data = (unsigned long) xhci;
++	xhci->cmd_timer.function = xhci_handle_command_timeout;
++
+ 	/*
+ 	 * XXX: Might need to set the Interrupter Moderation Register to
+ 	 * something other than the default (~1ms minimum between interrupts).
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index a0414a6..1758f0b 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -287,17 +287,7 @@ static int xhci_abort_cmd_ring(struct xhci_hcd *xhci)
+ 
+ 	xhci_dbg(xhci, "Abort command ring\n");
+ 
+-	if (!(xhci->cmd_ring_state & CMD_RING_STATE_RUNNING)) {
+-		xhci_dbg(xhci, "The command ring isn't running, "
+-				"Have the command ring been stopped?\n");
+-		return 0;
+-	}
+-
+ 	temp_64 = xhci_read_64(xhci, &xhci->op_regs->cmd_ring);
+-	if (!(temp_64 & CMD_RING_RUNNING)) {
+-		xhci_dbg(xhci, "Command ring had been stopped\n");
+-		return 0;
+-	}
+ 	xhci->cmd_ring_state = CMD_RING_STATE_ABORTED;
+ 	xhci_write_64(xhci, temp_64 | CMD_RING_ABORT,
+ 			&xhci->op_regs->cmd_ring);
+@@ -323,71 +313,6 @@ static int xhci_abort_cmd_ring(struct xhci_hcd *xhci)
+ 	return 0;
+ }
+ 
+-static int xhci_queue_cd(struct xhci_hcd *xhci,
+-		struct xhci_command *command,
+-		union xhci_trb *cmd_trb)
+-{
+-	struct xhci_cd *cd;
+-	cd = kzalloc(sizeof(struct xhci_cd), GFP_ATOMIC);
+-	if (!cd)
+-		return -ENOMEM;
+-	INIT_LIST_HEAD(&cd->cancel_cmd_list);
+-
+-	cd->command = command;
+-	cd->cmd_trb = cmd_trb;
+-	list_add_tail(&cd->cancel_cmd_list, &xhci->cancel_cmd_list);
+-
+-	return 0;
+-}
+-
+-/*
+- * Cancel the command which has issue.
+- *
+- * Some commands may hang due to waiting for acknowledgement from
+- * usb device. It is outside of the xHC's ability to control and
+- * will cause the command ring is blocked. When it occurs software
+- * should intervene to recover the command ring.
+- * See Section 4.6.1.1 and 4.6.1.2
+- */
+-int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
+-		union xhci_trb *cmd_trb)
+-{
+-	int retval = 0;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&xhci->lock, flags);
+-
+-	if (xhci->xhc_state & XHCI_STATE_DYING) {
+-		xhci_warn(xhci, "Abort the command ring,"
+-				" but the xHCI is dead.\n");
+-		retval = -ESHUTDOWN;
+-		goto fail;
+-	}
+-
+-	/* queue the cmd desriptor to cancel_cmd_list */
+-	retval = xhci_queue_cd(xhci, command, cmd_trb);
+-	if (retval) {
+-		xhci_warn(xhci, "Queuing command descriptor failed.\n");
+-		goto fail;
+-	}
+-
+-	/* abort command ring */
+-	retval = xhci_abort_cmd_ring(xhci);
+-	if (retval) {
+-		xhci_err(xhci, "Abort command ring failed\n");
+-		if (unlikely(retval == -ESHUTDOWN)) {
+-			spin_unlock_irqrestore(&xhci->lock, flags);
+-			usb_hc_died(xhci_to_hcd(xhci)->primary_hcd);
+-			xhci_dbg(xhci, "xHCI host controller is dead.\n");
+-			return retval;
+-		}
+-	}
+-
+-fail:
+-	spin_unlock_irqrestore(&xhci->lock, flags);
+-	return retval;
+-}
+-
+ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci,
+ 		unsigned int slot_id,
+ 		unsigned int ep_index,
+@@ -1207,164 +1132,6 @@ static void xhci_handle_cmd_reset_ep(struct xhci_hcd *xhci, int slot_id,
+ 	}
+ }
+ 
+-/* Complete the command and detele it from the devcie's command queue.
+- */
+-static void xhci_complete_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
+-		struct xhci_command *command, u32 status)
+-{
+-	command->status = status;
+-	list_del(&command->cmd_list);
+-	if (command->completion)
+-		complete(command->completion);
+-	else
+-		xhci_free_command(xhci, command);
+-}
+-
+-
+-/*
+- * Finding the command trb need to be cancelled and modifying it to
+- * NO OP command. And if the command is in device's command wait
+- * list, finishing and freeing it.
+- *
+- * If we can't find the command trb, we think it had already been
+- * executed.
+- */
+-static void xhci_cmd_to_noop(struct xhci_hcd *xhci, struct xhci_cd *cur_cd)
+-{
+-	struct xhci_segment *cur_seg;
+-	union xhci_trb *cmd_trb;
+-	u32 cycle_state;
+-
+-	if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
+-		return;
+-
+-	/* find the current segment of command ring */
+-	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
+-			xhci->cmd_ring->dequeue, &cycle_state);
+-
+-	if (!cur_seg) {
+-		xhci_warn(xhci, "Command ring mismatch, dequeue = %p %llx (dma)\n",
+-				xhci->cmd_ring->dequeue,
+-				(unsigned long long)
+-				xhci_trb_virt_to_dma(xhci->cmd_ring->deq_seg,
+-					xhci->cmd_ring->dequeue));
+-		xhci_debug_ring(xhci, xhci->cmd_ring);
+-		xhci_dbg_ring_ptrs(xhci, xhci->cmd_ring);
+-		return;
+-	}
+-
+-	/* find the command trb matched by cd from command ring */
+-	for (cmd_trb = xhci->cmd_ring->dequeue;
+-			cmd_trb != xhci->cmd_ring->enqueue;
+-			next_trb(xhci, xhci->cmd_ring, &cur_seg, &cmd_trb)) {
+-		/* If the trb is link trb, continue */
+-		if (TRB_TYPE_LINK_LE32(cmd_trb->generic.field[3]))
+-			continue;
+-
+-		if (cur_cd->cmd_trb == cmd_trb) {
+-
+-			/* If the command in device's command list, we should
+-			 * finish it and free the command structure.
+-			 */
+-			if (cur_cd->command)
+-				xhci_complete_cmd_in_cmd_wait_list(xhci,
+-					cur_cd->command, COMP_CMD_STOP);
+-
+-			/* get cycle state from the origin command trb */
+-			cycle_state = le32_to_cpu(cmd_trb->generic.field[3])
+-				& TRB_CYCLE;
+-
+-			/* modify the command trb to NO OP command */
+-			cmd_trb->generic.field[0] = 0;
+-			cmd_trb->generic.field[1] = 0;
+-			cmd_trb->generic.field[2] = 0;
+-			cmd_trb->generic.field[3] = cpu_to_le32(
+-					TRB_TYPE(TRB_CMD_NOOP) | cycle_state);
+-			break;
+-		}
+-	}
+-}
+-
+-static void xhci_cancel_cmd_in_cd_list(struct xhci_hcd *xhci)
+-{
+-	struct xhci_cd *cur_cd, *next_cd;
+-
+-	if (list_empty(&xhci->cancel_cmd_list))
+-		return;
+-
+-	list_for_each_entry_safe(cur_cd, next_cd,
+-			&xhci->cancel_cmd_list, cancel_cmd_list) {
+-		xhci_cmd_to_noop(xhci, cur_cd);
+-		list_del(&cur_cd->cancel_cmd_list);
+-		kfree(cur_cd);
+-	}
+-}
+-
+-/*
+- * traversing the cancel_cmd_list. If the command descriptor according
+- * to cmd_trb is found, the function free it and return 1, otherwise
+- * return 0.
+- */
+-static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
+-		union xhci_trb *cmd_trb)
+-{
+-	struct xhci_cd *cur_cd, *next_cd;
+-
+-	if (list_empty(&xhci->cancel_cmd_list))
+-		return 0;
+-
+-	list_for_each_entry_safe(cur_cd, next_cd,
+-			&xhci->cancel_cmd_list, cancel_cmd_list) {
+-		if (cur_cd->cmd_trb == cmd_trb) {
+-			if (cur_cd->command)
+-				xhci_complete_cmd_in_cmd_wait_list(xhci,
+-					cur_cd->command, COMP_CMD_STOP);
+-			list_del(&cur_cd->cancel_cmd_list);
+-			kfree(cur_cd);
+-			return 1;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+-/*
+- * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
+- * trb pointed by the command ring dequeue pointer is the trb we want to
+- * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
+- * traverse the cancel_cmd_list to trun the all of the commands according
+- * to command descriptor to NO-OP trb.
+- */
+-static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
+-		int cmd_trb_comp_code)
+-{
+-	int cur_trb_is_good = 0;
+-
+-	/* Searching the cmd trb pointed by the command ring dequeue
+-	 * pointer in command descriptor list. If it is found, free it.
+-	 */
+-	cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
+-			xhci->cmd_ring->dequeue);
+-
+-	if (cmd_trb_comp_code == COMP_CMD_ABORT)
+-		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
+-	else if (cmd_trb_comp_code == COMP_CMD_STOP) {
+-		/* traversing the cancel_cmd_list and canceling
+-		 * the command according to command descriptor
+-		 */
+-		xhci_cancel_cmd_in_cd_list(xhci);
+-
+-		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
+-		/*
+-		 * ring command ring doorbell again to restart the
+-		 * command ring
+-		 */
+-		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
+-			xhci_ring_cmd_db(xhci);
+-	}
+-	return cur_trb_is_good;
+-}
+-
+ static void xhci_handle_cmd_enable_slot(struct xhci_hcd *xhci, int slot_id,
+ 		u32 cmd_comp_code)
+ {
+@@ -1481,6 +1248,97 @@ void xhci_cleanup_command_queue(struct xhci_hcd *xhci)
+ 		xhci_complete_del_and_free_cmd(cur_cmd, COMP_CMD_ABORT);
+ }
+ 
++/*
++ * Turn all commands on command ring with status set to "aborted" to no-op trbs.
++ * If there are other commands waiting then restart the ring and kick the timer.
++ * This must be called with command ring stopped and xhci->lock held.
++ */
++static void xhci_handle_stopped_cmd_ring(struct xhci_hcd *xhci,
++					 struct xhci_command *cur_cmd)
++{
++	struct xhci_command *i_cmd, *tmp_cmd;
++	u32 cycle_state;
++
++	/* Turn all aborted commands in list to no-ops, then restart */
++	list_for_each_entry_safe(i_cmd, tmp_cmd, &xhci->cmd_list,
++				 cmd_list) {
++
++		if (i_cmd->status != COMP_CMD_ABORT)
++			continue;
++
++		i_cmd->status = COMP_CMD_STOP;
++
++		xhci_dbg(xhci, "Turn aborted command %p to no-op\n",
++			 i_cmd->command_trb);
++		/* get cycle state from the original cmd trb */
++		cycle_state = le32_to_cpu(
++			i_cmd->command_trb->generic.field[3]) &	TRB_CYCLE;
++		/* modify the command trb to no-op command */
++		i_cmd->command_trb->generic.field[0] = 0;
++		i_cmd->command_trb->generic.field[1] = 0;
++		i_cmd->command_trb->generic.field[2] = 0;
++		i_cmd->command_trb->generic.field[3] = cpu_to_le32(
++			TRB_TYPE(TRB_CMD_NOOP) | cycle_state);
++
++		/*
++		 * caller waiting for completion is called when command
++		 *  completion event is received for these no-op commands
++		 */
++	}
++
++	xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
++
++	/* ring command ring doorbell to restart the command ring */
++	if ((xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue) &&
++	    !(xhci->xhc_state & XHCI_STATE_DYING)) {
++		xhci->current_cmd = cur_cmd;
++		mod_timer(&xhci->cmd_timer, jiffies + XHCI_CMD_DEFAULT_TIMEOUT);
++		xhci_ring_cmd_db(xhci);
++	}
++	return;
++}
++
++
++void xhci_handle_command_timeout(unsigned long data)
++{
++	struct xhci_hcd *xhci;
++	int ret;
++	unsigned long flags;
++	u64 hw_ring_state;
++	struct xhci_command *cur_cmd = NULL;
++	xhci = (struct xhci_hcd *) data;
++
++	/* mark this command to be cancelled */
++	spin_lock_irqsave(&xhci->lock, flags);
++	if (xhci->current_cmd) {
++		cur_cmd = xhci->current_cmd;
++		cur_cmd->status = COMP_CMD_ABORT;
++	}
++
++
++	/* Make sure command ring is running before aborting it */
++	hw_ring_state = xhci_read_64(xhci, &xhci->op_regs->cmd_ring);
++	if ((xhci->cmd_ring_state & CMD_RING_STATE_RUNNING) &&
++	    (hw_ring_state & CMD_RING_RUNNING))  {
++
++		spin_unlock_irqrestore(&xhci->lock, flags);
++		xhci_dbg(xhci, "Command timeout\n");
++		ret = xhci_abort_cmd_ring(xhci);
++		if (unlikely(ret == -ESHUTDOWN)) {
++			xhci_err(xhci, "Abort command ring failed\n");
++			xhci_cleanup_command_queue(xhci);
++			usb_hc_died(xhci_to_hcd(xhci)->primary_hcd);
++			xhci_dbg(xhci, "xHCI host controller is dead.\n");
++		}
++		return;
++	}
++	/* command timeout on stopped ring, ring can't be aborted */
++	xhci_dbg(xhci, "Command timeout on stopped ring\n");
++	xhci_handle_stopped_cmd_ring(xhci, xhci->current_cmd);
++	spin_unlock_irqrestore(&xhci->lock, flags);
++	return;
++}
++
+ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		struct xhci_event_cmd *event)
+ {
+@@ -1514,26 +1372,28 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 			 "Command completion event does not match command\n");
+ 		return;
+ 	}
++
++	del_timer(&xhci->cmd_timer);
++
+ 	trace_xhci_cmd_completion(cmd_trb, (struct xhci_generic_trb *) event);
+ 
+ 	cmd_comp_code = GET_COMP_CODE(le32_to_cpu(event->status));
+-	if (cmd_comp_code == COMP_CMD_ABORT || cmd_comp_code == COMP_CMD_STOP) {
+-		/* If the return value is 0, we think the trb pointed by
+-		 * command ring dequeue pointer is a good trb. The good
+-		 * trb means we don't want to cancel the trb, but it have
+-		 * been stopped by host. So we should handle it normally.
+-		 * Otherwise, driver should invoke inc_deq() and return.
+-		 */
+-		if (handle_stopped_cmd_ring(xhci, cmd_comp_code)) {
+-			inc_deq(xhci, xhci->cmd_ring);
+-			return;
+-		}
+-		/* There is no command to handle if we get a stop event when the
+-		 * command ring is empty, event->cmd_trb points to the next
+-		 * unset command
+-		 */
+-		if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
+-			return;
++
++	/* If CMD ring stopped we own the trbs between enqueue and dequeue */
++	if (cmd_comp_code == COMP_CMD_STOP) {
++		xhci_handle_stopped_cmd_ring(xhci, cmd);
++		return;
++	}
++	/*
++	 * Host aborted the command ring, check if the current command was
++	 * supposed to be aborted, otherwise continue normally.
++	 * The command ring is stopped now, but the xHC will issue a Command
++	 * Ring Stopped event which will cause us to restart it.
++	 */
++	if (cmd_comp_code == COMP_CMD_ABORT) {
++		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
++		if (cmd->status == COMP_CMD_ABORT)
++			goto event_handled;
+ 	}
+ 
+ 	cmd_type = TRB_FIELD_TO_TYPE(le32_to_cpu(cmd_trb->generic.field[3]));
+@@ -1564,6 +1424,9 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		xhci_handle_cmd_set_deq(xhci, slot_id, cmd_trb, cmd_comp_code);
+ 		break;
+ 	case TRB_CMD_NOOP:
++		/* Is this an aborted command turned to NO-OP? */
++		if (cmd->status == COMP_CMD_STOP)
++			cmd_comp_code = COMP_CMD_STOP;
+ 		break;
+ 	case TRB_RESET_EP:
+ 		WARN_ON(slot_id != TRB_TO_SLOT_ID(
+@@ -1584,6 +1447,14 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		break;
+ 	}
+ 
++	/* restart timer if this wasn't the last command */
++	if (cmd->cmd_list.next != &xhci->cmd_list) {
++		xhci->current_cmd = list_entry(cmd->cmd_list.next,
++					       struct xhci_command, cmd_list);
++		mod_timer(&xhci->cmd_timer, jiffies + XHCI_CMD_DEFAULT_TIMEOUT);
++	}
++
++event_handled:
+ 	xhci_complete_del_and_free_cmd(cmd, cmd_comp_code);
+ 
+ 	inc_deq(xhci, xhci->cmd_ring);
+@@ -3992,6 +3863,13 @@ static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,
+ 	cmd->command_trb = xhci->cmd_ring->enqueue;
+ 	list_add_tail(&cmd->cmd_list, &xhci->cmd_list);
+ 
++	/* if there are no other commands queued we start the timeout timer */
++	if (xhci->cmd_list.next == &cmd->cmd_list &&
++	    !timer_pending(&xhci->cmd_timer)) {
++		xhci->current_cmd = cmd;
++		mod_timer(&xhci->cmd_timer, jiffies + XHCI_CMD_DEFAULT_TIMEOUT);
++	}
++
+ 	queue_trb(xhci, xhci->cmd_ring, false, field1, field2, field3,
+ 			field4 | xhci->cmd_ring->cycle_state);
+ 	return 0;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 4568cbe..9c522df 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1820,6 +1820,11 @@ static int xhci_configure_endpoint_result(struct xhci_hcd *xhci,
+ 	int ret;
+ 
+ 	switch (*cmd_status) {
++	case COMP_CMD_ABORT:
++	case COMP_CMD_STOP:
++		xhci_warn(xhci, "Timeout while waiting for configure endpoint command\n");
++		ret = -ETIME;
++		break;
+ 	case COMP_ENOMEM:
+ 		dev_warn(&udev->dev, "Not enough host controller resources "
+ 				"for new device state.\n");
+@@ -1866,6 +1871,11 @@ static int xhci_evaluate_context_result(struct xhci_hcd *xhci,
+ 	struct xhci_virt_device *virt_dev = xhci->devs[udev->slot_id];
+ 
+ 	switch (*cmd_status) {
++	case COMP_CMD_ABORT:
++	case COMP_CMD_STOP:
++		xhci_warn(xhci, "Timeout while waiting for evaluate context command\n");
++		ret = -ETIME;
++		break;
+ 	case COMP_EINVAL:
+ 		dev_warn(&udev->dev, "WARN: xHCI driver setup invalid evaluate "
+ 				"context command.\n");
+@@ -2590,7 +2600,6 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 		bool ctx_change, bool must_succeed)
+ {
+ 	int ret;
+-	int timeleft;
+ 	unsigned long flags;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	struct xhci_virt_device *virt_dev;
+@@ -2646,21 +2655,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* Wait for the configure endpoint command to complete */
+-	timeleft = wait_for_completion_interruptible_timeout(
+-			command->completion,
+-			XHCI_CMD_DEFAULT_TIMEOUT);
+-	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for %s command\n",
+-				timeleft == 0 ? "Timeout" : "Signal",
+-				ctx_change == 0 ?
+-					"configure endpoint" :
+-					"evaluate context");
+-		/* cancel the configure endpoint command */
+-		ret = xhci_cancel_cmd(xhci, command, command->command_trb);
+-		if (ret < 0)
+-			return ret;
+-		return -ETIME;
+-	}
++	wait_for_completion(command->completion);
+ 
+ 	if (!ctx_change)
+ 		ret = xhci_configure_endpoint_result(xhci, udev,
+@@ -3439,7 +3434,6 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	unsigned int slot_id;
+ 	struct xhci_virt_device *virt_dev;
+ 	struct xhci_command *reset_device_cmd;
+-	int timeleft;
+ 	int last_freed_endpoint;
+ 	struct xhci_slot_ctx *slot_ctx;
+ 	int old_active_eps = 0;
+@@ -3507,15 +3501,7 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* Wait for the Reset Device command to finish */
+-	timeleft = wait_for_completion_interruptible_timeout(
+-			reset_device_cmd->completion,
+-			XHCI_CMD_DEFAULT_TIMEOUT);
+-	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for reset device command\n",
+-				timeleft == 0 ? "Timeout" : "Signal");
+-		ret = -ETIME;
+-		goto command_cleanup;
+-	}
++	wait_for_completion(reset_device_cmd->completion);
+ 
+ 	/* The Reset Device command can't fail, according to the 0.95/0.96 spec,
+ 	 * unless we tried to reset a slot ID that wasn't enabled,
+@@ -3523,6 +3509,11 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	 */
+ 	ret = reset_device_cmd->status;
+ 	switch (ret) {
++	case COMP_CMD_ABORT:
++	case COMP_CMD_STOP:
++		xhci_warn(xhci, "Timeout waiting for reset device command\n");
++		ret = -ETIME;
++		goto command_cleanup;
+ 	case COMP_EBADSLT: /* 0.95 completion code for bad slot ID */
+ 	case COMP_CTX_STATE: /* 0.96 completion code for same thing */
+ 		xhci_dbg(xhci, "Can't reset device (slot ID %u) in %s state\n",
+@@ -3692,7 +3683,6 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 	unsigned long flags;
+-	int timeleft;
+ 	int ret;
+ 	struct xhci_command *command;
+ 
+@@ -3712,19 +3702,9 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 	xhci_ring_cmd_db(xhci);
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+-	/* XXX: how much time for xHC slot assignment? */
+-	timeleft = wait_for_completion_interruptible_timeout(
+-			command->completion,
+-			XHCI_CMD_DEFAULT_TIMEOUT);
+-	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for a slot\n",
+-				timeleft == 0 ? "Timeout" : "Signal");
+-		/* cancel the enable slot request */
+-		ret = xhci_cancel_cmd(xhci, NULL, command->command_trb);
+-		return ret;
+-	}
++	wait_for_completion(command->completion);
+ 
+-	if (!xhci->slot_id) {
++	if (!xhci->slot_id || command->status != COMP_SUCCESS) {
+ 		xhci_err(xhci, "Error while assigning device slot ID\n");
+ 		kfree(command);
+ 		return 0;
+@@ -3790,7 +3770,6 @@ static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,
+ {
+ 	const char *act = setup == SETUP_CONTEXT_ONLY ? "context" : "address";
+ 	unsigned long flags;
+-	int timeleft;
+ 	struct xhci_virt_device *virt_dev;
+ 	int ret = 0;
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+@@ -3865,23 +3844,18 @@ static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+-	timeleft = wait_for_completion_interruptible_timeout(
+-			command->completion, XHCI_CMD_DEFAULT_TIMEOUT);
++	wait_for_completion(command->completion);
++
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+ 	 * command on a timeout.
+ 	 */
+-	if (timeleft <= 0) {
+-		xhci_warn(xhci, "%s while waiting for setup %s command\n",
+-			  timeleft == 0 ? "Timeout" : "Signal", act);
+-		/* cancel the address device command */
+-		ret = xhci_cancel_cmd(xhci, NULL, command->command_trb);
+-		if (ret < 0)
+-			return ret;
+-		return -ETIME;
+-	}
+-
+ 	switch (command->status) {
++	case COMP_CMD_ABORT:
++	case COMP_CMD_STOP:
++		xhci_warn(xhci, "Timeout while waiting for setup device command\n");
++		ret = -ETIME;
++		break;
+ 	case COMP_CTX_STATE:
+ 	case COMP_EBADSLT:
+ 		xhci_err(xhci, "Setup ERROR: setup %s command for slot %d.\n",
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 0682a09..eec0fe6 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1297,7 +1297,6 @@ struct xhci_td {
+ 
+ /* command descriptor */
+ struct xhci_cd {
+-	struct list_head	cancel_cmd_list;
+ 	struct xhci_command	*command;
+ 	union xhci_trb		*cmd_trb;
+ };
+@@ -1482,9 +1481,10 @@ struct xhci_hcd {
+ #define CMD_RING_STATE_RUNNING         (1 << 0)
+ #define CMD_RING_STATE_ABORTED         (1 << 1)
+ #define CMD_RING_STATE_STOPPED         (1 << 2)
+-	struct list_head        cancel_cmd_list;
+ 	struct list_head        cmd_list;
+ 	unsigned int		cmd_ring_reserved_trbs;
++	struct timer_list	cmd_timer;
++	struct xhci_command	*current_cmd;
+ 	struct xhci_ring	*event_ring;
+ 	struct xhci_erst	erst;
+ 	/* Scratchpad */
+@@ -1848,8 +1848,8 @@ void xhci_queue_config_ep_quirk(struct xhci_hcd *xhci,
+ 		unsigned int slot_id, unsigned int ep_index,
+ 		struct xhci_dequeue_state *deq_state);
+ void xhci_stop_endpoint_command_watchdog(unsigned long arg);
+-int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
+-		union xhci_trb *cmd_trb);
++void xhci_handle_command_timeout(unsigned long data);
++
+ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ 		unsigned int ep_index, unsigned int stream_id);
+ void xhci_cleanup_command_queue(struct xhci_hcd *xhci);
 -- 
-Ezequiel García, VanguardiaSur
-www.vanguardiasur.com.ar
+1.8.3.2
+
