@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366AbaDCNtp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 09:49:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39411 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752233AbaDCNtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 09:49:41 -0400
-Message-ID: <533D66F2.7050600@ti.com>
-Date: Thu, 3 Apr 2014 08:49:38 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <mturquette@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <ldewangan@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <grant.likely@linaro.org>
-Subject: Re: [PATCH] clk: Add driver for Palmas clk32kg and clk32kgaudio clocks
-References: <1396522348-31989-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1396522348-31989-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752421AbaDCNub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 09:50:31 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:63309 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777AbaDCNu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 09:50:28 -0400
+Message-ID: <1396533026.12330.9.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: 3.14 regression: huge latency in read/select on tun
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ortwin =?ISO-8859-1?Q?Gl=FCck?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Thu, 03 Apr 2014 06:50:26 -0700
+In-Reply-To: <1396531176.12330.6.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <533C381E.9090103@odi.ch>
+	 <1396456973.3989.41.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <533D133A.3090008@odi.ch>
+	 <1396531176.12330.6.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 05:52 AM, Peter Ujfalusi wrote:
-[...]
->  .../devicetree/bindings/clock/clk-palmas.txt       |  35 +++
->  drivers/clk/Kconfig                                |   7 +
->  drivers/clk/Makefile                               |   1 +
->  drivers/clk/clk-palmas.c                           | 307 +++++++++++++++++++++
->  include/dt-bindings/mfd/palmas.h                   |  18 ++
->  5 files changed, 368 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/clk-palmas.txt
->  create mode 100644 drivers/clk/clk-palmas.c
->  create mode 100644 include/dt-bindings/mfd/palmas.h
+On Thu, 2014-04-03 at 06:19 -0700, Eric Dumazet wrote:
+
+> It seems TSO support is broken.
+
+If bug is in tun.c you have this list of changes  you could bisect
+from :
+
+# git log --oneline v3.13..v3.14 drivers/net/tun.c
+6671b2240c54 tun: remove bogus hardware vlan acceleration flags from vlan_features
+99932d4fc03a netdevice: add queue selection fallback handler for ndo_select_queue
+93e14b6d776e tun: add device name(iff) field to proc fdinfo entry
+fa35864e0bb7 tuntap: Fix for a race in accessing numqueues
+0a379e21c503 Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
+fbe4d4565bad tun, rfs: fix the incorrect hash value
+9bc8893937c8 tun: Add support for RFS on tun flows
+143c90549494 Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
+3958afa1b272 net: Change skb_get_rxhash to skb_get_hash
+42404c091510 Revert "tun: remove useless codes in tun_chr_aio_read() and tun_recvmsg()"
+73713357ab58 tun: remove useless codes in tun_chr_aio_read() and tun_recvmsg()
+34f9f437104b Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
+f96eb74c84eb tun: remove unused parameter in tun_do_read()
+92d4ea6e412a tun: spelling fixes
 
 
-Only complaint i have is based on :
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=2a9330010bea5982a5c6593824bc036bf62d67b7
-
-you may want to split the new binding off to a separate patch.
-Otherwise, personally, I think it is an good evolution, thanks for
-doing it.
-
-
--- 
-Regards,
-Nishanth Menon
