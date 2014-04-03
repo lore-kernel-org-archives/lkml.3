@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162450AbaDCHGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 03:06:54 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:46670 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162355AbaDCHGu (ORCPT
+	id S1162466AbaDCHHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 03:07:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61769 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162355AbaDCHHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 03:06:50 -0400
-Date: Thu, 3 Apr 2014 10:06:36 +0300
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
-Message-ID: <20140403070636.GA18305@t440s.lan>
-Mail-Followup-To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	"Gustavo F. Padovan" <gustavo@padovan.org>,
-	BlueZ development <linux-bluetooth@vger.kernel.org>,
-	"Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-References: <533C8F3C.6090306@archlinux.org>
- <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
- <533C97A3.8080104@archlinux.org>
+	Thu, 3 Apr 2014 03:07:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <533C97A3.8080104@archlinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395940862-31428-4-git-send-email-fweisbec@gmail.com>
+References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
+	<1395940862-31428-4-git-send-email-fweisbec@gmail.com>
+Date: Thu, 3 Apr 2014 12:37:00 +0530
+Message-ID: <CAKohponsqy37v6ZfVt1eZtE5gdEFiNpQe1K-E=oJJGF5a+Fbxg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] workqueue: Add anon workqueue sysfs hierarchy
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On 27 March 2014 22:51, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
 
-On Thu, Apr 03, 2014, Thomas Bächler wrote:
-> > You can easily check by running the "Inquiry (LIAC)” test from
-> > tools/hci-tester. Problem is that some of the HCI events are not
-> > making it to the host. They get delivered as soon as the device
-> > wakes up again. In this test case it is the Inquiry Complete event.
-> > If you poke the controller and send a new command, the even will be
-> > magically dequeued.
-> 
-> I cannot figure out how to compile hci-tester. The Makefiles from
-> bluez.git won't build it.
+>  static int __init wq_sysfs_init(void)
+>  {
+> -       return subsys_virtual_register(&wq_subsys, NULL);
+> +       struct device *anon_dev;
+> +       int ret;
+> +
+> +       ret = subsys_virtual_register(&wq_subsys, NULL);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       mutex_lock(&wq_unbound_mutex);
+> +       cpumask_copy(&wq_anon_cpumask, cpu_possible_mask);
+> +       mutex_unlock(&wq_unbound_mutex);
+> +
+> +       anon_dev = kzalloc(sizeof(*anon_dev), GFP_KERNEL);
+> +       if (!anon_dev)
+> +               return -ENOMEM;
+> +
+> +       anon_dev->bus = &wq_subsys;
+> +       anon_dev->init_name = "anon_wqs";
+> +       anon_dev->release = device_release;
+> +
+> +       ret = device_register(anon_dev);
+> +       if (ret) {
+> +               kfree(anon_dev);
+> +               return ret;
+> +       }
+> +
+> +       ret = device_create_file(anon_dev, &wq_sysfs_anon_attr);
+> +       if (ret) {
+> +               device_unregister(anon_dev);
 
-A quick look at Makefile.tools shows that you'll probably need to pass
---enable-experimental to configure in order to build it.
+kfree(anon_dev) ??
 
-Johan
+> +               return ret;
+> +       }
+> +
+> +       kobject_uevent(&anon_dev->kobj, KOBJ_ADD);
+> +
+> +       return 0;
+>  }
+>  core_initcall(wq_sysfs_init);
