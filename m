@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaDCNeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 09:34:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:58927 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaDCNeo (ORCPT
+	id S1752065AbaDCNiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 09:38:10 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:54724 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035AbaDCNiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 09:34:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-acpi@lists.linaro.org
-Cc: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Linaro-acpi] How to pass I2C platform_data under ACPI
-Date: Thu, 03 Apr 2014 15:34:30 +0200
-Message-ID: <4539649.rsMWK1FkZ6@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140403113832.GD19349@intel.com>
-References: <D854C92F57B1B347B57E531E78D05EAD57463568@BGSMSX104.gar.corp.intel.com> <D854C92F57B1B347B57E531E78D05EAD57463D21@BGSMSX104.gar.corp.intel.com> <20140403113832.GD19349@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:nsn691JhfQVvtO6fSqiv2Uv3ag63fwXtEzG1U6mRSQO
- 9PTLy9ESaHybmW9GmgS8BNyg7NS6pHN/0PTAD+ht10OiK+oNQw
- jNolg0vjSfuOJjeI0f0KsG2l0p9hrPNEkNpEnKyvJh/LxvAMsr
- Sppo00oK+iGsLLEJhmrxycFMEh1hdbfuN8m7K4KJayGRjvfk3b
- Teh1h4w6q8RcNHWQNFkMIxGO3GsGnVtQVcFeXpJ8fkhX48qPEn
- nIy7kkQHgSGLBLXHtvzX62gpNTW2eSTHrLUHVjj1OypQCu+wDq
- h4ENDaaUY9IK10n+1Q5ds2eINTctiXrYW9R7r35jlThvu4NSwI
- zYfDQgNfvW7s4+UuEXM4=
+	Thu, 3 Apr 2014 09:38:07 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: jack@suse.cz
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        Jianyu Zhan <nasa4836@gmail.com>
+Subject: Re: [PATCH] blkdev: use an efficient way to check merge flags
+Date: Thu,  3 Apr 2014 21:37:57 +0800
+Message-Id: <1396532277-14226-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 1.9.0.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 April 2014 14:38:33 mika.westerberg@linux.intel.com wrote:
-> On Thu, Apr 03, 2014 at 11:25:34AM +0000, Pallala, Ramakrishna wrote:
-> > >> In non ACPI environment I used to initialize the platform_data under 
-> > >> board or platforms files. Under ACPI how do I do that?
-> > >
-> > >If you can't extract that information from ACPI namespace, then one option is to pass platform data along with the device ACPI ID:
-> > >
-> > >static const struct acpi_device_id my_acpi_match[] = {
-> > >     { "MYID0001", (kernel_ulong_t)&my_platform_data }
-> > >     ...
-> > >     { },
-> > >};
-> > 
-> > Thanks for the Quick reply.
-> > 
-> > So If I  want to use different platform_data for different boards can I
-> > do something like below?
-> 
-> Exactly.
-> 
-> > And initialize the platform data in either driver or in separate module
-> > which gets compiled along with driver?
-> 
-> Typically it has been done in the same driver but I don't see any problems
-> having a separate module as well.
-> 
-> > static const struct acpi_device_id my_acpi_match[] = {
-> >       { "MYID0001", (kernel_ulong_t)&my_platform_data1 }
-> >       { "MYID0002", (kernel_ulong_t)&my_platform_data2 }
-> >       ...
-> >       { },
+Hi, Jan,
 
-We definitely don't want per-board match entries, that does not scale.
-The driver should be reasonably generic and get all the necessary data
-out of well-defined tables. You can have different IDs when there
-are only a few cases that are actually relevant, but it has to be
-conceivable that the same driver get used on future hardware without
-changes.
+I've just renewed the patch as you suggusted. Actually it isn't quite 
+performance sensitive, but the point is one less branch leads to
+less penalty caused by branch prediction failure. Ok, this may be 
+way too paranoid.:-)
 
-	Arnd
+A bitwise flag comparison could be done using a more efficient bit-ops
+way, by mimicking GCC logic of optimizing such bitwise comparison.
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ include/linux/blkdev.h | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1e1fa3f..f2b79fc 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -655,16 +655,18 @@ static inline bool rq_mergeable(struct request *rq)
+ static inline bool blk_check_merge_flags(unsigned int flags1,
+ 					 unsigned int flags2)
+ {
+-	if ((flags1 & REQ_DISCARD) != (flags2 & REQ_DISCARD))
+-		return false;
+-
+-	if ((flags1 & REQ_SECURE) != (flags2 & REQ_SECURE))
+-		return false;
+-
+-	if ((flags1 & REQ_WRITE_SAME) != (flags2 & REQ_WRITE_SAME))
+-		return false;
+-
+-	return true;
++	/*
++	 * Check whether all tree flags are the same in both
++	 * flags.
++	 *
++	 * Replace original three-if's comparision with a
++	 * more efficient method, by mimicking the GCC logic of
++	 * optimizing such bitwise comparion. This makes GCC
++	 * to spit out most compact and least brach code.
++	 */
++	return ((flags1 ^ flags2) &
++		(REQ_DISCARD | REQ_SECURE | REQ_WRITE_SAME))
++		== 0;
+ }
+ 
+ static inline bool blk_write_same_mergeable(struct bio *a, struct bio *b)
+-- 
+1.9.0.GIT
+
