@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaDCOtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 10:49:13 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:49958 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359AbaDCOtJ (ORCPT
+	id S1752580AbaDCOtU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 10:49:20 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47910 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaDCOtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 10:49:09 -0400
-Date: Thu, 3 Apr 2014 10:49:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Loc Ho <lho@apm.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH libata/for-3.15-fixes] libata: drop COMPILE_TEST from
- AHCI_XGENE
-Message-ID: <20140403144905.GB24119@htj.dyndns.org>
-References: <20140401184916.GA21938@kroah.com>
- <20140402155357.GA16631@htj.dyndns.org>
- <20140402162215.GC16631@htj.dyndns.org>
- <1975949.1ZaeyAUAJz@amdc1032>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1975949.1ZaeyAUAJz@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Apr 2014 10:49:10 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Ivo van Doorn <IvDoorn@gmail.com>
+Cc: Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH] rt2x00: Endless loop on hub port power down
+Date: Thu,  3 Apr 2014 16:48:56 +0200
+Message-Id: <1396536536-26423-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+I've met an endless (or at least very long) loop if I power down the usb
+port on witch a usb wifi key is plugged.
+(Ok, it's not very smart to power down a usb port when a usb key is in
+used... but still, I think that should not lead to an endless loop).
 
-On Thu, Apr 03, 2014 at 04:32:24PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> > So, apparently, this isn't enough as this would allow enabling
-> > PHY_XGENE regardless of HAS_IOMEM or OF.  From kconfig-language.txt,
-> 
-> PHY_XGENE has the following dependencies:
-> 
-> 	depends on HAS_IOMEM && OF && (ARM64 || COMPILE_TEST)
-> 
-> So it should be OK.
-...
-> Please note that ARM64 implies that HAS_IOMEM and OF are _always_
-> selected.  This is the reason why removing "|| COMPILE_TEST" from
-> AHCI_XGENE dependencies is sufficient to fix the issue (though
-> I have to admit that relying indirectly on ARM64 selects is a bit
-> hacky).
+I have a lot of:
+ieee80211 phy1: rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x0438 with error -71
 
-This being okay is so not obvious.  Let's either float all
-dependencies to the higher level drivers or just use "depends on".  I
-really dislike mixing the two and playing games with the subtle
-combinations.  For now, I'm making it all "depends on".  Please feel
-free to improve on it as necessary.
+(-71==-EPROTO)
 
-> Hmmm, the alternative idea is to remove PHY_XGENE reference from
-> AHCI_XGENE altogether and add:
-> 
-> 	default y if AHCI_XGENE
-> 
-> to PHY_XGENE instead (which seems to be not as hacky as solution
-> with "select PHY_XGENE" and also more user-friendly than "depends
-> on PHY_XGENE" one).
+How to reproduce:
+- plug an usb wifi key
+- ip link set wlan0 up
+- hub-ctrl -b usb_bus -d usb_device -P usb_port -p 0
 
-The config dependencies should be indicative the actual dependency.
-AHCI_XGENE is useless without PHY_XGENE; then, the config dependency
-*must* represent that.  That's the priority.
+hub-ctrl source: https://github.com/codazoda/hub-ctrl.c/blob/master/hub-ctrl.c
 
-It is true that users probably won't care about PHY_XGENE or any PHY
-drivers probably, but, again, let's please not mix depends and selects
-in contrived manner to hit the just right mixture of the two.  Let's
-please do it systematically.  Float all actual deps to the surface to
-the options that the users configuring care about and propagate down
-to phy drivers using select.  Our config system *really* doesn't work
-with mixed depends and selects.  I mean, think about the suggested
-solution.  It works only because there's no actual linkage dependency
-between the two, ARM64 implies HAS_IOMEM && OF, AND we omitted
-COMPILE_TEST for a completely obscure reason.  I don't think that's
-acceptable.
+The following patch prevents the endless loop, but I'm really not sure
+that The Right Way To Do It (R)
 
-Thanks.
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ drivers/net/wireless/rt2x00/rt2x00usb.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
+diff --git a/drivers/net/wireless/rt2x00/rt2x00usb.c b/drivers/net/wireless/rt2x00/rt2x00usb.c
+index 14142b099019..6bf4067ebf63 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00usb.c
++++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
+@@ -68,6 +68,12 @@ int rt2x00usb_vendor_request(struct rt2x00_dev *rt2x00dev,
+ 		}
+ 	}
+ 
++	/* If the port is powered down, we get a -EPROTO error, and this
++	 * leads to a endless loop. So just say that the device is gone.
++	 */
++	if (status == -EPROTO)
++		clear_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags);
++
+ 	rt2x00_err(rt2x00dev,
+ 		   "Vendor Request 0x%02x failed for offset 0x%04x with error %d\n",
+ 		   request, offset, status);
 -- 
-tejun
+1.8.5.5
+
