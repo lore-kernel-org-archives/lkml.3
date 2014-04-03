@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaDCMt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 08:49:26 -0400
-Received: from linux-libre.fsfla.org ([208.118.235.54]:53182 "EHLO
-	linux-libre.fsfla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaDCMtW (ORCPT
+	id S1751937AbaDCM5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 08:57:11 -0400
+Received: from 2.241-151-88.om-powered.net ([88.151.241.2]:40355 "EHLO
+	zimbra.inuits.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaDCM5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 08:49:22 -0400
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 08:49:22 EDT
-From: Alexandre Oliva <oliva@gnu.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: loongson2_cpufreq: don't declare local variable as static
-Organization: Free thinker, not speaking for the GNU Project
-References: <254471b8cee296f860d24368cc467c00b5a07336.1396413826.git.viresh.kumar@linaro.org>
-Date: Thu, 03 Apr 2014 09:40:57 -0300
-In-Reply-To: <254471b8cee296f860d24368cc467c00b5a07336.1396413826.git.viresh.kumar@linaro.org>
-	(Viresh Kumar's message of "Wed, 2 Apr 2014 10:14:24 +0530")
-Message-ID: <or61mqio12.fsf@livre.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 3 Apr 2014 08:57:08 -0400
+Date: Thu, 3 Apr 2014 14:56:55 +0200
+From: Julien Pivotto <roidelapluie@inuits.eu>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v2] stable: Spelling s/than/then
+Message-ID: <20140403125655.GA30846@tungsten>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr  2, 2014, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+Signed-off-by: Julien Pivotto <roidelapluie@inuits.eu>
+---
+ Documentation/stable_kernel_rules.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> did some changes to driver and by mistake made cpuclk as a 'static' local
-> variable, which wasn't actually required. Fix it.
-
-FWIW, the same mistake is present in at32.
-
-I've just finished bisecting the cpufreq regression on loongson2.
-Indeed, this s/static// patch does not fix it, but it was 652ed95d5fa,
-the patch that moved cpuclk into loongson2_cpufreq_cpu_init, that caused
-the regression.
-
-Reverting all the changes to loongson2_cpufreq.c in 652ed95d5fa makes
-cpufreq work again, as opposed to printing nan% in all cpufreq stats in
-cpufreq-info's output, and freezing shortly thereafter.
-
-> -	static struct clk *cpuclk;
-> +	struct clk *cpuclk;
-
+diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
+index b0714d8..33e1b2c 100644
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -39,7 +39,7 @@ Procedure for submitting patches to the -stable tree:
+    the stable tree without anything else needing to be done by the author
+    or subsystem maintainer.
+  - If the patch requires other patches as prerequisites which can be
+-   cherry-picked than this can be specified in the following format in
++   cherry-picked then this can be specified in the following format in
+    the sign-off area:
+ 
+      Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
 -- 
-Alexandre Oliva, freedom fighter    http://FSFLA.org/~lxoliva/
-You must be the change you wish to see in the world. -- Gandhi
-Be Free! -- http://FSFLA.org/   FSF Latin America board member
-Free Software Evangelist|Red Hat Brasil GNU Toolchain Engineer
+1.9.0
