@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162430AbaDCHF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 03:05:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33924 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162382AbaDCHFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 03:05:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,784,1389772800"; 
-   d="scan'208";a="513904184"
-From: Jani Nikula <jani.nikula@intel.com>
-To: James Hogan <james@albanarts.com>, Imre Deak <imre.deak@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: drm/i915: XPS13 backlight regression in v3.14
-In-Reply-To: <2613018.1cXJgVWlHm@radagast>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <2613018.1cXJgVWlHm@radagast>
-User-Agent: Notmuch/0.17+162~g34940eaa1d37 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 03 Apr 2014 10:02:58 +0300
-Message-ID: <87zjk2lwt9.fsf@intel.com>
+	id S1162450AbaDCHGy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 03:06:54 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:46670 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162355AbaDCHGu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 03:06:50 -0400
+Date: Thu, 3 Apr 2014 10:06:36 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: USB autosuspend causing trouble on Intel bluetooth (Linux 3.14)
+Message-ID: <20140403070636.GA18305@t440s.lan>
+Mail-Followup-To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	"Gustavo F. Padovan" <gustavo@padovan.org>,
+	BlueZ development <linux-bluetooth@vger.kernel.org>,
+	"Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+References: <533C8F3C.6090306@archlinux.org>
+ <922DC347-921E-4B82-9843-7758BD096854@holtmann.org>
+ <533C97A3.8080104@archlinux.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <533C97A3.8080104@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Apr 2014, James Hogan <james@albanarts.com> wrote:
-> Hi,
->
-> I've noticed that v3.14 breaks the backlight on Dell XPS13. Reverting the 
-> following commit fixes the issue for me (i.e. the GUI brightness controls work 
-> again):
->
-> bc0bb9fd1c78 drm/i915: remove QUIRK_NO_PCH_PWM_ENABLE
->
-> It appears that in v3.14 (with the above patch):
-> * intel_backlight/brightness=4882 (max & default) causes 
-> acpi_video0/brightness to have no effect.
-> * intel_backlight/brightness=0 causes acpi_video0/brightness to behave 
-> corrrectly (the firmware (I assume) fades the brightness gradually when 
-> acpi_video0/brightness is set)
-> * intel_backlight/brightness=something else in between often causes 
-> acpi_video0 and intel_backlight to apparently "fight" over the backlight, 
-> resulting in brightness flickering up and down every second or so.
->
-> Reverting the above patch on v3.14:
-> * intel_backlight/brightness has no effect
-> * acpi_video0/brightness works normally
->
-> It doesn't seem quite as simple as them trying to use the same hardware since 
-> when intel_backlight/brightness=4882, acpi_video0/brightness has no effect at 
-> all, so I don't really get what's going on.
->
-> Can anybody shed some light or suggest a proper fix for this recurring issue?
+Hi Thomas,
 
-Tracked at https://bugs.freedesktop.org/show_bug.cgi?id=76276
+On Thu, Apr 03, 2014, Thomas Bächler wrote:
+> > You can easily check by running the "Inquiry (LIAC)” test from
+> > tools/hci-tester. Problem is that some of the HCI events are not
+> > making it to the host. They get delivered as soon as the device
+> > wakes up again. In this test case it is the Inquiry Complete event.
+> > If you poke the controller and send a new command, the even will be
+> > magically dequeued.
+> 
+> I cannot figure out how to compile hci-tester. The Makefiles from
+> bluez.git won't build it.
 
-BR,
-Jani.
+A quick look at Makefile.tools shows that you'll probably need to pass
+--enable-experimental to configure in order to build it.
 
-
->
-> Thanks
-> James
-
--- 
-Jani Nikula, Intel Open Source Technology Center
+Johan
