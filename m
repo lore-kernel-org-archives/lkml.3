@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840AbaDCVBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 17:01:40 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:32884 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761AbaDCVBh (ORCPT
+	id S1753876AbaDCVCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 17:02:10 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50923 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753737AbaDCVCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 17:01:37 -0400
-Message-ID: <533DCC4E.4000303@linaro.org>
-Date: Thu, 03 Apr 2014 16:02:06 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 3 Apr 2014 17:02:03 -0400
+Date: Thu, 3 Apr 2014 22:01:35 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, michal.simek@xilinx.com, kpc528@gmail.com,
+        kalluripunnaiahchoudary@gmail.com, harinik@xilinx.com,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Message-ID: <20140403210135.GX14763@sirena.org.uk>
+References: <ee057d8c-50d9-4d4b-ac86-d7c5fc44b1b0@TX2EHSMHS034.ehs.local>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: bcm@fixthebug.org, mporter@linaro.org,
-        bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mach-bcm: clean up config and build targets
-References: <1396557052-24029-1-git-send-email-elder@linaro.org> <1396558159.21212.4.camel@x220>
-In-Reply-To: <1396558159.21212.4.camel@x220>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LvnU4bbuCGLV8PtK"
+Content-Disposition: inline
+In-Reply-To: <ee057d8c-50d9-4d4b-ac86-d7c5fc44b1b0@TX2EHSMHS034.ehs.local>
+X-Cookie: To make an enemy, do someone a favor.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] devicetree: Add devicetree bindings documentation
+ for Zynq Quad SPI
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 03:49 PM, Paul Bolle wrote:
-> On Thu, 2014-04-03 at 15:30 -0500, Alex Elder wrote:
->> Currently CONFIG_ARCH_BCM_MOBILE is used to select all Broadcom
->> mobile SoCs.  Instead, use that only as a config menu switch, and
->> define specific symbols like CONFIG_ARCH_BCM_281XX to select a
->> particular SoC family.  If ARCH_BCM_MOBILE is selected, all of the
->> SoCs will be selected by default, but this way each can be disabled
->> individually as well.
->>
->> This allows more precision in controlling what gets built under
->> mach-bcm.  Another benefit to doing this is that it makes it obvious
->> that the code that implements SMC calls to control L2 cache is only
->> used for BCM281XX (for example).
->>
->> Also use Kbuild's $(<modulename>-y) variable mechanism to build a
->> single object file containing everything used for the bcm281xx board
->> in arch/arm/mach-bcm.
->>
->> Note:  This patch is based on the current arm-soc/for-next branch:
->>     e98cd72 arm-soc: document samsung merges
->>
->> The patch is available here:
->>     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
->>     Branch review/mach-bcm-cleanup
-> 
-> It seems the last two paragraphs should actually be below the "---"
-> marker. There's no need to include them in the commit explanation, is
-> there?
 
-You're right.  Sorry about that.
+--LvnU4bbuCGLV8PtK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I got another comment too and will be doing a v2 shortly.
+On Thu, Apr 03, 2014 at 10:33:06PM +0530, Punnaiah Choudary Kalluri wrote:
 
-					-Alex
-> 
->> Signed-off-by: Alex Elder <elder@linaro.org>
->> ---
-> 
-> 
-> Paul Bolle
-> 
+> +Optional properties:
+> +- num-cs		: Number of chip selects used.
 
+What does this translate into?
+
+> +		num-cs = /bits/ 16 <1>;
+
+Why the odd specification in the example - why not just specify it as a
+number?
+
+--LvnU4bbuCGLV8PtK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPcwsAAoJELSic+t+oim93CoP/1PVC5uFm8g2siiedwBT/i6/
+bxn9DwUFSjSfKJw17ChAec0HEczUq/VEM4b43aMQmgpOvfHtXaHLOvQQlF6naPp4
+nBq7qG2zBEm0EnWnVXKonhVfbEvt1Dlf/SwuIfJNBZFZilFB13hHJaNC9twVaNdq
+FxLHYBNvHv4i5gHJWtIue6f31HnVQptamx7KrOr+2eg/DAy2qBUdO4jUzZdOwBWu
+o48997SECtfbhZ+FbUsmcNLSK4ClqiaiwCDA5712iNJV41UW3SlHgEsdr1AEnvVH
+YPFslDOwE0VUH8ZhTLxRijToYFBhzQU0vk7m6VkrU1pKFIO1f1C59+03IOgEgcfA
+AoDjs33c+/PKRuB92n8BckzZL8q3gYO+ugUqvNOQYId+HYKEv90SKlSkE/tkVgMQ
+AkY+ke+DxjmfTUOMdpTG0fM+rhnJkTCwpSC5dGtk/STlK+Z8rU6wp43ZH0YFJ++Q
+BvVxpwKNzL10ZltYzB8qbQR5cldAs1vyY45JlPDeXRzpFJpu1NcXaRtqMfM8y0ML
+ZXBl9ZhHQ4tYsleKVclv3E3JZL2Id7gzJPrIHIPDt0gQAk3HaeLe6sKJndMpvaFE
+sb3EEec4Wd4rLOZH3K5oi40WbVNWjC/87i4Vp2MptWoA8UOU9n9b2FYN4l46yTWh
+SgqEGvfCx7mS7f+amF1s
+=eYZ1
+-----END PGP SIGNATURE-----
+
+--LvnU4bbuCGLV8PtK--
