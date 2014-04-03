@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaDCOtU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 10:49:20 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47910 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaDCOtK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 10:49:10 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Ivo van Doorn <IvDoorn@gmail.com>
-Cc: Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH] rt2x00: Endless loop on hub port power down
-Date: Thu,  3 Apr 2014 16:48:56 +0200
-Message-Id: <1396536536-26423-1-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	id S1752600AbaDCOt3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 10:49:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33265 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752289AbaDCOtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 10:49:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,787,1389772800"; 
+   d="scan'208";a="486566048"
+From: "Dugger, Donald D" <donald.d.dugger@intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] PCI: Add Patsburg (X79) to Intel PCH root port ACS quirk
+Thread-Topic: [PATCH] PCI: Add Patsburg (X79) to Intel PCH root port ACS
+ quirk
+Thread-Index: AQHPTQ4Yp1TC9gVPMkGAkjmrold1gJr//DsQ
+Date: Thu, 3 Apr 2014 14:45:20 +0000
+Message-ID: <6AF484C0160C61439DE06F17668F3BCB528CD050@ORSMSX102.amr.corp.intel.com>
+References: <20140331182113.23398.38246.stgit@bling.home>
+In-Reply-To: <20140331182113.23398.38246.stgit@bling.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s33EnbRE018129
 
-I've met an endless (or at least very long) loop if I power down the usb
-port on witch a usb wifi key is plugged.
-(Ok, it's not very smart to power down a usb port when a usb key is in
-used... but still, I think that should not lead to an endless loop).
+Acked-by: Don Dugger <donald.d.dugger@intel.com>
 
-I have a lot of:
-ieee80211 phy1: rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x0438 with error -71
 
-(-71==-EPROTO)
+-----Original Message-----
+From: Alex Williamson [mailto:alex.williamson@redhat.com] 
+Sent: Monday, March 31, 2014 12:22 PM
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Dugger, Donald D
+Subject: [PATCH] PCI: Add Patsburg (X79) to Intel PCH root port ACS quirk
 
-How to reproduce:
-- plug an usb wifi key
-- ip link set wlan0 up
-- hub-ctrl -b usb_bus -d usb_device -P usb_port -p 0
+Intel has updated Red Hat bz1037684 to note that X79 PCH root ports also provide isolation and the same ACS quirks apply.  Some sources indicate additional device IDs for X79, but this patch includes only the ones specifically identified by Intel:
+https://bugzilla.redhat.com/show_bug.cgi?id=1037684#c11
 
-hub-ctrl source: https://github.com/codazoda/hub-ctrl.c/blob/master/hub-ctrl.c
-
-The following patch prevents the endless loop, but I'm really not sure
-that The Right Way To Do It (R)
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Don Dugger <donald.d.dugger@intel.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00usb.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/pci/quirks.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00usb.c b/drivers/net/wireless/rt2x00/rt2x00usb.c
-index 14142b099019..6bf4067ebf63 100644
---- a/drivers/net/wireless/rt2x00/rt2x00usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
-@@ -68,6 +68,12 @@ int rt2x00usb_vendor_request(struct rt2x00_dev *rt2x00dev,
- 		}
- 	}
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index e729206..5e4ac63 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3453,6 +3453,8 @@ static const u16 pci_quirk_intel_pch_acs_ids[] = {
+ 	/* Wildcat PCH */
+ 	0x9c90, 0x9c91, 0x9c92, 0x9c93, 0x9c94, 0x9c95, 0x9c96, 0x9c97,
+ 	0x9c98, 0x9c99, 0x9c9a, 0x9c9b,
++	/* Patsburg (X79) PCH */
++	0x1d10, 0x1d12, 0x1d14, 0x1d16, 0x1d18, 0x1d1a, 0x1d1c, 0x1d1e,
+ };
  
-+	/* If the port is powered down, we get a -EPROTO error, and this
-+	 * leads to a endless loop. So just say that the device is gone.
-+	 */
-+	if (status == -EPROTO)
-+		clear_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags);
-+
- 	rt2x00_err(rt2x00dev,
- 		   "Vendor Request 0x%02x failed for offset 0x%04x with error %d\n",
- 		   request, offset, status);
--- 
-1.8.5.5
+ static bool pci_quirk_intel_pch_acs_match(struct pci_dev *dev)
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
