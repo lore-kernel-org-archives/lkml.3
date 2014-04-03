@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918AbaDCQx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 12:53:59 -0400
-Received: from mail1.start.ca ([64.140.120.57]:46968 "EHLO mail1.start.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752300AbaDCQx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 12:53:58 -0400
-Message-ID: <533D921E.4030001@pobox.com>
-Date: Thu, 03 Apr 2014 12:53:50 -0400
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753047AbaDCQ5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 12:57:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33309 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844AbaDCQ5K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 12:57:10 -0400
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Joe Perches <joe@perches.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm: convert some level-less printks to pr_*
+References: <1395942859-11611-1-git-send-email-mitchelh@codeaurora.org>
+	<1395942859-11611-2-git-send-email-mitchelh@codeaurora.org>
+	<alpine.DEB.2.10.1403311334060.3313@nuc>
+	<1396291441.21529.52.camel@joe-AO722>
+	<alpine.DEB.2.10.1404031132310.21658@nuc>
+Date: Thu, 03 Apr 2014 09:57:11 -0700
+In-Reply-To: <alpine.DEB.2.10.1404031132310.21658@nuc> (Christoph Lameter's
+	message of "Thu, 3 Apr 2014 11:33:15 -0500 (CDT)")
+Message-ID: <vnkwha6a1hco.fsf@mitchelh-linux.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Albert Fluegel <af@muc.de>, "J. Bruce Fields" <bfields@redhat.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-References: <533D8D73.1090603@pobox.com> <533D8FE9.80309@pobox.com>
-In-Reply-To: <533D8FE9.80309@pobox.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Lord wrote:
-> On 14-04-03 12:33 PM, Mark Lord wrote:
->> This commit from linux-3.14 breaks our NFS-root clients here:
+On Thu, Apr 03 2014 at 09:33:15 AM, Christoph Lameter <cl@linux.com> wrote:
+> On Mon, 31 Mar 2014, Joe Perches wrote:
+>
+>> On Mon, 2014-03-31 at 13:35 -0500, Christoph Lameter wrote:
+>> > On Thu, 27 Mar 2014, Mitchel Humpherys wrote:
+>> >
+>> > > diff --git a/mm/slub.c b/mm/slub.c
+>> []
+>> > > @@ -9,6 +9,8 @@
+>> > >   * (C) 2011 Linux Foundation, Christoph Lameter
+>> > >   */
+>> > >
+>> > > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>> >
+>> > This is implicitly used by some macros? If so then please define this
+>> > elsewhere. I do not see any use in slub.c of this one.
 >>
->> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
+>> Hi Christoph
 >>
+>> All the pr_<level> macros use it.
 >>
->> - *p++ = htonl((u32) stat->mode);
->> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
->>
->>
->> Reverting the one-liner above (on the server) fixes it for us,
->> as does reverting back to linux-3.13.8 on the server.
->>
->> The NFS-root clients are on PowerPC (big-endian) architecture,
->> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
->>
->> ACL is completely disabled on server and client,
->> and we're using NFSv2/v3.  No support for v4.
->>
->> I instrumented the function to see what other bits were being cleared
->> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
-> ..
-> 
-> 
-> Looking into the (previously attached) trace, the bits that seem to be
-> getting chopped most often are S_IFREG (0x8000) and S_IFDIR (0x4000).
-> It appears that one/both of those are needed for mounting nfsroot.
-> 
-> 
-> [ 2733.823753] encode_fattr: mode=0x000041ed mask=0x00000fff
-> [ 2733.824217] encode_fattr: mode=0x000041ed mask=0x00000fff
-> [ 2733.838769] encode_fattr: mode=0x000041ed mask=0x00000fff
-> [ 2733.839175] encode_fattr: mode=0x0000a1ff mask=0x00000fff
-> [ 2733.839895] encode_fattr: mode=0x000081ed mask=0x00000fff
-...
+>> from include/linux/printk.h:
+>
+> Ok then why do you add the definition to slub.c?
 
-Okay, the NFS root filesystem mounts and appears to work if I use this:
+Ah that was an oversight on my part after changing to pr_cont. I'll send
+a v3 that removes the pr_fmt. Or I could send a v3 that leaves the
+pr_fmt but changes the printk that the pr_cont's are continuing (at the
+top of note_cmpxchg_failure) to pr_info, but that wouldn't be consistent
+with the rest of the file, which is using hand-tagged printk's.
 
-    *p++ = htonl((u32) (stat->mode & (S_IALLUGO | S_IFDIR | S_IFREG | S_IFCHR)));
+I don't know if it's worthwhile to convert all of the hand-tagged
+printk's to the pr_ macros, but if so I can do that in a separate patch.
 
-But I suspect it may also need S_IFBLK for block device accesses as well.
-
-Cheers
-
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
