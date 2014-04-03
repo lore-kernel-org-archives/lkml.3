@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaDCNvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 09:51:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23560 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320AbaDCNvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 09:51:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,787,1389772800"; 
-   d="scan'208";a="513702944"
-Date: Thu, 3 Apr 2014 16:58:26 +0300
-From: "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-acpi@lists.linaro.org,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Linaro-acpi] How to pass I2C platform_data under ACPI
-Message-ID: <20140403135826.GF19349@intel.com>
-References: <D854C92F57B1B347B57E531E78D05EAD57463568@BGSMSX104.gar.corp.intel.com>
- <D854C92F57B1B347B57E531E78D05EAD57463D21@BGSMSX104.gar.corp.intel.com>
- <20140403113832.GD19349@intel.com>
- <4539649.rsMWK1FkZ6@wuerfel>
+	id S1752491AbaDCNvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 09:51:37 -0400
+Received: from omr-d09.mx.aol.com ([205.188.108.133]:45715 "EHLO
+	omr-d09.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218AbaDCNvd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 09:51:33 -0400
+References: <8D11C01F3154466-1620-15304@webmail-vd015.sysops.aol.com>
+To: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Subject: /proc/kmalloc
+In-Reply-To: <8D11C01F3154466-1620-15304@webmail-vd015.sysops.aol.com>
+X-MB-Message-Source: WebUI
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4539649.rsMWK1FkZ6@wuerfel>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Pietro Paolini <pulsarpietro@aol.com>
+X-MB-Message-Type: User
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+X-Mailer: AOL Webmail 38466-STANDARD
+Message-Id: <8D11D5AF40BE76E-4C30-1F45D@webmail-va019.sysops.aol.com>
+X-Originating-IP: [185.15.248.65]
+Date: Thu, 3 Apr 2014 09:51:31 -0400 (EDT)
+x-aol-global-disposition: G
+x-aol-sid: 3039ac1add90533d67640f83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 03:34:30PM +0200, Arnd Bergmann wrote:
-> On Thursday 03 April 2014 14:38:33 mika.westerberg@linux.intel.com wrote:
-> > On Thu, Apr 03, 2014 at 11:25:34AM +0000, Pallala, Ramakrishna wrote:
-> > > >> In non ACPI environment I used to initialize the platform_data under 
-> > > >> board or platforms files. Under ACPI how do I do that?
-> > > >
-> > > >If you can't extract that information from ACPI namespace, then one option is to pass platform data along with the device ACPI ID:
-> > > >
-> > > >static const struct acpi_device_id my_acpi_match[] = {
-> > > >     { "MYID0001", (kernel_ulong_t)&my_platform_data }
-> > > >     ...
-> > > >     { },
-> > > >};
-> > > 
-> > > Thanks for the Quick reply.
-> > > 
-> > > So If I  want to use different platform_data for different boards can I
-> > > do something like below?
-> > 
-> > Exactly.
-> > 
-> > > And initialize the platform data in either driver or in separate module
-> > > which gets compiled along with driver?
-> > 
-> > Typically it has been done in the same driver but I don't see any problems
-> > having a separate module as well.
-> > 
-> > > static const struct acpi_device_id my_acpi_match[] = {
-> > >       { "MYID0001", (kernel_ulong_t)&my_platform_data1 }
-> > >       { "MYID0002", (kernel_ulong_t)&my_platform_data2 }
-> > >       ...
-> > >       { },
-> 
-> We definitely don't want per-board match entries, that does not scale.
-> The driver should be reasonably generic and get all the necessary data
-> out of well-defined tables. You can have different IDs when there
-> are only a few cases that are actually relevant, but it has to be
-> conceivable that the same driver get used on future hardware without
-> changes.
+Hello everyone,
 
-Yes, I meant that when the platform data information is not available in
-ACPI namespace, then (and only then) pass the data by means of different
-IDs.
+I have read here  - http://lwn.net/Articles/124374/ - a way to debug 
+the kmalloc allocation() and free() which are performed in my system, 
+that patch could really help me in solving a problem I am facing. By 
+the way that patch does not work for my kernel and I can see that 
+sources
+are really different, I am using 2.6.33.5, is that patch provided for 
+that version as well or do we have similar ways to achieve the same 
+result  ?
 
-Preferably this information is included in the ACPI namespace.
+
+Thanks in advance,
+Pietro.
+
+
