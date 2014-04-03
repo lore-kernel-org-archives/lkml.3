@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaDCVrg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 17:47:36 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:51992 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802AbaDCVr3 (ORCPT
+	id S1753816AbaDCVul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 17:50:41 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50965 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711AbaDCVuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 17:47:29 -0400
-Message-ID: <533DD6EE.8030000@bjorling.me>
-Date: Thu, 03 Apr 2014 14:47:26 -0700
-From: Matias Bjorling <m@bjorling.me>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 3 Apr 2014 17:50:40 -0400
+Date: Thu, 3 Apr 2014 22:50:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20140403215027.GD14763@sirena.org.uk>
+References: <1396535537-1352-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [RFC] blk-mq: support for shared tags
-References: <1396277175-21382-1-git-send-email-hch@lst.de> <533B56D5.5070803@bjorling.me> <20140402074632.GA11359@lst.de> <533CDF24.9030902@bjorling.me> <20140403073631.GA26921@lst.de> <533D9017.4070609@bjorling.me> <20140403180143.GA23473@lst.de>
-In-Reply-To: <20140403180143.GA23473@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PUgybOivvlPvn0/l"
+Content-Disposition: inline
+In-Reply-To: <1396535537-1352-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: To make an enemy, do someone a favor.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regulator: core: Add of_node_get to
+ of_regulator_match
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 11:01 AM, Christoph Hellwig wrote:
-> On Thu, Apr 03, 2014 at 09:45:11AM -0700, Matias Bjorling wrote:
->>> I'd still create a request_queue for the internal queue, just not register
->>> a block device for it.  For example SCSI sets up queues for each LUN
->>> found, but only a subset actually is exposed as a block device.
->>>
->>
->> Ok. That is good enough for now. A little heavy on the overhead side, if
->> only the tag logic is needed.
->>
->> What about the following suggestions for shared tags:
->>
->> 1. Rename it from blk_mq_shared_tags to blk_mq_tag_group. A driver can
->> have several tag groups that it maintains.
-> 
-> I was going to rename it to tag_set, but tag_group sounds fine to me as well.
->
 
-tag_set is shorter. tag_set it is.
+--PUgybOivvlPvn0/l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> 2. Instead of blk_mq_shared_tags structure in blk_mq_reg. Have  function
->> pointer for getting the tags structure during hctx initialization. This
->> is interesting for nvme, because it has as set of tags for each hardware
->> queue it exposes.
-> 
-> The current code also has an array of blk_mq_tags structures, one for
-> each queue.  Do you need a more complicated mapping than that?
-> 
+On Thu, Apr 03, 2014 at 03:32:15PM +0100, Charles Keepax wrote:
+> Currently, of_regulator_match does not increment the reference count of
+> the of_nodes it takes new references to. This could cause the node
+> pointer held to be invalid, by the time it is passed to the regulator
+> core. This patchs adds an of_node_get when we copy each of_node pointer
+> into the match structure.
 
-No, that's great. Had misinterpreted the arrays, now that I look at it
-again. Thanks
+Applied all, thanks.  You just made all users of of_regulator_match()
+buggy - I'm assuming you're going to be fixing that!  :P
 
-> Btw, I was also going to siply split out the tag allocation from the
-> queue registration unconditionally.  While this adds a little more
-> boilerplate to simple drivers it avoids unconditional code pathes and should
-> make the model much easier to understand.  I should have a new version
-> of the patches soon.
-> 
+--PUgybOivvlPvn0/l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-ack, good idea.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTPdegAAoJELSic+t+oim9HI8P/2Sb5N/i6U7QB8v/wYut9VpP
+iz78JpVDKPsh4GmZV3010bTQ6JatfG47/xXP0+jBJcjCu/vzVBXFCtRGMnc7gxO9
+VRq1O6/LnnmrFJV8OTGz4fFbqF2lGsezROI2plHli+EkGIKTZUNI5DiCG2GXpuCu
+32rzvd+8chSPEUCWKMdBRiLMsv4dsbFQBHY2Y9WVlm61qX5BZ+H9mtDZg9xN9s3w
+Rt7N2h2xWoL4txFAf90o2VxyfAAlk7HdAe3lW9flxr/X2Zp73UUJ7wAPExNa1Oka
+C9k/aU8+lnfJyOtmB3v/MQ2ju8IbyvNsCX5awc+PCBLIrKlZZsmnjCy7orira+UD
+5+qpCVTZ4hLDW/W7ifhShb3jKItJ5YmpkjVUxNFI+hkc09UeLiN4N4FQJAT2LwIy
+NyudXavzwnJ3EhJirZR1sTxNduzxFvi3VTHRqlD6x90WR2qTgcTor/DYUIXTYA37
+QGCXvOAy7pJ6SpjhcvUKtWMYyJn+hgZia0+RHn5+Tcn/HntLycHFp8DZAq/T3fM+
+E/bHdan6QcnZUnQ1AifApg3D2fN59QjdVm+FB1CsmOaurDZAk4opF4SsGGZoB6oT
+EfYhfQkiUfwmNkTnhLUy0XSkP88QBkIAxI9vnPNUwvFfWIBcDocPlhlE0Tw3JZQV
+NeooMoOpyaT+8xcd0gAR
+=lWpL
+-----END PGP SIGNATURE-----
+
+--PUgybOivvlPvn0/l--
