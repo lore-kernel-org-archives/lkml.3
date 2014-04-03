@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaDCJa6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 05:30:58 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:40050 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbaDCJax (ORCPT
+	id S1751709AbaDCJck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 05:32:40 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:35716 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319AbaDCJcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 05:30:53 -0400
-Message-ID: <533D2A41.7090207@linaro.org>
-Date: Thu, 03 Apr 2014 17:30:41 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 3 Apr 2014 05:32:35 -0400
+Date: Thu, 3 Apr 2014 11:32:30 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: fix command parser debug print
+ format mismatches
+Message-ID: <20140403093230.GB7225@phenom.ffwll.local>
+Mail-Followup-To: Randy Dunlap <rdunlap@infradead.org>,
+	Jani Nikula <jani.nikula@intel.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org
+References: <533B106B.8090408@infradead.org>
+ <1396427060-12539-1-git-send-email-jani.nikula@intel.com>
+ <533C2C1F.5010303@infradead.org>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Mark Brown <broonie@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: Re: [PATCH] arm64: Fix duplicated Kconfig entries again
-References: <1395738060-18489-1-git-send-email-hanjun.guo@linaro.org> <5334078A.9010408@arm.com> <53341ADF.2050904@linaro.org> <2765234.k5FCzWzCDz@vostro.rjw.lan> <533D1D5E.20208@linaro.org> <CAOh2x=nYWjB+Org6eNjQAT93ZX2DRHNYSJWgWTo8vS2AmdrAbA@mail.gmail.com> <20140403085120.GB17022@arm.com> <533D2980.6000903@linaro.org>
-In-Reply-To: <533D2980.6000903@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533C2C1F.5010303@infradead.org>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-4-3 17:27, Hanjun Guo wrote:
-> On 2014-4-3 16:51, Catalin Marinas wrote:
->> On Thu, Apr 03, 2014 at 09:41:57AM +0100, Viresh Kumar wrote:
->>> On Thu, Apr 3, 2014 at 2:05 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>>> How about the following patch? if it is ok, I will resend it.
->>>
->>> http://www.spinics.net/lists/arm-kernel/msg319545.html
->>
->> I can see commit 62d1a3ba5adc5653d43f6cd3a90758bb6ad5d5bd (arm64: Fix
->> duplicated Kconfig entries again) already in mainline, so problem
->> solved.
->>
->> Thanks Josh ;)
+On Wed, Apr 02, 2014 at 08:26:23AM -0700, Randy Dunlap wrote:
+> On 04/02/2014 01:24 AM, Jani Nikula wrote:
+> > Drop the cast from the pointer diff to fix:
+> > 
+> > drivers/gpu/drm/i915/i915_cmd_parser.c:405:4: warning: format '%td' expects
+> > argument of type 'ptrdiff_t', but argument 5 has type 'long unsigned int'
+> > [-Wformat]
+> > 
+> > While at it, use %u for u32.
+> > 
+> > Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> > Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+> > 
+> > ---
+> > 
+> > Randy, try as I might, I wasn't able to coerce gcc to spit out that
+> > warning. Please enlighten me! (Does this fix the warn?)
+> 
+> Yes, it does.  Thanks.
+> 
+> Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-I just noticed Josh's patch half a hour ago, that's why I didn't review it...
+Maybe I'm blind, but I think the recent refactoring patch fixed this. Can
+someone please double-check? I always get confused with printf formats ;-)
 
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
