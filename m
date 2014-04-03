@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaDCP5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:57:32 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:33624 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566AbaDCP52 (ORCPT
+	id S1752819AbaDCP5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:57:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58057 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785AbaDCP5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:57:28 -0400
-X-AuditID: cbfec37b-b7f8f6d000007030-76-533d84e6705d
-Message-id: <533D84DC.2050604@samsung.com>
-Date: Thu, 03 Apr 2014 09:57:16 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.12 00/40] 3.12.17-stable review
-References: <cover.1396469191.git.jslaby@suse.cz>
-In-reply-to: <cover.1396469191.git.jslaby@suse.cz>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.219]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9hX91nLbbBBjs+qlt8/r2L1eLyrjls
-	Fgs2PmJ0YPY4s+AIu8fnTXIBTFFcNimpOZllqUX6dglcGUe3T2IvOMFW8Wn1T+YGxnmsXYyc
-	HBICJhJtMxvZIGwxiQv31gPZXBxCAssYJdYeWcsO4fQySWzb3c0M4WxjlHj3sp0dpIVXQEti
-	4Yo9TCA2i4CqxNHrN8DGsgmoS3x+vQOsRkhATqJpyWpmEFtUIELi1dmJLBC9ghI/Jt8Ds0UE
-	zCUe3DkAVs8s4Cwx991jsDnCAqYS69auY4WYYyjx5eBVMJtTwEjixbd9bBD11hIrJ21jhLDl
-	JTavecsMUa8s8efyKSaI15Ql3vdOZprAKDILyepZSNpnIWlfwMi8ilGstDi5oDgpPbXCSK84
-	Mbe4NC9dLzk/dxMjJAqqdzDe/WpziFGAg1GJh5cj3TZYiDWxrLgy9xCjBAezkgjvsUSgEG9K
-	YmVValF+fFFpTmrxIUYmDk6pBka5192/BcKqTi92rV3svt/FTCVEqdPKLdnotZTqDYYVbacC
-	lny7Lu93S/bnRceMO3yzZlw3My++PWNu+omdxyL9vJ/pvu+IV217F3Oq9ZHkmarLAs/yzl64
-	fEd7mZ699eL2w+1PD6rGH7BZWZ/TVPhStPVx/uGdYhxhpoG7NnC6ShvU6D7hm6fEUpyRaKjF
-	XFScCABqWQEFYAIAAA==
+	Thu, 3 Apr 2014 11:57:34 -0400
+Message-ID: <1396540644.20145.38.camel@fourier>
+Subject: Re: [PATCH 3.8 57/86] ASoC: pcm: free path list before exiting from
+ error conditions
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        Patrick Lai <plai@codeaurora.org>, Mark Brown <broonie@linaro.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Date: Thu, 03 Apr 2014 08:57:24 -0700
+In-Reply-To: <1396368519-12728-58-git-send-email-kamal@canonical.com>
+References: <1396368519-12728-1-git-send-email-kamal@canonical.com>
+	 <1396368519-12728-58-git-send-email-kamal@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 02:12 PM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.17 release.
-> There are 40 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Fri Apr  4 20:06:31 2014
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.17-rc1.xz
-> and the diffstat can be found below.
->
-> thanks,
-> js
->
+On Tue, 2014-04-01 at 09:08 -0700, Kamal Mostafa wrote:
+> 3.8.13.21 -stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Patrick Lai <plai@codeaurora.org>
+> 
+> commit e4ad1accb28d0ed8cea6f12395d58686ad344ca7 upstream.
 
-Compiled and booted on all my test systems. No dmesg regressions.
 
--- Shuah
+I am dropping this patch from 3.8-stable, per Ben Hutchings' analysis in
+stable@ thread "Re: [PATCH 3.13 110/149] ASoC: pcm: free path list
+before exiting from error conditions".
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Thanks, Ben!
+
+ -Kamal
+
+
+> dpcm_path_get() allocates dynamic memory to hold path list.
+> Corresponding dpcm_path_put() must be called to free the memory.
+> dpcm_path_put() is not called under several error conditions.
+> This leads to memory leak.
+> 
+> Signed-off-by: Patrick Lai <plai@codeaurora.org>
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> ---
+>  sound/soc/soc-pcm.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
+> index cf191e6..2d0dbd2 100644
+> --- a/sound/soc/soc-pcm.c
+> +++ b/sound/soc/soc-pcm.c
+> @@ -1866,6 +1866,7 @@ int soc_dpcm_runtime_update(struct snd_soc_dapm_widget *widget)
+>  
+>  		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_PLAYBACK, &list);
+>  		if (paths < 0) {
+> +			dpcm_path_put(&list);
+>  			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
+>  					fe->dai_link->name,  "playback");
+>  			mutex_unlock(&card->mutex);
+> @@ -1895,6 +1896,7 @@ capture:
+>  
+>  		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_CAPTURE, &list);
+>  		if (paths < 0) {
+> +			dpcm_path_put(&list);
+>  			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
+>  					fe->dai_link->name,  "capture");
+>  			mutex_unlock(&card->mutex);
+> @@ -1959,6 +1961,7 @@ static int dpcm_fe_dai_open(struct snd_pcm_substream *fe_substream)
+>  	fe->dpcm[stream].runtime = fe_substream->runtime;
+>  
+>  	if (dpcm_path_get(fe, stream, &list) <= 0) {
+> +		dpcm_path_put(&list);
+>  		dev_dbg(fe->dev, "ASoC: %s no valid %s route\n",
+>  			fe->dai_link->name, stream ? "capture" : "playback");
+>  	}
+
+
