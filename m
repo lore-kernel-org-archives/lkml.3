@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaDCWnZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 18:43:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41313 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751577AbaDCWnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 18:43:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,791,1389772800"; 
-   d="scan'208";a="506523379"
-Message-ID: <1396564999.3047.65.camel@empanada>
-Subject: Re: [PATCH 5/5] tracing: Add 'hash' event trigger command
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Date: Thu, 03 Apr 2014 17:43:19 -0500
-In-Reply-To: <533D22E6.4000607@hitachi.com>
-References: <cover.1395894625.git.tom.zanussi@linux.intel.com>
-	 <b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>
-	 <533D22E6.4000607@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753972AbaDCWoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 18:44:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33357 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397AbaDCWoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 18:44:09 -0400
+Date: Thu, 3 Apr 2014 15:46:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.4.86
+Message-ID: <20140403224632.GA13833@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
 
-On Thu, 2014-04-03 at 17:59 +0900, Masami Hiramatsu wrote:
-> Hi Tom,
-> 
-> (2014/03/27 13:54), Tom Zanussi wrote:
-> > Hash triggers allow users to continually hash events which can then be
-> > dumped later by simply reading the trigger file.  This is done
-> > strictly via one-liners and without any kind of programming language.
-> > 
-> > The syntax follows the existing trigger syntax:
-> > 
-> >   # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
-> > 
-> > The values used as keys and values are just the fields that define the
-> > trace event and available in the event's 'format' file.  For example,
-> > the kmalloc event:
-> > 
-> > root@ie:/sys/kernel/debug/tracing/events/kmem/kmalloc# cat format
-> > name: kmalloc
-> > ID: 370
-> > format:
-> >         field:unsigned short common_type;       offset:0;       size:2; signed:0;
-> >         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
-> >         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
-> >         field:int common_pid;   offset:4;       size:4; signed:1;
-> > 
-> >         field:unsigned long call_site;  offset:8;       size:4; signed:0;
-> >         field:const void * ptr; offset:12;      size:4; signed:0;
-> >         field:size_t bytes_req; offset:16;      size:4; signed:0;
-> >         field:size_t bytes_alloc;       offset:20;      size:4; signed:0;
-> >         field:gfp_t gfp_flags;  offset:24;      size:4; signed:0;
-> > 
-> > The key can be made up of one or more of these fields and any number of
-> > values can specified - these are automatically tallied in the hash entry
-> > any time the event is hit.  Stacktraces can also be used as keys.
-> > 
-> > For example, the following uses the stacktrace leading up to a kmalloc
-> > as the key for hashing kmalloc events.  For each hash entry a tally of
-> > the bytes_alloc field is kept.  Dumping out the trigger shows the sum
-> > of bytes allocated for each execution path that led to a kmalloc:
-> > 
-> >   # echo 'hash:call_site:bytes_alloc' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-> >   # cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-> 
-> I like the basic idea :) but I'm confused the interface what you're introduced.
-> I suppose that the "trigger" file is for control triggers on the event, so that
-> user can check what trigger rules are set on the event and remove it.
-> But in this patch, that is also used for a data path.
-> 
-> I'd like to suggest adding new "hash" file under events/GROUP/EVENT/, which is
-> only for dumping the hash data, and keep the "trigger" as a control path.
-> This makes users easier to build their own tools on the ftrace facility.
-> 
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I was really trying to avoid adding a new file - my thinking was that
-the trigger file is just sitting there doing nothing besides either
-listing available triggers when inactive or listing active triggers when
-active, which it would still do even if also providing a conduit for the
-output.
+I'm announcing the release of the 3.4.86 kernel.
 
-I agree that it would be cleaner to have a separate file, but I don't
-know if it's worth a dedicated file.  Another possibility would be to
-have it exist only when a hash trigger is active..
+All users of the 3.4 kernel series must upgrade.
 
-Tom
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                 |    2=20
+ arch/x86/include/asm/topology.h          |    3=20
+ drivers/input/mouse/synaptics.c          |   55 ++++
+ drivers/staging/speakup/i18n.c           |   12 -
+ drivers/staging/speakup/i18n.h           |   12 -
+ drivers/staging/speakup/keyhelp.c        |   36 +--
+ drivers/staging/speakup/kobjects.c       |   80 +++---
+ drivers/staging/speakup/main.c           |  366 +++++++++++++++-----------=
+-----
+ drivers/staging/speakup/selection.c      |   14 -
+ drivers/staging/speakup/serialio.c       |    6=20
+ drivers/staging/speakup/speakup.h        |   72 +++---
+ drivers/staging/speakup/speakup_acntpc.c |    6=20
+ drivers/staging/speakup/speakup_acntsa.c |    2=20
+ drivers/staging/speakup/speakup_apollo.c |    8=20
+ drivers/staging/speakup/speakup_audptr.c |    2=20
+ drivers/staging/speakup/speakup_bns.c    |    2=20
+ drivers/staging/speakup/speakup_decext.c |    6=20
+ drivers/staging/speakup/speakup_decpc.c  |    4=20
+ drivers/staging/speakup/speakup_dectlk.c |    6=20
+ drivers/staging/speakup/speakup_dtlk.c   |    4=20
+ drivers/staging/speakup/speakup_dummy.c  |    2=20
+ drivers/staging/speakup/speakup_keypc.c  |    6=20
+ drivers/staging/speakup/speakup_ltlk.c   |    2=20
+ drivers/staging/speakup/speakup_spkout.c |    2=20
+ drivers/staging/speakup/speakup_txprt.c  |    2=20
+ drivers/staging/speakup/spk_priv.h       |    8=20
+ drivers/staging/speakup/synth.c          |   38 +--
+ drivers/staging/speakup/thread.c         |    4=20
+ drivers/staging/speakup/varhandlers.c    |   66 ++---
+ fs/ext4/inode.c                          |   15 -
+ include/linux/bitops.h                   |   15 +
+ net/netfilter/nf_conntrack_proto_dccp.c  |    6=20
+ 32 files changed, 469 insertions(+), 395 deletions(-)
+
+Artem Fetishev (1):
+      x86: fix boot on uniprocessor systems
+
+Benjamin Tissoires (1):
+      Input: synaptics - add manual min/max quirk
+
+Daniel Borkmann (1):
+      netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.86
+
+Hans de Goede (1):
+      Input: synaptics - add manual min/max quirk for ThinkPad X240
+
+Samuel Thibault (1):
+      staging: speakup: Prefix externally-visible symbols
+
+Theodore Ts'o (1):
+      ext4: atomically set inode->i_flags in ext4_set_inode_flags()
 
 
-> Thank you,
-> 
-> 
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTPeTIAAoJEDjbvchgkmk+RMkP/3GO2h13xbHdIwKG0WLlR2/S
+UlUqrSkKiNW8tccHQYT+vN/zgahgIH7Ef5aAAGgBbYmWURkyME9TCG/IC/Ch5iwT
+urrlt5jtgyRgc3HhvCUiXOwoXEmznIODh8jv/zAsRcOZke1CB7IJiflgP4Ff51OS
+qri9Q3H3OzXsUXl4KA8XOQpFfAdyJJKW9luDvQz1EvKwYN6Zoy2TmhwDlUJOG580
+mMKrOgXeCkfCI+silpiXut0kgQlj3dD0DpVv6kvjc0tQYos2fBmMLv6UbgAcaWRG
+rQBVAROwaWZb3KPI9CaWcEnQBC93I5any+cEcQzxaB7wvFk56RtM97IwoSAPy9Bc
+69zzP9aCK0vlwBOfBBuHVNC3I6ivggDOz7ItDjZ7Y80+QYhlAgUfbjYCJnAH/fYA
+I3BQ2J7eW+8LXFrYvd1Q92I2c5jDloNU5dZFz56IvRDXX3rUV26PieXm5Jz9aB83
+cU6AvjpYfq0VsVSk3tnbyAfMzB5e4HNe4RBTrf1wFUh1UKUFuhkBcRdaMjEXX++5
+SeWcHjz7dljNGpA6gt2tMmY8aeaBrQ/f5p8FnpdB3mpWMstOVSTYiQOedgjC6hyP
+l5jDkAeoTT9dDcEZhwqNIJtls1TJOYiX1qus5XvsqNyf2qzPhOae/dwF2k3olyea
+QDEPIvQyz44Psmy4Bffe
+=p5tu
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
