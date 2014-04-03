@@ -1,69 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162624AbaDCING (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:13:06 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:52496 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1162421AbaDCIMz (ORCPT
+	id S1162558AbaDCIQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:16:50 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61893 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162462AbaDCIQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:12:55 -0400
-Message-ID: <1396512771.31985.5.camel@x220>
-Subject: [PATCH] rtlwifi: btcoexist: remove undefined Kconfig macros
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	Thu, 3 Apr 2014 04:16:42 -0400
+Message-ID: <533D18F8.3040102@linaro.org>
+Date: Thu, 03 Apr 2014 10:16:56 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         linux-kernel@vger.kernel.org
-Date: Thu, 03 Apr 2014 10:12:51 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Apr 2014 08:12:52.0075 (UTC) FILETIME=[82484BB0:01CF4F14]
-X-RcptDomain: vger.kernel.org
+Subject: Re: [PATCH v6 10/11] cpuidle: mvebu: Add initial CPU idle support
+ for Armada 370/XP SoC
+References: <1396005211-15573-1-git-send-email-gregory.clement@free-electrons.com> <1396005211-15573-11-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1396005211-15573-11-git-send-email-gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are references to four undefined Kconfig macros in the code.
-Commit 8542373dccd2 ("Staging: rtl8812ae: remove undefined Kconfig
-macros") removed identical references from that staging driver, but
-they resurfaced in rtlwifi. Remove these again as the checks for them
-still will always evaluate to false.
+On 03/28/2014 12:13 PM, Gregory CLEMENT wrote:
+> Add the wfi, cpu idle and cpu deep idle power states support for the
+> Armada XP SoCs.
+>
+> All the latencies and the power consumption values used at the
+> "armada_370_xp_idle_driver" structure are preliminary and will be
+> modified in the future after running some measurements and analysis.
+>
+> Based on the work of Nadav Haklai.
+>
+> Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested by grepping the tree only.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-A follow up could now remove both "enum btc_chip_interface" and
-"chip_interface", couldn't it?
+> ---
+>   drivers/cpuidle/Kconfig.arm             |  5 ++
+>   drivers/cpuidle/Makefile                |  1 +
+>   drivers/cpuidle/cpuidle-armada-370-xp.c | 93 +++++++++++++++++++++++++++++++++
+>   3 files changed, 99 insertions(+)
+>   create mode 100644 drivers/cpuidle/cpuidle-armada-370-xp.c
+>
+> diff --git a/drivers/cpuidle/Kconfig.arm b/drivers/cpuidle/Kconfig.arm
+> index 97ccc31dbdd8..5bb94780d377 100644
+> --- a/drivers/cpuidle/Kconfig.arm
+> +++ b/drivers/cpuidle/Kconfig.arm
+> @@ -1,6 +1,11 @@
+>   #
+>   # ARM CPU Idle drivers
+>   #
+> +config ARM_ARMADA_370_XP_CPUIDLE
+> +	bool "CPU Idle Driver for Armada 370/XP family processors"
+> +	depends on ARCH_MVEBU
+> +	help
+> +	  Select this to enable cpuidle on Armada 370/XP processors.
+>
+>   config ARM_BIG_LITTLE_CPUIDLE
+>   	bool "Support for ARM big.LITTLE processors"
+> diff --git a/drivers/cpuidle/Makefile b/drivers/cpuidle/Makefile
+> index f71ae1b373c5..9902d052bd87 100644
+> --- a/drivers/cpuidle/Makefile
+> +++ b/drivers/cpuidle/Makefile
+> @@ -7,6 +7,7 @@ obj-$(CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED) += coupled.o
+>
+>   ##################################################################################
+>   # ARM SoC drivers
+> +obj-$(CONFIG_ARM_ARMADA_370_XP_CPUIDLE) += cpuidle-armada-370-xp.o
+>   obj-$(CONFIG_ARM_BIG_LITTLE_CPUIDLE)	+= cpuidle-big_little.o
+>   obj-$(CONFIG_ARM_HIGHBANK_CPUIDLE)	+= cpuidle-calxeda.o
+>   obj-$(CONFIG_ARM_KIRKWOOD_CPUIDLE)	+= cpuidle-kirkwood.o
+> diff --git a/drivers/cpuidle/cpuidle-armada-370-xp.c b/drivers/cpuidle/cpuidle-armada-370-xp.c
+> new file mode 100644
+> index 000000000000..6b98608c222e
+> --- /dev/null
+> +++ b/drivers/cpuidle/cpuidle-armada-370-xp.c
+> @@ -0,0 +1,93 @@
+> +/*
+> + * Marvell Armada 370 and Armada XP SoC cpuidle driver
+> + *
+> + * Copyright (C) 2013 Marvell
 
- drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c | 10 ----------
- 1 file changed, 10 deletions(-)
+2014 ?
 
-diff --git a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c
-index b6722de6..33da3df 100644
---- a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c
-+++ b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c
-@@ -625,17 +625,7 @@ bool exhalbtc_initlize_variables(struct rtl_priv *adapter)
- 	else
- 		btcoexist->binded = true;
- 
--#if (defined(CONFIG_PCI_HCI))
--	btcoexist->chip_interface = BTC_INTF_PCI;
--#elif (defined(CONFIG_USB_HCI))
--	btcoexist->chip_interface = BTC_INTF_USB;
--#elif (defined(CONFIG_SDIO_HCI))
--	btcoexist->chip_interface = BTC_INTF_SDIO;
--#elif (defined(CONFIG_GSPI_HCI))
--	btcoexist->chip_interface = BTC_INTF_GSPI;
--#else
- 	btcoexist->chip_interface = BTC_INTF_UNKNOWN;
--#endif
- 
- 	if (NULL == btcoexist->adapter)
- 		btcoexist->adapter = adapter;
+> + *
+> + * Nadav Haklai <nadavh@marvell.com>
+> + * Gregory CLEMENT <gregory.clement@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + *
+> + * Maintainer: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> + */
+> +
+> +#include <linux/cpu_pm.h>
+> +#include <linux/cpuidle.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/suspend.h>
+> +#include <linux/platform_device.h>
+> +#include <asm/cpuidle.h>
+> +
+> +#define ARMADA_370_XP_MAX_STATES	3
+> +#define ARMADA_370_XP_FLAG_DEEP_IDLE	0x10000
+> +
+> +static int (*armada_370_xp_cpu_suspend)(int);
+> +
+> +static int armada_370_xp_enter_idle(struct cpuidle_device *dev,
+> +				struct cpuidle_driver *drv,
+> +				int index)
+> +{
+> +	int ret;
+> +	bool deepidle = false;
+> +	cpu_pm_enter();
+> +
+> +	if (drv->states[index].flags & ARMADA_370_XP_FLAG_DEEP_IDLE)
+> +		deepidle = true;
+> +
+> +	ret = armada_370_xp_cpu_suspend(deepidle);
+> +	if (ret)
+> +		return ret;
+> +
+> +	cpu_pm_exit();
+> +
+> +	return index;
+> +}
+> +
+> +static struct cpuidle_driver armada_370_xp_idle_driver = {
+> +	.name			= "armada_370_xp_idle",
+> +	.states[0]		= ARM_CPUIDLE_WFI_STATE,
+> +	.states[1]		= {
+> +		.enter			= armada_370_xp_enter_idle,
+> +		.exit_latency		= 10,
+> +		.power_usage		= 50,
+> +		.target_residency	= 100,
+> +		.flags			= CPUIDLE_FLAG_TIME_VALID,
+> +		.name			= "MV CPU IDLE",
+> +		.desc			= "CPU power down",
+> +	},
+> +	.states[2]		= {
+> +		.enter			= armada_370_xp_enter_idle,
+> +		.exit_latency		= 100,
+> +		.power_usage		= 5,
+> +		.target_residency	= 1000,
+> +		.flags			= CPUIDLE_FLAG_TIME_VALID |
+> +						ARMADA_370_XP_FLAG_DEEP_IDLE,
+> +		.name			= "MV CPU DEEP IDLE",
+> +		.desc			= "CPU and L2 Fabric power down",
+> +	},
+> +	.state_count = ARMADA_370_XP_MAX_STATES,
+> +};
+> +
+> +static int armada_370_xp_cpuidle_probe(struct platform_device *pdev)
+> +{
+> +
+> +	armada_370_xp_cpu_suspend = (void *)(pdev->dev.platform_data);
+> +	return cpuidle_register(&armada_370_xp_idle_driver, NULL);
+> +}
+> +
+> +static struct platform_driver armada_370_xp_cpuidle_plat_driver = {
+> +	.driver = {
+> +		.name = "cpuidle-armada-370-xp",
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.probe = armada_370_xp_cpuidle_probe,
+> +};
+> +
+> +module_platform_driver(armada_370_xp_cpuidle_plat_driver);
+> +
+> +MODULE_AUTHOR("Gregory CLEMENT <gregory.clement@free-electrons.com>");
+> +MODULE_DESCRIPTION("Armada 370/XP cpu idle driver");
+> +MODULE_LICENSE("GPL");
+>
+
+
 -- 
-1.9.0
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
