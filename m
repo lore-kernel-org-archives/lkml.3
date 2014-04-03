@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151AbaDCRFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 13:05:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33757 "EHLO
+	id S1753178AbaDCRFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 13:05:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33770 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaDCRFF (ORCPT
+	with ESMTP id S1752853AbaDCRFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 13:05:05 -0400
+	Thu, 3 Apr 2014 13:05:06 -0400
 From: Laura Abbott <lauraa@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
 Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>,
@@ -18,83 +17,60 @@ Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org,
         Ard Biesheuvel <ard.biesheuvel@linaro.org>,
         Will Deacon <will.deacon@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCHv5 0/2] Remove ARM meminfo
-Date: Thu,  3 Apr 2014 10:04:56 -0700
-Message-Id: <1396544698-15596-1-git-send-email-lauraa@codeaurora.org>
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCHv5 1/2] mm/memblock: add memblock_get_current_limit
+Date: Thu,  3 Apr 2014 10:04:57 -0700
+Message-Id: <1396544698-15596-2-git-send-email-lauraa@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1396544698-15596-1-git-send-email-lauraa@codeaurora.org>
+References: <1396544698-15596-1-git-send-email-lauraa@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Apart from setting the limit of memblock, it's also useful to be able
+to get the limit to avoid recalculating it every time. Add the function
+to do so.
 
-This is v5 of the series to remove meminfo and use memblock
-directly. This has been validated with/without highmem although
-SPARSEMEM has not been validated. Reviews/testing welcome.
+Change-Id: I4f28dc1e549fd4c7fabf4e0dbd97871dbaa318ab
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ include/linux/memblock.h | 2 ++
+ mm/memblock.c            | 5 +++++
+ 2 files changed, 7 insertions(+)
 
-Thanks,
-Laura
-
-v5: Folded in patch from Nicolas, addressed several issues found by
-Russell with fixes suggested by Grygorii. Whitespace cleanup.
-
-v4: Added nommu support. Fixed issues with !HIGHMEM per Grygorii Strashko.
-
-v3: Fixed compilation issue for CONFIG_SPARSEMEM. Fixed several typos
-in spitz.c. Removed early_init_dt_add_memory_arch per Grant's suggestion.
-
-v2: Implemented full commandline support for mem@addr
-
-
-Laura Abbott (2):
-  mm/memblock: add memblock_get_current_limit
-  arm: Get rid of meminfo
-
- arch/arm/Kconfig                         |   5 --
- arch/arm/boot/compressed/atags_to_fdt.c  |   2 +
- arch/arm/include/asm/mach/arch.h         |   4 +-
- arch/arm/include/asm/memblock.h          |   3 +-
- arch/arm/include/asm/setup.h             |  28 --------
- arch/arm/kernel/atags_parse.c            |   5 +-
- arch/arm/kernel/devtree.c                |   5 --
- arch/arm/kernel/setup.c                  |  30 +++-----
- arch/arm/mach-clps711x/board-clep7312.c  |   7 +-
- arch/arm/mach-clps711x/board-edb7211.c   |  10 ++-
- arch/arm/mach-clps711x/board-p720t.c     |   2 +-
- arch/arm/mach-footbridge/cats-hw.c       |   2 +-
- arch/arm/mach-footbridge/netwinder-hw.c  |   2 +-
- arch/arm/mach-msm/board-halibut.c        |   6 --
- arch/arm/mach-msm/board-mahimahi.c       |  13 ++--
- arch/arm/mach-msm/board-msm7x30.c        |   3 +-
- arch/arm/mach-msm/board-sapphire.c       |  13 ++--
- arch/arm/mach-msm/board-trout.c          |   8 +--
- arch/arm/mach-orion5x/common.c           |   3 +-
- arch/arm/mach-orion5x/common.h           |   3 +-
- arch/arm/mach-pxa/cm-x300.c              |   3 +-
- arch/arm/mach-pxa/corgi.c                |  10 ++-
- arch/arm/mach-pxa/eseries.c              |   9 ++-
- arch/arm/mach-pxa/poodle.c               |   8 +--
- arch/arm/mach-pxa/spitz.c                |   8 +--
- arch/arm/mach-pxa/tosa.c                 |   8 +--
- arch/arm/mach-realview/core.c            |  11 ++-
- arch/arm/mach-realview/core.h            |   3 +-
- arch/arm/mach-realview/realview_pb1176.c |   8 +--
- arch/arm/mach-realview/realview_pbx.c    |  17 ++---
- arch/arm/mach-s3c24xx/mach-smdk2413.c    |   8 +--
- arch/arm/mach-s3c24xx/mach-vstms.c       |   8 +--
- arch/arm/mach-sa1100/assabet.c           |   2 +-
- arch/arm/mm/init.c                       |  72 ++++++++-----------
- arch/arm/mm/mmu.c                        | 117 +++++++++----------------------
- arch/arm/mm/nommu.c                      |  66 +++++++++--------
- include/linux/memblock.h                 |   2 +
- mm/memblock.c                            |   5 ++
- 38 files changed, 186 insertions(+), 333 deletions(-)
-
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 1ef6636..8a20a51 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -252,6 +252,8 @@ static inline void memblock_dump_all(void)
+ void memblock_set_current_limit(phys_addr_t limit);
+ 
+ 
++phys_addr_t memblock_get_current_limit(void);
++
+ /*
+  * pfn conversion functions
+  *
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 39a31e7..7fe5354 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -1407,6 +1407,11 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ 	memblock.current_limit = limit;
+ }
+ 
++phys_addr_t __init_memblock memblock_get_current_limit(void)
++{
++	return memblock.current_limit;
++}
++
+ static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
+ {
+ 	unsigned long long base, size;
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
