@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758913AbaDCDQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Apr 2014 23:16:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53594 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758822AbaDCDQw (ORCPT
+	id S1758943AbaDCDRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Apr 2014 23:17:06 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:42298 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758822AbaDCDRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Apr 2014 23:16:52 -0400
-Date: Wed, 02 Apr 2014 20:16:51 -0700 (PDT)
-Message-ID: <87k3b7rtjw.wl%kuninori.morimoto.gx@gmail.com>
+	Wed, 2 Apr 2014 23:17:01 -0400
+Date: Wed, 02 Apr 2014 20:17:00 -0700 (PDT)
+Message-ID: <87ioqrrtjn.wl%kuninori.morimoto.gx@gmail.com>
 From: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Subject: [PATCH 1/2] DMA: shdma: tidyup callback chunk finder
+Subject: [PATCH 2/2] DMA: shdma: add cyclic transfer support
 User-Agent: Wanderlust/2.14.0 Emacs/23.3 Mule/6.0
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Linux-SH <linux-sh@vger.kernel.org>, linux-kernel@vger.kernel.org,
@@ -25,58 +25,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-Current shdma is using "last" which indicates last desc
-which needs to have callback function.
-but, that desc's chunks is always 1
-We can use it as finder
+This patch add cyclic transfer support
+and enables dmaengine_prep_dma_cyclic()
 
 Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 ---
- drivers/dma/sh/shdma-base.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/dma/sh/shdma-base.c |   72 ++++++++++++++++++++++++++++++++++++++-----
+ include/linux/shdma-base.h  |    1 +
+ 2 files changed, 66 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
-index 5239677..6786ecb 100644
+index 6786ecb..974794c 100644
 --- a/drivers/dma/sh/shdma-base.c
 +++ b/drivers/dma/sh/shdma-base.c
-@@ -73,8 +73,7 @@ static void shdma_chan_xfer_ld_queue(struct shdma_chan *schan)
- static dma_cookie_t shdma_tx_submit(struct dma_async_tx_descriptor *tx)
+@@ -304,6 +304,7 @@ static dma_async_tx_callback __ld_cleanup(struct shdma_chan *schan, bool all)
+ 	dma_async_tx_callback callback = NULL;
+ 	void *param = NULL;
+ 	unsigned long flags;
++	LIST_HEAD(cyclic_list);
+ 
+ 	spin_lock_irqsave(&schan->chan_lock, flags);
+ 	list_for_each_entry_safe(desc, _desc, &schan->ld_queue, node) {
+@@ -369,10 +370,16 @@ static dma_async_tx_callback __ld_cleanup(struct shdma_chan *schan, bool all)
+ 		if (((desc->mark == DESC_COMPLETED ||
+ 		      desc->mark == DESC_WAITING) &&
+ 		     async_tx_test_ack(&desc->async_tx)) || all) {
+-			/* Remove from ld_queue list */
+-			desc->mark = DESC_IDLE;
+ 
+-			list_move(&desc->node, &schan->ld_free);
++			if (all || !desc->cyclic) {
++				/* Remove from ld_queue list */
++				desc->mark = DESC_IDLE;
++				list_move(&desc->node, &schan->ld_free);
++			} else {
++				/* reuse as cyclic */
++				desc->mark = DESC_SUBMITTED;
++				list_move_tail(&desc->node, &cyclic_list);
++			}
+ 
+ 			if (list_empty(&schan->ld_queue)) {
+ 				dev_dbg(schan->dev, "Bring down channel %d\n", schan->id);
+@@ -389,6 +396,8 @@ static dma_async_tx_callback __ld_cleanup(struct shdma_chan *schan, bool all)
+ 		 */
+ 		schan->dma_chan.completed_cookie = schan->dma_chan.cookie;
+ 
++	list_splice_tail(&cyclic_list, &schan->ld_queue);
++
+ 	spin_unlock_irqrestore(&schan->chan_lock, flags);
+ 
+ 	if (callback)
+@@ -521,7 +530,7 @@ static struct shdma_desc *shdma_add_desc(struct shdma_chan *schan,
+  */
+ static struct dma_async_tx_descriptor *shdma_prep_sg(struct shdma_chan *schan,
+ 	struct scatterlist *sgl, unsigned int sg_len, dma_addr_t *addr,
+-	enum dma_transfer_direction direction, unsigned long flags)
++	enum dma_transfer_direction direction, unsigned long flags, bool cyclic)
  {
- 	struct shdma_desc *chunk, *c, *desc =
--		container_of(tx, struct shdma_desc, async_tx),
--		*last = desc;
-+		container_of(tx, struct shdma_desc, async_tx);
- 	struct shdma_chan *schan = to_shdma_chan(tx->chan);
- 	dma_async_tx_callback callback = tx->callback;
- 	dma_cookie_t cookie;
-@@ -98,19 +97,20 @@ static dma_cookie_t shdma_tx_submit(struct dma_async_tx_descriptor *tx)
- 				      &chunk->node == &schan->ld_free))
- 			break;
- 		chunk->mark = DESC_SUBMITTED;
--		/* Callback goes to the last chunk */
--		chunk->async_tx.callback = NULL;
-+		if (chunk->chunks == 1) {
-+			chunk->async_tx.callback = callback;
-+			chunk->async_tx.callback_param = tx->callback_param;
-+		} else {
-+			/* Callback goes to the last chunk */
-+			chunk->async_tx.callback = NULL;
-+		}
- 		chunk->cookie = cookie;
- 		list_move_tail(&chunk->node, &schan->ld_queue);
--		last = chunk;
+ 	struct scatterlist *sg;
+ 	struct shdma_desc *first = NULL, *new = NULL /* compiler... */;
+@@ -569,7 +578,11 @@ static struct dma_async_tx_descriptor *shdma_prep_sg(struct shdma_chan *schan,
+ 			if (!new)
+ 				goto err_get_desc;
  
- 		dev_dbg(schan->dev, "submit #%d@%p on %d\n",
--			tx->cookie, &last->async_tx, schan->id);
-+			tx->cookie, &chunk->async_tx, schan->id);
+-			new->chunks = chunks--;
++			new->cyclic = cyclic;
++			if (cyclic)
++				new->chunks = 1;
++			else
++				new->chunks = chunks--;
+ 			list_add_tail(&new->node, &tx_list);
+ 		} while (len);
  	}
+@@ -612,7 +625,8 @@ static struct dma_async_tx_descriptor *shdma_prep_memcpy(
+ 	sg_dma_address(&sg) = dma_src;
+ 	sg_dma_len(&sg) = len;
  
--	last->async_tx.callback = callback;
--	last->async_tx.callback_param = tx->callback_param;
--
- 	if (power_up) {
- 		int ret;
- 		schan->pm_state = SHDMA_PM_BUSY;
+-	return shdma_prep_sg(schan, &sg, 1, &dma_dest, DMA_MEM_TO_MEM, flags);
++	return shdma_prep_sg(schan, &sg, 1, &dma_dest, DMA_MEM_TO_MEM,
++			     flags, false);
+ }
+ 
+ static struct dma_async_tx_descriptor *shdma_prep_slave_sg(
+@@ -640,7 +654,50 @@ static struct dma_async_tx_descriptor *shdma_prep_slave_sg(
+ 	slave_addr = ops->slave_addr(schan);
+ 
+ 	return shdma_prep_sg(schan, sgl, sg_len, &slave_addr,
+-			      direction, flags);
++			     direction, flags, false);
++}
++
++struct dma_async_tx_descriptor *shdma_prep_dma_cyclic(
++	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
++	size_t period_len, enum dma_transfer_direction direction,
++	unsigned long flags, void *context)
++{
++	struct shdma_chan *schan = to_shdma_chan(chan);
++	struct shdma_dev *sdev = to_shdma_dev(schan->dma_chan.device);
++	const struct shdma_ops *ops = sdev->ops;
++	unsigned int sg_len = buf_len / period_len;
++	int slave_id = schan->slave_id;
++	dma_addr_t slave_addr;
++	struct scatterlist sgl[sg_len];
++	int i;
++
++	if (!chan)
++		return NULL;
++
++	BUG_ON(!schan->desc_num);
++
++	/* Someone calling slave DMA on a generic channel? */
++	if (slave_id < 0 || (buf_len < period_len)) {
++		dev_warn(schan->dev,
++			"%s: bad parameter: buf_len=%d, period_len=%d, id=%d\n",
++			__func__, buf_len, period_len, slave_id);
++		return NULL;
++	}
++
++	slave_addr = ops->slave_addr(schan);
++
++	sg_init_table(sgl, sg_len);
++	for (i = 0; i < sg_len; i++) {
++		dma_addr_t src = buf_addr + (period_len * i);
++
++		sg_set_page(&sgl[i], pfn_to_page(PFN_DOWN(src)), period_len,
++			    offset_in_page(src));
++		sg_dma_address(&sgl[i]) = src;
++		sg_dma_len(&sgl[i]) = period_len;
++	}
++
++	return shdma_prep_sg(schan, sgl, sg_len, &slave_addr,
++			     direction, flags, true);
+ }
+ 
+ static int shdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+@@ -915,6 +972,7 @@ int shdma_init(struct device *dev, struct shdma_dev *sdev,
+ 
+ 	/* Compulsory for DMA_SLAVE fields */
+ 	dma_dev->device_prep_slave_sg = shdma_prep_slave_sg;
++	dma_dev->device_prep_dma_cyclic = shdma_prep_dma_cyclic;
+ 	dma_dev->device_control = shdma_control;
+ 
+ 	dma_dev->dev = dev;
+diff --git a/include/linux/shdma-base.h b/include/linux/shdma-base.h
+index f92c0a4..abdf1f2 100644
+--- a/include/linux/shdma-base.h
++++ b/include/linux/shdma-base.h
+@@ -54,6 +54,7 @@ struct shdma_desc {
+ 	dma_cookie_t cookie;
+ 	int chunks;
+ 	int mark;
++	bool cyclic;			/* used as cyclic transfer */
+ };
+ 
+ struct shdma_chan {
 -- 
 1.7.9.5
 
