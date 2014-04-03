@@ -1,124 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaDCVyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 17:54:38 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:60725 "EHLO
+	id S1753929AbaDCVzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 17:55:22 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:37365 "EHLO
 	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaDCVyh (ORCPT
+	with ESMTP id S1753904AbaDCVzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 17:54:37 -0400
-From: Alex Elder <elder@linaro.org>
-To: bcm@fixthebug.org, mporter@linaro.org
-Cc: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] mach-bcm: clean up config and build targets
-Date: Thu,  3 Apr 2014 16:55:04 -0500
-Message-Id: <1396562104-2457-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 3 Apr 2014 17:55:16 -0400
+Date: Thu, 3 Apr 2014 15:55:13 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 69/73] drivers/pci: delete non-required instances of
+ <linux/init.h>
+Message-ID: <20140403215513.GB21931@google.com>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+ <1390339396-3479-70-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390339396-3479-70-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently CONFIG_ARCH_BCM_MOBILE is used to select all Broadcom
-mobile SoCs.  Instead, use that only as a config menu switch, and
-define specific symbols like CONFIG_ARCH_BCM_281XX to select
-a particular SoC family.  If ARCH_BCM_MOBILE is selected, all
-of the SoCs will be selected by default, but this way each can be
-disabled individually as well.
+On Tue, Jan 21, 2014 at 04:23:12PM -0500, Paul Gortmaker wrote:
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
+> 
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: linux-pci@vger.kernel.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-This allows more precision in controlling what gets built under
-mach-bcm.  Another benefit to doing this is that it makes it obvious
-that the code that implements SMC calls to control L2 cache is only
-used for BCM281XX (for example).
+I applied this to my "pci/pending" branch.  After v3.15-rc1, I will sort
+this into something for inclusion in -next.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
-v2:  No longer uses Kbuild's $(<modulename>-y) variable mechanism.
+Sorry for the delay; I don't remember why I didn't pick this up before.
 
-Note:
-This patch is based on the current arm-soc/for-next branch:
-    e98cd72 arm-soc: document samsung merges
+Bjorn
 
-The patch is available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/mach-bcm-cleanup-v2
-
- arch/arm/mach-bcm/Kconfig  |   28 ++++++++++++++++++++++++----
- arch/arm/mach-bcm/Makefile |   15 +++++++++++----
- 2 files changed, 35 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 21f97f7..183fdef 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -10,7 +10,7 @@ if ARCH_BCM
- menu "Broadcom SoC Selection"
- 
- config ARCH_BCM_MOBILE
--	bool "Broadcom Mobile SoC" if ARCH_MULTI_V7
-+	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
- 	depends on MMU
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_ERRATA_754322
-@@ -23,9 +23,29 @@ config ARCH_BCM_MOBILE
- 	select PINCTRL
- 	help
- 	  This enables support for systems based on Broadcom mobile SoCs.
--	  It currently supports the 'BCM281XX' family, which includes
--	  BCM11130, BCM11140, BCM11351, BCM28145 and
--	  BCM28155 variants.
-+
-+if ARCH_BCM_MOBILE
-+
-+menu "Broadcom Mobile SoC Selection"
-+
-+config ARCH_BCM_281XX
-+	bool "Broadcom BCM281XX SoC family"
-+	default y
-+	help
-+	  Enable support for the the BCM281XX family, which includes
-+	  BCM11130, BCM11140, BCM11351, BCM28145 and BCM28155
-+	  variants.
-+
-+config ARCH_BCM_21664
-+	bool "Broadcom BCM21664 SoC family"
-+	default y
-+	help
-+	  Enable support for the the BCM21664 family, which includes
-+	  BCM21663 and BCM21664 variants.
-+
-+endmenu
-+
-+endif
- 
- 
- config ARCH_BCM2835
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index a326b28..ac1f5cc 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -10,10 +10,17 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
--obj-$(CONFIG_ARCH_BCM_MOBILE)	:= board_bcm281xx.o board_bcm21664.o \
--				bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
--obj-$(CONFIG_ARCH_BCM2835)	+= board_bcm2835.o
--
-+# BCM281XX
-+obj-$(CONFIG_ARCH_BCM_281XX)	:= board_bcm281xx.o
-+obj-$(CONFIG_ARCH_BCM_281XX)	+= bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
- plus_sec := $(call as-instr,.arch_extension sec,+sec)
- AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
-+
-+# BCM21664
-+obj-$(CONFIG_ARCH_BCM_21664)	+= board_bcm21664.o
-+
-+# BCM2835
-+obj-$(CONFIG_ARCH_BCM2835)	+= board_bcm2835.o
-+
-+# BCM5301X
- obj-$(CONFIG_ARCH_BCM_5301X)	+= bcm_5301x.o
--- 
-1.7.9.5
-
+> ---
+>  drivers/pci/bus.c                  | 1 -
+>  drivers/pci/host-bridge.c          | 1 -
+>  drivers/pci/hotplug/acpiphp_glue.c | 1 -
+>  drivers/pci/hotplug/cpqphp_nvram.c | 1 -
+>  drivers/pci/hotplug/s390_pci_hpc.c | 1 -
+>  drivers/pci/msi.c                  | 1 -
+>  drivers/pci/search.c               | 1 -
+>  drivers/pci/setup-irq.c            | 1 -
+>  drivers/pci/setup-res.c            | 1 -
+>  9 files changed, 9 deletions(-)
+> 
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index 00660cc..ad0f20a 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -13,7 +13,6 @@
+>  #include <linux/errno.h>
+>  #include <linux/ioport.h>
+>  #include <linux/proc_fs.h>
+> -#include <linux/init.h>
+>  #include <linux/slab.h>
+>  
+>  #include "pci.h"
+> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+> index 06ace62..389e3df 100644
+> --- a/drivers/pci/host-bridge.c
+> +++ b/drivers/pci/host-bridge.c
+> @@ -3,7 +3,6 @@
+>   */
+>  
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/pci.h>
+>  #include <linux/module.h>
+>  
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index cd929ae..1629963 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -41,7 +41,6 @@
+>  
+>  #define pr_fmt(fmt) "acpiphp_glue: " fmt
+>  
+> -#include <linux/init.h>
+>  #include <linux/module.h>
+>  
+>  #include <linux/kernel.h>
+> diff --git a/drivers/pci/hotplug/cpqphp_nvram.c b/drivers/pci/hotplug/cpqphp_nvram.c
+> index 76ba8a1..9600a39 100644
+> --- a/drivers/pci/hotplug/cpqphp_nvram.c
+> +++ b/drivers/pci/hotplug/cpqphp_nvram.c
+> @@ -34,7 +34,6 @@
+>  #include <linux/workqueue.h>
+>  #include <linux/pci.h>
+>  #include <linux/pci_hotplug.h>
+> -#include <linux/init.h>
+>  #include <asm/uaccess.h>
+>  #include "cpqphp.h"
+>  #include "cpqphp_nvram.h"
+> diff --git a/drivers/pci/hotplug/s390_pci_hpc.c b/drivers/pci/hotplug/s390_pci_hpc.c
+> index 8d2ce22..d1332d2 100644
+> --- a/drivers/pci/hotplug/s390_pci_hpc.c
+> +++ b/drivers/pci/hotplug/s390_pci_hpc.c
+> @@ -15,7 +15,6 @@
+>  #include <linux/slab.h>
+>  #include <linux/pci.h>
+>  #include <linux/pci_hotplug.h>
+> -#include <linux/init.h>
+>  #include <asm/pci_debug.h>
+>  #include <asm/sclp.h>
+>  
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 7a0fec6..18ca2497 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -10,7 +10,6 @@
+>  #include <linux/mm.h>
+>  #include <linux/irq.h>
+>  #include <linux/interrupt.h>
+> -#include <linux/init.h>
+>  #include <linux/export.h>
+>  #include <linux/ioport.h>
+>  #include <linux/pci.h>
+> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> index 3ff2ac7..cc6db38 100644
+> --- a/drivers/pci/search.c
+> +++ b/drivers/pci/search.c
+> @@ -7,7 +7,6 @@
+>   *	Copyright (C) 2003 -- 2004 Greg Kroah-Hartman <greg@kroah.com>
+>   */
+>  
+> -#include <linux/init.h>
+>  #include <linux/pci.h>
+>  #include <linux/slab.h>
+>  #include <linux/module.h>
+> diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
+> index 9bd6864..dbc4ffc 100644
+> --- a/drivers/pci/setup-irq.c
+> +++ b/drivers/pci/setup-irq.c
+> @@ -10,7 +10,6 @@
+>   */
+>  
+>  
+> -#include <linux/init.h>
+>  #include <linux/kernel.h>
+>  #include <linux/pci.h>
+>  #include <linux/errno.h>
+> diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+> index 5c060b1..3e5682c 100644
+> --- a/drivers/pci/setup-res.c
+> +++ b/drivers/pci/setup-res.c
+> @@ -16,7 +16,6 @@
+>   *	     Resource sorting
+>   */
+>  
+> -#include <linux/init.h>
+>  #include <linux/kernel.h>
+>  #include <linux/export.h>
+>  #include <linux/pci.h>
+> -- 
+> 1.8.4.1
+> 
