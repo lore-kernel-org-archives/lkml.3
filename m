@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162611AbaDCIIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 04:08:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59822 "EHLO
+	id S1162628AbaDCIJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 04:09:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59830 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1162553AbaDCIIU (ORCPT
+	with ESMTP id S1162558AbaDCIIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 04:08:20 -0400
+	Thu, 3 Apr 2014 04:08:21 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com
@@ -15,9 +15,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         alexandre.belloni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] ARM: berlin: use CPU_METHOD_OF_DECLARE for smp
-Date: Thu,  3 Apr 2014 10:08:14 +0200
-Message-Id: <1396512496-8030-2-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH 3/3] ARM: dts: berlin: add enable-method property in cpus node for smp
+Date: Thu,  3 Apr 2014 10:08:16 +0200
+Message-Id: <1396512496-8030-4-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1396512496-8030-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1396512496-8030-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -28,52 +28,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the smp ops in the machine descriptor and select the cpu
-enable method in the device tree.
-
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/mach-berlin/berlin.c  | 1 -
- arch/arm/mach-berlin/common.h  | 2 --
- arch/arm/mach-berlin/platsmp.c | 3 ++-
- 3 files changed, 2 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/berlin2.dtsi  | 1 +
+ arch/arm/boot/dts/berlin2q.dtsi | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
-index 1bbca793174d..3cc3e706719e 100644
---- a/arch/arm/mach-berlin/berlin.c
-+++ b/arch/arm/mach-berlin/berlin.c
-@@ -38,5 +38,4 @@ static const char * const berlin_dt_compat[] = {
- DT_MACHINE_START(BERLIN_DT, "Marvell Berlin")
- 	.dt_compat	= berlin_dt_compat,
- 	.init_machine	= berlin_init_machine,
--	.smp		= smp_ops(berlin_smp_ops),
- MACHINE_END
-diff --git a/arch/arm/mach-berlin/common.h b/arch/arm/mach-berlin/common.h
-index 57c97669af0a..8d585e2481f9 100644
---- a/arch/arm/mach-berlin/common.h
-+++ b/arch/arm/mach-berlin/common.h
-@@ -13,6 +13,4 @@
+diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+index 4d85312dc17a..596f6bd07677 100644
+--- a/arch/arm/boot/dts/berlin2.dtsi
++++ b/arch/arm/boot/dts/berlin2.dtsi
+@@ -21,6 +21,7 @@
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
++		enable-method = "marvell,88de31-smp";
  
- extern void berlin_secondary_startup(void);
+ 		cpu@0 {
+ 			compatible = "marvell,pj4b";
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 86d8a2c49f38..5e8161aa21a3 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -17,6 +17,7 @@
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
++		enable-method = "marvell,88de31-smp";
  
--extern struct smp_operations berlin_smp_ops;
--
- #endif
-diff --git a/arch/arm/mach-berlin/platsmp.c b/arch/arm/mach-berlin/platsmp.c
-index 5c83941b0918..86fe697577fd 100644
---- a/arch/arm/mach-berlin/platsmp.c
-+++ b/arch/arm/mach-berlin/platsmp.c
-@@ -132,8 +132,9 @@ static void __init berlin_smp_prepare_cpus(unsigned int max_cpus)
- 	iounmap(gpr_base);
- }
- 
--struct smp_operations berlin_smp_ops __initdata = {
-+static struct smp_operations berlin_smp_ops __initdata = {
- 	.smp_prepare_cpus	= berlin_smp_prepare_cpus,
- 	.smp_secondary_init	= berlin_secondary_init,
- 	.smp_boot_secondary	= berlin_boot_secondary,
- };
-+CPU_METHOD_OF_DECLARE(berlin_smp, "marvell,88de31-smp", &berlin_smp_ops);
+ 		cpu@0 {
+ 			compatible = "arm,cortex-a9";
 -- 
 1.8.3.2
 
