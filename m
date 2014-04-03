@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900AbaDCEu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 00:50:28 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:61226 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaDCEtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 00:49:35 -0400
-From: jon@ringle.org
-To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Jon Ringle <jringle@gridpoint.com>
-Subject: [PATCH v4 2/2] serial: sc16is7xx: Add bindings documentation for the SC16IS7XX UARTs
-Date: Thu,  3 Apr 2014 00:49:15 -0400
-Message-Id: <1396500555-28873-2-git-send-email-jon@ringle.org>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1396500555-28873-1-git-send-email-jon@ringle.org>
-References: <1396500555-28873-1-git-send-email-jon@ringle.org>
+	id S933032AbaDCEvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 00:51:31 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:37280 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932914AbaDCEv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 00:51:29 -0400
+Message-ID: <533CE8C9.9050609@interlog.com>
+Date: Thu, 03 Apr 2014 00:51:21 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Ritesh Raj Sarraf <rrs@researchut.com>,
+        "Robin H. Johnson" <robbat2@gentoo.org>,
+        Martin Pitt <mpitt@debian.org>, Hannes Reinecke <hare@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [Announce] sg3_utils-1.38 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Ringle <jringle@gridpoint.com>
+sg3_utils is a package of command line utilities for sending
+SCSI and some ATA commands to devices. This package targets
+the Linux 3, 2.6 and 2.4 kernel series. It also has ports to
+FreeBSD, Tru64, Solaris, and Windows (cygwin and MinGW).
 
-This patch adds the devicetree documentation for the NXP SC16IS7XX UARTs.
+Users of sg_xcopy note that the default recipient of the
+xcopy(lid1) command has changed from the source to the
+destination device. An environment variable [XCOPY_TO_SRC] can
+re-instate the previous default. This version tracks various
+changes made by www.t10.org since October 2013.
 
-Signed-off-by: Jon Ringle <jringle@gridpoint.com>
----
- .../devicetree/bindings/serial/nxp,sc16is7xx.txt   | 33 ++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+For an overview of sg3_utils and downloads see this page:
+     http://sg.danny.cz/sg/sg3_utils.html
+The sg_ses utility (for enclosure devices) is discussed at:
+     http://sg.danny.cz/sg/sg_ses.html
+A full changelog can be found at:
+     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
 
-diff --git a/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
-new file mode 100644
-index 0000000..246c795
---- /dev/null
-+++ b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
-@@ -0,0 +1,33 @@
-+* NXP SC16IS7xx advanced Universal Asynchronous Receiver-Transmitter (UART)
-+
-+Required properties:
-+- compatible: Should be one of the following:
-+  - "nxp,sc16is740" for NXP SC16IS740,
-+  - "nxp,sc16is741" for NXP SC16IS741,
-+  - "nxp,sc16is750" for NXP SC16IS750,
-+  - "nxp,sc16is752" for NXP SC16IS752,
-+  - "nxp,sc16is760" for NXP SC16IS760,
-+  - "nxp,sc16is762" for NXP SC16IS762.
-+- reg: I2C address of the SC16IS7xx device.
-+- interrupt-parent: The phandle for the interrupt controller that
-+  services interrupts for this IC.
-+- interrupts: Should contain the UART interrupt
-+- clocks: Reference to the IC source clock.
-+
-+Optional properties:
-+- gpio-controller: Marks the device node as a GPIO controller.
-+- #gpio-cells: Should be two. The first cell is the GPIO number and
-+  the second cell is used to specify the GPIO polarity:
-+    0 = active high,
-+    1 = active low.
-+
-+Example:
-+        sc16is750: sc16is750@51 {
-+                compatible = "nxp,sc16is750";
-+                reg = <0x51>;
-+                clocks = <&clk20m>;
-+                interrupt-parent = <&gpio3>;
-+                interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
-+                gpio-controller;
-+                #gpio-cells = <2>;
-+        };
--- 
-1.8.5.4
+A release announcement will be sent to freecode.com .
 
+Changelog for sg3_utils-1.38 [20140401] [svn: r563]
+   - sg_ses: add --dev-slot-num= and --sas-addr=
+     - fix --data=- problem with large buffers
+     - new --data=@FN to read hex data from file FN
+     - error and warning message cleanup
+     - add --maxlen= option
+   - sg_inq: add --block=0|1 option to control opens
+     - add --inhex=FN to read response in ASCII hex from
+       a file; --inhex=FN --raw reads response in binary
+     - make -HHH (-HHHH for '-p ai') output suitable for
+       another sg_inq invocation to use --inhex to decode
+     - add LU_CONG to standard inquiry response output
+     - decode ASCII information VPD pages
+     - add HAW_ZBC in block dev char. VPD page (sbc4r01)
+     - sync version descriptors dated 20131126
+     - allow --page=-1 to force std INQUIRY decoding
+     - fix overflow in encode_whitespaces
+     - improve unit serial number display (VPD page 0x80)
+   - sg_vpd: add LU_CONG to standard inquiry response output
+     - add --inhex=FN to read response in ASCII hex from
+       a file; --inhex=FN --raw reads response in binary
+     - decode Third Party Copy (tpc) page
+     - add HAW_ZBC in block dev char. VPD page (sbc4r01)
+     - add LTO and DDS vendor pages
+     - allow --page=num to restrict --enumerate output
+   - sg_persist: add PROUT: Replace Lost Reservation (spc4r36)
+     - add --transport-id= for SOP: 'sop,<routing_id_in_hex>'
+   - sg_readcap: for --16 show physical block size if
+     different from logical block size
+   - sg_xcopy: environment variables: XCOPY_TO_SRC and
+     XCOPY_TO_DST indicate where xcopy command is sent
+     - change default to send xcopy to dst (was src)
+     - improve CL handling of short options (e.g. '-vv')
+   - sg_luns: guard against garbage response
+   - sg_decode_sense: with --nospace ignore spaces on
+     command line, so multiple arguments are concatenated
+   - sg_write_same: repeat if unit attention
+   - sg_rtpg: fix indexing bug with --extended option
+   - sg_logs: placeholder for pending defects lpage
+   - sg_unmap: fix another problem with --grpnum= option
+   - sg_lib.h: add PDT_ZBC define (spc4r36p)
+   - sg_lib_data: sync asc/ascq codes with T10 dated 20140320
+     - add pdt string for ZBC (spc4r36p)
+   - sg_lib: extensions to sg_get_num() and sg_get_llnum()
+   - sg_cmds_extra: fix sa bug in sg_ll_3party_copy_out()
+   - scripts/rescan-scsi-bus.sh: check if FC driver exports
+     issue_lip before using it
+     - man page added (Linux only)
+   - scripts/59-scsi-sg3_utils.rules: linux specific udev rules
+   - examples: add sg_tst_excl3 for testing O_EXCL
+     - improve sg_tst_excl and sg_tst_excl2
+     - add sg_tst_context for testing file handle contexts
+   - upgrade automake to version 1.13.3
+   - add suse directory and 'spec' file to facilitate builds
+
+Changelog for sg3_utils-1.37 [20131014] [svn: r522]
+...
+
+Doug Gilbert
