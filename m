@@ -1,39 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaDCP1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 11:27:10 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:60791 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391AbaDCP1D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 11:27:03 -0400
+	id S1752565AbaDCPeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 11:34:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752304AbaDCPd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 11:33:56 -0400
+Date: Thu, 3 Apr 2014 17:33:25 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
+        mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
+        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        yinghai@kernel.org, riel@redhat.com
+Subject: Re: [PATCH 0/4] hugetlb: add support gigantic page allocation at
+ runtime
+Message-ID: <20140403153325.GM1500@redhat.com>
+References: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1810753.STDdFhitt6@diego>
-References: <1395700561-3793-1-git-send-email-b.galvani@gmail.com>
-	<CACRpkda9Lh19sfkxs3=dNWbg4FgkAtY2tJdMQik=TGs8wUkYfA@mail.gmail.com>
-	<1810753.STDdFhitt6@diego>
-Date: Thu, 3 Apr 2014 17:27:03 +0200
-Message-ID: <CACRpkdZQPy=H+LEuC6SX8tSVD4fEWNnFgNOfv-=tYQ9NvgyOEA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: rockchip: fix offset of mux registers for rk3188
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Beniamino Galvani <b.galvani@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 3, 2014 at 4:20 PM, Heiko Stübner <heiko@sntech.de> wrote:
+On Wed, Apr 02, 2014 at 02:08:44PM -0400, Luiz Capitulino wrote:
+> Luiz Capitulino (4):
+>   hugetlb: add hstate_is_gigantic()
+>   hugetlb: update_and_free_page(): don't clear PG_reserved bit
+>   hugetlb: move helpers up in the file
+>   hugetlb: add support for gigantic page allocation at runtime
 
-> small protest note
->
-> "Heikki adds:" - sounds somehow finish or swedish, but who is this guy? ;-)
-
-Haha sorry Heiko, I'll fix.
-
-Yours,
-Linus Walleij
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
