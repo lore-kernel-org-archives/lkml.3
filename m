@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaDCVCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 17:02:20 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:64098 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737AbaDCVCN (ORCPT
+	id S1753948AbaDCVDH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 17:03:07 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:49600 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaDCVDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 17:02:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=sasl; b=Vim8vG
-	q4a3Ysw2PagZE0j/kE9m960mlvRDniYCXrmofrEqRkeozfVBVi47iEs9cFlyo98Y
-	eIGAYlEkjnkYxOLrhMlAGkt/AjWlqmk8ew+W2y2oV8PGjgqrPgdY/0XE0fHiEm3G
-	ScBbbOrREB/c90oJHxi9RcEbagmkiFWr9Osng=
-Message-ID: <533DC90B.8050906@pobox.com>
-Date: Thu, 03 Apr 2014 16:48:11 -0400
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 3 Apr 2014 17:03:03 -0400
+Date: Thu, 3 Apr 2014 23:03:00 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Igor Mammedov <imammedo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
+        gong.chen@linux.intel.com
+Subject: Re: [PATCH v2 1/5] x86: replace timeouts when booting secondary
+ CPU with infinite wait loop
+Message-ID: <20140403210300.GP22728@two.firstfloor.org>
+References: <1396296565-19709-1-git-send-email-imammedo@redhat.com>
+ <1396296565-19709-2-git-send-email-imammedo@redhat.com>
+ <87ppkzk5zi.fsf@tassilo.jf.intel.com>
+ <20140402232956.54848fbe@thinkpad>
+ <20140403064337.GA29274@gmail.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@redhat.com>
-CC: Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-References: <533D8D73.1090603@pobox.com> <20140403171643.GB28790@pad.redhat.com> <533D9F8A.6030001@pobox.com> <20140403193024.GC28790@pad.redhat.com>
-In-Reply-To: <20140403193024.GC28790@pad.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 4523783A-BB71-11E3-8060-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403064337.GA29274@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-04-03 03:30 PM, J. Bruce Fields wrote:
-> On Thu, Apr 03, 2014 at 01:51:06PM -0400, Mark Lord wrote:
->> On 14-04-03 01:16 PM, J. Bruce Fields wrote:
->>> On Thu, Apr 03, 2014 at 12:33:55PM -0400, Mark Lord wrote:
->>>> This commit from linux-3.14 breaks our NFS-root clients here:
->>>>
->>>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6e14b46b91fee8a049b0940333ce13a820beaaa5
->>>>
->>>>
->>>> - *p++ = htonl((u32) stat->mode);
->>>> + *p++ = htonl((u32) (stat->mode & S_IALLUGO));
->>>>
->>>>
->>>> Reverting the one-liner above (on the server) fixes it for us,
->>>> as does reverting back to linux-3.13.8 on the server.
->>>>
->>>> The NFS-root clients are on PowerPC (big-endian) architecture,
->>>> running linux-3.12.16. The NFS server is on an Intel PC running linux-3.14.
->>>>
->>>> ACL is completely disabled on server and client,
->>>> and we're using NFSv2/v3.  No support for v4.
->>>>
->>>> I instrumented the function to see what other bits were being cleared
->>>> by the (stat->mode & S_IALLUGO) masking.  The results are attached.
->>>
->>> Hm, it sounds like a bug in the client if it's depending on those high
->>> bits.
->>
->> But only for mounting / starting up from the nfsroot, it seems.
->> I wonder if there's an unusual code path for that in there?
->> The regular stuff looks mostly fine:
->>
->>         p = xdr_decode_ftype3(p, &fmode);
->>         fattr->mode = (be32_to_cpup(p++) & ~S_IFMT) | fmode;
+On Thu, Apr 03, 2014 at 08:43:37AM +0200, Ingo Molnar wrote:
 > 
-> Hm, but that's in nfs3xdr.c; in nfs2xdr.c we have just
+> * Igor Mammedov <imammedo@redhat.com> wrote:
 > 
-> 	fattr->mode = be32_to_cpup(p+);
+> > > I've seen that. Kernel still boots. With your patch it would hang.
 > 
-> and NFSv2 is the default for nfsroot.  Do you have some reason to
-> believe you're not using NFSv2?
+> Nonsense, not booting is OK when critical hardware is genuinely bad - 
+> this isn't a disk drive or networking where bad IO 'happens sometimes' 
+> and failure is something we have to engineer for - this is the CPU!
+> 
+> If a critical piece of hardware like the CPU or RAM is non-functional 
+> then it should be excluded by the user explicitly, not worked around 
+> after some ugly, non-deterministic and fragile timeout.
 
-Oh, the client here was using NFS2, absolutely.
-I just don't know my way around the code very well yet.  :)
+That's generally not true. We try to recover as best as we can
+and continue.
 
-But that mask in nfs3xdr.c (client) doesn't match what the server side is using.
--- 
-Mark Lord
-Real-Time Remedies Inc.
-mlord@pobox.com
+That's true for RCU stalls, and RAM errors (hwpoison) and
+other error conditions. It's true for kernel problems
+(we try to oops and continue, not to panic etc.)
+
+Hanging forever is not recovering, it's just poor and broken 
+error handling and generally not acceptable these days.
+
+-Andi
+
