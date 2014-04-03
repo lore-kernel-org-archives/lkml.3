@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaDCWnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 18:43:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33353 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaDCWnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 18:43:11 -0400
-Date: Thu, 3 Apr 2014 15:45:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux@roeck-us.net,
-        satoru.takeuchi@gmail.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 0/9] 3.10.36-stable review
-Message-ID: <20140403224534.GB13754@kroah.com>
-References: <20140401040754.479538406@linuxfoundation.org>
- <533B2A88.2010604@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533B2A88.2010604@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754063AbaDCWnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 18:43:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41313 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577AbaDCWnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 18:43:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,791,1389772800"; 
+   d="scan'208";a="506523379"
+Message-ID: <1396564999.3047.65.camel@empanada>
+Subject: Re: [PATCH 5/5] tracing: Add 'hash' event trigger command
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Date: Thu, 03 Apr 2014 17:43:19 -0500
+In-Reply-To: <533D22E6.4000607@hitachi.com>
+References: <cover.1395894625.git.tom.zanussi@linux.intel.com>
+	 <b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>
+	 <533D22E6.4000607@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 03:07:20PM -0600, Shuah Khan wrote:
-> On 03/31/2014 10:08 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.10.36 release.
-> >There are 9 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Thu Apr  3 04:07:29 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> >The whole patch series can be found in one patch at:
-> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.36-rc1.gz
-> >and the diffstat can be found below.
-> >
-> >thanks,
-> >
-> >greg k-h
-> >
+Hi Masami,
+
+On Thu, 2014-04-03 at 17:59 +0900, Masami Hiramatsu wrote:
+> Hi Tom,
 > 
-> Compiled, booted on all my test systems. No regressions in dmesg.
+> (2014/03/27 13:54), Tom Zanussi wrote:
+> > Hash triggers allow users to continually hash events which can then be
+> > dumped later by simply reading the trigger file.  This is done
+> > strictly via one-liners and without any kind of programming language.
+> > 
+> > The syntax follows the existing trigger syntax:
+> > 
+> >   # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
+> > 
+> > The values used as keys and values are just the fields that define the
+> > trace event and available in the event's 'format' file.  For example,
+> > the kmalloc event:
+> > 
+> > root@ie:/sys/kernel/debug/tracing/events/kmem/kmalloc# cat format
+> > name: kmalloc
+> > ID: 370
+> > format:
+> >         field:unsigned short common_type;       offset:0;       size:2; signed:0;
+> >         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+> >         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
+> >         field:int common_pid;   offset:4;       size:4; signed:1;
+> > 
+> >         field:unsigned long call_site;  offset:8;       size:4; signed:0;
+> >         field:const void * ptr; offset:12;      size:4; signed:0;
+> >         field:size_t bytes_req; offset:16;      size:4; signed:0;
+> >         field:size_t bytes_alloc;       offset:20;      size:4; signed:0;
+> >         field:gfp_t gfp_flags;  offset:24;      size:4; signed:0;
+> > 
+> > The key can be made up of one or more of these fields and any number of
+> > values can specified - these are automatically tallied in the hash entry
+> > any time the event is hit.  Stacktraces can also be used as keys.
+> > 
+> > For example, the following uses the stacktrace leading up to a kmalloc
+> > as the key for hashing kmalloc events.  For each hash entry a tally of
+> > the bytes_alloc field is kept.  Dumping out the trigger shows the sum
+> > of bytes allocated for each execution path that led to a kmalloc:
+> > 
+> >   # echo 'hash:call_site:bytes_alloc' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+> >   # cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+> 
+> I like the basic idea :) but I'm confused the interface what you're introduced.
+> I suppose that the "trigger" file is for control triggers on the event, so that
+> user can check what trigger rules are set on the event and remove it.
+> But in this patch, that is also used for a data path.
+> 
+> I'd like to suggest adding new "hash" file under events/GROUP/EVENT/, which is
+> only for dumping the hash data, and keep the "trigger" as a control path.
+> This makes users easier to build their own tools on the ftrace facility.
+> 
 
-Thanks for testing all of these.
+I was really trying to avoid adding a new file - my thinking was that
+the trigger file is just sitting there doing nothing besides either
+listing available triggers when inactive or listing active triggers when
+active, which it would still do even if also providing a conduit for the
+output.
 
-greg k-h
+I agree that it would be cleaner to have a separate file, but I don't
+know if it's worth a dedicated file.  Another possibility would be to
+have it exist only when a hash trigger is active..
+
+Tom
+
+
+> Thank you,
+> 
+> 
+
+
