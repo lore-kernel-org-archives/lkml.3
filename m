@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaDCL7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 07:59:07 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:41927 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaDCL7D (ORCPT
+	id S1751995AbaDCMJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 08:09:32 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:62955 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751929AbaDCMJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 07:59:03 -0400
-X-IronPort-AV: E=Sophos;i="4.97,786,1389744000"; 
-   d="scan'208";a="116407428"
-Message-ID: <533D4D04.2010101@citrix.com>
-Date: Thu, 3 Apr 2014 12:59:00 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Thu, 3 Apr 2014 08:09:29 -0400
+Date: Thu, 3 Apr 2014 08:09:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [BUG] x86: reboot doesn't reboot
+Message-ID: <20140403080926.0fe0c404@gandalf.local.home>
+In-Reply-To: <533D001A.5030802@linux.intel.com>
+References: <20140403021411.6236996f@gandalf.local.home>
+	<070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>
+	<533D001A.5030802@linux.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <Ian.Campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <JBeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH] Fixes to Linux v3.13 - bugs.xenproject.org ones. (v1).
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> Hey,
-> 
-> Two of these:
->  [PATCH 2/4] xen/manage: Poweroff forcefully if user-space is not yet
->  [PATCH 4/4] xen/xenbus: Avoid synchronous wait on XenBus stalling
-> 
-> fix the bugs.xenproject.org outstanding bugs.
-> 
-> The other ones are that were discovered on xen-devel and discussed.
-> They should go in v3.13 and as the merge window is next week I am
-> hoping they can be squeezed in then.
-> 
-> 
->  drivers/xen/manage.c            | 64 ++++++++++++++++++++++++++++++++++-------
->  drivers/xen/pci.c               | 47 ++++++++++++++++++++++++++++++
->  drivers/xen/xenbus/xenbus_xs.c  | 24 ++++++++++++++--
->  include/xen/interface/physdev.h | 11 +++++++
->  
-> Konrad Rzeszutek Wilk (4):
->       xen/mcfg: Call PHYSDEVOP_pci_mmcfg_reserved for MCFG areas.
->       xen/manage: Poweroff forcefully if user-space is not yet up.
->       xen/manage: Guard against user-space initiated poweroff and XenBus.
->       xen/xenbus: Avoid synchronous wait on XenBus stalling shutdown/restart.
+On Thu, 03 Apr 2014 14:30:50 +0800
+"Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
 
-Konrad, can you repost a final series please?  I'm not 100% which
-patches should be applied.
 
-David
+> May I know if "reboot=t" make any difference on your system with the change?
+
+It appears it does. Yes, it boots with "reboot=t" with the patches
+applied, and does not reboot without it.
+
+-- Steve
