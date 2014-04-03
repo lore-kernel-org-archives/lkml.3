@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162492AbaDCJHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 05:07:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50582 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162430AbaDCJHZ (ORCPT
+	id S1162550AbaDCJHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 05:07:50 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:24431 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162296AbaDCJHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 05:07:25 -0400
-Date: Thu, 3 Apr 2014 10:07:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140403090712.GP14763@sirena.org.uk>
-References: <1393398414-10822-1-git-send-email-peter.ujfalusi@ti.com>
- <20140301003320.GA31852@kroah.com>
- <53143CD3.30209@ti.com>
- <20140304045626.GK2411@sirena.org.uk>
- <533BB04E.9000206@ti.com>
- <20140402231857.GB26696@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qcTtWMBd/uZDG7+Y"
-Content-Disposition: inline
-In-Reply-To: <20140402231857.GB26696@kroah.com>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] drivercore: deferral race condition fix
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 3 Apr 2014 05:07:44 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-b8-533d24de5751
+Message-id: <533D24D6.2030103@samsung.com>
+Date: Thu, 03 Apr 2014 11:07:34 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: monstr@monstr.eu
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, chow.kim@samsung.com,
+        Young-Gun Jang <yg1004.jang@samsung.com>
+Subject: Re: [PATCH 06/10] ARM: EXYNOS: Add support for mapping PMU base
+ address via DT
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
+ <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com>
+ <533BF905.6070701@samsung.com> <533BFF69.1060701@monstr.eu>
+In-reply-to: <533BFF69.1060701@monstr.eu>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/xK7r3VGyDDbq+81ksm3SXzaJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NaPPl4msVi0dYv7BY7WlazOHB6tDT3sHlsXlLv8bdrCrNH
+	35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZUx70cZWsIy5oqFpL2sD42WmLkZODgkBE4ndKx8y
+	QthiEhfurWfrYuTiEBJYyigxp/cVI4TziVGie+9GsCpeAS2Jcx/b2LsYOThYBFQlbvaEg4TZ
+	BAwleo/2gZWICkRI3Gs8zApRLijxY/I9FhBbREBEYsa9LcwgM5kF2pkk7v8+xQaSEBaIlJh9
+	+gU7xLLDjBK/Lu0GS3AKaEocXN7NDmIzC+hI7G+dxgZhy0tsXvOWeQKjwCwkS2YhKZuFpGwB
+	I/MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJDA/7KDcfExq0OMAhyMSjy8FlI2wUKsiWXF
+	lbmHGCU4mJVEeC9+AQrxpiRWVqUW5ccXleakFh9iZOLglGpgZDk5gW/SxUmhFp7MnQcXO56c
+	6WIvIafRUnEuNqM8Si9mbsojP3nW1mmR8u2GL7Vaoj5OfHxZSE/NvDL5hOI9vfp7bukfve/I
+	POW8IxtyrX2muttJnavPxKyNbQvqWM7aWP6Z+65zTWbG2pVXHYuuFKb61srMZVD9otP2UPq0
+	9nf5f+kiK94osRRnJBpqMRcVJwIAz8yR/FoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/04/14 14:15, Michal Simek wrote:
+>> There were some patches posted for syscon to make it available in earlier
+>> system initialization stage: https://lkml.org/lkml/2014/2/19/218
+>
+> I haven't finished this yet. I have to look at it again.
 
---qcTtWMBd/uZDG7+Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for the information, I assume this would be also useful
+on the Exynos SoC series, so I'd be happy to see continuation
+of those works.
 
-On Wed, Apr 02, 2014 at 04:18:57PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Apr 02, 2014 at 09:38:06AM +0300, Peter Ujfalusi wrote:
-
-> > Do you want me to resend this patch in hope that it is going to be taken or do
-> > you have other method in mind to deal with the situation I have described and
-> > fixed with this patch?
-
-> Can you resend, I've totally lost the idea of the original patch.  And
-> if others agree with it, getting acks from them (like Grant) would be
-> great.
-
-Acked-by: Mark Brown <broonie@linaro.org>
-
-FWIW.  It's not the most elegant thing ever but then nor is deferred
-probing.
-
---qcTtWMBd/uZDG7+Y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPSS9AAoJELSic+t+oim9IDoQAInTj3IUEqUctvlzVSzjKQ9/
-wIpN+DAkHcnvzd0HJ8nm3aLUV7GCWhYanT5zsKKCEcFnHOz0vARlzGLeEasIEqph
-tixHllf4y+L3XSNYR0MshuU8qvcs7NjohmcquhKj4Adw1LP57FrhZ9dDaKbzndiq
-TWqEi48tCk0O0AEhFMjqd9ha5a1AWij69ADbTwmLwhYS8ar++abpF20Zp7icXOxn
-Z2JfixM3aCVv4Hnto8AbDORH3V1KcEjxd4SVqAEG2KsJJ5/aIHAbWANelSpcuOD1
-3o+42Tqs03Lr7R0MKRdK3EzWe3Lesg7oxQ4ZEnmbV4t8w1JaEfNdqXhfVNb1NtAn
-V4WAu2FxZw59VAzGIhV/blWhrI0m7F+OFz5u2k2SsU+VNowKAdxrdhijB8sMNQZo
-XG6jux/7Wlu94Gz5/YeNGOJlJDQ+aGTxt87t9irV5YIrC5aSj6ZSprysw7UJOVRv
-xgigJXLYsDejAvndIfU4PJkSMxLCAYG+7jO1zT4Cva2Gjbl0zUtDlz0IB3t+hUdF
-8dig/7/5gxK6olMEaciH6tog0uVuyH+ehvYFQOnEIeSDqX9GRd8SlxZQ0YJeX+NC
-9iZoKww56k5nD84NtgzqL0ypm90KYcGDT4pzcfOw70RGRPWrurW3rMdmsWS+N0dN
-8dgRJ6Qjy4nu/rGcXmQo
-=kNl0
------END PGP SIGNATURE-----
-
---qcTtWMBd/uZDG7+Y--
+--
+Thanks,
+Sylwester
