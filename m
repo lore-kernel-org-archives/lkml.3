@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaDDH17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:27:59 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:52311 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaDDH15 (ORCPT
+	id S1752058AbaDDHam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:30:42 -0400
+Received: from smtp-out-118.synserver.de ([212.40.185.118]:1033 "EHLO
+	smtp-out-115.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750811AbaDDHal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:27:57 -0400
-Date: Fri, 4 Apr 2014 09:27:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Jovi Zhangwei <jovi.zhangwei@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ktap and ebpf integration
-Message-ID: <20140404072753.GB1637@gmail.com>
-References: <CAGdX0WEeZJ9hxq1y-gmGC=kdtU0ecLbs5gVYb_8ZE6sOW_PPvg@mail.gmail.com>
- <CAMEtUuyQZo6fSMTZ5XKPfPBdjR13916Rd3=z5dip3N_WOzvr6Q@mail.gmail.com>
+	Fri, 4 Apr 2014 03:30:41 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 31573
+Message-ID: <533E5FD4.8040403@metafoo.de>
+Date: Fri, 04 Apr 2014 09:31:32 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUuyQZo6fSMTZ5XKPfPBdjR13916Rd3=z5dip3N_WOzvr6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arun Shamanna Lakshmi <aruns@nvidia.com>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Songhee Baek <sbaek@nvidia.com>
+Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
+References: <1396494710-20944-1-git-send-email-aruns@nvidia.com> <533D1B65.3030405@metafoo.de> <781A12BB53C15A4BB37291FDE08C03F3A05CDCDF9F@HQMAIL02.nvidia.com>
+In-Reply-To: <781A12BB53C15A4BB37291FDE08C03F3A05CDCDF9F@HQMAIL02.nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/03/2014 10:11 PM, Arun Shamanna Lakshmi wrote:
+[...]
+>> Here as well, default for bit_pos should be 0.
+>
+> This means when 'None' of the options are selected, by default, it
+> enumerates to 0. Since we are using __ffs, BIT(0) of Register-0 also
+> enumerates to 0. That's the reason why I used just ffs in the first place.
+> Let me know your opinion. My value table looks like below.
+>
+> #define MUX_VALUE(npart, nbit)	(nbit + 32 * npart)
+> static const int mux_values[] = {
+> 	0,
+> 	MUX_VALUE(0, 0),
+> 	.
+> 	.
+> 	.
+> 	MUX_VALUE(0, 31),
+> 	/* above inputs are for part0 mux */
+> 	MUX_VALUE(1, 0),
+> 	.
+> 	.
+> 	.
+> 	MUX_VALUE(1, 31),
+> 	/* above inputs are for part1 mux */
+> 	MUX_VALUE(2, 0),
+> 	.
+> 	.
+> 	.
+> 	MUX_VALUE(2, 31),
+> 	/* above inputs are for part2 mux */
+> };
 
-* Alexei Starovoitov <ast@plumgrid.com> wrote:
-
-> On Thu, Apr 3, 2014 at 6:21 PM, Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
-> > Hi Alexei,
-> >
-> > We talked a lot on ktap and ebpf integration in these days,
-> > Now I think we can put into deeply to thinking out some
-> > technical issues in there.
-> >
-> > Firstly, I want to make sure you are support this ktap and
-> > ebpf integration direction, I aware you have ongoing 'bpf filter'
-> > patch set work, which actually overlapping with ktap integration
-> > efforts (IMO the interface should be unified and simple for user,
-> >  so I think filter debugfs file is not a good interface), so please let
-> > me know your answer about this.
-> 
-> I think the more choices users have the better.
-> I'll continue with C based filters and you can continue with ktap
-> syntax. That's ok. We can share all kernel pieces.
-
-I'd somewhat agree with that if this wasn't about the kernel, but I 
-think that it's evidently useful to have one syntax for the kernel 
-(both the scheduler and drivers are written in C) - and probing the 
-kernel is really very close to the kernel source itself so it's just 
-an extension of that same principle.
-
-Look at the advantages: people who learn how to write C syntax ktaps 
-would only be a very small step away from writing actual kernel 
-patches and becoming contributors.
-
-With some random weird new syntax (be it Lua, C# or Java or any other 
-simplified syntax) that has no relation to kernel source syntax, 
-there's no such synergy!
-
-If the 'ktap syntax' lives purely in user space, and the kernel bits 
-are largely be shared and reused, which your suggested design is, then 
-I have no fundamental objections to that: other than I think it's a 
-mistake to not harmonize with the syntax of the probed project! But as 
-long as the other desing aspects are fixed it's not a big showstopper 
-as the mistake is not propagated to the kernel.
-
-> [ design suggestions ]
-
-I fully agree with your suggestions so far, that looks like a workable 
-way to address my concerns.
-
-Thanks,
-
-	Ingo
+Ok, so having none of the input selected should be a valid user selectable 
+option?
