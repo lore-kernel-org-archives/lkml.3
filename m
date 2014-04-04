@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaDDHIk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:08:40 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:56364 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752003AbaDDHIg (ORCPT
+	id S1752261AbaDDHLJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:11:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41086 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061AbaDDHLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:08:36 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: <broonie@kernel.org>, <Li.Xiubo@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <timur@tabi.org>
-Subject: [PATCH] ASoC: fsl_sai: Fix Bit Clock Polarity configurations
-Date: Fri, 4 Apr 2014 15:09:47 +0800
-Message-ID: <1396595387-4371-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Mailer: git-send-email 1.8.4
+	Fri, 4 Apr 2014 03:11:04 -0400
+Date: Fri, 4 Apr 2014 09:10:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        ak@linux.intel.com, peterz@infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH V2 2/2] mm: add FAULT_AROUND_ORDER Kconfig paramater for
+ powerpc
+Message-ID: <20140404071059.GA1397@gmail.com>
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com>
+ <1396592835-24767-3-git-send-email-maddy@linux.vnet.ibm.com>
+ <20140404070241.GA984@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140404070241.GA984@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BCP bit in TCR4/RCR4 register rules as followings:
-  0 Bit clock is active high with drive outputs on rising edge
-    and sample inputs on falling edge.
-  1 Bit clock is active low with drive outputs on falling edge
-    and sample inputs on rising edge.
 
-For all formats currently supported in the fsl_sai driver, they're exactly
-sending data on the falling edge and sampling on the rising edge.
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-However, the driver clears this BCP bit for all of them which results click
-noise when working with SGTL5000 and big noise with WM8962.
+> * Madhavan Srinivasan <maddy@linux.vnet.ibm.com> wrote:
+> 
+> > Performance data for different FAULT_AROUND_ORDER values from 4 
+> > socket Power7 system (128 Threads and 128GB memory) is below. perf 
+> > stat with repeat of 5 is used to get the stddev values. This patch 
+> > create FAULT_AROUND_ORDER Kconfig parameter and defaults it to 3 
+> > based on the performance data.
+> > 
+> > FAULT_AROUND_ORDER      Baseline        1               3               4               5               7
+> > 
+> > Linux build (make -j64)
+> > minor-faults            7184385         5874015         4567289         4318518         4193815         4159193
+> > times in seconds        61.433776136    60.865935292    59.245368038    60.630675011    60.56587624     59.828271924
+> >  stddev for time	( +-  1.18% )	( +-  1.78% )	( +-  0.44% )	( +-  2.03% )	( +-  1.66% )	( +-  1.45% )
+> 
+> Ok, this is better, but it is still rather incomplete statistically, 
+> please also calculate the percentage difference to baseline, so that 
+> the stddev becomes meaningful and can be compared to something!
+> 
+> As an example I did this for the first line of measurements (all 
+> errors in the numbers are mine, this was done manually), and it 
+> gives:
+> 
+> >  stddev for time   ( +-  1.18% ) ( +-  1.78% ) ( +-  0.44% ) ( +-  2.03% ) ( +-  1.66% ) ( +-  1.45% )
+>                                         +0.9%         +3.5%         +1.3%         +1.4%         +2.6%
+> 
+> This shows that there is probably a statistically significant 
+> (positiv) effect from the change, but from these numbers alone I 
+> would not draw any quantitative (sizing, tuning) conclusions, 
+> because in 3 out of 5 cases the stddev was larger than the effect, 
+> so the resulting percentages are not comparable.
 
-Thus this patch corrects the BCP settings for all the formats here to fix
-the nosie issue.
+Also note that because we calculate the percentage by dividing result 
+with baseline, the stddev of the two values roughly adds up. So for 
+example the second column the true noise is around 1.5%, not 0.4%
 
-Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
----
- sound/soc/fsl/fsl_sai.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+So for good sizing decisions the stddev must be 'comfortably' below 
+the effect. (or sizing should be done based on the other workloads yu 
+tested, I have not checked them.)
 
-diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-index 99051c7..9bbebea 100644
---- a/sound/soc/fsl/fsl_sai.c
-+++ b/sound/soc/fsl/fsl_sai.c
-@@ -180,7 +180,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 		 * that is, together with the last bit of the previous
- 		 * data word.
- 		 */
--		val_cr2 &= ~FSL_SAI_CR2_BCP;
-+		val_cr2 |= FSL_SAI_CR2_BCP;
- 		val_cr4 |= FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP;
- 		break;
- 	case SND_SOC_DAIFMT_LEFT_J:
-@@ -188,7 +188,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 		 * Frame high, one word length for frame sync,
- 		 * frame sync asserts with the first bit of the frame.
- 		 */
--		val_cr2 &= ~FSL_SAI_CR2_BCP;
-+		val_cr2 |= FSL_SAI_CR2_BCP;
- 		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
- 		break;
- 	case SND_SOC_DAIFMT_DSP_A:
-@@ -198,7 +198,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 		 * that is, together with the last bit of the previous
- 		 * data word.
- 		 */
--		val_cr2 &= ~FSL_SAI_CR2_BCP;
-+		val_cr2 |= FSL_SAI_CR2_BCP;
- 		val_cr4 &= ~FSL_SAI_CR4_FSP;
- 		val_cr4 |= FSL_SAI_CR4_FSE;
- 		sai->is_dsp_mode = true;
-@@ -208,7 +208,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 		 * Frame high, one bit for frame sync,
- 		 * frame sync asserts with the first bit of the frame.
- 		 */
--		val_cr2 &= ~FSL_SAI_CR2_BCP;
-+		val_cr2 |= FSL_SAI_CR2_BCP;
- 		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
- 		sai->is_dsp_mode = true;
- 		break;
--- 
-1.8.4
+It also makes sense to run more measurements to reduce the stddev of 
+the baseline. So if each measurement is run 3 times then it makes 
+sense to run the baseline 6 times, this gives a ~30% improvement in 
+the confidence of our result, at just a small increase in test time.
 
+[ For such cases it might also make sense to script all of that, 
+  combined with a debug patch that puts the tuned fault-around value 
+  into a dynamic knob in /proc/sys/, so that you can run the full 
+  measurement in a single pass, with no reboot and with no human 
+  intervention. ]
 
+Thanks,
+
+	Ingo
