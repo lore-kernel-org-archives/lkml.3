@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaDDD17 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 23:27:59 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:13970 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751215AbaDDD15 (ORCPT
+	id S1752302AbaDDD2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 23:28:11 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:44360
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752159AbaDDD2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 23:27:57 -0400
+	Thu, 3 Apr 2014 23:28:03 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch21a7h1fc6h208chzdchz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
@@ -16,9 +16,9 @@ To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
 CC: <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>,
         Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v2 1/8] DMA: Freescale: remove the unnecessary FSL_DMA_LD_DEBUG
-Date: Fri, 4 Apr 2014 11:27:10 +0800
-Message-ID: <1396582037-23065-2-git-send-email-hongbo.zhang@freescale.com>
+Subject: [PATCH v2 3/8] DMA: Freescale: remove attribute DMA_INTERRUPT of dmaengine
+Date: Fri, 4 Apr 2014 11:27:12 +0800
+Message-ID: <1396582037-23065-4-git-send-email-hongbo.zhang@freescale.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1396582037-23065-1-git-send-email-hongbo.zhang@freescale.com>
 References: <1396582037-23065-1-git-send-email-hongbo.zhang@freescale.com>
@@ -33,70 +33,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-Some codes are calling chan_dbg with FSL_DMA_LD_DEBUG surrounded, it is really
-unnecessary to use such a macro because chan_dbg is a wrapper of dev_dbg, we do
-have corresponding DEBUG macro to switch on/off dev_dbg, and most of the other
-codes are also calling chan_dbg directly without using FSL_DMA_LD_DEBUG.
+Delete attribute DMA_INTERRUPT because fsldma doesn't support this function,
+exception will be thrown if talitos is used to offload xor at the same time.
 
 Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
 ---
- drivers/dma/fsldma.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/dma/fsldma.c |   31 -------------------------------
+ 1 file changed, 31 deletions(-)
 
 diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index f157c6f..ec50420 100644
+index 5f32cb8..b71cc04 100644
 --- a/drivers/dma/fsldma.c
 +++ b/drivers/dma/fsldma.c
-@@ -426,9 +426,7 @@ static struct fsl_desc_sw *fsl_dma_alloc_descriptor(struct fsldma_chan *chan)
- 	desc->async_tx.tx_submit = fsl_dma_tx_submit;
- 	desc->async_tx.phys = pdesc;
- 
--#ifdef FSL_DMA_LD_DEBUG
- 	chan_dbg(chan, "LD %p allocated\n", desc);
--#endif
- 
- 	return desc;
- }
-@@ -479,9 +477,7 @@ static void fsldma_free_desc_list(struct fsldma_chan *chan,
- 
- 	list_for_each_entry_safe(desc, _desc, list, node) {
- 		list_del(&desc->node);
--#ifdef FSL_DMA_LD_DEBUG
- 		chan_dbg(chan, "LD %p free\n", desc);
--#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
- 	}
- }
-@@ -493,9 +489,7 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
- 
- 	list_for_each_entry_safe_reverse(desc, _desc, list, node) {
- 		list_del(&desc->node);
--#ifdef FSL_DMA_LD_DEBUG
- 		chan_dbg(chan, "LD %p free\n", desc);
--#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
- 	}
- }
-@@ -832,9 +826,7 @@ static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
- 
- 	/* Run the link descriptor callback function */
- 	if (txd->callback) {
--#ifdef FSL_DMA_LD_DEBUG
- 		chan_dbg(chan, "LD %p callback\n", desc);
--#endif
- 		txd->callback(txd->callback_param);
- 	}
- 
-@@ -842,9 +834,7 @@ static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
- 	dma_run_dependencies(txd);
- 
- 	dma_descriptor_unmap(txd);
--#ifdef FSL_DMA_LD_DEBUG
- 	chan_dbg(chan, "LD %p free\n", desc);
--#endif
- 	dma_pool_free(chan->desc_pool, desc, txd->phys);
+@@ -528,35 +528,6 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
  }
  
+ static struct dma_async_tx_descriptor *
+-fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
+-{
+-	struct fsldma_chan *chan;
+-	struct fsl_desc_sw *new;
+-
+-	if (!dchan)
+-		return NULL;
+-
+-	chan = to_fsl_chan(dchan);
+-
+-	new = fsl_dma_alloc_descriptor(chan);
+-	if (!new) {
+-		chan_err(chan, "%s\n", msg_ld_oom);
+-		return NULL;
+-	}
+-
+-	new->async_tx.cookie = -EBUSY;
+-	new->async_tx.flags = flags;
+-
+-	/* Insert the link descriptor to the LD ring */
+-	list_add_tail(&new->node, &new->tx_list);
+-
+-	/* Set End-of-link to the last link descriptor of new list */
+-	set_ld_eol(chan, new);
+-
+-	return &new->async_tx;
+-}
+-
+-static struct dma_async_tx_descriptor *
+ fsl_dma_prep_memcpy(struct dma_chan *dchan,
+ 	dma_addr_t dma_dst, dma_addr_t dma_src,
+ 	size_t len, unsigned long flags)
+@@ -1308,12 +1279,10 @@ static int fsldma_of_probe(struct platform_device *op)
+ 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 
+ 	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
+-	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
+ 	dma_cap_set(DMA_SG, fdev->common.cap_mask);
+ 	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
+ 	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
+ 	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
+-	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
+ 	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
+ 	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
+ 	fdev->common.device_tx_status = fsl_tx_status;
 -- 
 1.7.9.5
 
