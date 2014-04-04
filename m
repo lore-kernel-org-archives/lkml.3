@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaDDS7x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:59:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59318 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005AbaDDSpl (ORCPT
+	id S1754293AbaDDTBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 15:01:07 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:59094 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140AbaDDTBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:45:41 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3/4] ARM: dts: qcom: Add GDSC nodes underneath clock controller
-Date: Fri,  4 Apr 2014 11:45:35 -0700
-Message-Id: <1396637136-29974-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1396637136-29974-1-git-send-email-sboyd@codeaurora.org>
-References: <1396637136-29974-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 4 Apr 2014 15:01:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFz=rnGo_DvtYa4aonm_JUyWe5cynLcsCYDfr+jMZ91+Sg@mail.gmail.com>
+References: <20140402144219.4cafbe37@gandalf.local.home> <20140402221212.GD16570@mguzik.redhat.com>
+ <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+ <alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz> <20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
+ <CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
+ <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz> <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
+ <CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
+ <20140403104308.GP13491@8bytes.org> <20140403170541.GA19010@thunk.org>
+ <533EF832.1030902@mit.edu> <CA+55aFz=rnGo_DvtYa4aonm_JUyWe5cynLcsCYDfr+jMZ91+Sg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 4 Apr 2014 12:00:44 -0700
+Message-ID: <CALCETrWsdaoATWPCZUXiuPqzKSCb7oE16mQ0Nn4+8HtZVhfffg@mail.gmail.com>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Joerg Roedel <joro@8bytes.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add nodes for the GDSCs present on the multimedia clock
-controller in 8974.
+On Fri, Apr 4, 2014 at 11:42 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Apr 4, 2014 at 11:21 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> I'm using /dev/kmsg in virtme so that I can easily capture, with
+>> timestamps, the ten or so log lines that it produces.  It would be sad
+>> if I had to worry about small ratelimits here.
+>
+> So the _default_ rate limits (which is what my example patch used) are
+> almost certainly not appropriate for /dev/kmsg.
+>
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/boot/dts/qcom-apq8074-dragonboard.dts | 18 ++++++++++++++++++
- arch/arm/boot/dts/qcom-msm8974.dtsi            | 26 ++++++++++++++++++++++++++
- 2 files changed, 44 insertions(+)
+If this kind of patch goes in, I'd like to see a burst of 50 or 100
+lines allowed, at least early on.  If virtme's init stuff runs for
+more than five seconds, something's wrong anyway.
 
-diff --git a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-index 13ac3e222495..478e89de0f38 100644
---- a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-+++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-@@ -3,4 +3,22 @@
- / {
- 	model = "Qualcomm APQ8074 Dragonboard";
- 	compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
-+
-+};
-+
-+&gdsc_venus {
-+	qcom,skip-logic-collapse;
-+	qcom,retain-periph;
-+	qcom,retain-mem;
-+};
-+
-+&gdsc_mdss {
-+	qcom,skip-logic-collapse;
-+	qcom,retain-periph;
-+	qcom,retain-mem;
-+};
-+
-+&gdsc_oxili_gx {
-+	qcom,retain-mem;
-+	qcom,retain-periph;
- };
-diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-index 9e5dadb101eb..e38ae30930b2 100644
---- a/arch/arm/boot/dts/qcom-msm8974.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-@@ -108,6 +108,32 @@
- 			#clock-cells = <1>;
- 			#reset-cells = <1>;
- 			reg = <0xfd8c0000 0x6000>;
-+
-+			regulators {
-+				gdsc_venus: gdsc_venus {
-+					regulator-name = "gdsc_venus";
-+				};
-+
-+				gdsc_mdss: gdsc_mdss {
-+					regulator-name = "gdsc_mdss";
-+				};
-+
-+				gdsc_jpeg: gdsc_jpeg {
-+					regulator-name = "gdsc_jpeg";
-+				};
-+
-+				gdsc_vfe: gdsc_vfe {
-+					regulator-name = "gdsc_vfe";
-+				};
-+
-+				gdsc_oxili_gx: gdsc_oxili_gx {
-+					regulator-name = "gdsc_oxili_gx";
-+				};
-+
-+				gdsc_oxili_cx: gdsc_oxili_cx {
-+					regulator-name = "gdsc_oxili_cx";
-+				};
-+			};
- 		};
- 
- 		serial@f991e000 {
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+That being said, virtme will be happily immune to a per-struct file
+approach, since it's mostly written in sh and it does things like
+"echo virtme-initramfs: in ur box eating ur cycles" >/dev/kmsg.
 
+--Andy
