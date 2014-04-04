@@ -1,126 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaDDNTQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:19:16 -0400
-Received: from mail.efficios.com ([78.47.125.74]:33790 "EHLO mail.efficios.com"
+	id S1753111AbaDDNUz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 09:20:55 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:60522 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752658AbaDDNTO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:19:14 -0400
-Date: Fri, 4 Apr 2014 13:19:10 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Message-ID: <20367690.6153.1396617550266.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1275825820.6059.1396582817493.JavaMail.zimbra@efficios.com>
-References: <1396391508-17294-1-git-send-email-mathieu.desnoyers@efficios.com> <1396391508-17294-2-git-send-email-mathieu.desnoyers@efficios.com> <20140403131559.4ed4cf5e@gandalf.local.home> <693620685.5916.1396547394009.JavaMail.zimbra@efficios.com> <20140403145441.2ca44063@gandalf.local.home> <1275825820.6059.1396582817493.JavaMail.zimbra@efficios.com>
-Subject: Re: [PATCH v9 1/1] Tracepoint: register/unregister struct
- tracepoint
+	id S1752700AbaDDNUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 09:20:52 -0400
+Date: Fri, 4 Apr 2014 16:17:47 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
+Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
+Message-ID: <20140404131747.GA23076@node.dhcp.inet.fi>
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com>
+ <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Tracepoint: register/unregister struct tracepoint
-Thread-Index: lDWcRFrlJOXKJY02xngFA1W8YXr6csnLYkxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> To: "Steven Rostedt" <rostedt@goodmis.org>
-> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
-> "Andrew Morton" <akpm@linux-foundation.org>, "Frank Ch. Eigler" <fche@redhat.com>, "Johannes Berg"
-> <johannes.berg@intel.com>
-> Sent: Thursday, April 3, 2014 11:40:17 PM
-> Subject: Re: [PATCH v9 1/1] Tracepoint: register/unregister struct tracepoint
+On Fri, Apr 04, 2014 at 11:57:14AM +0530, Madhavan Srinivasan wrote:
+> Kirill A. Shutemov with faultaround patchset introduced
+> vm_ops->map_pages() for mapping easy accessible pages around
+> fault address in hope to reduce number of minor page faults.
 > 
-> ----- Original Message -----
-> > From: "Steven Rostedt" <rostedt@goodmis.org>
-> > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>,
-> > "Frederic Weisbecker" <fweisbec@gmail.com>,
-> > "Andrew Morton" <akpm@linux-foundation.org>, "Frank Ch. Eigler"
-> > <fche@redhat.com>, "Johannes Berg"
-> > <johannes.berg@intel.com>
-> > Sent: Thursday, April 3, 2014 2:54:41 PM
-> > Subject: Re: [PATCH v9 1/1] Tracepoint: register/unregister struct
-> > tracepoint
-> > 
-> > On Thu, 3 Apr 2014 17:49:54 +0000 (UTC)
-> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > 
-> > 
-> > > So my current thinking is that the pre-existing code was erroneously
-> > > enabling tracepoints with the name of every event enabled (including
-> > > e.g. function tracer, kprobes, etc). It was not failing because
-> > > tracepoint.c silently accepted to enable tracepoints were not loaded
-> > > yet.
-> > > 
-> > 
-> > If that was true, than wouldn't the error code I added have returned an
-> > error?
+> This patch creates infrastructure to move the FAULT_AROUND_ORDER
+> to arch/ using Kconfig. This will enable architecture maintainers
+> to decide on suitable FAULT_AROUND_ORDER value based on
+> performance data for that architecture. Patch also adds
+> FAULT_AROUND_ORDER Kconfig element in arch/X86.
 > 
-> Good point.
+> Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+> ---
+>  arch/x86/Kconfig   |    4 ++++
+>  include/linux/mm.h |    9 +++++++++
+>  mm/memory.c        |   12 +++++-------
+>  3 files changed, 18 insertions(+), 7 deletions(-)
 > 
-> I found the culprit:
-> 
-> [    0.560002] event_trace_enable: �GT����� call ffffffff81613930 (core)
-> [    0.564001] event_trace_enable: �GTȁ���� call ffffffff816139c0 (core)
-> 
-> compudj@ok:~/git/rostedt/linux-trace$ objdump -t vmlinux |grep
-> ffffffff81613930
-> ffffffff81613930 l     O .data	0000000000000090 event_sys_exit
-> compudj@ok:~/git/rostedt/linux-trace$ objdump -t vmlinux |grep
-> ffffffff816139c0
-> ffffffff816139c0 l     O .data	0000000000000090 event_sys_enter
-> 
-> I'll look into those two sites tomorrow morning.
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 9c0a657..5833f22 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1177,6 +1177,10 @@ config DIRECT_GBPAGES
+>  	  support it. This can improve the kernel's performance a tiny bit by
+>  	  reducing TLB pressure. If in doubt, say "Y".
+>  
+> +config FAULT_AROUND_ORDER
+> +	int
+> +	default "4"
+> +
+>  # Common NUMA Features
+>  config NUMA
+>  	bool "Numa Memory Allocation and Scheduler Support"
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 0bd4359..b93c1c3 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -26,6 +26,15 @@ struct file_ra_state;
+>  struct user_struct;
+>  struct writeback_control;
+>  
+> +/*
+> + * Fault around order is a control knob to decide the fault around pages.
+> + * Default value is set to 0UL (disabled), but the arch can override it as
+> + * desired.
+> + */
+> +#ifndef CONFIG_FAULT_AROUND_ORDER
+> +#define CONFIG_FAULT_AROUND_ORDER 0
+> +#endif
+> +
 
-And here is the fix:
+I don't think it should be in header file: nobody except mm/memory.c cares.
+Just put it instead '#define FAULT_AROUND_ORDER'.
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 7538389..75e64e8 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -371,7 +371,7 @@ struct ftrace_event_file {
- #define __TRACE_EVENT_FLAGS(name, value)                               \
-        static int __init trace_init_flags_##name(void)                 \
-        {                                                               \
--               event_##name.flags = value;                             \
-+               event_##name.flags |= value;                            \
-                return 0;                                               \
-        }                                                               \
-        early_initcall(trace_init_flags_##name);
+>  #ifndef CONFIG_NEED_MULTIPLE_NODES	/* Don't use mapnrs, do it properly */
+>  extern unsigned long max_mapnr;
+>  
+> diff --git a/mm/memory.c b/mm/memory.c
+> index b02c584..22a4a89 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3358,10 +3358,8 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+>  	update_mmu_cache(vma, address, pte);
+>  }
+>  
+> -#define FAULT_AROUND_ORDER 4
+> -
+>  #ifdef CONFIG_DEBUG_FS
+> -static unsigned int fault_around_order = FAULT_AROUND_ORDER;
+> +static unsigned int fault_around_order = CONFIG_FAULT_AROUND_ORDER;
+>  
+>  static int fault_around_order_get(void *data, u64 *val)
+>  {
+> @@ -3371,7 +3369,7 @@ static int fault_around_order_get(void *data, u64 *val)
+>  
+>  static int fault_around_order_set(void *data, u64 val)
+>  {
+> -	BUILD_BUG_ON((1UL << FAULT_AROUND_ORDER) > PTRS_PER_PTE);
+> +	BUILD_BUG_ON((1UL << CONFIG_FAULT_AROUND_ORDER) > PTRS_PER_PTE);
+>  	if (1UL << val > PTRS_PER_PTE)
+>  		return -EINVAL;
+>  	fault_around_order = val;
+> @@ -3406,14 +3404,14 @@ static inline unsigned long fault_around_pages(void)
+>  {
+>  	unsigned long nr_pages;
+>  
+> -	nr_pages = 1UL << FAULT_AROUND_ORDER;
+> +	nr_pages = 1UL << CONFIG_FAULT_AROUND_ORDER;
+>  	BUILD_BUG_ON(nr_pages > PTRS_PER_PTE);
+>  	return nr_pages;
+>  }
+>  
+>  static inline unsigned long fault_around_mask(void)
+>  {
+> -	return ~((1UL << (PAGE_SHIFT + FAULT_AROUND_ORDER)) - 1);
+> +	return ~((1UL << (PAGE_SHIFT + CONFIG_FAULT_AROUND_ORDER)) - 1);
+>  }
+>  #endif
+>  
+> @@ -3471,7 +3469,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	 * if page by the offset is not ready to be mapped (cold cache or
+>  	 * something).
+>  	 */
+> -	if (vma->vm_ops->map_pages) {
+> +	if ((vma->vm_ops->map_pages) && (fault_around_pages() > 1)) {
 
-I will respin a new version after some extra testing.
+	if (vma->vm_ops->map_pages && fault_around_pages()) {
 
-Thanks!
-
-Mathieu
-
-
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> > 
-> > -- Steve
-> > 
+>  		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+>  		do_fault_around(vma, address, pte, pgoff, flags);
+>  		if (!pte_same(*pte, orig_pte))
+> -- 
+> 1.7.10.4
 > 
 > --
-> Mathieu Desnoyers
-> EfficiOS Inc.
-> http://www.efficios.com
-> 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+ Kirill A. Shutemov
