@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794AbaDDRQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 13:16:28 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:42715 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461AbaDDRQ0 (ORCPT
+	id S1753844AbaDDRRl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 13:17:41 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:50974 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174AbaDDRRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 13:16:26 -0400
+	Fri, 4 Apr 2014 13:17:40 -0400
+Message-ID: <533EE932.5090100@tilera.com>
+Date: Fri, 4 Apr 2014 13:17:38 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140404134429.GB26806@quack.suse.cz>
-References: <20140403191558.GA8745@thunk.org>
-	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
-	<20140404035308.GC2525@thunk.org>
-	<20140404134429.GB26806@quack.suse.cz>
-Date: Fri, 4 Apr 2014 19:16:25 +0200
-Message-ID: <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Jan Kara <jack@suse.cz>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/tile changes for v3.15
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 3:44 PM, Jan Kara <jack@suse.cz> wrote:
-> On Thu 03-04-14 23:53:08, Ted Tso wrote:
->> On Thu, Apr 03, 2014 at 12:39:42PM -0700, Linus Torvalds wrote:
->> > Btw, since I'm planning on getting to the filesystem pulls later today
->> > (or perhaps tomorrow), I wanted to check: are you ok with the ext4
->> > parts of the cross-rename patches from Miklos?
->> >
->> > They are currently at
->> >
->> >   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
->> >
->> > in case you want to refresh your memory.
->>
->> I've pulled in the cross-rename branch to my test branch and run a set
->> of tests, and it passes.  Unfortunately I don't believe Miklos
->> contributed tests for renameat(2) to xfstests, so we don't have any
->> on-point testing of renameat() and cross-rename, but it's at least not
->> triggering any failures on the existing tests.
->   Actually Miklos has contributed xfstests tests. I'm not sure if they were
-> merged but I've seen them flying by.
+Linus,
 
-Yes:
+Please pull the following changes for 3.15 from:
 
-http://marc.info/?l=linux-kernel&m=139523745403081&w=2
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
 
-The following cases are tested:
+These fix a few stray build issues seen in linux-next, and also
+add the minimal required support for perf to tilegx.
 
-1) plain rename (flags = 0)
-2) cross rename
-3) noreplace rename
+Thanks!
 
-For each the following are tested:
+Chris Metcalf (2):
+      tile: don't use __get_cpu_var() with structure-typed arguments
+      arch/tile: remove unused variable 'devcap'
 
-a) same directory rename
-b) cross directory rename
+Henrik Austad (1):
+      tile: avoid overflow in ns2cycles
 
-And all combinations of source and dest being:
+Kerry Sheh (1):
+      tile: Fix vDSO compilation issue with allyesconfig
 
-- negative
-- regular file
-- symlink
-- empty dir
-- nonempty dir
+Zhigang Lu (4):
+      tile: Add support for handling PMC hardware
+      tile: Enable NMIs on return from handle_nmi() without errors
+      tile/perf: Support perf_events on tilegx and tilepro
+      perf tools: Allow building for tile
 
-After the operation the file type of both source and dest are checked
-(or the error value returned).
+ arch/tile/Kconfig                  |    6 +
+ arch/tile/include/asm/perf_event.h |   22 +
+ arch/tile/include/asm/pmc.h        |   64 +++
+ arch/tile/kernel/Makefile          |    2 +
+ arch/tile/kernel/intvec_32.S       |   24 +-
+ arch/tile/kernel/intvec_64.S       |   24 +-
+ arch/tile/kernel/irq.c             |   18 +
+ arch/tile/kernel/messaging.c       |    4 +-
+ arch/tile/kernel/pci.c             |    2 -
+ arch/tile/kernel/perf_event.c      | 1005 ++++++++++++++++++++++++++++++++++++
+ arch/tile/kernel/pmc.c             |  121 +++++
+ arch/tile/kernel/time.c            |   10 +-
+ arch/tile/kernel/vdso/Makefile     |    2 +-
+ tools/perf/config/Makefile.arch    |    3 +-
+ tools/perf/perf.h                  |    8 +
+ 15 files changed, 1295 insertions(+), 20 deletions(-)
+ create mode 100644 arch/tile/include/asm/perf_event.h
+ create mode 100644 arch/tile/include/asm/pmc.h
+ create mode 100644 arch/tile/kernel/perf_event.c
+ create mode 100644 arch/tile/kernel/pmc.c
 
-Thanks,
-Miklos
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
