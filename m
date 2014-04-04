@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaDDUZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 16:25:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:56306 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753472AbaDDUZ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 16:25:27 -0400
-Date: Fri, 4 Apr 2014 16:25:24 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: konrad@kernel.org
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH] xen/spinlock: Don't enable them unconditionally.
-Message-ID: <20140404162524.31c823a9@gandalf.local.home>
-In-Reply-To: <1396637284-6312-1-git-send-email-konrad@kernel.org>
-References: <1396637284-6312-1-git-send-email-konrad@kernel.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1751804AbaDDUca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 16:32:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64612 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632AbaDDUc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 16:32:28 -0400
+Date: Fri, 4 Apr 2014 16:32:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Dave Young <dyoung@redhat.com>
+Subject: Re: [PATCH 1/1] x86/platform/hyperv: When on Hyper-v use NULL legacy
+ PIC
+Message-ID: <20140404203218.GA26102@redhat.com>
+References: <1396574193-12043-1-git-send-email-kys@microsoft.com>
+ <20140404141218.GA2161@redhat.com>
+ <fb8d196a0c01479bae9c3669d8ea8be5@BY2PR03MB299.namprd03.prod.outlook.com>
+ <20140404151620.GB2161@redhat.com>
+ <9a22bbc2850941819cd2c71a26c584d5@BY2PR03MB299.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9a22bbc2850941819cd2c71a26c584d5@BY2PR03MB299.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  4 Apr 2014 14:48:04 -0400
-konrad@kernel.org wrote:
-
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Fri, Apr 04, 2014 at 08:09:47PM +0000, KY Srinivasan wrote:
 > 
-> The git commit a945928ea2709bc0e8e8165d33aed855a0110279
-> ('xen: Do not enable spinlocks before jump_label_init() has executed')
-> was added to deal with the jump machinery. Earlier the code
-> that turned on the jump label was only called by Xen specific
-> functions. But now that it had been moved to the initcall machinery
-> it gets called on Xen, KVM, and baremetal - ouch!. And the detection
-> machinery to only call it on Xen wasn't remembered in the heat
-> of merge window excitement.
 > 
-> This means that the slowpath is enabled on baremetal while it should
-> not be.
+> > -----Original Message-----
+> > From: Vivek Goyal [mailto:vgoyal@redhat.com]
+> > Sent: Friday, April 4, 2014 8:16 AM
+> > To: KY Srinivasan
+> > Cc: x86@kernel.org; linux-kernel@vger.kernel.org; olaf@aepfle.de;
+> > apw@canonical.com; jasowang@redhat.com; hpa@zytor.com;
+> > stable@vger.kernel.org; Dave Young
+> > Subject: Re: [PATCH 1/1] x86/platform/hyperv: When on Hyper-v use NULL
+> > legacy PIC
+> > 
+> > On Fri, Apr 04, 2014 at 03:01:51PM +0000, KY Srinivasan wrote:
+> > 
+> > [..]
+> > > The problem we were having is that the initial boot on the EFI
+> > > firmware would succeed as the legacy PIC would be NULL legacy PIC,
+> > > however in the kexeced kernel, the initial boot information is not
+> > > available and so we would not set the legacy PIC to NULL legacy PIC.
+> > 
+> > I am curious to know what "initial boot information" is not available in
+> > kexeced kernel and who is supposed to provide that.
+> > 
+> > Is it a bug or that's how it is supposed to work.
 > 
-> Reported-by: Waiman Long <waiman.long@hp.com>
+> As the name indicates, the dump kernel is not "booted" but it is kexeced.
+> In the address space of this second kernel, the initial boot state is not visible.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+What do you mean by "initial boot state"? Most of the state we pass to
+second kernel in bootparams and on command line and rest second kernel
+can query from firmware as needed.
 
--- Steve
-
-> CC: stable@vger.kernel.org
-> CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> CC: David Vrabel <david.vrabel@citrix.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/spinlock.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-> index 581521c..c570fea 100644
-> --- a/arch/x86/xen/spinlock.c
-> +++ b/arch/x86/xen/spinlock.c
-> @@ -274,7 +274,7 @@ void __init xen_init_spinlocks(void)
->  		printk(KERN_DEBUG "xen: PV spinlocks disabled\n");
->  		return;
->  	}
-> -
-> +	printk(KERN_DEBUG "xen: PV spinlocks enabled\n");
->  	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
->  	pv_lock_ops.unlock_kick = xen_unlock_kick;
->  }
-> @@ -290,6 +290,9 @@ static __init int xen_init_spinlocks_jump(void)
->  	if (!xen_pvspin)
->  		return 0;
->  
-> +	if (!xen_domain())
-> +		return 0;
-> +
->  	static_key_slow_inc(&paravirt_ticketlocks_enabled);
->  	return 0;
->  }
-
+Thanks
+Vivek
