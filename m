@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaDDRDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 13:03:06 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:52455 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbaDDRDE (ORCPT
+	id S1753705AbaDDRF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 13:05:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39797 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453AbaDDRFZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 13:03:04 -0400
+	Fri, 4 Apr 2014 13:05:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,796,1389772800"; 
+   d="scan'208";a="514974998"
+From: "Du, Wenkai" <wenkai.du@intel.com>
+To: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+CC: Wolfram Sang <wsa@the-dreams.de>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] i2c-designware: Mask interrupts during i2c controller enable
+Thread-Topic: [PATCH] i2c-designware: Mask interrupts during i2c controller
+ enable
+Thread-Index: Ac9QJwrpXJhe4Vv7Q76dkBKVgbE+4A==
+Date: Fri, 4 Apr 2014 17:05:23 +0000
+Message-ID: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70E1F@ORSMSX109.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140404160328.GA10042@localhost.localdomain>
-References: <5338CC86.9080602@jp.fujitsu.com> <5338CE0B.1050100@jp.fujitsu.com>
- <CAK1hOcMmmq=5EVLBrAd44HC+EHrnztABU48gd9BgK+LUNBJSOQ@mail.gmail.com> <20140404160328.GA10042@localhost.localdomain>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Fri, 4 Apr 2014 19:02:43 +0200
-Message-ID: <CAK1hOcMZPDhUzvJk0Q0rkkBh1tS=O+HU9ufEmX7VwnjhsSgQeA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] nohz: use seqlock to avoid race on idle time stats v2
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 6:03 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> However, if we would put ourselves into admin's seat, iowait
->> immediately starts to make sense: for admin, the system state
->> where a lot of CPU time is genuinely idle is qualitatively different
->> form the state where a lot of CPU time is "idle" because
->> we are I/O bound.
->>
->> Admins probably wouldn't insist that iowait accounting must be
->> very accurate. I would hazard to guess that admins would settle
->> for the following rules:
->
-> Iowait makes sense but not per cpu. Eventually it's a global
-> stat. Or per task.
+Hi all,
 
-There a lot of situations where admins want to know
-how much, on average, their CPUs are idle because
-they wait for IO.
+There were "i2c_designware 80860F41:00: controller timed out" errors
+on a number of Baytrail platforms. They typically occurred during suspend
+resume where some short i2c transfers were exchanged with devices. And they
+mostly occurred when using fast mode, not standard mode.
 
-If you are running, say, a Web cache,
-you need to know that stat in order to be able to
-conjecture "looks like I'm IO bound, perhaps caching
-some data in RAM will speed it up".
+The cause of the problem is that interrupts start right away when the
+controller is enabled. There's this comment in __i2c_dw_enable:
 
-Global stat will give such data to admin. Per-task won't -
-there can be an efficient Web cache design which uses
-many parallel tasks to hide IO latency. Thus, such
-Web cache can be nearly optimal despite its tasks,
-individually, having significant iowait counts each.
+/*
+ * Wait 10 times the signaling period of the highest I2C
+ * transfer supported by the driver (for 400KHz this is
+ * 25us) as described in the DesignWare I2C databook.
+ */
 
-> I've sratched my head a lot on this. And I think we can't continue
-> with the current semantics. If we had to keep the current semantics
-> and enforce correctness at the same time, we are going to run into
-> big scalability and performance issues. This can't be done without
-> locking updates to nr_iowait() with seqlock:
->
-> * when a task blocks on IO and goes idle, lock some per cpu iowait_seq,
-> increase nr_iowait, save curr CPU number, save time.
->
-> * when a task io completes and it gets enqueued on another CPU: retrieve
-> old CPU, lock its iowait_seq, decrease nr_iowait, flush delta iowait .
->
-> And all that just to maintain stats which semantics are wrong, this
-> would be pure madness.
->
-> OTOH we must stay compatible with user ABI in /proc/stat (the one in /proc/timers_list
-> matters less).  But if we make it a per task stat, we are free to account it
-> on the CPU we want.
->
-> So what we can do for example is to account it per task and update stats
-> on the CPU where the blocking task wakes up. This way we guarantee
-> that we only account locally, which is good for scalability.
+The __i2c_dw_enable then does a usleep for 25us to 250us, but since interrupts
+were previously enabled, this wait wasn't being respected by ISR. With
+additional traces, we could see ISR was activated and finished i2c transfer
+while the code was still inside __i2c_dw_enable. At combination of fast
+mode, certain transfer size and device response time, i2c_dw_clear_int was executed 
+and cleared STOP condition flag, which resulted in i2c time out.
 
-When IO-bound task wakes on some CPU,
-how exactly do you propose to update counters -
-add total waited time of this task to this CPU's counter?
+static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+{
+...
+	/* Enable the adapter */
+	__i2c_dw_enable(dev, true);
 
-Is such counter meaningful for the admin?
+	/* Clear and enable interrupts */
+	i2c_dw_clear_int(dev);
+	dw_writel(dev, DW_IC_INTR_DEFAULT_MASK, DW_IC_INTR_MASK);
+}
 
-> This is going to be an ABI change on a /proc/stat field semantic.
-> We usually can not do that as it can break userspace. But I think
-> we have a reasonable exception here:
->
-> 1) On a performance POV we don't have the choice.
->
-> 2) It has always been a buggy stat on SMP. Given the possible fast iowait update
-> rate, I doubt it has ever dumped correct stats. So I guess that few user apps
-> have ever correctly relied on it.
+The patch disables interrupts before the controller is enabled to remove this
+race condition.
 
-In busybox project, the following tools use iowait counter:
+Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-top,mpstat: in order to show "%iowait"
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 14c4b30..71a3fa9 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -417,6 +417,9 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+ 	 */
+ 	dw_writel(dev, msgs[dev->msg_write_idx].addr | ic_tar, DW_IC_TAR);
+ 
++	/* disable interrupts */
++	i2c_dw_disable_int(dev);
++
+ 	/* Enable the adapter */
+ 	__i2c_dw_enable(dev, true);
+ 
+-- 
+1.7.9.5
 
-nmeter: to show "waiting for disk" part of CPU bar.
-Example:
-$ nmeter '%t %70c'
-18:57:33 SUU...................................................................
-18:57:34 SUUUUUUUUUUI..........................................................
-18:57:35 SUUUII................................................................
-18:57:36 SUUU..................................................................
-18:57:37 SSUDDD................................................................
-  (^^^^^^ IO-intensive task starts)
-18:57:38 SSSSSSUDDDDDDDDDDDDIi.................................................
-18:57:39 SSSSSSSSUDDDDDDDDDi...................................................
-18:57:40 SSSSSUUDDDDDDDDDDDDi..................................................
-18:57:41 SSSSSUUUUUDDDDDDDDDDDDi...............................................
-18:57:42 SSSSSUDDDDDDDDDDDDDIi.................................................
-18:57:43 SSSUUDDDDDDDi.........................................................
-  (^^^^^^ IO-intensive task ends)
-18:57:44 SUUUI.................................................................
-18:57:45 SUUU..................................................................
-18:57:46 UU....................................................................
-18:57:47 U.....................................................................
-
-This doesn't look bogus to me.
-It does give me information I need to know.
-
-> Also it decouples iowait from idle time. Running time is also accounted
-> as iowait.
-
-The time when CPUs are busy while there is IO-wait
-are usually not a sign of badly tuned software/system.
-
-Only when CPUs are idle and there is IO-wait is.
-
-That's how it looks from userspace.
