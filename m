@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180AbaDDTJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 15:09:23 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:39018 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068AbaDDTJW (ORCPT
+	id S1754207AbaDDTKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 15:10:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37262 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048AbaDDTKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 15:09:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrW7-AEZkfnFy1L0heyKxo188C9DB+ruFAvfT6iUkKxYZw@mail.gmail.com>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
-	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
-	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
-	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
-	<CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
-	<CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
-	<20140403104308.GP13491@8bytes.org>
-	<20140403170541.GA19010@thunk.org>
-	<533EF832.1030902@mit.edu>
-	<CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
-	<CALCETrW7-AEZkfnFy1L0heyKxo188C9DB+ruFAvfT6iUkKxYZw@mail.gmail.com>
-Date: Fri, 4 Apr 2014 12:09:21 -0700
-X-Google-Sender-Auth: 18Kubs70mzM4OiMHRCMCyQjo6Yk
-Message-ID: <CA+55aFz8wxNGBU9nibJu9TTNac9v7hhrSN4o=6D2qNTsVx2rXA@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Linus Torvalds <torvalds@linux-foundation.org>
+	Fri, 4 Apr 2014 15:10:13 -0400
+Date: Fri, 4 Apr 2014 14:10:00 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
 To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Joerg Roedel <joro@8bytes.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sean Pajot <sean.pajot@execulink.com>,
+        lxc-devel@lists.linuxcontainers.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
+Message-ID: <20140404191000.GA13496@sergelap>
+References: <5266BEA3.6020008@execulink.com>
+ <20131022193718.GA18463@ac100>
+ <874n89rsoc.fsf@xmission.com>
+ <20140402172049.GA13240@sergelap>
+ <20140402173248.GA22804@mail.hallyn.com>
+ <533EF65E.6050508@mit.edu>
+ <20140404183022.GA6728@sergelap>
+ <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 11:57 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> What would break if we used CLOCK_BOOTTIME or CLOCK_MONOTONIC?
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On Fri, Apr 4, 2014 at 11:30 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> On 04/02/2014 10:32 AM, Serge E. Hallyn wrote:
+> >> > (Sorry - the lxc-devel list has moved, so replying to all with the
+> >> > correct list address;   please reply to this rather than my previous
+> >> > email)
+> >> >
+> >> > Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
+> >> >> Hi Eric,
+> >> >>
+> >> >> (sorry, I don't seem to have the email I actually wanted to reply
+> >> >> to in my mbox, but it is
+> >> >> https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-October/005857.html)
+> >> >>
+> >> >> You'd said,
+> >> >>> Someone needs to read and think through all of the corner cases and see
+> >> >>> if we can ever have a time when task_dumpable is false but root in the
+> >> >>> container would not or should not be able to see everything.
+> >> >>>
+> >> >>> In particular I am worried about the case of a setuid app calling setns,
+> >> >>> and entering a lesser privileged user namespace.  In my foggy mind that
+> >> >>> might be a security problem.  And there might be other similar crazy
+> >> >>> cases.
+> >> >>
+> >> >> Can we make use of current->mm->exe_file->f_cred->user_ns?
+> >> >>
+> >> >> So either always use
+> >> >> make_kgid(current->mm->exe_file->f_cred->user_ns, 0)
+> >> >> instead of make_kuid(cred->user_ns, 0), or check that
+> >> >> (current->mm->exe_file->f_cred->user_ns == cred->user_ns)
+> >> >> and, if not, assume that the caller has done a setns?
+> >>
+> >> Do you have a summary of the issue?  I'm a little lost here.
+> >
+> > Sure - when running an unprivileged container, tasks which become
+> > !dumpable end up with /proc/$pid/fd/ being owned by the global
+> > root user, which inside the container is nobody:nogroup.  Examples
+> > are the user's sshd threads and apache, and in the past I think I've
+> > seen it with logind or getty too.
+> 
+> Other than the aesthetics, why does this matter?  Things in the
+> container who are actually mapped to nobody still can't access those
+> files?
 
-I wouldn't object to trying - I thought you meant changing the format
-itself. If we keep the semantics (seconds since boot) but just change
-the clock source in other ways, I wouldn't worry.
+Bc root cannot look at the fds.
 
-Of course, one issue is locking and performance. Most clock sources
-are nasty as hell to read. "sched_clock()" is special.
+> The alternative (using the container's owner) sounds a bit scary.
 
-But I'm absolutely ok with trying things out, so if you have an idea
-for a patch...
+If the file being run belongs to the container, why would it be scary?
+Bc some fds may have been not closed when the task did execve, where
+the previous bprm file may have been on the host?
 
-> It would be really neat if we even went back and edited the queued up
-> messages once we have a clocksource.
-
-Sounds great, I'd love to see it. Patches welcome ;)
-
-> There are also log message metadata fields now; we could stick more
-> than one timestamp in there, and existing tools either won't see them
-> at all (if they use klogctl) or they already know how to ignore
-> unknown fields (/dev/kmsg).
-
-That sounds like overkill, but trying to aim for something that is
-actually accurate to within a second is fine.
-
-That said, I *also* suspect that we could easily just have a simple
-heartbeat message that gives accurate real time. Adding a kernel
-heartbeat to dmesg is something I've often wanted to have myself.
-Having something that prints out real wall-clock time every 30 minutes
-or so in dmesg does not sound like a bad idea, and could be used to
-correct for time skew with the existing one even if we decided that
-CLOCK_BOOTTIME has too many locking/performance issues.
-
-                  Linus
+> >> I suspect that what we really need is to revoke a bunch of proc files
+> >> every time a task does anything involving setuid (or, more generally,
+> >> any of the LSM_UNSAFE_PTRACE things).
+> >
+> > setuid, or do you mean setns?  In any case, I'm not thinking through
+> > attach (setns'ing into a container) yet, but the cases I'm looking at
+> > right now are just a root daemon - already inside the non-init user
+> > ns - doing something to become !dumpable, and having its fds become
+> > owned by GLOBAL_ROOT_UID.  Since these tasks are running a program
+> > which came from inside the non-init userns, I think it's sane to
+> > allow root in the non-init userns own any coredumps.
+> >
+> > Whereas if the program had started as /bin/passwd in the init userns,
+> > then coredumps (and /proc/$$/fd/*) should be owned by the GLOBAL_ROOT_UID.
+> 
+> Gack.
+> 
+> This is kind of the same problem as the ptrace issue in the credfd
+> thread.  Sigh.
+> 
+> --Andy
