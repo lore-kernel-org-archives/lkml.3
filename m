@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaDDOIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:08:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56047 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaDDOIB (ORCPT
+	id S1753206AbaDDOKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:10:04 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38559 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752925AbaDDOJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:08:01 -0400
-Date: Fri, 4 Apr 2014 16:07:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Richard Hansen <rhansen@bbn.com>, Steven Whitehouse <swhiteho@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Greg Troxel <gdt@ir.bbn.com>,
-        bug-readline@gnu.org
-Subject: Re: [PATCH] mm: msync: require either MS_ASYNC or MS_SYNC [resend]
-Message-ID: <20140404140732.GG10526@twins.programming.kicks-ass.net>
-References: <533B04A9.6090405@bbn.com>
- <20140402111032.GA27551@infradead.org>
- <1396439119.2726.29.camel@menhir>
- <533CA0F6.2070100@bbn.com>
- <533E5B7A.7030309@gmail.com>
+	Fri, 4 Apr 2014 10:09:59 -0400
+Date: Fri, 4 Apr 2014 11:09:34 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: linux-mtd@lists.infradead.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] axs_nand - add driver for NAND controller used on
+ Synopsys AXS dev boards
+Message-ID: <20140404140933.GA25772@arch.cereza>
+References: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <533E5B7A.7030309@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 09:12:58AM +0200, Michael Kerrisk (man-pages) wrote:
-> >   * Clearer intentions.  Looking at the existing code and the code
-> >     history, the fact that flags=0 behaves like flags=MS_ASYNC appears
-> >     to be a coincidence, not the result of an intentional choice.
+On Apr 04, Alexey Brodkin wrote:
+> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 > 
-> Maybe. You earlier asserted that the semantics when flags==0 may have
-> been different, prior to Peter Zijstra's patch,
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=204ec841fbea3e5138168edbc3a76d46747cc987
-> .
-> It's not clear to me that that is the case. But, it would be wise to
-> CC the developer, in case he has an insight.
 
-Right; so before that patch there appears to have been a difference.
-The code looked like:
+Maybe it would be nice adding some driver description here, so the commit
+log actually says something useful about the commit.
 
-  if (flags & MS_ASYNC) {
-  	balance_dirty_pages_ratelimited();
-  } else if (flags & MS_SYNC) {
-  	do_fsync()
-  } else {
-  	/* do nothing */
-  }
+[..]
+> Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> 
+> +/**
+> + * axs_flag_wait_and_reset - Waits until requested flag in INT_STATUS register
+> + *              is set by HW and resets it by writing "1" in INT_CLR_STATUS.
+> + * @host:	Pointer to private data structure.
+> + * @flag:	Bit/flag offset in INT_STATUS register
+> + */
+> +static void axs_flag_wait_and_reset(struct axs_nand_host *host, int flag)
+> +{
+> +	unsigned int i;
+> +
+> +	for (i = 0; i < AXS_FLAG_WAIT_DELAY * 100; i++) {
+> +		unsigned int status = reg_get(host, INT_STATUS);
+> +
+> +		if (status & (1 << flag)) {
+> +			reg_set(host, INT_CLR_STATUS, 1 << flag);
+> +			return;
+> +		}
+> +
+> +		udelay(10);
+> +	}
+> +
+> +	/*
+> +	 * Since we cannot report this problem any further than
+> +	 * axs_nand_{write|read}_buf() letting user know there's a problem.
+> +	 */
+> +	dev_err(host->dev, "Waited too long (%d s.) for flag/bit %d\n",
+> +		AXS_FLAG_WAIT_DELAY, flag);
+> +}
 
-Which would give the following semantics:
+Hm... I'm not sure the above is really true.
 
-  msync(.flags = 0) -- scan PTEs and update dirty page accounting
-  msync(.flags = MS_ASYNC) -- scan PTEs and dirty throttle
-  msync(.flags = MS_SYNC) -- scan PTEs and flush dirty pages
+The NAND core uses the replaceable chip->waitfunc callback to check the
+status of issued commands. See for instance:
 
-However with the introduction of accurate dirty page accounting in
-.19 we always had an accurate dirty page count and both .flags=0 and
-.flags=MS_ASYNC turn into the same NO-OP.
+static int nand_write_oob_std(struct mtd_info *mtd, struct nand_chip *chip,
+                              int page)
+{
+        int status = 0;
+        const uint8_t *buf = chip->oob_poi;
+        int length = mtd->oobsize;
 
-Yielding todays state, where 0 and MS_ASYNC don't do anything much and
-MS_SYNC issues the fsync() -- although I understand Willy recently
-posted a patch to do a data-range-sync instead of the full fsync.
+        chip->cmdfunc(mtd, NAND_CMD_SEQIN, mtd->writesize, page);
+        chip->write_buf(mtd, buf, length);
+        /* Send command to program the OOB data */
+        chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
 
+        status = chip->waitfunc(mtd, chip);
 
+        return status & NAND_STATUS_FAIL ? -EIO : 0;
+}
+
+On the other side, if you are clearing the flags in axs_flag_wait_and_reset()
+it might be a bit hard for you to get this right.
+
+IOW, I'm not saying you *must* do this, but instead suggesting that you take
+a look at waitfunc() and see if it helps report a proper error in the
+read/write path.
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
