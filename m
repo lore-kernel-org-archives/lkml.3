@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaDDOUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:20:42 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:51761 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaDDOUk (ORCPT
+	id S1753087AbaDDO27 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:28:59 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:35258 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaDDO25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:20:40 -0400
-Date: Fri, 4 Apr 2014 16:20:38 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ktap and ebpf integration
-Message-ID: <20140404142038.GR22728@two.firstfloor.org>
-References: <CAGdX0WEeZJ9hxq1y-gmGC=kdtU0ecLbs5gVYb_8ZE6sOW_PPvg@mail.gmail.com>
- <CAMEtUuyQZo6fSMTZ5XKPfPBdjR13916Rd3=z5dip3N_WOzvr6Q@mail.gmail.com>
- <CAGdX0WFm2wccs30q1=eduLdzjAjfxz-6oL-zGvumY6BigQ-a4g@mail.gmail.com>
+	Fri, 4 Apr 2014 10:28:57 -0400
+X-Auth-Info: jex3s9jJblTcc7TSNCL+W18ywq1Vbfs+jkGw4GKCN/M=
+From: Marek Vasut <marex@denx.de>
+To: Yuan Yao <yao.yuan@freescale.com>
+Subject: Re: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
+Date: Fri, 4 Apr 2014 16:28:55 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: wsa@the-dreams.de, mark.rutland@arm.com, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org
+References: <1396579272-19542-1-git-send-email-yao.yuan@freescale.com> <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
+In-Reply-To: <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGdX0WFm2wccs30q1=eduLdzjAjfxz-6oL-zGvumY6BigQ-a4g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404041628.55471.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Anyway, I think there will don't have any necessary to upstream
-> ktap any more, I still enjoy the simplicity and flexibility given
+On Friday, April 04, 2014 at 04:41:11 AM, Yuan Yao wrote:
+> Add dma support for i2c. This function depend on DMA driver.
+> You can turn on it by write both the dmas and dma-name properties in dts
+> node.
+> 
+> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
 
-Not sure how you got to that conclusion.
+[...]
 
-You were asked to evaluate if EBPF is an alternative
-for ktap. It looks like the answer is no. So the original KTAP VM design
-is back on the table. You can continue pursuing to merge that.
-No reason to give up.
+Since you will be fixing that superfluous return 0; (I actually wonder, did you 
+really test the driver at all before submitting it?) ...
 
-BTW I agree that EBPF won't work for ktap. The models
-(static vs dynamic typing etc.) are just too different.
-But it's good that it was studied in detail.
+> +static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
+> +					struct i2c_msg *msgs)
+> +{
+> +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> +	struct dma_async_tx_descriptor *txdesc;
+> +	struct device *dev = &i2c_imx->adapter.dev;
+> +
+> +	dma->dma_buf = dma_map_single(dma->chan_using->device->dev, msgs->buf,
 
--Andi
+Please fix this "noodle" here too, the chain of pointers is quite long, you can 
+just define a variable for that.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> +					dma->dma_len, dma->dma_data_dir);
+> +	if (dma_mapping_error(dma->chan_using->device->dev, dma->dma_buf)) {
+> +		dev_err(dev, "DMA mapping failed\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	txdesc = dmaengine_prep_slave_single(dma->chan_using, dma->dma_buf,
+> +					dma->dma_len, dma->dma_transfer_dir,
+> +					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+> +	if (!txdesc) {
+> +		dev_err(dev, "Not able to get desc for DMA xfer\n");
+> +		dma_unmap_single(dma->chan_using->device->dev, dma->dma_buf,
+> +					dma->dma_len, dma->dma_data_dir);
+> +		return -EINVAL;
+> +	}
+> +
+> +	txdesc->callback = i2c_imx_dma_callback;
+> +	txdesc->callback_param = i2c_imx;
+> +	dmaengine_submit(txdesc);
+> +	dma_async_issue_pending(dma->chan_using);
+> +
+> +	return 0;
+> +}
+[...]
+
+Other than those two things,
+
+Reviewed-by: Marek Vasut <marex@denx.de>
