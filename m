@@ -1,105 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaDDV4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:56:53 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39128 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaDDV4v (ORCPT
+	id S1753193AbaDDWAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 18:00:46 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61854 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901AbaDDWAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:56:51 -0400
-Subject: Re: [PATCH v2 9/9] uprobes/x86: Teach arch_uprobe_post_xol() to
- restart if possible
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140404185142.GA14756@redhat.com>
-References: <20140404185142.GA14756@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Apr 2014 14:56:47 -0700
-Message-ID: <1396648607.4769.3.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040421-1542-0000-0000-000000DF21A2
+	Fri, 4 Apr 2014 18:00:42 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Subject: [PATCH 2/2] ARM: zynq: dt: Use #defines for interrupt specifiers
+Date: Fri,  4 Apr 2014 15:00:31 -0700
+Message-Id: <1396648831-7570-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.9.1.1.gbb9f595
+In-Reply-To: <1396648831-7570-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1396648831-7570-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-04 at 20:51 +0200, Oleg Nesterov wrote:
-> SIGILL after the failed arch_uprobe_post_xol() should only be used as
-> a last resort, we should try to restart the probed insn if possible.
-> 
-> Currently only adjust_ret_addr() can fail, and this can only happen if
-> another thread unmapped our stack after we executed "call" out-of-line.
-> Most probably the application if buggy, but even in this case it can
-> have a handler for SIGSEGV/etc. And in theory it can be even correct
-> and do something non-trivial with its memory.
-> 
-> Of course we can't restart unconditionally, so arch_uprobe_post_xol()
-> does this only if ->post_xol() returns -ERESTART even if currently this
-> is the only possible error.
+Use #defines from the common include file to describe
+interrupt specifiers.
 
-When re-executing the call instruction, I'd think the stack pointer
-would be wrong the second time around, unless you pop off the return
-address from the first try.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
 
-> 
-> Note: this is not "perfect", we do not want the extra handler_chain()
-> after restart, but I think this is the best solution we can realistically
-> do without too much uglifications.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/kernel/uprobes.c |   15 +++++++++++----
->  1 files changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index e72903e..b820668 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -443,16 +443,17 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
->  {
->  	struct uprobe_task *utask = current->utask;
->  	long correction = (long)(utask->vaddr - utask->xol_vaddr);
-> -	int ret = 0;
-> 
->  	handle_riprel_post_xol(auprobe, regs, &correction);
->  	if (auprobe->fixups & UPROBE_FIX_IP)
->  		regs->ip += correction;
-> 
-> -	if (auprobe->fixups & UPROBE_FIX_CALL)
-> -		ret = adjust_ret_addr(regs->sp, correction);
-> +	if (auprobe->fixups & UPROBE_FIX_CALL) {
-> +		if (adjust_ret_addr(regs->sp, correction))
-> +			return -ERESTART;
-> +	}
-> 
-> -	return ret;
-> +	return 0;
->  }
-> 
->  static struct uprobe_xol_ops default_xol_ops = {
-> @@ -599,6 +600,12 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
->  		int err = auprobe->ops->post_xol(auprobe, regs);
->  		if (err) {
->  			arch_uprobe_abort_xol(auprobe, regs);
-> +			/*
-> +			 * Restart the probed insn. ->post_xol() must ensure
-> +			 * this is really possible if it returns -ERESTART.
-> +			 */
-> +			if (err == -ERESTART)
-> +				return 0;
->  			return err;
->  		}
->  	}
+---
+ arch/arm/boot/dts/zynq-7000.dtsi | 27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index b028278b7f49..a219a927c0e4 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -12,6 +12,7 @@
+  */
+ 
+ #include "skeleton.dtsi"
++#include <dt-bindings/interrupt-controller/arm-gic.h>
+ 
+ / {
+ 	compatible = "xlnx,zynq-7000";
+@@ -43,7 +44,7 @@
+ 
+ 	pmu {
+ 		compatible = "arm,cortex-a9-pmu";
+-		interrupts = <0 5 4>, <0 6 4>;
++		interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
+ 		interrupt-parent = <&intc>;
+ 		reg = < 0xf8891000 0x1000 0xf8893000 0x1000 >;
+ 	};
+@@ -79,7 +80,7 @@
+ 			clocks = <&clkc 23>, <&clkc 40>;
+ 			clock-names = "ref_clk", "aper_clk";
+ 			reg = <0xE0000000 0x1000>;
+-			interrupts = <0 27 4>;
++			interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
+ 		};
+ 
+ 		uart1: uart@e0001000 {
+@@ -88,14 +89,14 @@
+ 			clocks = <&clkc 24>, <&clkc 41>;
+ 			clock-names = "ref_clk", "aper_clk";
+ 			reg = <0xE0001000 0x1000>;
+-			interrupts = <0 50 4>;
++			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
+ 		};
+ 
+ 		gem0: ethernet@e000b000 {
+ 			compatible = "cdns,gem";
+ 			reg = <0xe000b000 0x4000>;
+ 			status = "disabled";
+-			interrupts = <0 22 4>;
++			interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&clkc 30>, <&clkc 30>, <&clkc 13>;
+ 			clock-names = "pclk", "hclk", "tx_clk";
+ 		};
+@@ -104,7 +105,7 @@
+ 			compatible = "cdns,gem";
+ 			reg = <0xe000c000 0x4000>;
+ 			status = "disabled";
+-			interrupts = <0 45 4>;
++			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&clkc 31>, <&clkc 31>, <&clkc 14>;
+ 			clock-names = "pclk", "hclk", "tx_clk";
+ 		};
+@@ -115,7 +116,7 @@
+ 			clock-names = "clk_xin", "clk_ahb";
+ 			clocks = <&clkc 21>, <&clkc 32>;
+ 			interrupt-parent = <&intc>;
+-			interrupts = <0 24 4>;
++			interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+ 			reg = <0xe0100000 0x1000>;
+ 		} ;
+ 
+@@ -125,7 +126,7 @@
+ 			clock-names = "clk_xin", "clk_ahb";
+ 			clocks = <&clkc 22>, <&clkc 33>;
+ 			interrupt-parent = <&intc>;
+-			interrupts = <0 47 4>;
++			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
+ 			reg = <0xe0101000 0x1000>;
+ 		} ;
+ 
+@@ -159,14 +160,16 @@
+ 		global_timer: timer@f8f00200 {
+ 			compatible = "arm,cortex-a9-global-timer";
+ 			reg = <0xf8f00200 0x20>;
+-			interrupts = <1 11 0x301>;
++			interrupts = <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_EDGE_RISING)>;
+ 			interrupt-parent = <&intc>;
+ 			clocks = <&clkc 4>;
+ 		};
+ 
+ 		ttc0: ttc0@f8001000 {
+ 			interrupt-parent = <&intc>;
+-			interrupts = < 0 10 4 0 11 4 0 12 4 >;
++			interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
+ 			compatible = "cdns,ttc";
+ 			clocks = <&clkc 6>;
+ 			reg = <0xF8001000 0x1000>;
+@@ -174,14 +177,16 @@
+ 
+ 		ttc1: ttc1@f8002000 {
+ 			interrupt-parent = <&intc>;
+-			interrupts = < 0 37 4 0 38 4 0 39 4 >;
++			interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
+ 			compatible = "cdns,ttc";
+ 			clocks = <&clkc 6>;
+ 			reg = <0xF8002000 0x1000>;
+ 		};
+ 		scutimer: scutimer@f8f00600 {
+ 			interrupt-parent = <&intc>;
+-			interrupts = < 1 13 0x301 >;
++			interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_EDGE_RISING)>;
+ 			compatible = "arm,cortex-a9-twd-timer";
+ 			reg = < 0xf8f00600 0x20 >;
+ 			clocks = <&clkc 4>;
+-- 
+1.9.1.1.gbb9f595
 
