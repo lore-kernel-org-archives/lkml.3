@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaDDOmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:42:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52133 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160AbaDDOmu convert rfc822-to-8bit (ORCPT
+	id S1753370AbaDDOnt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:43:49 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:36213 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748AbaDDOns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:42:50 -0400
-Date: Fri, 04 Apr 2014 10:44:26 -0400 (EDT)
-Message-Id: <20140404.104426.2226769084775433079.davem@davemloft.net>
-To: luis.henriques@canonical.com
-Cc: sasha.levin@oracle.com, chien.yen@oracle.com, rds-devel@oss.oracle.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rds: prevent dereference of a NULL device in
- rds_iw_laddr_check
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140404143136.GA2593@hercules>
-References: <1396139975-5314-1-git-send-email-sasha.levin@oracle.com>
-	<20140331.162607.153228065356865845.davem@davemloft.net>
-	<20140404143136.GA2593@hercules>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 04 Apr 2014 07:42:50 -0700 (PDT)
+	Fri, 4 Apr 2014 10:43:48 -0400
+From: Stephen Chandler Paul <thatslyude@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Shawn Rutledge <shawn.t.rutledge@gmail.com>
+Subject: [PATCH] Favor native backlight interface for ThinkPad Helix
+Date: Fri,  4 Apr 2014 10:44:46 -0400
+Message-Id: <1396622686-6373-1-git-send-email-thatslyude@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luís Henriques <luis.henriques@canonical.com>
-Date: Fri, 4 Apr 2014 15:31:36 +0100
+Like many other Windows 8 laptops the ThinkPad Helix's backlight has a
+broken ACPI interface and can only be properly adjusted by using the
+video card's native backlight control. This adds the ThinkPad Helix to
+the list of laptops affected with this issue so that
+video.use_native_backlight is enabled by default.
 
-> Could you please queue this one for stable as well?  (Looks like it even
-> has CVE-2014-2678 assigned to it.)
+Signed-off-by: Stephen Chandler Paul <thatslyude@gmail.com>
+---
+ drivers/acpi/video.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Done.
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 48c7e8a..8b6990e 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -488,6 +488,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 		},
+ 	},
+ 	{
++	.callback = video_set_use_native_backlight,
++	.ident = "Thinkpad Helix",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
++		},
++	},
++	{
+ 	 .callback = video_set_use_native_backlight,
+ 	 .ident = "Dell Inspiron 7520",
+ 	 .matches = {
+-- 
+1.8.3.2
+
