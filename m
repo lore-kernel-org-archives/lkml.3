@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaDDPCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:02:10 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:52222 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818AbaDDPCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:02:06 -0400
-X-IronPort-AV: E=Sophos;i="4.97,795,1389744000"; 
-   d="scan'208";a="116829393"
-Message-ID: <533EC966.7030101@citrix.com>
-Date: Fri, 4 Apr 2014 16:01:58 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Roger Pau Monne <roger.pau@citrix.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH] xen-blkback: only attach blkback if the required features
- are met
-References: <1396622471-13114-1-git-send-email-roger.pau@citrix.com>
-In-Reply-To: <1396622471-13114-1-git-send-email-roger.pau@citrix.com>
+	id S1753078AbaDDPJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:09:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22762 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752526AbaDDPJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 11:09:53 -0400
+Message-ID: <1396624170.2790.9.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+From: Adam Williamson <awilliam@redhat.com>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        mjg59@srcf.ucam.org, rostedt@goodmis.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Date: Fri, 04 Apr 2014 08:09:30 -0700
+In-Reply-To: <533EB5F1.8060002@linux.intel.com>
+References: <20140404064120.GB11877@gmail.com>
+	 <tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>
+	 <20140404080006.GB6944@gmail.com> <533EB5F1.8060002@linux.intel.com>
+Organization: Red Hat
 Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/14 15:41, Roger Pau Monne wrote:
-> Blkback cannot work properly on auto-translated guests if Xen doesn't
-> update the IOMMU when performing grant maps/unmaps, so only attach if
-> the newly introduced XENFEAT_hvm_gntmap_supports_iommu is found.
+On Fri, 2014-04-04 at 21:38 +0800, Li, Aubrey wrote:
+> <cc to adam>
+> 
+> On 2014/4/4 16:00, Ingo Molnar wrote:
+> > 
+> >>
+> >> [PATCH] x86: Try the BIOS reboot method before the PCI reboot method
+> > 
+> > So, JFYI, I have put this into x86/reboot to get it tested, but it's 
+> > not queued up for upstream yet until there's concensus.
+> > 
+> > (Steve testing it wouldn't hurt either.)
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> 
+> The change is originated from the following bug:
+> https://bugzilla.kernel.org/show_bug.cgi?id=70931
+> 
+> The system will hang after BIOS or TRIPLE if it doesn't work, that's why
+> I added CF9 before BIOS and TRIPLE.
+> 
+> Adam may want to try this change to see if reboot works on his DELL
+> Venue 8 Pro.
+> 
+> I don't think there is enough justification to revert the patch. We
+> introduce EFI into the default list, we didn't see any reason to remove
+> it out so far.
 
-Can you explain the problem in more detail and which guest
-configurations are affected?
+AIUI the bottom line for Baytrail-y devices is that they'll be OK so
+long as EFI is tried before anything which causes a hang, right?
 
-This isn't a problem that is specific to blkback, but any backend that
-grant maps and passes the foreign pages to a device so there needs to be
-a generic solution.
+I can try patches out for sure and confirm, but it'd be good to have a
+definite candidate. Are we considering the first patch alone -
+https://patchwork.kernel.org/patch/3937101/ - or also the second patch -
+https://patchwork.kernel.org/patch/3937091/ ?
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
-Why can't this be fixed by having the swiotlb bounce foreign pages?
-
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -1381,6 +1381,18 @@ static int __init xen_blkif_init(void)
->  	if (!xen_domain())
->  		return -ENODEV;
->  
-> +#ifdef CONFIG_X86
-> +	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-> +	    !xen_feature(XENFEAT_hvm_gntmap_supports_iommu)) {
-> +		/*
-> +		 * blkback cannot work properly on auto-translated guests
-> +		 * if grant table mappings don't update the IOMMU entries.
-> +		 */
-> +		pr_debug(DRV_PFX "Disabling blkback because Xen is missing feature XENFEAT_hvm_gntmap_supports_iommu\n");
-> +		return -ENODEV;
-> +	}
-> +#endif /* CONFIG_X86 */
-
-Why CONFIG_X86?
-
-David
