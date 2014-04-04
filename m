@@ -1,68 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaDDMnC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:43:02 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:51018 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996AbaDDMm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:42:58 -0400
-X-Auth-Info: ziSxuI7WXGZJMSQdFtxwt6Eoqdf7RCLy9f04x0A2lFI=
-From: Marek Vasut <marex@denx.de>
-To: sourav <sourav.poddar@ti.com>
-Subject: Re: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
-Date: Fri, 4 Apr 2014 13:49:07 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: Yuan Yao <yao.yuan@freescale.com>, wsa@the-dreams.de, mark.rutland@arm.com,
-        shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
-References: <1396579272-19542-1-git-send-email-yao.yuan@freescale.com> <1396579272-19542-2-git-send-email-yao.yuan@freescale.com> <533E8033.70904@ti.com>
-In-Reply-To: <533E8033.70904@ti.com>
+	id S1752785AbaDDMns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:43:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59611 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677AbaDDMnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 08:43:40 -0400
+Date: Fri, 4 Apr 2014 14:43:38 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, John McCutchan <john@johnmccutchan.com>,
+        Robert Love <rlove@rlove.org>, Eric Paris <eparis@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
+        daniel@veillard.com, Christoph Hellwig <hch@infradead.org>,
+        Vegard Nossum <vegard.nossum@oracle.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        inotify-tools-general@lists.sourceforge.net
+Subject: Re: Things I wish I'd known about Inotify
+Message-ID: <20140404124338.GA26806@quack.suse.cz>
+References: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com>
+ <20140403205236.GE14107@quack.suse.cz>
+ <533E60D6.2000704@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404041349.07721.marex@denx.de>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <533E60D6.2000704@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 04, 2014 at 11:49:39 AM, sourav wrote:
-
-[...]
-
-> > +/* Functions for DMA support */
-> > +static int i2c_imx_dma_request(struct imx_i2c_struct *i2c_imx,
-> > +						dma_addr_t phy_addr)
-> > +{
-> > +	struct imx_i2c_dma *dma;
-> > +	struct dma_slave_config dma_sconfig;
-> > +	struct device *dev =&i2c_imx->adapter.dev;
-> > +	int ret;
-> > +
-> > +	dma = devm_kzalloc(dev, sizeof(struct imx_i2c_dma), GFP_KERNEL);
-> > +	if (!dma) {
-> > +		dev_info(dev, "can't allocate DMA struct\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	dma->chan_tx = dma_request_slave_channel(dev, "tx");
-> > +	return 0;
+On Fri 04-04-14 09:35:50, Michael Kerrisk (man-pages) wrote:
+> On 04/03/2014 10:52 PM, Jan Kara wrote:
+> > On Thu 03-04-14 08:34:44, Michael Kerrisk (man-pages) wrote:
+> >>    Limitations and caveats
+> >>        The inotify API provides no information about the user or process
+> >>        that triggered the inotify event.  In  particular,  there  is  no
+> >>        easy  way  for a process that is monitoring events via inotify to
+> >>        distinguish events that it triggers itself from  those  that  are
+> >>        triggered by other processes.
+> >>
+> >>        The  inotify API identifies affected files by filename.  However,
+> >>        by the time an application processes an inotify event, the  file‐
+> >>        name may already have been deleted or renamed.
+> >>
+> >>        The  inotify  API identifies events via watch descriptors.  It is
+> >>        the application's responsibility to cache a mapping  (if  one  is
+> >>        needed)  between  watch descriptors and pathnames.  Be aware that
+> >>        directory renamings may affect multiple cached pathnames.
+> >>
+> >>        Inotify monitoring of directories is not  recursive:  to  monitor
+> >>        subdirectories under a directory, additional watches must be cre‐
+> >>        ated.  This can take a significant amount time for  large  direc‐
+> >>        tory trees.
+> >   And also there's a problem with the limit on the number of watches a user
+> > can have.
 > 
-> ?? Looks to be some leftover?
+> What is the problem exactly (given that the limit is configurable)?
+  Well, if you want to watch the whole home directory and you have a large
+one, you may run into that limit. Sure you can ask sysadmin to raise the
+limit but it's a bit anoying.
 
-Nice find.
+> >>        If monitoring an entire directory subtree, and a new subdirectory
+> >>        is created in that tree or an existing directory is renamed  into
+> >>        that  tree,  be aware that by the time you create a watch for the
+> >>        new subdirectory, new  files  (and  subdirectories)  may  already
+> >>        exist  inside  the subdirectory.  Therefore, you may want to scan
+> >>        the contents of the subdirectory  immediately  after  adding  the
+> >>        watch (and, if desired, recursively add watches for any subdirec‐
+> >>        tories that it contains).
+> >>
+> >>        Note that the event queue can overflow.  In this case, events are
+> >>        lost.   Robust applications should handle the possibility of lost
+> >>        events gracefully.  For example, it may be necessary  to  rebuild
+> >>        part  or all of the application cache.  (One simple, but possibly
+> >>        expensive, approach is to  close  the  inotify  file  descriptor,
+> >>        empty  the  cache, create a new inotify file descriptor, and then
+> >>        re-create watches and cache entries for the objects to  be  moni‐
+> >>        tored.)
+> >>
+> >>    Dealing with rename() events
+> >>        The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
+> >>        rename(2) are usually available as consecutive events when  read‐
+> >>        ing from the inotify file descriptor.  However, this is not guar‐
+> >>        anteed.  If multiple processes are triggering  events  for  moni‐
+> >>        tored  objects,  then  (on rare occasions) an arbitrary number of
+> >>        other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
+> >>        events.
+> >>
+> >>        Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‐
+> >>        ated by rename(2) is thus inherently racy.  (Don't forget that if
+> >>        an  object is renamed outside of a monitored directory, there may
+> >>        not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
+> >>        assume the events are always consecutive) can be used to ensure a
+> >>        match in most cases, but will inevitably miss some cases, causing
+> >>        the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
+> >>        events as being unrelated.  If watch  descriptors  are  destroyed
+> >>        and  re-created as a result, then those watch descriptors will be
+> >>        inconsistent with the watch descriptors in  any  pending  events.
+> >>        (Re-creating the inotify file descriptor and rebuilding the cache
+> >>        may be useful to deal with this scenario.)
+> >   Well, but there's 'cookie' value meant exactly for matching up
+> > IN_MOVED_FROM and IN_MOVED_TO events. And 'cookie' is guaranteed to be
+> > unique at least within the inotify instance (in fact currently it is unique
+> > within the whole system but I don't think we want to give that promise).
+> 
+> Yes, that's already assumed by my discussion above (its described elsewhere
+> in the page). But your comment makes me think I should add a few words to
+> remind the reader of that fact. I'll do that.
+  Yes, that would be good.
 
-btw. you might want to trim the email only to the relevant parts when replying 
-so it's easier to find your commments in the entire body of text.
- 
-> > +	if (!dma->chan_tx) {
-> > +		dev_info(dev, "DMA tx channel request failed\n");
-> > +		ret = -ENODEV;
-> > +		goto fail_al;
-> > +	}
+> But, the point is that even with the cookie, matching the events is 
+> nontrivial, since:
+> 
+> * There may not even be an IN_MOVED_FROM event
+> * There may be an arbitrary number of other events in between the 
+>   IN_MOVED_FROM and the IN_MOVED_TO.
+> 
+> Therefore, one has to use heuristic approaches such as "allow at least
+> N millisconds" or "check the next N events" to see if there is an
+> IN_MOVED_FROM that matches the IN_MOVED_TO. I can't see any way around
+> that being inherently racy. (It's unfortunate that the kernel can't 
+> provide a guarantee that the two events are always consecutive, since
+> that would simply user space's life considerably.)
+  Yeah, it's unpleasant but doing that would be quite costly/complex at the
+kernel side. And the race would in the worst case lead to application
+thinking there's been file moved outside of watched area & a file moved
+somewhere else inside the watched area. So the application will have to
+possibly inspect that file. That doesn't seem too bad.
 
-[...]
-
-Best regards,
-Marek Vasut
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
