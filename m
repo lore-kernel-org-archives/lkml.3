@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbaDDRst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 13:48:49 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64063 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856AbaDDRsq (ORCPT
+	id S1754094AbaDDRtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 13:49:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53341 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800AbaDDRtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 13:48:46 -0400
-Date: Fri, 4 Apr 2014 19:48:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mjg59@srcf.ucam.org, rostedt@goodmis.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
- the PCI reboot method
-Message-ID: <20140404174842.GA25736@gmail.com>
-References: <20140404064120.GB11877@gmail.com>
- <tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>
- <20140404080006.GB6944@gmail.com>
- <533EB5F1.8060002@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533EB5F1.8060002@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Apr 2014 13:49:22 -0400
+Date: Fri, 04 Apr 2014 13:50:56 -0400 (EDT)
+Message-Id: <20140404.135056.2103520199689146670.davem@davemloft.net>
+To: dave.hansen@intel.com
+Cc: maddy@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, x86@kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, kirill.shutemov@linux.intel.com,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, riel@redhat.com,
+        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
+        mingo@kernel.org
+Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <533EDB63.8090909@intel.com>
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com>
+	<1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com>
+	<533EDB63.8090909@intel.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 04 Apr 2014 10:49:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Dave Hansen <dave.hansen@intel.com>
+Date: Fri, 04 Apr 2014 09:18:43 -0700
 
-* Li, Aubrey <aubrey.li@linux.intel.com> wrote:
-
-> <cc to adam>
+> On 04/03/2014 11:27 PM, Madhavan Srinivasan wrote:
+>> This patch creates infrastructure to move the FAULT_AROUND_ORDER
+>> to arch/ using Kconfig. This will enable architecture maintainers
+>> to decide on suitable FAULT_AROUND_ORDER value based on
+>> performance data for that architecture. Patch also adds
+>> FAULT_AROUND_ORDER Kconfig element in arch/X86.
 > 
-> On 2014/4/4 16:00, Ingo Molnar wrote:
-> > 
-> >>
-> >> [PATCH] x86: Try the BIOS reboot method before the PCI reboot method
-> > 
-> > So, JFYI, I have put this into x86/reboot to get it tested, but it's 
-> > not queued up for upstream yet until there's concensus.
-> > 
-> > (Steve testing it wouldn't hurt either.)
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
+> Please don't do it this way.
 > 
-> The change is originated from the following bug:
-> https://bugzilla.kernel.org/show_bug.cgi?id=70931
+> In mm/Kconfig, put
 > 
-> The system will hang after BIOS or TRIPLE if it doesn't work, that's 
-> why I added CF9 before BIOS and TRIPLE.
+> 	config FAULT_AROUND_ORDER
+> 		int
+> 		default 1234 if POWERPC
+> 		default 4
 > 
-> Adam may want to try this change to see if reboot works on his DELL 
-> Venue 8 Pro.
-> 
-> I don't think there is enough justification to revert the patch. 
-> [...]
+> The way you have it now, every single architecture that needs to enable
+> this has to go put that in their Kconfig.  That's madness.  This way,
+> you only put it in one place, and folks only have to care if they want
+> to change the default to be something other than 4.
 
-'Breaks a box' is more than enough justification to revert a patch...
-
-You can try to fix boxes, but only if you can do it without breaking 
-others.
-
-Thanks,
-
-	Ingo
+It looks more like it's necessary only to change the default, not
+to enable it.  Unless I read his patch wrong...
