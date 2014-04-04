@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaDDIYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 04:24:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20411 "EHLO mx1.redhat.com"
+	id S1752181AbaDDIZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 04:25:04 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:46920 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863AbaDDIYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 04:24:35 -0400
-Date: Fri, 4 Apr 2014 10:19:09 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Jakub =?utf-8?B?S2ljacWEc2tp?= <moorray3@wp.pl>
-Cc: Richard Genoud <richard.genoud@gmail.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rt2x00: BUG: remove double loop on REGISTER_BUSY_COUNT
-Message-ID: <20140404081908.GB1448@redhat.com>
-References: <1396534327-12971-1-git-send-email-richard.genoud@gmail.com>
- <20140403173701.75c1f497@north>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140403173701.75c1f497@north>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751814AbaDDIZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 04:25:00 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrey Vagin <avagin@openvz.org>
+Subject: [PATCH] maps.2: fd for a file mapping must be opened for reading
+Date: Fri,  4 Apr 2014 12:24:35 +0400
+Message-Id: <1396599875-10562-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 05:37:01PM +0200, Jakub Kiciński wrote:
-> On Thu,  3 Apr 2014 16:12:07 +0200, Richard Genoud wrote:
-> > rt2x00usb_register_read_lock() calls rt2x00usb_vendor_req_buff_lock()
-> > that calls rt2x00usb_vendor_request() which is already looping up to
-> > REGISTER_BUSY_COUNT times.
-> > 
-> > So this loop is not needed.
-> 
-> Not true.  rt2x00usb_vendor_request() busy-waits for usb_control_msg()
-> to succeed, rt2x00usb_register_read_lock() busy-waits for the register
-> field itself to become 0.
+Here is no difference between MAP_SHARED and MAP_PRIVATE.
 
-Yeah, but still we are looping REGISTER_BUSY_COUNT*REGISTER_BUSY_COUNT
-what seems to be far too long.
+do_mmap_pgoff()
+	switch (flags & MAP_TYPE) {
+	case MAP_SHARED:
+	...
+	/* fall through */
+	case MAP_PRIVATE:
+		if (!(file->f_mode & FMODE_READ))
+			return -EACCES;
 
-Stanislaw 
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ man2/mmap.2 | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/man2/mmap.2 b/man2/mmap.2
+index c0fd321..b469f84 100644
+--- a/man2/mmap.2
++++ b/man2/mmap.2
+@@ -393,9 +393,7 @@ is set (probably to
+ .TP
+ .B EACCES
+ A file descriptor refers to a non-regular file.
+-Or
+-.B MAP_PRIVATE
+-was requested, but
++Or a file mapping was requested, but
+ .I fd
+ is not open for reading.
+ Or
+-- 
+1.8.5.3
+
