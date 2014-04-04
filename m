@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaDDLsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 07:48:51 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:50735 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535AbaDDLsu (ORCPT
+	id S1752837AbaDDLtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 07:49:08 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:48662 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535AbaDDLtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 07:48:50 -0400
-Date: Fri, 4 Apr 2014 13:48:48 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Inconsistent lock state introduced by ipv6/addrconf change
-Message-ID: <20140404114848.GD13354@order.stressinduktion.org>
-Mail-Followup-To: Shawn Guo <shawn.guo@freescale.com>,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org,
-	Stephen Hemminger <stephen@networkplumber.org>,
-	"David S. Miller" <davem@davemloft.net>
-References: <20140404073455.GB29778@dragon>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Fri, 4 Apr 2014 07:49:03 -0400
+Date: Fri, 4 Apr 2014 14:48:52 +0300
+From: Kumar Amit Mehta <gmate.amit@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: abbotti@mev.co.uk, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] staging: comedi: drivers: pcl812.c: fixed a coding style
+ issue
+Message-ID: <20140404114852.GA12452@gmail.com>
+References: <1396605929-10514-1-git-send-email-gmate.amit@gmail.com>
+ <20140404110707.GT6991@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140404073455.GB29778@dragon>
+In-Reply-To: <20140404110707.GT6991@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
-
-On Fri, Apr 04, 2014 at 03:34:56PM +0800, Shawn Guo wrote:
-> I'm running into an inconsistent lock state warning on the final v3.14
-> kernel (-rc8 is good) on Freescale i.MX6 platform with fec driver
-> (drivers/net/ethernet/freescale/fec_main.c).  The git bisect points
-> the finger to commit c15b1cc (ipv6: move DAD and addrconf_verify
-> processing to workqueue).  Reverting the commit does fix the problem
-> for me.  The image is built from arch/arm/configs/imx_v6_v7_defconfig.
+On Fri, Apr 04, 2014 at 02:07:07PM +0300, Dan Carpenter wrote:
+> On Fri, Apr 04, 2014 at 01:05:29PM +0300, Kumar Amit Mehta wrote:
+> > Fixed a coding style issue. Reported by checkpatch.pl
+> > 
 > 
-> The interesting part is the same warning shows up on mainline tree until
-> net-next gets merged with commit cd6362b.  That's why Olof's autobooter
-> keeps reporting failure on hummingboard and wandboard (both i.MX6 based)
-> since v3.14 release [1], but reports success after commit cd6362b.
-> 
-> We're less concerned by the mainline tree, since the problem disappeared
-> now (nice to know why though).  But we do still want to fix it for 3.14
-> stable kernel.
+> It's better if the commit messages are more specific than this.
 
-The patch which fixes this is already queued up for -stable:
+So, should I resend the patch with a more appropriate commit message ?
 
-http://patchwork.ozlabs.org/patch/335536/
-
-Sorry for the inconvenience,
-
-  Hannes
-
-
+Thanks,
+Kumar
