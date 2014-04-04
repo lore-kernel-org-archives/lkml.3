@@ -1,785 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030AbaDDFoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 01:44:19 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:46637 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaDDFoO (ORCPT
+	id S1752047AbaDDFwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 01:52:16 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:61830 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144AbaDDFwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 01:44:14 -0400
+	Fri, 4 Apr 2014 01:52:11 -0400
+Message-ID: <533E4884.1020907@monstr.eu>
+Date: Fri, 04 Apr 2014 07:52:04 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 4 Apr 2014 07:43:53 +0200
-Message-ID: <CAKgNAkgtrc73kawRuoa-VoNx7DY2Ld+Qxwp5GNj9syxOmN_ctA@mail.gmail.com>
-Subject: For review: open_by_handle_at(2) man page [v4]
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, Neil Brown <neilb@suse.de>,
-        linux-man <linux-man@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: balbi@ti.com
+CC: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, michals@xilinx.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Subject: Re: [PATCH v2 1/2] usb: doc: udc-xilinx: Add devicetree bindings
+References: <5a9b0116-246c-40a0-b894-3321c74648de@CH1EHSMHS007.ehs.local> <20140403145934.GE14162@saruman.home>
+In-Reply-To: <20140403145934.GE14162@saruman.home>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="ktmQKHiMnuAePgwjbCw4dTPXkD2C3IPII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Aneesh,
-
-After integrating review comments from NeilBown, Christoph Hellwig,
-and Mike Frysinger, here is draft 4 of a man page I've written for
-name_to_handle_at(2) and open_by_handle_at(2). (The changes since
-draft 3 are only minor.)
-
-Would you be willing to review it please, and let me know of any
-corrections/improvements? (Of course, further comments from anyone
-else are also welcome.)
-
-There are some FIXMEs in the page that I would especially like some help with.
-
-Thanks,
-
-Michael
-
-
-.\" Copyright (c) 2014 by Michael Kerrisk <mtk.manpages@gmail.com>
-.\"
-.\" %%%LICENSE_START(VERBATIM)
-.\" Permission is granted to make and distribute verbatim copies of this
-.\" manual provided the copyright notice and this permission notice are
-.\" preserved on all copies.
-.\"
-.\" Permission is granted to copy and distribute modified versions of this
-.\" manual under the conditions for verbatim copying, provided that the
-.\" entire resulting derived work is distributed under the terms of a
-.\" permission notice identical to this one.
-.\"
-.\" Since the Linux kernel and libraries are constantly changing, this
-.\" manual page may be incorrect or out-of-date.  The author(s) assume no
-.\" responsibility for errors or omissions, or for damages resulting from
-.\" the use of the information contained herein.  The author(s) may not
-.\" have taken the same level of care in the production of this manual,
-.\" which is licensed free of charge, as they might when working
-.\" professionally.
-.\"
-.\" Formatted or processed versions of this manual, if unaccompanied by
-.\" the source, must acknowledge the copyright and authors of this work.
-.\" %%%LICENSE_END
-.\"
-.TH OPEN_BY_HANDLE_AT 2 2014-03-24 "Linux" "Linux Programmer's Manual"
-.SH NAME
-name_to_handle_at, open_by_handle_at \- obtain handle
-for a pathname and open file via a handle
-.SH SYNOPSIS
-.nf
-.B #define _GNU_SOURCE
-.B #include <sys/types.h>
-.B #include <sys/stat.h>
-.B #include <fcntl.h>
-
-.BI "int name_to_handle_at(int " dirfd ", const char *" pathname ,
-.BI "                      struct file_handle *" handle ,
-.BI "                      int *" mount_id ", int " flags );
-
-.BI "int open_by_handle_at(int " mount_fd ", struct file_handle *" handle ,
-.BI "                      int " flags );
-.fi
-.SH DESCRIPTION
-The
-.BR name_to_handle_at ()
-and
-.BR open_by_handle_at ()
-system calls split the functionality of
-.BR openat (2)
-into two parts:
-.BR name_to_handle_at ()
-returns an opaque handle that corresponds to a specified file;
-.BR open_by_handle_at ()
-opens the file corresponding to a handle returned by a previous call to
-.BR name_to_handle_at ()
-and returns an open file descriptor.
-.\"
-.\"
-.SS name_to_handle_at()
-The
-.BR name_to_handle_at ()
-system call returns a file handle and a mount ID corresponding to
-the file specified by the
-.IR dirfd
-and
-.IR pathname
-arguments.
-The file handle is returned via the argument
-.IR handle ,
-which is a pointer to a structure of the following form:
-
-.in +4n
-.nf
-struct file_handle {
-    unsigned int  handle_bytes;   /* Size of f_handle [in, out] */
-    int           handle_type;    /* Handle type [out] */
-    unsigned char f_handle[0];    /* File identifier (sized by
-                                     caller) [out] */
-};
-.fi
-.in
-.PP
-It is the caller's responsibility to allocate the structure
-with a size large enough to hold the handle returned in
-.IR f_handle .
-Before the call, the
-.IR handle_bytes
-field should be initialized to contain the allocated size for
-.IR f_handle .
-(The constant
-.BR MAX_HANDLE_SZ ,
-defined in
-.IR <fcntl.h> ,
-specifies the maximum possible size for a file handle.)
-Upon successful return, the
-.IR handle_bytes
-field is updated to contain the number of bytes actually written to
-.IR f_handle .
-
-The caller can discover the required size for the
-.I file_handle
-structure by making a call in which
-.IR handle->handle_bytes
-is zero;
-in this case, the call fails with the error
-.BR EOVERFLOW
-and
-.IR handle->handle_bytes
-is set to indicate the required size;
-the caller can then use this information to allocate a structure
-of the correct size (see EXAMPLE below).
-
-Other than the use of the
-.IR handle_bytes
-field, the caller should treat the
-.IR file_handle
-structure as an opaque data type: the
-.IR handle_type
-and
-.IR f_handle
-fields are needed only by a subsequent call to
-.BR open_by_handle_at ().
-
-The
-.I flags
-argument is a bit mask constructed by ORing together zero or more of
-.BR AT_EMPTY_PATH
-and
-.BR AT_SYMLINK_FOLLOW ,
-described below.
-
-Together, the
-.I pathname
-and
-.I dirfd
-arguments identify the file for which a handle is to be obtained.
-There are four distinct cases:
-.IP * 3
-If
-.I pathname
-is a nonempty string containing an absolute pathname,
-then a handle is returned for the file referred to by that pathname.
-In this case,
-.IR dirfd
-is ignored.
-.IP *
-If
-.I pathname
-is a nonempty string containing a relative pathname and
-.IR dirfd
-has the special value
-.BR AT_FDCWD ,
-then
-.I pathname
-is interpreted relative to the current working directory of the caller,
-and a handle is returned for the file to which it refers.
-.IP *
-If
-.I pathname
-is a nonempty string containing a relative pathname and
-.IR dirfd
-is a file descriptor referring to a directory, then
-.I pathname
-is interpreted relative to the directory referred to by
-.IR dirfd ,
-and a handle is returned for the file to which it refers.
-(See
-.BR openat (3)
-for an explanation of why "directory file descriptors" are useful.)
-.IP *
-If
-.I pathname
-is an empty string and
-.I flags
-specifies the value
-.BR AT_EMPTY_PATH ,
-then
-.IR dirfd
-can be an open file descriptor referring to any type of file,
-or
-.BR AT_FDCWD ,
-meaning the current working directory,
-and a handle is returned for the file to which it refers.
-.PP
-The
-.I mount_id
-argument returns an identifier for the filesystem
-mount that corresponds to
-.IR pathname .
-This corresponds to the first field in one of the records in
-.IR /proc/self/mountinfo .
-Opening the pathname in the fifth field of that record yields a file
-descriptor for the mount point;
-that file descriptor can be used in a subsequent call to
-.BR open_by_handle_at ().
-
-By default,
-.BR name_to_handle_at ()
-does not dereference
-.I pathname
-if it is a symbolic link, and thus returns a handle for the link itself.
-If
-.B AT_SYMLINK_FOLLOW
-is specified in
-.IR flags ,
-.I pathname
-is dereferenced if it is a symbolic link
-(so that the call returns a handle for the file referred to by the link).
-.SS open_by_handle_at()
-The
-.BR open_by_handle_at ()
-system call opens the file referred to by
-.IR handle ,
-a file handle returned by a previous call to
-.BR name_to_handle_at ().
-
-The
-.IR mount_fd
-argument is a file descriptor for any object (file, directory, etc.)
-in the mounted filesystem with respect to which
-.IR handle
-should be interpreted.
-The special value
-.B AT_FDCWD
-can be specified, meaning the current working directory of the caller.
-
-The
-.I flags
-argument
-is as for
-.BR open (2).
-.\" FIXME: Confirm that the following is intended behavior.
-.\"        (It certainly seems to be the behavior, from experimenting.)
-If
-.I handle
-refers to a symbolic link, the caller must specify the
-.B O_PATH
-flag, and the symbolic link is not dereferenced; the
-.B O_NOFOLLOW
-flag, if specified, is ignored.
-
-
-The caller must have the
-.B CAP_DAC_READ_SEARCH
-capability to invoke
-.BR open_by_handle_at ().
-.SH RETURN VALUE
-On success,
-.BR name_to_handle_at ()
-returns 0,
-and
-.BR open_by_handle_at ()
-returns a nonnegative file descriptor.
-
-In the event of an error, both system calls return \-1 and set
-.I errno
-to indicate the cause of the error.
-.SH ERRORS
-.BR name_to_handle_at ()
-and
-.BR open_by_handle_at ()
-can fail for the same errors as
-.BR openat (2).
-In addition, they can fail with the errors noted below.
-
-.BR name_to_handle_at ()
-can fail with the following errors:
-.TP
-.B EFAULT
-.IR pathname ,
-.IR mount_id ,
-or
-.IR handle
-points outside your accessible address space.
-.TP
-.B EINVAL
-.I flags
-includes an invalid bit value.
-.TP
-.B EINVAL
-.IR handle_bytes\->handle_bytes
-is greater than
-.BR MAX_HANDLE_SZ .
-.TP
-.B ENOENT
-.I pathname
-is an empty string, but
-.BR AT_EMPTY_PATH
-was not specified in
-.IR flags .
-.TP
-.B ENOTDIR
-The file descriptor supplied in
-.I dirfd
-does not refer to a directory,
-and it is not the case that both
-.I flags
-includes
-.BR AT_EMPTY_PATH
-and
-.I pathname
-is an empty string.
-.TP
-.B EOPNOTSUPP
-The filesystem does not support decoding of a pathname to a file handle.
-.TP
-.B EOVERFLOW
-The
-.I handle->handle_bytes
-value passed into the call was too small.
-When this error occurs,
-.I handle->handle_bytes
-is updated to indicate the required size for the handle.
-.\"
-.\"
-.PP
-.BR open_by_handle_at ()
-can fail with the following errors:
-.TP
-.B EBADF
-.IR mount_fd
-is not an open file descriptor.
-.TP
-.B EFAULT
-.IR handle
-points outside your accessible address space.
-.TP
-.B EINVAL
-.I handle->handle_bytes
-is greater than
-.BR MAX_HANDLE_SZ
-or is equal to zero.
-.TP
-.B ELOOP
-.\" FIXME (see earlier FIXME). Is this the intended behavior?
-.I handle
-refers to a symbolic link, but
-.B O_PATH
-was not specified in
-.IR flags .
-.TP
-.B EPERM
-The caller does not have the
-.BR CAP_DAC_READ_SEARCH
-capability.
-.TP
-.B ESTALE
-The specified
-.I handle
-is not valid.
-This error will occur if, for example, the file has been deleted.
-.SH VERSIONS
-These system calls first appeared in Linux 2.6.39.
-Library support is provided in glibc since version 2.14.
-.SH CONFORMING TO
-These system calls are nonstandard Linux extensions.
-.SH NOTES
-A file handle can be generated in one process using
-.BR name_to_handle_at ()
-and later used in a different process that calls
-.BR open_by_handle_at ().
-
-Some filesystem don't support the translation of pathnames to
-file handles, for example,
-.IR /proc ,
-.IR /sys ,
-and various network filesystems.
-
-A file handle may become invalid ("stale") if a file is deleted,
-or for other filesystem-specific reasons.
-Invalid handles are notified by an
-.B ESTALE
-error from
-.BR open_by_handle_at ().
-
-These system calls are designed for use by user-space file servers.
-For example, a user-space NFS server might generate a file handle
-and pass it to an NFS client.
-Later, when the client wants to open the file,
-it could pass the handle back to the server.
-.\" https://lwn.net/Articles/375888/
-.\"    "Open by handle" - Jonathan Corbet, 2010-02-23
-This sort of functionality allows a user-space file server to operate in
-a stateless fashion with respect to the files it serves.
-
-If
-.I pathname
-refers to a symbolic link and
-.IR flags
-does not specify
-.BR AT_SYMLINK_FOLLOW ,
-then
-.BR name_to_handle_at ()
-returns a handle for the link (rather than the file to which it refers).
-.\" commit bcda76524cd1fa32af748536f27f674a13e56700
-The process receiving the handle can later perform operations
-on the symbolic link by converting the handle to a file descriptor using
-.BR open_by_handle_at ()
-with the
-.BR O_PATH
-flag, and then passing the file descriptor as the
-.IR dirfd
-argument in system calls such as
-.BR readlinkat (2)
-and
-.BR fchownat (2).
-.SS Obtaining a persistent filesystem ID
-The mount IDs in
-.IR /proc/self/mountinfo
-can be reused as filesystems are unmounted and mounted.
-Therefore, the mount ID returned by
-.BR name_to_handle_at ()
-(in
-.IR *mount_id )
-should not be treated as a persistent identifier
-for the corresponding mounted filesystem.
-However, an application can use the information in the
-.I mountinfo
-record that corresponds to the mount ID
-to derive a persistent identifier.
-
-For example, one can use the device name in the fifth field of the
-.I mountinfo
-record to search for the corresponding device UUID via the symbolic links in
-.IR /dev/disks/by-uuid .
-(A more comfortable way of obtaining the UUID is to use the
-.\" e.g., http://stackoverflow.com/questions/6748429/using-libblkid-to-find-uuid-of-a-partition
-.BR libblkid (3)
-library.)
-That process can then be reversed,
-using the UUID to look up the device name,
-and then obtaining the corresponding mount point,
-in order to produce the
-.IR mount_fd
-argument used by
-.BR open_by_handle_at ().
-.SH EXAMPLE
-The two programs below demonstrate the use of
-.BR name_to_handle_at ()
-and
-.BR open_by_handle_at ().
-The first program
-.RI ( t_name_to_handle_at.c )
-uses
-.BR name_to_handle_at ()
-to obtain the file handle and mount ID
-for the file specified in its command-line argument;
-the handle and mount ID are written to standard output.
-
-The second program
-.RI ( t_open_by_handle_at.c )
-reads a mount ID and file handle from standard input.
-The program then employs
-.BR open_by_handle_at ()
-to open the file using that handle.
-If an optional command-line argument is supplied, then the
-.IR mount_fd
-argument for
-.BR open_by_handle_at ()
-is obtained by opening the directory named in that argument.
-Otherwise,
-.IR mount_fd
-is obtained by scanning
-.IR /proc/self/mountinfo
-to find a record whose mount ID matches the mount ID
-read from standard input,
-and the mount directory specified in that record is opened.
-(These programs do not deal with the fact that mount IDs are not persistent.)
-
-The following shell session demonstrates the use of these two programs:
-
-.in +4n
-.nf
-$ \fBecho 'Can you please think about it?' > cecilia.txt\fP
-$ \fB./t_name_to_handle_at cecilia.txt > fh\fP
-$ \fB./t_open_by_handle_at < fh\fP
-open_by_handle_at: Operation not permitted
-$ \fBsudo ./t_open_by_handle_at < fh\fP      # Need CAP_SYS_ADMIN
-Read 31 bytes
-$ \fBrm cecilia.txt\fP
-.fi
-.in
-
-Now we delete and (quickly) re-create the file so that
-it has the same content and (by chance) the same inode.
-Nevertheless,
-.BR open_by_handle_at ()
-.\" Christoph Hellwig: That's why the file handles contain a generation
-.\" counter that gets incremented in this case.
-recognizes that the original file referred to by the file handle
-no longer exists.
-
-.in +4n
-.nf
-$ \fBstat \-\-printf="%i\\n" cecilia.txt\fP     # Display inode number
-4072121
-$ \fBrm cecilia.txt\fP
-$ \fBecho 'Can you please think about it?' > cecilia.txt\fP
-$ \fBstat \-\-printf="%i\\n" cecilia.txt\fP     # Check inode number
-4072121
-$ \fBsudo ./t_open_by_handle_at < fh\fP
-open_by_handle_at: Stale NFS file handle
-.fi
-.in
-.SS Program source: t_name_to_handle_at.c
-\&
-.nf
-#define _GNU_SOURCE
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-
-#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \\
-                        } while (0)
-
-int
-main(int argc, char *argv[])
-{
-    struct file_handle *fhp;
-    int mount_id, fhsize, flags, dirfd, j;
-    char *pathname;
-
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s pathname\\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    pathname = argv[1];
-
-    /* Allocate file_handle structure */
-
-    fhsize = sizeof(*fhp);
-    fhp = malloc(fhsize);
-    if (fhp == NULL)
-        errExit("malloc");
-
-    /* Make an initial call to name_to_handle_at() to discover
-       the size required for file handle */
-
-    dirfd = AT_FDCWD;           /* For name_to_handle_at() calls */
-    flags = 0;                  /* For name_to_handle_at() calls */
-    fhp\->handle_bytes = 0;
-    if (name_to_handle_at(dirfd, pathname, fhp,
-                &mount_id, flags) != \-1 || errno != EOVERFLOW) {
-        fprintf(stderr, "Unexpected result from name_to_handle_at()\\n");
-        exit(EXIT_FAILURE);
-    }
-
-    /* Reallocate file_handle structure with correct size */
-
-    fhsize = sizeof(struct file_handle) + fhp\->handle_bytes;
-    fhp = realloc(fhp, fhsize);         /* Copies fhp\->handle_bytes */
-    if (fhp == NULL)
-        errExit("realloc");
-
-    /* Get file handle from pathname supplied on command line */
-
-    if (name_to_handle_at(dirfd, pathname, fhp, &mount_id, flags) == \-1)
-        errExit("name_to_handle_at");
-
-    /* Write mount ID, file handle size, and file handle to stdout,
-       for later reuse by t_open_by_handle_at.c */
-
-    printf("%d\\n", mount_id);
-    printf("%d %d   ", fhp\->handle_bytes, fhp\->handle_type);
-    for (j = 0; j < fhp\->handle_bytes; j++)
-        printf(" %02x", fhp\->f_handle[j]);
-    printf("\\n");
-
-    exit(EXIT_SUCCESS);
-}
-.fi
-.SS Program source: t_open_by_handle_at.c
-\&
-.nf
-#define _GNU_SOURCE
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-
-#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \\
-                        } while (0)
-
-/* Scan /proc/self/mountinfo to find the line whose mount ID matches
-   \(aqmount_id\(aq. (An easier way to do this is to install and use the
-   \(aqlibmount\(aq library provided by the \(aqutil\-linux\(aq project.)
-   Open the corresponding mount path and return the resulting file
-   descriptor. */
-
-static int
-open_mount_path_by_id(int mount_id)
-{
-    char *linep;
-    size_t lsize;
-    char mount_path[PATH_MAX];
-    int mi_mount_id, found;
-    ssize_t nread;
-    FILE *fp;
-
-    fp = fopen("/proc/self/mountinfo", "r");
-    if (fp == NULL)
-        errExit("fopen");
-
-    found = 0;
-    linep = NULL;
-    while (!found) {
-        nread = getline(&linep, &lsize, fp);
-        if (nread == \-1)
-            break;
-
-        nread = sscanf(linep, "%d %*d %*s %*s %s",
-                       &mi_mount_id, mount_path);
-        if (nread != 2) {
-            fprintf(stderr, "Bad sscanf()\\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (mi_mount_id == mount_id)
-            found = 1;
-    }
-    free(linep);
-
-    fclose(fp);
-
-    if (!found) {
-        fprintf(stderr, "Could not find mount point\\n");
-        exit(EXIT_FAILURE);
-    }
-
-    return open(mount_path, O_RDONLY);
-}
-
-int
-main(int argc, char *argv[])
-{
-    struct file_handle *fhp;
-    int mount_id, fd, mount_fd, handle_bytes, j;
-    ssize_t nread;
-    char buf[1000];
-#define LINE_SIZE 100
-    char line1[LINE_SIZE], line2[LINE_SIZE];
-    char *nextp;
-
-    if ((argc > 1 && strcmp(argv[1], "\-\-help") == 0) || argc > 2) {
-        fprintf(stderr, "Usage: %s [mount\-path]\\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    /* Standard input contains mount ID and file handle information:
-
-         Line 1: <mount_id>
-         Line 2: <handle_bytes> <handle_type>   <bytes of handle in hex>
-    */
-
-    if ((fgets(line1, sizeof(line1), stdin) == NULL) ||
-           (fgets(line2, sizeof(line2), stdin) == NULL)) {
-        fprintf(stderr, "Missing mount_id / file handle\\n");
-        exit(EXIT_FAILURE);
-    }
-
-    mount_id = atoi(line1);
-
-    handle_bytes = strtoul(line2, &nextp, 0);
-
-    /* Given handle_bytes, we can now allocate file_handle structure */
-
-    fhp = malloc(sizeof(struct file_handle) + handle_bytes);
-    if (fhp == NULL)
-        errExit("malloc");
-
-    fhp\->handle_bytes = handle_bytes;
-
-    fhp\->handle_type = strtoul(nextp, &nextp, 0);
-
-    for (j = 0; j < fhp\->handle_bytes; j++)
-        fhp\->f_handle[j] = strtoul(nextp, &nextp, 16);
-
-    /* Obtain file descriptor for mount point, either by opening
-       the pathname specified on the command line, or by scanning
-       /proc/self/mounts to find a mount that matches the \(aqmount_id\(aq
-       that we received from stdin. */
-
-    if (argc > 1)
-        mount_fd = open(argv[1], O_RDONLY);
-    else
-        mount_fd = open_mount_path_by_id(mount_id);
-
-    if (mount_fd == \-1)
-        errExit("opening mount fd");
-
-    /* Open file using handle and mount point */
-
-    fd = open_by_handle_at(mount_fd, fhp, O_RDONLY);
-    if (fd == \-1)
-        errExit("open_by_handle_at");
-
-    /* Try reading a few bytes from the file */
-
-    nread = read(fd, buf, sizeof(buf));
-    if (nread == \-1)
-        errExit("read");
-
-    printf("Read %zd bytes\\n", nread);
-
-    exit(EXIT_SUCCESS);
-}
-.fi
-.SH SEE ALSO
-.BR open (2),
-.BR libblkid (3),
-.BR blkid (8),
-.BR findfs (8),
-.BR mount (8)
-
-The
-.I libblkid
-and
-.I libmount
-documentation in the latest
-.I util-linux
-release at
-.UR https://www.kernel.org/pub/linux/utils/util-linux/
-.UE
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--ktmQKHiMnuAePgwjbCw4dTPXkD2C3IPII
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 04/03/2014 04:59 PM, Felipe Balbi wrote:
+> On Thu, Apr 03, 2014 at 01:05:18PM +0530, Subbaraya Sundeep Bhatta wrot=
+e:
+>> Add devicetree bindings for Xilinx axi udc driver.
+>>
+>> Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+>> ---
+>> Changes for v2:
+>> 	- replaced xlnx,include-dma with xlnx,has-builtin-dma
+>>
+>>  .../devicetree/bindings/usb/udc-xilinx.txt         |   20 +++++++++++=
++++++++++
+>>  1 files changed, 20 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/usb/udc-xilinx.t=
+xt
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/udc-xilinx.txt b/Do=
+cumentation/devicetree/bindings/usb/udc-xilinx.txt
+>> new file mode 100644
+>> index 0000000..7c24fac
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/usb/udc-xilinx.txt
+>> @@ -0,0 +1,20 @@
+>> +Xilinx AXI USB2 device controller
+>> +
+>> +Required properties:
+>> +- compatible		: Should be "xlnx,axi-usb2-device-4.00.a"
+>> +- reg			: Physical base address and size of the Axi USB2
+>> +			  device registers map.
+>> +- interrupts		: Property with a value describing the interrupt
+>> +			  number.
+>> +- interrupt-parent	: Must be core interrupt controller
+>> +- xlnx,has-builtin-dma	: if DMA is included
+>=20
+> isn't there a configuration register to tell you this ?
+
+I have checked this with Sundeep and there is nothing like that in the HW=
+=2E
+
+>=20
+>> +
+>> +Example:
+>> + 		axi-usb2-device@42e00000 {
+>> +                        compatible =3D "xlnx,axi-usb2-device-4.00.a";=
+
+>> +                        interrupt-parent =3D <0x1>;
+>=20
+> why isn't interrupt-parent a phandle ?
+
+Just for the record: Using number here should be also fine because DTC
+is converting it to numbers with linux,phandle and phandle.
+[linux-next]$ dtc -O dts -I dtb /tftpboot/devicetree.dtb | less
+=2E..
+                ps7-scugic@f8f01000 {
+                        #address-cells =3D <0x2>;
+                        #interrupt-cells =3D <0x3>;
+                        #size-cells =3D <0x1>;
+                        compatible =3D "arm,cortex-a9-gic", "arm,gic";
+                        interrupt-controller;
+                        num_cpus =3D <0x2>;
+                        num_interrupts =3D <0x60>;
+                        reg =3D <0xf8f01000 0x1000 0xf8f00100 0x100>;
+                        linux,phandle =3D <0x3>;
+                        phandle =3D <0x3>;
+                };
+
+                ps7-scutimer@f8f00600 {
+                        clocks =3D <0x2 0x4>;
+                        compatible =3D "arm,cortex-a9-twd-timer";
+                        interrupt-parent =3D <0x3>;
+                        interrupts =3D <0x1 0xd 0x301>;
+                        reg =3D <0xf8f00600 0x20>;
+                };
+=2E..
+
+but anyway Sundeep with change it to any sensible value <&intc>;
+
+Thanks for pointing to it,
+Michal
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--ktmQKHiMnuAePgwjbCw4dTPXkD2C3IPII
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlM+SIQACgkQykllyylKDCH/yACfaGnZM5oUhMYf7zFW1sD6kcOn
+DugAn0AxYyiQ3hxmyQ6RVUue6fm9HJxc
+=ugKb
+-----END PGP SIGNATURE-----
+
+--ktmQKHiMnuAePgwjbCw4dTPXkD2C3IPII--
