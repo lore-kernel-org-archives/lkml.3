@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaDDUiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 16:38:20 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:57477 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaDDUiR (ORCPT
+	id S1752287AbaDDUjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 16:39:42 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:58551 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaDDUjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 16:38:17 -0400
-Message-ID: <533F1857.1020604@ieee.org>
-Date: Fri, 04 Apr 2014 15:38:47 -0500
-From: Alex Elder <elder@ieee.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 4 Apr 2014 16:39:40 -0400
+Date: Fri, 4 Apr 2014 14:39:36 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Ryan Desfosses <ryan@desfo.org>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/2] pci: added space before the open parenthesis
+Message-ID: <20140404203936.GA13931@google.com>
+References: <1396635490-3630-1-git-send-email-ryan@desfo.org>
 MIME-Version: 1.0
-To: Alex Elder <elder@linaro.org>, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org, viresh.linux@gmail.com,
-        shiraz.hashim@gmail.com, catalin.marinas@arm.com
-CC: spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/7] ARM: SMP: common "pen" secondary release method
-References: <1396041180-29897-1-git-send-email-elder@linaro.org>
-In-Reply-To: <1396041180-29897-1-git-send-email-elder@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1396635490-3630-1-git-send-email-ryan@desfo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2014 04:12 PM, Alex Elder wrote:
-> This series proposes creating a single implementation of the "pen
-> release" (or spin-table) mechanism for starting secondary CPUs on
-> ARM SMP systems.  This mechanism is currently implemented at least 5
-> times in the kernel, each essentially identical to the other.  There
-> are other machines that use this method, but slight differences make
-> it necessary to incorporate further work in order to accomodate them
-> with a single set of functions.
+On Fri, Apr 04, 2014 at 02:18:10PM -0400, Ryan Desfosses wrote:
+> change made to resolve checkpatch.pl error
+> 
+> Signed-off-by: Ryan Desfosses <ryan@desfo.org>
 
-Given Russell King's reluctance to include this sort of
-thing in common code I'm withdrawing this series from
-consideration.
+Hi Ryan,
 
-					-Alex
+Thanks for this and your previous fix.  This "Signed-off-by" looks good.
+Would you mind reposting the "pci_bus*" fix with a similar "Signed-off-by"?
+It's a small fix, but strictly speaking, I need the "Signed-off-by" before
+I can apply a patch.
 
-> 
-> This work began with integrating SMP support for a Broadcom SoC.
-> The code I started was another copy of the "pen release" code.
-> Looking at how existing systems handled this, the duplication of
-> code was obvious, but the fact that implementations were identical
-> was less so.  In addition, the arm64 (though not 32-bit arm) code
-> supports the ability to define an "enable-method" property for CPUs
-> in a machine's device tree (one of which is "spin-table"), allowing
-> the secondary startup mechanism to be specified abstractly.
-> 
-> My broader goal then was to set up the SMP support for the Broadcom
-> SoC such that it could be defined in its device tree using a central
-> "spin-table" enable method for secondary CPUs.  The first step was
-> to create a central spin-table implementation.  I've tried to do
-> this generally so it's usable by as many other platforms as
-> possible.  (An alternative would be to define a custom enable method
-> for this platform, but I'd prefer to avoid that if I can.)
-> 
-> I already have some code for the second step--which supports
-> specifying the "spin-table" CPU enable method in device tree files.
-> But before presenting that I wanted to post this series to get
-> feedback on the approach.
-> 
-> I've provided a little more information for each patch below.
-> 
-> This code is available in the "review/common-spin-code" branch of
-> the git repository here:
->     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-> 
-> 
-> 					-Alex
-> 
-> Alex Elder (7):
->   ARM: allow <asm/cputype.h> inclusion from assembly
->     This patch is done specifically so the next one can use the
->     value of MPIDR_HWID_BITMASK in secondary_holding_pen(), which is
->     defined in asssembly.
->   ARM: SMP: generic SMP spin-table method routines
->     Define the common code (based on any of the others, but
->     reportedly they all derive from ARM Realview.)  Names are
->     changed to be more like arch/arm64/kernel/smp_spin_table.c.
-> 
->   ARM: realview: use central SMP spin-table routines
->   ARM: vexpress: use central SMP spin-table routines
->   ARM: versatile: kill off SMP support code
->   	The SMP code for realview and vexpress both use SMP code
-> 	defined under mach-versatile, so these three go together.
-> 
->   ARM: ux500: use generic SMP spin-table routines
->     This one is a pretty straightforward switch to using
->     the common code.
->   	
->   ARM: spear: use central SMP spin-table routines
->     This is straightforward as well, but it depends on the
->     two prerequisite patches mentioned above (which together
->     make this code roughly identical to the rest).
-> 
->  arch/arm/include/asm/cputype.h                 |    4 ++
->  arch/arm/include/asm/smp.h                     |    5 ++
->  arch/arm/kernel/head.S                         |   33 +++++++++
->  arch/arm/kernel/smp.c                          |   77 ++++++++++++++++++++
->  arch/arm/mach-realview/platsmp.c               |    8 +--
->  arch/arm/mach-spear/Makefile                   |    2 +-
->  arch/arm/mach-spear/generic.h                  |    1 -
->  arch/arm/mach-spear/headsmp.S                  |   47 ------------
->  arch/arm/mach-spear/platsmp.c                  |   75 +------------------
->  arch/arm/mach-ux500/Makefile                   |    2 +-
->  arch/arm/mach-ux500/headsmp.S                  |   37 ----------
->  arch/arm/mach-ux500/platsmp.c                  |   72 +------------------
->  arch/arm/mach-vexpress/platsmp.c               |    8 +--
->  arch/arm/mach-vexpress/v2m.c                   |    1 -
->  arch/arm/plat-versatile/Makefile               |    1 -
->  arch/arm/plat-versatile/headsmp.S              |   41 -----------
->  arch/arm/plat-versatile/include/plat/platsmp.h |   14 ----
->  arch/arm/plat-versatile/platsmp.c              |   91 ------------------------
->  18 files changed, 133 insertions(+), 386 deletions(-)
->  delete mode 100644 arch/arm/mach-spear/headsmp.S
->  delete mode 100644 arch/arm/mach-ux500/headsmp.S
->  delete mode 100644 arch/arm/plat-versatile/headsmp.S
->  delete mode 100644 arch/arm/plat-versatile/include/plat/platsmp.h
->  delete mode 100644 arch/arm/plat-versatile/platsmp.c
-> 
+We normally write the changelog so it can stand alone, i.e., you shouldn't
+have to read the summary in addition to the changelog for it to make sense.
+It might be useful to browse other changelogs, e.g., with "git log
+--no-merges drivers/pci".  I do often fix capitalization, spelling, and
+other errors because I think consistency makes it easier to read the
+history.
 
+The "[2/2]" notation suggests that there's another patch labeled "[1/2]"
+(and probably an overall summary labeled "[0/2]"), and that all were posted
+together.  In this case, I think you intended your "pci_bus*" patch to be
+[1/2], but since they weren't posted together, it's a bit harder for me to
+keep track of them as a group.
+
+If you don't mind, I'll collect up this and your previous fix (and any
+future ones you find) and squash them into a single "whitespace fixes" sort
+of patch to reduce the number of commits for obviously-correct changes.
+
+Thanks again, and welcome to Linux kernel development!
+
+Oh, and I applied the patch below to my pending/misc branch (and I'll
+update it with the other one when you post it).  I have a few other things
+I hope to ask Linus to put in v3.15 yet, and I'll include this.
+
+Bjorn
+
+
+
+From: Ryan Desfosses <ryan@desfo.org>
+
+PCI: Fix whitespace issues
+
+Resolve whitespace issues that checkpatch.pl complained about.
+
+No functional change.
+
+Signed-off-by: Ryan Desfosses <ryan@desfo.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 7325d43bf030..1f0bf2eec127 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -114,7 +114,7 @@ unsigned char pci_bus_max_busnr(struct pci_bus* bus)
+ 	max = bus->busn_res.end;
+ 	list_for_each_entry(tmp, &bus->children, node) {
+ 		n = pci_bus_max_busnr(tmp);
+-		if(n > max)
++		if (n > max)
+ 			max = n;
+ 	}
+ 	return max;
