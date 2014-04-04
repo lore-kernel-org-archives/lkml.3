@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaDDMdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:33:07 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:49701 "EHLO kirsi1.inet.fi"
+	id S1752879AbaDDMfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:35:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47919 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067AbaDDMdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:33:03 -0400
-Date: Fri, 4 Apr 2014 15:32:42 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Roland Dreier <roland@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Inki Dae <inki.dae@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-rdma@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] mm: get_user_pages(write,force) refuse to COW in shared
- areas
-Message-ID: <20140404123242.GA22320@node.dhcp.inet.fi>
-References: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils>
+	id S1752755AbaDDMfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 08:35:30 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140404061332.GA11877@gmail.com>
+References: <533D7C93.7080105@zytor.com> <20140403113921.23dceb75@gandalf.local.home> <533D8516.1040803@zytor.com> <20140403121314.246b03a7@gandalf.local.home> <533DED74.6050202@linux.intel.com> <20140403194018.7c67aec7@gandalf.local.home> <533DF455.4040908@linux.intel.com> <533DF8D2.9060508@zytor.com> <533E0A94.5040007@linux.intel.com> <091fb6ee-a7e1-4962-9382-7e3b14792797@email.android.com> <20140404061332.GA11877@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [BUG] x86: reboot doesn't reboot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 04 Apr 2014 05:34:39 -0700
+To: Ingo Molnar <mingo@kernel.org>
+CC: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Message-ID: <86edd315-bbea-47a5-b228-95326de8aff0@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 01:28:22AM -0700, Hugh Dickins wrote:
-> get_user_pages(write=1, force=1) has always had odd behaviour on write-
-> protected shared mappings: although it demands FMODE_WRITE-access to the
-> underlying object (do_mmap_pgoff sets neither VM_SHARED nor VM_MAYWRITE
-> without that), it ends up with do_wp_page substituting private anonymous
-> Copied-On-Write pages for the shared file pages in the area.
-> 
-> That was long ago intentional, as a safety measure to prevent ptrace
-> setting a breakpoint (or POKETEXT or POKEDATA) from inadvertently
-> corrupting the underlying executable.  Yet exec and dynamic loaders
-> open the file read-only, and use MAP_PRIVATE rather than MAP_SHARED.
-> 
-> The traditional odd behaviour still causes surprises and bugs in mm,
-> and is probably not what any caller wants - even the comment on the flag
-> says "You do not want this" (although it's undoubtedly necessary for
-> overriding userspace protections in some contexts, and good when !write).
-> 
-> Let's stop doing that.  But it would be dangerous to remove the long-
-> standing safety at this stage, so just make get_user_pages(write,force)
-> fail with EFAULT when applied to a write-protected shared area.
-> Infiniband may in future want to force write through to underlying
-> object: we can add another FOLL_flag later to enable that if required.
-> 
-> Odd though the old behaviour was, there is no doubt that we may turn
-> out to break userspace with this change, and have to revert it quickly.
-> Issue a WARN_ON_ONCE to help debug the changed case (easily triggered
-> by userspace, so only once to prevent spamming the logs); and delay a
-> few associated cleanups until this change is proved.
-> 
-> get_user_pages callers who might see trouble from this change:
->   ptrace poking, or writing to /proc/<pid>/mem
->   drivers/infiniband/
->   drivers/media/v4l2-core/
->   drivers/gpu/drm/exynos/exynos_drm_gem.c
->   drivers/staging/tidspbridge/core/tiomap3430.c
-> if they ever apply get_user_pages to write-protected shared mappings
-> of an object which was opened for writing.
-> 
-> I went to apply the same change to mm/nommu.c, but retreated.  NOMMU
-> has no place for COW, and its VM_flags conventions are not the same:
-> I'd be more likely to screw up NOMMU than make an improvement there.
-> 
-> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+Plenty.  It used to be the default reboot method for a long time, but it isn't anymore for a reason.
 
-There's comment in do_wp_page() which is not true anymore with patch
-applied. It should be fixed.
-
-Otherwise, looks good to me:
-
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+On April 3, 2014 11:13:32 PM PDT, Ingo Molnar <mingo@kernel.org> wrote:
+>
+>* H. Peter Anvin <hpa@zytor.com> wrote:
+>
+>> Keep in mind we already tried CF9 in the default flow and it broke 
+>> things.  I'm willing to wait for reports about production machines, 
+>> though, but I fully expect them.
+>
+>Typically there's nothing particularly weird about preproduction Intel 
+>hardware when it comes to reboot methods, other than people more 
+>willing to test them with development kernels.
+>
+>Is there any system were the triple fault method does not work?
+>
+>Thanks,
+>
+>	Ingo
 
 -- 
- Kirill A. Shutemov
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
