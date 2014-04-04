@@ -1,122 +1,527 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaDDHhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:37:24 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:2529
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752427AbaDDHhU convert rfc822-to-8bit (ORCPT
+	id S1752116AbaDDHic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:38:32 -0400
+Received: from smtprelay2.synopsys.com ([198.182.60.111]:43196 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaDDHi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:37:20 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "timur@tabi.org" <timur@tabi.org>
-Subject: RE: [PATCH] ASoC: fsl_sai: Fix Bit Clock Polarity configurations
-Thread-Topic: [PATCH] ASoC: fsl_sai: Fix Bit Clock Polarity configurations
-Thread-Index: AQHPT9SzoBtFKZIfLEyeDsRSykEKpJsBEOVw
-Date: Fri, 4 Apr 2014 07:37:00 +0000
-Message-ID: <9cb53ac6e0e04c01bc0c6ae6a4d42557@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1396595387-4371-1-git-send-email-Guangyu.Chen@freescale.com>
-In-Reply-To: <1396595387-4371-1-git-send-email-Guangyu.Chen@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01713B2841
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(164054003)(199002)(189002)(51704005)(76482001)(74366001)(85306002)(76576001)(59766001)(56776001)(54316002)(77982001)(63696002)(76786001)(51856001)(76796001)(74316001)(54356001)(4396001)(47976001)(19580395003)(47736001)(49866001)(20776003)(74706001)(50986001)(74502001)(79102001)(33646001)(46102001)(74662001)(81816001)(74876001)(47446002)(94316002)(81542001)(95666003)(97186001)(93516002)(86362001)(94946001)(81342001)(95416001)(80976001)(99286001)(99396002)(81686001)(69226001)(87266001)(85852003)(98676001)(83322001)(19580405001)(2656002)(90146001)(87936001)(66066001)(65816001)(56816005)(93136001)(80022001)(97336001)(83072002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB443;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:2E207F6C.AEF20CF9.73DCA740.42842B1.20273;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Fri, 4 Apr 2014 03:38:27 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: linux-mtd@lists.infradead.org
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH v2] axs_nand - add driver for NAND controller used on Synopsys AXS dev boards
+Date: Fri,  4 Apr 2014 11:38:09 +0400
+Message-Id: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-> Subject: [PATCH] ASoC: fsl_sai: Fix Bit Clock Polarity configurations
-> 
-> The BCP bit in TCR4/RCR4 register rules as followings:
->   0 Bit clock is active high with drive outputs on rising edge
->     and sample inputs on falling edge.
->   1 Bit clock is active low with drive outputs on falling edge
->     and sample inputs on rising edge.
-> 
-> For all formats currently supported in the fsl_sai driver, they're exactly
-> sending data on the falling edge and sampling on the rising edge.
-> 
-> However, the driver clears this BCP bit for all of them which results click
-> noise when working with SGTL5000 and big noise with WM8962.
-> 
-> Thus this patch corrects the BCP settings for all the formats here to fix
-> the nosie issue.
-> 
-> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> ---
+Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-Good catch.
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+cc: Brian Norris <computersforpeace@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Francois Bedard <fbedard@synopsys.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+---
 
-Acked-by: Xiubo Li <Li.Xiubo@freescale.com>
+In this re-spin I addressed Ezequiel comments.
 
-Thanks,
---
+Changes compared to v1:
+ * Minor code clean-up
+ * Fixed typos
+ * axs_flag_is_set() replaced with axs_flag_wait_and_reset()
+ * axs_flag_wait_and_reset() has built-in check for timeout instead of endless
+ while() loop initially used
 
-BRs,
-Xiubo
+ Documentation/devicetree/bindings/mtd/axs-nand.txt |  17 +
+ drivers/mtd/nand/Kconfig                           |   6 +
+ drivers/mtd/nand/Makefile                          |   1 +
+ drivers/mtd/nand/axs_nand.c                        | 411 +++++++++++++++++++++
+ 4 files changed, 435 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mtd/axs-nand.txt
+ create mode 100644 drivers/mtd/nand/axs_nand.c
 
-
->  sound/soc/fsl/fsl_sai.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-> index 99051c7..9bbebea 100644
-> --- a/sound/soc/fsl/fsl_sai.c
-> +++ b/sound/soc/fsl/fsl_sai.c
-> @@ -180,7 +180,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai
-> *cpu_dai,
->  		 * that is, together with the last bit of the previous
->  		 * data word.
->  		 */
-> -		val_cr2 &= ~FSL_SAI_CR2_BCP;
-> +		val_cr2 |= FSL_SAI_CR2_BCP;
->  		val_cr4 |= FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP;
->  		break;
->  	case SND_SOC_DAIFMT_LEFT_J:
-> @@ -188,7 +188,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai
-> *cpu_dai,
->  		 * Frame high, one word length for frame sync,
->  		 * frame sync asserts with the first bit of the frame.
->  		 */
-> -		val_cr2 &= ~FSL_SAI_CR2_BCP;
-> +		val_cr2 |= FSL_SAI_CR2_BCP;
->  		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
->  		break;
->  	case SND_SOC_DAIFMT_DSP_A:
-> @@ -198,7 +198,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai
-> *cpu_dai,
->  		 * that is, together with the last bit of the previous
->  		 * data word.
->  		 */
-> -		val_cr2 &= ~FSL_SAI_CR2_BCP;
-> +		val_cr2 |= FSL_SAI_CR2_BCP;
->  		val_cr4 &= ~FSL_SAI_CR4_FSP;
->  		val_cr4 |= FSL_SAI_CR4_FSE;
->  		sai->is_dsp_mode = true;
-> @@ -208,7 +208,7 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai
-> *cpu_dai,
->  		 * Frame high, one bit for frame sync,
->  		 * frame sync asserts with the first bit of the frame.
->  		 */
-> -		val_cr2 &= ~FSL_SAI_CR2_BCP;
-> +		val_cr2 |= FSL_SAI_CR2_BCP;
->  		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
->  		sai->is_dsp_mode = true;
->  		break;
-> --
-> 1.8.4
-> 
+diff --git a/Documentation/devicetree/bindings/mtd/axs-nand.txt b/Documentation/devicetree/bindings/mtd/axs-nand.txt
+new file mode 100644
+index 0000000..c522b7f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mtd/axs-nand.txt
+@@ -0,0 +1,17 @@
++* Synopsys AXS NAND controller
++
++Required properties:
++  - compatible: must be "snps,axs-nand"
++  - reg: physical base address and size of the registers map
++
++The device tree may optionally contain sub-nodes describing partitions of the
++address space. See partition.txt for more detail.
++
++Examples:
++
++flash@0x16000 {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "snps,axs-nand";
++	reg = < 0x16000 0x200 >;
++};
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index 93ae6a6..3661822 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -510,4 +510,10 @@ config MTD_NAND_XWAY
+ 	  Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is attached
+ 	  to the External Bus Unit (EBU).
+ 
++config MTD_NAND_AXS
++	tristate "Support for NAND on Synopsys AXS development board"
++	help
++	  Enables support for NAND Flash chips on Synopsys AXS development
++	  boards.
++
+ endif # MTD_NAND
+diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
+index 542b568..635a918 100644
+--- a/drivers/mtd/nand/Makefile
++++ b/drivers/mtd/nand/Makefile
+@@ -49,5 +49,6 @@ obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
+ obj-$(CONFIG_MTD_NAND_GPMI_NAND)	+= gpmi-nand/
+ obj-$(CONFIG_MTD_NAND_XWAY)		+= xway_nand.o
+ obj-$(CONFIG_MTD_NAND_BCM47XXNFLASH)	+= bcm47xxnflash/
++obj-$(CONFIG_MTD_NAND_AXS)		+= axs_nand.o
+ 
+ nand-objs := nand_base.o nand_bbt.o
+diff --git a/drivers/mtd/nand/axs_nand.c b/drivers/mtd/nand/axs_nand.c
+new file mode 100644
+index 0000000..9ee21b6
+--- /dev/null
++++ b/drivers/mtd/nand/axs_nand.c
+@@ -0,0 +1,411 @@
++/*
++ * Copyright (C) 2014 Synopsys, Inc. (www.synopsys.com)
++ *
++ * Driver for NAND controller on Synopsys AXS development board.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License v2. See the file COPYING in the main directory of this archive for
++ * more details.
++ */
++
++#include <linux/delay.h>
++#include <linux/dma-mapping.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/nand.h>
++#include <linux/mtd/partitions.h>
++#include <linux/of_address.h>
++#include <linux/of_platform.h>
++#include <linux/io.h>
++
++/*
++ * There's an issue with DMA'd data if data buffer is cached.
++ * So to make NAND storage available for now we'll map data buffer in
++ * uncached memory.
++ *
++ * As soon as issue with cached buffer is resolved following define to be
++ * removed as well as sources it enables.
++ */
++#define DATA_BUFFER_UNCACHED
++
++#define BUS_WIDTH	8		/* AXI data bus width in bytes	*/
++
++/* DMA buffer descriptor masks */
++#define BD_STAT_OWN			(1 << 31)
++#define BD_STAT_BD_FIRST		(1 << 3)
++#define BD_STAT_BD_LAST			(1 << 2)
++#define BD_SIZES_BUFFER1_MASK		0xfff
++
++#define BD_STAT_BD_COMPLETE	(BD_STAT_BD_FIRST | BD_STAT_BD_LAST)
++
++/* Controller command types */
++#define B_CT_ADDRESS	(0x0 << 16)	/* Address operation		*/
++#define B_CT_COMMAND	(0x1 << 16)	/* Command operation		*/
++#define B_CT_WRITE	(0x2 << 16)	/* Write operation		*/
++#define B_CT_READ	(0x3 << 16)	/* Read operation		*/
++
++/* Controller command options */
++#define B_WFR		(1 << 19)	/* 1b - Wait for ready		*/
++#define B_LC		(1 << 18)	/* 1b - Last cycle		*/
++#define B_IWC		(1 << 13)	/* 1b - Interrupt when complete	*/
++
++enum {
++	NAND_ISR_DATAREQUIRED = 0,
++	NAND_ISR_TXUNDERFLOW,
++	NAND_ISR_TXOVERFLOW,
++	NAND_ISR_DATAAVAILABLE,
++	NAND_ISR_RXUNDERFLOW,
++	NAND_ISR_RXOVERFLOW,
++	NAND_ISR_TXDMACOMPLETE,
++	NAND_ISR_RXDMACOMPLETE,
++	NAND_ISR_DESCRIPTORUNAVAILABLE,
++	NAND_ISR_CMDDONE,
++	NAND_ISR_CMDAVAILABLE,
++	NAND_ISR_CMDERROR,
++	NAND_ISR_DATATRANSFEROVER,
++	NAND_ISR_NONE
++};
++
++enum {
++	AC_FIFO = 0,		/* Address and command fifo */
++	IDMAC_BDADDR = 0x18,	/* IDMAC descriptor list base address */
++	INT_STATUS = 0x118,	/* Interrupt status register */
++	INT_CLR_STATUS = 0x120	/* Interrupt clear status register */
++};
++
++#define AXS_BUF_SIZE	(PAGE_ALIGN(NAND_MAX_PAGESIZE + NAND_MAX_OOBSIZE))
++
++struct asx_nand_bd {
++	__le32 status;		/* DES0 */
++	__le32 sizes;		/* DES1 */
++	dma_addr_t buffer_ptr0;	/* DES2 */
++	dma_addr_t buffer_ptr1;	/* DES3 */
++};
++
++struct axs_nand_host {
++	struct nand_chip	nand_chip;
++	struct mtd_info		mtd;
++	void __iomem		*io_base;
++	struct device		*dev;
++	struct asx_nand_bd	*bd;	/* Buffer descriptor */
++	dma_addr_t		bd_dma;	/* DMA handle for buffer descriptor */
++	uint8_t			*db;	/* Data buffer */
++	dma_addr_t		db_dma;	/* DMA handle for data buffer */
++};
++
++/**
++ * reg_set - Sets register with provided value.
++ * @host:	Pointer to private data structure.
++ * @reg:	Register offset from base address.
++ * @value:	Value to set in register.
++ */
++static inline void reg_set(struct axs_nand_host *host, int reg, int value)
++{
++	iowrite32(value, host->io_base + reg);
++}
++
++/**
++ * reg_get - Gets value of specified register.
++ * @host:	Pointer to private data structure.
++ * @reg:	Register offset from base address.
++ *
++ * returns:	Value of requested register.
++ */
++static inline unsigned int reg_get(struct axs_nand_host *host, int reg)
++{
++	return ioread32(host->io_base + reg);
++}
++
++/* Maximum number of milliseconds we wait for flag to appear */
++#define AXS_FLAG_WAIT_DELAY	1000
++
++/**
++ * axs_flag_wait_and_reset - Waits until requested flag in INT_STATUS register
++ *              is set by HW and resets it by writing "1" in INT_CLR_STATUS.
++ * @host:	Pointer to private data structure.
++ * @flag:	Bit/flag offset in INT_STATUS register
++ */
++static void axs_flag_wait_and_reset(struct axs_nand_host *host, int flag)
++{
++	unsigned int i;
++
++	for (i = 0; i < AXS_FLAG_WAIT_DELAY * 100; i++) {
++		unsigned int status = reg_get(host, INT_STATUS);
++
++		if (status & (1 << flag)) {
++			reg_set(host, INT_CLR_STATUS, 1 << flag);
++			return;
++		}
++
++		udelay(10);
++	}
++
++	/*
++	 * Since we cannot report this problem any further than
++	 * axs_nand_{write|read}_buf() letting user know there's a problem.
++	 */
++	dev_err(host->dev, "Waited too long (%d s.) for flag/bit %d\n",
++		AXS_FLAG_WAIT_DELAY, flag);
++}
++
++/**
++ * axs_nand_write_buf - write buffer to chip
++ * @mtd:	MTD device structure
++ * @buf:	Data buffer
++ * @len:	Number of bytes to write
++ */
++static void axs_nand_write_buf(struct mtd_info *mtd,
++		const uint8_t *buf, int len)
++{
++	struct nand_chip *this = mtd->priv;
++	struct axs_nand_host *host = this->priv;
++
++	memcpy(host->db, buf, len);
++#ifndef DATA_BUFFER_UNCACHED
++	dma_sync_single_for_device(host->dev, host->db_dma, len, DMA_TO_DEVICE);
++#endif
++
++	/* Setup buffer descriptor */
++	host->bd->status = BD_STAT_OWN | BD_STAT_BD_COMPLETE;
++	host->bd->sizes = cpu_to_le32(ALIGN(len, BUS_WIDTH) &
++				      BD_SIZES_BUFFER1_MASK);
++	host->bd->buffer_ptr0 = cpu_to_le32(host->db_dma);
++	host->bd->buffer_ptr1 = 0;
++
++	/* Issue "write" command */
++	reg_set(host, AC_FIFO, B_CT_WRITE | B_WFR | B_IWC | B_LC | (len - 1));
++
++	/* Wait for NAND command and DMA to complete */
++	axs_flag_wait_and_reset(host, NAND_ISR_CMDDONE);
++	axs_flag_wait_and_reset(host, NAND_ISR_TXDMACOMPLETE);
++}
++
++/**
++ * axs_nand_read_buf -  read chip data into buffer
++ * @mtd:	MTD device structure
++ * @buf:	Buffer to store data
++ * @len:	Number of bytes to read
++ */
++static void axs_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
++{
++	struct nand_chip *this = mtd->priv;
++	struct axs_nand_host *host = this->priv;
++
++	/* Setup buffer descriptor */
++	host->bd->status = BD_STAT_OWN | BD_STAT_BD_COMPLETE;
++	host->bd->sizes = cpu_to_le32(ALIGN(len, BUS_WIDTH) &
++				      BD_SIZES_BUFFER1_MASK);
++	host->bd->buffer_ptr0 = cpu_to_le32(host->db_dma);
++	host->bd->buffer_ptr1 = 0;
++
++	/* Issue "read" command */
++	reg_set(host, AC_FIFO, B_CT_READ | B_WFR | B_IWC | B_LC | (len - 1));
++
++	/* Wait for NAND command and DMA to complete */
++	axs_flag_wait_and_reset(host, NAND_ISR_CMDDONE);
++	axs_flag_wait_and_reset(host, NAND_ISR_RXDMACOMPLETE);
++
++#ifndef DATA_BUFFER_UNCACHED
++	dma_sync_single_for_cpu(host->dev, host->db_dma, len, DMA_FROM_DEVICE);
++#endif
++	if (buf != host->db)
++		memcpy(buf, host->db, len);
++}
++
++/**
++ * axs_nand_read_byte - read one byte from the chip
++ * @mtd:	MTD device structure
++ *
++ * returns:	read data byte
++ */
++static uint8_t axs_nand_read_byte(struct mtd_info *mtd)
++{
++	struct nand_chip *this = mtd->priv;
++	struct axs_nand_host *host = this->priv;
++
++	axs_nand_read_buf(mtd, host->db, sizeof(uint8_t));
++	return (uint8_t)host->db[0];
++}
++
++/**
++ * axs_nand_read_word - read one word from the chip
++ * @mtd:	MTD device structure
++ *
++ * returns:	read data word
++ */
++static uint16_t axs_nand_read_word(struct mtd_info *mtd)
++{
++	struct nand_chip *this = mtd->priv;
++	struct axs_nand_host *host = this->priv;
++
++	axs_nand_read_buf(mtd, host->db, sizeof(uint16_t));
++	return (uint16_t)host->db[0];
++}
++
++/**
++ * axs_nand_cmd_ctrl - hardware specific access to control-lines
++ * @mtd:	MTD device structure
++ * @cmd:	NAND command
++ * @ctrl:	NAND control options
++ */
++static void axs_nand_cmd_ctrl(struct mtd_info *mtd, int cmd,
++		unsigned int ctrl)
++{
++	struct nand_chip *nand_chip = mtd->priv;
++	struct axs_nand_host *host = nand_chip->priv;
++
++	if (cmd == NAND_CMD_NONE)
++		return;
++
++	cmd = cmd & 0xff;
++
++	switch (ctrl & (NAND_ALE | NAND_CLE)) {
++	/* Address */
++	case NAND_ALE:
++		cmd |= B_CT_ADDRESS;
++		break;
++
++	/* Command */
++	case NAND_CLE:
++		cmd |= B_CT_COMMAND | B_WFR;
++
++		break;
++
++	default:
++		dev_err(host->dev, "Unknown ctrl %#x\n", ctrl);
++		return;
++	}
++
++	reg_set(host, AC_FIFO, cmd | B_LC);
++	axs_flag_wait_and_reset(host, NAND_ISR_CMDDONE);
++}
++
++static int axs_nand_probe(struct platform_device *pdev)
++{
++	struct mtd_part_parser_data ppdata;
++	struct nand_chip *nand_chip;
++	struct axs_nand_host *host;
++	struct resource res_regs;
++	struct mtd_info *mtd;
++	int err;
++
++	if (!pdev->dev.of_node)
++		return -ENODEV;
++
++	/* Get registers base address from device tree */
++	err = of_address_to_resource(pdev->dev.of_node, 0, &res_regs);
++	if (err) {
++		dev_err(&pdev->dev, "Failed to retrieve registers base from device tree\n");
++		return -ENODEV;
++	}
++
++	/* Allocate memory for the device structure (and zero it) */
++	host = kzalloc(sizeof(struct axs_nand_host), GFP_KERNEL);
++	if (!host)
++		return -ENOMEM;
++
++	host->io_base = devm_ioremap_resource(&pdev->dev, &res_regs);
++	if (IS_ERR(host->io_base)) {
++		err = PTR_ERR(host->io_base);
++		goto out;
++	}
++	dev_dbg(&pdev->dev, "Registers base address is 0x%p\n", host->io_base);
++
++	host->bd = dmam_alloc_coherent(&pdev->dev, sizeof(struct asx_nand_bd),
++				       &host->bd_dma, GFP_KERNEL);
++	if (!host->bd) {
++		dev_err(&pdev->dev, "Failed to allocate buffer descriptor\n");
++		err = -ENOMEM;
++		goto out;
++	}
++
++	memset(host->bd, 0, sizeof(struct asx_nand_bd));
++
++#ifdef DATA_BUFFER_UNCACHED
++	host->db = dmam_alloc_coherent(&pdev->dev, AXS_BUF_SIZE,
++#else
++	host->db = dmam_alloc_noncoherent(&pdev->dev, AXS_BUF_SIZE,
++#endif
++				       &host->db_dma, GFP_KERNEL);
++	if (!host->db) {
++		dev_err(&pdev->dev, "Failed to allocate data buffer\n");
++		err = -ENOMEM;
++		goto out;
++	}
++	dev_dbg(&pdev->dev, "Data buffer mapped @ %p, DMA @ %x\n", host->db,
++		host->db_dma);
++
++	mtd = &host->mtd;
++	nand_chip = &host->nand_chip;
++	host->dev = &pdev->dev;
++
++	nand_chip->priv = host;
++	mtd->priv = nand_chip;
++	mtd->name = "axs_nand";
++	mtd->owner = THIS_MODULE;
++	mtd->dev.parent = &pdev->dev;
++	ppdata.of_node = pdev->dev.of_node;
++
++	nand_chip->cmd_ctrl = axs_nand_cmd_ctrl;
++	nand_chip->read_byte = axs_nand_read_byte;
++	nand_chip->read_word = axs_nand_read_word;
++	nand_chip->write_buf = axs_nand_write_buf;
++	nand_chip->read_buf = axs_nand_read_buf;
++	nand_chip->ecc.mode = NAND_ECC_SOFT;
++
++	dev_set_drvdata(&pdev->dev, host);
++
++	reg_set(host, IDMAC_BDADDR, host->bd_dma);
++
++	err = nand_scan(mtd, 1);
++	if (err)
++		goto out1;
++
++	err = mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
++	if (!err)
++		return err;
++
++	nand_release(mtd);
++
++out1:
++	dev_set_drvdata(&pdev->dev, NULL);
++out:
++	kfree(host);
++	return err;
++}
++
++static int axs_nand_remove(struct platform_device *ofdev)
++{
++	struct axs_nand_host *host = dev_get_drvdata(&ofdev->dev);
++	struct mtd_info *mtd = &host->mtd;
++
++	nand_release(mtd);
++	dev_set_drvdata(&ofdev->dev, NULL);
++	kfree(host);
++
++	return 0;
++}
++
++static const struct of_device_id axs_nand_dt_ids[] = {
++	{ .compatible = "snps,axs-nand", },
++	{ /* Sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, axs_nand_match);
++
++static struct platform_driver axs_nand_driver = {
++	.probe		= axs_nand_probe,
++	.remove		= axs_nand_remove,
++	.driver = {
++		.name = "asx-nand",
++		.owner = THIS_MODULE,
++		.of_match_table = axs_nand_dt_ids,
++	},
++};
++
++module_platform_driver(axs_nand_driver);
++
++MODULE_AUTHOR("Alexey Brodkin <abrodkin@synopsys.com>");
++MODULE_DESCRIPTION("NAND driver for Synopsys AXS development board");
++MODULE_LICENSE("GPL");
+-- 
+1.9.0
 
