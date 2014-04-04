@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaDDUzh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 16:55:37 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:48483 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaDDUzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 16:55:36 -0400
-From: Camille Begue <camille.begue44@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: Camille Begue <camille.begue44@gmail.com>, Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 1/1] staging: comedi: Fix checkpatch warning
-Date: Fri,  4 Apr 2014 22:55:18 +0200
-Message-Id: <1396644920-13925-1-git-send-email-camille.begue44@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752341AbaDDU4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 16:56:16 -0400
+Received: from imap.thunk.org ([74.207.234.97]:50154 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752151AbaDDU4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 16:56:13 -0400
+Date: Fri, 4 Apr 2014 16:56:04 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Daniel J Blueman <daniel@numascale.com>
+Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Steffen Persvold <sp@numascale.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: Re: ext4 performance falloff
+Message-ID: <20140404205604.GC10275@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Daniel J Blueman <daniel@numascale.com>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	Steffen Persvold <sp@numascale.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>
+References: <533EE547.3030504@numascale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533EE547.3030504@numascale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wrap lines > 80 columns.
-This patch is part of eudyptula challenge
+On Sat, Apr 05, 2014 at 01:00:55AM +0800, Daniel J Blueman wrote:
+> On a larger system 1728 cores/4.5TB memory and 3.13.9, I'm seeing very low
+> 600KB/s cached write performance to a local ext4 filesystem:
 
-Signed-off-by: Camille Begue <camille.begue44@gmail.com>
----
- drivers/staging/comedi/comedi_fops.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Hi Daniel,
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index ea6dc36..0f05e87 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1435,13 +1435,16 @@ static int __comedi_get_user_cmd(struct comedi_device *dev,
- 	s = &dev->subdevices[cmd->subdev];
- 
- 	if (s->type == COMEDI_SUBD_UNUSED) {
--		dev_dbg(dev->class_dev, "%d not valid subdevice\n", cmd->subdev);
-+		dev_dbg(dev->class_dev,
-+			"%d not valid subdevice\n",
-+			cmd->subdev);
- 		return -EIO;
- 	}
- 
- 	if (!s->do_cmd || !s->do_cmdtest || !s->async) {
- 		dev_dbg(dev->class_dev,
--			"subdevice %d does not support commands\n", cmd->subdev);
-+			"subdevice %d does not support commands\n",
-+			cmd->subdev);
- 		return -EIO;
- 	}
- 
--- 
-1.9.1
+Thanks for the heads up.  Most (all?) of the ext4 don't have systems
+with thousands of cores, so these issues generally don't come up for
+us, and so we're not likely (hell, very unlikely!) to notice potential
+problems cause by these sorts of uber-large systems.
 
+> Analysis shows that ext4 is reading from all cores' cpu-local data (thus
+> expensive off-NUMA-node access) for each block written:
+> 
+> if (free_clusters - (nclusters + rsv + dirty_clusters) <
+> 				EXT4_FREECLUSTERS_WATERMARK) {
+> 	free_clusters  = percpu_counter_sum_positive(fcc);
+> 	dirty_clusters = percpu_counter_sum_positive(dcc);
+> }
+> 
+> This threshold is defined as:
+> 
+> #define EXT4_FREECLUSTERS_WATERMARK (4 * (percpu_counter_batch *
+> nr_cpu_ids))
+> 
+> I can see why this may get overlooked for systems with commensurate local
+> storage, but some filesystems reasonably don't need to scale with core
+> count. The filesystem I'm testing on and the rootfs (as it has /tmp) are
+> 50GB.
+
+The problem we are trying to solve here is that when we do delayed
+allocation, we're making an implicit promise that there will be space
+available, even though we haven't allocated the space yet.  The reason
+why we are using percpu counters is precisely so that we don't have to
+take a global lock in order to protect the free space counter for the
+file system.
+
+The problem is that when we start getting close to full, there is the
+possibility that all of the cpus might simultaneously try allocate
+space at exactly the same time (and while that might sound unlikely,
+Murphy's law will dictate that if the downside is that the user will
+lose data, and curse the day the file system developers were born, it
+*will* happen :-).  So when the free space, minus the space we have
+already promised, drops below EXT4_FREE_CLUSTERS_WATERMARK, we start
+being super careful.
+
+I've done the calculations, and 4 * 32 * 1728 cores = 221184 blocks,
+or 864 megabytes.  That would mean that the file system is over 98%
+full, so that's actually pretty reasonable; most of the time there's
+more free space than that.
+
+It looks like the real problem is that we're using nr_cpu_ids, which
+is the maximum possible number of cpu's that the system can support,
+which is different from the number of cpu's that you currently have.
+For normal kernels nr_cpu_ids is small, so that has never been a
+problem, but I bet you have nr_cpu_ids set to something really large,
+right?
+
+If you change nr_cpu_ids to total_cpus in the definition of
+EXT4_FREECLUSTERS_WATERMARK, does that make things better for your
+system?
+
+Thanks,
+
+					- Ted
