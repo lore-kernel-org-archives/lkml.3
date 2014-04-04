@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaDDSah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:30:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37084 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401AbaDDSag (ORCPT
+	id S1753984AbaDDScT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:32:19 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:44305 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592AbaDDScR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:30:36 -0400
-Date: Fri, 4 Apr 2014 13:30:22 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sean Pajot <sean.pajot@execulink.com>,
-        lxc-devel@lists.linuxcontainers.org, linux-kernel@vger.kernel.org
-Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
-Message-ID: <20140404183022.GA6728@sergelap>
-References: <5266BEA3.6020008@execulink.com>
- <20131022193718.GA18463@ac100>
- <874n89rsoc.fsf@xmission.com>
- <20140402172049.GA13240@sergelap>
- <20140402173248.GA22804@mail.hallyn.com>
- <533EF65E.6050508@mit.edu>
+	Fri, 4 Apr 2014 14:32:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533EF65E.6050508@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <533EF832.1030902@mit.edu>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+	<20140402221212.GD16570@mguzik.redhat.com>
+	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
+	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
+	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
+	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
+	<CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
+	<CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
+	<20140403104308.GP13491@8bytes.org>
+	<20140403170541.GA19010@thunk.org>
+	<533EF832.1030902@mit.edu>
+Date: Fri, 4 Apr 2014 11:32:17 -0700
+X-Google-Sender-Auth: _Yc_EZMZSSHj__ufRSKcROigv28
+Message-ID: <CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Joerg Roedel <joro@8bytes.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On 04/02/2014 10:32 AM, Serge E. Hallyn wrote:
-> > (Sorry - the lxc-devel list has moved, so replying to all with the
-> > correct list address;   please reply to this rather than my previous
-> > email)
-> > 
-> > Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
-> >> Hi Eric,
-> >>
-> >> (sorry, I don't seem to have the email I actually wanted to reply
-> >> to in my mbox, but it is
-> >> https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-October/005857.html)
-> >>
-> >> You'd said,
-> >>> Someone needs to read and think through all of the corner cases and see
-> >>> if we can ever have a time when task_dumpable is false but root in the
-> >>> container would not or should not be able to see everything.
-> >>>
-> >>> In particular I am worried about the case of a setuid app calling setns,
-> >>> and entering a lesser privileged user namespace.  In my foggy mind that
-> >>> might be a security problem.  And there might be other similar crazy
-> >>> cases.
-> >>
-> >> Can we make use of current->mm->exe_file->f_cred->user_ns?
-> >>
-> >> So either always use 
-> >> make_kgid(current->mm->exe_file->f_cred->user_ns, 0)
-> >> instead of make_kuid(cred->user_ns, 0), or check that
-> >> (current->mm->exe_file->f_cred->user_ns == cred->user_ns)
-> >> and, if not, assume that the caller has done a setns?
-> 
-> Do you have a summary of the issue?  I'm a little lost here.
+On Fri, Apr 4, 2014 at 11:21 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> The other thing I've used /dev/kmsg for is to shove a "I'm starting
+> something now" message in.  This is only really necessary because the
+> current kernel log timestamps are unusable crap.  (We could fix that,
+> hint hint.)
 
-Sure - when running an unprivileged container, tasks which become
-!dumpable end up with /proc/$pid/fd/ being owned by the global
-root user, which inside the container is nobody:nogroup.  Examples
-are the user's sshd threads and apache, and in the past I think I've
-seen it with logind or getty too.
+I'd actually love to fix that, but I disagree with the "we could fix
+it". There are tons of people who know how to parse them (admittedly
+often only to ignore them), so changing the format is not likely to
+work.
 
-> I suspect that what we really need is to revoke a bunch of proc files
-> every time a task does anything involving setuid (or, more generally,
-> any of the LSM_UNSAFE_PTRACE things).
+The good news is that "dmesg -H" does help if you're human. While at
+the same time being an example of that very "there are tools that know
+about the current horrid format" issue.. D'oh.
 
-setuid, or do you mean setns?  In any case, I'm not thinking through
-attach (setns'ing into a container) yet, but the cases I'm looking at
-right now are just a root daemon - already inside the non-init user
-ns - doing something to become !dumpable, and having its fds become
-owned by GLOBAL_ROOT_UID.  Since these tasks are running a program
-which came from inside the non-init userns, I think it's sane to
-allow root in the non-init userns own any coredumps.
-
-Whereas if the program had started as /bin/passwd in the init userns,
-then coredumps (and /proc/$$/fd/*) should be owned by the GLOBAL_ROOT_UID.
-
--serge
+             Linus
