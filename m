@@ -1,55 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaDDGNj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 02:13:39 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:41381 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaDDGNf (ORCPT
+	id S1752023AbaDDG0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 02:26:17 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39386 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaDDG0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 02:13:35 -0400
-Date: Fri, 4 Apr 2014 08:13:32 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-Message-ID: <20140404061332.GA11877@gmail.com>
-References: <533D7C93.7080105@zytor.com>
- <20140403113921.23dceb75@gandalf.local.home>
- <533D8516.1040803@zytor.com>
- <20140403121314.246b03a7@gandalf.local.home>
- <533DED74.6050202@linux.intel.com>
- <20140403194018.7c67aec7@gandalf.local.home>
- <533DF455.4040908@linux.intel.com>
- <533DF8D2.9060508@zytor.com>
- <533E0A94.5040007@linux.intel.com>
- <091fb6ee-a7e1-4962-9382-7e3b14792797@email.android.com>
+	Fri, 4 Apr 2014 02:26:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <091fb6ee-a7e1-4962-9382-7e3b14792797@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGdX0WEeZJ9hxq1y-gmGC=kdtU0ecLbs5gVYb_8ZE6sOW_PPvg@mail.gmail.com>
+References: <CAGdX0WEeZJ9hxq1y-gmGC=kdtU0ecLbs5gVYb_8ZE6sOW_PPvg@mail.gmail.com>
+Date: Thu, 3 Apr 2014 23:26:12 -0700
+Message-ID: <CAMEtUuyQZo6fSMTZ5XKPfPBdjR13916Rd3=z5dip3N_WOzvr6Q@mail.gmail.com>
+Subject: Re: ktap and ebpf integration
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 3, 2014 at 6:21 PM, Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+> Hi Alexei,
+>
+> We talked a lot on ktap and ebpf integration in these days,
+> Now I think we can put into deeply to thinking out some
+> technical issues in there.
+>
+> Firstly, I want to make sure you are support this ktap and
+> ebpf integration direction, I aware you have ongoing 'bpf filter'
+> patch set work, which actually overlapping with ktap integration
+> efforts (IMO the interface should be unified and simple for user,
+>  so I think filter debugfs file is not a good interface), so please let
+> me know your answer about this.
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+I think the more choices users have the better.
+I'll continue with C based filters and you can continue with ktap
+syntax. That's ok. We can share all kernel pieces.
+Like:
+1.
+user: C -> llvm -> obj_file
+kernel: obj_file -> ibpf_verifier -> ibpf execution engine
+2.
+user: ktap language -> ktap_compiler -> obj_file
+kernel: obj_file -> ibpf_verifier -> ibpf execution engine
 
-> Keep in mind we already tried CF9 in the default flow and it broke 
-> things.  I'm willing to wait for reports about production machines, 
-> though, but I fully expect them.
+> If the answer is yes, then we can go through ebpf core
+> improvement, for example:
 
-Typically there's nothing particularly weird about preproduction Intel 
-hardware when it comes to reboot methods, other than people more 
-willing to test them with development kernels.
+In the architecture I'm proposing there are three main pieces:
+- user facing language and userspace compiler into ibpf
+  instruction set stored into object file format like ELF
+  or something simpler
+- in kernel loader of that object file, license and instruction verifier
+- ibpf execution engine
 
-Is there any system were the triple fault method does not work?
+ibpf execution engine can do all requested features already.
+It's a matter of loader and verifier to accept them.
+For example:
 
-Thanks,
+> - support global variable access
 
-	Ingo
+from execution engine point of view global or stack variable
+makes no difference. It's a 'ld rY, word ptr [rX]' instruction.
+where register rX is pointing to the stack or to some memory location.
+In my old patch set 'verifier' was proving correctness of stack
+and table accesses only, since I didn't see the need for global
+pointers yet, but we can add it.
+
+>   this is mandatory for dynamic tracing, otherwise, there have
+>   no possible to run a simple script like get function execution
+>   time.
+
+I don't understand the correlation between measuring function
+execution time and global variables.
+I think userspace should be measuring script execution time.
+Time sampling within kernel can be done from ibpf program
+by calling ktime_get().
+
+> - support timer in kernel
+>   The final solution must need to support kernel timer for profiling,
+>   and sampling stack.
+
+we can let programs be executed in kernel by timer events, but
+I think it's a userspace task.
+If userspace can do it without hurting performance, it probably
+should do it.
+
+For example to do systemtap 'iotop.stp' which looks like:
+probe vfs.read.return {
+    reads[execname()] += bytes_read
+}
+probe vfs.write.return {
+    writes[execname()] += bytes_written
+}
+# print top 10 IO processes every 5 seconds
+probe timer.s(5) {
+    foreach (name in writes)
+        total_io[name] += writes[name]
+    foreach (name in reads)
+        total_io[name] += reads[name]
+    printf ("%16s\t%10s\t%10s\n", "Process", "KB Read", "KB Written")
+...
+}
+first two probe functions belong in kernel as two independent
+ibpf programs that access 'reads' and 'writes' tables,
+and 'timer.s' really belongs in userspace.
+Every 5 seconds it can access 'reads' and 'write' tables, sort them,
+print them, etc.
+The important concept here is a user/kernel shared table.
+ibpf program can read/write to it from kernel.
+userspace component can read/write it in parallel.
+
+Back in september I posted patches for this style of table
+access via netlink.
+Note that ibpf program doesn't own memory.
+It can call 'bpf_table_update' to store key/value pair
+into kernel table. Think of it as small in kernel database
+that ibpf program can store data to and user space can
+read/write data at the same time.
+
+> - support register multi-event in one script
+
+I think it should be clear now, that it's already supported.
+one ibpf program == one function.
+object file may contain multiple programs that attach to
+different kprobe events and store key/value pairs into
+the same or different tables.
+>From verifier point of view this two programs are disjoint.
+They cannot call each other. Verifier checks them
+independently.
+
+> - support trace_end
+
+if you mean the final print out of everything,
+then it's a userspace task.
+
+Thanks
+Alexei
