@@ -1,132 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbaDDSx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:53:56 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28520 "EHLO
+	id S1754334AbaDDSxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:53:55 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28517 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161AbaDDSxv (ORCPT
+	with ESMTP id S1754107AbaDDSxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Apr 2014 14:53:51 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/2] xen/xenbus: Avoid synchronous wait on XenBus stalling shutdown/restart.
-Date: Fri,  4 Apr 2014 14:53:40 -0400
-Message-Id: <1396637621-30113-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH] Bug-fixes for 3.15 related to 'xl shutdown' and hanging the initial domain reboot.
+Date: Fri,  4 Apr 2014 14:53:39 -0400
+Message-Id: <1396637621-30113-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1396637621-30113-1-git-send-email-konrad.wilk@oracle.com>
-References: <1396637621-30113-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'read_reply' works with 'process_msg' to read of a reply in XenBus.
-'process_msg' is running from within the 'xenbus' thread. Whenever
-a message shows up in XenBus it is put on a xs_state.reply_list list
-and 'read_reply' picks it up.
+Hey,
 
-The problem is if the backend domain or the xenstored process is killed.
-In which case 'xenbus' is still awaiting - and 'read_reply' if called -
-stuck forever waiting for the reply_list to have some contents.
+These patches were posted way back in Novemeber for issues discovered with Xen 4.4.
+I posted the patches and then dropped them to focus on PVH. Now dusting off
+my patch queue.
 
-This is normally not a problem - as the backend domain can come back
-or the xenstored process can be restarted. However if the domain
-is in process of being powered off/restarted/halted - there is no
-point of waiting on it coming back - as we are effectively being
-terminated and should not impede the progress.
+The 
+ [PATCH 1/2] xen/xenbus: Avoid synchronous wait on XenBus stalling
 
-This patch solves this problem by checking whether the guest is
-the right domain. If it is an initial domain and hurtling towards
-death - there is no point of continuing the wait. All other type
-of guests continue with their behavior.
-mechanism a bit more asynchronous.
+fixes an issue were initial domain would hang if it had guest running.
+Usually the toolstack is in charge of such things but in case that had died
+- well we still want to reboot but we couldn't because we were stuck waiting
+for a reply that we would never get.
 
-Fixes-Bug: http://bugs.xenproject.org/xen/bug/8
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v2: Fixed it up per David's suggestions]
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
----
+The
+ [PATCH 2/2] xen/manage: Poweroff forcefully if user-space is not yet
+
+fixes a bit of how Linux handles the 'xl shutdown' command. In theory if
+the first 'xl shutdown' didn't do it - send another, and then another.
+
+Except that the kernel would gate on the first and ignore the rest. Even
+if it failed to shutdown. This mean the user had to destroy the guest.
+This patch fixes that and also makes the shutdown work when we are in the
+booting stage.
+
+Please pull these in stable/for-linus-3.15 after rc1. Thanks!
+
+ drivers/xen/manage.c           | 32 ++++++++++++++++++++++++++++--
  drivers/xen/xenbus/xenbus_xs.c | 44 +++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 41 insertions(+), 3 deletions(-)
+ 2 files changed, 71 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
-index b6d5fff..ba804f3 100644
---- a/drivers/xen/xenbus/xenbus_xs.c
-+++ b/drivers/xen/xenbus/xenbus_xs.c
-@@ -50,6 +50,7 @@
- #include <xen/xenbus.h>
- #include <xen/xen.h>
- #include "xenbus_comms.h"
-+#include "xenbus_probe.h"
- 
- struct xs_stored_msg {
- 	struct list_head list;
-@@ -139,6 +140,29 @@ static int get_error(const char *errorstring)
- 	return xsd_errors[i].errnum;
- }
- 
-+static bool xenbus_ok(void)
-+{
-+	switch (xen_store_domain_type) {
-+	case XS_LOCAL:
-+		switch (system_state) {
-+		case SYSTEM_POWER_OFF:
-+		case SYSTEM_RESTART:
-+		case SYSTEM_HALT:
-+			return false;
-+		default:
-+			break;
-+		}
-+		return true;
-+	case XS_PV:
-+	case XS_HVM:
-+		/* FIXME: Could check that the remote domain is alive,
-+		 * but it is normally initial domain. */
-+		return true;
-+	default:
-+		break;
-+	}
-+	return false;
-+}
- static void *read_reply(enum xsd_sockmsg_type *type, unsigned int *len)
- {
- 	struct xs_stored_msg *msg;
-@@ -148,9 +172,20 @@ static void *read_reply(enum xsd_sockmsg_type *type, unsigned int *len)
- 
- 	while (list_empty(&xs_state.reply_list)) {
- 		spin_unlock(&xs_state.reply_lock);
--		/* XXX FIXME: Avoid synchronous wait for response here. */
--		wait_event(xs_state.reply_waitq,
--			   !list_empty(&xs_state.reply_list));
-+		if (xenbus_ok())
-+			/* XXX FIXME: Avoid synchronous wait for response here. */
-+			wait_event_timeout(xs_state.reply_waitq,
-+					   !list_empty(&xs_state.reply_list),
-+					   msecs_to_jiffies(500));
-+		else {
-+			/*
-+			 * If we are in the process of being shut-down there is
-+			 * no point of trying to contact XenBus - it is either
-+			 * killed (xenstored application) or the other domain
-+			 * has been killed or is unreachable.
-+			 */
-+			return ERR_PTR(-EIO);
-+		}
- 		spin_lock(&xs_state.reply_lock);
- 	}
- 
-@@ -215,6 +250,9 @@ void *xenbus_dev_request_and_reply(struct xsd_sockmsg *msg)
- 
- 	mutex_unlock(&xs_state.request_mutex);
- 
-+	if (IS_ERR(ret))
-+		return ret;
-+
- 	if ((msg->type == XS_TRANSACTION_END) ||
- 	    ((req_msg.type == XS_TRANSACTION_START) &&
- 	     (msg->type == XS_ERROR)))
--- 
-1.8.5.3
+Konrad Rzeszutek Wilk (2):
+      xen/xenbus: Avoid synchronous wait on XenBus stalling shutdown/restart.
+      xen/manage: Poweroff forcefully if user-space is not yet up.
 
