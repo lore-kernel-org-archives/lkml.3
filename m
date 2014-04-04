@@ -1,543 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbaDDJu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 05:50:27 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35714 "EHLO arroyo.ext.ti.com"
+	id S1752366AbaDDJwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 05:52:40 -0400
+Received: from 8bytes.org ([85.214.48.195]:45947 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978AbaDDJuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 05:50:23 -0400
-Message-ID: <533E8033.70904@ti.com>
-Date: Fri, 4 Apr 2014 15:19:39 +0530
-From: sourav <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1752112AbaDDJwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 05:52:38 -0400
+Date: Fri, 4 Apr 2014 11:52:34 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU Updates for Linux v3.15
+Message-ID: <20140404095233.GA3692@8bytes.org>
 MIME-Version: 1.0
-To: Yuan Yao <yao.yuan@freescale.com>
-CC: <wsa@the-dreams.de>, <marex@denx.de>, <mark.rutland@arm.com>,
-        <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
-References: <1396579272-19542-1-git-send-email-yao.yuan@freescale.com> <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
-In-Reply-To: <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Apr  4 11:52:36 2014
+X-DSPAM-Confidence: 0.9992
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 533e80e420861397221422
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Friday 04 April 2014 08:11 AM, Yuan Yao wrote:
-> Add dma support for i2c. This function depend on DMA driver.
-> You can turn on it by write both the dmas and dma-name properties in dts node.
->
-> Signed-off-by: Yuan Yao<yao.yuan@freescale.com>
-> ---
->   drivers/i2c/busses/i2c-imx.c | 372 +++++++++++++++++++++++++++++++++++++------
->   1 file changed, 319 insertions(+), 53 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-> index db895fb..3d63b35 100644
-> --- a/drivers/i2c/busses/i2c-imx.c
-> +++ b/drivers/i2c/busses/i2c-imx.c
-> @@ -37,22 +37,27 @@
->   /** Includes *******************************************************************
->   *******************************************************************************/
->
-> -#include<linux/init.h>
-> -#include<linux/kernel.h>
-> -#include<linux/module.h>
-> +#include<linux/clk.h>
-> +#include<linux/completion.h>
-> +#include<linux/delay.h>
-> +#include<linux/dma-mapping.h>
-> +#include<linux/dmaengine.h>
-> +#include<linux/dmapool.h>
->   #include<linux/errno.h>
->   #include<linux/err.h>
->   #include<linux/interrupt.h>
-> -#include<linux/delay.h>
->   #include<linux/i2c.h>
-> +#include<linux/init.h>
->   #include<linux/io.h>
-> -#include<linux/sched.h>
-> -#include<linux/platform_device.h>
-> -#include<linux/clk.h>
-> -#include<linux/slab.h>
-> +#include<linux/kernel.h>
-> +#include<linux/module.h>
->   #include<linux/of.h>
->   #include<linux/of_device.h>
-> +#include<linux/of_dma.h>
->   #include<linux/platform_data/i2c-imx.h>
-> +#include<linux/platform_device.h>
-> +#include<linux/sched.h>
-> +#include<linux/slab.h>
->
->   /** Defines ********************************************************************
->   *******************************************************************************/
-> @@ -63,6 +68,10 @@
->   /* Default value */
->   #define IMX_I2C_BIT_RATE	100000	/* 100kHz */
->
-> +/* enable DMA if transfer byte size is bigger than this threshold */
-> +#define IMX_I2C_DMA_THRESHOLD	16
-> +#define IMX_I2C_DMA_TIMEOUT	1000
-> +
->   /* IMX I2C registers:
->    * the I2C register offset is different between SoCs,
->    * to provid support for all these chips, split the
-> @@ -88,6 +97,7 @@
->   #define I2SR_IBB	0x20
->   #define I2SR_IAAS	0x40
->   #define I2SR_ICF	0x80
-> +#define I2CR_DMAEN	0x02
->   #define I2CR_RSTA	0x04
->   #define I2CR_TXAK	0x08
->   #define I2CR_MTX	0x10
-> @@ -174,6 +184,17 @@ struct imx_i2c_hwdata {
->   	unsigned		i2cr_ien_opcode;
->   };
->
-> +struct imx_i2c_dma {
-> +	struct dma_chan		*chan_tx;
-> +	struct dma_chan		*chan_rx;
-> +	struct dma_chan		*chan_using;
-> +	struct completion	cmd_complete;
-> +	dma_addr_t		dma_buf;
-> +	unsigned int		dma_len;
-> +	unsigned int		dma_transfer_dir;
-> +	unsigned int		dma_data_dir;
-> +};
-> +
->   struct imx_i2c_struct {
->   	struct i2c_adapter	adapter;
->   	struct clk		*clk;
-> @@ -184,6 +205,8 @@ struct imx_i2c_struct {
->   	int			stopped;
->   	unsigned int		ifdr; /* IMX_I2C_IFDR */
->   	const struct imx_i2c_hwdata	*hwdata;
-> +
-> +	struct imx_i2c_dma	*dma;
->   };
->
->   static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
-> @@ -254,6 +277,132 @@ static inline unsigned char imx_i2c_read_reg(struct imx_i2c_struct *i2c_imx,
->   	return readb(i2c_imx->base + (reg<<  i2c_imx->hwdata->regshift));
->   }
->
-> +/* Functions for DMA support */
-> +static int i2c_imx_dma_request(struct imx_i2c_struct *i2c_imx,
-> +						dma_addr_t phy_addr)
-> +{
-> +	struct imx_i2c_dma *dma;
-> +	struct dma_slave_config dma_sconfig;
-> +	struct device *dev =&i2c_imx->adapter.dev;
-> +	int ret;
-> +
-> +	dma = devm_kzalloc(dev, sizeof(struct imx_i2c_dma), GFP_KERNEL);
-> +	if (!dma) {
-> +		dev_info(dev, "can't allocate DMA struct\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	dma->chan_tx = dma_request_slave_channel(dev, "tx");
-> +	return 0;
-?? Looks to be some leftover?
-> +	if (!dma->chan_tx) {
-> +		dev_info(dev, "DMA tx channel request failed\n");
-> +		ret = -ENODEV;
-> +		goto fail_al;
-> +	}
-> +
-> +	dma_sconfig.dst_addr = phy_addr +
-> +				(IMX_I2C_I2DR<<  i2c_imx->hwdata->regshift);
-> +	dma_sconfig.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-> +	dma_sconfig.dst_maxburst = 1;
-> +	dma_sconfig.direction = DMA_MEM_TO_DEV;
-> +	ret = dmaengine_slave_config(dma->chan_tx,&dma_sconfig);
-> +	if (ret<  0) {
-> +		dev_info(dev, "DMA slave config failed, err = %d\n", ret);
-> +		goto fail_tx;
-> +	}
-> +
-> +	dma->chan_rx = dma_request_slave_channel(dev, "rx");
-> +	if (!dma->chan_rx) {
-> +		dev_info(dev, "DMA rx channel request failed\n");
-> +		ret = -ENODEV;
-> +		goto fail_tx;
-> +	}
-> +
-> +	dma_sconfig.src_addr = phy_addr +
-> +				(IMX_I2C_I2DR<<  i2c_imx->hwdata->regshift);
-> +	dma_sconfig.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-> +	dma_sconfig.src_maxburst = 1;
-> +	dma_sconfig.direction = DMA_DEV_TO_MEM;
-> +	ret = dmaengine_slave_config(dma->chan_rx,&dma_sconfig);
-> +	if (ret<  0) {
-> +		dev_info(dev, "DMA slave config failed, err = %d\n", ret);
-> +		goto fail_rx;
-> +	}
-> +
-> +	i2c_imx->dma = dma;
-> +
-> +	init_completion(&dma->cmd_complete);
-> +
-> +	return 0;
-> +
-> +fail_rx:
-> +	dma_release_channel(dma->chan_rx);
-> +fail_tx:
-> +	dma_release_channel(dma->chan_tx);
-> +fail_al:
-> +	devm_kfree(dev, dma);
-> +
-> +	return ret;
-> +}
-> +
-> +static void i2c_imx_dma_callback(void *arg)
-> +{
-> +	struct imx_i2c_struct *i2c_imx = (struct imx_i2c_struct *)arg;
-> +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> +
-> +	dma_unmap_single(dma->chan_using->device->dev, dma->dma_buf,
-> +			dma->dma_len, dma->dma_data_dir);
-> +	complete(&dma->cmd_complete);
-> +}
-> +
-> +static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
-> +					struct i2c_msg *msgs)
-> +{
-> +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> +	struct dma_async_tx_descriptor *txdesc;
-> +	struct device *dev =&i2c_imx->adapter.dev;
-> +
-> +	dma->dma_buf = dma_map_single(dma->chan_using->device->dev, msgs->buf,
-> +					dma->dma_len, dma->dma_data_dir);
-> +	if (dma_mapping_error(dma->chan_using->device->dev, dma->dma_buf)) {
-> +		dev_err(dev, "DMA mapping failed\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	txdesc = dmaengine_prep_slave_single(dma->chan_using, dma->dma_buf,
-> +					dma->dma_len, dma->dma_transfer_dir,
-> +					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-> +	if (!txdesc) {
-> +		dev_err(dev, "Not able to get desc for DMA xfer\n");
-> +		dma_unmap_single(dma->chan_using->device->dev, dma->dma_buf,
-> +					dma->dma_len, dma->dma_data_dir);
-> +		return -EINVAL;
-> +	}
-> +
-> +	txdesc->callback = i2c_imx_dma_callback;
-> +	txdesc->callback_param = i2c_imx;
-> +	dmaengine_submit(txdesc);
-> +	dma_async_issue_pending(dma->chan_using);
-> +
-> +	return 0;
-> +}
-> +
-> +static void i2c_imx_dma_free(struct imx_i2c_struct *i2c_imx)
-> +{
-> +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> +
-> +	dma->dma_buf = 0;
-> +	dma->dma_len = 0;
-> +
-> +	dma_release_channel(dma->chan_tx);
-> +	dma->chan_tx = NULL;
-> +
-> +	dma_release_channel(dma->chan_rx);
-> +	dma->chan_rx = NULL;
-> +
-> +	dma->chan_using = NULL;
-> +}
-> +
->   /** Functions for IMX I2C adapter driver ***************************************
->   *******************************************************************************/
->
-> @@ -334,6 +483,11 @@ static int i2c_imx_start(struct imx_i2c_struct *i2c_imx)
->
->   	temp |= I2CR_IIEN | I2CR_MTX | I2CR_TXAK;
->   	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
-> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +	temp&= ~I2CR_DMAEN;
-> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
->   	return result;
->   }
->
-> @@ -427,44 +581,101 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)
->
->   static int i2c_imx_write(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
->   {
-> -	int i, result;
-> +	int i, result, timeout = IMX_I2C_DMA_TIMEOUT;
-> +	unsigned int temp = 0;
-> +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> +	struct device *dev =&i2c_imx->adapter.dev;
->
-> -	dev_dbg(&i2c_imx->adapter.dev, "<%s>  write slave address: addr=0x%x\n",
-> +	dev_dbg(dev, "<%s>  write slave address: addr=0x%x\n",
->   		__func__, msgs->addr<<  1);
-> +	if (dma&&  msgs->len>= IMX_I2C_DMA_THRESHOLD) {
-> +		reinit_completion(&i2c_imx->dma->cmd_complete);
-> +		dma->chan_using = dma->chan_tx;
-> +		dma->dma_transfer_dir = DMA_MEM_TO_DEV;
-> +		dma->dma_data_dir = DMA_TO_DEVICE;
-> +		dma->dma_len = msgs->len - 1;
-> +		result = i2c_imx_dma_xfer(i2c_imx, msgs);
-> +		if (result)
-> +			return result;
->
-> -	/* write slave address */
-> -	imx_i2c_write_reg(msgs->addr<<  1, i2c_imx, IMX_I2C_I2DR);
-> -	result = i2c_imx_trx_complete(i2c_imx);
-> -	if (result)
-> -		return result;
-> -	result = i2c_imx_acked(i2c_imx);
-> -	if (result)
-> -		return result;
-> -	dev_dbg(&i2c_imx->adapter.dev, "<%s>  write data\n", __func__);
-> +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +		temp |= I2CR_DMAEN;
-> +		imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
->
-> -	/* write data */
-> -	for (i = 0; i<  msgs->len; i++) {
-> -		dev_dbg(&i2c_imx->adapter.dev,
-> -			"<%s>  write byte: B%d=0x%X\n",
-> -			__func__, i, msgs->buf[i]);
-> -		imx_i2c_write_reg(msgs->buf[i], i2c_imx, IMX_I2C_I2DR);
-> +		/* write slave address */
-> +		imx_i2c_write_reg(msgs->addr<<  1, i2c_imx, IMX_I2C_I2DR);
-> +		result = wait_for_completion_interruptible_timeout(
-> +					&i2c_imx->dma->cmd_complete,
-> +					msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
-> +		if (result<= 0) {
-> +			dmaengine_terminate_all(dma->chan_using);
-> +			if (result)
-> +				return result;
-> +			else
-> +				return -ETIMEDOUT;
-> +		}
-> +
-> +		/* waiting for Transfer complete. */
-> +		while (timeout--) {
-> +			temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
-> +			if (temp&  I2SR_ICF)
-> +				break;
-> +			udelay(10);
-> +		}
-> +
-> +		if (!timeout)
-> +			return -ETIMEDOUT;
-> +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +		temp&= ~I2CR_DMAEN;
-> +		imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
-> +		/* write the last byte */
-> +		imx_i2c_write_reg(msgs->buf[msgs->len-1],
-> +					i2c_imx, IMX_I2C_I2DR);
->   		result = i2c_imx_trx_complete(i2c_imx);
->   		if (result)
->   			return result;
-> +
-> +		result = i2c_imx_acked(i2c_imx);
-> +		if (result)
-> +			return result;
-> +	} else {
-> +		/* write slave address */
-> +		imx_i2c_write_reg(msgs->addr<<  1, i2c_imx, IMX_I2C_I2DR);
-> +		result = i2c_imx_trx_complete(i2c_imx);
-> +		if (result)
-> +			return result;
-> +
->   		result = i2c_imx_acked(i2c_imx);
->   		if (result)
->   			return result;
-> +
-> +		dev_dbg(dev, "<%s>  write data\n", __func__);
-> +
-> +		/* write data */
-> +		for (i = 0; i<  msgs->len; i++) {
-> +			dev_dbg(dev, "<%s>  write byte: B%d=0x%X\n",
-> +				__func__, i, msgs->buf[i]);
-> +			imx_i2c_write_reg(msgs->buf[i], i2c_imx, IMX_I2C_I2DR);
-> +			result = i2c_imx_trx_complete(i2c_imx);
-> +			if (result)
-> +				return result;
-> +			result = i2c_imx_acked(i2c_imx);
-> +			if (result)
-> +				return result;
-> +		}
->   	}
->   	return 0;
->   }
->
->   static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
->   {
-> -	int i, result;
-> +	int i, result, timeout = IMX_I2C_DMA_TIMEOUT;
->   	unsigned int temp;
-> +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> +	struct device *dev =&i2c_imx->adapter.dev;
->
-> -	dev_dbg(&i2c_imx->adapter.dev,
-> -		"<%s>  write slave address: addr=0x%x\n",
-> +	dev_dbg(dev, "<%s>  write slave address: addr=0x%x\n",
->   		__func__, (msgs->addr<<  1) | 0x01);
->
->   	/* write slave address */
-> @@ -476,7 +687,7 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
->   	if (result)
->   		return result;
->
-> -	dev_dbg(&i2c_imx->adapter.dev, "<%s>  setup bus\n", __func__);
-> +	dev_dbg(dev, "<%s>  setup bus\n", __func__);
->
->   	/* setup bus to read data */
->   	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> @@ -486,35 +697,81 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
->   	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
->   	imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR); /* dummy read */
->
-> -	dev_dbg(&i2c_imx->adapter.dev, "<%s>  read data\n", __func__);
-> +	dev_dbg(dev, "<%s>  read data\n", __func__);
->
-> -	/* read data */
-> -	for (i = 0; i<  msgs->len; i++) {
-> -		result = i2c_imx_trx_complete(i2c_imx);
-> +	if (dma&&  msgs->len>= IMX_I2C_DMA_THRESHOLD) {
-> +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +		temp |= I2CR_DMAEN;
-> +		imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
-> +		reinit_completion(&i2c_imx->dma->cmd_complete);
-> +		dma->chan_using = dma->chan_rx;
-> +		dma->dma_transfer_dir = DMA_DEV_TO_MEM;
-> +		dma->dma_data_dir = DMA_FROM_DEVICE;
-> +		dma->dma_len = msgs->len - 2;
-> +		result = i2c_imx_dma_xfer(i2c_imx, msgs);
->   		if (result)
->   			return result;
-> -		if (i == (msgs->len - 1)) {
-> -			/* It must generate STOP before read I2DR to prevent
-> -			   controller from generating another clock cycle */
-> -			dev_dbg(&i2c_imx->adapter.dev,
-> -				"<%s>  clear MSTA\n", __func__);
-> -			temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> -			temp&= ~(I2CR_MSTA | I2CR_MTX);
-> -			imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> -			i2c_imx_bus_busy(i2c_imx, 0);
-> -			i2c_imx->stopped = 1;
-> -		} else if (i == (msgs->len - 2)) {
-> -			dev_dbg(&i2c_imx->adapter.dev,
-> -				"<%s>  set TXAK\n", __func__);
-> -			temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> -			temp |= I2CR_TXAK;
-> -			imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
-> +		result = wait_for_completion_interruptible_timeout(
-> +					&i2c_imx->dma->cmd_complete,
-> +					msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
-> +		if (result<= 0) {
-> +			dmaengine_terminate_all(dma->chan_using);
-> +			if (result)
-> +				return result;
-> +			else
-> +				return -ETIMEDOUT;
->   		}
-> -		msgs->buf[i] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-> -		dev_dbg(&i2c_imx->adapter.dev,
-> -			"<%s>  read byte: B%d=0x%X\n",
-> -			__func__, i, msgs->buf[i]);
-> +
-> +		/* waiting for Transfer complete. */
-> +		while (timeout--) {
-> +			temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
-> +			if (temp&  I2SR_ICF)
-> +				break;
-> +			udelay(10);
-> +		}
-> +
-> +		if(!timeout)
-> +			return -ETIMEDOUT;
-> +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +		temp&= ~I2CR_DMAEN;
-> +		imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +	} else {
-> +		/* read data */
-> +		for (i = 0; i<  msgs->len - 2; i++) {
-> +			result = i2c_imx_trx_complete(i2c_imx);
-> +			if (result)
-> +				return result;
-> +			msgs->buf[i] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-> +			dev_dbg(dev, "<%s>  read byte: B%d=0x%X\n",
-> +				__func__, i, msgs->buf[i]);
-> +		}
-> +		result = i2c_imx_trx_complete(i2c_imx);
->   	}
-> +
-> +	/* read n-1 byte data */
-> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +	temp |= I2CR_TXAK;
-> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
-> +	msgs->buf[msgs->len-2] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-> +	/* read n byte data */
-> +	result = i2c_imx_trx_complete(i2c_imx);
-> +	if (result)
-> +		return result;
-> +
-> +	/*
-> +	 * It must generate STOP before read I2DR to prevent
-> +	 * controller from generating another clock cycle
-> +	 */
-> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +	temp&= ~(I2CR_MSTA | I2CR_MTX);
-> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +	i2c_imx_bus_busy(i2c_imx, 0);
-> +	i2c_imx->stopped = 1;
-> +	msgs->buf[msgs->len-1] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-> +
->   	return 0;
->   }
->
-> @@ -601,6 +858,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
->   	void __iomem *base;
->   	int irq, ret;
->   	u32 bitrate;
-> +	u32 phy_addr;
->
->   	dev_dbg(&pdev->dev, "<%s>\n", __func__);
->
-> @@ -611,6 +869,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
->   	}
->
->   	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	phy_addr = res->start;
->   	base = devm_ioremap_resource(&pdev->dev, res);
->   	if (IS_ERR(base))
->   		return PTR_ERR(base);
-> @@ -696,6 +955,10 @@ static int i2c_imx_probe(struct platform_device *pdev)
->   		i2c_imx->adapter.name);
->   	dev_info(&i2c_imx->adapter.dev, "IMX I2C adapter registered\n");
->
-> +	/* Init DMA config if support*/
-> +	if (i2c_imx_dma_request(i2c_imx, (dma_addr_t)phy_addr))
-> +		dev_warn(&pdev->dev, "can't request DMA\n");
-> +
->   	return 0;   /* Return OK */
->   }
->
-> @@ -707,6 +970,9 @@ static int i2c_imx_remove(struct platform_device *pdev)
->   	dev_dbg(&i2c_imx->adapter.dev, "adapter removed\n");
->   	i2c_del_adapter(&i2c_imx->adapter);
->
-> +	if (i2c_imx->dma)
-> +		i2c_imx_dma_free(i2c_imx);
-> +
->   	/* setup chip registers to defaults */
->   	imx_i2c_write_reg(0, i2c_imx, IMX_I2C_IADR);
->   	imx_i2c_write_reg(0, i2c_imx, IMX_I2C_IFDR);
+
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi Linus,
+
+The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
+
+  Linux 3.14 (2014-03-30 20:40:15 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-updates-v3.15
+
+for you to fetch changes up to e172b81222548b856ecbe59b305d2cb733d512c4:
+
+  Merge branches 'iommu/fixes', 'arm/smmu', 'x86/amd', 'arm/omap', 'arm/shmobile' and 'x86/vt-d' into next (2014-04-02 19:13:12 +0200)
+
+----------------------------------------------------------------
+
+IOMMU Upates for Linux v3.15
+
+This time a few more updates queued up.
+
+	* Rework VT-d code to support ACPI devices
+
+	* Improvements for memory and PCI hotplug support
+	  in the VT-d driver
+
+	* Device-tree support for OMAP IOMMU
+
+	* Convert OMAP IOMMU to use devm_* interfaces
+
+	* Fixed PASID support for AMD IOMMU
+
+	* Other random cleanups and fixes for OMAP, ARM-SMMU
+	  and SHMOBILE IOMMU
+
+Most of the changes are in the VT-d driver because some rework was
+necessary for better hotplug and ACPI device support.
+
+----------------------------------------------------------------
+Andreas Herrmann (3):
+      iommu/arm-smmu: set MAX_MASTER_STREAMIDS to MAX_PHANDLE_ARGS
+      iommu/arm-smmu: support buggy implementations with secure cfg accesses
+      documentation/iommu: update description of ARM System MMU binding
+
+Dan Carpenter (1):
+      iommu/vt-d: returning free pointer in get_domain_for_dev()
+
+David Woodhouse (39):
+      iommu/vt-d: Clean up size handling for intel_iommu_unmap()
+      iommu/vt-d: Clean up and fix page table clear/free behaviour
+      iommu/vt-d: Honour intel_iommu=sp_off for non-VMM domains
+      iommu/vt-d: Be less pessimistic about domain coherency where possible
+      iommu/vt-d: Add ACPI namespace device reporting structures
+      iommu/vt-d: Parse ANDD records
+      iommu/vt-d: Allocate space for ACPI devices
+      iommu/vt-d: Change scope lists to struct device, bus, devfn
+      iommu/vt-d: Add ACPI devices into dmaru->devices[] array
+      iommu/vt-d: Make iommu_dummy() take struct device instead of struct pci_dev
+      iommu/vt-d: Make dmar_insert_dev_info() take struct device instead of struct pci_dev
+      iommu/vt-d: Use struct device in device_domain_info, not struct pci_dev
+      iommu/vt-d: Pass iommu to domain_context_mapping_one() and iommu_support_dev_iotlb()
+      iommu/vt-d: Stop dmar_insert_dev_info() freeing domains on losing race
+      iommu/vt-d: use dmar_insert_dev_info() from dma_add_dev_info()
+      iommu/vt-d: Use domain_remove_one_dev_info() in domain_add_dev_info() error path
+      iommu/vt-d: Always store iommu in device_domain_info
+      iommu/vt-d: Simplify iommu check in domain_remove_one_dev_info()
+      iommu/vt-d: Remove device_to_iommu() call from domain_remove_dev_info()
+      iommu/vt-d: Store PCI segment number in struct intel_iommu
+      iommu/vt-d: Remove segment from struct device_domain_info()
+      iommu/vt-d: Make identity_mapping() take struct device not struct pci_dev
+      iommu/vt-d: Make device_to_iommu() cope with non-PCI devices
+      iommu/vt-d: Make domain_context_mapp{ed,ing}() take struct device
+      iommu/vt-d: Make get_domain_for_dev() take struct device
+      iommu/vt-d: Handle RMRRs for non-PCI devices
+      iommu/vt-d: Make iommu_should_identity_map() take struct device
+      iommu/vt-d: Make get_valid_domain_for_dev() take struct device
+      iommu/vt-d: Remove some pointless to_pci_dev() calls
+      iommu/vt-d: Rename 'hwdev' variables to 'dev' now that that's the norm
+      iommu/vt-d: Make domain_remove_one_dev_info() take struct device
+      iommu/vt-d: Make domain_add_dev_info() take struct device
+      iommu/vt-d: Remove pdev from iommu_no_mapping()
+      iommu/vt-d: Remove pdev from intel_iommu_attach_device()
+      iommu/vt-d: Remove to_pci_dev() in intel_map_page()
+      iommu/vt-d: Finally enable translation for non-PCI devices
+      iommu/vt-d: Include ACPI devices in iommu=pt
+      iommu/vt-d: Only call dmar_acpi_dev_scope_init() if DRHD units present
+      iommu/vt-d: Fix error handling in ANDD processing
+
+Florian Vaussard (3):
+      iommu/omap: Allow enable/disable even without pdata
+      Documentation: dt: add OMAP iommu bindings
+      iommu/omap: Add devicetree support
+
+Jay Cornwall (1):
+      iommu/amd: Fix PASID format in INVALIDATE_IOTLB_PAGES command
+
+Jiang Liu (17):
+      iommu/vt-d: Avoid double free of g_iommus on error recovery path
+      iommu/vt-d: Avoid caching stale domain_device_info and fix memory leak
+      iommu/vt-d: Avoid caching stale domain_device_info when hot-removing PCI device
+      iommu/vt-d: Factor out dmar_alloc_dev_scope() for later reuse
+      iommu/vt-d: Move private structures and variables into intel-iommu.c
+      iommu/vt-d: Simplify function get_domain_for_dev()
+      iommu/vt-d: Free resources if failed to create domain for PCIe endpoint
+      iommu/vt-d: Reduce duplicated code to handle virtual machine domains
+      iommu/vt-d: Fix incorrect iommu_count for si_domain
+      iommu/vt-d: Check for NULL pointer when freeing IOMMU data structure
+      iommu/vt-d: Fix error in detect ATS capability
+      iommu/vt-d: Introduce macro for_each_dev_scope() to walk device scope entries
+      iommu/vt-d: Introduce a rwsem to protect global data structures
+      iommu/vt-d: Use RCU to protect global resources in interrupt context
+      iommu/vt-d: Update DRHD/RMRR/ATSR device scope caches when PCI hotplug happens
+      iommu/vt-d: Unify the way to process DMAR device scope array
+      iommu/vt-d: Update IOMMU state when memory hotplug happens
+
+Joerg Roedel (3):
+      Merge branch 'for-joerg/arm-smmu/updates' of git://git.kernel.org/.../will/linux into arm/smmu
+      iommu/vt-d: Check for NULL pointer in dmar_acpi_dev_scope_init()
+      Merge branches 'iommu/fixes', 'arm/smmu', 'x86/amd', 'arm/omap', 'arm/shmobile' and 'x86/vt-d' into next
+
+Laurent Pinchart (1):
+      iommu/omap: Allocate archdata on the fly for DT-based devices
+
+Paul Bolle (1):
+      iommu/shmobile: Depend on ARCH_SHMOBILE
+
+Suman Anna (3):
+      iommu/omap: Convert to devm_* interfaces
+      iommu/omap: Fix error return paths in omap_iommu_attach()
+      iommu/omap: Enable bus-error back on supported iommus
+
+Suravee Suthikulpanit (1):
+      iommu/amd: Fix logic to determine and checking max PASID
+
+Will Deacon (3):
+      iommu/arm-smmu: clean up use of `flags' in page table handling code
+      iommu/arm-smmu: provide option to dsb macro when publishing tables
+      iommu/arm-smmu: fix incorrect comment regarding TLB invalidation
+
+Zhouyi Zhou (1):
+      iommu/omap: Check for NULL in iopte_free()
+
+ .../devicetree/bindings/iommu/arm,smmu.txt         |    6 +
+ .../devicetree/bindings/iommu/ti,omap-iommu.txt    |   26 +
+ arch/arm/mach-omap2/omap-iommu.c                   |    5 +
+ drivers/iommu/Kconfig                              |    2 +-
+ drivers/iommu/amd_iommu.c                          |    8 +-
+ drivers/iommu/amd_iommu_init.c                     |   16 +-
+ drivers/iommu/amd_iommu_types.h                    |   11 +-
+ drivers/iommu/arm-smmu.c                           |  105 +-
+ drivers/iommu/dmar.c                               |  513 +++++--
+ drivers/iommu/intel-iommu.c                        | 1610 +++++++++++---------
+ drivers/iommu/intel_irq_remapping.c                |  108 +-
+ drivers/iommu/iova.c                               |   64 +-
+ drivers/iommu/omap-iommu.c                         |  162 +-
+ drivers/iommu/omap-iommu.h                         |    5 +
+ drivers/iommu/omap-iommu2.c                        |    3 +
+ include/acpi/actbl2.h                              |   15 +-
+ include/linux/dmar.h                               |   82 +-
+ include/linux/intel-iommu.h                        |    1 +
+ include/linux/iova.h                               |    2 +
+ 19 files changed, 1754 insertions(+), 990 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
+
+Please pull.
+
+Thanks,
+
+	Joerg
+
+
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPoDgAAoJECvwRC2XARrjeQMP/R11mX+bs2ZSU8LdzD2ckRf1
+FRe2f9KypR94vWXrb9xt3RbJlqEY9RbZUJ5hgwcOK3zdiV8VvkI+0eHE7+2d4U4+
+IuKjP5enetnctV8iGVqLB3+zVtw5JbxpYc6jjjP5GeGr8Na9CS7Wkm41qXlLfCAE
+9WKPhbPJ8OPRVrhoJfLKXlvc4bOaQWheeoFnn0QHvJOsQO/g0u/4bloSneiytXJH
+BEhLbDV1KPXbVdKwYkPbPHGQakbAA2KoxRTfZ0Qc9jO+QELjy2y1xAP3DaPQRG39
+t5dGIxXKKWMv3JPath8zl6rC+7Pu3HbqUClgiFrZDWmdJergb0gUcR6vAQ+e0K+v
+CNpqBWqyBfa9l1Gkz4/dTY5DFSKbfbRKeF0yqObRMpdKaUdIkt6dxUVen8QPzYs7
+pihbWdO4aDCmINLXfLIZNT5GO2Zyfroc1+fP3X+9vOJt7teV3zk6ID8kIpBeE0vY
+mi3f/jI/+G2o3xA/hMvlmFFRHjupqvu7iXMdZPE3y0ZEq0gse0Nhx5LWclcRhF/i
+z6XZFe4+SFH9i/UvECCNTTLCTPdBcULpYwAPv88RK/7n9Qjo+cZjwv9cU6xjiJza
+VS/2mgF6ezpMZY/u5SVwQ6BMbSaVQ3mlbSBhT7CPv8e48XHhCkrp6G0Edo6ksN73
+UeFbYobiguwGrKoTm/Je
+=InVo
+-----END PGP SIGNATURE-----
+
+--0F1p//8PRICkK4MW--
+
 
