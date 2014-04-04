@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaDDLAg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 07:00:36 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:55134 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436AbaDDLAc (ORCPT
+	id S1752574AbaDDLHa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 07:07:30 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64510 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752402AbaDDLHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 07:00:32 -0400
+	Fri, 4 Apr 2014 07:07:25 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 0/3] sched/idle : find the idlest cpu with cpuidle info
+Date: Fri, 04 Apr 2014 13:23:17 +0200
+Message-ID: <1529331.DNJJHlmQ1T@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <533BC9B7.3010501@linaro.org>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <22904760.5rGZuP5nsx@vostro.rjw.lan> <533BC9B7.3010501@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAHTX3dLrfW_Hbqx_-vEfcHGCh7c4n=Hs1OATfvjJ9UEaxJTCaQ@mail.gmail.com>
-References: <CA+G9fYuT4TSs=3j6K9zztsTgFNVp2YG6JT-2Q_L==1P5G+SBew@mail.gmail.com>
-	<52FDE52A.4070002@linux.vnet.ibm.com>
-	<CA+G9fYv9+Fhyz=nVZQZXxLU0YMTJadfr1XVVVb9P=inEfUaDuA@mail.gmail.com>
-	<CAHTX3dLrfW_Hbqx_-vEfcHGCh7c4n=Hs1OATfvjJ9UEaxJTCaQ@mail.gmail.com>
-Date: Fri, 4 Apr 2014 16:30:31 +0530
-Message-ID: <CA+G9fYtFOPf6MYBKiOyHwSwZx5bHZWt3=Hzwsjrh5pvSarT+fw@mail.gmail.com>
-Subject: Re: [LTP] How to get the Linux kernel coverage data on ARM arch when
- I run LTP test?
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
-        Milosz Wasilewski <milosz.wasilewski@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, fhrbata@redhat.com,
-        Paul Larson <paul.larson@canonical.com>,
-        ltp-list <ltp-list@lists.sourceforge.net>,
-        ltp-coverage <ltp-coverage@lists.sourceforge.net>,
-        Mark Brown <mark.brown@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 March 2014 20:51, Michal Simek <monstr@monstr.eu> wrote:
-> HI,
->
->
-> 2014-02-18 15:30 GMT+01:00 Naresh Kamboju <naresh.kamboju@linaro.org>:
->
->> On 14 February 2014 15:13, Peter Oberparleiter
->> <oberpar@linux.vnet.ibm.com> wrote:
->> > On 14.02.2014 10:02, Naresh Kamboju wrote:
->> >> root@linaro-developer:/tmp/linux-linaro-3.13-2014.01# gcov
->> >> kernel/gcov/base.c -o
->> >>  /sys/kernel/debug/gcov/tmp/linux-linaro-3.13-2014.01/kernel/gcov/
->> >> File 'kernel/gcov/base.c'
->> >> Lines executed:43.18% of 44
->> >> Creating 'base.c.gcov'
->> >>
->> >> root@linaro-developer:/tmp/linux-linaro-3.13-2014.01#
->> >>
->> >> The above experiment gives coverage of a single file base.c when i run
->> >> gcov manually.
->> >> Is there any way to get Linux kernel coverage of all files after
->> >> running LTP test cases ?
->> >
->> > 1. Reset coverage data: lcov -z
->> > 2. Run LTP (or any other test case)
->> > 3. Capture coverage data: lcov -c -o coverage.info
->> > 4. Generate HTML output: genhtml coverage.info -o out
->> > 5. View HTML output: <browser> out/index.html
->>
->> It is working !!!
->> LTP executed on linux-linaro build on vexpress-tc2 target.
->> Please find results obtained
->> http://people.linaro.org/~naresh.kamboju/linux-linaro-coverage-by-ltp/
->>
->> The plan is to run all linaro test suite and to get coverage date.
->
->
-> Have you already run it? Are these test cases available?
+On Wednesday, April 02, 2014 10:26:31 AM Daniel Lezcano wrote:
+> On 04/02/2014 01:01 AM, Rafael J. Wysocki wrote:
+> > On Friday, March 28, 2014 01:29:53 PM Daniel Lezcano wrote:
+> >> The following patchset provides an interaction between cpuidle and the scheduler.
+> >>
+> >> The first patch encapsulate the needed information for the scheduler in a
+> >> separate cpuidle structure. The second one stores the pointer to this structure
+> >> when entering idle. The third one, use this information to take the decision to
+> >> find the idlest cpu.
+> >>
+> >> After some basic testing with hackbench, it appears there is an improvement for
+> >> the performances (small) and for the duration of the idle states (which provides
+> >> a better power saving).
+> >>
+> >> The measurement has been done with the 'idlestat' tool previously posted in this
+> >> mailing list.
+> >>
+> >> So the benefit is good for both sides performance and power saving.
+> >>
+> >> The select_idle_sibling could be also improved in the same way.
+> >
+> > Well, quite frankly, I don't really like this series.  Not the idea itself, but
+> > the way it has been implemented.
+> >
+> > First off, if the scheduler is to access idle state data stored in struct
+> > cpuidle_state, I'm not sure why we need a separate new structure for that?
+> > Couldn't there be a pointer to a whole struct cpuidle_state from struct rq
+> > instead?  [->exit_latency is the only field that find_idlest_cpu() in your
+> > third patch seems to be using anyway.]
+> 
+> Hi Rafael,
+> 
+> thank you very much for reviewing the patchset.
+> 
+> I created a specific structure to encapsulate the informations needed 
+> for the scheduler and to prevent to export unneeded data. This is purely 
+> for code design. Also it was to separate the idle's energy 
+> characteristics from the cpuidle framework data (flags, name, etc ...).
+> 
+> The exit_latency field is only used in this patchset but the 
+> target_residency will be used also (eg. prevent to wakeup a cpu before 
+> the minimum idle time target residency).
 
+OK
 
-I have tested LTP on vexpress-tc2. I did not try all test suites.
-We ( In Linaro) Linaro Test Suites is a package that contains test
-suites that can be run in LAVA.
-http://releases.linaro.org/14.03/components/platform/linaro-test-suites
+It would be good to add that heuristics upfront so that we can see the full
+picture.
 
->
-> Thanks,
-> Michal
->
+> The power field is ... hum ... not filled by any board (except for 
+> calxeda). Vendors do not like to share this information, so very likely 
+> that would be changed to a normalized value, I don't know.
+
+I'm not sure if that field is ever going to be used by everyone to be honest.
+
+> I agree we can put a pointer to the struct cpuidle_state instead if that 
+> reduce the impact of the patchset.
+
+Yes, it will, in my opinion.
+
+> > Second, is accessing the idle state information for all CPUs from find_idlest_cpu()
+> > guaranteed to be non-racy?  I mean, what if a CPU changes its state from idle to
+> > non-idle while another one is executing find_idlest_cpu()?  In other words,
+> > where's the read memory barrier corresponding to the write ones in the modified
+> > cpu_idle_call()?  And is the memory barrier actually sufficient?  After all,
+> > you need to guarantee that the CPU is still idle after you have evaluated
+> > idle_cpu() on it.
+> 
+> Well, as Nicolas mentioned it in another mail, we can live with races, 
+> the scheduler will take a wrong decision but nothing worth than what we 
+
+I guess you mean "worse"?  I'm not sure about that.
+
+> have today. In any case we want to prevent any lock in the code.
+
+Of course. :-)
+
+> > Finally, is really the heuristics used by find_idlest_cpu() to select the "idlest"
+> > CPU the best one?  What about deeper vs shallower idle states, for example?
+> 
+> I believe it is what is supposed to do the patchset. 1. if the cpu is 
+> idle, pick the shallower, 2. if the cpu is not idle pick the less 
+> loaded. But may be there is something wrong in the routine as pointed 
+> Nico, I have to double check it.
+
+Yes, that routine doesn't look entirely correct then.
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
