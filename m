@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaDDSSs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:18:48 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:43572 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341AbaDDSSr (ORCPT
+	id S1754058AbaDDSTE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:19:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57913 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818AbaDDSTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:18:47 -0400
-X-Originating-IP: 76.119.93.133
-From: Ryan Desfosses <ryan@desfo.org>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Ryan Desfosses <ryan@desfo.org>
-Subject: [PATCH 2/2] pci: added space before the open parenthesis
-Date: Fri,  4 Apr 2014 14:18:10 -0400
-Message-Id: <1396635490-3630-1-git-send-email-ryan@desfo.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 4 Apr 2014 14:19:00 -0400
+Message-ID: <533EF793.3050104@codeaurora.org>
+Date: Fri, 04 Apr 2014 11:18:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>, Mike Turquette <mturquette@linaro.org>
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] clk: qcom: Various fixes for MSM8960's global clock controller
+References: <1396629176-7413-1-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1396629176-7413-1-git-send-email-galak@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change made to resolve checkpatch.pl error
+On 04/04/14 09:32, Kumar Gala wrote:
+> * Remove CE2_SLEEP_CLK, doesn't exist on 8960 family SoCs
+> * Fix incorrect offset for PMIC_SSBI2_RESET
+> * Fix typo:
+> 	SIC_TIC -> SPS_TIC_H
+> 	SFAB_ADM0_M2_A_CLK -> SFAB_ADM0_M2_H_CLK
+> * Fix naming convention:
+> 	SFAB_CFPB_S_HCLK -> SFAB_CFPB_S_H_CLK
+> 	SATA_SRC_CLK -> SATA_CLK_SRC
+>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>
 
-Signed-off-by: Ryan Desfosses <ryan@desfo.org>
----
- drivers/pci/pci.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index fdbc294..56acb63 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -114,7 +114,7 @@ unsigned char pci_bus_max_busnr(struct pci_bus* bus)
- 	max = bus->busn_res.end;
- 	list_for_each(tmp, &bus->children) {
- 		n = pci_bus_max_busnr(pci_bus_b(tmp));
--		if(n > max)
-+		if (n > max)
- 			max = n;
- 	}
- 	return max;
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+
 -- 
-1.9.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
