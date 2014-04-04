@@ -1,98 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaDDRNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 13:13:48 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:17827 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaDDRNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 13:13:45 -0400
-Message-ID: <533EE82D.4010303@hp.com>
-Date: Fri, 04 Apr 2014 13:13:17 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV support
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <20140402143201.GF12188@phenom.dumpdata.com> <533C7485.3030203@hp.com> <533CC309.3020607@hp.com> <20140403172333.GA3877@localhost.localdomain> <533E1F8E.5040600@hp.com> <20140404165523.GP19478@phenom.dumpdata.com>
-In-Reply-To: <20140404165523.GP19478@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753652AbaDDRN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 13:13:27 -0400
+Received: from smtp04.udag.de ([62.146.106.30]:34911 "EHLO smtp04.udag.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753120AbaDDRNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 13:13:25 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Apr 2014 13:13:25 EDT
+From: Tolga Cakir <tolga@cevel.net>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Derya <derya.kiran@yahoo.de>, Jiri Kosina <jkosina@suse.cz>,
+        Reyad Attiyat <reyad.attiyat@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tolga Cakir <tolga@cevel.net>
+Subject: [PATCH 4/4] HID: microsoft: undefining ms_map_key_clear after usage
+Date: Fri,  4 Apr 2014 19:07:17 +0200
+Message-Id: <1396631237-11813-1-git-send-email-tolga@cevel.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2014 12:55 PM, Konrad Rzeszutek Wilk wrote:
-> On Thu, Apr 03, 2014 at 10:57:18PM -0400, Waiman Long wrote:
->> On 04/03/2014 01:23 PM, Konrad Rzeszutek Wilk wrote:
->>> On Wed, Apr 02, 2014 at 10:10:17PM -0400, Waiman Long wrote:
->>>> On 04/02/2014 04:35 PM, Waiman Long wrote:
->>>>> On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
->>>>>> On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
->>>>>>> N.B. Sorry for the duplicate. This patch series were resent as the
->>>>>>>       original one was rejected by the vger.kernel.org list server
->>>>>>>       due to long header. There is no change in content.
->>>>>>>
->>>>>>> v7->v8:
->>>>>>>    - Remove one unneeded atomic operation from the slowpath, thus
->>>>>>>      improving performance.
->>>>>>>    - Simplify some of the codes and add more comments.
->>>>>>>    - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
->>>>>>>      unfair lock.
->>>>>>>    - Reduce unfair lock slowpath lock stealing frequency depending
->>>>>>>      on its distance from the queue head.
->>>>>>>    - Add performance data for IvyBridge-EX CPU.
->>>>>> FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
->>>>>> HVM guest under Xen after a while stops working. The workload
->>>>>> is doing 'make -j32' on the Linux kernel.
->>>>>>
->>>>>> Completely unresponsive. Thoughts?
->>>>>>
->>>>> Thank for reporting that. I haven't done that much testing on Xen.
->>>>> My focus was in KVM. I will perform more test on Xen to see if I
->>>>> can reproduce the problem.
->>>>>
->>>> BTW, does the halting and sending IPI mechanism work in HVM? I saw
->>> Yes.
->>>> that in RHEL7, PV spinlock was explicitly disabled when in HVM mode.
->>>> However, this piece of code isn't in upstream code. So I wonder if
->>>> there is problem with that.
->>> The PV ticketlock fixed it for HVM. It was disabled before because
->>> the PV guests were using bytelocks while the HVM were using ticketlocks
->>> and you couldnt' swap in PV bytelocks for ticketlocks during startup.
->> The RHEL7 code has used PV ticketlock already. RHEL7 uses a single
->> kernel for all configurations. So PV ticketlock as well as Xen and
->> KVM support was compiled in. I think booting the kernel on bare
->> metal will cause the Xen code to work in HVM mode thus activating
->> the PV spinlock code which has a negative impact on performance.
-> Huh? -EPARSE
->
->> That may be why it was disabled so that the bare metal performance
->> will not be impacted.
-> I am not following you.
+This is inspired by various other hid drivers.
 
-What I am saying is that when XEN and PV spinlock is compiled into the 
-current upstream kernel, the PV spinlock jump label is turned on when 
-booted on bare metal. In other words, the PV spinlock code is active 
-even when they are not needed and actually slow thing down in that 
-situation. This is a problem and we need to find way to make sure that 
-the PV spinlock code won't be activated on bare metal.
+Signed-off-by: Tolga Cakir <tolga@cevel.net>
+---
+ drivers/hid/hid-microsoft.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
--Longman
+diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+index 5674c0c..5281d2d 100644
+--- a/drivers/hid/hid-microsoft.c
++++ b/drivers/hid/hid-microsoft.c
+@@ -211,6 +211,8 @@ static int ms_sidewinder_kb_quirk(struct hid_input *hi, struct hid_usage *usage,
+ 	return 1;
+ }
+ 
++#undef ms_map_key_clear
++
+ static int ms_sidewinder_control(struct hid_device *hdev, __u8 setup)
+ {
+ 	struct ms_data *sc = hid_get_drvdata(hdev);
+-- 
+1.9.1
+
