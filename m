@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaDDKPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 06:15:22 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51128 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaDDKPS (ORCPT
+	id S1752599AbaDDKUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 06:20:41 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46610 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296AbaDDKUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 06:15:18 -0400
-Date: Fri, 4 Apr 2014 11:14:58 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20140404101458.GQ14763@sirena.org.uk>
-References: <1396600198-7288-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Fri, 4 Apr 2014 06:20:37 -0400
+Message-ID: <533E8793.8060409@linaro.org>
+Date: Fri, 04 Apr 2014 05:21:07 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NphB68aIrRU2wdue"
-Content-Disposition: inline
-In-Reply-To: <1396600198-7288-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Fix typo in of_regulator.h
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: mporter@linaro.org, bcm@fixthebug.org, devicetree@vger.kernel.org,
+        arnd@arndb.de, sboyd@codeaurora.org
+CC: bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] ARM: configs: enable SMP in bcm_defconfig
+References: <1396577891-2713-1-git-send-email-elder@linaro.org> <1396577891-2713-4-git-send-email-elder@linaro.org>
+In-Reply-To: <1396577891-2713-4-git-send-email-elder@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/03/2014 09:18 PM, Alex Elder wrote:
+> Also explicitly set CONFIG_NR_CPUS to 2, limiting it to the most we
+> currently need.
+> 
+> Signed-off-by: Ray Jui <rjui@broadcom.com>
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> ---
+>  arch/arm/configs/bcm_defconfig |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+> index 0100464..ea374a7 100644
+> --- a/arch/arm/configs/bcm_defconfig
+> +++ b/arch/arm/configs/bcm_defconfig
+> @@ -24,6 +24,8 @@ CONFIG_MODULES=y
+>  CONFIG_MODULE_UNLOAD=y
+>  # CONFIG_BLK_DEV_BSG is not set
+>  CONFIG_PARTITION_ADVANCED=y
+> +CONFIG_SMP=y
+> +CONFIG_NR_CPUS=2
 
---NphB68aIrRU2wdue
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Since this will be part of a MULTIPLATFORM build, I don't
+want to set CONFIG_NR_CPUS.  I will delete this line.
 
-On Fri, Apr 04, 2014 at 09:29:58AM +0100, Charles Keepax wrote:
-> Fix a typo from my patch adding of_regulator_put_match in the patch:
+					-Alex
 
-Applied, thanks.
+>  CONFIG_ARCH_BCM=y
+>  CONFIG_ARCH_BCM_MOBILE=y
+>  CONFIG_ARM_THUMBEE=y
+> 
 
---NphB68aIrRU2wdue
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPoYfAAoJELSic+t+oim9Pr4P/R1w7e+V6BsOCMhwPkjnmv4a
-68TZGJ6F4omWrRPPfPH9JGdrgtOmNQSuwI+uwbmu0wctIGd1A7MiajogPMzlYPUL
-paWPw3gxBQfL/Dmxuggth1GPoxm6eNWq/cuzgTg1A6a+iw68gx9Czk6bgJSoI/TD
-LXRQ491zFHYeMwSEbQFSJM7WId4N1pKDldzROlLl9JCK/F7SIOH9UgipW5+4ZD0R
-RGZk2u5S8U82jwst5S11eXZzPHpLsSevuK8AoszYgRr1sYEBe35z6xOkD0sPIYpD
-6b70Z4SSEBW6WW2rfmgyzCkQM5dL/9QAWEdKirz3Qv/uAUt/b44K9zRFU3aVViEw
-6If9CwnbTA4rB0TXf6M6V+w6cb4gDJgGobbkcyZ9Tlfl99Wk0cuNFm6agavmIbDX
-dK1phI1NUp7IcZPXmAUo5vIp4LIGd9AittjmVi6wKKomhjcwvu609ToWNN5IjHfX
-cqlsIN7KZHzT4jY/95+YSAnRUfxf9J5kxgvZj33WCq4t+E00rGL3n9NJZFWr5aFD
-hxAp3yC7zS9wnKAjOSdcB+4T/p+GNL4jeraptFPGv98w9Pw1Zo8am3680MEtFG8l
-Y1KZhpfm5pdVHrUc47Fpd4B3fn7OcYK35y9earxwo1rQwb8sE9KPLagFPjVBWGPe
-QgYt5W+y6WutKzoaMPl0
-=otNo
------END PGP SIGNATURE-----
-
---NphB68aIrRU2wdue--
