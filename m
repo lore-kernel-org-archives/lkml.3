@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaDDPmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:42:12 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:42039 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616AbaDDPmL (ORCPT
+	id S1753888AbaDDPmn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:42:43 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:40352 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485AbaDDPmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:42:11 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: [PATCH v3] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
-Date: Fri,  4 Apr 2014 16:41:42 +0100
-Message-Id: <1396626102-13991-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1396622847-12718-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396622847-12718-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 4 Apr 2014 11:42:40 -0400
+Message-ID: <533ED2E7.80205@linux.com>
+Date: Fri, 04 Apr 2014 17:42:31 +0200
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Jason Cooper <jason@lakedaemon.net>,
+        =?UTF-8?B?VGVvZG9yYSBCxINsdcWjxIM=?= <teobaluta@gmail.com>
+CC: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [RFC] QR encoding for Oops messages
+References: <20140319201838.GA11403@redhat.com> <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com> <20140321132816.GW15608@titan.lakedaemon.net> <532DC3D3.9060008@linux.com> <CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com> <20140323193839.GY15608@titan.lakedaemon.net> <CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com> <20140401142051.GO28304@titan.lakedaemon.net> <CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com> <CAAsK9AGW+L4GswAEAZeZEcqUDb+H9b=qu98znsM6XSU3B2fuGw@mail.gmail.com> <20140404151233.GA28334@titan.lakedaemon.net>
+In-Reply-To: <20140404151233.GA28334@titan.lakedaemon.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building a multi_v7_defconfig kernel it is not possible to configure
-DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
-accurately and worse, it is possible to configure a different serial
-device but KConfig does not honour this request. In fact this also
-overrides the user selection for some of the single platform kernels, for
-example I don't think DEBUG_LL can be targetted at ICE or semihosted
-supervisor for ARCH_VERSATILE.
+Hi,
 
-This happens because DEBUG_UART_PL01X is automatically enabled by
-some architectures and this means user decisions made regarding
-the DEBUG_LL backend will be overriden. Problem is fixed by removing the
-automatic enabling of this option.
+On 04/04/2014 05:12 PM, Jason Cooper wrote:
+> On Thu, Apr 03, 2014 at 10:21:39PM +0200, Levente Kurusa wrote:
+> ...
+>> Oh and I had an idea of adding a new kernel parameter, something
+>> like 'qr_oops.*'. (Looking for a better name! :-) )
+>> Basically, I thought of the following options so far:
+>>
+>> *  qr_oops.disable=1  - disable it
+>> *  qr_oops.scale=600x600 - scale the qr code so its easier to read
+>>    with a phone. In my testing I had huge difficulties reading the
+>>    QR codes, but when scaled to be a bit bigger it worked magically.
+>>    This might not be so easy to implement this way, but with preset
+>>    values, i.e. 4x4 squares instead of a pixel, it could work.
+> 
+> oops.qr=0 - disabled
+> oops.qr=3 - make each QR pixel 3x3 screen pixels.
+> 
+> I've found 3x3 works well for business cards and such.
+> 
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
+Yea this makes more sense. I'll go and implement this
+right now and send the changes to Teodora once finished.
 
-Notes:
-    v3: Switch from def_bool to bool (thanks Russell King)
-    v2: Remove pointless single platform support (thanks Arnd Bergmann)
-
- arch/arm/Kconfig.debug | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 0531da8..7e19c94 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -989,12 +989,7 @@ config DEBUG_LL_INCLUDE
- 
- # Compatibility options for PL01x
- config DEBUG_UART_PL01X
--	def_bool ARCH_EP93XX || \
--		ARCH_INTEGRATOR || \
--		ARCH_SPEAR3XX || \
--		ARCH_SPEAR6XX || \
--		ARCH_SPEAR13XX || \
--		ARCH_VERSATILE
-+	bool
- 
- # Compatibility options for 8250
- config DEBUG_UART_8250
 -- 
-1.9.0
-
+Regards,
+Levente Kurusa
