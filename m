@@ -1,122 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaDDSd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:33:56 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18042 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809AbaDDSdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:33:54 -0400
-Date: Fri, 4 Apr 2014 14:33:02 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV
- support
-Message-ID: <20140404183302.GB29801@phenom.dumpdata.com>
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com>
- <20140402143201.GF12188@phenom.dumpdata.com>
- <533C7485.3030203@hp.com>
- <533CC309.3020607@hp.com>
- <20140403172333.GA3877@localhost.localdomain>
- <533E1F8E.5040600@hp.com>
- <20140404165523.GP19478@phenom.dumpdata.com>
- <533EE82D.4010303@hp.com>
- <20140404175815.GA28449@phenom.dumpdata.com>
+	id S1754049AbaDDSe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:34:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:65145 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704AbaDDSe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 14:34:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,796,1389772800"; 
+   d="scan'208";a="507155407"
+Date: Fri, 4 Apr 2014 21:42:32 +0300
+From: "Westerberg, Mika" <mika.westerberg@intel.com>
+To: "Du, Wenkai" <wenkai.du@intel.com>
+Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller
+ enable
+Message-ID: <20140404184232.GC19349@intel.com>
+References: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70E1F@ORSMSX109.amr.corp.intel.com>
+ <20140404181613.GB19349@intel.com>
+ <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140404175815.GA28449@phenom.dumpdata.com>
+In-Reply-To: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 01:58:15PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Apr 04, 2014 at 01:13:17PM -0400, Waiman Long wrote:
-> > On 04/04/2014 12:55 PM, Konrad Rzeszutek Wilk wrote:
-> > >On Thu, Apr 03, 2014 at 10:57:18PM -0400, Waiman Long wrote:
-> > >>On 04/03/2014 01:23 PM, Konrad Rzeszutek Wilk wrote:
-> > >>>On Wed, Apr 02, 2014 at 10:10:17PM -0400, Waiman Long wrote:
-> > >>>>On 04/02/2014 04:35 PM, Waiman Long wrote:
-> > >>>>>On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
-> > >>>>>>On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
-> > >>>>>>>N.B. Sorry for the duplicate. This patch series were resent as the
-> > >>>>>>>      original one was rejected by the vger.kernel.org list server
-> > >>>>>>>      due to long header. There is no change in content.
-> > >>>>>>>
-> > >>>>>>>v7->v8:
-> > >>>>>>>   - Remove one unneeded atomic operation from the slowpath, thus
-> > >>>>>>>     improving performance.
-> > >>>>>>>   - Simplify some of the codes and add more comments.
-> > >>>>>>>   - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
-> > >>>>>>>     unfair lock.
-> > >>>>>>>   - Reduce unfair lock slowpath lock stealing frequency depending
-> > >>>>>>>     on its distance from the queue head.
-> > >>>>>>>   - Add performance data for IvyBridge-EX CPU.
-> > >>>>>>FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
-> > >>>>>>HVM guest under Xen after a while stops working. The workload
-> > >>>>>>is doing 'make -j32' on the Linux kernel.
-> > >>>>>>
-> > >>>>>>Completely unresponsive. Thoughts?
-> > >>>>>>
-> > >>>>>Thank for reporting that. I haven't done that much testing on Xen.
-> > >>>>>My focus was in KVM. I will perform more test on Xen to see if I
-> > >>>>>can reproduce the problem.
-> > >>>>>
-> > >>>>BTW, does the halting and sending IPI mechanism work in HVM? I saw
-> > >>>Yes.
-> > >>>>that in RHEL7, PV spinlock was explicitly disabled when in HVM mode.
-> > >>>>However, this piece of code isn't in upstream code. So I wonder if
-> > >>>>there is problem with that.
-> > >>>The PV ticketlock fixed it for HVM. It was disabled before because
-> > >>>the PV guests were using bytelocks while the HVM were using ticketlocks
-> > >>>and you couldnt' swap in PV bytelocks for ticketlocks during startup.
-> > >>The RHEL7 code has used PV ticketlock already. RHEL7 uses a single
-> > >>kernel for all configurations. So PV ticketlock as well as Xen and
-> > >>KVM support was compiled in. I think booting the kernel on bare
-> > >>metal will cause the Xen code to work in HVM mode thus activating
-> > >>the PV spinlock code which has a negative impact on performance.
-> > >Huh? -EPARSE
-> > >
-> > >>That may be why it was disabled so that the bare metal performance
-> > >>will not be impacted.
-> > >I am not following you.
-> > 
-> > What I am saying is that when XEN and PV spinlock is compiled into
-> > the current upstream kernel, the PV spinlock jump label is turned on
-> > when booted on bare metal. In other words, the PV spinlock code is
-> 
-> How does it turn it on? I see that the jump lables are only turned
-> on when the jump label is enable when it detects that it is running
-> under Xen or KVM. It won't turn it on under baremetal.
+On Fri, Apr 04, 2014 at 09:20:39PM +0300, Du, Wenkai wrote:
+> In current driver implementation, I2c controller is enabled, then
+> disabled every time inside i2c_dw_xfer. So I think the interrupt masking
+> should be done inside i2c_dw_xfer_init, where the controller is enabled.
 
-Well, it seems that it does turn it on baremetal which is an stupid mistake.
+Interrupt masking is done already after each transaction.
 
-Sending a patch shortly.
-> 
-> > active even when they are not needed and actually slow thing down in
-> > that situation. This is a problem and we need to find way to make
-> > sure that the PV spinlock code won't be activated on bare metal.
-> 
-> Could you explain to me which piece of code enables the jump labels
-> on baremetal please?
-> > 
-> > -Longman
+The problem here is that after reset, the interrupt mask register gets
+0x8ff value (HW default), which means that most of the interrupts are left
+unmasked.
+
+That is the reason why this only happens right after we resume from
+system sleep. Masking interrupts on that path fixes the problem.
