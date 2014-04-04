@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbaDDN4D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:56:03 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:12390 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384AbaDDN4A (ORCPT
+	id S1753223AbaDDN4t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 09:56:49 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:10005 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090AbaDDN4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:56:00 -0400
+	Fri, 4 Apr 2014 09:56:01 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 04 Apr 2014 06:49:11 -0700
+	by hqnvupgp07.nvidia.com on Fri, 04 Apr 2014 06:49:13 -0700
 From: Thierry Reding <treding@nvidia.com>
 To: Mike Turquette <mturquette@linaro.org>,
         Peter De Schrijver <pdeschrijver@nvidia.com>,
         Prashant Gaikwad <pgaikwad@nvidia.com>
 CC: Stephen Warren <swarren@wwwdotorg.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/3] clk: tegra: Fix PLLE programming
-Date: Fri, 4 Apr 2014 15:55:13 +0200
-Message-ID: <1396619715-15524-1-git-send-email-treding@nvidia.com>
+Subject: [PATCH v2 3/3] clk: tegra: Fix enabling of PLLE
+Date: Fri, 4 Apr 2014 15:55:15 +0200
+Message-ID: <1396619715-15524-3-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396619715-15524-1-git-send-email-treding@nvidia.com>
+References: <1396619715-15524-1-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PLLE has M, N and P divider shift and width parameters that differ from
-the defaults. Furthermore, when clearing the M, N and P divider fields
-the corresponding masks were never shifted, thereby clearing only the
-lowest bits of the register. This lead to a situation where the PLLE
-programming would only work if the register hadn't been touched before.
+When enabling the PLLE as its final step, clk_plle_enable() would
+accidentally OR in the value previously written to the PLLE_SS_CTRL
+register.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
 Changes in v2:
-- none
+- new patch
 
- drivers/clk/tegra/clk-pll.c | 30 ++++++++++++++++++++++++------
- 1 file changed, 24 insertions(+), 6 deletions(-)
+ drivers/clk/tegra/clk-pll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index 0d20241e0770..357911303315 100644
+index 1187187a1cf2..7a1b70dac824 100644
 --- a/drivers/clk/tegra/clk-pll.c
 +++ b/drivers/clk/tegra/clk-pll.c
-@@ -58,9 +58,9 @@
- #define PLLDU_LFCON_SET_DIVN 600
- 
- #define PLLE_BASE_DIVCML_SHIFT 24
--#define PLLE_BASE_DIVCML_WIDTH 4
-+#define PLLE_BASE_DIVCML_MASK 0xf
- #define PLLE_BASE_DIVP_SHIFT 16
--#define PLLE_BASE_DIVP_WIDTH 7
-+#define PLLE_BASE_DIVP_WIDTH 6
- #define PLLE_BASE_DIVN_SHIFT 8
- #define PLLE_BASE_DIVN_WIDTH 8
- #define PLLE_BASE_DIVM_SHIFT 0
-@@ -730,8 +730,10 @@ static int clk_plle_enable(struct clk_hw *hw)
- 	if (pll->params->flags & TEGRA_PLLE_CONFIGURE) {
- 		/* configure dividers */
- 		val = pll_readl_base(pll);
--		val &= ~(divm_mask(pll) | divn_mask(pll) | divp_mask(pll));
--		val &= ~(PLLE_BASE_DIVCML_WIDTH << PLLE_BASE_DIVCML_SHIFT);
-+		val &= ~(divp_mask(pll) << PLLE_BASE_DIVP_SHIFT |
-+			 divn_mask(pll) << PLLE_BASE_DIVN_SHIFT |
-+			 divm_mask(pll) << PLLE_BASE_DIVM_SHIFT);
-+		val &= ~(PLLE_BASE_DIVCML_MASK << PLLE_BASE_DIVCML_SHIFT);
- 		val |= sel.m << pll->params->div_nmp->divm_shift;
- 		val |= sel.n << pll->params->div_nmp->divn_shift;
- 		val |= sel.p << pll->params->div_nmp->divp_shift;
-@@ -745,6 +747,7 @@ static int clk_plle_enable(struct clk_hw *hw)
- 	pll_writel_misc(val, pll);
- 
- 	val = readl(pll->clk_base + PLLE_SS_CTRL);
-+	val &= ~PLLE_SS_COEFFICIENTS_MASK;
+@@ -757,7 +757,7 @@ static int clk_plle_enable(struct clk_hw *hw)
  	val |= PLLE_SS_DISABLE;
  	writel(val, pll->clk_base + PLLE_SS_CTRL);
  
-@@ -1292,8 +1295,10 @@ static int clk_plle_tegra114_enable(struct clk_hw *hw)
- 	pll_writel(val, PLLE_SS_CTRL, pll);
+-	val |= pll_readl_base(pll);
++	val = pll_readl_base(pll);
+ 	val |= (PLL_BASE_BYPASS | PLL_BASE_ENABLE);
+ 	pll_writel_base(val, pll);
  
- 	val = pll_readl_base(pll);
--	val &= ~(divm_mask(pll) | divn_mask(pll) | divp_mask(pll));
--	val &= ~(PLLE_BASE_DIVCML_WIDTH << PLLE_BASE_DIVCML_SHIFT);
-+	val &= ~(divp_mask(pll) << PLLE_BASE_DIVP_SHIFT |
-+		 divn_mask(pll) << PLLE_BASE_DIVN_SHIFT |
-+		 divm_mask(pll) << PLLE_BASE_DIVM_SHIFT);
-+	val &= ~(PLLE_BASE_DIVCML_MASK << PLLE_BASE_DIVCML_SHIFT);
- 	val |= sel.m << pll->params->div_nmp->divm_shift;
- 	val |= sel.n << pll->params->div_nmp->divn_shift;
- 	val |= sel.cpcon << PLLE_BASE_DIVCML_SHIFT;
-@@ -1410,6 +1415,15 @@ struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- 	return clk;
- }
- 
-+static struct div_nmp pll_e_nmp = {
-+	.divn_shift = PLLE_BASE_DIVN_SHIFT,
-+	.divn_width = PLLE_BASE_DIVN_WIDTH,
-+	.divm_shift = PLLE_BASE_DIVM_SHIFT,
-+	.divm_width = PLLE_BASE_DIVM_WIDTH,
-+	.divp_shift = PLLE_BASE_DIVP_SHIFT,
-+	.divp_width = PLLE_BASE_DIVP_WIDTH,
-+};
-+
- struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, struct tegra_clk_pll_params *pll_params,
-@@ -1420,6 +1434,10 @@ struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- 
- 	pll_params->flags |= TEGRA_PLL_LOCK_MISC | TEGRA_PLL_BYPASS;
- 	pll_params->flags |= TEGRA_PLL_HAS_LOCK_ENABLE;
-+
-+	if (!pll_params->div_nmp)
-+		pll_params->div_nmp = &pll_e_nmp;
-+
- 	pll = _tegra_init_pll(clk_base, pmc, pll_params, lock);
- 	if (IS_ERR(pll))
- 		return ERR_CAST(pll);
 -- 
 1.9.1
 
