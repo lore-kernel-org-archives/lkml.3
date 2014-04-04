@@ -1,250 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaDDPy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:54:58 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:40362 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615AbaDDPyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:54:55 -0400
-Message-ID: <533ED5CC.50909@mm-sol.com>
-Date: Fri, 04 Apr 2014 18:54:52 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1753885AbaDDPz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:55:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39094 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569AbaDDPzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 11:55:54 -0400
+Message-ID: <533ED607.1080700@wwwdotorg.org>
+Date: Fri, 04 Apr 2014 09:55:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 1/9] crypto: qce: Add core driver implementation
-References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com> <1396541886-10966-2-git-send-email-svarbanov@mm-sol.com> <20140403181914.GG28265@joshc.qualcomm.com>
-In-Reply-To: <20140403181914.GG28265@joshc.qualcomm.com>
+To: Thierry Reding <treding@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] clk: tegra: Fix PLLE programming
+References: <1396619715-15524-1-git-send-email-treding@nvidia.com>
+In-Reply-To: <1396619715-15524-1-git-send-email-treding@nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+On 04/04/2014 07:55 AM, Thierry Reding wrote:
+> PLLE has M, N and P divider shift and width parameters that differ from
+> the defaults. Furthermore, when clearing the M, N and P divider fields
+> the corresponding masks were never shifted, thereby clearing only the
+> lowest bits of the register. This lead to a situation where the PLLE
+> programming would only work if the register hadn't been touched before.
 
-Thanks for the comments!
+The series,
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-On 04/03/2014 09:19 PM, Josh Cartwright wrote:
-> Hey Stanimir-
-> 
-> Just a few comments/questions from a quick scan of your patchset:
-> 
-> On Thu, Apr 03, 2014 at 07:17:58PM +0300, Stanimir Varbanov wrote:
-> [..]
->> +++ b/drivers/crypto/qce/core.c
-> [..]
->> +
->> +static struct qce_algo_ops qce_ops[] = {
->> +	{
->> +		.type = CRYPTO_ALG_TYPE_ABLKCIPHER,
->> +		.register_alg = qce_ablkcipher_register,
->> +	},
->> +	{
->> +		.type = CRYPTO_ALG_TYPE_AHASH,
->> +		.register_alg = qce_ahash_register,
->> +	},
->> +};
->> +
->> +static void qce_unregister_algs(struct qce_device *qce)
->> +{
->> +	struct qce_alg_template *tmpl, *n;
->> +
->> +	list_for_each_entry_safe(tmpl, n, &qce->alg_list, entry) {
->> +		if (tmpl->crypto_alg_type == CRYPTO_ALG_TYPE_AHASH)
->> +			crypto_unregister_ahash(&tmpl->alg.ahash);
->> +		else
->> +			crypto_unregister_alg(&tmpl->alg.crypto);
-> 
-> Why no 'unregister_alg' member in qce_algo_ops?
+(I might have squashed patches 1 and 2 together, but no matter)
 
-Because we have a common unregister function :). We have common
-unregster function because in my opinion there is no need to copy the
-same piece of code on every algorithm file (ablkcipher.c, sha.c and one
-or two more could be added in the future). Something more, I'm not the
-inventor of this asymmetric calling convention in driver internals, it
-is widely spread in crypto drivers. So, I'm just have been inspired by
-this idea, and giving that I personally do not like the monotonic and
-linear  coding thus it was easy to me to borrow it.
-
-> 
->> +
->> +		list_del(&tmpl->entry);
->> +		kfree(tmpl);
->> +	}
->> +}
->> +
->> +static int qce_register_algs(struct qce_device *qce)
->> +{
->> +	struct qce_algo_ops *ops;
->> +	int i, rc = -ENODEV;
->> +
->> +	for (i = 0; i < ARRAY_SIZE(qce_ops); i++) {
->> +		ops = &qce_ops[i];
->> +		ops->async_req_queue = qce_async_request_queue;
->> +		ops->async_req_done = qce_async_request_done;
-> 
-> Why not set these statically?
-
-To save few lines of code. If this breaks readability I could move those
-function pointers to the qce_ops[].
-
-> 
->> +		rc = ops->register_alg(qce, ops);
->> +		if (rc)
->> +			break;
->> +	}
->> +
->> +	if (rc)
->> +		qce_unregister_algs(qce);
->> +
->> +	return rc;
->> +}
-> [..]
->> +static int qce_get_version(struct qce_device *qce)
->> +{
->> +	u32 major, minor, step;
->> +	u32 val;
->> +
->> +	val = readl(qce->base + REG_VERSION);
->> +	major = (val & CORE_MAJOR_REV_MASK) >> CORE_MAJOR_REV;
->> +	minor = (val & CORE_MINOR_REV_MASK) >> CORE_MINOR_REV;
->> +	step = (val & CORE_STEP_REV_MASK) >> CORE_STEP_REV;
->> +
->> +	/*
->> +	 * the driver does not support v5 with minor 0 because it has special
->> +	 * alignment requirements.
->> +	 */
->> +	if (major < QCE_MAJOR_VERSION5 && minor == 0)
->> +		return -ENODEV;
->> +
->> +	qce->burst_size = QCE_BAM_BURST_SIZE;
->> +	qce->pipe_pair_index = 1;
->> +
->> +	dev_info(qce->dev, "Crypto device found, version %d.%d.%d\n",
->> +		 major, minor, step);
-> 
-> I'd suggest dev_dbg().  Kernel boot is chatty enough.
-
-OK.
-
-> 
-> [..]
->> +static int qce_clks_enable(struct qce_device *qce, int enable)
->> +{
->> +	int rc = 0;
->> +	int i;
->> +
->> +	for (i = 0; i < QCE_CLKS_NUM; i++) {
->> +		if (enable)
->> +			rc = clk_prepare_enable(qce->clks[i]);
->> +		else
->> +			clk_disable_unprepare(qce->clks[i]);
->> +
->> +		if (rc)
->> +			break;
->> +	}
->> +
->> +	if (rc)
->> +		do
->> +			clk_disable_unprepare(qce->clks[i]);
->> +		while (--i >= 0);
->> +
->> +	return rc;
->> +}
-> 
-> See my below comment about lumping clocks together.
-> 
-> [..]
->> +static int qce_crypto_remove(struct platform_device *pdev)
->> +{
->> +	struct qce_device *qce = platform_get_drvdata(pdev);
->> +
->> +	cancel_work_sync(&qce->queue_work);
->> +	destroy_workqueue(qce->queue_wq);
->> +	tasklet_kill(&qce->done_tasklet);
->> +	qce_unregister_algs(qce);
->> +	qce_dma_release(&qce->dma);
->> +	qce_clks_enable(qce, 0);
-> 
-> qce_clks_enable(qce, 0) is really confusing....I'd suggest creating
-> separate qce_clks_enable() and qce_clks_disable() functions.
-> 
-
-OK will do.
-
-> [..]
->> +static const struct of_device_id qce_crypto_of_match[] = {
->> +	{ .compatible = "qcom,crypto-v5.1", },
->> +	{}
->> +};
-> 
-> MODULE_DEVICE_TABLE()?
-
-Good catch. Thanks.
-
-> 
-> [..]
->> +++ b/drivers/crypto/qce/core.h
->> @@ -0,0 +1,69 @@
->> +/*
->> + * Copyright (c) 2010-2014, The Linux Foundation. All rights reserved.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 and
->> + * only version 2 as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#ifndef _CORE_H_
->> +#define _CORE_H_
->> +
->> +static const char * const clk_names[] = {
->> +	"core",		/* GCC_CE_CLK */
->> +	"iface",	/* GCC_CE_AHB_CLK */
->> +	"bus",		/* GCC_CE_AXI_CLK */
->> +};
-> 
-> You probably don't want this in a header file, as now each compilation
-> unit will have a copy :(.
-
-It is my fault, I just forgot to move this array in the core.c.
-
-> 
-> Lumping all the clocks together assumes that you will only ever have all
-> clocks enabled, or all clocks disabled, are you sure that's what you
-> want?
-
-At least until now all clocks are needed. When adding power management
-this code should be revised.
-
-> 
-> [..]
->> +struct qce_algo_ops {
->> +	u32 type;
->> +	int (*register_alg)(struct qce_device *qce, struct qce_algo_ops *ops);
->> +	int (*async_req_queue)(struct qce_device *qce,
->> +			       struct crypto_async_request *req);
->> +	void (*async_req_done)(struct qce_device *qce, int ret);
-> 
-> What is the relationship between qce_algo_ops and the qce_alg_template
-> (which has these same two identically named callbacks)?
-
-This is a way of passing function pointers from core.c to the
-ablkcipher.c and sha.c (where they are needed to queue up new crypto
-async requests and finish the requests with done counterpart). This
-avoids prototyping those core.c functions and calling them directly.
-
--- 
-regards,
-Stan
+I expect these patches should be CC: stable when applied?
