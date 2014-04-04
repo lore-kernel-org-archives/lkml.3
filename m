@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaDDO7i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:59:38 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:42791 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067AbaDDO7g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:59:36 -0400
-Message-ID: <533EC8BD.8080601@hp.com>
-Date: Fri, 04 Apr 2014 10:59:09 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1753150AbaDDPBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:01:12 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58270 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752440AbaDDPBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 11:01:10 -0400
+Date: Fri, 4 Apr 2014 11:01:04 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Shaohua Li <shli@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@linux-foundation.org, riel@redhat.com,
+        hughd@google.com, mgorman@suse.de, torvalds@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch] x86: clearing access bit don't flush tlb
+Message-ID: <20140404150104.GN4407@cmpxchg.org>
+References: <20140403004250.GA14597@kernel.org>
+ <20140403113537.GA543@gmail.com>
+ <20140403134542.GA3371@kernel.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v8 01/10] qspinlock: A generic 4-byte queue spinlock implementation
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <1396445259-27670-2-git-send-email-Waiman.Long@hp.com> <20140404130012.GE10526@twins.programming.kicks-ass.net>
-In-Reply-To: <20140404130012.GE10526@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403134542.GA3371@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2014 09:00 AM, Peter Zijlstra wrote:
-> So I'm just not ever going to pick up this patch; I spend a week trying
-> to reverse engineer this; I posted a 7 patch series creating the
-> equivalent, but in a gradual and readable fashion:
->
->    http://lkml.kernel.org/r/20140310154236.038181843@infradead.org
->
-> You keep on ignoring that; I'll keep on ignoring your patches.
->
-> I might at some point rewrite some of your pv stuff on top to get this
-> moving again, but I'm not really motivated to work with you atm.
+On Thu, Apr 03, 2014 at 09:45:42PM +0800, Shaohua Li wrote:
+> On Thu, Apr 03, 2014 at 01:35:37PM +0200, Ingo Molnar wrote:
+> > 
+> > * Shaohua Li <shli@kernel.org> wrote:
+> > 
+> > > Add a few acks and resend this patch.
+> > > 
+> > > We use access bit to age a page at page reclaim. When clearing pte access bit,
+> > > we could skip tlb flush in X86. The side effect is if the pte is in tlb and pte
+> > > access bit is unset in page table, when cpu access the page again, cpu will not
+> > > set page table pte's access bit. Next time page reclaim will think this hot
+> > > page is yong and reclaim it wrongly, but this doesn't corrupt data.
+> > > 
+> > > And according to intel manual, tlb has less than 1k entries, which covers < 4M
+> > > memory. In today's system, several giga byte memory is normal. After page
+> > > reclaim clears pte access bit and before cpu access the page again, it's quite
+> > > unlikely this page's pte is still in TLB. And context swich will flush tlb too.
+> > > The chance skiping tlb flush to impact page reclaim should be very rare.
+> > > 
+> > > Originally (in 2.5 kernel maybe), we didn't do tlb flush after clear access bit.
+> > > Hugh added it to fix some ARM and sparc issues. Since I only change this for
+> > > x86, there should be no risk.
+> > > 
+> > > And in some workloads, TLB flush overhead is very heavy. In my simple
+> > > multithread app with a lot of swap to several pcie SSD, removing the tlb flush
+> > > gives about 20% ~ 30% swapout speedup.
+> > > 
+> > > Signed-off-by: Shaohua Li <shli@fusionio.com>
+> > > Acked-by: Rik van Riel <riel@redhat.com>
+> > > Acked-by: Mel Gorman <mgorman@suse.de>
+> > > Acked-by: Hugh Dickins <hughd@google.com>
+> > > ---
+> > >  arch/x86/mm/pgtable.c |   13 ++++++-------
+> > >  1 file changed, 6 insertions(+), 7 deletions(-)
+> > > 
+> > > Index: linux/arch/x86/mm/pgtable.c
+> > > ===================================================================
+> > > --- linux.orig/arch/x86/mm/pgtable.c	2014-03-27 05:22:08.572100549 +0800
+> > > +++ linux/arch/x86/mm/pgtable.c	2014-03-27 05:46:12.456131121 +0800
+> > > @@ -399,13 +399,12 @@ int pmdp_test_and_clear_young(struct vm_
+> > >  int ptep_clear_flush_young(struct vm_area_struct *vma,
+> > >  			   unsigned long address, pte_t *ptep)
+> > >  {
+> > > -	int young;
+> > > -
+> > > -	young = ptep_test_and_clear_young(vma, address, ptep);
+> > > -	if (young)
+> > > -		flush_tlb_page(vma, address);
+> > > -
+> > > -	return young;
+> > > +	/*
+> > > +	 * In X86, clearing access bit without TLB flush doesn't cause data
+> > > +	 * corruption. Doing this could cause wrong page aging and so hot pages
+> > > +	 * are reclaimed, but the chance should be very rare.
+> > 
+> > So, beyond the spelling mistakes, I guess this explanation should also 
+> > be a bit more explanatory - how about something like:
+> > 
+> > 	/*
+> > 	 * On x86 CPUs, clearing the accessed bit without a TLB flush 
+> > 	 * doesn't cause data corruption. [ It could cause incorrect
+> > 	 * page aging and the (mistaken) reclaim of hot pages, but the
+> > 	 * chance of that should be relatively low. ]
+> > 	 *
+> > 	 * So as a performance optimization don't flush the TLB when 
+> > 	 * clearing the accessed bit, it will eventually be flushed by 
+> > 	 * a context switch or a VM operation anyway. [ In the rare 
+> > 	 * event of it not getting flushed for a long time the delay 
+> > 	 * shouldn't really matter because there's no real memory 
+> > 	 * pressure for swapout to react to. ]
+> > 	 */
+> > 
+> > Agreed?
+> 
+> Sure, that's better, thanks!
 
-Peter, I am sorry that I have focused recently on making the qspinlock 
-patch works with virtualization and it is easier for me to based off on 
-my patch initially. Now the PV part is almost done, I will apply them on 
-top of your patch. Hopefully, I will get a new patch out sometime next week.
+With Ingo's updated comment:
 
-I am really sorry if you have bad feeling about it. I do not mean to 
-discredit you on your effort to make the qspinlock patch better. I 
-really appreciate your input and would like to work with you on this 
-patch as well as other future patches.
-
--Longman
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
