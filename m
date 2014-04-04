@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaDDBVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 21:21:18 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:60998 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaDDBVR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 21:21:17 -0400
+	id S1751870AbaDDB1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 21:27:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34575 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891AbaDDB1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 21:27:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,791,1389772800"; 
+   d="scan'208";a="514519273"
+Message-ID: <533E0A94.5040007@linux.intel.com>
+Date: Fri, 04 Apr 2014 09:27:48 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Date: Fri, 4 Apr 2014 09:21:16 +0800
-Message-ID: <CAGdX0WEeZJ9hxq1y-gmGC=kdtU0ecLbs5gVYb_8ZE6sOW_PPvg@mail.gmail.com>
-Subject: ktap and ebpf integration
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [BUG] x86: reboot doesn't reboot
+References: <20140403021411.6236996f@gandalf.local.home>	<070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>	<533D001A.5030802@linux.intel.com>	<20140403094155.04cc00bc@gandalf.local.home>	<533D6BE7.3020608@zytor.com>	<20140403104721.5f6c32b6@gandalf.local.home>	<20140403111711.5bed4ff7@gandalf.local.home>	<533D7C4F.4010504@zytor.com>	<533D7C93.7080105@zytor.com>	<20140403113921.23dceb75@gandalf.local.home>	<533D8516.1040803@zytor.com>	<20140403121314.246b03a7@gandalf.local.home>	<533DED74.6050202@linux.intel.com> <20140403194018.7c67aec7@gandalf.local.home> <533DF455.4040908@linux.intel.com> <533DF8D2.9060508@zytor.com>
+In-Reply-To: <533DF8D2.9060508@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexei,
+On 2014/4/4 8:12, H. Peter Anvin wrote:
+> On 04/03/2014 04:52 PM, Li, Aubrey wrote:
+>> On 2014/4/4 7:40, Steven Rostedt wrote:
+>>> On Fri, 04 Apr 2014 07:23:32 +0800
+>>> "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
+>>>
+>>>> Can you please send the dmi table out?
+>>>
+>>> I already did as a gz attachment to H. Peter. You were on the Cc, did
+>>> you not receive it?
+>>>
+>> Oh, I got it. This is a Preproduction machine.
+>> When reboot failed via a method (=e or =p), there are two case.
+>>
+>> Case 1: this method do nothing, pass the attempt chance to the next method
+>> Case 2: this method hangs the system
+>>
+>> I want to know if CF9 is case 1 or case 2. Could you please try the following
+>> patch *without* any reboot parameters?
+>>
+>> (1) If we didn't see any string, then EFI hangs your box.
+>> (2) if we see the first string but not the second one, CF9 hangs your box
+>> (3) if we see both, couldn't be, because BIOS works on your box.
+>>
+> 
+> Given that this machine doesn't have EFI, it seems kind of obvious, no?
+> 
+> 	-hpa
 
-We talked a lot on ktap and ebpf integration in these days,
-Now I think we can put into deeply to thinking out some
-technical issues in there.
+Yes. it should be but I want to confirm.
 
-Firstly, I want to make sure you are support this ktap and
-ebpf integration direction, I aware you have ongoing 'bpf filter'
-patch set work, which actually overlapping with ktap integration
-efforts (IMO the interface should be unified and simple for user,
- so I think filter debugfs file is not a good interface), so please let
-me know your answer about this.
+The current situation is,
+- we have one(do we know more?) preproduction machine hangs by CF9.
+- We have more than one(could be thousand known) production machine
+works by CF9.
 
-If the answer is yes, then we can go through ebpf core
-improvement, for example:
-- support global variable access
-  this is mandatory for dynamic tracing, otherwise, there have
-  no possible to run a simple script like get function execution
-  time.
-- support timer in kernel
-  The final solution must need to support kernel timer for profiling,
-  and sampling stack.
-- support register multi-event in one script
-- support trace_end
+So, if I understand correctly(please correct me if I was wrong), I don't
+think the justification is enough to revert the patch. The patch
+includes EFI, CF9 and BIOS.
 
+I'm open to make Steven's machine work:
+(1) remove CF9
+(2) add DMI table
+(3) any other idea without a regression.
 
-If the answer of first question is no, you still believe your "bpf filter"
-solution is a correct way, that's means there have no need to
-integrate ktap and ebpf, and don't need any ktap upstream efforts,
-I 'm fine with it, then I can make another technical plan for ktap.
+I prefer (2) or (3) if better because if we do (1) we will probably
+receive some other regression reports.
 
-Thank you.
-
-Jovi
+Thanks,
+-Aubrey
