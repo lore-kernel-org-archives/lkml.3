@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaDDM1B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:27:01 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:61211 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929AbaDDM0i (ORCPT
+	id S1753078AbaDDM1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:27:05 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:35950 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960AbaDDM0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:26:38 -0400
+	Fri, 4 Apr 2014 08:26:42 -0400
 From: Leif Lindholm <leif.lindholm@linaro.org>
 To: linux-efi@vger.kernel.org, matt.fleming@intel.com
-Cc: linux-kernel@vger.kernel.org, Mark Salter <msalter@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Roy Franz <roy.franz@linaro.org>,
         Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH 2/5] efi: create memory map iteration helper
-Date: Fri,  4 Apr 2014 13:25:47 +0100
-Message-Id: <1396614350-20889-3-git-send-email-leif.lindholm@linaro.org>
+Subject: [PATCH 5/5] efi: Add get_dram_base() helper function
+Date: Fri,  4 Apr 2014 13:25:50 +0100
+Message-Id: <1396614350-20889-6-git-send-email-leif.lindholm@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
 References: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
@@ -21,37 +21,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Salter <msalter@redhat.com>
+From: Roy Franz <roy.franz@linaro.org>
 
-There are a lot of places in the kernel which iterate through an
-EFI memory map. Most of these places use essentially the same
-for-loop code. This patch adds a for_each_efi_memory_desc()
-helper to clean up all of the existing duplicate code and avoid
-more in the future.
+Add the get_dram_base() function, shared by arm/arm64.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
+Signed-off-by: Roy Franz <roy.franz@linaro.org>
 Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 ---
- include/linux/efi.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/firmware/efi/efi-stub-helper.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 6c100ff..82d0abb 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -863,6 +863,12 @@ extern int efi_set_rtc_mmss(const struct timespec *now);
- extern void efi_reserve_boot_services(void);
- extern struct efi_memory_map memmap;
+diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+index 183289c..998b884 100644
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -11,6 +11,10 @@
+  */
+ #define EFI_READ_CHUNK_SIZE	(1024 * 1024)
  
-+/* Iterate through an efi_memory_map */
-+#define for_each_efi_memory_desc(m, md)					   \
-+	for ((md) = (m)->map;						   \
-+	     (md) <= (efi_memory_desc_t *)((m)->map_end - (m)->desc_size); \
-+	     (md) = (void *)(md) + (m)->desc_size)
++/* error code which can't be mistaken for valid address */
++#define EFI_ERROR	(~0UL)
 +
- /**
-  * efi_range_is_wc - check the WC bit on an address range
-  * @start: starting kvirt address
++
+ struct file_info {
+ 	efi_file_handle_t *handle;
+ 	u64 size;
+@@ -83,6 +87,32 @@ fail:
+ 	return status;
+ }
+ 
++
++static unsigned long __init get_dram_base(efi_system_table_t *sys_table)
++{
++	efi_status_t status;
++	unsigned long map_size;
++	unsigned long membase  = EFI_ERROR;
++	struct efi_memory_map map;
++	efi_memory_desc_t *md;
++
++	status = efi_get_memory_map(sys_table, (efi_memory_desc_t **)&map.map,
++				    &map_size, &map.desc_size, NULL, NULL);
++	if (status != EFI_SUCCESS)
++		return membase;
++
++	map.map_end = map.map + map_size;
++
++	for_each_efi_memory_desc(&map, md)
++		if (md->attribute & EFI_MEMORY_WB)
++			if (membase > md->phys_addr)
++				membase = md->phys_addr;
++
++	efi_call_phys1(sys_table->boottime->free_pool, map.map);
++
++	return membase;
++}
++
+ /*
+  * Allocate at the highest possible address that is not above 'max'.
+  */
 -- 
 1.7.10.4
 
