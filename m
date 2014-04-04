@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaDDXj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 19:39:56 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:53058 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546AbaDDXjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 19:39:52 -0400
-Date: Fri, 4 Apr 2014 17:39:48 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 5/6] pci: Export find_pci_host_bridge() function.
-Message-ID: <20140404233948.GC15806@google.com>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811272-1547-6-git-send-email-Liviu.Dudau@arm.com>
+	id S1753363AbaDDXoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 19:44:08 -0400
+Received: from imap.thunk.org ([74.207.234.97]:50212 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752487AbaDDXoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 19:44:07 -0400
+Date: Fri, 4 Apr 2014 19:43:58 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Jan Kara <jack@suse.cz>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+Message-ID: <20140404234358.GE10275@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20140403191558.GA8745@thunk.org>
+ <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
+ <20140404035308.GC2525@thunk.org>
+ <20140404134429.GB26806@quack.suse.cz>
+ <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394811272-1547-6-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 03:34:31PM +0000, Liviu Dudau wrote:
-> This is a useful function and we should make it visible outside the
-> generic PCI code. Export it as a GPL symbol.
+On Fri, Apr 04, 2014 at 07:16:25PM +0200, Miklos Szeredi wrote:
 > 
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> ---
->  drivers/pci/host-bridge.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-> index 06ace62..8708b652 100644
-> --- a/drivers/pci/host-bridge.c
-> +++ b/drivers/pci/host-bridge.c
-> @@ -17,12 +17,13 @@ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
->  	return bus;
->  }
->  
-> -static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
-> +struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
->  {
->  	struct pci_bus *root_bus = find_pci_root_bus(bus);
->  
->  	return to_pci_host_bridge(root_bus->bridge);
->  }
-> +EXPORT_SYMBOL_GPL(find_pci_host_bridge);
+> http://marc.info/?l=linux-kernel&m=139523745403081&w=2
 
-Do you have a place where you actually need to use find_pci_host_bridge()?
-I'd rather not export it, even as _GPL, unless we have a user.
+I tried applying this patch on top of xfstests commit 3948694eb1, but
+running on ext4.git's test branch, which has the your cross-rename
+patches applied:
 
-If we *do* export it, I'd like it to have a more conventional name, e.g.,
-something starting with "pci_".
+http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/commit/?h=test&id=b7bcc46d4f80139930c2e6bd04ff8ebbff121bc9
 
->  
->  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
->  				 void (*release_fn)(struct pci_host_bridge *),
-> -- 
-> 1.9.0
-> 
+I see the following:
+
+BEGIN TEST: Ext4 4k block Fri Apr  4 23:21:50 UTC 2014
+Device: /dev/vdb
+mk2fs options: -q
+mount options: -o block_validity
+FSTYP         -- ext4
+PLATFORM      -- Linux/i686 candygram 3.14.0-00061-gb7bcc46
+MKFS_OPTIONS  -- -q /dev/vdc
+MOUNT_OPTIONS -- -o acl,user_xattr -o block_validity /dev/vdc /vdc
+
+generic/323		[23:22:03] [23:22:04] [not run]
+	generic/323 -- kernel doesn't support renameat2 syscall
+generic/324		[23:22:04] [23:22:05] [not run]
+	generic/324 -- kernel doesn't support renameat2 syscall
+generic/325		[23:22:05] [23:22:06] [not run]
+	generic/325 -- kernel doesn't support renameat2 syscall
+Not run: generic/323 generic/324 generic/325
+
+Is there anything obvious that I might be doing wrong?
+
+Thanks,
+
+							- Ted
