@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaDDOIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:08:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139AbaDDOIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:08:04 -0400
-Date: Fri, 4 Apr 2014 10:07:55 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Mark Lord <mlord@pobox.com>, "J. Bruce Fields" <bfields@redhat.com>,
-        Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-Message-ID: <20140404100755.2a662cb1@tlielax.poochiereds.net>
-In-Reply-To: <20140404135842.GB17594@fieldses.org>
-References: <533D8D73.1090603@pobox.com>
-	<20140403171643.GB28790@pad.redhat.com>
-	<533D9F8A.6030001@pobox.com>
-	<20140403145504.3b04170e@tlielax.poochiereds.net>
-	<20140403201627.GC8343@fieldses.org>
-	<20140403192146.79679909@tlielax.poochiereds.net>
-	<20140404135842.GB17594@fieldses.org>
+	id S1753462AbaDDOIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:08:20 -0400
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:63093 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139AbaDDOIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 10:08:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140404124637.GT14763@sirena.org.uk>
+References: <1396523431-14519-1-git-send-email-harinik@xilinx.com>
+	<1396523431-14519-2-git-send-email-harinik@xilinx.com>
+	<20140403213446.GB14763@sirena.org.uk>
+	<CAFcVEC+mpHh_d2j6_sdhWS3d2KyXrDYUq6L6jO2Q=SS68Hda2g@mail.gmail.com>
+	<20140404100919.GO14763@sirena.org.uk>
+	<CAFcVECLDyfFSZFk9fzFKsr6pM=f1nwzGAhjX17z=NsbvWpiDew@mail.gmail.com>
+	<20140404124637.GT14763@sirena.org.uk>
+Date: Fri, 4 Apr 2014 19:38:14 +0530
+Message-ID: <CAFcVEC+FAAxxxxA8PgcTzLU5UFu=pkDEM4Li06dRmEwA95sz_g@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] devicetree: Add devicetree bindings documentation
+ for Cadence SPI
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Apr 2014 09:58:43 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+Hi Mark,
 
-> On Thu, Apr 03, 2014 at 07:21:46PM -0400, Jeff Layton wrote:
-> > So according to the RFC you have to encode both the mode bits and the
-> > ftype for v2. The type bits seem to be removed from the mode in NFSv3
-> > though, so perhaps we should only be doing that masking in versions
-> > above v2?
-> 
-> Right, the problematic patch applied the same mask in both v2 and v3
-> cases, so I'm reverting just the v2 part (see below).
-> 
-> > With a quick check, it looks like the v3 code doesn't rely on those bits
-> > and I imagine v4 doesn't either.
-> > 
-> > It might also be nice to have the client v2 decode_fattr function to
-> > throw a warning if the server sends us mismatched type bits and ftype
-> > values. That would have helped us catch this sooner...
-> 
-> Yes, that might be a reasonable thing to do, though I don't know if it's
-> worth it.
-> 
-> --b.
-> 
-> commit 35a8dff14e76c00e5b52140290cfb498dc2454a0
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Thu Apr 3 15:10:35 2014 -0400
-> 
->     nfsd: revert v2 half of "nfsd: don't return high mode bits"
->     
->     This reverts the part of commit 6e14b46b91fee8a049b0940333ce13a820beaaa5
->     that changes NFSv2 behavior.
->     
->     Mark Lord found that it broke nfs-root for Linux clients, because it
->     broke NFSv2.
->     
->     In fact, from RFC 1094:
->     
->     	"Notice that the file type is specified both in the mode bits
->     	and in the file type.  This is really a bug in the protocol and
->     	will be fixed in future versions."
->     
->     So NFSv2 clients really are expected to depend on the high bits of the
->     mode.
->     
->     Cc: stable@kernel.org
->     Reported-by: Mark Lord <mlord@pobox.com>
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-> index b17d932..9c769a4 100644
-> --- a/fs/nfsd/nfsxdr.c
-> +++ b/fs/nfsd/nfsxdr.c
-> @@ -152,7 +152,7 @@ encode_fattr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp,
->  	type = (stat->mode & S_IFMT);
->  
->  	*p++ = htonl(nfs_ftypes[type >> 12]);
-> -	*p++ = htonl((u32) (stat->mode & S_IALLUGO));
-> +	*p++ = htonl((u32) stat->mode);
->  	*p++ = htonl((u32) stat->nlink);
->  	*p++ = htonl((u32) from_kuid(&init_user_ns, stat->uid));
->  	*p++ = htonl((u32) from_kgid(&init_user_ns, stat->gid));
+On Fri, Apr 4, 2014 at 6:16 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Apr 04, 2014 at 05:44:23PM +0530, Harini Katakam wrote:
+>> On Fri, Apr 4, 2014 at 3:39 PM, Mark Brown <broonie@kernel.org> wrote:
+>> > On Fri, Apr 04, 2014 at 08:30:38AM +0530, Harini Katakam wrote:
+>
+>> >> This IP can drive 4 slaves.
+>> >> The CS line to be driven is selected in spi device structure and
+>> >> that is driven by the software.
+>
+>> > So why specify this in the binding at all?  If the device always has the
+>> > same number of chip selects it's redundant.
+>
+>> I'm sorry, I should have explained that better.
+>> The IP can support upto 4 chip selects.
+>> The num-cs value here is the number of chip selects actually used on the board.
+>
+> Why does that need to be configured?  Surely the presence of slaves is
+> enough information.
 
-Looks right...
+OK. I understand.
+Can you comment on the case where a decoder is used?
 
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
+There is support for adding a decoder where extended slaves can be selected
+through the IP's control register.
+(This is not currently implemented in the driver but will be in the future.)
+
+How should the driver know whether it is 4 or 16 select lines for example?
+This has to be written to master->num_chipselect.
+
+Regards,
+Harini
