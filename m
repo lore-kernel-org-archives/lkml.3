@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675AbaDDPSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:18:11 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:65158 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818AbaDDPSI (ORCPT
+	id S1753712AbaDDPSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:18:21 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49308 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680AbaDDPSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:18:08 -0400
-Date: Fri, 4 Apr 2014 18:17:56 +0300
-From: Kumar Amit Mehta <gmate.amit@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com, wharms@bfs.de,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: pcl812.c: fixed a coding style
- issue
-Message-ID: <20140404151756.GA14330@gmail.com>
-References: <1396605929-10514-1-git-send-email-gmate.amit@gmail.com>
- <20140404110707.GT6991@mwanda>
- <20140404114852.GA12452@gmail.com>
- <20140404132651.GV6991@mwanda>
+	Fri, 4 Apr 2014 11:18:16 -0400
+Message-ID: <533ECD34.5030502@linaro.org>
+Date: Fri, 04 Apr 2014 16:18:12 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140404132651.GV6991@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com
+Subject: Re: [PATCH] arm: Fix DEBUG_LL for multi-platform kernels (without
+ PL01X)
+References: <1396610269-11580-1-git-send-email-daniel.thompson@linaro.org> <20140404144108.GD7528@n2100.arm.linux.org.uk>
+In-Reply-To: <20140404144108.GD7528@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 04:26:51PM +0300, Dan Carpenter wrote:
-> On Fri, Apr 04, 2014 at 02:48:52PM +0300, Kumar Amit Mehta wrote:
-> > On Fri, Apr 04, 2014 at 02:07:07PM +0300, Dan Carpenter wrote:
-> > > On Fri, Apr 04, 2014 at 01:05:29PM +0300, Kumar Amit Mehta wrote:
-> > > > Fixed a coding style issue. Reported by checkpatch.pl
-> > > > 
-> > > 
-> > > It's better if the commit messages are more specific than this.
-> > 
-> > So, should I resend the patch with a more appropriate commit message ?
+On 04/04/14 15:41, Russell King - ARM Linux wrote:
+>> The happens because the multi-platform mode may include ARCH_SPEAR13XX
+>> and this forcibly engages DEBUG_UART_PL01X to provide some kind of
+>> compatibility with single platform builds (SPEAr supports both single and
+>> multi-platform). This in turn causes DEBUG_LL_INCLUDE to wedge at
+>> debug/pl01x.S.
+>>
+>> Problem is fixed by only deploying the compatibility options for SPEAr
+>> when ARCH_MULTIPLATFORM is not set.
 > 
-> [PATCH] staging: comedi: drivers: pcl812.c: add curly braces for checkpatch
-> 
-> Kernel style is that if one side of the if else statement gets has curly
-> braces then both side should have them.
+> I think it's probably about time we killed the def_bool and just made
+> this a plain 'bool'.  The affected platforms should be using
+> DEBUG_LL_UART_PL01X by now.
 
-Dan, 
+Ok.
 
-What Walter mentioned also makes sense, So shouldn't it be something
-like this:
+Looking closely I think this will actually be better even for the single
+platforms since today KConfig will not honour targeting DEBUG_LL at
+EmbeddedICE or semihosting on the platforms that remain in the list.
 
-[amit@localhost linux-next]$ git diff
-diff --git a/drivers/staging/comedi/drivers/pcl812.c
-b/drivers/staging/comedi/drivers/pcl812.c
-index 160eac8..552b696 100644
---- a/drivers/staging/comedi/drivers/pcl812.c
-+++ b/drivers/staging/comedi/drivers/pcl812.c
-@@ -803,16 +803,14 @@ static int pcl812_ai_cmd(struct comedi_device
-*dev, struct comedi_subdevice *s)
- 
-        pcl812_ai_set_chan_range(dev, cmd->chanlist[0], 1);
- 
-+       devpriv->ai_dma = 0;
-        if (devpriv->dma) {     /*  check if we can use DMA transfer */
-                devpriv->ai_dma = 1;
-                for (i = 1; i < cmd->chanlist_len; i++)
-                        if (cmd->chanlist[0] != cmd->chanlist[i]) {
-                                /*  we cann't use DMA :-( */
--                               devpriv->ai_dma = 0;
-                                break;
-                        }
--       } else
--               devpriv->ai_dma = 0;
- 
-        devpriv->ai_act_scan = 0;
-        devpriv->ai_poll_ptr = 0;
+Expect a v3...
 
 
-Thanks,
-Kumar
+
+Daniel.
