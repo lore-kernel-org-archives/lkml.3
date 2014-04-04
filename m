@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaDDMod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:44:33 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:63217 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878AbaDDMoX (ORCPT
+	id S1753072AbaDDMo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:44:58 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:52635 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaDDMoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:44:23 -0400
+	Fri, 4 Apr 2014 08:44:44 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -28,9 +28,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v4 3/8] OF: DT-Overlay configfs interface
-Date: Fri,  4 Apr 2014 15:43:56 +0300
-Message-Id: <1396615441-29630-4-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v4 8/8] OF: selftest: Add overlay self-test support.
+Date: Fri,  4 Apr 2014 15:44:01 +0300
+Message-Id: <1396615441-29630-9-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
 References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
@@ -38,342 +38,552 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a runtime interface to using configfs for generic device tree overlay
-usage.
+This patch adds overlay tests to the OF selftest.
 
-A device-tree configfs entry is created in /config/device-tree/overlays
-
-To create an overlay you mkdir the directory and then echo the overlay
-firmware file to the path property file.
-
-	# mkdir /config/device-tree/overlays/foo
-	# echo foo.dtbo >/config/device-tree/overlays/foo/path
-
-The overlay file will be loaded using the standard firmware loader
-and will be applied.
-
-To remove it simply rmdir the directory.
-
-	# rmdir /config/device-tree/overlays/foo
+It tests overlay device addition/removal and whether
+the apply revert sequence is correct.
 
 Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/of/Kconfig    |   5 +
- drivers/of/Makefile   |   1 +
- drivers/of/configfs.c | 272 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 278 insertions(+)
- create mode 100644 drivers/of/configfs.c
+ drivers/of/selftest.c                       | 368 ++++++++++++++++++++++++++++
+ drivers/of/testcase-data/testcases.dtsi     |   1 +
+ drivers/of/testcase-data/tests-overlay.dtsi | 125 ++++++++++
+ 3 files changed, 494 insertions(+)
+ create mode 100644 drivers/of/testcase-data/tests-overlay.dtsi
 
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index cfb7ff8..872e45e 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -77,6 +77,10 @@ config OF_RESERVED_MEM
- 	help
- 	  Helpers to allow for reservation of memory regions
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index ae44500..eeb29ff 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -14,6 +14,8 @@
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+ #include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/of_platform.h>
  
-+config OF_CONFIGFS
-+	select CONFIGFS_FS
-+	def_bool n
-+
- config OF_RESOLVE
- 	bool "OF Dynamic resolution support"
- 	depends on OF && !SPARC
-@@ -92,6 +96,7 @@ config OF_OVERLAY
- 	select OF_DYNAMIC
- 	select OF_DEVICE
- 	select OF_RESOLVE
-+	select OF_CONFIGFS
- 	help
- 	  OpenFirmware overlay support. Allows you to modify on runtime the
- 	  live tree using overlays.
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index d2a6e0d..4efa17b 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -12,3 +12,4 @@ obj-$(CONFIG_OF_MTD)	+= of_mtd.o
- obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
- obj-$(CONFIG_OF_RESOLVE)  += resolver.o
- obj-$(CONFIG_OF_OVERLAY) += overlay.o
-+obj-$(CONFIG_OF_CONFIGFS) += configfs.o
-diff --git a/drivers/of/configfs.c b/drivers/of/configfs.c
-new file mode 100644
-index 0000000..a494643
---- /dev/null
-+++ b/drivers/of/configfs.c
-@@ -0,0 +1,272 @@
-+/*
-+ * Configfs entries for device-tree
-+ *
-+ * Copyright (C) 2013 - Pantelis Antoniou <panto@antoniou-consulting.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+#include <linux/ctype.h>
-+#include <linux/cpu.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/spinlock.h>
-+#include <linux/slab.h>
-+#include <linux/proc_fs.h>
-+#include <linux/configfs.h>
-+#include <linux/types.h>
-+#include <linux/stat.h>
-+#include <linux/limits.h>
-+#include <linux/file.h>
-+#include <linux/vmalloc.h>
-+#include <linux/firmware.h>
-+
-+#include "of_private.h"
-+
+ static struct selftest_results {
+ 	int passed;
+@@ -427,6 +429,371 @@ static void __init of_selftest_match_node(void)
+ 	}
+ }
+ 
 +#ifdef CONFIG_OF_OVERLAY
 +
-+struct cfs_overlay_item {
-+	struct config_item 	item;
-+
-+	char			path[PATH_MAX];
-+
-+	const struct firmware	*fw;
-+	struct device_node	*overlay;
-+	int			ovinfo_cnt;
-+	struct of_overlay_info	*ovinfo;
-+	unsigned int		applied : 1;
-+};
-+
-+static inline struct cfs_overlay_item *to_cfs_overlay_item(struct config_item *item)
++static int selftest_probe(struct platform_device *pdev)
 +{
-+	return item ? container_of(item, struct cfs_overlay_item, item) : NULL;
-+}
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
 +
-+CONFIGFS_ATTR_STRUCT(cfs_overlay_item);
-+#define CFS_OVERLAY_ITEM_ATTR(_name, _mode, _show, _store)	\
-+struct cfs_overlay_item_attribute cfs_overlay_item_attr_##_name = \
-+	__CONFIGFS_ATTR(_name, _mode, _show, _store)
-+#define CFS_OVERLAY_ITEM_ATTR_RO(_name, _show)	\
-+struct cfs_overlay_item_attribute cfs_overlay_item_attr_##_name = \
-+	__CONFIGFS_ATTR_RO(_name, _show)
++	if (np == NULL) {
++		dev_err(dev, "No OF data for device\n");
++		return -EINVAL;
 +
-+static ssize_t cfs_overlay_item_path_show(struct cfs_overlay_item *overlay,
-+		char *page)
-+{
-+	return sprintf(page, "%s\n", overlay->path);
-+}
-+
-+static ssize_t cfs_overlay_item_path_store(struct cfs_overlay_item *overlay,
-+		const char *page, size_t count)
-+{
-+	const char *p = page;
-+	char *s;
-+	int err;
-+
-+	/* if it's set do not allow changes */
-+	if (overlay->path[0] != '\0')
-+		return -EPERM;
-+
-+	/* copy to path buffer (and make sure it's always zero terminated */
-+	count = snprintf(overlay->path, sizeof(overlay->path) - 1, "%s", p);
-+	overlay->path[sizeof(overlay->path) - 1] = '\0';
-+
-+	/* strip trailing newlines */
-+	s = overlay->path + strlen(overlay->path);
-+	while (s > overlay->path && *--s == '\n')
-+		*s = '\0';
-+
-+	pr_debug("%s: path is '%s'\n", __func__, overlay->path);
-+
-+	err = request_firmware(&overlay->fw, overlay->path, NULL);
-+	if (err != 0)
-+		goto out_err;
-+
-+	/* unflatten the tree */
-+	of_fdt_unflatten_tree((void *)overlay->fw->data, &overlay->overlay);
-+	if (overlay->overlay == NULL) {
-+		pr_err("%s: failed to unflatten tree\n", __func__);
-+		err = -EINVAL;
-+		goto out_err;
-+	}
-+	pr_debug("%s: unflattened OK\n", __func__);
-+
-+	/* mark it as detached */
-+	of_node_set_flag(overlay->overlay, OF_DETACHED);
-+
-+	/* perform resolution */
-+	err = of_resolve(overlay->overlay);
-+	if (err != 0) {
-+		pr_err("%s: Failed to resolve tree\n", __func__);
-+		goto out_err;
-+	}
-+	pr_debug("%s: resolved OK\n", __func__);
-+
-+	/* now build an overlay info array */
-+	err = of_build_overlay_info(overlay->overlay,
-+			&overlay->ovinfo_cnt, &overlay->ovinfo);
-+	if (err != 0) {
-+		pr_err("%s: Failed to build overlay info\n", __func__);
-+		goto out_err;
 +	}
 +
-+	pr_debug("%s: built %d overlay segments\n", __func__,
-+			overlay->ovinfo_cnt);
-+
-+	err = of_overlay(overlay->ovinfo_cnt, overlay->ovinfo);
-+	if (err != 0) {
-+		pr_err("%s: Failed to apply overlay\n", __func__);
-+		goto out_err;
-+	}
-+
-+	overlay->applied = 1;
-+
-+	pr_debug("%s: Applied #%d overlay segments\n", __func__,
-+			overlay->ovinfo_cnt);
-+
-+	return count;
-+
-+out_err:
-+	if (overlay->applied)
-+		of_overlay_revert(overlay->ovinfo_cnt, overlay->ovinfo);
-+	overlay->applied = 0;
-+
-+	if (overlay->ovinfo)
-+		of_free_overlay_info(overlay->ovinfo_cnt, overlay->ovinfo);
-+	overlay->ovinfo = NULL;
-+	overlay->ovinfo_cnt = 0;
-+
-+	release_firmware(overlay->fw);
-+	overlay->fw = NULL;
-+
-+	overlay->path[0] = '\0';
-+	return err;
++	dev_dbg(dev, "%s for node @%s\n", __func__, np->full_name);
++	return 0;
 +}
 +
-+static ssize_t cfs_overlay_item_status_show(struct cfs_overlay_item *overlay,
-+		char *page)
++static int selftest_remove(struct platform_device *pdev)
 +{
-+	return sprintf(page, "%s\n",
-+			overlay->applied ? "applied" : "unapplied");
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++
++	dev_dbg(dev, "%s for node @%s\n", __func__, np->full_name);
++	return 0;
 +}
 +
-+CFS_OVERLAY_ITEM_ATTR(path, S_IRUGO | S_IWUSR, \
-+		cfs_overlay_item_path_show, cfs_overlay_item_path_store);
-+CFS_OVERLAY_ITEM_ATTR_RO(status, cfs_overlay_item_status_show);
-+
-+static struct configfs_attribute *cfs_overlay_attrs[] = {
-+	&cfs_overlay_item_attr_path.attr,
-+	&cfs_overlay_item_attr_status.attr,
-+	NULL,
++static struct of_device_id selftest_match[] = {
++	{ .compatible = "selftest", },
++	{},
 +};
++MODULE_DEVICE_TABLE(of, altera_jtaguart_match);
 +
-+static void cfs_overlay_release(struct config_item *item)
-+{
-+	struct cfs_overlay_item *overlay = to_cfs_overlay_item(item);
-+
-+	if (overlay->applied)
-+		of_overlay_revert(overlay->ovinfo_cnt, overlay->ovinfo);
-+	if (overlay->ovinfo)
-+		of_free_overlay_info(overlay->ovinfo_cnt, overlay->ovinfo);
-+	if (overlay->fw)
-+		release_firmware(overlay->fw);
-+	kfree(overlay);
-+}
-+
-+CONFIGFS_ATTR_OPS(cfs_overlay_item);
-+static struct configfs_item_operations cfs_overlay_item_ops = {
-+	.release		= cfs_overlay_release,
-+	.show_attribute		= cfs_overlay_item_attr_show,
-+	.store_attribute	= cfs_overlay_item_attr_store,
-+};
-+
-+static struct config_item_type cfs_overlay_type = {
-+	.ct_item_ops	= &cfs_overlay_item_ops,
-+	.ct_attrs	= cfs_overlay_attrs,
-+	.ct_owner	= THIS_MODULE,
-+};
-+
-+static struct config_item *cfs_overlay_group_make_item(struct config_group *group, const char *name)
-+{
-+	struct cfs_overlay_item *overlay;
-+
-+	overlay = kzalloc(sizeof(*overlay), GFP_KERNEL);
-+	if (!overlay)
-+		return ERR_PTR(-ENOMEM);
-+
-+	config_item_init_type_name(&overlay->item, name, &cfs_overlay_type);
-+	return &overlay->item;
-+}
-+
-+static void cfs_overlay_group_drop_item(struct config_group *group, struct config_item *item)
-+{
-+	struct cfs_overlay_item *overlay = to_cfs_overlay_item(item);
-+
-+	config_item_put(&overlay->item);
-+}
-+
-+static struct configfs_group_operations overlays_ops = {
-+	.make_item	= cfs_overlay_group_make_item,
-+	.drop_item	= cfs_overlay_group_drop_item,
-+};
-+
-+static struct config_item_type overlays_type = {
-+	.ct_group_ops   = &overlays_ops,
-+	.ct_owner       = THIS_MODULE,
-+};
-+
-+#endif /* CONFIG_OF_OVERLAY */
-+
-+static struct configfs_group_operations of_cfs_ops = {
-+	/* empty - we don't allow anything to be created */
-+};
-+
-+static struct config_item_type of_cfs_type = {
-+	.ct_group_ops   = &of_cfs_ops,
-+	.ct_owner       = THIS_MODULE,
-+};
-+
-+struct config_group of_cfs_overlay_group;
-+
-+struct config_group *of_cfs_def_groups[] = {
-+#ifdef CONFIG_OF_OVERLAY
-+	&of_cfs_overlay_group,
-+#endif
-+	NULL
-+};
-+
-+static struct configfs_subsystem of_cfs_subsys = {
-+	.su_group = {
-+		.cg_item = {
-+			.ci_namebuf = "device-tree",
-+			.ci_type = &of_cfs_type,
-+		},
-+		.default_groups = of_cfs_def_groups,
++static struct platform_driver selftest_driver = {
++	.probe			= selftest_probe,
++	.remove			= selftest_remove,
++	.driver = {
++		.name		= "selftest",
++		.owner		= THIS_MODULE,
++		.of_match_table	= of_match_ptr(selftest_match),
 +	},
-+	.su_mutex = __MUTEX_INITIALIZER(of_cfs_subsys.su_mutex),
 +};
 +
-+static int __init of_cfs_init(void)
++/* get the platform device instantiated at the path */
++static struct platform_device *of_path_to_platform_device(const char *path)
++{
++	struct device_node *np;
++	struct platform_device *pdev;
++
++	np = of_find_node_by_path(path);
++	if (np == NULL)
++		return NULL;
++
++	pdev = of_find_device_by_node(np);
++	of_node_put(np);
++
++	return pdev;
++}
++
++/* find out if a platform device exists at that path */
++static int of_path_platform_device_exists(const char *path)
++{
++	struct platform_device *pdev;
++
++	pdev = of_path_to_platform_device(path);
++	platform_device_put(pdev);
++	return pdev != NULL;
++}
++
++static const char *selftest_path(int nr)
++{
++	static char buf[256];
++
++	snprintf(buf, sizeof(buf) - 1,
++		"/testcase-data/overlay-node/test-bus/test-selftest%d", nr);
++	buf[sizeof(buf) - 1] = '\0';
++
++	return buf;
++}
++
++static const char *overlay_path(int nr)
++{
++	static char buf[256];
++
++	snprintf(buf, sizeof(buf) - 1,
++		"/testcase-data/overlay%d", nr);
++	buf[sizeof(buf) - 1] = '\0';
++
++	return buf;
++}
++
++static const char *bus_path = "/testcase-data/overlay-node/test-bus";
++
++static int of_selftest_apply_overlay(int selftest_nr, int overlay_nr,
++		int *ovcount_arg, struct of_overlay_info **ovinfo_arg)
++{
++	struct device_node *np = NULL;
++	int ret, ovcount_val, *ovcount;
++	struct of_overlay_info *ovinfo_val, **ovinfo;
++
++	if (ovcount_arg == NULL || ovinfo_arg == NULL) {
++		ovcount = &ovcount_val;
++		ovinfo = &ovinfo_val;
++	} else {
++		ovcount = ovcount_arg;
++		ovinfo = ovinfo_arg;
++	}
++
++	*ovcount = 0;
++	*ovinfo = NULL;
++
++	np = of_find_node_by_path(overlay_path(overlay_nr));
++	if (np == NULL) {
++		selftest(0, "could not find overlay node @\"%s\"\n",
++				overlay_path(overlay_nr));
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = of_build_overlay_info(np, ovcount, ovinfo);
++	if (ret != 0) {
++		selftest(0, "could not build overlay from \"%s\"\n",
++				overlay_path(overlay_nr));
++		goto out;
++	}
++
++	ret = of_overlay(*ovcount, *ovinfo);
++	if (ret != 0) {
++		selftest(0, "could not apply overlay from \"%s\"\n",
++				overlay_path(overlay_nr));
++		goto out;
++	}
++
++	ret = 0;
++
++out:
++	/* free if no argument passed */
++	if (ovinfo == &ovinfo_val)
++		of_free_overlay_info(*ovcount, *ovinfo);
++	of_node_put(np);
++	return ret;
++}
++
++/* apply an overlay while checking before and after states */
++static int of_selftest_apply_overlay_check(int overlay_nr, int selftest_nr,
++		int before, int after)
 +{
 +	int ret;
 +
-+	pr_info("%s\n", __func__);
++	/* selftest device must not be in before state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= before) {
++		selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!before ? "enabled" : "disabled");
++		return -EINVAL;
++	}
 +
-+	config_group_init(&of_cfs_subsys.su_group);
-+#ifdef CONFIG_OF_OVERLAY
-+	config_group_init_type_name(&of_cfs_overlay_group, "overlays", &overlays_type);
-+#endif
-+
-+	ret = configfs_register_subsystem(&of_cfs_subsys);
++	ret = of_selftest_apply_overlay(overlay_nr, selftest_nr, NULL, NULL);
 +	if (ret != 0) {
-+		pr_err("%s: failed to register subsys\n", __func__);
++		/* of_selftest_apply_overlay already called selftest() */
++		return ret;
++	}
++
++	/* selftest device must be to set to after state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= after) {
++		selftest(0, "overlay @\"%s\" failed to create @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!after ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/* apply an overlay and then revert it while checking before, after states */
++static int of_selftest_apply_revert_overlay_check(int overlay_nr,
++		int selftest_nr, int before, int after)
++{
++	int ret, ovcount;
++	struct of_overlay_info *ovinfo;
++
++	/* selftest device must be in before state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= before) {
++		selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!before ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	/* apply the overlay */
++	ret = of_selftest_apply_overlay(overlay_nr, selftest_nr,
++			&ovcount, &ovinfo);
++	if (ret != 0) {
++		/* of_selftest_apply_overlay already called selftest() */
++		return ret;
++	}
++
++	/* selftest device must be in after state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= after) {
++		selftest(0, "overlay @\"%s\" failed to create @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!after ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	ret = of_overlay_revert(ovcount, ovinfo);
++	if (ret != 0) {
++		selftest(0, "overlay @\"%s\" failed to revert @\"%s\"\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr));
++		return ret;
++	}
++
++	of_free_overlay_info(ovcount, ovinfo);
++
++	/* selftest device must be again in before state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= before) {
++		selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!before ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/* test activation of device */
++static void of_selftest_overlay_0(void)
++{
++	int ret;
++
++	/* device should enable */
++	ret = of_selftest_apply_overlay_check(0, 0, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 0);
++}
++
++/* test deactivation of device */
++static void of_selftest_overlay_1(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_overlay_check(1, 1, 1, 0);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 1);
++}
++
++/* test activation of device */
++static void of_selftest_overlay_2(void)
++{
++	int ret;
++
++	/* device should enable */
++	ret = of_selftest_apply_overlay_check(2, 2, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 2);
++}
++
++/* test deactivation of device */
++static void of_selftest_overlay_3(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_overlay_check(3, 3, 1, 0);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 3);
++}
++
++/* test activation of a full device node */
++static void of_selftest_overlay_4(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_overlay_check(4, 4, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 4);
++}
++
++/* test overlay apply/revert sequence */
++static void of_selftest_overlay_5(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_revert_overlay_check(5, 5, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 5);
++}
++
++static void __init of_selftest_overlay(void)
++{
++	struct device_node *bus_np = NULL;
++	int ret;
++
++	ret = platform_driver_register(&selftest_driver);
++	if (ret != 0) {
++		selftest(0, "could not register selftest driver\n");
 +		goto out;
 +	}
-+	pr_info("%s: OK\n", __func__);
++
++	bus_np = of_find_node_by_path(bus_path);
++	if (bus_np == NULL) {
++		selftest(0, "could not find bus_path \"%s\"\n", bus_path);
++		goto out;
++	}
++
++	ret = of_platform_populate(bus_np, of_default_bus_match_table,
++			NULL, NULL);
++	if (ret != 0) {
++		selftest(0, "could not populate bus @ \"%s\"\n", bus_path);
++		goto out;
++	}
++
++	if (!of_path_platform_device_exists(selftest_path(100))) {
++		selftest(0, "could not find selftest0 @ \"%s\"\n", selftest_path(100));
++		goto out;
++	}
++
++	if (of_path_platform_device_exists(selftest_path(101))) {
++		selftest(0, "selftest1 @ \"%s\" should not exist\n", selftest_path(101));
++		goto out;
++	}
++
++	selftest(1, "basic infrastructure of overlays passed");
++
++	/* tests in sequence */
++	of_selftest_overlay_0();
++	of_selftest_overlay_1();
++	of_selftest_overlay_2();
++	of_selftest_overlay_3();
++	of_selftest_overlay_4();
++	of_selftest_overlay_5();
++
 +out:
-+	return ret;
++	of_node_put(bus_np);
 +}
-+late_initcall(of_cfs_init);
++
++#else
++static inline void __init of_selftest_overlay(void) { }
++#endif
++
+ static int __init of_selftest(void)
+ {
+ 	struct device_node *np;
+@@ -445,6 +812,7 @@ static int __init of_selftest(void)
+ 	of_selftest_parse_interrupts();
+ 	of_selftest_parse_interrupts_extended();
+ 	of_selftest_match_node();
++	of_selftest_overlay();
+ 	pr_info("end of selftest - %i passed, %i failed\n",
+ 		selftest_results.passed, selftest_results.failed);
+ 	return 0;
+diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
+index 3a5b75a..6a9441e 100644
+--- a/drivers/of/testcase-data/testcases.dtsi
++++ b/drivers/of/testcase-data/testcases.dtsi
+@@ -1,3 +1,4 @@
+ #include "tests-phandle.dtsi"
+ #include "tests-interrupts.dtsi"
+ #include "tests-match.dtsi"
++#include "tests-overlay.dtsi"
+diff --git a/drivers/of/testcase-data/tests-overlay.dtsi b/drivers/of/testcase-data/tests-overlay.dtsi
+new file mode 100644
+index 0000000..9981b20
+--- /dev/null
++++ b/drivers/of/testcase-data/tests-overlay.dtsi
+@@ -0,0 +1,125 @@
++
++/ {
++	testcase-data {
++		overlay-node {
++
++			/* test bus */
++			selftestbus: test-bus {
++				compatible = "simple-bus";
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				selftest100: test-selftest100 {
++					compatible = "selftest";
++					status = "okay";
++					reg = <100>;
++				};
++
++				selftest101: test-selftest101 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <101>;
++				};
++
++				selftest0: test-selftest0 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <0>;
++				};
++
++				selftest1: test-selftest1 {
++					compatible = "selftest";
++					status = "okay";
++					reg = <1>;
++				};
++
++				selftest2: test-selftest2 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <2>;
++				};
++
++				selftest3: test-selftest3 {
++					compatible = "selftest";
++					status = "okay";
++					reg = <3>;
++				};
++
++				selftest5: test-selftest5 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <5>;
++				};
++			};
++		};
++
++		/* test enable using absolute target path */
++		overlay0 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest0";
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++
++		/* test disable using absolute target path */
++		overlay1 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest1";
++				__overlay__ {
++					status = "disabled";
++				};
++			};
++		};
++
++		/* test enable using label */
++		overlay2 {
++			fragment@0 {
++				target = <&selftest2>;
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++
++		/* test disable using label */
++		overlay3 {
++			fragment@0 {
++				target = <&selftest3>;
++				__overlay__ {
++					status = "disabled";
++				};
++			};
++		};
++
++		/* test insertion of a full node */
++		overlay4 {
++			fragment@0 {
++				target = <&selftestbus>;
++				__overlay__ {
++
++					/* suppress DTC warning */
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					test-selftest4 {
++						compatible = "selftest";
++						status = "okay";
++						reg = <4>;
++					};
++				};
++			};
++		};
++
++		/* test overlay apply revert */
++		overlay5 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest5";
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++	};
++};
 -- 
 1.7.12
 
