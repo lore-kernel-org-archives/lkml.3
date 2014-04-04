@@ -1,69 +1,620 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaDDVNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:13:48 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:61095 "EHLO
+	id S1752766AbaDDVOK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:14:10 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:61218 "EHLO
 	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752303AbaDDVNr (ORCPT
+	by vger.kernel.org with ESMTP id S1752604AbaDDVOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:13:47 -0400
+	Fri, 4 Apr 2014 17:14:04 -0400
 To: bp@alien8.de
 Cc: tony.luck@intel.com, hpa@zytor.com, mingo@kernel.org,
         dougthompson@xmission.com, m.chehab@samsung.com,
         mitake@dcl.info.waseda.ac.jp, linux-edac@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-Id: <cover.1396645124.git.jbaron@akamai.com>
+Message-Id: <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
+In-Reply-To: <cover.1396645124.git.jbaron@akamai.com>
+References: <cover.1396645124.git.jbaron@akamai.com>
 From: Jason Baron <jbaron@akamai.com>
-Subject: [PATCH 0/3] Add new ie31200_edac driver
-Date: Fri,  4 Apr 2014 21:13:45 +0000 (GMT)
+Subject: [PATCH 3/3] ie31200_edac: Add driver
+Date: Fri,  4 Apr 2014 21:14:04 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add 'ie31200_edac' driver for the E3-1200 series of Intel processors. Driver
+is based on the following E3-1200 specs:
 
-Add support for memory errors for the Intel E3-1200 processors.
+http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200-family-vol-2-datasheet.html
+http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200v3-vol-2-datasheet.html
 
-While testing the driver, I found that doing a readq() on the
-memory mapped memory controller hub registers caused a hard lockup
-on my x86_64 system. It turns out that a read across a DW boundary
-is a no no here.
+I've tested this on bad memory hardware, and observed correlating bad reads
+and uncorrected memory errors as reported by the driver.
 
-"
-Software must not access B0/D0/F0 32-bit memory-mapped registers with
-requests that cross a DW boundary.
-"
-
-(http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200-family-vol-2-datasheet.html p. 16)
-
-Thus, I've added a generic lo_hi_[read|write]_q API, to deal with
-this issue.
-
-I think longer term the right thing is maybe to simply add these
-definitions to include/asm-generic/io.h, as I didn't see any
-in tree users of 'io-64-nonatomic-hi-lo.h', and simply remove
-io-64-nonatomic-hi-lo.h and io-64-nonatomic-lo-hi.h. But I didn't want to
-tie that cleanup to this edac driver submission.
-
-Thanks,
-
--Jason
-
-
-Jason Baron (3):
-  readq/writeq: Add explicit lo_hi_[read|write]_q and hi_lo_[read|write]_q
-  x38_edac: make use of lo_hi_readq()
-  ie31200_edac: Add driver
-
- drivers/edac/Kconfig                        |   7 +
- drivers/edac/Makefile                       |   1 +
- drivers/edac/ie31200_edac.c                 | 540 ++++++++++++++++++++++++++++
- drivers/edac/x38_edac.c                     |  15 +-
- include/asm-generic/io-64-nonatomic-hi-lo.h |  14 +-
- include/asm-generic/io-64-nonatomic-lo-hi.h |  14 +-
- 6 files changed, 572 insertions(+), 19 deletions(-)
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+---
+ drivers/edac/Kconfig        |   7 +
+ drivers/edac/Makefile       |   1 +
+ drivers/edac/ie31200_edac.c | 540 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 548 insertions(+)
  create mode 100644 drivers/edac/ie31200_edac.c
 
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index 878f090..27f44a1 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -186,6 +186,13 @@ config EDAC_I3200
+ 	  Support for error detection and correction on the Intel
+ 	  3200 and 3210 server chipsets.
+ 
++config EDAC_IE31200
++	tristate "Intel e312xx"
++	depends on EDAC_MM_EDAC && PCI && X86
++	help
++	  Support for error detection and correction on the Intel
++	  E3-1200 processor.
++
+ config EDAC_X38
+ 	tristate "Intel X38"
+ 	depends on EDAC_MM_EDAC && PCI && X86
+diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+index 4154ed6..c479a24 100644
+--- a/drivers/edac/Makefile
++++ b/drivers/edac/Makefile
+@@ -37,6 +37,7 @@ obj-$(CONFIG_EDAC_I82875P)		+= i82875p_edac.o
+ obj-$(CONFIG_EDAC_I82975X)		+= i82975x_edac.o
+ obj-$(CONFIG_EDAC_I3000)		+= i3000_edac.o
+ obj-$(CONFIG_EDAC_I3200)		+= i3200_edac.o
++obj-$(CONFIG_EDAC_IE31200)		+= ie31200_edac.o
+ obj-$(CONFIG_EDAC_X38)			+= x38_edac.o
+ obj-$(CONFIG_EDAC_I82860)		+= i82860_edac.o
+ obj-$(CONFIG_EDAC_R82600)		+= r82600_edac.o
+diff --git a/drivers/edac/ie31200_edac.c b/drivers/edac/ie31200_edac.c
+new file mode 100644
+index 0000000..ae03d21
+--- /dev/null
++++ b/drivers/edac/ie31200_edac.c
+@@ -0,0 +1,540 @@
++/*
++ * Intel E3-1200
++ * Copyright (C) 2014 Jason Baron <jbaron@akamai.com>
++ *
++ * Support for the E3-1200 processor family. Heavily based on previous
++ * Intel EDAC drivers.
++ *
++ * Since the DRAM controller is on the cpu chip, we can use its PCI device
++ * id to identify these processors.
++ *
++ * PCI DRAM controller device ids (Taken from The PCI ID Repository - http://pci-ids.ucw.cz/)
++ *
++ * 0108: Xeon E3-1200 Processor Family DRAM Controller
++ * 010c: Xeon E3-1200/2nd Generation Core Processor Family DRAM Controller
++ * 0150: Xeon E3-1200 v2/3rd Gen Core processor DRAM Controller
++ * 0158: Xeon E3-1200 v2/Ivy Bridge DRAM Controller
++ * 015c: Xeon E3-1200 v2/3rd Gen Core processor DRAM Controller
++ * 0c04: Xeon E3-1200 v3/4th Gen Core Processor DRAM Controller
++ * 0c08: Xeon E3-1200 v3 Processor DRAM Controller
++ *
++ * Based on Intel specification:
++ * http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/xeon-e3-1200v3-vol-2-datasheet.pdf
++ * http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200-family-vol-2-datasheet.html
++ *
++ * According to the above datasheet (p.16):
++ * "
++ * 6. Software must not access B0/D0/F0 32-bit memory-mapped registers with
++ * requests that cross a DW boundary.
++ * "
++ *
++ * Thus, we make use of the explicit: lo_hi_readq(), which breaks the readq into
++ * 2 readl() calls. This restriction may be lifted in subsequent chip releases,
++ * but lo_hi_readq() ensures that we are safe across all e3-1200 processors.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/pci.h>
++#include <linux/pci_ids.h>
++#include <linux/edac.h>
++
++#include <asm-generic/io-64-nonatomic-lo-hi.h>
++#include "edac_core.h"
++
++#define IE31200_REVISION "1.0"
++#define EDAC_MOD_STR "ie31200_edac"
++
++#define PCI_DEVICE_ID_INTEL_IE31200_HB_1 0x0108
++#define PCI_DEVICE_ID_INTEL_IE31200_HB_2 0x010c
++#define PCI_DEVICE_ID_INTEL_IE31200_HB_3 0x0150
++#define PCI_DEVICE_ID_INTEL_IE31200_HB_4 0x0158
++#define PCI_DEVICE_ID_INTEL_IE31200_HB_5 0x015c
++#define PCI_DEVICE_ID_INTEL_IE31200_HB_6 0x0c04
++#define PCI_DEVICE_ID_INTEL_IE31200_HB_7 0x0c08
++
++#define IE31200_DIMMS			4
++#define IE31200_RANKS			8
++#define IE31200_RANKS_PER_CHANNEL	4
++#define IE31200_DIMMS_PER_CHANNEL	2
++#define IE31200_CHANNELS		2
++
++/* Intel IE31200 register addresses - device 0 function 0 - DRAM Controller */
++#define IE31200_MCHBAR_LOW	0x48
++#define IE31200_MCHBAR_HIGH	0x4c
++#define IE31200_MCHBAR_MASK	0xffffff8000ULL	/* bits 38:15 */
++#define IE31200_MMR_WINDOW_SIZE	32768
++
++/* Error Status Register (16b)
++ *
++ * 15    reserved
++ * 14    Isochronous TBWRR Run Behind FIFO Full
++ *       (ITCV)
++ * 13    Isochronous TBWRR Run Behind FIFO Put
++ *       (ITSTV)
++ * 12    reserved
++ * 11    MCH Thermal Sensor Event
++ *       for SMI/SCI/SERR (GTSE)
++ * 10    reserved
++ *  9    LOCK to non-DRAM Memory Flag (LCKF)
++ *  8    reserved
++ *  7    DRAM Throttle Flag (DTF)
++ *  6:2  reserved
++ *  1    Multi-bit DRAM ECC Error Flag (DMERR)
++ *  0    Single-bit DRAM ECC Error Flag (DSERR)
++ */
++#define IE31200_ERRSTS		0xc8
++#define IE31200_ERRSTS_UE	0x0002
++#define IE31200_ERRSTS_CE	0x0001
++#define IE31200_ERRSTS_BITS	(IE31200_ERRSTS_UE | IE31200_ERRSTS_CE)
++
++/*
++ * Channel 0 ECC Error Log (64b)
++ *
++ * 63:48 Error Column Address (ERRCOL)
++ * 47:32 Error Row Address (ERRROW)
++ * 31:29 Error Bank Address (ERRBANK)
++ * 28:27 Error Rank Address (ERRRANK)
++ * 26:24 reserved
++ * 23:16 Error Syndrome (ERRSYND)
++ * 15: 2 reserved
++ *    1  Multiple Bit Error Status (MERRSTS)
++ *    0  Correctable Error Status (CERRSTS)
++ */
++#define IE31200_C0ECCERRLOG			0x40c8
++#define IE31200_C1ECCERRLOG			0x44c8
++#define IE31200_ECCERRLOG_CE			0x1
++#define IE31200_ECCERRLOG_UE			0x2
++#define IE31200_ECCERRLOG_RANK_BITS		0x18000000
++#define IE31200_ECCERRLOG_RANK_SHIFT		27
++#define IE31200_ECCERRLOG_SYNDROME_BITS		0xff0000
++#define IE31200_ECCERRLOG_SYNDROME_SHIFT	16
++#define IE31200_CAPID0				0xe4
++
++#define IE31200_MAD_DIMM_0_OFFSET 0x5004
++
++#define IE31200_PAGES(n) \
++	(n << (28 - PAGE_SHIFT))
++
++struct ie31200_priv {
++	void __iomem *window;
++};
++
++static int nr_channels;
++
++static int how_many_channels(struct pci_dev *pdev)
++{
++	int n_channels;
++	unsigned char capid0_2b; /* 2nd byte of CAPID0 */
++
++	pci_read_config_byte(pdev, IE31200_CAPID0 + 1, &capid0_2b);
++
++	/* check PDCD: Dual Channel Disable */
++	if (capid0_2b & 0x10) {
++		edac_dbg(0, "In single channel mode\n");
++		n_channels = 1;
++	} else {
++		edac_dbg(0, "In dual channel mode\n");
++		n_channels = 2;
++	}
++
++	/* check DDPCD - check if both channels are filled */
++	if (capid0_2b & 0x40)
++		edac_dbg(0, "2 DIMMS per channel disabled\n");
++	else
++		edac_dbg(0, "2 DIMMS per channel enabled\n");
++
++	return n_channels;
++}
++
++static bool ecc_capable(struct pci_dev *pdev)
++{
++	unsigned char capid0_4b; /* 4th byte of CAPID0 */
++
++	pci_read_config_byte(pdev, IE31200_CAPID0 + 3, &capid0_4b);
++	if (capid0_4b & 0x2)
++		return false;
++	return true;
++}
++
++static unsigned long eccerrlog_syndrome(u64 log)
++{
++	return (log & IE31200_ECCERRLOG_SYNDROME_BITS) >>
++		IE31200_ECCERRLOG_SYNDROME_SHIFT;
++}
++
++static int eccerrlog_row(int channel, u64 log)
++{
++	u64 rank = ((log & IE31200_ECCERRLOG_RANK_BITS) >>
++		IE31200_ECCERRLOG_RANK_SHIFT);
++	return rank;
++}
++
++enum ie31200_chips {
++	IE31200 = 0,
++};
++
++struct ie31200_dev_info {
++	const char *ctl_name;
++};
++
++struct ie31200_error_info {
++	u16 errsts;
++	u16 errsts2;
++	u64 eccerrlog[IE31200_CHANNELS];
++};
++
++static const struct ie31200_dev_info ie31200_devs[] = {
++	[IE31200] = {
++		.ctl_name = "IE31200"
++	},
++};
++
++static void ie31200_clear_error_info(struct mem_ctl_info *mci)
++{
++	struct pci_dev *pdev;
++
++	pdev = to_pci_dev(mci->pdev);
++
++	/*
++	 * Clear any error bits.
++	 * (Yes, we really clear bits by writing 1 to them.)
++	 */
++	pci_write_bits16(pdev, IE31200_ERRSTS, IE31200_ERRSTS_BITS,
++		IE31200_ERRSTS_BITS);
++}
++
++static void ie31200_get_and_clear_error_info(struct mem_ctl_info *mci,
++		struct ie31200_error_info *info)
++{
++	struct pci_dev *pdev;
++	struct ie31200_priv *priv = mci->pvt_info;
++	void __iomem *window = priv->window;
++
++	pdev = to_pci_dev(mci->pdev);
++
++	/*
++	 * This is a mess because there is no atomic way to read all the
++	 * registers at once and the registers can transition from CE being
++	 * overwritten by UE.
++	 */
++	pci_read_config_word(pdev, IE31200_ERRSTS, &info->errsts);
++	if (!(info->errsts & IE31200_ERRSTS_BITS))
++		return;
++
++	info->eccerrlog[0] = lo_hi_readq(window + IE31200_C0ECCERRLOG);
++	if (nr_channels == 2)
++		info->eccerrlog[1] = lo_hi_readq(window + IE31200_C1ECCERRLOG);
++
++	pci_read_config_word(pdev, IE31200_ERRSTS, &info->errsts2);
++
++	/*
++	 * If the error is the same for both reads then the first set
++	 * of reads is valid.  If there is a change then there is a CE
++	 * with no info and the second set of reads is valid and
++	 * should be UE info.
++	 */
++	if ((info->errsts ^ info->errsts2) & IE31200_ERRSTS_BITS) {
++		info->eccerrlog[0] = lo_hi_readq(window + IE31200_C0ECCERRLOG);
++		if (nr_channels == 2)
++			info->eccerrlog[1] =
++				lo_hi_readq(window + IE31200_C1ECCERRLOG);
++	}
++
++	ie31200_clear_error_info(mci);
++}
++
++static void ie31200_process_error_info(struct mem_ctl_info *mci,
++		struct ie31200_error_info *info)
++{
++	int channel;
++	u64 log;
++
++	if (!(info->errsts & IE31200_ERRSTS_BITS))
++		return;
++
++	if ((info->errsts ^ info->errsts2) & IE31200_ERRSTS_BITS) {
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1, 0, 0, 0,
++				     -1, -1, -1, "UE overwrote CE", "");
++		info->errsts = info->errsts2;
++	}
++
++	for (channel = 0; channel < nr_channels; channel++) {
++		log = info->eccerrlog[channel];
++		if (log & IE31200_ECCERRLOG_UE) {
++			edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1,
++					     0, 0, 0,
++					     eccerrlog_row(channel, log),
++					     channel, -1,
++					     "i3000 UE", "");
++		} else if (log & IE31200_ECCERRLOG_CE) {
++			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 1,
++					     0, 0, eccerrlog_syndrome(log),
++					     eccerrlog_row(channel, log),
++					     channel, -1,
++					     "i3000 CE", "");
++		}
++	}
++}
++
++static void ie31200_check(struct mem_ctl_info *mci)
++{
++	struct ie31200_error_info info;
++
++	edac_dbg(1, "MC%d\n", mci->mc_idx);
++	ie31200_get_and_clear_error_info(mci, &info);
++	ie31200_process_error_info(mci, &info);
++}
++
++static void __iomem *ie31200_map_mchbar(struct pci_dev *pdev)
++{
++	union {
++		u64 mchbar;
++		struct {
++			u32 mchbar_low;
++			u32 mchbar_high;
++		};
++	} u;
++	void __iomem *window;
++
++	pci_read_config_dword(pdev, IE31200_MCHBAR_LOW, &u.mchbar_low);
++	pci_read_config_dword(pdev, IE31200_MCHBAR_HIGH, &u.mchbar_high);
++	u.mchbar &= IE31200_MCHBAR_MASK;
++
++	if (u.mchbar != (resource_size_t)u.mchbar) {
++		pr_err("ie31200: mmio space beyond accessible range (0x%llx)\n",
++			(unsigned long long)u.mchbar);
++		return NULL;
++	}
++
++	window = ioremap_nocache(u.mchbar, IE31200_MMR_WINDOW_SIZE);
++	if (!window)
++		pr_err("ie31200: cannot map mmio space at 0x%llx\n",
++			(unsigned long long)u.mchbar);
++
++	return window;
++}
++
++struct dimm_data {
++	u8 size; /* in 256MB multiples */
++	u8 dual_rank : 1,
++	   x16_width : 1; /* 0 means x8 width */
++};
++
++static int ie31200_probe1(struct pci_dev *pdev, int dev_idx)
++{
++	int rc;
++	int i, j;
++	struct mem_ctl_info *mci = NULL;
++	struct edac_mc_layer layers[2];
++	struct dimm_data dimm_info[IE31200_CHANNELS][IE31200_DIMMS_PER_CHANNEL];
++	void __iomem *window;
++	struct ie31200_priv *priv;
++	u32 addr_decode;
++
++	edac_dbg(0, "MC:\n");
++
++	if (!ecc_capable(pdev)) {
++		edac_dbg(1, "Not edac capable\n");
++		return -ENODEV;
++	}
++
++	window = ie31200_map_mchbar(pdev);
++	if (!window)
++		return -ENODEV;
++
++	/* populate DIMM info */
++	for (i = 0; i < IE31200_CHANNELS; i++) {
++		addr_decode = readl(window + IE31200_MAD_DIMM_0_OFFSET +
++					(i * 4));
++		edac_dbg(0, "addr_decode: 0x%x\n", addr_decode);
++		for (j = 0; j < IE31200_DIMMS_PER_CHANNEL; j++) {
++			dimm_info[i][j].size = (addr_decode >> (j * 8)) & 0xff;
++			dimm_info[i][j].dual_rank =
++				(addr_decode & (0x20000 << j)) ? 1 : 0;
++			dimm_info[i][j].x16_width =
++				(addr_decode & (0x80000 << j)) ? 1 : 0;
++			edac_dbg(0, "size: 0x%x, rank: %d, width: %d\n",
++				 dimm_info[i][j].size,
++				 dimm_info[i][j].dual_rank,
++				 dimm_info[i][j].x16_width);
++		}
++	}
++
++	nr_channels = how_many_channels(pdev);
++
++	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
++	layers[0].size = IE31200_DIMMS;
++	layers[0].is_virt_csrow = true;
++	layers[1].type = EDAC_MC_LAYER_CHANNEL;
++	layers[1].size = nr_channels;
++	layers[1].is_virt_csrow = false;
++	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
++			    sizeof(struct ie31200_priv));
++
++	rc = -ENOMEM;
++	if (!mci)
++		goto fail_unmap;
++
++	edac_dbg(3, "MC: init mci\n");
++
++	mci->pdev = &pdev->dev;
++	mci->mtype_cap = MEM_FLAG_DDR3;
++
++	mci->edac_ctl_cap = EDAC_FLAG_SECDED;
++	mci->edac_cap = EDAC_FLAG_SECDED;
++
++	mci->mod_name = EDAC_MOD_STR;
++	mci->mod_ver = IE31200_REVISION;
++	mci->ctl_name = ie31200_devs[dev_idx].ctl_name;
++	mci->dev_name = pci_name(pdev);
++	mci->edac_check = ie31200_check;
++	mci->ctl_page_to_phys = NULL;
++	priv = mci->pvt_info;
++	priv->window = window;
++
++	/*
++	 * The dram rank boundary (DRB) reg values are boundary addresses
++	 * for each DRAM rank with a granularity of 64MB.  DRB regs are
++	 * cumulative; the last one will contain the total memory
++	 * contained in all ranks.
++	 */
++	for (i = 0; i < IE31200_DIMMS_PER_CHANNEL; i++) {
++		for (j = 0; j < IE31200_CHANNELS; j++) {
++			struct dimm_info *dimm;
++			unsigned long nr_pages;
++
++			nr_pages = IE31200_PAGES(dimm_info[j][i].size);
++			if (nr_pages == 0)
++				continue;
++
++			if (dimm_info[j][i].dual_rank) {
++				nr_pages = nr_pages / 2;
++				dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms,
++						     mci->n_layers, (i * 2) + 1,
++						     j, 0);
++				dimm->nr_pages = nr_pages;
++				edac_dbg(0, "set nr pages: 0x%lx\n", nr_pages);
++				dimm->grain = 8; /* just a guess */
++				dimm->mtype = MEM_DDR3;
++				dimm->dtype = DEV_UNKNOWN;
++				dimm->edac_mode = EDAC_UNKNOWN;
++			}
++			dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms,
++					     mci->n_layers, i * 2, j, 0);
++			dimm->nr_pages = nr_pages;
++			edac_dbg(0, "set nr pages: 0x%lx\n", nr_pages);
++			dimm->grain = 8; /* same guess */
++			dimm->mtype = MEM_DDR3;
++			dimm->dtype = DEV_UNKNOWN;
++			dimm->edac_mode = EDAC_UNKNOWN;
++		}
++	}
++
++	ie31200_clear_error_info(mci);
++
++	rc = -ENODEV;
++	if (edac_mc_add_mc(mci)) {
++		edac_dbg(3, "MC: failed edac_mc_add_mc()\n");
++		goto fail_free;
++	}
++
++	/* get this far and it's successful */
++	edac_dbg(3, "MC: success\n");
++	return 0;
++
++fail_free:
++	if (mci)
++		edac_mc_free(mci);
++fail_unmap:
++	iounmap(window);
++
++	return rc;
++}
++
++static int ie31200_init_one(struct pci_dev *pdev,
++			    const struct pci_device_id *ent)
++{
++	int rc;
++
++	edac_dbg(0, "MC:\n");
++
++	if (pci_enable_device(pdev) < 0)
++		return -EIO;
++
++	rc = ie31200_probe1(pdev, ent->driver_data);
++
++	return rc;
++}
++
++static void ie31200_remove_one(struct pci_dev *pdev)
++{
++	struct mem_ctl_info *mci;
++	struct ie31200_priv *priv;
++
++	edac_dbg(0, "\n");
++	mci = edac_mc_del_mc(&pdev->dev);
++	if (!mci)
++		return;
++	priv = mci->pvt_info;
++	iounmap(priv->window);
++	edac_mc_free(mci);
++}
++
++static const struct pci_device_id ie31200_pci_tbl[] = {
++	{
++		PCI_VEND_DEV(INTEL, IE31200_HB_1), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		IE31200},
++	{
++		PCI_VEND_DEV(INTEL, IE31200_HB_2), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		IE31200},
++	{
++		PCI_VEND_DEV(INTEL, IE31200_HB_3), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		IE31200},
++	{
++		PCI_VEND_DEV(INTEL, IE31200_HB_4), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		IE31200},
++	{
++		PCI_VEND_DEV(INTEL, IE31200_HB_5), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		IE31200},
++	{
++		PCI_VEND_DEV(INTEL, IE31200_HB_6), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		IE31200},
++	{
++		PCI_VEND_DEV(INTEL, IE31200_HB_7), PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		IE31200},
++	{
++		0,
++	}            /* 0 terminated list. */
++};
++MODULE_DEVICE_TABLE(pci, ie31200_pci_tbl);
++
++static struct pci_driver ie31200_driver = {
++	.name = EDAC_MOD_STR,
++	.probe = ie31200_init_one,
++	.remove = ie31200_remove_one,
++	.id_table = ie31200_pci_tbl,
++};
++
++static int __init ie31200_init(void)
++{
++	edac_dbg(3, "MC:\n");
++	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
++	opstate_init();
++
++	return pci_register_driver(&ie31200_driver);
++}
++
++static void __exit ie31200_exit(void)
++{
++	edac_dbg(3, "MC:\n");
++	pci_unregister_driver(&ie31200_driver);
++}
++
++module_init(ie31200_init);
++module_exit(ie31200_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Jason Baron <jbaron@akamai.com>");
++MODULE_DESCRIPTION("MC support for Intel Processor E31200 memory hub controllers");
 -- 
 1.8.2.rc2
 
