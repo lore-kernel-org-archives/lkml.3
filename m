@@ -1,138 +1,519 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaDDMns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:43:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59611 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677AbaDDMnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:43:40 -0400
-Date: Fri, 4 Apr 2014 14:43:38 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, John McCutchan <john@johnmccutchan.com>,
-        Robert Love <rlove@rlove.org>, Eric Paris <eparis@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
-        daniel@veillard.com, Christoph Hellwig <hch@infradead.org>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        inotify-tools-general@lists.sourceforge.net
-Subject: Re: Things I wish I'd known about Inotify
-Message-ID: <20140404124338.GA26806@quack.suse.cz>
-References: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com>
- <20140403205236.GE14107@quack.suse.cz>
- <533E60D6.2000704@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <533E60D6.2000704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752902AbaDDMoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:44:23 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:37746 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793AbaDDMoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 08:44:14 -0400
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH v4 1/8] OF: Introduce Device Tree resolve support.
+Date: Fri,  4 Apr 2014 15:43:54 +0300
+Message-Id: <1396615441-29630-2-git-send-email-pantelis.antoniou@konsulko.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 04-04-14 09:35:50, Michael Kerrisk (man-pages) wrote:
-> On 04/03/2014 10:52 PM, Jan Kara wrote:
-> > On Thu 03-04-14 08:34:44, Michael Kerrisk (man-pages) wrote:
-> >>    Limitations and caveats
-> >>        The inotify API provides no information about the user or process
-> >>        that triggered the inotify event.  In  particular,  there  is  no
-> >>        easy  way  for a process that is monitoring events via inotify to
-> >>        distinguish events that it triggers itself from  those  that  are
-> >>        triggered by other processes.
-> >>
-> >>        The  inotify API identifies affected files by filename.  However,
-> >>        by the time an application processes an inotify event, the  file‐
-> >>        name may already have been deleted or renamed.
-> >>
-> >>        The  inotify  API identifies events via watch descriptors.  It is
-> >>        the application's responsibility to cache a mapping  (if  one  is
-> >>        needed)  between  watch descriptors and pathnames.  Be aware that
-> >>        directory renamings may affect multiple cached pathnames.
-> >>
-> >>        Inotify monitoring of directories is not  recursive:  to  monitor
-> >>        subdirectories under a directory, additional watches must be cre‐
-> >>        ated.  This can take a significant amount time for  large  direc‐
-> >>        tory trees.
-> >   And also there's a problem with the limit on the number of watches a user
-> > can have.
-> 
-> What is the problem exactly (given that the limit is configurable)?
-  Well, if you want to watch the whole home directory and you have a large
-one, you may run into that limit. Sure you can ask sysadmin to raise the
-limit but it's a bit anoying.
+Introduce support for dynamic device tree resolution.
+Using it, it is possible to prepare a device tree that's
+been loaded on runtime to be modified and inserted at the kernel
+live tree.
 
-> >>        If monitoring an entire directory subtree, and a new subdirectory
-> >>        is created in that tree or an existing directory is renamed  into
-> >>        that  tree,  be aware that by the time you create a watch for the
-> >>        new subdirectory, new  files  (and  subdirectories)  may  already
-> >>        exist  inside  the subdirectory.  Therefore, you may want to scan
-> >>        the contents of the subdirectory  immediately  after  adding  the
-> >>        watch (and, if desired, recursively add watches for any subdirec‐
-> >>        tories that it contains).
-> >>
-> >>        Note that the event queue can overflow.  In this case, events are
-> >>        lost.   Robust applications should handle the possibility of lost
-> >>        events gracefully.  For example, it may be necessary  to  rebuild
-> >>        part  or all of the application cache.  (One simple, but possibly
-> >>        expensive, approach is to  close  the  inotify  file  descriptor,
-> >>        empty  the  cache, create a new inotify file descriptor, and then
-> >>        re-create watches and cache entries for the objects to  be  moni‐
-> >>        tored.)
-> >>
-> >>    Dealing with rename() events
-> >>        The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
-> >>        rename(2) are usually available as consecutive events when  read‐
-> >>        ing from the inotify file descriptor.  However, this is not guar‐
-> >>        anteed.  If multiple processes are triggering  events  for  moni‐
-> >>        tored  objects,  then  (on rare occasions) an arbitrary number of
-> >>        other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
-> >>        events.
-> >>
-> >>        Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‐
-> >>        ated by rename(2) is thus inherently racy.  (Don't forget that if
-> >>        an  object is renamed outside of a monitored directory, there may
-> >>        not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
-> >>        assume the events are always consecutive) can be used to ensure a
-> >>        match in most cases, but will inevitably miss some cases, causing
-> >>        the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
-> >>        events as being unrelated.  If watch  descriptors  are  destroyed
-> >>        and  re-created as a result, then those watch descriptors will be
-> >>        inconsistent with the watch descriptors in  any  pending  events.
-> >>        (Re-creating the inotify file descriptor and rebuilding the cache
-> >>        may be useful to deal with this scenario.)
-> >   Well, but there's 'cookie' value meant exactly for matching up
-> > IN_MOVED_FROM and IN_MOVED_TO events. And 'cookie' is guaranteed to be
-> > unique at least within the inotify instance (in fact currently it is unique
-> > within the whole system but I don't think we want to give that promise).
-> 
-> Yes, that's already assumed by my discussion above (its described elsewhere
-> in the page). But your comment makes me think I should add a few words to
-> remind the reader of that fact. I'll do that.
-  Yes, that would be good.
+Export of of_resolve by Guenter Roeck <groeck@juniper.net>
 
-> But, the point is that even with the cookie, matching the events is 
-> nontrivial, since:
-> 
-> * There may not even be an IN_MOVED_FROM event
-> * There may be an arbitrary number of other events in between the 
->   IN_MOVED_FROM and the IN_MOVED_TO.
-> 
-> Therefore, one has to use heuristic approaches such as "allow at least
-> N millisconds" or "check the next N events" to see if there is an
-> IN_MOVED_FROM that matches the IN_MOVED_TO. I can't see any way around
-> that being inherently racy. (It's unfortunate that the kernel can't 
-> provide a guarantee that the two events are always consecutive, since
-> that would simply user space's life considerably.)
-  Yeah, it's unpleasant but doing that would be quite costly/complex at the
-kernel side. And the race would in the worst case lead to application
-thinking there's been file moved outside of watched area & a file moved
-somewhere else inside the watched area. So the application will have to
-possibly inspect that file. That doesn't seem too bad.
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+---
+ .../devicetree/dynamic-resolution-notes.txt        |  25 ++
+ drivers/of/Kconfig                                 |   9 +
+ drivers/of/Makefile                                |   1 +
+ drivers/of/resolver.c                              | 368 +++++++++++++++++++++
+ include/linux/of.h                                 |  17 +
+ 5 files changed, 420 insertions(+)
+ create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+ create mode 100644 drivers/of/resolver.c
 
-								Honza
+diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b/Documentation/devicetree/dynamic-resolution-notes.txt
+new file mode 100644
+index 0000000..0b396c4
+--- /dev/null
++++ b/Documentation/devicetree/dynamic-resolution-notes.txt
+@@ -0,0 +1,25 @@
++Device Tree Dynamic Resolver Notes
++----------------------------------
++
++This document describes the implementation of the in-kernel
++Device Tree resolver, residing in drivers/of/resolver.c and is a
++companion document to Documentation/devicetree/dt-object-internal.txt[1]
++
++How the resolver works
++----------------------
++
++The resolver is given as an input an arbitrary tree compiled with the
++proper dtc option and having a /plugin/ tag. This generates the
++appropriate __fixups__ & __local_fixups__ nodes as described in [1].
++
++In sequence the resolver works by the following steps:
++
++1. Get the maximum device tree phandle value from the live tree + 1.
++2. Adjust all the local phandles of the tree to resolve by that amount.
++3. Using the __local__fixups__ node information adjust all local references
++   by the same amount.
++4. For each property in the __fixups__ node locate the node it references
++   in the live tree. This is the label used to tag the node.
++5. Retrieve the phandle of the target of the fixup.
++5. For each fixup in the property locate the node:property:offset location
++   and replace it with the phandle value.
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index 889005f..4d39c88 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -77,4 +77,13 @@ config OF_RESERVED_MEM
+ 	help
+ 	  Helpers to allow for reservation of memory regions
+ 
++config OF_RESOLVE
++	bool "OF Dynamic resolution support"
++	depends on OF && !SPARC
++	select OF_DYNAMIC
++	select OF_DEVICE
++	help
++	  Enable OF dynamic resolution support. This allows you to
++	  load Device Tree object fragments are run time.
++
+ endmenu # OF
+diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+index 26de2ed..c241e79 100644
+--- a/drivers/of/Makefile
++++ b/drivers/of/Makefile
+@@ -10,3 +10,4 @@ obj-$(CONFIG_OF_PCI)	+= of_pci.o
+ obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+ obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+ obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
++obj-$(CONFIG_OF_RESOLVE)  += resolver.o
+diff --git a/drivers/of/resolver.c b/drivers/of/resolver.c
+new file mode 100644
+index 0000000..7c29b16
+--- /dev/null
++++ b/drivers/of/resolver.c
+@@ -0,0 +1,368 @@
++/*
++ * Functions for dealing with DT resolution
++ *
++ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
++ * Copyright (C) 2012 Texas Instruments Inc.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/string.h>
++#include <linux/ctype.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++
++/*
++ * Find live tree's maximum phandle value.
++ */
++static phandle of_get_tree_max_phandle(void)
++{
++	struct device_node *node;
++	phandle phandle;
++	unsigned long flags;
++
++	/* now search recursively */
++	raw_spin_lock_irqsave(&devtree_lock, flags);
++	phandle = 0;
++	for_each_of_allnodes(node) {
++		if (node->phandle != OF_PHANDLE_ILLEGAL &&
++				node->phandle > phandle)
++			phandle = node->phandle;
++	}
++	raw_spin_unlock_irqrestore(&devtree_lock, flags);
++
++	return phandle;
++}
++
++/*
++ * Adjust a subtree's phandle values by a given delta.
++ * Makes sure not to just adjust the device node's phandle value,
++ * but modify the phandle properties values as well.
++ */
++static void __of_adjust_tree_phandles(struct device_node *node,
++		int phandle_delta)
++{
++	struct device_node *child;
++	struct property *prop;
++	phandle phandle;
++
++	/* first adjust the node's phandle direct value */
++	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
++		node->phandle += phandle_delta;
++
++	/* now adjust phandle & linux,phandle values */
++	for_each_property_of_node(node, prop) {
++
++		/* only look for these two */
++		if (of_prop_cmp(prop->name, "phandle") != 0 &&
++		    of_prop_cmp(prop->name, "linux,phandle") != 0)
++			continue;
++
++		/* must be big enough */
++		if (prop->length < 4)
++			continue;
++
++		/* read phandle value */
++		phandle = be32_to_cpup(prop->value);
++		if (phandle == OF_PHANDLE_ILLEGAL)	/* unresolved */
++			continue;
++
++		/* adjust */
++		*(uint32_t *)prop->value = cpu_to_be32(node->phandle);
++	}
++
++	/* now do the children recursively */
++	__for_each_child_of_node(node, child)
++		__of_adjust_tree_phandles(child, phandle_delta);
++}
++
++/*
++ * Adjust the local phandle references by the given phandle delta.
++ * Assumes the existances of a __local_fixups__ node at the root
++ * of the tree. Does not take any devtree locks so make sure you
++ * call this on a tree which is at the detached state.
++ */
++static int __of_adjust_tree_phandle_references(struct device_node *node,
++		int phandle_delta)
++{
++	phandle phandle;
++	struct device_node *refnode, *child;
++	struct property *rprop, *sprop;
++	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
++	int offset, propcurlen;
++	int err;
++
++	/* locate the symbols & fixups nodes on resolve */
++	__for_each_child_of_node(node, child)
++		if (of_node_cmp(child->name, "__local_fixups__") == 0)
++			break;
++
++	/* no local fixups */
++	if (!child)
++		return 0;
++
++	/* find the local fixups property */
++	for_each_property_of_node(child, rprop) {
++
++		/* skip properties added automatically */
++		if (of_prop_cmp(rprop->name, "name") == 0)
++			continue;
++
++		/* make a copy */
++		propval = kmalloc(rprop->length, GFP_KERNEL);
++		if (!propval) {
++			pr_err("%s: Could not copy value of '%s'\n",
++					__func__, rprop->name);
++			return -ENOMEM;
++		}
++		memcpy(propval, rprop->value, rprop->length);
++
++		propend = propval + rprop->length;
++		for (propcur = propval; propcur < propend;
++				propcur += propcurlen + 1) {
++
++			propcurlen = strlen(propcur);
++
++			nodestr = propcur;
++			s = strchr(propcur, ':');
++			if (!s) {
++				pr_err("%s: Illegal symbol entry '%s' (1)\n",
++					__func__, propcur);
++				err = -EINVAL;
++				goto err_fail;
++			}
++			*s++ = '\0';
++
++			propstr = s;
++			s = strchr(s, ':');
++			if (!s) {
++				pr_err("%s: Illegal symbol entry '%s' (2)\n",
++					__func__, (char *)rprop->value);
++				err = -EINVAL;
++				goto err_fail;
++			}
++
++			*s++ = '\0';
++			offset = simple_strtoul(s, NULL, 10);
++
++			/* look into the resolve node for the full path */
++			refnode = __of_find_node_by_full_name(node, nodestr);
++			if (!refnode) {
++				pr_warn("%s: Could not find refnode '%s'\n",
++					__func__, (char *)rprop->value);
++				continue;
++			}
++
++			/* now find the property */
++			for_each_property_of_node(refnode, sprop) {
++				if (of_prop_cmp(sprop->name, propstr) == 0)
++					break;
++			}
++
++			if (!sprop) {
++				pr_err("%s: Could not find property '%s'\n",
++					__func__, (char *)rprop->value);
++				err = -ENOENT;
++				goto err_fail;
++			}
++
++			phandle = be32_to_cpup(sprop->value + offset);
++			*(__be32 *)(sprop->value + offset) =
++				cpu_to_be32(phandle + phandle_delta);
++		}
++
++		kfree(propval);
++	}
++
++	return 0;
++
++err_fail:
++	kfree(propval);
++	return err;
++}
++
++/**
++ * of_resolve	- Resolve the given node against the live tree.
++ *
++ * @resolve:	Node to resolve
++ *
++ * Perform dynamic Device Tree resolution against the live tree
++ * to the given node to resolve. This depends on the live tree
++ * having a __symbols__ node, and the resolve node the __fixups__ &
++ * __local_fixups__ nodes (if needed).
++ * The result of the operation is a resolve node that it's contents
++ * are fit to be inserted or operate upon the live tree.
++ * Returns 0 on success or a negative error value on error.
++ */
++int of_resolve(struct device_node *resolve)
++{
++	struct device_node *child, *refnode;
++	struct device_node *root_sym, *resolve_sym, *resolve_fix;
++	struct property *rprop, *sprop;
++	const char *refpath;
++	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
++	int offset, propcurlen;
++	phandle phandle, phandle_delta;
++	int err;
++
++	/* the resolve node must exist, and be detached */
++	if (!resolve || !of_node_check_flag(resolve, OF_DETACHED))
++		return -EINVAL;
++
++	/* first we need to adjust the phandles */
++	phandle_delta = of_get_tree_max_phandle() + 1;
++	__of_adjust_tree_phandles(resolve, phandle_delta);
++	err = __of_adjust_tree_phandle_references(resolve, phandle_delta);
++	if (err != 0)
++		return err;
++
++	root_sym = NULL;
++	resolve_sym = NULL;
++	resolve_fix = NULL;
++
++	/* this may fail (if no fixups are required) */
++	root_sym = of_find_node_by_path("/__symbols__");
++
++	/* locate the symbols & fixups nodes on resolve */
++	__for_each_child_of_node(resolve, child) {
++
++		if (!resolve_sym &&
++				of_node_cmp(child->name, "__symbols__") == 0)
++			resolve_sym = child;
++
++		if (!resolve_fix &&
++				of_node_cmp(child->name, "__fixups__") == 0)
++			resolve_fix = child;
++
++		/* both found, don't bother anymore */
++		if (resolve_sym && resolve_fix)
++			break;
++	}
++
++	/* we do allow for the case where no fixups are needed */
++	if (!resolve_fix) {
++		err = 0;	/* no error */
++		goto out;
++	}
++
++	/* we need to fixup, but no root symbols... */
++	if (!root_sym) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	for_each_property_of_node(resolve_fix, rprop) {
++
++		/* skip properties added automatically */
++		if (of_prop_cmp(rprop->name, "name") == 0)
++			continue;
++
++		err = of_property_read_string(root_sym,
++				rprop->name, &refpath);
++		if (err != 0) {
++			pr_err("%s: Could not find symbol '%s'\n",
++					__func__, rprop->name);
++			goto out;
++		}
++
++		refnode = of_find_node_by_path(refpath);
++		if (!refnode) {
++			pr_err("%s: Could not find node by path '%s'\n",
++					__func__, refpath);
++			err = -ENOENT;
++			goto out;
++		}
++
++		phandle = refnode->phandle;
++		of_node_put(refnode);
++
++		pr_debug("%s: %s phandle is 0x%08x\n",
++				__func__, rprop->name, phandle);
++
++		/* make a copy */
++		propval = kmalloc(rprop->length, GFP_KERNEL);
++		if (!propval) {
++			pr_err("%s: Could not copy value of '%s'\n",
++					__func__, rprop->name);
++			err = -ENOMEM;
++			goto out;
++		}
++
++		memcpy(propval, rprop->value, rprop->length);
++
++		propend = propval + rprop->length;
++		for (propcur = propval; propcur < propend;
++				propcur += propcurlen + 1) {
++			propcurlen = strlen(propcur);
++
++			nodestr = propcur;
++			s = strchr(propcur, ':');
++			if (!s) {
++				pr_err("%s: Illegal symbol "
++					"entry '%s' (1)\n",
++					__func__, (char *)rprop->value);
++				err = -EINVAL;
++				goto err_fail_free;
++			}
++			*s++ = '\0';
++
++			propstr = s;
++			s = strchr(s, ':');
++			if (!s) {
++				pr_err("%s: Illegal symbol "
++					"entry '%s' (2)\n",
++					__func__, (char *)rprop->value);
++				err = -EINVAL;
++				goto err_fail_free;
++			}
++
++			*s++ = '\0';
++			offset = simple_strtoul(s, NULL, 10);
++
++			/* look into the resolve node for the full path */
++			refnode = __of_find_node_by_full_name(resolve,
++					nodestr);
++			if (!refnode) {
++				pr_err("%s: Could not find refnode '%s'\n",
++					__func__, (char *)rprop->value);
++				err = -ENOENT;
++				goto err_fail_free;
++			}
++
++			/* now find the property */
++			for_each_property_of_node(refnode, sprop) {
++				if (of_prop_cmp(sprop->name, propstr) == 0)
++					break;
++			}
++
++			if (!sprop) {
++				pr_err("%s: Could not find property '%s'\n",
++					__func__, (char *)rprop->value);
++				err = -ENOENT;
++				goto err_fail_free;
++			}
++
++			*(__be32 *)(sprop->value + offset) =
++				cpu_to_be32(phandle);
++		}
++
++		kfree(propval);
++	}
++
++err_fail_free:
++	kfree(propval);
++
++out:
++	/* NULL is handled by of_node_put as NOP */
++	of_node_put(root_sym);
++
++	return err;
++}
++EXPORT_SYMBOL_GPL(of_resolve);
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 4dcec8f..3edb9b9 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -811,4 +811,21 @@ static inline struct device_node *__of_create_empty_node( const char *name,
+ 
+ #endif	/* !CONFIG_OF */
+ 
++
++/* illegal phandle value (set when unresolved) */
++#define OF_PHANDLE_ILLEGAL	0xdeadbeef
++
++#ifdef CONFIG_OF_RESOLVE
++
++int of_resolve(struct device_node *resolve);
++
++#else
++
++static inline int of_resolve(struct device_node *resolve)
++{
++	return -ENOTSUPP;
++}
++
++#endif
++
+ #endif /* _LINUX_OF_H */
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.12
+
