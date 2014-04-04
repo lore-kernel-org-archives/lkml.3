@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaDDJTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 05:19:10 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:38961 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234AbaDDJS6 (ORCPT
+	id S1752368AbaDDJWV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 05:22:21 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:39535 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaDDJWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 05:18:58 -0400
-Message-ID: <533E78FA.60204@gmail.com>
-Date: Fri, 04 Apr 2014 17:18:50 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: tytso@mit.edu, adilger.kernel@dilger.ca
-CC: linux-ext4@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        gxt@mprc.pku.edu.cn
-Subject: Re: [PATCH] fs/ext4/extents_status.c: fix 64-bit number truncation
- bug
-References: <53396AC1.10108@gmail.com>
-In-Reply-To: <53396AC1.10108@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Fri, 4 Apr 2014 05:22:15 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Inki Dae <inki.dae@samsung.com>, dri-devel@lists.freedesktop.org
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 1/2] drm/exynos/fbdev: don't set fix.smem/mmio_{start,len}
+Date: Fri,  4 Apr 2014 17:22:01 +0800
+Message-Id: <1396603322-13585-1-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintains:
+Kernel access to the eyxnos fbdev framebuffer is via its gem object's
+kernel mapping (kvaddr, stored in info->screen_base).
 
-Please help check this patch, when you have time, thanks.
+User space access is provided by mmap(), read() and write() of /dev/fb/fb0.
+These functions also only use screen_base/screen_size().
 
+Therefore, it is not necessary to set fix->smem_{start,len} or
+fix->mmio_{start,len} fields.
 
-On 03/31/2014 09:16 PM, Chen Gang wrote:
-> '0x7FDEADBEEF' will be truncated to 32-bit number under unicore32. Need
-> append 'ULL' for it.
-> 
-> The related warning (with allmodconfig under unicore32):
-> 
->     CC [M]  fs/ext4/extents_status.o
->   fs/ext4/extents_status.c: In function ‘__es_remove_extent’:
->   fs/ext4/extents_status.c:813: warning: integer constant is too large for ‘long’ type
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  fs/ext4/extents_status.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c
-> index 0a014a7..0ebc212 100644
-> --- a/fs/ext4/extents_status.c
-> +++ b/fs/ext4/extents_status.c
-> @@ -810,7 +810,7 @@ retry:
->  
->  			newes.es_lblk = end + 1;
->  			newes.es_len = len2;
-> -			block = 0x7FDEADBEEF;
-> +			block = 0x7FDEADBEEFULL;
->  			if (ext4_es_is_written(&orig_es) ||
->  			    ext4_es_is_unwritten(&orig_es))
->  				block = ext4_es_pblock(&orig_es) +
-> 
+This avoids leaking kernel, physical and dma mapped addresses to user
+space via the ioctls FBIOGET_VSCREENINFO and FBIOGET_FSCREENINFO.
 
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/gpu/drm/exynos/exynos_drm_fbdev.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+index 5fa342e..2dcc589 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+@@ -123,14 +123,7 @@ static int exynos_drm_fbdev_update(struct drm_fb_helper *helper,
+ 
+ 	dev->mode_config.fb_base = (resource_size_t)buffer->dma_addr;
+ 	fbi->screen_base = buffer->kvaddr + offset;
+-	if (is_drm_iommu_supported(dev))
+-		fbi->fix.smem_start = (unsigned long)
+-			(page_to_phys(sg_page(buffer->sgt->sgl)) + offset);
+-	else
+-		fbi->fix.smem_start = (unsigned long)buffer->dma_addr;
+-
+ 	fbi->screen_size = size;
+-	fbi->fix.smem_len = size;
+ 
+ 	return 0;
+ }
 -- 
-Chen Gang
+1.9.1.423.g4596e3a
 
-Open, share, and attitude like air, water, and life which God blessed
