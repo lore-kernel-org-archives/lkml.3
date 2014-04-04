@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaDDNdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:33:47 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:65252 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822AbaDDNdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:33:45 -0400
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, kgene.kim@samsung.com,
-        Manjunath Goudar <csmanjuvijay@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH] usb: ohci-exynos: Remove locks for 'ohci' in suspend callback
-Date: Fri,  4 Apr 2014 19:03:37 +0530
-Message-Id: <1396618417-9560-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753004AbaDDNjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 09:39:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56989 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752473AbaDDNjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 09:39:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,795,1389772800"; 
+   d="scan'208";a="514857748"
+Message-ID: <533EB5F1.8060002@linux.intel.com>
+Date: Fri, 04 Apr 2014 21:38:57 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        mjg59@srcf.ucam.org, rostedt@goodmis.org, tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org, Adam Williamson <awilliam@redhat.com>
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+References: <20140404064120.GB11877@gmail.com> <tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org> <20140404080006.GB6944@gmail.com>
+In-Reply-To: <20140404080006.GB6944@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch : 14982e3 USB: OHCI: Properly handle ohci-exynos suspend
-has already removed 'ohci_hcd' settings from exynos glue layer
-as a part of streamlining the ohci controller's suspend.
-So we don't need the locks for 'ohci_hcd' anymore.
+<cc to adam>
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Manjunath Goudar <csmanjuvijay@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/host/ohci-exynos.c |    4 ----
- 1 file changed, 4 deletions(-)
+On 2014/4/4 16:00, Ingo Molnar wrote:
+> 
+>>
+>> [PATCH] x86: Try the BIOS reboot method before the PCI reboot method
+> 
+> So, JFYI, I have put this into x86/reboot to get it tested, but it's 
+> not queued up for upstream yet until there's concensus.
+> 
+> (Steve testing it wouldn't hurt either.)
+> 
+> Thanks,
+> 
+> 	Ingo
 
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index 68588d8..7f5e779 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -199,8 +199,6 @@ static int exynos_ohci_suspend(struct device *dev)
- 	if (rc)
- 		return rc;
- 
--	spin_lock_irqsave(&ohci->lock, flags);
--
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
- 
-@@ -208,8 +206,6 @@ static int exynos_ohci_suspend(struct device *dev)
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
- 
--	spin_unlock_irqrestore(&ohci->lock, flags);
--
- 	return 0;
- }
- 
--- 
-1.7.10.4
+The change is originated from the following bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=70931
+
+The system will hang after BIOS or TRIPLE if it doesn't work, that's why
+I added CF9 before BIOS and TRIPLE.
+
+Adam may want to try this change to see if reboot works on his DELL
+Venue 8 Pro.
+
+I don't think there is enough justification to revert the patch. We
+introduce EFI into the default list, we didn't see any reason to remove
+it out so far.
+
+Thanks,
+-Aubrey
+
+
 
