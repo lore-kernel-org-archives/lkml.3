@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaDDO27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:28:59 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:35258 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaDDO25 (ORCPT
+	id S1753364AbaDDOaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:30:23 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:46769 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278AbaDDOaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:28:57 -0400
-X-Auth-Info: jex3s9jJblTcc7TSNCL+W18ywq1Vbfs+jkGw4GKCN/M=
-From: Marek Vasut <marex@denx.de>
-To: Yuan Yao <yao.yuan@freescale.com>
-Subject: Re: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
-Date: Fri, 4 Apr 2014 16:28:55 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: wsa@the-dreams.de, mark.rutland@arm.com, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org
-References: <1396579272-19542-1-git-send-email-yao.yuan@freescale.com> <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
-In-Reply-To: <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
+	Fri, 4 Apr 2014 10:30:20 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404041628.55471.marex@denx.de>
+In-Reply-To: <CAFcVEC+FAAxxxxA8PgcTzLU5UFu=pkDEM4Li06dRmEwA95sz_g@mail.gmail.com>
+References: <1396523431-14519-1-git-send-email-harinik@xilinx.com>
+	<1396523431-14519-2-git-send-email-harinik@xilinx.com>
+	<20140403213446.GB14763@sirena.org.uk>
+	<CAFcVEC+mpHh_d2j6_sdhWS3d2KyXrDYUq6L6jO2Q=SS68Hda2g@mail.gmail.com>
+	<20140404100919.GO14763@sirena.org.uk>
+	<CAFcVECLDyfFSZFk9fzFKsr6pM=f1nwzGAhjX17z=NsbvWpiDew@mail.gmail.com>
+	<20140404124637.GT14763@sirena.org.uk>
+	<CAFcVEC+FAAxxxxA8PgcTzLU5UFu=pkDEM4Li06dRmEwA95sz_g@mail.gmail.com>
+Date: Fri, 4 Apr 2014 20:00:19 +0530
+Message-ID: <CAFcVECJYdW0=r425tWs8y6DJDNh3c75TAzg7+UCNRgLP8WHf+A@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] devicetree: Add devicetree bindings documentation
+ for Cadence SPI
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 04, 2014 at 04:41:11 AM, Yuan Yao wrote:
-> Add dma support for i2c. This function depend on DMA driver.
-> You can turn on it by write both the dmas and dma-name properties in dts
-> node.
-> 
-> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+Hi,
 
-[...]
+On Fri, Apr 4, 2014 at 7:38 PM, Harini Katakam
+<harinikatakamlinux@gmail.com> wrote:
+> Hi Mark,
+>
+> On Fri, Apr 4, 2014 at 6:16 PM, Mark Brown <broonie@kernel.org> wrote:
+>> On Fri, Apr 04, 2014 at 05:44:23PM +0530, Harini Katakam wrote:
+>>> On Fri, Apr 4, 2014 at 3:39 PM, Mark Brown <broonie@kernel.org> wrote:
+>>> > On Fri, Apr 04, 2014 at 08:30:38AM +0530, Harini Katakam wrote:
+>>
+>>> >> This IP can drive 4 slaves.
+>>> >> The CS line to be driven is selected in spi device structure and
+>>> >> that is driven by the software.
+>>
+>>> > So why specify this in the binding at all?  If the device always has the
+>>> > same number of chip selects it's redundant.
+>>
+>>> I'm sorry, I should have explained that better.
+>>> The IP can support upto 4 chip selects.
+>>> The num-cs value here is the number of chip selects actually used on the board.
+>>
+>> Why does that need to be configured?  Surely the presence of slaves is
+>> enough information.
+>
+> OK. I understand.
+> Can you comment on the case where a decoder is used?
+>
+> There is support for adding a decoder where extended slaves can be selected
+> through the IP's control register.
+> (This is not currently implemented in the driver but will be in the future.)
+>
+> How should the driver know whether it is 4 or 16 select lines for example?
+> This has to be written to master->num_chipselect.
+>
+> Regards,
+> Harini
 
-Since you will be fixing that superfluous return 0; (I actually wonder, did you 
-really test the driver at all before submitting it?) ...
+Just adding to my above comment.
+Alternately, I could not use the "num-cs" property and add another
+optional property to be used only when required.
+The driver sets a default value already.
 
-> +static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
-> +					struct i2c_msg *msgs)
-> +{
-> +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> +	struct dma_async_tx_descriptor *txdesc;
-> +	struct device *dev = &i2c_imx->adapter.dev;
-> +
-> +	dma->dma_buf = dma_map_single(dma->chan_using->device->dev, msgs->buf,
-
-Please fix this "noodle" here too, the chain of pointers is quite long, you can 
-just define a variable for that.
-
-> +					dma->dma_len, dma->dma_data_dir);
-> +	if (dma_mapping_error(dma->chan_using->device->dev, dma->dma_buf)) {
-> +		dev_err(dev, "DMA mapping failed\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	txdesc = dmaengine_prep_slave_single(dma->chan_using, dma->dma_buf,
-> +					dma->dma_len, dma->dma_transfer_dir,
-> +					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-> +	if (!txdesc) {
-> +		dev_err(dev, "Not able to get desc for DMA xfer\n");
-> +		dma_unmap_single(dma->chan_using->device->dev, dma->dma_buf,
-> +					dma->dma_len, dma->dma_data_dir);
-> +		return -EINVAL;
-> +	}
-> +
-> +	txdesc->callback = i2c_imx_dma_callback;
-> +	txdesc->callback_param = i2c_imx;
-> +	dmaengine_submit(txdesc);
-> +	dma_async_issue_pending(dma->chan_using);
-> +
-> +	return 0;
-> +}
-[...]
-
-Other than those two things,
-
-Reviewed-by: Marek Vasut <marex@denx.de>
+Regards,
+Harini
