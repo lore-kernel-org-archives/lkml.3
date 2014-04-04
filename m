@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaDDKkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 06:40:17 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:45794 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaDDKkM (ORCPT
+	id S1752526AbaDDKq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 06:46:57 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45274 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101AbaDDKqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 06:40:12 -0400
+	Fri, 4 Apr 2014 06:46:49 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
 Cc: Andreas Dilger <adilger@dilger.ca>, Neil Brown <neilb@suse.de>,
@@ -21,13 +21,13 @@ Subject: Re: For review: open_by_handle_at(2) man page [v4]
 In-Reply-To: <CAKgNAkgtrc73kawRuoa-VoNx7DY2Ld+Qxwp5GNj9syxOmN_ctA@mail.gmail.com>
 References: <CAKgNAkgtrc73kawRuoa-VoNx7DY2Ld+Qxwp5GNj9syxOmN_ctA@mail.gmail.com>
 User-Agent: Notmuch/0.17+7~gc734dd75344e (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 04 Apr 2014 16:10:01 +0530
-Message-ID: <8761mpnzsu.fsf@linux.vnet.ibm.com>
+Date: Fri, 04 Apr 2014 16:15:41 +0530
+Message-ID: <8738htnzje.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040410-5816-0000-0000-00000D358648
+x-cbid: 14040410-5490-0000-0000-0000054F5C28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -293,12 +293,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > .B O_NOFOLLOW
 > flag, if specified, is ignored.
 >
-
-If the handler refer a symlink and if O_PATH is not specified one would
-get -ELOOP error.
-
-
-
 >
 > The caller must have the
 > .B CAP_DAC_READ_SEARCH
@@ -397,11 +391,6 @@ get -ELOOP error.
 > refers to a symbolic link, but
 > .B O_PATH
 > was not specified in
-
-
-That is correct.
-
-
 > .IR flags .
 > .TP
 > .B EPERM
@@ -469,6 +458,14 @@ That is correct.
 > .BR readlinkat (2)
 > and
 > .BR fchownat (2).
+
+
+You may want to specify that one need to pass AT_EMPTY_PATH in case of
+fchownat ? readlinkat do take null names, because there is no flags
+argument. For syscalls that take flags, to make it operate on fd, one
+need to pass "" path name and a flag value of AT_EMPTY_PATH.
+
+
 > .SS Obtaining a persistent filesystem ID
 > The mount IDs in
 > .IR /proc/self/mountinfo
