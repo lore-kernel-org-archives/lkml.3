@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaDDSTc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:19:32 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56767 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638AbaDDST1 (ORCPT
+	id S1754063AbaDDSUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:20:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63363 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753722AbaDDSUl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:19:27 -0400
+	Fri, 4 Apr 2014 14:20:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,796,1389772800"; 
+   d="scan'208";a="507148323"
+From: "Du, Wenkai" <wenkai.du@intel.com>
+To: "Westerberg, Mika" <mika.westerberg@intel.com>
+CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] i2c-designware: Mask interrupts during i2c controller
+ enable
+Thread-Topic: [PATCH] i2c-designware: Mask interrupts during i2c controller
+ enable
+Thread-Index: Ac9QJwrpXJhe4Vv7Q76dkBKVgbE+4AARZeWAAA7Jh9A=
+Date: Fri, 4 Apr 2014 18:20:39 +0000
+Message-ID: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
+References: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70E1F@ORSMSX109.amr.corp.intel.com>
+ <20140404181613.GB19349@intel.com>
+In-Reply-To: <20140404181613.GB19349@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140404162108.GA17393@srcf.ucam.org>
-References: <20140403121314.246b03a7@gandalf.local.home>
-	<533DED74.6050202@linux.intel.com>
-	<20140403194018.7c67aec7@gandalf.local.home>
-	<533DF455.4040908@linux.intel.com>
-	<533DF8D2.9060508@zytor.com>
-	<533E0A94.5040007@linux.intel.com>
-	<20140404151203.GA12370@srcf.ucam.org>
-	<CA+55aFx+6ODkyueA2iHLhO8-eo95QYCBybhR63owxUMbhXh8wQ@mail.gmail.com>
-	<20140404154520.GA14980@srcf.ucam.org>
-	<CA+55aFwiO2kcNF4=ph9UWhPB7Vd6sRZ5B6g7qFV2yAwKBLP+2Q@mail.gmail.com>
-	<20140404162108.GA17393@srcf.ucam.org>
-Date: Fri, 4 Apr 2014 11:19:26 -0700
-X-Google-Sender-Auth: JflZECSKn349ycBmiTcsEur5xAI
-Message-ID: <CA+55aFzbBYV=R+7HJXMRL0+E8rgvHt0cFXoh++Y9716Yv_9Xfw@mail.gmail.com>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 9:21 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
-> Because Windows doesn't use CF9 but machines reboot anyway. That
-> shouldn't be a controversial point of view.
+Hi Mika,
 
-No, that's not a controversial view.
+In current driver implementation, I2c controller is enabled, then disabled every time inside i2c_dw_xfer. So I think the interrupt masking should be done inside i2c_dw_xfer_init, where the controller is enabled.
 
-But it's not the case for us, and I haven't seen a patch to make us
-work more like Windows, so for *us*, and in this universe (rather than
-some make-believe one), the fact that we need to use pci to reboot is
-simply a fact. Including, very much, on "production hardware".
+i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+{
+...
+	/* start the transfers */
+	i2c_dw_xfer_init(dev);
+...
+	/*
+	 * We must disable the adapter before unlocking the &dev->lock mutex
+	 * below. Otherwise the hardware might continue generating interrupts
+	 * which in turn causes a race condition with the following transfer.
+	 * Needs some more investigation if the additional interrupts are
+	 * a hardware bug or this driver doesn't handle them correctly yet.
+	 */
+	__i2c_dw_enable(dev, false);
+...
+}
 
-So I repeat: I'd love to fix whatever it is that we do that is
-different and triggers problems (particularly on Dell, but there are
-certainly other vendors too). But in the absense of that (and I
-haven't actually seen a serious patch for it), denying that reboot=pci
-is sometimes the right thing - regardless of "production" hardware or
-not is not valid. That's what I reacted to.
 
-               Linus
+Thanks,
+Wenkai
+
+
+
+-----Original Message-----
+From: Westerberg, Mika 
+Sent: Friday, April 04, 2014 11:16 AM
+To: Du, Wenkai
+Cc: linux-i2c@vger.kernel.org; Wolfram Sang; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller enable
+
+On Fri, Apr 04, 2014 at 08:05:23PM +0300, Du, Wenkai wrote:
+> diff --git a/drivers/i2c/busses/i2c-designware-core.c 
+> b/drivers/i2c/busses/i2c-designware-core.c
+> index 14c4b30..71a3fa9 100644
+> --- a/drivers/i2c/busses/i2c-designware-core.c
+> +++ b/drivers/i2c/busses/i2c-designware-core.c
+> @@ -417,6 +417,9 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+>  	 */
+>  	dw_writel(dev, msgs[dev->msg_write_idx].addr | ic_tar, DW_IC_TAR);
+>  
+> +	/* disable interrupts */
+> +	i2c_dw_disable_int(dev);
+> +
+
+Please move this to i2c_dw_init() as I previously commented. This can only happen once the controller comes out of reset (either boot, or resume from system sleep).
+
+>  	/* Enable the adapter */
+>  	__i2c_dw_enable(dev, true);
+>  
+> --
+> 1.7.9.5
