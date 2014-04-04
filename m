@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaDDIhV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 04:37:21 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:44423 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaDDIgx (ORCPT
+	id S1752509AbaDDIiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 04:38:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60576 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752122AbaDDIiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 04:36:53 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de, fweisbec@gmail.com, peterz@infradead.org,
-        mingo@kernel.org, tj@kernel.org, lizefan@huawei.com
-Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        Arvind.Chauhan@arm.com, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 8/8] sched: don't queue timers on quiesced CPUs
-Date: Fri,  4 Apr 2014 14:05:35 +0530
-Message-Id: <3fefafdf2d06b1d6ecc0e2cbb6f860f6c8cd8df2.1396599474.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1396599474.git.viresh.kumar@linaro.org>
-References: <cover.1396599474.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1396599474.git.viresh.kumar@linaro.org>
-References: <cover.1396599474.git.viresh.kumar@linaro.org>
+	Fri, 4 Apr 2014 04:38:13 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: [PATCH] regulator: core: Fix typo in of_regulator.h
+Date: Fri,  4 Apr 2014 09:29:58 +0100
+Message-Id: <1396600198-7288-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPUSets have cpusets.quiesce sysfs file now, with which some CPUs can opt for
-isolating themselves from background kernel activities, like: timers & hrtimers.
+Fix a typo from my patch adding of_regulator_put_match in the patch:
 
-get_nohz_timer_target() is used for finding suitable CPU for firing a timer. To
-guarantee that new timers wouldn't be queued on quiesced CPUs, we need to modify
-this routine.
+regulator: core: Add helper to put of_nodes from matches
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- kernel/sched/core.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ include/linux/regulator/of_regulator.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c0339e2..b235af2 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -557,17 +557,18 @@ void resched_cpu(int cpu)
-  */
- int get_nohz_timer_target(int pinned)
+diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
+index 0652851..a5abd83 100644
+--- a/include/linux/regulator/of_regulator.h
++++ b/include/linux/regulator/of_regulator.h
+@@ -38,7 +38,7 @@ static inline int of_regulator_match(struct device *dev,
+ 	return 0;
+ }
+ static inline int of_regulator_put_match(struct of_regulator_match *matches,
+-					 unsigned int num_matches);
++					 unsigned int num_matches)
  {
--	int cpu = smp_processor_id();
--	int i;
-+	int cpu = smp_processor_id(), i;
- 	struct sched_domain *sd;
- 
--	if (pinned || !get_sysctl_timer_migration() || !idle_cpu(cpu))
-+	if (pinned || !get_sysctl_timer_migration() ||
-+	    !(idle_cpu(cpu) || cpu_quiesced(cpu)))
- 		return cpu;
- 
- 	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		for_each_cpu(i, sched_domain_span(sd)) {
--			if (!idle_cpu(i)) {
-+			/* Don't push timers to quiesced CPUs */
-+			if (!(cpu_quiesced(i) || idle_cpu(i))) {
- 				cpu = i;
- 				goto unlock;
- 			}
+ 	return 0;
+ }
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.2.5
 
