@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaDDS0l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:26:41 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:62051 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555AbaDDS0k (ORCPT
+	id S1753915AbaDDSah (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:30:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37084 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401AbaDDSag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:26:40 -0400
+	Fri, 4 Apr 2014 14:30:36 -0400
+Date: Fri, 4 Apr 2014 13:30:22 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sean Pajot <sean.pajot@execulink.com>,
+        lxc-devel@lists.linuxcontainers.org, linux-kernel@vger.kernel.org
+Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
+Message-ID: <20140404183022.GA6728@sergelap>
+References: <5266BEA3.6020008@execulink.com>
+ <20131022193718.GA18463@ac100>
+ <874n89rsoc.fsf@xmission.com>
+ <20140402172049.GA13240@sergelap>
+ <20140402173248.GA22804@mail.hallyn.com>
+ <533EF65E.6050508@mit.edu>
 MIME-Version: 1.0
-In-Reply-To: <533EDE6A.1050804@zytor.com>
-References: <20140403113921.23dceb75@gandalf.local.home>
-	<533D8516.1040803@zytor.com>
-	<20140403121314.246b03a7@gandalf.local.home>
-	<533DED74.6050202@linux.intel.com>
-	<20140403194018.7c67aec7@gandalf.local.home>
-	<533DF455.4040908@linux.intel.com>
-	<533DF8D2.9060508@zytor.com>
-	<533E0A94.5040007@linux.intel.com>
-	<20140404151203.GA12370@srcf.ucam.org>
-	<CA+55aFx+6ODkyueA2iHLhO8-eo95QYCBybhR63owxUMbhXh8wQ@mail.gmail.com>
-	<20140404154520.GA14980@srcf.ucam.org>
-	<533EDE6A.1050804@zytor.com>
-Date: Fri, 4 Apr 2014 11:26:39 -0700
-X-Google-Sender-Auth: s9O8CxcFmLW1da2xBzA5DIt6EHs
-Message-ID: <CA+55aFxgg3UP-F3tAaeQKSMGO9Y9NZYG2DPip9PCzjPsksMKSw@mail.gmail.com>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533EF65E.6050508@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 9:31 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/04/2014 08:45 AM, Matthew Garrett wrote:
->>
->> Windows hits the keyboard controller and then tries the ACPI vector. It
->> then sleeps for a short period, then tries the keyboard controller again
->> and the ACPI vector again.
->>
->
-> So do you think we should move the KBC upward in our priority list?
-> That would seem to be the obvious thing to do...
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On 04/02/2014 10:32 AM, Serge E. Hallyn wrote:
+> > (Sorry - the lxc-devel list has moved, so replying to all with the
+> > correct list address;   please reply to this rather than my previous
+> > email)
+> > 
+> > Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
+> >> Hi Eric,
+> >>
+> >> (sorry, I don't seem to have the email I actually wanted to reply
+> >> to in my mbox, but it is
+> >> https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-October/005857.html)
+> >>
+> >> You'd said,
+> >>> Someone needs to read and think through all of the corner cases and see
+> >>> if we can ever have a time when task_dumpable is false but root in the
+> >>> container would not or should not be able to see everything.
+> >>>
+> >>> In particular I am worried about the case of a setuid app calling setns,
+> >>> and entering a lesser privileged user namespace.  In my foggy mind that
+> >>> might be a security problem.  And there might be other similar crazy
+> >>> cases.
+> >>
+> >> Can we make use of current->mm->exe_file->f_cred->user_ns?
+> >>
+> >> So either always use 
+> >> make_kgid(current->mm->exe_file->f_cred->user_ns, 0)
+> >> instead of make_kuid(cred->user_ns, 0), or check that
+> >> (current->mm->exe_file->f_cred->user_ns == cred->user_ns)
+> >> and, if not, assume that the caller has done a setns?
+> 
+> Do you have a summary of the issue?  I'm a little lost here.
 
-Not likely to help. And certainly not Steve's problem. For him, moving
-the *BIOS* reboot up would help.
+Sure - when running an unprivileged container, tasks which become
+!dumpable end up with /proc/$pid/fd/ being owned by the global
+root user, which inside the container is nobody:nogroup.  Examples
+are the user's sshd threads and apache, and in the past I think I've
+seen it with logind or getty too.
 
-I do think that to fix Steve's issue, we should probably remove the
-PCI from the list of defaults again. So I agree with Matthew in that
-sense, I'm just arguing that real production hardware still (sadly)
-very much does need it.
+> I suspect that what we really need is to revoke a bunch of proc files
+> every time a task does anything involving setuid (or, more generally,
+> any of the LSM_UNSAFE_PTRACE things).
 
-             Linus
+setuid, or do you mean setns?  In any case, I'm not thinking through
+attach (setns'ing into a container) yet, but the cases I'm looking at
+right now are just a root daemon - already inside the non-init user
+ns - doing something to become !dumpable, and having its fds become
+owned by GLOBAL_ROOT_UID.  Since these tasks are running a program
+which came from inside the non-init userns, I think it's sane to
+allow root in the non-init userns own any coredumps.
+
+Whereas if the program had started as /bin/passwd in the init userns,
+then coredumps (and /proc/$$/fd/*) should be owned by the GLOBAL_ROOT_UID.
+
+-serge
