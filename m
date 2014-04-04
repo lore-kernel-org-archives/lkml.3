@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaDDDxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 23:53:20 -0400
-Received: from imap.thunk.org ([74.207.234.97]:49764 "EHLO imap.thunk.org"
+	id S1752250AbaDDD46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 23:56:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29006 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804AbaDDDxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 23:53:13 -0400
-Date: Thu, 3 Apr 2014 23:53:08 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-Message-ID: <20140404035308.GC2525@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <20140403191558.GA8745@thunk.org>
- <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1751804AbaDDD4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 23:56:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,792,1389772800"; 
+   d="scan'208";a="514581730"
+From: Liu ShuoX <shuox.liu@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: yanmin_zhang@linux.intel.com, keescook@chromium.org, tony.luck@intel.com,
+        fengguang.wu@intel.com, Liu ShuoX <shuox.liu@intel.com>
+Subject: [PATCH v3 0/3] Add a method to expand tracers for pstore easily
+Date: Fri,  4 Apr 2014 11:55:56 +0800
+Message-Id: <1396583760-4772-1-git-send-email-shuox.liu@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 12:39:42PM -0700, Linus Torvalds wrote:
-> Btw, since I'm planning on getting to the filesystem pulls later today
-> (or perhaps tomorrow), I wanted to check: are you ok with the ext4
-> parts of the cross-rename patches from Miklos?
-> 
-> They are currently at
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
-> 
-> in case you want to refresh your memory.
+Hi,
+Here are the v3 of this series.
+Changelog v3:
+  1) Fix compiling errors when CONFIG_PSTORE_RAM=m.
 
-I've pulled in the cross-rename branch to my test branch and run a set
-of tests, and it passes.  Unfortunately I don't believe Miklos
-contributed tests for renameat(2) to xfstests, so we don't have any
-on-point testing of renameat() and cross-rename, but it's at least not
-triggering any failures on the existing tests.
+Changelog v2:
+  1) Fix compiling errors when CONFIG_PSTORE_RAM is disabled.
+  2) Add some protection in the code in case we disable CONFIG_PSTORE_RAM.
 
-I've also reviewed the patches again, so:
+---
+Liu ShuoX (2):
+  pstore: add seq_ops for norm zone
+  pstore: support current records dump in ramoops
 
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+Zhang Yanmin (1):
+  pstore: restructure ramoops to support more trace
 
-						- Ted
+ Documentation/ramoops.txt                 |  70 +++++++++++++++-
+ arch/x86/kernel/vmlinux.lds.S             |   9 ++
+ drivers/platform/chrome/chromeos_pstore.c |   2 +-
+ fs/pstore/inode.c                         | 126 ++++++++++++++++++++++++++--
+ fs/pstore/internal.h                      |   4 +-
+ fs/pstore/platform.c                      |  77 +++++++++++++++--
+ fs/pstore/ram.c                           | 132 +++++++++++++++++++++++-------
+ fs/pstore/ram_core.c                      |  30 +++++++
+ include/linux/pstore.h                    |   4 +
+ include/linux/pstore_ram.h                |  23 ++----
+ include/linux/pstore_ramoops.h            |  78 ++++++++++++++++++
+ 11 files changed, 490 insertions(+), 65 deletions(-)
+ create mode 100644 include/linux/pstore_ramoops.h
+
+-- 
+1.8.3.2
+
