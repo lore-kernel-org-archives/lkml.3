@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080AbaDDGnb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 02:43:31 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:60673 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021AbaDDGnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 02:43:18 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, fweisbec@gmail.com,
-        linaro-networking@linaro.org, Arvind.Chauhan@arm.com,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 36/36] timer: don't emulate notifier call to initialize timer base
-Date: Fri,  4 Apr 2014 12:06:19 +0530
-Message-Id: <2ad6493a8e3fb226b5b9dde6a95ed5de53f2a844.1396592516.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1396592516.git.viresh.kumar@linaro.org>
-References: <cover.1396592516.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1396592516.git.viresh.kumar@linaro.org>
-References: <cover.1396592516.git.viresh.kumar@linaro.org>
+	id S1753143AbaDDGnx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 02:43:53 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:52056 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104AbaDDGnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 02:43:46 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        stable@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] topology: Fix compilation warning when not in SMP
+Date: Fri,  4 Apr 2014 08:43:18 +0200
+Message-Id: <1396593798-29173-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In init_timers() we need to call init_timers_cpu() for boot cpu. For this,
-currently we are emulating a call to hotplug notifier. Probably this was done
-initially to get rid of code redundancy. But this sequence always called a
-single routine, i.e. init_timers_cpu(), and so calling that routine directly
-would be better. This would get rid of emulating a notifier call, few typecasts
-and the extra steps we are doing in notifier callback.
+The topology_##name() macro does not use its argument when CONFIG_SMP is not
+set, as it ultimately calls the cpu_data() macro.
 
-So, this patch calls init_timers_cpu() directly from init_timers().
+So we avoid maintaining a possibly unused `cpu' variable, to avoid the
+following compilation warning:
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+  drivers/base/topology.c: In function ‘show_physical_package_id’:
+  drivers/base/topology.c:103:118: warning: unused variable ‘cpu’ [-Wunused-variable]
+   define_id_show_func(physical_package_id);
+
+  drivers/base/topology.c: In function ‘show_core_id’:
+  drivers/base/topology.c:106:106: warning: unused variable ‘cpu’ [-Wunused-variable]
+   define_id_show_func(core_id);
+
+This can be seen with e.g. x86 defconfig and CONFIG_SMP not set.
+
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: <stable@vger.kernel.org> # 3.10.x
+Cc: <stable@vger.kernel.org> # 3.13.x
+Cc: <stable@vger.kernel.org> # 3.14.x
 ---
- kernel/timer.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/base/topology.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 4360edc..d13eb56 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1666,15 +1666,9 @@ static struct notifier_block timers_nb = {
+diff --git a/drivers/base/topology.c b/drivers/base/topology.c
+index ad9d177..c928576 100644
+--- a/drivers/base/topology.c
++++ b/drivers/base/topology.c
+@@ -39,8 +39,7 @@
+ static ssize_t show_##name(struct device *dev,			\
+ 		struct device_attribute *attr, char *buf)	\
+ {								\
+-	unsigned int cpu = dev->id;				\
+-	return sprintf(buf, "%d\n", topology_##name(cpu));	\
++	return sprintf(buf, "%d\n", topology_##name(dev->id));	\
+ }
  
- void __init init_timers(void)
- {
--	int err;
--
- 	/* ensure there are enough low bits for flags in timer->base pointer */
- 	BUILD_BUG_ON(__alignof__(struct tvec_base) & TIMER_FLAG_MASK);
--
--	err = timer_cpu_notify(&timers_nb, (unsigned long)CPU_UP_PREPARE,
--			       (void *)(long)smp_processor_id());
--	BUG_ON(err != NOTIFY_OK);
--
-+	BUG_ON(init_timers_cpu(smp_processor_id()));
- 	init_timer_stats();
- 	register_cpu_notifier(&timers_nb);
- 	open_softirq(TIMER_SOFTIRQ, run_timer_softirq);
+ #if defined(topology_thread_cpumask) || defined(topology_core_cpumask) || \
 -- 
-1.7.12.rc2.18.g61b472e
+1.9.1
 
