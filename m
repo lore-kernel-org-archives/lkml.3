@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaDDIim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 04:38:42 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:52125 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417AbaDDIga (ORCPT
+	id S1752310AbaDDIjT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 04:39:19 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:42803 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410AbaDDIgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 04:36:30 -0400
+	Fri, 4 Apr 2014 04:36:25 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de, fweisbec@gmail.com, peterz@infradead.org,
         mingo@kernel.org, tj@kernel.org, lizefan@huawei.com
 Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
         Arvind.Chauhan@arm.com, linux-kernel@vger.kernel.org,
         cgroups@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 5/8] hrtimer: don't migrate pinned timers
-Date: Fri,  4 Apr 2014 14:05:32 +0530
-Message-Id: <62698fe1c1f632338b0441f63897372dc0f4cd13.1396599474.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 4/8] hrtimer: update timer->state with 'pinned' information
+Date: Fri,  4 Apr 2014 14:05:31 +0530
+Message-Id: <489558160713494c5e8840aa5d6c22a8064aa603.1396599474.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1396599474.git.viresh.kumar@linaro.org>
 References: <cover.1396599474.git.viresh.kumar@linaro.org>
@@ -25,48 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-migrate_hrtimer() is called when a CPU goes down and its timers are required to
-be migrated to some other CPU. Its the responsibility of the users of the
-hrtimer to remove it before control reaches to migrate_hrtimer().
+'Pinned' information would be required in migrate_hrtimers() now, as we can
+migrate non-pinned timers away without a hotplug (i.e. with cpuset.quiesce). And
+so we may need to identify pinned timers now, as we can't migrate them.
 
-As these were the pinned hrtimers, the best we can do is: don't migrate these
-and report to the user as well.
-
-That's all this patch does.
+This patch reuses the timer->state variable for setting this flag as there were
+enough number of free bits available in this variable. And there is no point
+increasing size of this struct by adding another field.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- kernel/hrtimer.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ include/linux/hrtimer.h |  3 +++
+ kernel/hrtimer.c        | 12 ++++++++++--
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 435ac4c..9fdb67b 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -55,6 +55,7 @@ enum hrtimer_restart {
+  * 0x01		enqueued into rbtree
+  * 0x02		callback function running
+  * 0x04		timer is migrated to another cpu
++ * 0x08		timer is pinned to a cpu
+  *
+  * Special cases:
+  * 0x03		callback function running and enqueued
+@@ -81,6 +82,8 @@ enum hrtimer_restart {
+ #define HRTIMER_STATE_ENQUEUED	0x01
+ #define HRTIMER_STATE_CALLBACK	0x02
+ #define HRTIMER_STATE_MIGRATE	0x04
++#define HRTIMER_PINNED_SHIFT	3
++#define HRTIMER_STATE_PINNED	(1 << HRTIMER_PINNED_SHIFT)
+ 
+ /**
+  * struct hrtimer - the basic hrtimer structure
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index c5a4bf4..853dd8c 100644
+index d62fe32..c5a4bf4 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -1640,6 +1640,7 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
- {
- 	struct hrtimer *timer;
- 	struct timerqueue_node *node;
-+	int is_pinned;
+@@ -905,7 +905,11 @@ static void __remove_hrtimer(struct hrtimer *timer, unsigned long newstate,
+ 			hrtimer_force_reprogram(base->cpu_base, 1);
+ 	}
+ #endif
+-	timer->state = newstate;
++	/*
++	 * We need to preserve PINNED state here, otherwise we may end up
++	 * migrating pinned hrtimers as well.
++	 */
++	timer->state = newstate | (timer->state & HRTIMER_STATE_PINNED);
+ }
  
- 	while ((node = timerqueue_getnext(&old_base->active))) {
- 		timer = container_of(node, struct hrtimer, node);
-@@ -1652,6 +1653,15 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
- 		 * under us on another CPU
- 		 */
- 		__remove_hrtimer(timer, HRTIMER_STATE_MIGRATE, 0);
+ /* remove hrtimer, called with base lock held */
+@@ -970,6 +974,10 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
++	/* Update pinned state */
++	timer->state &= ~HRTIMER_STATE_PINNED;
++	timer->state |= !!(mode & HRTIMER_MODE_PINNED) << HRTIMER_PINNED_SHIFT;
 +
-+		is_pinned = timer->state & HRTIMER_STATE_PINNED;
-+
-+		/* Check if CPU still has pinned timers */
-+		if (unlikely(WARN(is_pinned,
-+				  "%s: can't migrate pinned timer: %p, deactivating it\n",
-+				  __func__, timer)))
-+			continue;
-+
- 		timer->base = new_base;
- 		/*
- 		 * Enqueue the timers on the new cpu. This does not
+ 	enqueue_hrtimer(timer);
+ 
+ 	/*
+@@ -1227,7 +1235,7 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+ 	 * hrtimer_start_range_ns() or in hrtimer_interrupt()
+ 	 */
+ 	if (restart != HRTIMER_NORESTART) {
+-		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
++		BUG_ON(!(timer->state & HRTIMER_STATE_CALLBACK));
+ 		enqueue_hrtimer(timer);
+ 	}
+ 
 -- 
 1.7.12.rc2.18.g61b472e
 
