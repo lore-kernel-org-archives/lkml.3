@@ -1,116 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaDDSva (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:51:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754186AbaDDSvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:51:25 -0400
-Date: Fri, 4 Apr 2014 20:51:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/9] uprobes/x86: move the UPROBE_FIX_{RIP,IP,CALL} code
-	at the end of pre/post hooks
-Message-ID: <20140404185128.GA14735@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140404185038.GA14679@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754587AbaDDSx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:53:56 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28520 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161AbaDDSxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 14:53:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 1/2] xen/xenbus: Avoid synchronous wait on XenBus stalling shutdown/restart.
+Date: Fri,  4 Apr 2014 14:53:40 -0400
+Message-Id: <1396637621-30113-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1396637621-30113-1-git-send-email-konrad.wilk@oracle.com>
+References: <1396637621-30113-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes. Preparation to simplify the review of the next
-change. Just reorder the code in arch_uprobe_pre/post_xol() functions
-so that UPROBE_FIX_{RIP_*,IP,CALL} logic goes to the end.
+The 'read_reply' works with 'process_msg' to read of a reply in XenBus.
+'process_msg' is running from within the 'xenbus' thread. Whenever
+a message shows up in XenBus it is put on a xs_state.reply_list list
+and 'read_reply' picks it up.
 
-Also change arch_uprobe_pre_xol() to use utask instead of autask, to
-make the code more symmetrical with arch_uprobe_post_xol().
+The problem is if the backend domain or the xenstored process is killed.
+In which case 'xenbus' is still awaiting - and 'read_reply' if called -
+stuck forever waiting for the reply_list to have some contents.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+This is normally not a problem - as the backend domain can come back
+or the xenstored process can be restarted. However if the domain
+is in process of being powered off/restarted/halted - there is no
+point of waiting on it coming back - as we are effectively being
+terminated and should not impede the progress.
+
+This patch solves this problem by checking whether the guest is
+the right domain. If it is an initial domain and hurtling towards
+death - there is no point of continuing the wait. All other type
+of guests continue with their behavior.
+mechanism a bit more asynchronous.
+
+Fixes-Bug: http://bugs.xenproject.org/xen/bug/8
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[v2: Fixed it up per David's suggestions]
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 ---
- arch/x86/kernel/uprobes.c |   30 ++++++++++++++----------------
- 1 files changed, 14 insertions(+), 16 deletions(-)
+ drivers/xen/xenbus/xenbus_xs.c | 44 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 41 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index c52c30f..3bb4198 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -474,19 +474,18 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
-  */
- int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- {
--	struct arch_uprobe_task *autask;
-+	struct uprobe_task *utask = current->utask;
+diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
+index b6d5fff..ba804f3 100644
+--- a/drivers/xen/xenbus/xenbus_xs.c
++++ b/drivers/xen/xenbus/xenbus_xs.c
+@@ -50,6 +50,7 @@
+ #include <xen/xenbus.h>
+ #include <xen/xen.h>
+ #include "xenbus_comms.h"
++#include "xenbus_probe.h"
  
--	autask = &current->utask->autask;
--	autask->saved_trap_nr = current->thread.trap_nr;
-+	regs->ip = utask->xol_vaddr;
-+	utask->autask.saved_trap_nr = current->thread.trap_nr;
- 	current->thread.trap_nr = UPROBE_TRAP_NR;
--	regs->ip = current->utask->xol_vaddr;
--	pre_xol_rip_insn(auprobe, regs, autask);
- 
--	autask->saved_tf = !!(regs->flags & X86_EFLAGS_TF);
-+	utask->autask.saved_tf = !!(regs->flags & X86_EFLAGS_TF);
- 	regs->flags |= X86_EFLAGS_TF;
- 	if (test_tsk_thread_flag(current, TIF_BLOCKSTEP))
- 		set_task_blockstep(current, false);
- 
-+	pre_xol_rip_insn(auprobe, regs, &utask->autask);
- 	return 0;
+ struct xs_stored_msg {
+ 	struct list_head list;
+@@ -139,6 +140,29 @@ static int get_error(const char *errorstring)
+ 	return xsd_errors[i].errnum;
  }
  
-@@ -560,22 +559,13 @@ bool arch_uprobe_xol_was_trapped(struct task_struct *t)
-  */
- int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
++static bool xenbus_ok(void)
++{
++	switch (xen_store_domain_type) {
++	case XS_LOCAL:
++		switch (system_state) {
++		case SYSTEM_POWER_OFF:
++		case SYSTEM_RESTART:
++		case SYSTEM_HALT:
++			return false;
++		default:
++			break;
++		}
++		return true;
++	case XS_PV:
++	case XS_HVM:
++		/* FIXME: Could check that the remote domain is alive,
++		 * but it is normally initial domain. */
++		return true;
++	default:
++		break;
++	}
++	return false;
++}
+ static void *read_reply(enum xsd_sockmsg_type *type, unsigned int *len)
  {
--	struct uprobe_task *utask;
-+	struct uprobe_task *utask = current->utask;
- 	long correction;
- 	int result = 0;
+ 	struct xs_stored_msg *msg;
+@@ -148,9 +172,20 @@ static void *read_reply(enum xsd_sockmsg_type *type, unsigned int *len)
  
- 	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
+ 	while (list_empty(&xs_state.reply_list)) {
+ 		spin_unlock(&xs_state.reply_lock);
+-		/* XXX FIXME: Avoid synchronous wait for response here. */
+-		wait_event(xs_state.reply_waitq,
+-			   !list_empty(&xs_state.reply_list));
++		if (xenbus_ok())
++			/* XXX FIXME: Avoid synchronous wait for response here. */
++			wait_event_timeout(xs_state.reply_waitq,
++					   !list_empty(&xs_state.reply_list),
++					   msecs_to_jiffies(500));
++		else {
++			/*
++			 * If we are in the process of being shut-down there is
++			 * no point of trying to contact XenBus - it is either
++			 * killed (xenstored application) or the other domain
++			 * has been killed or is unreachable.
++			 */
++			return ERR_PTR(-EIO);
++		}
+ 		spin_lock(&xs_state.reply_lock);
+ 	}
  
--	utask = current->utask;
- 	current->thread.trap_nr = utask->autask.saved_trap_nr;
--	correction = (long)(utask->vaddr - utask->xol_vaddr);
--	handle_riprel_post_xol(auprobe, regs, &correction);
--	if (auprobe->fixups & UPROBE_FIX_IP)
--		regs->ip += correction;
--
--	if (auprobe->fixups & UPROBE_FIX_CALL)
--		result = adjust_ret_addr(regs->sp, correction);
--
- 	/*
- 	 * arch_uprobe_pre_xol() doesn't save the state of TIF_BLOCKSTEP
- 	 * so we can get an extra SIGTRAP if we do not clear TF. We need
-@@ -586,6 +576,14 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 	else if (!(auprobe->fixups & UPROBE_FIX_SETF))
- 		regs->flags &= ~X86_EFLAGS_TF;
+@@ -215,6 +250,9 @@ void *xenbus_dev_request_and_reply(struct xsd_sockmsg *msg)
  
-+	correction = (long)(utask->vaddr - utask->xol_vaddr);
-+	handle_riprel_post_xol(auprobe, regs, &correction);
-+	if (auprobe->fixups & UPROBE_FIX_IP)
-+		regs->ip += correction;
+ 	mutex_unlock(&xs_state.request_mutex);
+ 
++	if (IS_ERR(ret))
++		return ret;
 +
-+	if (auprobe->fixups & UPROBE_FIX_CALL)
-+		result = adjust_ret_addr(regs->sp, correction);
-+
- 	return result;
- }
- 
+ 	if ((msg->type == XS_TRANSACTION_END) ||
+ 	    ((req_msg.type == XS_TRANSACTION_START) &&
+ 	     (msg->type == XS_ERROR)))
 -- 
-1.5.5.1
+1.8.5.3
 
