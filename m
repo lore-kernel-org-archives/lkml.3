@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaDDOrr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:47:47 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:36957 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206AbaDDOrp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:47:45 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: [PATCH v2] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
-Date: Fri,  4 Apr 2014 15:47:27 +0100
-Message-Id: <1396622847-12718-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1396610269-11580-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396610269-11580-1-git-send-email-daniel.thompson@linaro.org>
+	id S1753669AbaDDOsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:48:06 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:56219 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456AbaDDOsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 10:48:04 -0400
+X-IronPort-AV: E=Sophos;i="4.97,795,1389744000"; 
+   d="scan'208";a="118035774"
+Message-ID: <533EC612.90400@citrix.com>
+Date: Fri, 4 Apr 2014 15:47:46 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <paul.durrant@citrix.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v3 1/2] xen-netback: Rename map ops
+References: <1396458298-30041-1-git-send-email-zoltan.kiss@citrix.com> <20140403.142330.1048193401278908355.davem@davemloft.net>
+In-Reply-To: <20140403.142330.1048193401278908355.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building a multi_v7_defconfig kernel it is not possible to configure
-DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
-accurately and worse, it is possible to configure a different serial
-device but KConfig does not honour this request.
+On 03/04/14 19:23, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Wed, 2 Apr 2014 18:04:57 +0100
+>
+>> Rename identifiers to state explicitly that they refer to map ops.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>
+> Applied.
 
-This happens because DEBUG_UART_PL01X, which is intended to provide some
-kind of compatibility with single platform builds, spuriously depends upon
-ARCH_SPEAR13XX (and similar SPEAr options).
+Hi,
 
-Problem is fixed by removing problematic dependancies.
+I still can't see these two on net-next, did something went wrong?
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
+Zoli
 
-Notes:
-    v2: Remove pointless single platform support (thanks Arnd Bergmann)
-
- arch/arm/Kconfig.debug | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 0531da8..e554d35 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -991,9 +991,6 @@ config DEBUG_LL_INCLUDE
- config DEBUG_UART_PL01X
- 	def_bool ARCH_EP93XX || \
- 		ARCH_INTEGRATOR || \
--		ARCH_SPEAR3XX || \
--		ARCH_SPEAR6XX || \
--		ARCH_SPEAR13XX || \
- 		ARCH_VERSATILE
- 
- # Compatibility options for 8250
--- 
-1.9.0
-
+p.s.: I've just sent a trivial format string fix on top of this patch
