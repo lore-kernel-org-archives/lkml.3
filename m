@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaDDMoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:44:14 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:43278 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaDDMoL (ORCPT
+	id S1752960AbaDDMod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:44:33 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:63217 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752878AbaDDMoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:44:11 -0400
+	Fri, 4 Apr 2014 08:44:23 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -28,89 +28,352 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v4 0/8] Introducing (yet again) Device Tree Overlays
-Date: Fri,  4 Apr 2014 15:43:53 +0300
-Message-Id: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v4 3/8] OF: DT-Overlay configfs interface
+Date: Fri,  4 Apr 2014 15:43:56 +0300
+Message-Id: <1396615441-29630-4-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
+Add a runtime interface to using configfs for generic device tree overlay
+usage.
 
-The following patchset introduces Device Tree overlays, a method
-of dynamically altering the kernel's live Device Tree, along with
-a generic interface to use it in a board agnostic manner.
+A device-tree configfs entry is created in /config/device-tree/overlays
 
-It is dependent on Grant Likely's DT kobjectification patches located
-in his tree as queued for -next.
+To create an overlay you mkdir the directory and then echo the overlay
+firmware file to the path property file.
 
-It relies on the following previously submitted patches/patchsets:
+	# mkdir /config/device-tree/overlays/foo
+	# echo foo.dtbo >/config/device-tree/overlays/foo/path
 
-* OF: Add [__]of_find_node_by_full_name
-* OF: Utility helper functions for dynamic nodes
+The overlay file will be loaded using the standard firmware loader
+and will be applied.
 
-To compile overlays you need the DTC compiler patch
+To remove it simply rmdir the directory.
 
-* "dtc: Dynamic symbols & fixup support (v2)"
+	# rmdir /config/device-tree/overlays/foo
 
-Changes since V3:
-* Added overlay self-tests.
-* Fix bug in of_init_overlay_info (wrong sizeof)
-* Platform bus handler handles parent_pdev == NULL
-* of_resolve fixes according to comments by robh
-  + changed if (foo == NULL) to if (!foo)
-  + changed if (foo != NULL) to if (foo)
-  + drivers/of/Kconfig added dep on OF && !SPARC
-  + convert to using be32_to_cpup
-  + u32 -> __be32 when modifying property values
-  + cosmetic fixes
-
-Changes since V2:
-* Use of a configfs board agnostic overlay method
-* Use of per bus handlers instead of hardcoded behaviour
-* Optional target-path overlay target, which allows one to use standard
-DTBs without resolution options.
-
-Changes since V1:
-
-* Removal of any bits related to a specific board (beaglebone).
-* Introduced a platform agnostic interface using /proc/device-tree-overlay
-* Various bug fixes related to i2c device handling have been squashed in.
-
-Pantelis Antoniou (8):
-  OF: Introduce Device Tree resolve support.
-  OF: Introduce DT overlay support.
-  OF: DT-Overlay configfs interface
-  OF: platform: Add overlay bus handler
-  of: i2c: Export single device registration method
-  OF: i2c: Add overlay bus handler
-  OF: spi: Add overlay bus handler
-  OF: selftest: Add overlay self-test support.
-
- .../devicetree/dynamic-resolution-notes.txt        |  25 +
- Documentation/devicetree/overlay-notes.txt         | 187 +++++
- drivers/base/platform.c                            |  98 ++-
- drivers/i2c/i2c-core.c                             | 186 +++--
- drivers/of/Kconfig                                 |  24 +
- drivers/of/Makefile                                |   3 +
- drivers/of/configfs.c                              | 272 +++++++
- drivers/of/overlay.c                               | 895 +++++++++++++++++++++
- drivers/of/resolver.c                              | 368 +++++++++
- drivers/of/selftest.c                              | 368 +++++++++
- drivers/of/testcase-data/testcases.dtsi            |   1 +
- drivers/of/testcase-data/tests-overlay.dtsi        | 125 +++
- drivers/spi/spi.c                                  | 345 +++++---
- include/linux/i2c.h                                |  10 +
- include/linux/of.h                                 | 170 ++++
- 15 files changed, 2925 insertions(+), 152 deletions(-)
- create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
- create mode 100644 Documentation/devicetree/overlay-notes.txt
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+---
+ drivers/of/Kconfig    |   5 +
+ drivers/of/Makefile   |   1 +
+ drivers/of/configfs.c | 272 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 278 insertions(+)
  create mode 100644 drivers/of/configfs.c
- create mode 100644 drivers/of/overlay.c
- create mode 100644 drivers/of/resolver.c
- create mode 100644 drivers/of/testcase-data/tests-overlay.dtsi
 
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index cfb7ff8..872e45e 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -77,6 +77,10 @@ config OF_RESERVED_MEM
+ 	help
+ 	  Helpers to allow for reservation of memory regions
+ 
++config OF_CONFIGFS
++	select CONFIGFS_FS
++	def_bool n
++
+ config OF_RESOLVE
+ 	bool "OF Dynamic resolution support"
+ 	depends on OF && !SPARC
+@@ -92,6 +96,7 @@ config OF_OVERLAY
+ 	select OF_DYNAMIC
+ 	select OF_DEVICE
+ 	select OF_RESOLVE
++	select OF_CONFIGFS
+ 	help
+ 	  OpenFirmware overlay support. Allows you to modify on runtime the
+ 	  live tree using overlays.
+diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+index d2a6e0d..4efa17b 100644
+--- a/drivers/of/Makefile
++++ b/drivers/of/Makefile
+@@ -12,3 +12,4 @@ obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+ obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
+ obj-$(CONFIG_OF_RESOLVE)  += resolver.o
+ obj-$(CONFIG_OF_OVERLAY) += overlay.o
++obj-$(CONFIG_OF_CONFIGFS) += configfs.o
+diff --git a/drivers/of/configfs.c b/drivers/of/configfs.c
+new file mode 100644
+index 0000000..a494643
+--- /dev/null
++++ b/drivers/of/configfs.c
+@@ -0,0 +1,272 @@
++/*
++ * Configfs entries for device-tree
++ *
++ * Copyright (C) 2013 - Pantelis Antoniou <panto@antoniou-consulting.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++#include <linux/ctype.h>
++#include <linux/cpu.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/spinlock.h>
++#include <linux/slab.h>
++#include <linux/proc_fs.h>
++#include <linux/configfs.h>
++#include <linux/types.h>
++#include <linux/stat.h>
++#include <linux/limits.h>
++#include <linux/file.h>
++#include <linux/vmalloc.h>
++#include <linux/firmware.h>
++
++#include "of_private.h"
++
++#ifdef CONFIG_OF_OVERLAY
++
++struct cfs_overlay_item {
++	struct config_item 	item;
++
++	char			path[PATH_MAX];
++
++	const struct firmware	*fw;
++	struct device_node	*overlay;
++	int			ovinfo_cnt;
++	struct of_overlay_info	*ovinfo;
++	unsigned int		applied : 1;
++};
++
++static inline struct cfs_overlay_item *to_cfs_overlay_item(struct config_item *item)
++{
++	return item ? container_of(item, struct cfs_overlay_item, item) : NULL;
++}
++
++CONFIGFS_ATTR_STRUCT(cfs_overlay_item);
++#define CFS_OVERLAY_ITEM_ATTR(_name, _mode, _show, _store)	\
++struct cfs_overlay_item_attribute cfs_overlay_item_attr_##_name = \
++	__CONFIGFS_ATTR(_name, _mode, _show, _store)
++#define CFS_OVERLAY_ITEM_ATTR_RO(_name, _show)	\
++struct cfs_overlay_item_attribute cfs_overlay_item_attr_##_name = \
++	__CONFIGFS_ATTR_RO(_name, _show)
++
++static ssize_t cfs_overlay_item_path_show(struct cfs_overlay_item *overlay,
++		char *page)
++{
++	return sprintf(page, "%s\n", overlay->path);
++}
++
++static ssize_t cfs_overlay_item_path_store(struct cfs_overlay_item *overlay,
++		const char *page, size_t count)
++{
++	const char *p = page;
++	char *s;
++	int err;
++
++	/* if it's set do not allow changes */
++	if (overlay->path[0] != '\0')
++		return -EPERM;
++
++	/* copy to path buffer (and make sure it's always zero terminated */
++	count = snprintf(overlay->path, sizeof(overlay->path) - 1, "%s", p);
++	overlay->path[sizeof(overlay->path) - 1] = '\0';
++
++	/* strip trailing newlines */
++	s = overlay->path + strlen(overlay->path);
++	while (s > overlay->path && *--s == '\n')
++		*s = '\0';
++
++	pr_debug("%s: path is '%s'\n", __func__, overlay->path);
++
++	err = request_firmware(&overlay->fw, overlay->path, NULL);
++	if (err != 0)
++		goto out_err;
++
++	/* unflatten the tree */
++	of_fdt_unflatten_tree((void *)overlay->fw->data, &overlay->overlay);
++	if (overlay->overlay == NULL) {
++		pr_err("%s: failed to unflatten tree\n", __func__);
++		err = -EINVAL;
++		goto out_err;
++	}
++	pr_debug("%s: unflattened OK\n", __func__);
++
++	/* mark it as detached */
++	of_node_set_flag(overlay->overlay, OF_DETACHED);
++
++	/* perform resolution */
++	err = of_resolve(overlay->overlay);
++	if (err != 0) {
++		pr_err("%s: Failed to resolve tree\n", __func__);
++		goto out_err;
++	}
++	pr_debug("%s: resolved OK\n", __func__);
++
++	/* now build an overlay info array */
++	err = of_build_overlay_info(overlay->overlay,
++			&overlay->ovinfo_cnt, &overlay->ovinfo);
++	if (err != 0) {
++		pr_err("%s: Failed to build overlay info\n", __func__);
++		goto out_err;
++	}
++
++	pr_debug("%s: built %d overlay segments\n", __func__,
++			overlay->ovinfo_cnt);
++
++	err = of_overlay(overlay->ovinfo_cnt, overlay->ovinfo);
++	if (err != 0) {
++		pr_err("%s: Failed to apply overlay\n", __func__);
++		goto out_err;
++	}
++
++	overlay->applied = 1;
++
++	pr_debug("%s: Applied #%d overlay segments\n", __func__,
++			overlay->ovinfo_cnt);
++
++	return count;
++
++out_err:
++	if (overlay->applied)
++		of_overlay_revert(overlay->ovinfo_cnt, overlay->ovinfo);
++	overlay->applied = 0;
++
++	if (overlay->ovinfo)
++		of_free_overlay_info(overlay->ovinfo_cnt, overlay->ovinfo);
++	overlay->ovinfo = NULL;
++	overlay->ovinfo_cnt = 0;
++
++	release_firmware(overlay->fw);
++	overlay->fw = NULL;
++
++	overlay->path[0] = '\0';
++	return err;
++}
++
++static ssize_t cfs_overlay_item_status_show(struct cfs_overlay_item *overlay,
++		char *page)
++{
++	return sprintf(page, "%s\n",
++			overlay->applied ? "applied" : "unapplied");
++}
++
++CFS_OVERLAY_ITEM_ATTR(path, S_IRUGO | S_IWUSR, \
++		cfs_overlay_item_path_show, cfs_overlay_item_path_store);
++CFS_OVERLAY_ITEM_ATTR_RO(status, cfs_overlay_item_status_show);
++
++static struct configfs_attribute *cfs_overlay_attrs[] = {
++	&cfs_overlay_item_attr_path.attr,
++	&cfs_overlay_item_attr_status.attr,
++	NULL,
++};
++
++static void cfs_overlay_release(struct config_item *item)
++{
++	struct cfs_overlay_item *overlay = to_cfs_overlay_item(item);
++
++	if (overlay->applied)
++		of_overlay_revert(overlay->ovinfo_cnt, overlay->ovinfo);
++	if (overlay->ovinfo)
++		of_free_overlay_info(overlay->ovinfo_cnt, overlay->ovinfo);
++	if (overlay->fw)
++		release_firmware(overlay->fw);
++	kfree(overlay);
++}
++
++CONFIGFS_ATTR_OPS(cfs_overlay_item);
++static struct configfs_item_operations cfs_overlay_item_ops = {
++	.release		= cfs_overlay_release,
++	.show_attribute		= cfs_overlay_item_attr_show,
++	.store_attribute	= cfs_overlay_item_attr_store,
++};
++
++static struct config_item_type cfs_overlay_type = {
++	.ct_item_ops	= &cfs_overlay_item_ops,
++	.ct_attrs	= cfs_overlay_attrs,
++	.ct_owner	= THIS_MODULE,
++};
++
++static struct config_item *cfs_overlay_group_make_item(struct config_group *group, const char *name)
++{
++	struct cfs_overlay_item *overlay;
++
++	overlay = kzalloc(sizeof(*overlay), GFP_KERNEL);
++	if (!overlay)
++		return ERR_PTR(-ENOMEM);
++
++	config_item_init_type_name(&overlay->item, name, &cfs_overlay_type);
++	return &overlay->item;
++}
++
++static void cfs_overlay_group_drop_item(struct config_group *group, struct config_item *item)
++{
++	struct cfs_overlay_item *overlay = to_cfs_overlay_item(item);
++
++	config_item_put(&overlay->item);
++}
++
++static struct configfs_group_operations overlays_ops = {
++	.make_item	= cfs_overlay_group_make_item,
++	.drop_item	= cfs_overlay_group_drop_item,
++};
++
++static struct config_item_type overlays_type = {
++	.ct_group_ops   = &overlays_ops,
++	.ct_owner       = THIS_MODULE,
++};
++
++#endif /* CONFIG_OF_OVERLAY */
++
++static struct configfs_group_operations of_cfs_ops = {
++	/* empty - we don't allow anything to be created */
++};
++
++static struct config_item_type of_cfs_type = {
++	.ct_group_ops   = &of_cfs_ops,
++	.ct_owner       = THIS_MODULE,
++};
++
++struct config_group of_cfs_overlay_group;
++
++struct config_group *of_cfs_def_groups[] = {
++#ifdef CONFIG_OF_OVERLAY
++	&of_cfs_overlay_group,
++#endif
++	NULL
++};
++
++static struct configfs_subsystem of_cfs_subsys = {
++	.su_group = {
++		.cg_item = {
++			.ci_namebuf = "device-tree",
++			.ci_type = &of_cfs_type,
++		},
++		.default_groups = of_cfs_def_groups,
++	},
++	.su_mutex = __MUTEX_INITIALIZER(of_cfs_subsys.su_mutex),
++};
++
++static int __init of_cfs_init(void)
++{
++	int ret;
++
++	pr_info("%s\n", __func__);
++
++	config_group_init(&of_cfs_subsys.su_group);
++#ifdef CONFIG_OF_OVERLAY
++	config_group_init_type_name(&of_cfs_overlay_group, "overlays", &overlays_type);
++#endif
++
++	ret = configfs_register_subsystem(&of_cfs_subsys);
++	if (ret != 0) {
++		pr_err("%s: failed to register subsys\n", __func__);
++		goto out;
++	}
++	pr_info("%s: OK\n", __func__);
++out:
++	return ret;
++}
++late_initcall(of_cfs_init);
 -- 
 1.7.12
 
