@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553AbaDDS40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:56:26 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:64367 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155AbaDDS4Y (ORCPT
+	id S1754427AbaDDSu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:50:56 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62736 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121AbaDDSp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:56:24 -0400
-Message-ID: <533F0076.4090407@linaro.org>
-Date: Fri, 04 Apr 2014 13:56:54 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Tim Kryger <tim.kryger@linaro.org>
-CC: Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, sboyd@codeaurora.org,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] ARM: add SMP support for Broadcom mobile SoCs
-References: <1396577891-2713-1-git-send-email-elder@linaro.org>	<1396577891-2713-3-git-send-email-elder@linaro.org> <CAAYSxhqOh4F=vSDJYUwFE85og-Tgc9Hi8c79biEZYYjb8z1Qkg@mail.gmail.com>
-In-Reply-To: <CAAYSxhqOh4F=vSDJYUwFE85og-Tgc9Hi8c79biEZYYjb8z1Qkg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Apr 2014 14:45:56 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Roy Franz <roy.franz@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH v3 02/10] doc: efi-stub.txt updates for ARM
+Date: Fri,  4 Apr 2014 19:45:05 +0100
+Message-Id: <1396637113-22790-3-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1396637113-22790-1-git-send-email-leif.lindholm@linaro.org>
+References: <1396637113-22790-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2014 10:30 AM, Tim Kryger wrote:
-> On Thu, Apr 3, 2014 at 7:18 PM, Alex Elder <elder@linaro.org> wrote:
-> 
->> diff --git a/arch/arm/mach-bcm/platsmp.c b/arch/arm/mach-bcm/platsmp.c
->> new file mode 100644
->> index 0000000..46a64f2
->> --- /dev/null
->> +++ b/arch/arm/mach-bcm/platsmp.c
-> 
->> +/* Size of mapped Cortex A9 SCU address space */
->> +#define SCU_SIZE               0x58
-> 
->> +/*
->> + * Enable the Cortex A9 Snoop Control Unit
->> + *
->> + * By the time this is called we already know there are multiple
->> + * cores present.  We assume we're running on a Cortex A9 processor,
->> + * so any trouble getting the base address register or getting the
->> + * SCU base is a problem.
->> + *
->> + * Return 0 if successful or an error code otherwise.
->> + */
->> +static int __init scu_a9_enable(void)
->> +{
->> +       unsigned long config_base;
->> +       void __iomem *scu_base;
->> +
->> +       if (!scu_a9_has_base()) {
->> +               pr_err("no configuration base address register!\n");
->> +               return -ENXIO;
->> +       }
->> +
->> +       /* Config base address register value is zero for uniprocessor */
->> +       config_base = scu_a9_get_base();
->> +       if (!config_base) {
->> +               pr_err("hardware reports only one core; disabling SMP\n");
->> +               return -ENOENT;
->> +       }
->> +
->> +       scu_base = ioremap((phys_addr_t)config_base, SCU_SIZE);
->> +       if (!scu_base) {
->> +               pr_err("failed to remap config base (%lu/%u) for SCU\n",
->> +                       config_base, SCU_SIZE);
->> +               return -ENOMEM;
->> +       }
->> +
->> +       scu_enable(scu_base);
->> +
->> +       iounmap(scu_base);      /* That's the last we'll need of this */
->> +
->> +       return 0;
->> +}
-> 
-> This function seems useful for Cortex A9 MPCore in general.
-> 
-> While you gave it a generic name, you put it in a Broadcom file.
-> 
-> Is there a better location for this code?
+From: Roy Franz <roy.franz@linaro.org>
 
-I think it belongs in arch/arm/kernel/smp_scu.c.  I was thinking
-it might be generally useful when I wrote it (hence the more
-complete header comment, for example).  And I'll gladly move
-it there, I just didn't want anybody to get hung up on that.
+Update efi-stub.txt documentation to be more general
+and not x86 specific.  Add ARM only "dtb=" command
+line option description.
 
-					-Alex
+Signed-off-by: Roy Franz <roy.franz@linaro.org>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+---
+ Documentation/efi-stub.txt |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
+diff --git a/Documentation/efi-stub.txt b/Documentation/efi-stub.txt
+index c628788..26be7b0 100644
+--- a/Documentation/efi-stub.txt
++++ b/Documentation/efi-stub.txt
+@@ -1,13 +1,16 @@
+ 			  The EFI Boot Stub
+ 		     ---------------------------
+ 
+-On the x86 platform, a bzImage can masquerade as a PE/COFF image,
+-thereby convincing EFI firmware loaders to load it as an EFI
+-executable. The code that modifies the bzImage header, along with the
+-EFI-specific entry point that the firmware loader jumps to are
+-collectively known as the "EFI boot stub", and live in
++On the x86 and ARM platforms, a kernel zImage/bzImage can masquerade
++as a PE/COFF image, thereby convincing EFI firmware loaders to load
++it as an EFI executable. The code that modifies the bzImage header,
++along with the EFI-specific entry point that the firmware loader
++jumps to are collectively known as the "EFI boot stub", and live in
+ arch/x86/boot/header.S and arch/x86/boot/compressed/eboot.c,
+-respectively.
++respectively. For ARM the EFI stub is implemented in
++arch/arm/boot/compressed/efi-header.S and
++arch/arm/boot/compressed/efi-stub.c. EFI stub code that is shared
++between architectures is in drivers/firmware/efi/efi-stub-helper.c.
+ 
+ By using the EFI boot stub it's possible to boot a Linux kernel
+ without the use of a conventional EFI boot loader, such as grub or
+@@ -23,7 +26,9 @@ The bzImage located in arch/x86/boot/bzImage must be copied to the EFI
+ System Partition (ESP) and renamed with the extension ".efi". Without
+ the extension the EFI firmware loader will refuse to execute it. It's
+ not possible to execute bzImage.efi from the usual Linux file systems
+-because EFI firmware doesn't have support for them.
++because EFI firmware doesn't have support for them. For ARM the
++arch/arm/boot/zImage should be copied to the system partition, and it
++may not need to be renamed.
+ 
+ 
+ **** Passing kernel parameters from the EFI shell
+@@ -63,3 +68,11 @@ Notice how bzImage.efi can be specified with a relative path. That's
+ because the image we're executing is interpreted by the EFI shell,
+ which understands relative paths, whereas the rest of the command line
+ is passed to bzImage.efi.
++
++
++**** The "dtb=" option
++
++For the ARM architecture, we also need to be able to provide a device
++tree to the kernel. This is done with the "dtb=" command line option,
++and is processed in the same manner as the "initrd=" option that is
++described above.
+-- 
+1.7.10.4
 
