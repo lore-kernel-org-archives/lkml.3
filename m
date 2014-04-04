@@ -1,101 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaDDM2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:28:12 -0400
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:38533 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982AbaDDM0t (ORCPT
+	id S1753185AbaDDM2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:28:37 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:33978 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729AbaDDM0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:26:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140404110837.GS14763@sirena.org.uk>
-References: <1396544587-10876-1-git-send-email-punnaia@xilinx.com>
-	<203181a5-626f-437e-8efe-983a9d78ec5d@AM1EHSMHS017.ehs.local>
-	<20140403212940.GY14763@sirena.org.uk>
-	<CAFcVECJiSm8MMJ37c-Qfsu-UE0jgEYRmeGZ8OQG97wyRMaJ1LQ@mail.gmail.com>
-	<20140404110837.GS14763@sirena.org.uk>
-Date: Fri, 4 Apr 2014 17:56:47 +0530
-Message-ID: <CAFcVECLLcVEh+P1EELAZEZhRhUFM--t3pmytv2y10pwCkoxFJA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] SPI: Add support for Zynq Quad SPI controller
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Punnaiah Choudary <kpc528@gmail.com>,
-        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 4 Apr 2014 08:26:36 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-efi@vger.kernel.org, matt.fleming@intel.com
+Cc: linux-kernel@vger.kernel.org, Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH 1/5] efi: efi-stub-helper cleanup
+Date: Fri,  4 Apr 2014 13:25:46 +0100
+Message-Id: <1396614350-20889-2-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
+References: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+An #ifdef CONFIG_ARM clause in efi-stub-helper.c got included with some
+of the generic stub rework by Roy Franz. Drop it here to make subsequent
+patches less confusing.
 
-On Fri, Apr 4, 2014 at 4:38 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, Apr 04, 2014 at 08:59:47AM +0530, Harini Katakam wrote:
->> On Fri, Apr 4, 2014 at 2:59 AM, Mark Brown <broonie@kernel.org> wrote:
->
->> > Why would a transfer be being set up without a transfer being provided?
->
->> The setup function calls this function before a transfer is initiated.
->> In this case NULL is passed to setup_transfer (see below) and
->> SPI is initialized with default clock configuration.
->> This initialization is necessary because otherwise this clock config
->> would be done
->> only after SPI is enabled in prepare_hardware, which is wrong.
->> (I'm checking for master->busy in setup to address your previous
->> comment on SPI).
->
-> The requirement for setup() to work when other transfers are in progress
-> is clear and unambiguous, it really isn't acceptable to reconfigure
-> hardware in use by a runing transfer in setup().
->
+Also, In handle_cmdline_files(), fh is not initialized, and while the
+overall logic around this handling appears safe, gcc does not always
+pick this up. Initialize to NULL to remove the resulting warning.
 
-OK. I'll remove setup_transfer here and handle clock configuration elsewhere.
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+---
+ drivers/firmware/efi/efi-stub-helper.c |   16 +++-------------
+ 1 file changed, 3 insertions(+), 13 deletions(-)
 
->> I explained the same in SPI v2 changes and this valid there too.
->
-> This is v2?
->
+diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+index ff50aee..61230cb 100644
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -267,7 +267,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 	struct file_info *files;
+ 	unsigned long file_addr;
+ 	u64 file_size_total;
+-	efi_file_handle_t *fh;
++	efi_file_handle_t *fh = NULL;
+ 	efi_status_t status;
+ 	int nr_files;
+ 	char *str;
+@@ -536,18 +536,8 @@ static char *efi_convert_cmdline_to_ascii(efi_system_table_t *sys_table_arg,
+ 	}
+ 
+ 	options_size++;  /* NUL termination */
+-#ifdef CONFIG_ARM
+-	/*
+-	 * For ARM, allocate at a high address to avoid reserved
+-	 * regions at low addresses that we don't know the specfics of
+-	 * at the time we are processing the command line.
+-	 */
+-	status = efi_high_alloc(sys_table_arg, options_size, 0,
+-			    &cmdline_addr, 0xfffff000);
+-#else
+-	status = efi_low_alloc(sys_table_arg, options_size, 0,
+-			    &cmdline_addr);
+-#endif
++
++	status = efi_low_alloc(sys_table_arg, options_size, 0, &cmdline_addr);
+ 	if (status != EFI_SUCCESS)
+ 		return NULL;
+ 
+-- 
+1.7.10.4
 
-No. This "Zynq QSPI" patch is v1.
-I was referring to "Cadence SPI" v2 patch in which you pointed to these
-comments.
-
-Sorry for the confusion.
-
-<snip>
-
->> >> +static int __maybe_unused zynq_qspi_suspend(struct device *_dev)
->> >> +{
->> >> +     struct platform_device *pdev = container_of(_dev,
->> >> +                     struct platform_device, dev);
->> >> +     struct spi_master *master = platform_get_drvdata(pdev);
->> >> +
->> >> +     spi_master_suspend(master);
->> >> +
->> >> +     zynq_unprepare_transfer_hardware(master);
->
->> > Why are you unpreparing the hardware - the framework should be doing
->> > that for you if the device is active, if it's not you've got an extra
->> > clock disable here?
->
->> I called unprepare_hardware  becuase it does the things necessary
->> after master suspend - disable clock and controller.
->> (I thought this was your suggestion for SPI?)
->
-> Why are these things required after the core has already idled the
-> device (using exactly the same function)?
-
-Ok. It's unecessary I'll remove it.
-
-Regards,
-Harini
