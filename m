@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbaDDP1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:27:51 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25211 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753629AbaDDP1t (ORCPT
+	id S1753732AbaDDP2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:28:16 -0400
+Received: from smtprelay0036.hostedemail.com ([216.40.44.36]:46927 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753472AbaDDP2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:27:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19toWYHynrlKW2nSv0929S9QyrGAE/u690=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 288FD551EFF
-Date: Fri, 4 Apr 2014 11:27:46 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: fakeroot make-kpkg is broken in 3.14
-Message-ID: <20140404152746.GC28334@titan.lakedaemon.net>
-References: <CAMEtUuyLOFOfJDOjsx8+L35_ULnmY+oBCMc5nqerncXe=FGH_w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUuyLOFOfJDOjsx8+L35_ULnmY+oBCMc5nqerncXe=FGH_w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 4 Apr 2014 11:28:14 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3866:3871:3872:3873:4250:4321:4605:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12663:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: spoon82_2a1ec4efa8a60
+X-Filterd-Recvd-Size: 2392
+Message-ID: <1396625287.2863.4.camel@joe-AO722>
+Subject: Re: [PATCH] staging: comedi: drivers: pcl812.c: fixed a coding
+ style issue
+From: Joe Perches <joe@perches.com>
+To: Kumar Amit Mehta <gmate.amit@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, abbotti@mev.co.uk,
+        hsweeten@visionengravers.com, wharms@bfs.de,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 04 Apr 2014 08:28:07 -0700
+In-Reply-To: <20140404151756.GA14330@gmail.com>
+References: <1396605929-10514-1-git-send-email-gmate.amit@gmail.com>
+	 <20140404110707.GT6991@mwanda> <20140404114852.GA12452@gmail.com>
+	 <20140404132651.GV6991@mwanda> <20140404151756.GA14330@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexei,
+On Fri, 2014-04-04 at 18:17 +0300, Kumar Amit Mehta wrote:
+> What Walter mentioned also makes sense, So shouldn't it be something
+> like this:
 
-Thanks for the heads up.
+I'm not Dan, but:
 
-On Thu, Apr 03, 2014 at 03:12:38PM -0700, Alexei Starovoitov wrote:
-> It seems commit f4d4ffc03efc ("kbuild: dtbs_install: new make target")
-> breaks 'fakeroot make-kpkg' package creation on ubuntu.
-> Didn't investigate the root cause yet, just heads up.
+> [amit@localhost linux-next]$ git diff
+> diff --git a/drivers/staging/comedi/drivers/pcl812.c
+> b/drivers/staging/comedi/drivers/pcl812.c
+> index 160eac8..552b696 100644
+> --- a/drivers/staging/comedi/drivers/pcl812.c
+> +++ b/drivers/staging/comedi/drivers/pcl812.c
+> @@ -803,16 +803,14 @@ static int pcl812_ai_cmd(struct comedi_device
+> *dev, struct comedi_subdevice *s)
+>  
+>         pcl812_ai_set_chan_range(dev, cmd->chanlist[0], 1);
+>  
+> +       devpriv->ai_dma = 0;
+>         if (devpriv->dma) {     /*  check if we can use DMA transfer */
+>                 devpriv->ai_dma = 1;
+>                 for (i = 1; i < cmd->chanlist_len; i++)
+>                         if (cmd->chanlist[0] != cmd->chanlist[i]) {
+>                                 /*  we cann't use DMA :-( */
+> -                               devpriv->ai_dma = 0;
 
-Grant's version differs significantly from what I had proposed.  Which
-isn't a big deal, except that I'm not familiar with why he added the
-'prepare' target to dtbs dtbs_install.  It's also clear from the patch
-that he is _much_ more familiar with the guts of the kernel Makefile
-system than I am ;-)
+No.
 
-> The errors I see:
-> update-initramfs: Generating
-> /w/net/debian/linux-image-3.14.0+//boot/initrd.img-3.14.0+
-> grep: /boot/config-3.14.0+: No such file or directory
-> WARNING: missing /lib/modules/3.14.0+
-> Device driver support needs thus be built-in linux image!
-> WARNING: Couldn't open directory /lib/modules/3.14.0+: No such file or directory
-> FATAL: Could not open /lib/modules/3.14.0+/modules.dep.temp for
-> writing: No such file or directory
-> ERROR: ld.so: object 'libfakeroot-sysv.so' from LD_PRELOAD cannot be
-> preloaded: ignored.
-> ERROR: ld.so: object 'libfakeroot-sysv.so' from LD_PRELOAD cannot be
-> preloaded: ignored.
-> /dev/sda1: Permission denied
-> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
-> or directory
-> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
-> or directory
-> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
-> or directory
-> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
-> or directory
-> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
-> or directory
+You enable unwanted DMA capability here.
+There's a typo of can't too.
 
-This really doesn't tell us much as I'm not familiar with make-kpkg and
-the assumptions it makes.  Please provide more details once you've
-investigated a bit more.
+>                                 break;
+>                         }
+> -       } else
+> -               devpriv->ai_dma = 0;
 
-On a side note: It's a bit concerning to see make-kpkg grepping the
-config.  In general, one should directly test for features as config
-symbols are not ABI and can change at any time.
+Otherwise, I suppose either style is OK.
 
-thx,
-
-Jason.
