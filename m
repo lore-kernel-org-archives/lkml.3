@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030AbaDDAxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 20:53:01 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:58702 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaDDAwz (ORCPT
+	id S1751902AbaDDBJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 21:09:09 -0400
+Received: from nskntqsrv02p.mx.bigpond.com ([61.9.168.234]:44718 "EHLO
+	nskntqsrv02p.mx.bigpond.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751215AbaDDBJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 20:52:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140403234850.GA13956@debian>
-References: <1396346657-7166-1-git-send-email-holler@ahsoftware.de>
-	<533AFF77.5030106@codeaurora.org>
-	<CAGXu5jKMF9n9svQBhyQFvCoUe86QhLycDTt-fWyiRfySbn=Fug@mail.gmail.com>
-	<CAH+eYFDkYczZXYF3be6tTRg7kkGhK2zyukDTo+N8mwEKcG89LA@mail.gmail.com>
-	<CAGXu5jKyzbRR4S0+0daygWcE2-BbFi1X6MFAkPqTNbGiT6huSQ@mail.gmail.com>
-	<20140403234850.GA13956@debian>
-Date: Thu, 3 Apr 2014 17:52:55 -0700
-X-Google-Sender-Auth: F7t0w2Kp0i_cPa-2A_9Mj6ayKdM
-Message-ID: <CAGXu5jLCm8Qg7oQzEjOHtpY5TX2aX1DR4hXtoM_wzeRH4+_JFA@mail.gmail.com>
-Subject: Re: [PATCH] arm: don't allow CONFIG_DEBUG_SET_MODULE_RONX if
- CONFIG_JUMP_LABEL is enabled
-From: Kees Cook <keescook@chromium.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Apr 2014 21:09:01 -0400
+X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Apr 2014 21:09:01 EDT
+X-Authority-Analysis: v=2.0 cv=JN65Qr2b c=1 sm=1
+ a=tpHzvNDyw14p4wpd1xf5Bw==:17 a=4QTP58DfdrcA:10 a=aFTPlZ8mLXYA:10
+ a=abLpnCq0AAAA:8 a=H5rnqBSDAAAA:8 a=VwQbUJbxAAAA:8 a=Czd6YuyKqfjiqNVPyFkA:9
+ a=tpHzvNDyw14p4wpd1xf5Bw==:117
+Date: Fri, 4 Apr 2014 11:01:29 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+Message-Id: <201404040101.s3411TEC025079@goober.accelcon.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-m68k@vger.kernel.org>,
+        <uclinux-dev@uclinux.org>, <geert@linux-m68k.org>
+Subject: [git pull] m68knommu arch fixes for 3.15
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 3, 2014 at 4:48 PM, Rabin Vincent <rabin@rab.in> wrote:
-> On Thu, Apr 03, 2014 at 04:14:54PM -0700, Kees Cook wrote:
->> On Tue, Apr 1, 2014 at 4:08 PM, Rabin Vincent <rabin@rab.in> wrote:
->> > Here's a patch (probably whitespace damaged, hence also attached) with
->> > which dynamic ftrace works for me on top your other paches.  Tested on
->> > a non-LPAE SMP.
->>
->> Thanks! I'll incorporate calls to set_all_modules_text_rw/ro and see
->> what I can make work.
->
-> You can use the patch I posted yesterday for module support:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/244558.html
+Hi Linus,
 
-Yup, that's basically what I had too.
+Can you please pull the m68knommu git tree, for-next branch.
 
-So, even with your patch, I still get faults with ftrace.
-probe_kernel_write still errors for me, and I don't see why. I will
-send an updated patch series with my current CONFIG_DEBUG_RODATA work
-shortly...
+Just a couple of fixes. Clean up compile warnings by using correct types
+in function args, and clean out the removed CONFIG_MTD_PARTITIONS.
 
--Kees
+Regards
+Greg
 
--- 
-Kees Cook
-Chrome OS Security
+
+
+
+The following changes since commit fa389e220254c69ffae0d403eac4146171062d08:
+
+  Linux 3.14-rc6 (2014-03-09 19:41:57 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+
+for you to fetch changes up to 4dc5aa2172373fe7ccc25bc22fc21fcf150a66c5:
+
+  m68knommu: fix arg types for outs* functions (2014-03-11 09:38:22 +1000)
+
+----------------------------------------------------------------
+Eunbong Song (1):
+      m68k : Kill CONFIG_MTD_PARTITIONS
+
+Greg Ungerer (1):
+      m68knommu: fix arg types for outs* functions
+
+ arch/m68k/configs/m5208evb_defconfig | 1 -
+ arch/m68k/configs/m5249evb_defconfig | 1 -
+ arch/m68k/configs/m5272c3_defconfig  | 1 -
+ arch/m68k/configs/m5275evb_defconfig | 1 -
+ arch/m68k/configs/m5307c3_defconfig  | 1 -
+ arch/m68k/configs/m5407c3_defconfig  | 1 -
+ arch/m68k/include/asm/io_no.h        | 6 +++---
+ 7 files changed, 3 insertions(+), 9 deletions(-)
