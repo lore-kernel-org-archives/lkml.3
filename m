@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaDDVAU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:00:20 -0400
-Received: from smtprelay0072.hostedemail.com ([216.40.44.72]:42693 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751908AbaDDVAT (ORCPT
+	id S1752194AbaDDVLI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:11:08 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:46652 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977AbaDDVLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:00:19 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3871:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: salt24_1f8a712441e29
-X-Filterd-Recvd-Size: 1188
-Message-ID: <1396645215.2863.19.camel@joe-AO722>
-Subject: Re: [PATCH v3 1/1] staging: comedi: Fix checkpatch warning
-From: Joe Perches <joe@perches.com>
-To: Camille Begue <camille.begue44@gmail.com>
-Cc: devel@driverdev.osuosl.org, Ian Abbott <abbotti@mev.co.uk>,
+	Fri, 4 Apr 2014 17:11:06 -0400
+From: Camille Begue <camille.begue44@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: Camille Begue <camille.begue44@gmail.com>, Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hsweeten@visionengravers.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Fri, 04 Apr 2014 14:00:15 -0700
-In-Reply-To: <1396645041-15567-1-git-send-email-camille.begue44@gmail.com>
-References: <1396645041-15567-1-git-send-email-camille.begue44@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v4 1/1] staging: comedi: Fix checkpatch warning
+Date: Fri,  4 Apr 2014 23:10:51 +0200
+Message-Id: <1396645854-20944-1-git-send-email-camille.begue44@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-04 at 22:57 +0200, Camille Begue wrote:
-> Wrap lines > 80 columns.
-> This patch is part of eudyptula challenge
+Wrap lines > 80 columns.
 
-No one cares about the eudyptula challenge
-(whatever that is) as part of a changelog.
+Signed-off-by: Camille Begue <camille.begue44@gmail.com>
+---
+ drivers/staging/comedi/comedi_fops.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index ea6dc36..252505b 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1435,13 +1435,14 @@ static int __comedi_get_user_cmd(struct comedi_device *dev,
+ 	s = &dev->subdevices[cmd->subdev];
+ 
+ 	if (s->type == COMEDI_SUBD_UNUSED) {
+-		dev_dbg(dev->class_dev, "%d not valid subdevice\n", cmd->subdev);
++		dev_dbg(dev->class_dev, "%d not valid subdevice\n",
++			cmd->subdev);
+ 		return -EIO;
+ 	}
+ 
+ 	if (!s->do_cmd || !s->do_cmdtest || !s->async) {
+-		dev_dbg(dev->class_dev,
+-			"subdevice %d does not support commands\n", cmd->subdev);
++		dev_dbg(dev->class_dev, "subdevice %d does not support commands\n",
++			cmd->subdev);
+ 		return -EIO;
+ 	}
+ 
+-- 
+1.9.1
 
