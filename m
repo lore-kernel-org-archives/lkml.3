@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaDDM2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:28:37 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:33978 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729AbaDDM0g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:26:36 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-efi@vger.kernel.org, matt.fleming@intel.com
-Cc: linux-kernel@vger.kernel.org, Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH 1/5] efi: efi-stub-helper cleanup
-Date: Fri,  4 Apr 2014 13:25:46 +0100
-Message-Id: <1396614350-20889-2-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
-References: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
+	id S1752807AbaDDMdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:33:07 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:49701 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752067AbaDDMdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 08:33:03 -0400
+Date: Fri, 4 Apr 2014 15:32:42 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Roland Dreier <roland@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Inki Dae <inki.dae@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-rdma@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] mm: get_user_pages(write,force) refuse to COW in shared
+ areas
+Message-ID: <20140404123242.GA22320@node.dhcp.inet.fi>
+References: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An #ifdef CONFIG_ARM clause in efi-stub-helper.c got included with some
-of the generic stub rework by Roy Franz. Drop it here to make subsequent
-patches less confusing.
+On Fri, Apr 04, 2014 at 01:28:22AM -0700, Hugh Dickins wrote:
+> get_user_pages(write=1, force=1) has always had odd behaviour on write-
+> protected shared mappings: although it demands FMODE_WRITE-access to the
+> underlying object (do_mmap_pgoff sets neither VM_SHARED nor VM_MAYWRITE
+> without that), it ends up with do_wp_page substituting private anonymous
+> Copied-On-Write pages for the shared file pages in the area.
+> 
+> That was long ago intentional, as a safety measure to prevent ptrace
+> setting a breakpoint (or POKETEXT or POKEDATA) from inadvertently
+> corrupting the underlying executable.  Yet exec and dynamic loaders
+> open the file read-only, and use MAP_PRIVATE rather than MAP_SHARED.
+> 
+> The traditional odd behaviour still causes surprises and bugs in mm,
+> and is probably not what any caller wants - even the comment on the flag
+> says "You do not want this" (although it's undoubtedly necessary for
+> overriding userspace protections in some contexts, and good when !write).
+> 
+> Let's stop doing that.  But it would be dangerous to remove the long-
+> standing safety at this stage, so just make get_user_pages(write,force)
+> fail with EFAULT when applied to a write-protected shared area.
+> Infiniband may in future want to force write through to underlying
+> object: we can add another FOLL_flag later to enable that if required.
+> 
+> Odd though the old behaviour was, there is no doubt that we may turn
+> out to break userspace with this change, and have to revert it quickly.
+> Issue a WARN_ON_ONCE to help debug the changed case (easily triggered
+> by userspace, so only once to prevent spamming the logs); and delay a
+> few associated cleanups until this change is proved.
+> 
+> get_user_pages callers who might see trouble from this change:
+>   ptrace poking, or writing to /proc/<pid>/mem
+>   drivers/infiniband/
+>   drivers/media/v4l2-core/
+>   drivers/gpu/drm/exynos/exynos_drm_gem.c
+>   drivers/staging/tidspbridge/core/tiomap3430.c
+> if they ever apply get_user_pages to write-protected shared mappings
+> of an object which was opened for writing.
+> 
+> I went to apply the same change to mm/nommu.c, but retreated.  NOMMU
+> has no place for COW, and its VM_flags conventions are not the same:
+> I'd be more likely to screw up NOMMU than make an improvement there.
+> 
+> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Also, In handle_cmdline_files(), fh is not initialized, and while the
-overall logic around this handling appears safe, gcc does not always
-pick this up. Initialize to NULL to remove the resulting warning.
+There's comment in do_wp_page() which is not true anymore with patch
+applied. It should be fixed.
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
----
- drivers/firmware/efi/efi-stub-helper.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+Otherwise, looks good to me:
 
-diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index ff50aee..61230cb 100644
---- a/drivers/firmware/efi/efi-stub-helper.c
-+++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -267,7 +267,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 	struct file_info *files;
- 	unsigned long file_addr;
- 	u64 file_size_total;
--	efi_file_handle_t *fh;
-+	efi_file_handle_t *fh = NULL;
- 	efi_status_t status;
- 	int nr_files;
- 	char *str;
-@@ -536,18 +536,8 @@ static char *efi_convert_cmdline_to_ascii(efi_system_table_t *sys_table_arg,
- 	}
- 
- 	options_size++;  /* NUL termination */
--#ifdef CONFIG_ARM
--	/*
--	 * For ARM, allocate at a high address to avoid reserved
--	 * regions at low addresses that we don't know the specfics of
--	 * at the time we are processing the command line.
--	 */
--	status = efi_high_alloc(sys_table_arg, options_size, 0,
--			    &cmdline_addr, 0xfffff000);
--#else
--	status = efi_low_alloc(sys_table_arg, options_size, 0,
--			    &cmdline_addr);
--#endif
-+
-+	status = efi_low_alloc(sys_table_arg, options_size, 0, &cmdline_addr);
- 	if (status != EFI_SUCCESS)
- 		return NULL;
- 
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+
 -- 
-1.7.10.4
-
+ Kirill A. Shutemov
