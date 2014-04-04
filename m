@@ -1,61 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaDDScT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:32:19 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:44305 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592AbaDDScR (ORCPT
+	id S1754021AbaDDSd4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:33:56 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18042 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809AbaDDSdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:32:17 -0400
+	Fri, 4 Apr 2014 14:33:54 -0400
+Date: Fri, 4 Apr 2014 14:33:02 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV
+ support
+Message-ID: <20140404183302.GB29801@phenom.dumpdata.com>
+References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com>
+ <20140402143201.GF12188@phenom.dumpdata.com>
+ <533C7485.3030203@hp.com>
+ <533CC309.3020607@hp.com>
+ <20140403172333.GA3877@localhost.localdomain>
+ <533E1F8E.5040600@hp.com>
+ <20140404165523.GP19478@phenom.dumpdata.com>
+ <533EE82D.4010303@hp.com>
+ <20140404175815.GA28449@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <533EF832.1030902@mit.edu>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
-	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
-	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
-	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
-	<CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
-	<CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
-	<20140403104308.GP13491@8bytes.org>
-	<20140403170541.GA19010@thunk.org>
-	<533EF832.1030902@mit.edu>
-Date: Fri, 4 Apr 2014 11:32:17 -0700
-X-Google-Sender-Auth: _Yc_EZMZSSHj__ufRSKcROigv28
-Message-ID: <CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Joerg Roedel <joro@8bytes.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140404175815.GA28449@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 11:21 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> The other thing I've used /dev/kmsg for is to shove a "I'm starting
-> something now" message in.  This is only really necessary because the
-> current kernel log timestamps are unusable crap.  (We could fix that,
-> hint hint.)
+On Fri, Apr 04, 2014 at 01:58:15PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Apr 04, 2014 at 01:13:17PM -0400, Waiman Long wrote:
+> > On 04/04/2014 12:55 PM, Konrad Rzeszutek Wilk wrote:
+> > >On Thu, Apr 03, 2014 at 10:57:18PM -0400, Waiman Long wrote:
+> > >>On 04/03/2014 01:23 PM, Konrad Rzeszutek Wilk wrote:
+> > >>>On Wed, Apr 02, 2014 at 10:10:17PM -0400, Waiman Long wrote:
+> > >>>>On 04/02/2014 04:35 PM, Waiman Long wrote:
+> > >>>>>On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
+> > >>>>>>On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
+> > >>>>>>>N.B. Sorry for the duplicate. This patch series were resent as the
+> > >>>>>>>      original one was rejected by the vger.kernel.org list server
+> > >>>>>>>      due to long header. There is no change in content.
+> > >>>>>>>
+> > >>>>>>>v7->v8:
+> > >>>>>>>   - Remove one unneeded atomic operation from the slowpath, thus
+> > >>>>>>>     improving performance.
+> > >>>>>>>   - Simplify some of the codes and add more comments.
+> > >>>>>>>   - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
+> > >>>>>>>     unfair lock.
+> > >>>>>>>   - Reduce unfair lock slowpath lock stealing frequency depending
+> > >>>>>>>     on its distance from the queue head.
+> > >>>>>>>   - Add performance data for IvyBridge-EX CPU.
+> > >>>>>>FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
+> > >>>>>>HVM guest under Xen after a while stops working. The workload
+> > >>>>>>is doing 'make -j32' on the Linux kernel.
+> > >>>>>>
+> > >>>>>>Completely unresponsive. Thoughts?
+> > >>>>>>
+> > >>>>>Thank for reporting that. I haven't done that much testing on Xen.
+> > >>>>>My focus was in KVM. I will perform more test on Xen to see if I
+> > >>>>>can reproduce the problem.
+> > >>>>>
+> > >>>>BTW, does the halting and sending IPI mechanism work in HVM? I saw
+> > >>>Yes.
+> > >>>>that in RHEL7, PV spinlock was explicitly disabled when in HVM mode.
+> > >>>>However, this piece of code isn't in upstream code. So I wonder if
+> > >>>>there is problem with that.
+> > >>>The PV ticketlock fixed it for HVM. It was disabled before because
+> > >>>the PV guests were using bytelocks while the HVM were using ticketlocks
+> > >>>and you couldnt' swap in PV bytelocks for ticketlocks during startup.
+> > >>The RHEL7 code has used PV ticketlock already. RHEL7 uses a single
+> > >>kernel for all configurations. So PV ticketlock as well as Xen and
+> > >>KVM support was compiled in. I think booting the kernel on bare
+> > >>metal will cause the Xen code to work in HVM mode thus activating
+> > >>the PV spinlock code which has a negative impact on performance.
+> > >Huh? -EPARSE
+> > >
+> > >>That may be why it was disabled so that the bare metal performance
+> > >>will not be impacted.
+> > >I am not following you.
+> > 
+> > What I am saying is that when XEN and PV spinlock is compiled into
+> > the current upstream kernel, the PV spinlock jump label is turned on
+> > when booted on bare metal. In other words, the PV spinlock code is
+> 
+> How does it turn it on? I see that the jump lables are only turned
+> on when the jump label is enable when it detects that it is running
+> under Xen or KVM. It won't turn it on under baremetal.
 
-I'd actually love to fix that, but I disagree with the "we could fix
-it". There are tons of people who know how to parse them (admittedly
-often only to ignore them), so changing the format is not likely to
-work.
+Well, it seems that it does turn it on baremetal which is an stupid mistake.
 
-The good news is that "dmesg -H" does help if you're human. While at
-the same time being an example of that very "there are tools that know
-about the current horrid format" issue.. D'oh.
-
-             Linus
+Sending a patch shortly.
+> 
+> > active even when they are not needed and actually slow thing down in
+> > that situation. This is a problem and we need to find way to make
+> > sure that the PV spinlock code won't be activated on bare metal.
+> 
+> Could you explain to me which piece of code enables the jump labels
+> on baremetal please?
+> > 
+> > -Longman
