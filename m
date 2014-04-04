@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918AbaDDPpe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:45:34 -0400
-Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:35008
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753809AbaDDPpb convert rfc822-to-8bit (ORCPT
+	id S1753926AbaDDPp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:45:58 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54379 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871AbaDDPpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:45:31 -0400
-From: Yao Yuan <yao.yuan@freescale.com>
-To: Marek Vasut <marex@denx.de>
-CC: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
-Thread-Topic: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
-Thread-Index: AQHPT7WKIG/+iHMwf0iZO9vAQDtI9JsBhP+AgAAE3p4=
-Date: Fri, 4 Apr 2014 15:45:15 +0000
-Message-ID: <aab78696ac364d9c832993c08915bad3@BL2PR03MB338.namprd03.prod.outlook.com>
-References: <1396579272-19542-1-git-send-email-yao.yuan@freescale.com>
- <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>,<201404041628.55471.marex@denx.de>
-In-Reply-To: <201404041628.55471.marex@denx.de>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [111.204.254.46]
-x-forefront-prvs: 01713B2841
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(377454003)(51704005)(24454002)(86362001)(92566001)(2656002)(83072002)(56816005)(69226001)(51856001)(97186001)(47446002)(79102001)(97336001)(4396001)(85852003)(54356001)(94946001)(94316002)(99396002)(50986001)(31966008)(87936001)(87266001)(53806001)(93516002)(49866001)(74662001)(47736001)(47976001)(80976001)(74502001)(56776001)(90146001)(95666003)(74706001)(93136001)(99286001)(76482001)(46102001)(19580405001)(20776003)(66066001)(83322001)(81542001)(33646001)(63696002)(98676001)(54316002)(81816001)(76576001)(76796001)(81686001)(19580395003)(81342001)(74876001)(59766001)(85306002)(80022001)(65816001)(74366001)(76786001)(95416001)(77982001)(74316001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB340;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:7C37FDD9.125509.B2E7B5EB.46ECD072.20246;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Apr 2014 11:45:33 -0400
+Date: Fri, 4 Apr 2014 16:45:20 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] x86: reboot doesn't reboot
+Message-ID: <20140404154520.GA14980@srcf.ucam.org>
+References: <20140403113921.23dceb75@gandalf.local.home>
+ <533D8516.1040803@zytor.com>
+ <20140403121314.246b03a7@gandalf.local.home>
+ <533DED74.6050202@linux.intel.com>
+ <20140403194018.7c67aec7@gandalf.local.home>
+ <533DF455.4040908@linux.intel.com>
+ <533DF8D2.9060508@zytor.com>
+ <533E0A94.5040007@linux.intel.com>
+ <20140404151203.GA12370@srcf.ucam.org>
+ <CA+55aFx+6ODkyueA2iHLhO8-eo95QYCBybhR63owxUMbhXh8wQ@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx+6ODkyueA2iHLhO8-eo95QYCBybhR63owxUMbhXh8wQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 04, 2014 at 22:29:32 PM, Marek Vasut wrote:
-> On Friday, April 04, 2014 at 04:41:11 AM, Yuan Yao wrote:
-> > Add dma support for i2c. This function depend on DMA driver.
-> > You can turn on it by write both the dmas and dma-name properties in dts
-> > node.
+On Fri, Apr 04, 2014 at 08:38:42AM -0700, Linus Torvalds wrote:
+> On Fri, Apr 4, 2014 at 8:12 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 > >
-> > Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+> > Production hardware should never require CF9.
+> 
+> That's total BS.
+> 
+> The fact is, we may be doing something wrong, but ACPI fails on a
+> *lot* of systems. A huge swath of Dell machines in particular for some
+> reason (laptops, desktops, _and_ now there's tablet reports).
 
-[...]
+Which is almost certainly because the other reboot methods are trapping 
+into SMI and hitting some hardware that we've left in a different state 
+to Windows. CF9 may work around that, but the actual fix is to figure 
+out why the firmware is wedging and fix it. Otherwise we're going to 
+spend the rest of our lives maintaining a giant DMI list that's still 
+going to be missing entries and users are going to be sad.
 
-> Since you will be fixing that superfluous return 0; (I actually wonder, did you
-> really test the driver at all before submitting it?) ...
+> The keyboard controller is sadly unreliable too, although I really
+> don't understand why. Even when a legacy keyboard controller exists
+> (which isn't as universal as you'd think, even though the *hardware*
+> is pretty much guaranteed to be there in the chipset, it can be
+> disabled) there seem to be machines where the reset line isn't hooked
+> up. Don't ask me why. Same goes for the triple fault failure case.
 
-I'm sorry for the leftover. It's a serious bug. The support by DMA will be disabled always.
-Thanks for your consideration. But subjective assume may not suitable. Testing is a essential link . 
-But the bug can't be found by normal test . The testing may not be  imperfect, it's my 
-serious fault, but please don't doubt my work attitude.
-The ugly is my work or even the ability but not the attitude, I think.
+See: SMI. Or in the triple fault case, because there's some early init 
+code that has the same issue. As far as I can tell Windows never triple 
+faults, so again I think this is our fault at some level.
 
-At last, Thank you for giving me a lot of help, it's very important for me.
+> It would be interesting if somebody can figure out *exactly* what
+> Windows does, because the fact that a lot of Dell machines need quirks
+> almost certainly means that it's _us_ doing something wrong. Dell
+> doesn't generally do lots of fancy odd things. I pretty much guarantee
+> it's because we've done something odd that Windows doesn't do.
 
-> > +static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
-> > +                                     struct i2c_msg *msgs)
-> > +{
-> > +     struct imx_i2c_dma *dma = i2c_imx->dma;
-> > +     struct dma_async_tx_descriptor *txdesc;
-> > +     struct device *dev = &i2c_imx->adapter.dev;
-> +
-> +     dma->dma_buf = dma_map_single(dma->chan_using->device->dev, msgs->buf,
-[...]
+Windows hits the keyboard controller and then tries the ACPI vector. It 
+then sleeps for a short period, then tries the keyboard controller again 
+and the ACPI vector again. This means that systems which put cf9 in the 
+ACPI vector tend to work because of the second write, which is obviously 
+not what the spec envisaged but here we are. The only time it hits CF9 
+is when the ACPI tables tell it to.
 
->  Reviewed-by: Marek Vasut <marex@denx.de>
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
