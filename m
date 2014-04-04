@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaDDM1F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:27:05 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:35950 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960AbaDDM0m (ORCPT
+	id S1752999AbaDDM0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:26:53 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:57396 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953AbaDDM0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:26:42 -0400
+	Fri, 4 Apr 2014 08:26:41 -0400
 From: Leif Lindholm <leif.lindholm@linaro.org>
 To: linux-efi@vger.kernel.org, matt.fleming@intel.com
 Cc: linux-kernel@vger.kernel.org, Roy Franz <roy.franz@linaro.org>,
         Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH 5/5] efi: Add get_dram_base() helper function
-Date: Fri,  4 Apr 2014 13:25:50 +0100
-Message-Id: <1396614350-20889-6-git-send-email-leif.lindholm@linaro.org>
+Subject: [PATCH 4/5] efi: Add shared printk wrapper for consistent prefixing
+Date: Fri,  4 Apr 2014 13:25:49 +0100
+Message-Id: <1396614350-20889-5-git-send-email-leif.lindholm@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
 References: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
@@ -23,62 +23,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roy Franz <roy.franz@linaro.org>
 
-Add the get_dram_base() function, shared by arm/arm64.
+Add a wrapper for printk to standardize the prefix for informational and
+error messages from the EFI stub.
 
 Signed-off-by: Roy Franz <roy.franz@linaro.org>
 Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 ---
- drivers/firmware/efi/efi-stub-helper.c |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ drivers/firmware/efi/efi-stub-helper.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index 183289c..998b884 100644
+index 3cc5ebe..183289c 100644
 --- a/drivers/firmware/efi/efi-stub-helper.c
 +++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -11,6 +11,10 @@
-  */
- #define EFI_READ_CHUNK_SIZE	(1024 * 1024)
- 
-+/* error code which can't be mistaken for valid address */
-+#define EFI_ERROR	(~0UL)
-+
-+
- struct file_info {
- 	efi_file_handle_t *handle;
- 	u64 size;
-@@ -83,6 +87,32 @@ fail:
- 	return status;
+@@ -33,6 +33,9 @@ static void efi_printk(efi_system_table_t *sys_table_arg, char *str)
+ 	}
  }
  
++#define pr_efi(sys_table, msg)     efi_printk(sys_table, "EFI stub: "msg)
++#define pr_efi_err(sys_table, msg) efi_printk(sys_table, "EFI stub: ERROR: "msg)
 +
-+static unsigned long __init get_dram_base(efi_system_table_t *sys_table)
-+{
-+	efi_status_t status;
-+	unsigned long map_size;
-+	unsigned long membase  = EFI_ERROR;
-+	struct efi_memory_map map;
-+	efi_memory_desc_t *md;
-+
-+	status = efi_get_memory_map(sys_table, (efi_memory_desc_t **)&map.map,
-+				    &map_size, &map.desc_size, NULL, NULL);
-+	if (status != EFI_SUCCESS)
-+		return membase;
-+
-+	map.map_end = map.map + map_size;
-+
-+	for_each_efi_memory_desc(&map, md)
-+		if (md->attribute & EFI_MEMORY_WB)
-+			if (membase > md->phys_addr)
-+				membase = md->phys_addr;
-+
-+	efi_call_phys1(sys_table->boottime->free_pool, map.map);
-+
-+	return membase;
-+}
-+
- /*
-  * Allocate at the highest possible address that is not above 'max'.
-  */
+ 
+ static efi_status_t efi_get_memory_map(efi_system_table_t *sys_table_arg,
+ 				       efi_memory_desc_t **map,
+@@ -310,7 +313,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
+ 				nr_files * sizeof(*files), (void **)&files);
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
++		pr_efi_err(sys_table_arg, "Failed to alloc mem for file handle list\n");
+ 		goto fail;
+ 	}
+ 
+@@ -374,13 +377,13 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 		status = efi_high_alloc(sys_table_arg, file_size_total, 0x1000,
+ 				    &file_addr, max_addr);
+ 		if (status != EFI_SUCCESS) {
+-			efi_printk(sys_table_arg, "Failed to alloc highmem for files\n");
++			pr_efi_err(sys_table_arg, "Failed to alloc highmem for files\n");
+ 			goto close_handles;
+ 		}
+ 
+ 		/* We've run out of free low memory. */
+ 		if (file_addr > max_addr) {
+-			efi_printk(sys_table_arg, "We've run out of free low memory\n");
++			pr_efi_err(sys_table_arg, "We've run out of free low memory\n");
+ 			status = EFI_INVALID_PARAMETER;
+ 			goto free_file_total;
+ 		}
+@@ -401,7 +404,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 						       &chunksize,
+ 						       (void *)addr);
+ 				if (status != EFI_SUCCESS) {
+-					efi_printk(sys_table_arg, "Failed to read file\n");
++					pr_efi_err(sys_table_arg, "Failed to read file\n");
+ 					goto free_file_total;
+ 				}
+ 				addr += chunksize;
+@@ -486,7 +489,7 @@ static efi_status_t efi_relocate_kernel(efi_system_table_t *sys_table_arg,
+ 				       &new_addr);
+ 	}
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk(sys_table_arg, "ERROR: Failed to allocate usable memory for kernel.\n");
++		pr_efi_err(sys_table_arg, "ERROR: Failed to allocate usable memory for kernel.\n");
+ 		return status;
+ 	}
+ 
 -- 
 1.7.10.4
 
