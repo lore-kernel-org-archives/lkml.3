@@ -1,168 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaDDRN3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 13:13:29 -0400
-Received: from smtp03.udag.de ([62.146.106.29]:41277 "EHLO smtp03.udag.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753174AbaDDRNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 13:13:25 -0400
-From: Tolga Cakir <tolga@cevel.net>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Derya <derya.kiran@yahoo.de>, Jiri Kosina <jkosina@suse.cz>,
-        Reyad Attiyat <reyad.attiyat@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tolga Cakir <tolga@cevel.net>
-Subject: [PATCH 1/4] HID: microsoft: moving quirks to struct
-Date: Fri,  4 Apr 2014 19:06:13 +0200
-Message-Id: <1396631173-11668-1-git-send-email-tolga@cevel.net>
-X-Mailer: git-send-email 1.9.1
+	id S1753926AbaDDRNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 13:13:48 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:17827 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838AbaDDRNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 13:13:45 -0400
+Message-ID: <533EE82D.4010303@hp.com>
+Date: Fri, 04 Apr 2014 13:13:17 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV support
+References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <20140402143201.GF12188@phenom.dumpdata.com> <533C7485.3030203@hp.com> <533CC309.3020607@hp.com> <20140403172333.GA3877@localhost.localdomain> <533E1F8E.5040600@hp.com> <20140404165523.GP19478@phenom.dumpdata.com>
+In-Reply-To: <20140404165523.GP19478@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will give us the opportunity to easily implement extra features
-for new devices.
+On 04/04/2014 12:55 PM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Apr 03, 2014 at 10:57:18PM -0400, Waiman Long wrote:
+>> On 04/03/2014 01:23 PM, Konrad Rzeszutek Wilk wrote:
+>>> On Wed, Apr 02, 2014 at 10:10:17PM -0400, Waiman Long wrote:
+>>>> On 04/02/2014 04:35 PM, Waiman Long wrote:
+>>>>> On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
+>>>>>> On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
+>>>>>>> N.B. Sorry for the duplicate. This patch series were resent as the
+>>>>>>>       original one was rejected by the vger.kernel.org list server
+>>>>>>>       due to long header. There is no change in content.
+>>>>>>>
+>>>>>>> v7->v8:
+>>>>>>>    - Remove one unneeded atomic operation from the slowpath, thus
+>>>>>>>      improving performance.
+>>>>>>>    - Simplify some of the codes and add more comments.
+>>>>>>>    - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
+>>>>>>>      unfair lock.
+>>>>>>>    - Reduce unfair lock slowpath lock stealing frequency depending
+>>>>>>>      on its distance from the queue head.
+>>>>>>>    - Add performance data for IvyBridge-EX CPU.
+>>>>>> FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
+>>>>>> HVM guest under Xen after a while stops working. The workload
+>>>>>> is doing 'make -j32' on the Linux kernel.
+>>>>>>
+>>>>>> Completely unresponsive. Thoughts?
+>>>>>>
+>>>>> Thank for reporting that. I haven't done that much testing on Xen.
+>>>>> My focus was in KVM. I will perform more test on Xen to see if I
+>>>>> can reproduce the problem.
+>>>>>
+>>>> BTW, does the halting and sending IPI mechanism work in HVM? I saw
+>>> Yes.
+>>>> that in RHEL7, PV spinlock was explicitly disabled when in HVM mode.
+>>>> However, this piece of code isn't in upstream code. So I wonder if
+>>>> there is problem with that.
+>>> The PV ticketlock fixed it for HVM. It was disabled before because
+>>> the PV guests were using bytelocks while the HVM were using ticketlocks
+>>> and you couldnt' swap in PV bytelocks for ticketlocks during startup.
+>> The RHEL7 code has used PV ticketlock already. RHEL7 uses a single
+>> kernel for all configurations. So PV ticketlock as well as Xen and
+>> KVM support was compiled in. I think booting the kernel on bare
+>> metal will cause the Xen code to work in HVM mode thus activating
+>> the PV spinlock code which has a negative impact on performance.
+> Huh? -EPARSE
+>
+>> That may be why it was disabled so that the bare metal performance
+>> will not be impacted.
+> I am not following you.
 
-Signed-off-by: Tolga Cakir <tolga@cevel.net>
----
- drivers/hid/hid-microsoft.c | 44 ++++++++++++++++++++++++++++----------------
- 1 file changed, 28 insertions(+), 16 deletions(-)
+What I am saying is that when XEN and PV spinlock is compiled into the 
+current upstream kernel, the PV spinlock jump label is turned on when 
+booted on bare metal. In other words, the PV spinlock code is active 
+even when they are not needed and actually slow thing down in that 
+situation. This is a problem and we need to find way to make sure that 
+the PV spinlock code won't be activated on bare metal.
 
-diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-index 6fd5817..0a61403 100644
---- a/drivers/hid/hid-microsoft.c
-+++ b/drivers/hid/hid-microsoft.c
-@@ -30,23 +30,28 @@
- #define MS_DUPLICATE_USAGES	0x20
- #define MS_RDESC_3K		0x40
- 
-+struct ms_data {
-+	unsigned long quirks;
-+	void *extra;
-+};
-+
- static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-+	struct ms_data *sc = hid_get_drvdata(hdev);
- 
- 	/*
- 	 * Microsoft Wireless Desktop Receiver (Model 1028) has
- 	 * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
- 	 */
--	if ((quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
-+	if ((sc->quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
- 			rdesc[559] == 0x29) {
- 		hid_info(hdev, "fixing up Microsoft Wireless Receiver Model 1028 report descriptor\n");
- 		rdesc[557] = 0x35;
- 		rdesc[559] = 0x45;
- 	}
- 	/* the same as above (s/usage/physical/) */
--	if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
-+	if ((sc->quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
- 			rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
- 			rdesc[97] == 0xff) {
- 		rdesc[94] = 0x35;
-@@ -142,15 +147,15 @@ static int ms_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
--	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-+	struct ms_data *sc = hid_get_drvdata(hdev);
- 
--	if (quirks & MS_ERGONOMY) {
-+	if (sc->quirks & MS_ERGONOMY) {
- 		int ret = ms_ergonomy_kb_quirk(hi, usage, bit, max);
- 		if (ret)
- 			return ret;
- 	}
- 
--	if ((quirks & MS_PRESENTER) &&
-+	if ((sc->quirks & MS_PRESENTER) &&
- 			ms_presenter_8k_quirk(hi, usage, bit, max))
- 		return 1;
- 
-@@ -161,9 +166,9 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
--	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-+	struct ms_data *sc = hid_get_drvdata(hdev);
- 
--	if (quirks & MS_DUPLICATE_USAGES)
-+	if (sc->quirks & MS_DUPLICATE_USAGES)
- 		clear_bit(usage->code, *bit);
- 
- 	return 0;
-@@ -172,7 +177,7 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- static int ms_event(struct hid_device *hdev, struct hid_field *field,
- 		struct hid_usage *usage, __s32 value)
- {
--	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-+	struct ms_data *sc = hid_get_drvdata(hdev);
- 	struct input_dev *input;
- 
- 	if (!(hdev->claimed & HID_CLAIMED_INPUT) || !field->hidinput ||
-@@ -182,7 +187,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
- 	input = field->hidinput->input;
- 
- 	/* Handling MS keyboards special buttons */
--	if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
-+	if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
- 		/* Special keypad keys */
- 		input_report_key(input, KEY_KPEQUAL, value & 0x01);
- 		input_report_key(input, KEY_KPLEFTPAREN, value & 0x02);
-@@ -190,7 +195,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
- 		return 1;
- 	}
- 
--	if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
-+	if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
- 		/* Scroll wheel */
- 		int step = ((value & 0x60) >> 5) + 1;
- 
-@@ -205,7 +210,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
- 		return 1;
- 	}
- 
--	if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
-+	if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
- 		static unsigned int last_key = 0;
- 		unsigned int key = 0;
- 		switch (value) {
-@@ -229,12 +234,19 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
- 
- static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
- {
--	unsigned long quirks = id->driver_data;
-+	struct ms_data *sc;
- 	int ret;
- 
--	hid_set_drvdata(hdev, (void *)quirks);
-+	sc = devm_kzalloc(&hdev->dev, sizeof(struct ms_data), GFP_KERNEL);
-+	if (!sc) {
-+		hid_err(hdev, "can't alloc microsoft descriptor\n");
-+		return -ENOMEM;
-+	}
-+
-+	sc->quirks = id->driver_data;
-+	hid_set_drvdata(hdev, sc);
- 
--	if (quirks & MS_NOGET)
-+	if (sc->quirks & MS_NOGET)
- 		hdev->quirks |= HID_QUIRK_NOGET;
- 
- 	ret = hid_parse(hdev);
-@@ -243,7 +255,7 @@ static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		goto err_free;
- 	}
- 
--	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((quirks & MS_HIDINPUT) ?
-+	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((sc->quirks & MS_HIDINPUT) ?
- 				HID_CONNECT_HIDINPUT_FORCE : 0));
- 	if (ret) {
- 		hid_err(hdev, "hw start failed\n");
--- 
-1.9.1
-
+-Longman
