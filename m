@@ -1,118 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548AbaDDXO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 19:14:59 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:40553 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaDDXOu (ORCPT
+	id S1753369AbaDDXOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 19:14:53 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:34002 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328AbaDDXOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 19:14:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFcVECJYdW0=r425tWs8y6DJDNh3c75TAzg7+UCNRgLP8WHf+A@mail.gmail.com>
-References: <1396523431-14519-1-git-send-email-harinik@xilinx.com>
-	<1396523431-14519-2-git-send-email-harinik@xilinx.com>
-	<20140403213446.GB14763@sirena.org.uk>
-	<CAFcVEC+mpHh_d2j6_sdhWS3d2KyXrDYUq6L6jO2Q=SS68Hda2g@mail.gmail.com>
-	<20140404100919.GO14763@sirena.org.uk>
-	<CAFcVECLDyfFSZFk9fzFKsr6pM=f1nwzGAhjX17z=NsbvWpiDew@mail.gmail.com>
-	<20140404124637.GT14763@sirena.org.uk>
-	<CAFcVEC+FAAxxxxA8PgcTzLU5UFu=pkDEM4Li06dRmEwA95sz_g@mail.gmail.com>
-	<CAFcVECJYdW0=r425tWs8y6DJDNh3c75TAzg7+UCNRgLP8WHf+A@mail.gmail.com>
-Date: Sat, 5 Apr 2014 09:14:48 +1000
-X-Google-Sender-Auth: KTxy4qQbhJgfHO0deetQ0Js9gK8
-Message-ID: <CAEgOgz56hhFCy6sjZmw+Wn6uT4rU8mXSpazscPG_uJ-==-uXLw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] devicetree: Add devicetree bindings documentation
- for Cadence SPI
-From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-To: Harini Katakam <harinikatakamlinux@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	Fri, 4 Apr 2014 19:14:48 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH v2 3/5] ARM: zynq: dt: Use #defines for interrupt specifiers
+Date: Fri,  4 Apr 2014 16:14:14 -0700
+Message-Id: <1396653256-28397-4-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.9.1.1.gbb9f595
+In-Reply-To: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 5, 2014 at 12:30 AM, Harini Katakam
-<harinikatakamlinux@gmail.com> wrote:
-> Hi,
->
-> On Fri, Apr 4, 2014 at 7:38 PM, Harini Katakam
-> <harinikatakamlinux@gmail.com> wrote:
->> Hi Mark,
->>
->> On Fri, Apr 4, 2014 at 6:16 PM, Mark Brown <broonie@kernel.org> wrote:
->>> On Fri, Apr 04, 2014 at 05:44:23PM +0530, Harini Katakam wrote:
->>>> On Fri, Apr 4, 2014 at 3:39 PM, Mark Brown <broonie@kernel.org> wrote:
->>>> > On Fri, Apr 04, 2014 at 08:30:38AM +0530, Harini Katakam wrote:
->>>
->>>> >> This IP can drive 4 slaves.
->>>> >> The CS line to be driven is selected in spi device structure and
->>>> >> that is driven by the software.
->>>
->>>> > So why specify this in the binding at all?  If the device always has the
->>>> > same number of chip selects it's redundant.
->>>
->>>> I'm sorry, I should have explained that better.
->>>> The IP can support upto 4 chip selects.
->>>> The num-cs value here is the number of chip selects actually used on the board.
+Use #defines from the common include file to describe
+interrupt specifiers.
 
-Shouldnt it be a property of the controller not the board? How for
-example do we differentiate between different implementations of
-cadence SPI controller that only supports up to two CS lines? My
-thinking is that this property should always be present and = 4 in the
-Zynq case as the controller always has 4 physical CS lines coming out
-(before any decoders, pin muxes or slaves etc.).
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
 
->>>
->>> Why does that need to be configured?  Surely the presence of slaves is
->>> enough information.
+Changes in v2: None
 
-And presence of slaves / board info is inferable from subnodes.
+ arch/arm/boot/dts/zynq-7000.dtsi | 27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
->>
->> OK. I understand.
->> Can you comment on the case where a decoder is used?
->>
->> There is support for adding a decoder where extended slaves can be selected
->> through the IP's control register.
->> (This is not currently implemented in the driver but will be in the future.)
->>
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index 66613d04de5d..36a34ffa30af 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -12,6 +12,7 @@
+  */
+ 
+ #include "skeleton.dtsi"
++#include <dt-bindings/interrupt-controller/arm-gic.h>
+ 
+ / {
+ 	compatible = "xlnx,zynq-7000";
+@@ -44,7 +45,7 @@
+ 
+ 	pmu {
+ 		compatible = "arm,cortex-a9-pmu";
+-		interrupts = <0 5 4>, <0 6 4>;
++		interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
+ 		interrupt-parent = <&intc>;
+ 		reg = < 0xf8891000 0x1000 0xf8893000 0x1000 >;
+ 	};
+@@ -80,7 +81,7 @@
+ 			clocks = <&clkc 23>, <&clkc 40>;
+ 			clock-names = "ref_clk", "aper_clk";
+ 			reg = <0xE0000000 0x1000>;
+-			interrupts = <0 27 4>;
++			interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
+ 		};
+ 
+ 		uart1: uart@e0001000 {
+@@ -89,14 +90,14 @@
+ 			clocks = <&clkc 24>, <&clkc 41>;
+ 			clock-names = "ref_clk", "aper_clk";
+ 			reg = <0xE0001000 0x1000>;
+-			interrupts = <0 50 4>;
++			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
+ 		};
+ 
+ 		gem0: ethernet@e000b000 {
+ 			compatible = "cdns,gem";
+ 			reg = <0xe000b000 0x4000>;
+ 			status = "disabled";
+-			interrupts = <0 22 4>;
++			interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&clkc 30>, <&clkc 30>, <&clkc 13>;
+ 			clock-names = "pclk", "hclk", "tx_clk";
+ 		};
+@@ -105,7 +106,7 @@
+ 			compatible = "cdns,gem";
+ 			reg = <0xe000c000 0x4000>;
+ 			status = "disabled";
+-			interrupts = <0 45 4>;
++			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&clkc 31>, <&clkc 31>, <&clkc 14>;
+ 			clock-names = "pclk", "hclk", "tx_clk";
+ 		};
+@@ -116,7 +117,7 @@
+ 			clock-names = "clk_xin", "clk_ahb";
+ 			clocks = <&clkc 21>, <&clkc 32>;
+ 			interrupt-parent = <&intc>;
+-			interrupts = <0 24 4>;
++			interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+ 			reg = <0xe0100000 0x1000>;
+ 		} ;
+ 
+@@ -126,7 +127,7 @@
+ 			clock-names = "clk_xin", "clk_ahb";
+ 			clocks = <&clkc 22>, <&clkc 33>;
+ 			interrupt-parent = <&intc>;
+-			interrupts = <0 47 4>;
++			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
+ 			reg = <0xe0101000 0x1000>;
+ 		} ;
+ 
+@@ -160,14 +161,16 @@
+ 		global_timer: timer@f8f00200 {
+ 			compatible = "arm,cortex-a9-global-timer";
+ 			reg = <0xf8f00200 0x20>;
+-			interrupts = <1 11 0x301>;
++			interrupts = <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_EDGE_RISING)>;
+ 			interrupt-parent = <&intc>;
+ 			clocks = <&clkc 4>;
+ 		};
+ 
+ 		ttc0: ttc0@f8001000 {
+ 			interrupt-parent = <&intc>;
+-			interrupts = < 0 10 4 0 11 4 0 12 4 >;
++			interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
+ 			compatible = "cdns,ttc";
+ 			clocks = <&clkc 6>;
+ 			reg = <0xF8001000 0x1000>;
+@@ -175,14 +178,16 @@
+ 
+ 		ttc1: ttc1@f8002000 {
+ 			interrupt-parent = <&intc>;
+-			interrupts = < 0 37 4 0 38 4 0 39 4 >;
++			interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
+ 			compatible = "cdns,ttc";
+ 			clocks = <&clkc 6>;
+ 			reg = <0xF8002000 0x1000>;
+ 		};
+ 		scutimer: scutimer@f8f00600 {
+ 			interrupt-parent = <&intc>;
+-			interrupts = < 1 13 0x301 >;
++			interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_EDGE_RISING)>;
+ 			compatible = "arm,cortex-a9-twd-timer";
+ 			reg = < 0xf8f00600 0x20 >;
+ 			clocks = <&clkc 4>;
+-- 
+1.9.1.1.gbb9f595
 
-I think thats seperate information. is-decoded-cs property of something.
-
->> How should the driver know whether it is 4 or 16 select lines for example?
->> This has to be written to master->num_chipselect.
->>
-
-If you only have one property (== 4) how do you tell the difference
-between 4 un-decoded CS lines vs 2 decoded CS lines?
-
->> Regards,
->> Harini
->
-> Just adding to my above comment.
-> Alternately, I could not use the "num-cs" property and add another
-> optional property to be used only when required.
-
-I think num-cs has validity as the number of CS lines implemented in
-the controller. For any given SoC, it's constant but could differ
-between SoCs.
-
-Regards,
-Peter
-
-> The driver sets a default value already.
->
-> Regards,
-> Harini
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
