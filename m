@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544AbaDDT5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 15:57:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37901 "EHLO
+	id S1754500AbaDDT5m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 15:57:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37896 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414AbaDDT5f (ORCPT
+	with ESMTP id S1753284AbaDDT5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Apr 2014 15:57:35 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Borislav Petkov <bp@alien8.de>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        <devicetree@vger.kernel.org>
-Subject: [PATCH v6 3/5] devicetree: bindings: Document Krait cache error interrupts
-Date: Fri,  4 Apr 2014 12:57:28 -0700
-Message-Id: <1396641450-12854-4-git-send-email-sboyd@codeaurora.org>
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>
+Subject: [PATCH v6 2/5] ARM: Add Krait L2 register accessor functions
+Date: Fri,  4 Apr 2014 12:57:27 -0700
+Message-Id: <1396641450-12854-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
 References: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
@@ -24,91 +24,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Krait L1/L2 error reporting hardware is made up a per-CPU
-interrupt for the L1 cache and a SPI interrupt for the L2.
+Krait CPUs have a handful of L2 cache controller registers that
+live behind a cp15 based indirection register. First you program
+the indirection register (l2cpselr) to point the L2 'window'
+register (l2cpdr) at what you want to read/write.  Then you
+read/write the 'window' register to do what you want. The
+l2cpselr register is not banked per-cpu so we must lock around
+accesses to it to prevent other CPUs from re-pointing l2cpdr
+underneath us.
 
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: <devicetree@vger.kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- Documentation/devicetree/bindings/arm/cache.txt | 48 ++++++++++++++++++++++++-
- 1 file changed, 47 insertions(+), 1 deletion(-)
+ arch/arm/common/Kconfig                   |  3 ++
+ arch/arm/common/Makefile                  |  1 +
+ arch/arm/common/krait-l2-accessors.c      | 58 +++++++++++++++++++++++++++++++
+ arch/arm/include/asm/krait-l2-accessors.h | 20 +++++++++++
+ 4 files changed, 82 insertions(+)
+ create mode 100644 arch/arm/common/krait-l2-accessors.c
+ create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
 
-diff --git a/Documentation/devicetree/bindings/arm/cache.txt b/Documentation/devicetree/bindings/arm/cache.txt
-index b90fcc7c53cf..d7357e777399 100644
---- a/Documentation/devicetree/bindings/arm/cache.txt
-+++ b/Documentation/devicetree/bindings/arm/cache.txt
-@@ -37,7 +37,9 @@ This document provides the device tree bindings for ARM architected caches.
- 	- compatible
- 		Usage: Required
- 		Value type: <string>
--		Definition: value shall be "arm,arch-cache".
-+		Definition: shall be one of:
-+				"arm,arch-cache"
-+				"qcom,arch-cache"
+diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
+index c3a4e9ceba34..9da52dc6260b 100644
+--- a/arch/arm/common/Kconfig
++++ b/arch/arm/common/Kconfig
+@@ -9,6 +9,9 @@ config DMABOUNCE
+ 	bool
+ 	select ZONE_DMA
  
- 	- power-domain
- 		Usage: Optional
-@@ -45,6 +47,12 @@ This document provides the device tree bindings for ARM architected caches.
- 		Definition: A phandle and power domain specifier as defined by
- 			    bindings of power domain specified by [3].
++config KRAIT_L2_ACCESSORS
++	bool
++
+ config SHARP_LOCOMO
+ 	bool
  
-+	- interrupts
-+		Usage: Optional for caches with compatible of "qcom,arch-cache"
-+		Value type: <prop-encoded-array>
-+		Definition: Error interrupt associated with this cache.
+diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
+index 70b1eff477b3..6b2cddf6e8d0 100644
+--- a/arch/arm/common/Makefile
++++ b/arch/arm/common/Makefile
+@@ -7,6 +7,7 @@ obj-y				+= firmware.o
+ obj-$(CONFIG_ICST)		+= icst.o
+ obj-$(CONFIG_SA1111)		+= sa1111.o
+ obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
++obj-$(CONFIG_KRAIT_L2_ACCESSORS) += krait-l2-accessors.o
+ obj-$(CONFIG_SHARP_LOCOMO)	+= locomo.o
+ obj-$(CONFIG_SHARP_PARAM)	+= sharpsl_param.o
+ obj-$(CONFIG_SHARP_SCOOP)	+= scoop.o
+diff --git a/arch/arm/common/krait-l2-accessors.c b/arch/arm/common/krait-l2-accessors.c
+new file mode 100644
+index 000000000000..5d514bbc88a6
+--- /dev/null
++++ b/arch/arm/common/krait-l2-accessors.c
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
++#include <linux/spinlock.h>
++#include <linux/export.h>
 +
- Example(dual-cluster big.LITTLE system 32-bit)
- 
- 	cpus {
-@@ -156,6 +164,44 @@ Example(dual-cluster big.LITTLE system 32-bit)
- 		};
- 	};
- 
-+Example (Krait 32-bit system):
++#include <asm/barrier.h>
++#include <asm/krait-l2-accessors.h>
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++static DEFINE_RAW_SPINLOCK(krait_l2_lock);
 +
-+		cpu@0 {
-+			compatible = "qcom,krait";
-+			device_type = "cpu";
-+			reg = <0>;
-+			next-level-cache = <&L1_0>;
++void krait_set_l2_indirect_reg(u32 addr, u32 val)
++{
++	unsigned long flags;
 +
-+			L1_0: l1-cache {
-+				compatible = "qcom,arch-cache";
-+				interrupts = <1 14 0x104>;
-+				next-level-cache = <&L2>;
-+			};
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then write to the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mcr p15, 3, %0, c15, c0, 7 @ l2cpdr" : : "r" (val));
++	isb();
 +
-+			L2: l2-cache {
-+				compatible = "qcom,arch-cache";
-+				interrupts = <0 2 0x4>;
-+			};
-+		};
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++}
++EXPORT_SYMBOL(krait_set_l2_indirect_reg);
 +
-+		cpu@1 {
-+			compatible = "qcom,krait";
-+			device_type = "cpu";
-+			reg = <1>;
-+			next-level-cache = <&L1_1>;
++u32 krait_get_l2_indirect_reg(u32 addr)
++{
++	u32 val;
++	unsigned long flags;
 +
-+			L1_1: l1-cache {
-+				compatible = "qcom,arch-cache";
-+				interrupts = <1 14 0x204>;
-+				next-level-cache = <&L2>;
-+			};
-+		};
-+	};
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then read from the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mrc p15, 3, %0, c15, c0, 7 @ l2cpdr" : "=r" (val));
 +
- [1] ARM Architecture Reference Manuals
-     http://infocenter.arm.com/help/index.jsp
- 
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++
++	return val;
++}
++EXPORT_SYMBOL(krait_get_l2_indirect_reg);
+diff --git a/arch/arm/include/asm/krait-l2-accessors.h b/arch/arm/include/asm/krait-l2-accessors.h
+new file mode 100644
+index 000000000000..48fe5527bc01
+--- /dev/null
++++ b/arch/arm/include/asm/krait-l2-accessors.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __ASMARM_KRAIT_L2_ACCESSORS_H
++#define __ASMARM_KRAIT_L2_ACCESSORS_H
++
++extern void krait_set_l2_indirect_reg(u32 addr, u32 val);
++extern u32 krait_get_l2_indirect_reg(u32 addr);
++
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
