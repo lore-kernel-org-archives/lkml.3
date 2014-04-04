@@ -1,52 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326AbaDDQZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 12:25:56 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59160 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748AbaDDQZx (ORCPT
+	id S1753638AbaDDQ3x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 12:29:53 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47021 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031AbaDDQ3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 12:25:53 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <533EDD0E.8010304@roeck-us.net>
-Date: Fri, 04 Apr 2014 09:25:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Peter Tyser <ptyser@xes-inc.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Adding interrupt support to gpio-ich driver (possibly via SCI)
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Apr 2014 12:29:51 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH] ARM: qcom: Add initial IPQ8064 SoC and AP148 device trees
+Date: Fri,  4 Apr 2014 11:29:46 -0500
+Message-Id: <1396628986-6613-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Add basic IPQ8064 SoC include device tree and support for basic booting on
+the AP148 Reference board.  Also, keep dtb build list and qcom_dt_match in
+sorted order.
 
-I have an application where I would need interrupt support for the gpio-ich driver.
-More specifically, in my application some of the GPIO pins are used to report
-interrupt status from a couple of connected chips. This is with a Panther Point
-PCH (QM77).
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ arch/arm/boot/dts/Makefile               |   8 +-
+ arch/arm/boot/dts/qcom-ipq8064-ap148.dts |  12 +++
+ arch/arm/boot/dts/qcom-ipq8064.dtsi      | 122 +++++++++++++++++++++++++++++++
+ arch/arm/mach-qcom/board.c               |   4 +-
+ 4 files changed, 142 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/boot/dts/qcom-ipq8064-ap148.dts
+ create mode 100644 arch/arm/boot/dts/qcom-ipq8064.dtsi
 
-I see that the gpio pins in question (in the 0..15 range) do support interrupts,
-but it looks like the only configuration options are to generate SMI, SCI, or NMI.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 4a89023..0591ed0 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -231,9 +231,11 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	dra7-evm.dtb
+ dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
+ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
+-dtb-$(CONFIG_ARCH_QCOM) += qcom-msm8660-surf.dtb \
+-	qcom-msm8960-cdp.dtb \
+-	qcom-apq8074-dragonboard.dtb
++dtb-$(CONFIG_ARCH_QCOM) += \
++	qcom-apq8074-dragonboard.dtb \
++	qcom-ipq8064-ap148.dtb \
++	qcom-msm8660-surf.dtb \
++	qcom-msm8960-cdp.dtb
+ dtb-$(CONFIG_ARCH_U8500) += ste-snowball.dtb \
+ 	ste-hrefprev60-stuib.dtb \
+ 	ste-hrefprev60-tvk.dtb \
+diff --git a/arch/arm/boot/dts/qcom-ipq8064-ap148.dts b/arch/arm/boot/dts/qcom-ipq8064-ap148.dts
+new file mode 100644
+index 0000000..0861110
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom-ipq8064-ap148.dts
+@@ -0,0 +1,12 @@
++#include "qcom-ipq8064.dtsi"
++
++/ {
++	model = "Qualcomm IPQ8064/DB149";
++	compatible = "qcom,ipq8064-db149", "qcom,ipq8064";
++
++	soc {
++		serial@16340000 {
++			status = "ok";
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/qcom-ipq8064.dtsi b/arch/arm/boot/dts/qcom-ipq8064.dtsi
+new file mode 100644
+index 0000000..31f735c
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom-ipq8064.dtsi
+@@ -0,0 +1,122 @@
++/dts-v1/;
++
++/include/ "skeleton.dtsi"
++
++#include <dt-bindings/clock/qcom,gcc-ipq806x.h>
++
++/ {
++	model = "Qualcomm IPQ8064";
++	compatible = "qcom,ipq8064";
++	interrupt-parent = <&intc>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		interrupts = <1 14 0x304>;
++		compatible = "qcom,krait";
++		enable-method = "qcom,kpss-acc-v1";
++
++		cpu@0 {
++			device_type = "cpu";
++			reg = <0>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc0>;
++			qcom,saw = <&saw0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			reg = <1>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc1>;
++			qcom,saw = <&saw1>;
++		};
++
++		L2: l2-cache {
++			compatible = "cache";
++			cache-level = <2>;
++			interrupts = <0 2 0x4>;
++		};
++	};
++
++	soc: soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		compatible = "simple-bus";
++
++		intc: interrupt-controller@2000000 {
++			compatible = "qcom,msm-qgic2";
++			interrupt-controller;
++			#interrupt-cells = <3>;
++			reg = < 0x02000000 0x1000 >,
++			      < 0x02002000 0x1000 >;
++		};
++
++		timer@200a000 {
++			compatible = "qcom,kpss-timer", "qcom,msm-timer";
++			interrupts = <1 1 0x301>,
++				     <1 2 0x301>,
++				     <1 3 0x301>;
++			reg = <0x0200a000 0x100>;
++			clock-frequency = <27000000>,
++					  <32768>;
++			cpu-offset = <0x80000>;
++		};
++
++		acc0: clock-controller@2088000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		acc1: clock-controller@2098000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x02098000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		saw0: regulator@2089000 {
++			compatible = "qcom,saw2";
++			reg = <0x02089000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		saw1: regulator@2099000 {
++			compatible = "qcom,saw2";
++			reg = <0x02099000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		serial@12490000 {
++			compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
++			reg = <0x12490000 0x1000>,
++			      <0x12480000 0x1000>;
++			interrupts = <0 195 0x0>;
++			clocks = <&gcc GSBI2_UART_CLK>, <&gcc GSBI2_H_CLK>;
++			clock-names = "core", "iface";
++			status = "disabled";
++		};
++
++		serial@16340000 {
++			compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
++			reg = <0x16340000 0x1000>,
++			      <0x16300000 0x1000>;
++			interrupts = <0 152 0x0>;
++			clocks = <&gcc GSBI4_UART_CLK>, <&gcc GSBI4_H_CLK>;
++			clock-names = "core", "iface";
++			status = "disabled";
++		};
++
++		qcom,ssbi@500000 {
++			compatible = "qcom,ssbi";
++			reg = <0x00500000 0x1000>;
++			qcom,controller-type = "pmic-arbiter";
++		};
++
++		gcc: clock-controller@900000 {
++			compatible = "qcom,gcc-ipq8064";
++			reg = <0x00900000 0x4000>;
++			#clock-cells = <1>;
++			#reset-cells = <1>;
++		};
++	};
++};
+diff --git a/arch/arm/mach-qcom/board.c b/arch/arm/mach-qcom/board.c
+index bae617e..cb3c07c 100644
+--- a/arch/arm/mach-qcom/board.c
++++ b/arch/arm/mach-qcom/board.c
+@@ -15,9 +15,11 @@
+ #include <asm/mach/arch.h>
+ 
+ static const char * const qcom_dt_match[] __initconst = {
++	"qcom,apq8074-dragonboard",
++	"qcom,ipq8062",
++	"qcom,ipq8064",
+ 	"qcom,msm8660-surf",
+ 	"qcom,msm8960-cdp",
+-	"qcom,apq8074-dragonboard",
+ 	NULL
+ };
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Is there a clean way to use any of those to implement interrupt support
-for this driver ? I thought about hijacking the SCI interrupt by registering
-an interrupt handler with acpi_install_sci_handler(), but that would restrict
-the driver to kernel only (or the acpi function would have to be exported),
-and I have no idea if it would work or, more importantly, if it would be
-the best approach to solve the problem, or if the result would be acceptable.
-I can figure out the "working" part, but that would not help much if I would
-have to carry the patch locally because it is not acceptable for upstream
-integration.
-
-Side note: gpio-ich is not currently enabled for Panther Point; that will be
-a one-line separate patch for the mfd/lpc_ich driver.
-
-Thanks,
-Guenter
