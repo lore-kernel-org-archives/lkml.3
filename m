@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaDDOEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:04:48 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39839 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaDDOEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:04:46 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Maxime COQUELIN <maxime.coquelin@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: [PATCH] pinctrl: st: switch IRQ locking to resource callbacks
-Date: Fri,  4 Apr 2014 16:04:38 +0200
-Message-Id: <1396620278-18107-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.0
+	id S1753301AbaDDOHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:07:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752890AbaDDOHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 10:07:35 -0400
+Date: Fri, 4 Apr 2014 16:06:15 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Jakub =?utf-8?B?S2ljacWEc2tp?= <moorray3@wp.pl>
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rt2x00: BUG: remove double loop on REGISTER_BUSY_COUNT
+Message-ID: <20140404140614.GA2147@redhat.com>
+References: <1396534327-12971-1-git-send-email-richard.genoud@gmail.com>
+ <20140403173701.75c1f497@north>
+ <20140404081908.GB1448@redhat.com>
+ <20140404110106.6d249615@north>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140404110106.6d249615@north>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the mass-conversion to the new irqchip callbacks, this
-in-transit IRQ support was missed. Fix it.
+On Fri, Apr 04, 2014 at 11:01:06AM +0200, Jakub Kiciński wrote:
+> On Fri, 4 Apr 2014 10:19:09 +0200, Stanislaw Gruszka wrote:
+> > On Thu, Apr 03, 2014 at 05:37:01PM +0200, Jakub Kiciński wrote:
+> > > On Thu,  3 Apr 2014 16:12:07 +0200, Richard Genoud wrote:
+> > > > rt2x00usb_register_read_lock() calls rt2x00usb_vendor_req_buff_lock()
+> > > > that calls rt2x00usb_vendor_request() which is already looping up to
+> > > > REGISTER_BUSY_COUNT times.
+> > > > 
+> > > > So this loop is not needed.
+> > > 
+> > > Not true.  rt2x00usb_vendor_request() busy-waits for usb_control_msg()
+> > > to succeed, rt2x00usb_register_read_lock() busy-waits for the register
+> > > field itself to become 0.
+> > 
+> > Yeah, but still we are looping REGISTER_BUSY_COUNT*REGISTER_BUSY_COUNT
+> > what seems to be far too long.
+> 
+> Yes, the busy waiting itself takes roughly 1s (100*100*100us) and then
+> there are transfer times, so it might be too long indeed.  Vendor driver
+> waits only 10 * 5ms in RTUSB_VendorRequest() so
 
-Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Cc: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-st.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+We use "timeout" argument which is set to 500ms , so perhaps that
+could be the reason why Richard sees "infinite" loop i.e.
+100*100*(500ms + 100us)
 
-diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-index bd725b0a4341..639af4a9a2e4 100644
---- a/drivers/pinctrl/pinctrl-st.c
-+++ b/drivers/pinctrl/pinctrl-st.c
-@@ -1312,25 +1312,23 @@ static void st_gpio_irq_unmask(struct irq_data *d)
- 	writel(BIT(d->hwirq), bank->base + REG_PIO_SET_PMASK);
- }
- 
--static unsigned int st_gpio_irq_startup(struct irq_data *d)
-+static int st_gpio_irq_reqres(struct irq_data *d)
- {
- 	struct st_gpio_bank *bank = irq_data_get_irq_chip_data(d);
- 
--	if (gpio_lock_as_irq(&bank->gpio_chip, d->hwirq))
-+	if (gpio_lock_as_irq(&bank->gpio_chip, d->hwirq)) {
- 		dev_err(bank->gpio_chip.dev,
- 			"unable to lock HW IRQ %lu for IRQ\n",
- 			d->hwirq);
--
--	st_gpio_irq_unmask(d);
--
-+		return -EINVAL;
-+	}
- 	return 0;
- }
- 
--static void st_gpio_irq_shutdown(struct irq_data *d)
-+static void st_gpio_irq_relres(struct irq_data *d)
- {
- 	struct st_gpio_bank *bank = irq_data_get_irq_chip_data(d);
- 
--	st_gpio_irq_mask(d);
- 	gpio_unlock_as_irq(&bank->gpio_chip, d->hwirq);
- }
- 
-@@ -1491,8 +1489,8 @@ static struct irq_chip st_gpio_irqchip = {
- 	.irq_mask	= st_gpio_irq_mask,
- 	.irq_unmask	= st_gpio_irq_unmask,
- 	.irq_set_type	= st_gpio_irq_set_type,
--	.irq_startup	= st_gpio_irq_startup,
--	.irq_shutdown	= st_gpio_irq_shutdown,
-+	.irq_request_resources = st_gpio_irq_reqres,
-+	.irq_release_resources = st_gpio_irq_relres,
- };
- 
- static int st_gpio_irq_domain_map(struct irq_domain *h,
--- 
-1.9.0
+> rt2x00usb_vendor_request() seems like a better place to cut down the
+> number of loops.
+>
+> Alternatively we could make rt2x00usb_regbusy_read() check the retval
+> from rt2x00usb_vendor_request() and exit early?
 
+Make sense, but I think we should review the area and make some more
+changes to fine tune the timeout of USB reg reading functions.
+
+Stanislaw 
