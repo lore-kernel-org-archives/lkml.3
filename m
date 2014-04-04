@@ -1,184 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaDDHw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:52:59 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:33619 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472AbaDDHvx (ORCPT
+	id S1752609AbaDDHxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:53:55 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59044 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbaDDHxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:51:53 -0400
+	Fri, 4 Apr 2014 03:53:53 -0400
+Date: Fri, 4 Apr 2014 09:53:50 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [PATCH] x86: Don't do the BIOS and PCI 0xCF9 reboot methods by
+ default
+Message-ID: <20140404075350.GA7136@gmail.com>
+References: <20140403021411.6236996f@gandalf.local.home>
+ <070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>
+ <533D001A.5030802@linux.intel.com>
+ <20140403094155.04cc00bc@gandalf.local.home>
+ <533D6BE7.3020608@zytor.com>
+ <20140403104721.5f6c32b6@gandalf.local.home>
+ <20140404064120.GB11877@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFrcx1=TSsaDK0xgtJSQUtvUnwicrXNU-nYAcMOi4B=nTU_Qwg@mail.gmail.com>
-References: <1395222155-22205-1-git-send-email-jean.pihet@linaro.org>
-	<1395222155-22205-2-git-send-email-jean.pihet@linaro.org>
-	<20140321151126.GR23372@e106331-lin.cambridge.arm.com>
-	<CAFrcx1=TSsaDK0xgtJSQUtvUnwicrXNU-nYAcMOi4B=nTU_Qwg@mail.gmail.com>
-Date: Fri, 4 Apr 2014 09:51:52 +0200
-Message-ID: <CAFrcx1mBoFQXHVWM5BNwty--SxbsSPyGt4iq0L39WXSi4QwLWA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM64
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140404064120.GB11877@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
 
-ping on this series, see comment below.
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-On 25 March 2014 16:23, Jean Pihet <jean.pihet@linaro.org> wrote:
-> Hi Mark,
->
-> On 21 March 2014 16:11, Mark Rutland <mark.rutland@arm.com> wrote:
->> Hi Jean,
->>
->> On Wed, Mar 19, 2014 at 09:42:33AM +0000, Jean Pihet wrote:
->>> Introducing perf_regs_load function, which is going
->>> to be used for dwarf unwind test in following patches.
->>>
->>> It takes single argument as a pointer to the regs dump
->>> buffer and populates it with current registers values, as
->>> expected by the perf built-in unwinding test.
->>>
->>> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
->>> Cc: Steve Capper <steve.capper@linaro.org>
->>> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
->>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->>> Cc: Ingo Molnar <mingo@kernel.org>
->>> Cc: Namhyung Kim <namhyung@kernel.org>
->>> Cc: Paul Mackerras <paulus@samba.org>
->>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
->>> Cc: David Ahern <dsahern@gmail.com>
->>> Cc: Jiri Olsa <jolsa@redhat.com>
->>> ---
->>>  tools/perf/arch/arm64/Makefile            |  1 +
->>>  tools/perf/arch/arm64/include/perf_regs.h |  2 ++
->>>  tools/perf/arch/arm64/tests/regs_load.S   | 39 +++++++++++++++++++++++++++++++
->>>  3 files changed, 42 insertions(+)
->>>  create mode 100644 tools/perf/arch/arm64/tests/regs_load.S
->>>
->>> diff --git a/tools/perf/arch/arm64/Makefile b/tools/perf/arch/arm64/Makefile
->>> index 67e9b3d..9b8f87e 100644
->>> --- a/tools/perf/arch/arm64/Makefile
->>> +++ b/tools/perf/arch/arm64/Makefile
->>> @@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
->>>  endif
->>>  ifndef NO_LIBUNWIND
->>>  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
->>> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
->>>  endif
->>> diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
->>> index 2359546..1e052f1 100644
->>> --- a/tools/perf/arch/arm64/include/perf_regs.h
->>> +++ b/tools/perf/arch/arm64/include/perf_regs.h
->>> @@ -9,6 +9,8 @@
->>>  #define PERF_REG_IP  PERF_REG_ARM64_PC
->>>  #define PERF_REG_SP  PERF_REG_ARM64_SP
->>>
->>> +void perf_regs_load(u64 *regs);
->>> +
->>>  static inline const char *perf_reg_name(int id)
->>>  {
->>>       switch (id) {
->>> diff --git a/tools/perf/arch/arm64/tests/regs_load.S b/tools/perf/arch/arm64/tests/regs_load.S
->>> new file mode 100644
->>> index 0000000..92ab968
->>> --- /dev/null
->>> +++ b/tools/perf/arch/arm64/tests/regs_load.S
->>> @@ -0,0 +1,39 @@
->>> +#include <linux/linkage.h>
->>> +
->>> +/*
->>> + * Implementation of void perf_regs_load(u64 *regs);
->>> + *
->>> + * This functions fills in the 'regs' buffer from the actual registers values,
->>> + * in the way the perf built-in unwinding test expects them:
->>> + * - the PC at the time at the call to this function. Since this function
->>> + *   is called using a bl instruction, the PC value is taken from LR,
->>
->> Is it guaranteed that this function is always invoked with a branch with
->> link instruction, or is that just what current compiler versions are
->> doing? I couldn't see where we would get that guarantee from.
-> The current compiler implements the call as a bl instruction.
->
->> If it is called with a branch with link, then the LR value will be the
->> PC at call time + 4, rather than just the exact PC at call time. If not
->> then we don't have a guaranteed relationship between the PC at call time
->> and the current LR value.
->>
->> If the only place that perf_regs_load is used is a single test which
->> doesn't care about the precise PC at the time of the call, then it's
->> probably OK to use the LR value, but we should be careful to document
->> what the faked-up PC actually is and how we expect it to be used.
-> The code is only used by an unwinding test. The unwinding code
-> resolves the function name from an address range found in the dwarf
-> information so in principle it is ok to use the PC/LR at the time of
-> the call to a function.
->
-> Is the comment above OK or do you want an update of the code as well?
-What do you think?
+> Alternatively we could just use the following reboot order:
+> 
+>  * 1) If the FADT has the ACPI reboot register flag set, try it
+>  * 2) If still alive, write to the keyboard controller
+>  * 3) If still alive, write to the ACPI reboot register again
+>  * 4) If still alive, write to the keyboard controller again
+>  * 5) If still alive, call the EFI runtime service to reboot
+>  * 6) If still alive, force a triple fault
+> 
+> I.e. eliminate the 'PCI' and 'BIOS' methods from our default 
+> sequence, as both are documented as being able to hang some boxes.
 
-Regards,
-Jean
+The patch below, on top of my first patch, does that.
 
->
->>
->>> + * - the current SP (not touched by this function),
->>> + * - the current value of LR is merely retrieved and stored because the
->>> + *   value before the call to this function is unknown at this time; it will
->>> + *   be unwound from the dwarf information in unwind__get_entries.
->>> + */
->>> +
->>> +.text
->>> +.type perf_regs_load,%function
->>> +ENTRY(perf_regs_load)
->>> +     stp x0,  x1,  [x0], #16 // store x0..x29
->>> +     stp x2,  x3,  [x0], #16
->>> +     stp x4,  x5,  [x0], #16
->>> +     stp x6,  x7,  [x0], #16
->>> +     stp x8,  x9,  [x0], #16
->>> +     stp x10, x11, [x0], #16
->>> +     stp x12, x13, [x0], #16
->>> +     stp x14, x15, [x0], #16
->>> +     stp x16, x17, [x0], #16
->>> +     stp x18, x19, [x0], #16
->>> +     stp x20, x21, [x0], #16
->>> +     stp x22, x23, [x0], #16
->>> +     stp x24, x25, [x0], #16
->>> +     stp x26, x27, [x0], #16
->>> +     stp x28, x29, [x0], #16
->>> +     mov x1,  sp
->>> +     stp x30, x1,  [x0], #16 // store lr and sp
->>> +     str x30, [x0]           // store pc as lr in order to skip the call
->>> +                             //  to this function
->>
->> It might be better to word this a "store the lr in place of the pc". To
->> me at least the current wording implies the opposite of what the code
->> seems to be doing.
-> Ok the last comment can be updated.
->
-> Thanks!
-> Jean
->
->>
->> Cheers,
->> Mark.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Only lightly tested.
+
+My expectation would be that Steve's box reboots fine by default with 
+the first patch already, and that it would still reboot fine with the 
+second patch applied as well.
+
+Thanks,
+
+	Ingo
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 527dbcb..bd9b0ef 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -470,10 +470,10 @@ void __attribute__((weak)) mach_reboot_fixups(void)
+  *
+  * If the machine is still alive at this stage, it gives up.
+  *
+- * We default to following the same pattern, except that we try
+- * (7) [BIOS] before (6) [PCI], and we add 8): try to force a
+- * triple fault and then cycle between hitting the keyboard
+- * controller and doing that.
++ * We default to following the same pattern, except that after
++ * the 5) EFI reboot step we go straight to Linux specific
++ * step 8): try to force a triple fault and then cycle between
++ * hitting the keyboard controller and doing that.
+  *
+  * This means that this function can never return, it can misbehave
+  * by not rebooting properly and hanging.
+@@ -525,7 +525,7 @@ static void native_machine_emergency_restart(void)
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+ 						 EFI_SUCCESS, 0, NULL);
+-			reboot_type = BOOT_BIOS;
++			reboot_type = BOOT_TRIPLE;
+ 			break;
+ 
+ 		case BOOT_BIOS:
