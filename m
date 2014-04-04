@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaDDOlm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:41:42 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50471 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753010AbaDDOlk (ORCPT
+	id S1753523AbaDDOmw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:42:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52133 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160AbaDDOmu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:41:40 -0400
-Date: Fri, 4 Apr 2014 15:41:08 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Subject: Re: [PATCH] arm: Fix DEBUG_LL for multi-platform kernels (without
-	PL01X)
-Message-ID: <20140404144108.GD7528@n2100.arm.linux.org.uk>
-References: <1396610269-11580-1-git-send-email-daniel.thompson@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396610269-11580-1-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 4 Apr 2014 10:42:50 -0400
+Date: Fri, 04 Apr 2014 10:44:26 -0400 (EDT)
+Message-Id: <20140404.104426.2226769084775433079.davem@davemloft.net>
+To: luis.henriques@canonical.com
+Cc: sasha.levin@oracle.com, chien.yen@oracle.com, rds-devel@oss.oracle.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] rds: prevent dereference of a NULL device in
+ rds_iw_laddr_check
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140404143136.GA2593@hercules>
+References: <1396139975-5314-1-git-send-email-sasha.levin@oracle.com>
+	<20140331.162607.153228065356865845.davem@davemloft.net>
+	<20140404143136.GA2593@hercules>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 04 Apr 2014 07:42:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 12:17:49PM +0100, Daniel Thompson wrote:
-> When building a multi_v7_defconfig kernel it is not possible to configure
-> DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
-> accurately and worse, it is possible to configure a different serial
-> device but KConfig does not honour this request.
-> 
-> The happens because the multi-platform mode may include ARCH_SPEAR13XX
-> and this forcibly engages DEBUG_UART_PL01X to provide some kind of
-> compatibility with single platform builds (SPEAr supports both single and
-> multi-platform). This in turn causes DEBUG_LL_INCLUDE to wedge at
-> debug/pl01x.S.
-> 
-> Problem is fixed by only deploying the compatibility options for SPEAr
-> when ARCH_MULTIPLATFORM is not set.
+From: Luís Henriques <luis.henriques@canonical.com>
+Date: Fri, 4 Apr 2014 15:31:36 +0100
 
-I think it's probably about time we killed the def_bool and just made
-this a plain 'bool'.  The affected platforms should be using
-DEBUG_LL_UART_PL01X by now.
+> Could you please queue this one for stable as well?  (Looks like it even
+> has CVE-2014-2678 assigned to it.)
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Done.
