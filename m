@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaDDRGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 13:06:46 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51257 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540AbaDDRGo (ORCPT
+	id S1753729AbaDDRIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 13:08:44 -0400
+Received: from g6t1525.atlanta.hp.com ([15.193.200.68]:44107 "EHLO
+	g6t1525.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284AbaDDRIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 13:06:44 -0400
-Date: Fri, 4 Apr 2014 10:06:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_prempt stalls / lockup
-Message-ID: <20140404170639.GO4284@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140401172244.GA10363@redhat.com>
- <20140401175545.GV4284@linux.vnet.ibm.com>
- <20140401180414.GA12326@redhat.com>
- <20140401183245.GA12473@linux.vnet.ibm.com>
- <20140402162043.GA11090@linux.vnet.ibm.com>
- <20140402224840.GA5385@redhat.com>
- <20140403200143.GA8119@redhat.com>
- <20140403204656.GI4284@linux.vnet.ibm.com>
- <20140403214430.GA20249@redhat.com>
- <20140403223700.GA18353@redhat.com>
+	Fri, 4 Apr 2014 13:08:42 -0400
+Message-ID: <533EE700.4080408@hp.com>
+Date: Fri, 04 Apr 2014 13:08:16 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403223700.GA18353@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040417-8236-0000-0000-0000014B9B84
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Marcos Matsunaga <Marcos.Matsunaga@oracle.com>
+Subject: Re: [PATCH v8 01/10] qspinlock: A generic 4-byte queue spinlock implementation
+References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <1396445259-27670-2-git-send-email-Waiman.Long@hp.com> <20140404130012.GE10526@twins.programming.kicks-ass.net> <20140404165727.GQ19478@phenom.dumpdata.com>
+In-Reply-To: <20140404165727.GQ19478@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 06:37:00PM -0400, Dave Jones wrote:
-> On Thu, Apr 03, 2014 at 05:44:30PM -0400, Dave Jones wrote:
->  > On Thu, Apr 03, 2014 at 01:46:56PM -0700, Paul E. McKenney wrote:
->  >  > 	git merge anti-fixes
->  >  > 
->  >  > Then bisect through these reverts.
->  >  > 
->  >  > I am assuming, perhaps naively, that changes under Documentation and
->  >  > to torture testing should not be affecting you.
->  >  > 
->  >  > Does this make sense?
->  > 
->  > I tried reverting every one of those and could still hit it, which
->  > seems to indicate the bug is elsewhere, and rcu is just a victim of it.
->  > I'm going to start trying to revert the lockdep changes, given this seems
->  > to happen after that has warned..
-> 
-> And that was also without any success.
-> Tomorrow I'll try a bisect on just arch/x86.
+On 04/04/2014 12:57 PM, Konrad Rzeszutek Wilk wrote:
+> On Fri, Apr 04, 2014 at 03:00:12PM +0200, Peter Zijlstra wrote:
+>> So I'm just not ever going to pick up this patch; I spend a week trying
+>> to reverse engineer this; I posted a 7 patch series creating the
+>> equivalent, but in a gradual and readable fashion:
+>>
+>>    http://lkml.kernel.org/r/20140310154236.038181843@infradead.org
+>>
+>> You keep on ignoring that; I'll keep on ignoring your patches.
+>>
+>> I might at some point rewrite some of your pv stuff on top to get this
+>> moving again, but I'm not really motivated to work with you atm.
+> Uh? Did you CC also xen-devel@lists.xenproject.org on your patches Peter?
+> I hadn't had a chance to see or comment on them :-(
+>
 
-I cannot think of any better debugging strategy at the moment.
+Peter's patch is a rewrite of my patches 1-4, there is no PV or unfair 
+lock support in there.
 
-							Thanx, Paul
-
+-Longman
