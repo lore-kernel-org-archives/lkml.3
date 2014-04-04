@@ -1,100 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002AbaDDNAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:00:55 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:35835 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbaDDNAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:00:39 -0400
+	id S1752809AbaDDNHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 09:07:22 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:53436 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752422AbaDDNHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 09:07:16 -0400
+Message-ID: <533EAE81.6060109@mm-sol.com>
+Date: Fri, 04 Apr 2014 16:07:13 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <533EA2B0.7080703@monstr.eu>
-References: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
-	<1396563423-30893-10-git-send-email-robherring2@gmail.com>
-	<533EA2B0.7080703@monstr.eu>
-Date: Fri, 4 Apr 2014 08:00:38 -0500
-Message-ID: <CAL_JsqKFK8YDoODYKg5b8SmDzqdNSS6UvYr3_atzhcL2uR-=rA@mail.gmail.com>
-Subject: Re: [PATCH 09/20] of/fdt: create common debugfs
-From: Rob Herring <robherring2@gmail.com>
-To: Michal Simek <monstr@monstr.eu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 3/9] crypto: qce: Add dma and sg helpers
+References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com> <1396541886-10966-4-git-send-email-svarbanov@mm-sol.com> <20140403231525.GE17066@sonymobile.com>
+In-Reply-To: <20140403231525.GE17066@sonymobile.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 7:16 AM, Michal Simek <monstr@monstr.eu> wrote:
-> On 04/04/2014 12:16 AM, Rob Herring wrote:
->> From: Rob Herring <robh@kernel.org>
->>
->> Both powerpc and microblaze have the same FDT blob in debugfs feature.
->> Move this to common location and remove the powerpc and microblaze
->> implementations. This feature could become more useful when FDT
->> overlay support is added.
->>
->> This changes the path of the blob from "$arch/flat-device-tree" to
->> "device-tree/flat-device-tree".
+Hi Courtney,
 
-[snip]
+Thanks for the comments!
 
->> -#if defined(CONFIG_DEBUG_FS) && defined(DEBUG)
->> -static struct debugfs_blob_wrapper flat_dt_blob;
->> -
->> -static int __init export_flat_device_tree(void)
->> -{
->> -     struct dentry *d;
->> -
->> -     flat_dt_blob.data = initial_boot_params;
->> -     flat_dt_blob.size = initial_boot_params->totalsize;
->
-> As I see even microblaze version was buggy.
-
-How so?
-
-> ...
->
->> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
->> index fa16a91..2085d47 100644
->> --- a/drivers/of/fdt.c
->> +++ b/drivers/of/fdt.c
->> @@ -20,6 +20,7 @@
->>  #include <linux/string.h>
->>  #include <linux/errno.h>
->>  #include <linux/slab.h>
->> +#include <linux/debugfs.h>
+On 04/04/2014 02:15 AM, Courtney Cavin wrote:
+> On Thu, Apr 03, 2014 at 06:18:00PM +0200, Stanimir Varbanov wrote:
+>> This adds dmaengine and sg-list helper functions used by
+>> other parts of the crypto driver.
 >>
->>  #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
->>  #ifdef CONFIG_PPC
->> @@ -1084,4 +1085,27 @@ void __init unflatten_and_copy_device_tree(void)
->>       unflatten_device_tree();
->>  }
+>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>> ---
+>>  drivers/crypto/qce/dma.c | 201 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/crypto/qce/dma.h |  57 ++++++++++++++
+>>  2 files changed, 258 insertions(+)
+>>  create mode 100644 drivers/crypto/qce/dma.c
+>>  create mode 100644 drivers/crypto/qce/dma.h
+> 
+> More nitpicking, because everyone loves that....
+> 
 >>
->> +#if defined(CONFIG_DEBUG_FS) && defined(DEBUG)
->> +static struct debugfs_blob_wrapper flat_dt_blob;
->> +
->> +static int __init of_flat_dt_debugfs_export_fdt(void)
+>> diff --git a/drivers/crypto/qce/dma.c b/drivers/crypto/qce/dma.c
+>> new file mode 100644
+>> index 000000000000..1bad958db2f9
+>> --- /dev/null
+>> +++ b/drivers/crypto/qce/dma.c
+>> @@ -0,0 +1,201 @@
+> [...]
+>> +int qce_dma_request(struct device *dev, struct qce_dma_data *dma)
 >> +{
->> +     struct dentry *d = debugfs_create_dir("device-tree", NULL);
+>> +	unsigned int memsize;
+>> +	void *va;
+>> +	int ret;
 >> +
->> +     if (!d)
->> +             return -ENOENT;
+>> +	dma->txchan = dma_request_slave_channel_reason(dev, "tx");
+>> +	if (IS_ERR(dma->txchan)) {
+>> +		ret = PTR_ERR(dma->txchan);
+>> +		return ret;
+> 
+> You can just return PTR_ERR(dma->txchan) here, no need to set 'ret'.
+
+I think the idea was to have only one exit point from the function,
+never mind I will return from here.
+
+> 
+>> +	}
 >> +
->> +     flat_dt_blob.data = initial_boot_params;
->> +     flat_dt_blob.size = fdt_totalsize(initial_boot_params);
->
-> Have you tried to compile this?
->
-> From my tests fdt_totalsize is not available for target just for host
-> from libfdt.h
->
-> drivers/of/fdt.c: In function 'of_flat_dt_debugfs_export_fdt':
-> drivers/of/fdt.c:957:2: error: implicit declaration of function 'fdt_totalsize' [-Werror=implicit-function-declaration]
+>> +	dma->rxchan = dma_request_slave_channel_reason(dev, "rx");
+>> +	if (IS_ERR(dma->rxchan)) {
+>> +		ret = PTR_ERR(dma->rxchan);
+>> +		goto error_rx;
+>> +	}
+>> +
+>> +	memsize = QCE_RESULT_BUF_SZ + QCE_IGNORE_BUF_SZ;
+>> +	va = kzalloc(memsize, GFP_KERNEL);
+> 
+> 'memsize' is only used here.  Just pass 'QCE_RESULT_BUF_SZ +
+> QCE_IGNORE_BUF_SZ' directly to kzalloc().
+> 
 
-Ah, it needs to be re-ordered after the libfdt conversion when
-libfdt.h gets added.
+The only reason to have "memsize" variable is to avoid carry over the
+new line. The compiler is smart enough to delete this variable. But this
+is a minor issue and I tend to agree with you.
 
-Rob
+> Additionally, is there some particular reason why we need to zero this
+> memory?
+
+IMO, it makes sense when debugging some issue related to dma to this
+memory.
+
+> 
+>> +	if (!va) {
+>> +		ret = -ENOMEM;
+>> +		goto error_nomem;
+>> +	}
+>> +
+>> +	dma->result_buf = va;
+> 
+> Is there some requirement that we don't set dma->result_buf on error?
+> If not, we can discard the 'va' variable as well.
+
+No, there is no such requirement, the error is fatal and driver will
+refuse to .probe.
+
+> 
+>> +	dma->ignore_buf = dma->result_buf + QCE_RESULT_BUF_SZ;
+>> +
+>> +	return 0;
+>> +error_nomem:
+>> +	if (!IS_ERR(dma->rxchan))
+>> +		dma_release_channel(dma->rxchan);
+>> +error_rx:
+>> +	if (!IS_ERR(dma->txchan))
+>> +		dma_release_channel(dma->txchan);
+>> +	return ret;
+>> +}
+>> +
+>> +void qce_dma_release(struct qce_dma_data *dma)
+>> +{
+>> +	dma_release_channel(dma->txchan);
+>> +	dma_release_channel(dma->rxchan);
+>> +	kfree(dma->result_buf);
+>> +}
+>> +
+>> +int qce_mapsg(struct device *dev, struct scatterlist *sg, unsigned int nents,
+>> +	      enum dma_data_direction dir, bool chained)
+>> +{
+>> +	int err;
+>> +
+>> +	if (chained) {
+>> +		while (sg) {
+>> +			err = dma_map_sg(dev, sg, 1, dir);
+>> +			if (!err)
+>> +				goto error;
+>> +			sg = scatterwalk_sg_next(sg);
+>> +		}
+>> +	} else {
+>> +		err = dma_map_sg(dev, sg, nents, dir);
+>> +		if (!err)
+>> +			goto error;
+>> +	}
+>> +
+>> +	return nents;
+>> +error:
+>> +	return -EFAULT;
+> 
+> No need for this label, as there's no cleanup.  Just return
+> -EFAULT directly on error.
+
+Sure, will do.
+
+> 
+>> +}
+> [...]
+>> +struct scatterlist *
+>> +qce_sgtable_add(struct sg_table *sgt, struct scatterlist *new_sgl)
+>> +{
+>> +	struct scatterlist *sg = sgt->sgl, *sg_last = NULL;
+>> +
+>> +	while (sg) {
+>> +		if (!sg_page(sg))
+>> +			break;
+>> +		sg = sg_next(sg);
+>> +	}
+>> +
+>> +	if (!sg)
+>> +		goto error;
+>> +
+>> +	while (new_sgl && sg) {
+>> +		sg_set_page(sg, sg_page(new_sgl), new_sgl->length,
+>> +			    new_sgl->offset);
+>> +		sg_last = sg;
+>> +		sg = sg_next(sg);
+>> +		new_sgl = sg_next(new_sgl);
+>> +	}
+>> +
+>> +	if (new_sgl)
+>> +		goto error;
+>> +
+>> +	return sg_last;
+>> +error:
+>> +	return ERR_PTR(-EINVAL);
+> 
+> No need for this label, as there's no cleanup.  Just return
+> ERR_PTR(-EINVAL) directly on error.
+
+Sure, will fix it.
+
+> 
+>> +}
+>> +
+>> +static int qce_dma_prep_sg(struct dma_chan *chan, struct scatterlist *sg,
+>> +			   int nents, unsigned long flags,
+>> +			   enum dma_transfer_direction dir,
+>> +			   dma_async_tx_callback cb, void *cb_param)
+>> +{
+>> +	struct dma_async_tx_descriptor *desc;
+>> +
+>> +	if (!sg || !nents)
+>> +		return -EINVAL;
+>> +
+>> +	desc = dmaengine_prep_slave_sg(chan, sg, nents, dir, flags);
+>> +	if (!desc)
+>> +		return -EINVAL;
+>> +
+>> +	desc->callback = cb;
+>> +	desc->callback_param = cb_param;
+>> +	dmaengine_submit(desc);
+> 
+> Do we not care if there is an error here?
+> 
+> dma_cookie_t cookie;
+> ...
+> cookie = dmaengine_submit(desc);
+> return dma_submit_error(cookie);
+> 
+
+Good catch, we should care. Will check the error. Thanks.
+
+>> +	return 0;
+>> +}
+> [...]
+>> diff --git a/drivers/crypto/qce/dma.h b/drivers/crypto/qce/dma.h
+>> new file mode 100644
+>> index 000000000000..932b02fd8f25
+>> --- /dev/null
+>> +++ b/drivers/crypto/qce/dma.h
+>> @@ -0,0 +1,57 @@
+>> +/*
+>> + * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 and
+>> + * only version 2 as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#ifndef _DMA_H_
+>> +#define _DMA_H_
+>> +
+>> +#define QCE_AUTHIV_REGS_CNT		16
+>> +#define QCE_AUTH_BYTECOUNT_REGS_CNT	4
+>> +#define QCE_CNTRIV_REGS_CNT		4
+>> +
+>> +/* result dump format */
+>> +struct qce_result_dump {
+>> +	u32 auth_iv[QCE_AUTHIV_REGS_CNT];
+>> +	u32 auth_byte_count[QCE_AUTH_BYTECOUNT_REGS_CNT];
+>> +	u32 encr_cntr_iv[QCE_CNTRIV_REGS_CNT];
+>> +	u32 status;
+>> +	u32 status2;
+>> +};
+>> +
+>> +#define QCE_IGNORE_BUF_SZ	(2 * QCE_BAM_BURST_SIZE)
+> 
+> QCE_BAM_BURST_SIZE is defined in common.h in 6/9.  Either that file
+> needs to be included from this one, or the definition needs to be moved.
+
+I decided to not include any files in driver private headers. Thus I
+include the private header files in relevant c files in order.
+
+-- 
+regards,
+Stan
