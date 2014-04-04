@@ -1,122 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaDDVN5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:13:57 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:61140 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752429AbaDDVNx (ORCPT
+	id S1752878AbaDDVPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:15:35 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:16640 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837AbaDDVPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:13:53 -0400
-To: bp@alien8.de
-Cc: tony.luck@intel.com, hpa@zytor.com, mingo@kernel.org,
-        dougthompson@xmission.com, m.chehab@samsung.com,
-        mitake@dcl.info.waseda.ac.jp, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-Id: <0c5b7b7e3bb5071553aa0565e9a365697785af34.1396645124.git.jbaron@akamai.com>
-In-Reply-To: <cover.1396645124.git.jbaron@akamai.com>
-References: <cover.1396645124.git.jbaron@akamai.com>
-From: Jason Baron <jbaron@akamai.com>
-Subject: [PATCH 1/3] readq/writeq: Add explicit lo_hi_[read|write]_q and hi_lo_[read|write]_q
-Date: Fri,  4 Apr 2014 21:13:52 +0000 (GMT)
+	Fri, 4 Apr 2014 17:15:33 -0400
+Message-ID: <533F20EB.2040500@oracle.com>
+Date: Fri, 04 Apr 2014 17:15:23 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Jeff Mahoney <jeffm@suse.com>, dsterba@suse.cz, clm@fb.com, jbacik@fb.com,
+        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs: lock inversion between delayed_node->mutex and found->groups_sem
+References: <53239AE0.8030306@oracle.com> <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com>
+In-Reply-To: <533307ED.8030700@suse.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even on x86-64, I've found the need to break up a readq() into 2 readl()
-calls. According to the Intel datasheet for the E3-1200 processor:
+On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
+> On 3/17/14, 9:05 AM, David Sterba wrote:
+>>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
+>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
+>>>>> 
+>>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
+>>> 
+>>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
+> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
 
-"
-Software must not access B0/D0/F0 32-bit memory-mapped registers with
-requests that cross a DW boundary.
-"
+Is that fix available anywhere? I'm still seeing the issue in -next.
 
-(http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200-family-vol-2-datasheet.html p. 16)
 
-I can confirm this is true via several hard machine lockups.
-
-Thus, add explicit hi_lo_[readq|write]_q and lo_hi_[read|write]_q so that these
-uses are spelled out.
-
-Signed-off-by: Jason Baron <jbaron@akamai.com>
----
- include/asm-generic/io-64-nonatomic-hi-lo.h | 14 +++++++++-----
- include/asm-generic/io-64-nonatomic-lo-hi.h | 14 +++++++++-----
- 2 files changed, 18 insertions(+), 10 deletions(-)
-
-diff --git a/include/asm-generic/io-64-nonatomic-hi-lo.h b/include/asm-generic/io-64-nonatomic-hi-lo.h
-index a6806a9..2e29d13 100644
---- a/include/asm-generic/io-64-nonatomic-hi-lo.h
-+++ b/include/asm-generic/io-64-nonatomic-hi-lo.h
-@@ -4,8 +4,7 @@
- #include <linux/io.h>
- #include <asm-generic/int-ll64.h>
- 
--#ifndef readq
--static inline __u64 readq(const volatile void __iomem *addr)
-+static inline __u64 hi_lo_readq(const volatile void __iomem *addr)
- {
- 	const volatile u32 __iomem *p = addr;
- 	u32 low, high;
-@@ -15,14 +14,19 @@ static inline __u64 readq(const volatile void __iomem *addr)
- 
- 	return low + ((u64)high << 32);
- }
--#endif
- 
--#ifndef writeq
--static inline void writeq(__u64 val, volatile void __iomem *addr)
-+static inline void hi_lo_writeq(__u64 val, volatile void __iomem *addr)
- {
- 	writel(val >> 32, addr + 4);
- 	writel(val, addr);
- }
-+
-+#ifndef readq
-+#define readq hi_lo_readq
-+#endif
-+
-+#ifndef writeq
-+#define writeq hi_lo_writeq
- #endif
- 
- #endif	/* _ASM_IO_64_NONATOMIC_HI_LO_H_ */
-diff --git a/include/asm-generic/io-64-nonatomic-lo-hi.h b/include/asm-generic/io-64-nonatomic-lo-hi.h
-index ca546b1..0efacff 100644
---- a/include/asm-generic/io-64-nonatomic-lo-hi.h
-+++ b/include/asm-generic/io-64-nonatomic-lo-hi.h
-@@ -4,8 +4,7 @@
- #include <linux/io.h>
- #include <asm-generic/int-ll64.h>
- 
--#ifndef readq
--static inline __u64 readq(const volatile void __iomem *addr)
-+static inline __u64 lo_hi_readq(const volatile void __iomem *addr)
- {
- 	const volatile u32 __iomem *p = addr;
- 	u32 low, high;
-@@ -15,14 +14,19 @@ static inline __u64 readq(const volatile void __iomem *addr)
- 
- 	return low + ((u64)high << 32);
- }
--#endif
- 
--#ifndef writeq
--static inline void writeq(__u64 val, volatile void __iomem *addr)
-+static inline void lo_hi_writeq(__u64 val, volatile void __iomem *addr)
- {
- 	writel(val, addr);
- 	writel(val >> 32, addr + 4);
- }
-+
-+#ifndef readq
-+#define readq lo_hi_readq
-+#endif
-+
-+#ifndef writeq
-+#define writeq lo_hi_writeq
- #endif
- 
- #endif	/* _ASM_IO_64_NONATOMIC_LO_HI_H_ */
--- 
-1.8.2.rc2
-
+Thanks,
+Sasha
