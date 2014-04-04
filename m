@@ -1,406 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaDDHfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:35:36 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:42981 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaDDHf2 (ORCPT
+	id S1752229AbaDDHf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:35:59 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:60225 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaDDHfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:35:28 -0400
-Subject: [PATCH v2] powerpc/le: enable RTAS events support
-To: benh@kernel.crashing.org
-From: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Cc: tony@bakeyournoodle.com, linux-kernel@vger.kernel.org,
-        geert@linux-m68k.org, paulus@samba.org, anton@samba.org,
-        nfont@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-Date: Fri, 04 Apr 2014 09:35:13 +0200
-Message-ID: <20140404072750.20016.18969.stgit@bahia.local>
-In-Reply-To: <0140402175658.1b4a8c4d@bahia.local>
-References: <0140402175658.1b4a8c4d@bahia.local>
-User-Agent: StGit/0.16
+	Fri, 4 Apr 2014 03:35:55 -0400
+Message-ID: <533E60D6.2000704@gmail.com>
+Date: Fri, 04 Apr 2014 09:35:50 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040407-5024-0000-0000-000009602D7B
+To: Jan Kara <jack@suse.cz>
+CC: mtk.manpages@gmail.com, John McCutchan <john@johnmccutchan.com>,
+        Robert Love <rlove@rlove.org>, Eric Paris <eparis@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
+        daniel@veillard.com, Christoph Hellwig <hch@infradead.org>,
+        Vegard Nossum <vegard.nossum@oracle.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        inotify-tools-general@lists.sourceforge.net
+Subject: Re: Things I wish I'd known about Inotify
+References: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com> <20140403205236.GE14107@quack.suse.cz>
+In-Reply-To: <20140403205236.GE14107@quack.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current kernel code assumes big endian and parses RTAS events all
-wrong. The most visible effect is that we cannot honor EPOW events,
-meaning, for example, we cannot shut down a guest properly from the
-hypervisor.
+On 04/03/2014 10:52 PM, Jan Kara wrote:
+> On Thu 03-04-14 08:34:44, Michael Kerrisk (man-pages) wrote:
+>>    Limitations and caveats
+>>        The inotify API provides no information about the user or process
+>>        that triggered the inotify event.  In  particular,  there  is  no
+>>        easy  way  for a process that is monitoring events via inotify to
+>>        distinguish events that it triggers itself from  those  that  are
+>>        triggered by other processes.
+>>
+>>        The  inotify API identifies affected files by filename.  However,
+>>        by the time an application processes an inotify event, the  file‐
+>>        name may already have been deleted or renamed.
+>>
+>>        The  inotify  API identifies events via watch descriptors.  It is
+>>        the application's responsibility to cache a mapping  (if  one  is
+>>        needed)  between  watch descriptors and pathnames.  Be aware that
+>>        directory renamings may affect multiple cached pathnames.
+>>
+>>        Inotify monitoring of directories is not  recursive:  to  monitor
+>>        subdirectories under a directory, additional watches must be cre‐
+>>        ated.  This can take a significant amount time for  large  direc‐
+>>        tory trees.
+>   And also there's a problem with the limit on the number of watches a user
+> can have.
 
-This new patch is largely inspired by Nathan's work: we get rid of all
-the bit fields in the RTAS event structures (even the unused ones, for
-consistency). We also introduce endian safe accessors for the fields used
-by the kernel (trivial rtas_error_type() accessor added for consistency).
+What is the problem exactly (given that the limit is configurable)?
 
-Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
----
+>>        If monitoring an entire directory subtree, and a new subdirectory
+>>        is created in that tree or an existing directory is renamed  into
+>>        that  tree,  be aware that by the time you create a watch for the
+>>        new subdirectory, new  files  (and  subdirectories)  may  already
+>>        exist  inside  the subdirectory.  Therefore, you may want to scan
+>>        the contents of the subdirectory  immediately  after  adding  the
+>>        watch (and, if desired, recursively add watches for any subdirec‐
+>>        tories that it contains).
+>>
+>>        Note that the event queue can overflow.  In this case, events are
+>>        lost.   Robust applications should handle the possibility of lost
+>>        events gracefully.  For example, it may be necessary  to  rebuild
+>>        part  or all of the application cache.  (One simple, but possibly
+>>        expensive, approach is to  close  the  inotify  file  descriptor,
+>>        empty  the  cache, create a new inotify file descriptor, and then
+>>        re-create watches and cache entries for the objects to  be  moni‐
+>>        tored.)
+>>
+>>    Dealing with rename() events
+>>        The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
+>>        rename(2) are usually available as consecutive events when  read‐
+>>        ing from the inotify file descriptor.  However, this is not guar‐
+>>        anteed.  If multiple processes are triggering  events  for  moni‐
+>>        tored  objects,  then  (on rare occasions) an arbitrary number of
+>>        other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
+>>        events.
+>>
+>>        Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‐
+>>        ated by rename(2) is thus inherently racy.  (Don't forget that if
+>>        an  object is renamed outside of a monitored directory, there may
+>>        not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
+>>        assume the events are always consecutive) can be used to ensure a
+>>        match in most cases, but will inevitably miss some cases, causing
+>>        the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
+>>        events as being unrelated.  If watch  descriptors  are  destroyed
+>>        and  re-created as a result, then those watch descriptors will be
+>>        inconsistent with the watch descriptors in  any  pending  events.
+>>        (Re-creating the inotify file descriptor and rebuilding the cache
+>>        may be useful to deal with this scenario.)
+>   Well, but there's 'cookie' value meant exactly for matching up
+> IN_MOVED_FROM and IN_MOVED_TO events. And 'cookie' is guaranteed to be
+> unique at least within the inotify instance (in fact currently it is unique
+> within the whole system but I don't think we want to give that promise).
 
-Changes since v2:
-- kill all bit fields in RTAS event structures
-- endian safe accessors
-- use __be32 and __be16 where applicable
+Yes, that's already assumed by my discussion above (its described elsewhere
+in the page). But your comment makes me think I should add a few words to
+remind the reader of that fact. I'll do that.
 
-I could successfuly have the system_shutdown command working in the qemu
-monitor.
+But, the point is that even with the cookie, matching the events is 
+nontrivial, since:
 
-Cheers.
+* There may not even be an IN_MOVED_FROM event
+* There may be an arbitrary number of other events in between the 
+  IN_MOVED_FROM and the IN_MOVED_TO.
 
---
-Greg
+Therefore, one has to use heuristic approaches such as "allow at least
+N millisconds" or "check the next N events" to see if there is an
+IN_MOVED_FROM that matches the IN_MOVED_TO. I can't see any way around
+that being inherently racy. (It's unfortunate that the kernel can't 
+provide a guarantee that the two events are always consecutive, since
+that would simply user space's life considerably.)
 
- arch/powerpc/include/asm/rtas.h               |  127 +++++++++++++++++++------
- arch/powerpc/kernel/rtas.c                    |   15 ++-
- arch/powerpc/kernel/rtasd.c                   |   24 ++---
- arch/powerpc/platforms/pseries/io_event_irq.c |    6 +
- arch/powerpc/platforms/pseries/ras.c          |   17 ++-
- 5 files changed, 128 insertions(+), 61 deletions(-)
+Cheers,
 
-diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
-index 9bd52c6..217c81e 100644
---- a/arch/powerpc/include/asm/rtas.h
-+++ b/arch/powerpc/include/asm/rtas.h
-@@ -150,19 +150,53 @@ struct rtas_suspend_me_data {
- #define RTAS_VECTOR_EXTERNAL_INTERRUPT	0x500
- 
- struct rtas_error_log {
--	unsigned long version:8;		/* Architectural version */
--	unsigned long severity:3;		/* Severity level of error */
--	unsigned long disposition:2;		/* Degree of recovery */
--	unsigned long extended:1;		/* extended log present? */
--	unsigned long /* reserved */ :2;	/* Reserved for future use */
--	unsigned long initiator:4;		/* Initiator of event */
--	unsigned long target:4;			/* Target of failed operation */
--	unsigned long type:8;			/* General event or error*/
--	unsigned long extended_log_length:32;	/* length in bytes */
--	unsigned char buffer[1];		/* Start of extended log */
-+	/* Byte 0 */
-+	uint8_t		byte0;			/* Architectural version */
-+
-+	/* Byte 1 */
-+	uint8_t		byte1;
-+	/* XXXXXXXX
-+	 * XXX		3: Severity level of error
-+	 *    XX	2: Degree of recovery
-+	 *      X	1: Extended log present?
-+	 *       XX	2: Reserved
-+	 */
-+
-+	/* Byte 2 */
-+	uint8_t		byte2;
-+	/* XXXXXXXX
-+	 * XXXX		4: Initiator of event
-+	 *     XXXX	4: Target of failed operation
-+	 */
-+	uint8_t		byte3;			/* General event or error*/
-+	__be32		extended_log_length;	/* length in bytes */
-+	unsigned char	buffer[1];		/* Start of extended log */
- 						/* Variable length.      */
- };
- 
-+static inline uint8_t rtas_error_severity(const struct rtas_error_log *elog)
-+{
-+	return (elog->byte1 & 0xE0) >> 5;
-+}
-+
-+static inline uint8_t rtas_error_disposition(const struct rtas_error_log *elog)
-+{
-+	return (elog->byte1 & 0x18) >> 3;
-+}
-+
-+static inline uint8_t rtas_error_extended(const struct rtas_error_log *elog)
-+{
-+	return (elog->byte1 & 0x04) >> 2;
-+}
-+
-+#define rtas_error_type(x)	((x)->byte3)
-+
-+static inline
-+uint32_t rtas_error_extended_log_length(const struct rtas_error_log *elog)
-+{
-+	return be32_to_cpu(elog->extended_log_length);
-+}
-+
- #define RTAS_V6EXT_LOG_FORMAT_EVENT_LOG	14
- 
- #define RTAS_V6EXT_COMPANY_ID_IBM	(('I' << 24) | ('B' << 16) | ('M' << 8))
-@@ -172,32 +206,35 @@ struct rtas_error_log {
-  */
- struct rtas_ext_event_log_v6 {
- 	/* Byte 0 */
--	uint32_t log_valid:1;		/* 1:Log valid */
--	uint32_t unrecoverable_error:1;	/* 1:Unrecoverable error */
--	uint32_t recoverable_error:1;	/* 1:recoverable (correctable	*/
--					/*   or successfully retried)	*/
--	uint32_t degraded_operation:1;	/* 1:Unrecoverable err, bypassed*/
--					/*   - degraded operation (e.g.	*/
--					/*   CPU or mem taken off-line)	*/
--	uint32_t predictive_error:1;
--	uint32_t new_log:1;		/* 1:"New" log (Always 1 for	*/
--					/*   data returned from RTAS	*/
--	uint32_t big_endian:1;		/* 1: Big endian */
--	uint32_t :1;			/* reserved */
-+	uint8_t byte0;
-+	/* XXXXXXXX
-+	 * X		1: Log valid
-+	 *  X		1: Unrecoverable error
-+	 *   X		1: Recoverable (correctable or successfully retried)
-+	 *    X		1: Bypassed unrecoverable error (degraded operation)
-+	 *     X	1: Predictive error
-+	 *      X	1: "New" log (always 1 for data returned from RTAS)
-+	 *       X	1: Big Endian
-+	 *        X	1: Reserved
-+	 */
-+
- 	/* Byte 1 */
--	uint32_t :8;			/* reserved */
-+	uint8_t byte1;			/* reserved */
-+
- 	/* Byte 2 */
--	uint32_t powerpc_format:1;	/* Set to 1 (indicating log is	*/
--					/* in PowerPC format		*/
--	uint32_t :3;			/* reserved */
--	uint32_t log_format:4;		/* Log format indicator. Define	*/
--					/* format used for byte 12-2047	*/
-+	uint8_t byte2;
-+	/* XXXXXXXX
-+	 * X		1: Set to 1 (indicating log is in PowerPC format)
-+	 *  XXX		3: Reserved
-+	 *     XXXX	4: Log format used for bytes 12-2047
-+	 */
-+
- 	/* Byte 3 */
--	uint32_t :8;			/* reserved */
-+	uint8_t byte3;			/* reserved */
- 	/* Byte 4-11 */
- 	uint8_t reserved[8];		/* reserved */
- 	/* Byte 12-15 */
--	uint32_t company_id;		/* Company ID of the company	*/
-+	__be32  company_id;		/* Company ID of the company	*/
- 					/* that defines the format for	*/
- 					/* the vendor specific log type	*/
- 	/* Byte 16-end of log */
-@@ -205,6 +242,18 @@ struct rtas_ext_event_log_v6 {
- 					/* Variable length.		*/
- };
- 
-+static
-+inline uint8_t rtas_ext_event_log_format(struct rtas_ext_event_log_v6 *ext_log)
-+{
-+	return ext_log->byte2 & 0x0F;
-+}
-+
-+static
-+inline uint32_t rtas_ext_event_company_id(struct rtas_ext_event_log_v6 *ext_log)
-+{
-+	return be32_to_cpu(ext_log->company_id);
-+}
-+
- /* pSeries event log format */
- 
- /* Two bytes ASCII section IDs */
-@@ -227,14 +276,26 @@ struct rtas_ext_event_log_v6 {
- 
- /* Vendor specific Platform Event Log Format, Version 6, section header */
- struct pseries_errorlog {
--	uint16_t id;			/* 0x00 2-byte ASCII section ID	*/
--	uint16_t length;		/* 0x02 Section length in bytes	*/
-+	__be16 id;			/* 0x00 2-byte ASCII section ID	*/
-+	__be16 length;			/* 0x02 Section length in bytes	*/
- 	uint8_t version;		/* 0x04 Section version		*/
- 	uint8_t subtype;		/* 0x05 Section subtype		*/
--	uint16_t creator_component;	/* 0x06 Creator component ID	*/
-+	__be16 creator_component;	/* 0x06 Creator component ID	*/
- 	uint8_t data[];			/* 0x08 Start of section data	*/
- };
- 
-+static
-+inline uint16_t pseries_errorlog_id(struct pseries_errorlog *sect)
-+{
-+	return be16_to_cpu(sect->id);
-+}
-+
-+static
-+inline uint16_t pseries_errorlog_length(struct pseries_errorlog *sect)
-+{
-+	return be16_to_cpu(sect->length);
-+}
-+
- struct pseries_errorlog *get_pseries_errorlog(struct rtas_error_log *log,
- 					      uint16_t section_id);
- 
-diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-index f386296..8cd5ed0 100644
---- a/arch/powerpc/kernel/rtas.c
-+++ b/arch/powerpc/kernel/rtas.c
-@@ -993,21 +993,24 @@ struct pseries_errorlog *get_pseries_errorlog(struct rtas_error_log *log,
- 		(struct rtas_ext_event_log_v6 *)log->buffer;
- 	struct pseries_errorlog *sect;
- 	unsigned char *p, *log_end;
-+	uint32_t ext_log_length = rtas_error_extended_log_length(log);
-+	uint8_t log_format = rtas_ext_event_log_format(ext_log);
-+	uint32_t company_id = rtas_ext_event_company_id(ext_log);
- 
- 	/* Check that we understand the format */
--	if (log->extended_log_length < sizeof(struct rtas_ext_event_log_v6) ||
--	    ext_log->log_format != RTAS_V6EXT_LOG_FORMAT_EVENT_LOG ||
--	    ext_log->company_id != RTAS_V6EXT_COMPANY_ID_IBM)
-+	if (ext_log_length < sizeof(struct rtas_ext_event_log_v6) ||
-+	    log_format != RTAS_V6EXT_LOG_FORMAT_EVENT_LOG ||
-+	    company_id != RTAS_V6EXT_COMPANY_ID_IBM)
- 		return NULL;
- 
--	log_end = log->buffer + log->extended_log_length;
-+	log_end = log->buffer + ext_log_length;
- 	p = ext_log->vendor_log;
- 
- 	while (p < log_end) {
- 		sect = (struct pseries_errorlog *)p;
--		if (sect->id == section_id)
-+		if (pseries_errorlog_id(sect) == section_id)
- 			return sect;
--		p += sect->length;
-+		p += pseries_errorlog_length(sect);
- 	}
- 
- 	return NULL;
-diff --git a/arch/powerpc/kernel/rtasd.c b/arch/powerpc/kernel/rtasd.c
-index 1130c53..e736387 100644
---- a/arch/powerpc/kernel/rtasd.c
-+++ b/arch/powerpc/kernel/rtasd.c
-@@ -150,8 +150,8 @@ static void printk_log_rtas(char *buf, int len)
- 		struct rtas_error_log *errlog = (struct rtas_error_log *)buf;
- 
- 		printk(RTAS_DEBUG "event: %d, Type: %s, Severity: %d\n",
--		       error_log_cnt, rtas_event_type(errlog->type),
--		       errlog->severity);
-+		       error_log_cnt, rtas_event_type(rtas_error_type(errlog)),
-+		       rtas_error_severity(errlog));
- 	}
- }
- 
-@@ -159,14 +159,16 @@ static int log_rtas_len(char * buf)
- {
- 	int len;
- 	struct rtas_error_log *err;
-+	uint32_t extended_log_length;
- 
- 	/* rtas fixed header */
- 	len = 8;
- 	err = (struct rtas_error_log *)buf;
--	if (err->extended && err->extended_log_length) {
-+	extended_log_length = rtas_error_extended_log_length(err);
-+	if (rtas_error_extended(err) && extended_log_length) {
- 
- 		/* extended header */
--		len += err->extended_log_length;
-+		len += extended_log_length;
- 	}
- 
- 	if (rtas_error_log_max == 0)
-@@ -293,15 +295,13 @@ void prrn_schedule_update(u32 scope)
- 
- static void handle_rtas_event(const struct rtas_error_log *log)
- {
--	if (log->type == RTAS_TYPE_PRRN) {
--		/* For PRRN Events the extended log length is used to denote
--		 * the scope for calling rtas update-nodes.
--		 */
--		if (prrn_is_enabled())
--			prrn_schedule_update(log->extended_log_length);
--	}
-+	if (rtas_error_type(log) != RTAS_TYPE_PRRN || !prrn_is_enabled())
-+		return;
- 
--	return;
-+	/* For PRRN Events the extended log length is used to denote
-+	 * the scope for calling rtas update-nodes.
-+	 */
-+	prrn_schedule_update(rtas_error_extended_log_length(log));
- }
- 
- #else
-diff --git a/arch/powerpc/platforms/pseries/io_event_irq.c b/arch/powerpc/platforms/pseries/io_event_irq.c
-index 5ea88d1..0240c4f 100644
---- a/arch/powerpc/platforms/pseries/io_event_irq.c
-+++ b/arch/powerpc/platforms/pseries/io_event_irq.c
-@@ -82,9 +82,9 @@ static struct pseries_io_event * ioei_find_event(struct rtas_error_log *elog)
- 	 * RTAS_TYPE_IO only exists in extended event log version 6 or later.
- 	 * No need to check event log version.
- 	 */
--	if (unlikely(elog->type != RTAS_TYPE_IO)) {
--		printk_once(KERN_WARNING "io_event_irq: Unexpected event type %d",
--			    elog->type);
-+	if (unlikely(rtas_error_type(elog) != RTAS_TYPE_IO)) {
-+		printk_once(KERN_WARNING"io_event_irq: Unexpected event type %d",
-+			    rtas_error_type(elog));
- 		return NULL;
- 	}
- 
-diff --git a/arch/powerpc/platforms/pseries/ras.c b/arch/powerpc/platforms/pseries/ras.c
-index 721c058..9c5778e 100644
---- a/arch/powerpc/platforms/pseries/ras.c
-+++ b/arch/powerpc/platforms/pseries/ras.c
-@@ -236,7 +236,8 @@ static irqreturn_t ras_error_interrupt(int irq, void *dev_id)
- 
- 	rtas_elog = (struct rtas_error_log *)ras_log_buf;
- 
--	if ((status == 0) && (rtas_elog->severity >= RTAS_SEVERITY_ERROR_SYNC))
-+	if (status == 0 &&
-+	    rtas_error_severity(rtas_elog) >= RTAS_SEVERITY_ERROR_SYNC)
- 		fatal = 1;
- 	else
- 		fatal = 0;
-@@ -300,13 +301,14 @@ static struct rtas_error_log *fwnmi_get_errinfo(struct pt_regs *regs)
- 
- 	/* If it isn't an extended log we can use the per cpu 64bit buffer */
- 	h = (struct rtas_error_log *)&savep[1];
--	if (!h->extended) {
-+	if (!rtas_error_extended(h)) {
- 		memcpy(&__get_cpu_var(mce_data_buf), h, sizeof(__u64));
- 		errhdr = (struct rtas_error_log *)&__get_cpu_var(mce_data_buf);
- 	} else {
--		int len;
-+		int len, error_log_length;
- 
--		len = max_t(int, 8+h->extended_log_length, RTAS_ERROR_LOG_MAX);
-+		error_log_length = 8 + rtas_error_extended_log_length(h);
-+		len = max_t(int, error_log_length, RTAS_ERROR_LOG_MAX);
- 		memset(global_mce_data_buf, 0, RTAS_ERROR_LOG_MAX);
- 		memcpy(global_mce_data_buf, h, len);
- 		errhdr = (struct rtas_error_log *)global_mce_data_buf;
-@@ -350,23 +352,24 @@ int pSeries_system_reset_exception(struct pt_regs *regs)
- static int recover_mce(struct pt_regs *regs, struct rtas_error_log *err)
- {
- 	int recovered = 0;
-+	int disposition = rtas_error_disposition(err);
- 
- 	if (!(regs->msr & MSR_RI)) {
- 		/* If MSR_RI isn't set, we cannot recover */
- 		recovered = 0;
- 
--	} else if (err->disposition == RTAS_DISP_FULLY_RECOVERED) {
-+	} else if (disposition == RTAS_DISP_FULLY_RECOVERED) {
- 		/* Platform corrected itself */
- 		recovered = 1;
- 
--	} else if (err->disposition == RTAS_DISP_LIMITED_RECOVERY) {
-+	} else if (disposition == RTAS_DISP_LIMITED_RECOVERY) {
- 		/* Platform corrected itself but could be degraded */
- 		printk(KERN_ERR "MCE: limited recovery, system may "
- 		       "be degraded\n");
- 		recovered = 1;
- 
- 	} else if (user_mode(regs) && !is_global_init(current) &&
--		   err->severity == RTAS_SEVERITY_ERROR_SYNC) {
-+		   rtas_error_severity(err) == RTAS_SEVERITY_ERROR_SYNC) {
- 
- 		/*
- 		 * If we received a synchronous error when in userspace
+Michael
 
+
+>>        Applications should also  allow  for  the  possibility  that  the
+>>        IN_MOVED_FROM event was the last event that could fit in the buf‐
+>>        fer returned by the current call to read(2), and the accompanying
+>>        IN_MOVED_TO event might be fetched only on the next read(2).
+> 
+> 								Honza
+> 
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
