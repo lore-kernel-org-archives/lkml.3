@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaDDN11 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:27:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22774 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503AbaDDN10 (ORCPT
+	id S1752960AbaDDNaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 09:30:10 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:22700 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752439AbaDDNaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:27:26 -0400
-Date: Fri, 4 Apr 2014 16:26:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kumar Amit Mehta <gmate.amit@gmail.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, abbotti@mev.co.uk,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: drivers: pcl812.c: fixed a coding style
- issue
-Message-ID: <20140404132651.GV6991@mwanda>
-References: <1396605929-10514-1-git-send-email-gmate.amit@gmail.com>
- <20140404110707.GT6991@mwanda>
- <20140404114852.GA12452@gmail.com>
+	Fri, 4 Apr 2014 09:30:07 -0400
+Date: Fri, 4 Apr 2014 09:30:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        mjg59@srcf.ucam.org, aubrey.li@linux.intel.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+Message-ID: <20140404093004.7d9e7493@gandalf.local.home>
+In-Reply-To: <20140404080006.GB6944@gmail.com>
+References: <20140404064120.GB11877@gmail.com>
+	<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>
+	<20140404080006.GB6944@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140404114852.GA12452@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 02:48:52PM +0300, Kumar Amit Mehta wrote:
-> On Fri, Apr 04, 2014 at 02:07:07PM +0300, Dan Carpenter wrote:
-> > On Fri, Apr 04, 2014 at 01:05:29PM +0300, Kumar Amit Mehta wrote:
-> > > Fixed a coding style issue. Reported by checkpatch.pl
-> > > 
-> > 
-> > It's better if the commit messages are more specific than this.
+On Fri, 4 Apr 2014 10:00:07 +0200
+Ingo Molnar <mingo@kernel.org> wrote:
+
 > 
-> So, should I resend the patch with a more appropriate commit message ?
+> * tip-bot for Ingo Molnar <tipbot@zytor.com> wrote:
+> 
+> > Commit-ID:  d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3
+> > Gitweb:     http://git.kernel.org/tip/d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3
+> > Author:     Ingo Molnar <mingo@kernel.org>
+> > AuthorDate: Fri, 4 Apr 2014 08:41:26 +0200
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Fri, 4 Apr 2014 08:48:03 +0200
+> > 
+> > [PATCH] x86: Try the BIOS reboot method before the PCI reboot method
+> 
+> So, JFYI, I have put this into x86/reboot to get it tested, but it's 
+> not queued up for upstream yet until there's concensus.
+> 
+> (Steve testing it wouldn't hurt either.)
 
-[PATCH] staging: comedi: drivers: pcl812.c: add curly braces for checkpatch
+I'll give it a test. But currently I resurrected an old box Pentium III,
+and I'm going to give it a try to see if it fails with the current
+kernel too.
 
-Kernel style is that if one side of the if else statement gets has curly
-braces then both side should have them.
-
-regards,
-dan carpenter
-
+-- Steve
