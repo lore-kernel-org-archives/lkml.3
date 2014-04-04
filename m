@@ -1,65 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaDDTb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 15:31:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2976 "EHLO mx1.redhat.com"
+	id S1754579AbaDDTca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 15:32:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54128 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754374AbaDDTbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 15:31:25 -0400
-Date: Fri, 4 Apr 2014 15:31:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com
-Subject: Re: [PATCH 3/4] perf, callchain: Add generic report parse callchain
- callback function
-Message-ID: <20140404193119.GI8488@redhat.com>
-References: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
- <1395689577-214654-4-git-send-email-dzickus@redhat.com>
- <87zjk3x8dv.fsf@sejong.aot.lge.com>
+	id S1754273AbaDDTc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 15:32:27 -0400
+Date: Fri, 4 Apr 2014 21:32:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] uprobes/x86: preparations to fix the reprel
+	jmp/call handling.
+Message-ID: <20140404193226.GA23092@redhat.com>
+References: <20140404185038.GA14679@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87zjk3x8dv.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140404185038.GA14679@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 02:57:32PM +0900, Namhyung Kim wrote:
-> On Mon, 24 Mar 2014 15:32:56 -0400, Don Zickus wrote:
-> > This takes the parse_callchain_opt function and copies it into the
-> > callchain.c file.  Now the c2c tool can use it too without duplicating.
-> >
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > ---
-> >  tools/perf/util/callchain.c | 83 +++++++++++++++++++++++++++++++++++++++++++++
-> >  tools/perf/util/callchain.h |  1 +
-> >  2 files changed, 84 insertions(+)
-> >
-> > diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-> > index 8d9db45..2320678 100644
-> > --- a/tools/perf/util/callchain.c
-> > +++ b/tools/perf/util/callchain.c
-> > @@ -25,6 +25,89 @@
-> >  
-> >  __thread struct callchain_cursor callchain_cursor;
-> >  
-> > +int
-> > +report_parse_callchain_opt(const char *arg)
-> 
-> As it eliminated any dependency to the report code, the name can omit
-> 'report' as well.
+On 04/04, Oleg Nesterov wrote:
+>
+> Now let me send the draft RFC patch which fixes the "call" handling...
 
-Hmm, shrinking this down to 'parse_callchain_opt' seems to conflict with
-builtin-top.c's defintion which is a wrapper around
-record_parse_callchain_opt.
+Damn. apparently I can't understand lib/insn.c...
 
-I can modify builtin-top.c's defintion to top_parse_callchain_opt, but do
-we want to make the function parse_callchain_opt name more obvious that it is
-for 'report' style parsing (which means it looks for the embedded
-callchain flag)?  Vs. the record_parse_callchain_opt function, which is for
-setting up the callchain flag?
+Please see the draft below. Lets ignore 32bit tasks, lets ignore jmp's,
+please ignore how the (pseudo) code written, I'll change it anyway.
 
-Cheers,
-Don
+Questions:
+
+	1. Why insn_get_displacement() doesn't work? See "HELP!!!"
+	   below.
+
+	2. Do I use lib/insn.c correctly (ignoring displacement) ?
+
+           In particular, is 'turn this insn into "1: call 1b;"'
+           below correct?
+
+	3. Jim, do you still think it would be better to rewrite the
+	   call insns using a scratch register ?
+
+	4. Is there other call insns with OPCODE1() != 0xe8 which
+	   should be fixed too?
+
+Thanks,
+
+Oleg.
+
+
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 9f8210b..cca62c5 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -44,9 +44,15 @@ struct arch_uprobe {
+ 	u16				fixups;
+ 	const struct uprobe_xol_ops	*ops;
+ 
++	union {
+ #ifdef CONFIG_X86_64
+-	unsigned long			rip_rela_target_address;
++		unsigned long			rip_rela_target_address;
+ #endif
++		struct {
++			s32	disp;
++			u8	ilen;
++		}				ttt;
++	};
+ };
+ 
+ struct arch_uprobe_task {
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index b820668..423ae86 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -461,6 +461,52 @@ static struct uprobe_xol_ops default_xol_ops = {
+ 	.post_xol = default_post_xol_op,
+ };
+ 
++static bool ttt_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++
++	if (put_user(regs->ip + auprobe->ttt.ilen, (long __user *)(regs->sp - 8)))
++		return false;
++
++	regs->sp -= 8;
++	regs->ip += auprobe->ttt.ilen + auprobe->ttt.disp;
++
++	return true;
++}
++
++static int ttt_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	regs->sp += 8;
++	if (ttt_emulate_op(auprobe, regs))
++		return 0;
++	return -ERESTART;
++}
++
++static struct uprobe_xol_ops ttt_xol_ops = {
++	.emulate  = ttt_emulate_op,
++	.post_xol = ttt_post_xol_op,
++};
++
++static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
++{
++	s32 *disp;
++
++	insn_get_length(insn);
++	auprobe->ttt.ilen = insn->length;
++
++	insn_get_displacement(insn);
++	auprobe->ttt.disp = insn->displacement.value;
++	// HELP!!! the above doesn't work, ->displacement.value == 0
++	auprobe->ttt.disp = *(s32 *)(auprobe->insn + 1);
++
++	// turn this insn into "1: call 1b;", we only need to xol it
++	// to expand the stack if ->emulate() fails.
++	disp = (void *)auprobe->insn + insn_offset_displacement(insn);
++	*disp = -(s32)auprobe->ttt.ilen;
++
++	auprobe->ops = &ttt_xol_ops;
++	return 0;
++}
++
+ /**
+  * arch_uprobe_analyze_insn - instruction analysis including validity and fixups.
+  * @mm: the probed address space.
+@@ -484,6 +530,9 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	 * is either zero or it reflects rip-related fixups.
+ 	 */
+ 	switch (OPCODE1(&insn)) {
++	case 0xe8:		/* call relative - has its own xol_ops */
++		return ttt_setup_xol_ops(auprobe, &insn);
++
+ 	case 0x9d:		/* popf */
+ 		auprobe->fixups |= UPROBE_FIX_SETF;
+ 		break;
+@@ -493,9 +542,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	case 0xca:
+ 		fix_ip = false;
+ 		break;
+-	case 0xe8:		/* call relative - Fix return addr */
+-		fix_call = true;
+-		break;
+ 	case 0x9a:		/* call absolute - Fix return addr, not ip */
+ 		fix_call = true;
+ 		fix_ip = false;
+
