@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaDDLoj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 07:44:39 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.24]:54044 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631AbaDDLog (ORCPT
+	id S1752761AbaDDLsv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 07:48:51 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:50735 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535AbaDDLsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 07:44:36 -0400
-From: Christoph Jaeger <christophjaeger@linux.com>
-To: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, lgirdwood@gmail.com
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Christoph Jaeger <christophjaeger@linux.com>
-Subject: [PATCH] ASoC: alc56(23|32): fix undefined return value of probing code
-Date: Fri,  4 Apr 2014 13:44:19 +0200
-Message-Id: <1396611859-719-1-git-send-email-christophjaeger@linux.com>
-X-Mailer: git-send-email 1.9.0
-X-Df-Sender: MTg4NDM4Mw==
+	Fri, 4 Apr 2014 07:48:50 -0400
+Date: Fri, 4 Apr 2014 13:48:48 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Inconsistent lock state introduced by ipv6/addrconf change
+Message-ID: <20140404114848.GD13354@order.stressinduktion.org>
+Mail-Followup-To: Shawn Guo <shawn.guo@freescale.com>,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org,
+	Stephen Hemminger <stephen@networkplumber.org>,
+	"David S. Miller" <davem@davemloft.net>
+References: <20140404073455.GB29778@dragon>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140404073455.GB29778@dragon>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5d6be5aa ("ASoC: codec: Simplify ASoC probe code.") left variable
-'ret', whose value is returned, uninitialized. Since it is not used
-otherwise, remove it.
+Hello!
 
-Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
----
- sound/soc/codecs/alc5623.c | 3 +--
- sound/soc/codecs/alc5632.c | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+On Fri, Apr 04, 2014 at 03:34:56PM +0800, Shawn Guo wrote:
+> I'm running into an inconsistent lock state warning on the final v3.14
+> kernel (-rc8 is good) on Freescale i.MX6 platform with fec driver
+> (drivers/net/ethernet/freescale/fec_main.c).  The git bisect points
+> the finger to commit c15b1cc (ipv6: move DAD and addrconf_verify
+> processing to workqueue).  Reverting the commit does fix the problem
+> for me.  The image is built from arch/arm/configs/imx_v6_v7_defconfig.
+> 
+> The interesting part is the same warning shows up on mainline tree until
+> net-next gets merged with commit cd6362b.  That's why Olof's autobooter
+> keeps reporting failure on hummingboard and wandboard (both i.MX6 based)
+> since v3.14 release [1], but reports success after commit cd6362b.
+> 
+> We're less concerned by the mainline tree, since the problem disappeared
+> now (nice to know why though).  But we do still want to fix it for 3.14
+> stable kernel.
 
-diff --git a/sound/soc/codecs/alc5623.c b/sound/soc/codecs/alc5623.c
-index 09f7e77..f500905 100644
---- a/sound/soc/codecs/alc5623.c
-+++ b/sound/soc/codecs/alc5623.c
-@@ -902,7 +902,6 @@ static int alc5623_probe(struct snd_soc_codec *codec)
- {
- 	struct alc5623_priv *alc5623 = snd_soc_codec_get_drvdata(codec);
- 	struct snd_soc_dapm_context *dapm = &codec->dapm;
--	int ret;
- 
- 	alc5623_reset(codec);
- 
-@@ -961,7 +960,7 @@ static int alc5623_probe(struct snd_soc_codec *codec)
- 		return -EINVAL;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- /* power down chip */
-diff --git a/sound/soc/codecs/alc5632.c b/sound/soc/codecs/alc5632.c
-index ec071a6..3ee8d4e 100644
---- a/sound/soc/codecs/alc5632.c
-+++ b/sound/soc/codecs/alc5632.c
-@@ -1061,7 +1061,6 @@ static int alc5632_resume(struct snd_soc_codec *codec)
- static int alc5632_probe(struct snd_soc_codec *codec)
- {
- 	struct alc5632_priv *alc5632 = snd_soc_codec_get_drvdata(codec);
--	int ret;
- 
- 	/* power on device  */
- 	alc5632_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-@@ -1075,7 +1074,7 @@ static int alc5632_probe(struct snd_soc_codec *codec)
- 		return -EINVAL;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- /* power down chip */
--- 
-1.9.0
+The patch which fixes this is already queued up for -stable:
+
+http://patchwork.ozlabs.org/patch/335536/
+
+Sorry for the inconvenience,
+
+  Hannes
+
 
