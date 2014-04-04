@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252AbaDDSrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:47:09 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:40523 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840AbaDDSqG (ORCPT
+	id S1754058AbaDDSrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:47:07 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:33751 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754177AbaDDSqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:46:06 -0400
+	Fri, 4 Apr 2014 14:46:07 -0400
 From: Leif Lindholm <leif.lindholm@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mark Salter <msalter@redhat.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH v3 08/10] arm64: add EFI runtime services
-Date: Fri,  4 Apr 2014 19:45:11 +0100
-Message-Id: <1396637113-22790-9-git-send-email-leif.lindholm@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Leif Lindholm <leif.lindholm@linaro.org>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Subject: [PATCH v3 09/10] doc: arm: add UEFI support documentation
+Date: Fri,  4 Apr 2014 19:45:12 +0100
+Message-Id: <1396637113-22790-10-git-send-email-leif.lindholm@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1396637113-22790-1-git-send-email-leif.lindholm@linaro.org>
 References: <1396637113-22790-1-git-send-email-leif.lindholm@linaro.org>
@@ -22,599 +21,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Salter <msalter@redhat.com>
+This patch provides documentation of the [U]EFI runtime service and
+configuration features for the arm architecture.
 
-This patch adds EFI runtime support for arm64. The runtime support allows
-the kernel to access various EFI runtime services provided by EFI firmware.
-Things like reboot, real time clock, EFI boot variables, and others.
+Cc: Rob Landley <rob@landley.net>
+Cc: linux-doc@vger.kernel.org
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
 Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
 ---
- arch/arm64/Kconfig           |    7 +
- arch/arm64/include/asm/efi.h |   14 ++
- arch/arm64/kernel/Makefile   |    2 +-
- arch/arm64/kernel/efi.c      |  469 ++++++++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/setup.c    |    5 +
- 5 files changed, 496 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm64/include/asm/efi.h
- create mode 100644 arch/arm64/kernel/efi.c
+ Documentation/arm/00-INDEX |    2 ++
+ Documentation/arm/uefi.txt |   64 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 66 insertions(+)
+ create mode 100644 Documentation/arm/uefi.txt
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 791ec61..a7ee734 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -284,12 +284,17 @@ config EFI
- 	bool "UEFI firmware support"
- 	depends on OF
- 	select LIBFDT
-+	select UCS2_STRING
-+	select UEFI_PARAMS_FROM_FDT
- 	default y
- 	help
- 	  This option permits an Image to be loaded directly
- 	  by EFI firmware without the use of a bootloader.
- 	  See Documentation/efi-stub.txt for more information.
- 
-+	  It also enables the kernel to use available UEFI runtime
-+	  services (such as the UEFI variable services).
-+
- 	  This is only useful on systems that have UEFI firmware.
- 	  However, even with this option, the resultant kernel should
- 	  continue to boot on existing non-UEFI platforms.
-@@ -353,6 +358,8 @@ source "net/Kconfig"
- 
- source "drivers/Kconfig"
- 
-+source "drivers/firmware/Kconfig"
-+
- source "fs/Kconfig"
- 
- source "arch/arm64/kvm/Kconfig"
-diff --git a/arch/arm64/include/asm/efi.h b/arch/arm64/include/asm/efi.h
+diff --git a/Documentation/arm/00-INDEX b/Documentation/arm/00-INDEX
+index a94090c..3b08bc2 100644
+--- a/Documentation/arm/00-INDEX
++++ b/Documentation/arm/00-INDEX
+@@ -46,5 +46,7 @@ swp_emulation
+ 	- SWP/SWPB emulation handler/logging description
+ tcm.txt
+ 	- ARM Tightly Coupled Memory
++uefi.txt
++	- [U]EFI configuration and runtime services documentation
+ vlocks.txt
+ 	- Voting locks, low-level mechanism relying on memory system atomic writes.
+diff --git a/Documentation/arm/uefi.txt b/Documentation/arm/uefi.txt
 new file mode 100644
-index 0000000..5a46c4e
+index 0000000..d60030a
 --- /dev/null
-+++ b/arch/arm64/include/asm/efi.h
-@@ -0,0 +1,14 @@
-+#ifndef _ASM_EFI_H
-+#define _ASM_EFI_H
-+
-+#include <asm/io.h>
-+
-+#ifdef CONFIG_EFI
-+extern void efi_init(void);
-+extern void efi_idmap_init(void);
-+#else
-+#define efi_init()
-+#define efi_idmap_init()
-+#endif
-+
-+#endif /* _ASM_EFI_H */
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 21009b7..3a2815b 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -24,7 +24,7 @@ arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
- arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
- arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
- arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
--arm64-obj-$(CONFIG_EFI)			+= efi-stub.o efi-entry.o
-+arm64-obj-$(CONFIG_EFI)			+= efi-stub.o efi-entry.o efi.o
- 
- obj-y					+= $(arm64-obj-y) vdso/
- obj-m					+= $(arm64-obj-m)
-diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-new file mode 100644
-index 0000000..45f4784
---- /dev/null
-+++ b/arch/arm64/kernel/efi.c
-@@ -0,0 +1,469 @@
-+/*
-+ * Extensible Firmware Interface
-+ *
-+ * Based on Extensible Firmware Interface Specification version 2.4
-+ *
-+ * Copyright (C) 2013, 2014 Linaro Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/efi.h>
-+#include <linux/export.h>
-+#include <linux/memblock.h>
-+#include <linux/bootmem.h>
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/efi.h>
-+#include <asm/tlbflush.h>
-+#include <asm/mmu_context.h>
-+
-+struct efi_memory_map memmap;
-+
-+static efi_runtime_services_t *runtime;
-+
-+static u64 efi_system_table;
-+
-+static int uefi_debug __initdata;
-+static int __init uefi_debug_setup(char *str)
-+{
-+	uefi_debug = 1;
-+
-+	return 0;
-+}
-+early_param("uefi_debug", uefi_debug_setup);
-+
-+static int __init is_normal_ram(efi_memory_desc_t *md)
-+{
-+	if (md->attribute & EFI_MEMORY_WB)
-+		return 1;
-+	return 0;
-+}
-+
-+static void __init efi_setup_idmap(void)
-+{
-+	struct memblock_region *r;
-+	efi_memory_desc_t *md;
-+	u64 paddr, npages, size;
-+
-+	for_each_memblock(memory, r)
-+		create_id_mapping(r->base, r->size, 0);
-+
-+	/* map runtime io spaces */
-+	for_each_efi_memory_desc(&memmap, md) {
-+		if (!(md->attribute & EFI_MEMORY_RUNTIME) || is_normal_ram(md))
-+			continue;
-+		paddr = md->phys_addr;
-+		npages = md->num_pages;
-+		memrange_efi_to_native(&paddr, &npages);
-+		size = npages << PAGE_SHIFT;
-+		create_id_mapping(paddr, size, 1);
-+	}
-+}
-+
-+static int __init uefi_init(void)
-+{
-+	efi_char16_t *c16;
-+	char vendor[100] = "unknown";
-+	int i, retval;
-+
-+	efi.systab = early_memremap(efi_system_table,
-+				    sizeof(efi_system_table_t));
-+	if (efi.systab == NULL) {
-+		pr_warn("Unable to map EFI system table.\n");
-+		return -ENOMEM;
-+	}
-+
-+	set_bit(EFI_BOOT, &efi.flags);
-+	set_bit(EFI_64BIT, &efi.flags);
-+
-+	/*
-+	 * Verify the EFI Table
-+	 */
-+	if (efi.systab->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE) {
-+		pr_err("System table signature incorrect\n");
-+		return -EINVAL;
-+	}
-+	if ((efi.systab->hdr.revision >> 16) < 2)
-+		pr_warn("Warning: EFI system table version %d.%02d, expected 2.00 or greater\n",
-+			efi.systab->hdr.revision >> 16,
-+			efi.systab->hdr.revision & 0xffff);
-+
-+	/* Show what we know for posterity */
-+	c16 = early_memremap(efi.systab->fw_vendor,
-+			     sizeof(vendor));
-+	if (c16) {
-+		for (i = 0; i < (int) sizeof(vendor) - 1 && *c16; ++i)
-+			vendor[i] = c16[i];
-+		vendor[i] = '\0';
-+	}
-+
-+	pr_info("EFI v%u.%.02u by %s\n",
-+		efi.systab->hdr.revision >> 16,
-+		efi.systab->hdr.revision & 0xffff, vendor);
-+
-+	retval = efi_config_init(NULL);
-+	if (retval == 0)
-+		set_bit(EFI_CONFIG_TABLES, &efi.flags);
-+
-+	early_memunmap(c16, sizeof(vendor));
-+	early_memunmap(efi.systab,  sizeof(efi_system_table_t));
-+
-+	return retval;
-+}
-+
-+static __initdata char memory_type_name[][32] = {
-+	{"Reserved"},
-+	{"Loader Code"},
-+	{"Loader Data"},
-+	{"Boot Code"},
-+	{"Boot Data"},
-+	{"Runtime Code"},
-+	{"Runtime Data"},
-+	{"Conventional Memory"},
-+	{"Unusable Memory"},
-+	{"ACPI Reclaim Memory"},
-+	{"ACPI Memory NVS"},
-+	{"Memory Mapped I/O"},
-+	{"MMIO Port Space"},
-+	{"PAL Code"},
-+};
-+
-+/*
-+ * Return true for RAM regions we want to permanently reserve.
-+ */
-+static __init int is_reserve_region(efi_memory_desc_t *md)
-+{
-+	if (!is_normal_ram(md))
-+		return 0;
-+
-+	if (md->attribute & EFI_MEMORY_RUNTIME)
-+		return 1;
-+
-+	if (md->type == EFI_ACPI_RECLAIM_MEMORY ||
-+	    md->type == EFI_RESERVED_TYPE)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static __init void reserve_regions(void)
-+{
-+	efi_memory_desc_t *md;
-+	u64 paddr, npages, size;
-+
-+	if (uefi_debug)
-+		pr_info("Processing EFI memory map:\n");
-+
-+	for_each_efi_memory_desc(&memmap, md) {
-+		paddr = md->phys_addr;
-+		npages = md->num_pages;
-+
-+		if (uefi_debug)
-+			pr_info("  0x%012llx-0x%012llx [%s]",
-+				paddr, paddr + (npages << EFI_PAGE_SHIFT) - 1,
-+				memory_type_name[md->type]);
-+
-+		memrange_efi_to_native(&paddr, &npages);
-+		size = npages << PAGE_SHIFT;
-+
-+		if (is_normal_ram(md))
-+			early_init_dt_add_memory_arch(paddr, size);
-+
-+		if (is_reserve_region(md) ||
-+		    md->type == EFI_BOOT_SERVICES_CODE ||
-+		    md->type == EFI_BOOT_SERVICES_DATA) {
-+			memblock_reserve(paddr, size);
-+			if (uefi_debug)
-+				pr_cont("*");
-+		}
-+
-+		if (uefi_debug)
-+			pr_cont("\n");
-+	}
-+}
-+
-+
-+static u64 __init free_one_region(u64 start, u64 end)
-+{
-+	u64 size = end - start;
-+
-+	if (uefi_debug)
-+		pr_info("  EFI freeing: 0x%012llx-0x%012llx\n",	start, end - 1);
-+
-+	free_bootmem_late(start, size);
-+	return size;
-+}
-+
-+static u64 __init free_region(u64 start, u64 end)
-+{
-+	u64 map_start, map_end, total = 0;
-+
-+	if (end <= start)
-+		return total;
-+
-+	map_start = (u64)memmap.phys_map;
-+	map_end = PAGE_ALIGN(map_start + (memmap.map_end - memmap.map));
-+	map_start &= PAGE_MASK;
-+
-+	if (start < map_end && end > map_start) {
-+		/* region overlaps UEFI memmap */
-+		if (start < map_start)
-+			total += free_one_region(start, map_start);
-+
-+		if (map_end < end)
-+			total += free_one_region(map_end, end);
-+	} else
-+		total += free_one_region(start, end);
-+
-+	return total;
-+}
-+
-+static void __init free_boot_services(void)
-+{
-+	u64 total_freed = 0;
-+	u64 keep_end, free_start, free_end;
-+	efi_memory_desc_t *md;
-+
-+	/*
-+	 * If kernel uses larger pages than UEFI, we have to be careful
-+	 * not to inadvertantly free memory we want to keep if there is
-+	 * overlap at the kernel page size alignment. We do not want to
-+	 * free is_reserve_region() memory nor the UEFI memmap itself.
-+	 *
-+	 * The memory map is sorted, so we keep track of the end of
-+	 * any previous region we want to keep, remember any region
-+	 * we want to free and defer freeing it until we encounter
-+	 * the next region we want to keep. This way, before freeing
-+	 * it, we can clip it as needed to avoid freeing memory we
-+	 * want to keep for UEFI.
-+	 */
-+
-+	keep_end = 0;
-+	free_start = 0;
-+
-+	for_each_efi_memory_desc(&memmap, md) {
-+		u64 paddr, npages, size;
-+
-+		if (is_reserve_region(md)) {
-+			/*
-+			 * We don't want to free any memory from this region.
-+			 */
-+			if (free_start) {
-+				/* adjust free_end then free region */
-+				if (free_end > md->phys_addr)
-+					free_end -= PAGE_SIZE;
-+				total_freed += free_region(free_start, free_end);
-+				free_start = 0;
-+			}
-+			keep_end = md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT);
-+			continue;
-+		}
-+
-+		if (md->type != EFI_BOOT_SERVICES_CODE &&
-+		    md->type != EFI_BOOT_SERVICES_DATA) {
-+			/* no need to free this region */
-+			continue;
-+		}
-+
-+		/*
-+		 * We want to free memory from this region.
-+		 */
-+		paddr = md->phys_addr;
-+		npages = md->num_pages;
-+		memrange_efi_to_native(&paddr, &npages);
-+		size = npages << PAGE_SHIFT;
-+
-+		if (free_start) {
-+			if (paddr <= free_end)
-+				free_end = paddr + size;
-+			else {
-+				total_freed += free_region(free_start, free_end);
-+				free_start = paddr;
-+				free_end = paddr + size;
-+			}
-+		} else {
-+			free_start = paddr;
-+			free_end = paddr + size;
-+		}
-+		if (free_start < keep_end) {
-+			free_start += PAGE_SIZE;
-+			if (free_start >= free_end)
-+				free_start = 0;
-+		}
-+	}
-+	if (free_start)
-+		total_freed += free_region(free_start, free_end);
-+
-+	if (total_freed)
-+		pr_info("Freed 0x%llx bytes of EFI boot services memory",
-+			total_freed);
-+}
-+
-+void __init efi_init(void)
-+{
-+	struct efi_fdt_params params;
-+
-+	/* Grab UEFI information placed in FDT by stub */
-+	if (!efi_get_fdt_params(&params, uefi_debug))
-+		return;
-+
-+	efi_system_table = params.system_table;
-+
-+	memblock_reserve(params.mmap & PAGE_MASK,
-+			 PAGE_ALIGN(params.mmap_size + (params.mmap & ~PAGE_MASK)));
-+	memmap.phys_map = (void *)params.mmap;
-+	memmap.map = early_memremap(params.mmap, params.mmap_size);
-+	memmap.map_end = memmap.map + params.mmap_size;
-+	memmap.desc_size = params.desc_size;
-+	memmap.desc_version = params.desc_ver;
-+
-+	if (uefi_init() < 0)
-+		return;
-+
-+	reserve_regions();
-+}
-+
-+void __init efi_idmap_init(void)
-+{
-+	/* boot time idmap_pg_dir is incomplete, so fill in missing parts */
-+	efi_setup_idmap();
-+}
-+
-+static int __init remap_region(efi_memory_desc_t *md, void **new)
-+{
-+	u64 paddr, vaddr, npages, size;
-+
-+	paddr = md->phys_addr;
-+	npages = md->num_pages;
-+	memrange_efi_to_native(&paddr, &npages);
-+	size = npages << PAGE_SHIFT;
-+
-+	if (is_normal_ram(md))
-+		vaddr = (__force u64)ioremap_cache(paddr, size);
-+	else
-+		vaddr = (__force u64)ioremap(paddr, size);
-+
-+	if (!vaddr) {
-+		pr_err("Unable to remap 0x%llx pages @ %p\n",
-+		       npages, (void *)paddr);
-+		return 0;
-+	}
-+
-+	/* adjust for any rounding when EFI and system pagesize differs */
-+	md->virt_addr = vaddr + (md->phys_addr - paddr);
-+
-+	if (uefi_debug)
-+		pr_info("  EFI remap 0x%012llx => %p\n",
-+			md->phys_addr, (void *)md->virt_addr);
-+
-+	memcpy(*new, md, memmap.desc_size);
-+	*new += memmap.desc_size;
-+
-+	return 1;
-+}
-+
-+/*
-+ * Switch UEFI from an identity map to a kernel virtual map
-+ */
-+static int __init arm64_enter_virtual_mode(void)
-+{
-+	efi_memory_desc_t *md;
-+	phys_addr_t virtmap_phys;
-+	void *virtmap, *virt_md;
-+	efi_status_t status;
-+	u64 mapsize;
-+	int count = 0;
-+	unsigned long flags;
-+
-+	if (!efi_enabled(EFI_BOOT)) {
-+		pr_info("EFI services will not be available.\n");
-+		return -1;
-+	}
-+
-+	pr_info("Remapping and enabling EFI services.\n");
-+
-+	/* replace early memmap mapping with permanent mapping */
-+	mapsize = memmap.map_end - memmap.map;
-+	early_memunmap(memmap.map, mapsize);
-+	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
-+						   mapsize);
-+	memmap.map_end = memmap.map + mapsize;
-+
-+	efi.memmap = &memmap;
-+
-+	/* Map the runtime regions */
-+	virtmap = kmalloc(mapsize, GFP_KERNEL);
-+	if (!virtmap) {
-+		pr_err("Failed to allocate EFI virtual memmap\n");
-+		return -1;
-+	}
-+	virtmap_phys = virt_to_phys(virtmap);
-+	virt_md = virtmap;
-+
-+	for_each_efi_memory_desc(&memmap, md) {
-+		if (!(md->attribute & EFI_MEMORY_RUNTIME))
-+			continue;
-+		if (remap_region(md, &virt_md))
-+			++count;
-+	}
-+
-+	efi.systab = (__force void *)efi_lookup_mapped_addr(efi_system_table);
-+	if (efi.systab)
-+		set_bit(EFI_SYSTEM_TABLES, &efi.flags);
-+
-+	local_irq_save(flags);
-+	cpu_switch_mm(idmap_pg_dir, &init_mm);
-+	flush_tlb_all();
-+	flush_cache_all();
-+
-+	/* Call SetVirtualAddressMap with the physical address of the map */
-+	runtime = efi.systab->runtime;
-+	efi.set_virtual_address_map = runtime->set_virtual_address_map;
-+
-+	status = efi.set_virtual_address_map(count * memmap.desc_size,
-+					     memmap.desc_size,
-+					     memmap.desc_version,
-+					     (efi_memory_desc_t *)virtmap_phys);
-+	cpu_set_reserved_ttbr0();
-+	flush_tlb_all();
-+	flush_cache_all();
-+	local_irq_restore(flags);
-+
-+	kfree(virtmap);
-+
-+	free_boot_services();
-+
-+	if (status != EFI_SUCCESS) {
-+		pr_err("Failed to set EFI virtual address map! [%lx]\n",
-+			status);
-+		return -1;
-+	}
-+
-+	/* Set up runtime services function pointers */
-+	runtime = efi.systab->runtime;
-+	efi.get_time = runtime->get_time;
-+	efi.set_time = runtime->set_time;
-+	efi.get_wakeup_time = runtime->get_wakeup_time;
-+	efi.set_wakeup_time = runtime->set_wakeup_time;
-+	efi.get_variable = runtime->get_variable;
-+	efi.get_next_variable = runtime->get_next_variable;
-+	efi.set_variable = runtime->set_variable;
-+	efi.query_variable_info = runtime->query_variable_info;
-+	efi.update_capsule = runtime->update_capsule;
-+	efi.query_capsule_caps = runtime->query_capsule_caps;
-+	efi.get_next_high_mono_count = runtime->get_next_high_mono_count;
-+	efi.reset_system = runtime->reset_system;
-+
-+	set_bit(EFI_RUNTIME_SERVICES, &efi.flags);
-+
-+	return 0;
-+}
-+early_initcall(arm64_enter_virtual_mode);
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 720853f..0a14aaf 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -41,6 +41,7 @@
- #include <linux/memblock.h>
- #include <linux/of_fdt.h>
- #include <linux/of_platform.h>
-+#include <linux/efi.h>
- 
- #include <asm/fixmap.h>
- #include <asm/cputype.h>
-@@ -55,6 +56,7 @@
- #include <asm/traps.h>
- #include <asm/memblock.h>
- #include <asm/psci.h>
-+#include <asm/efi.h>
- 
- unsigned int processor_id;
- EXPORT_SYMBOL(processor_id);
-@@ -366,11 +368,14 @@ void __init setup_arch(char **cmdline_p)
- 
- 	parse_early_param();
- 
-+	efi_init();
- 	arm64_memblock_init();
- 
- 	paging_init();
- 	request_standard_resources();
- 
-+	efi_idmap_init();
-+
- 	unflatten_device_tree();
- 
- 	psci_init();
++++ b/Documentation/arm/uefi.txt
+@@ -0,0 +1,64 @@
++UEFI, the Unified Extensible Firmware Interface, is a specification
++governing the behaviours of compatible firmware interfaces. It is
++maintained by the UEFI Forum - http://www.uefi.org/.
++
++UEFI is an evolution of its predecessor 'EFI', so the terms EFI and
++UEFI are used somewhat interchangeably in this document and associated
++source code. As a rule, anything new uses 'UEFI', whereas 'EFI' refers
++to legacy code or specifications.
++
++UEFI support in Linux
++=====================
++Booting on a platform with firmware compliant with the UEFI specification
++makes it possible for the kernel to support additional features:
++- UEFI Runtime Services
++- Retrieving various configuration information through the standardised
++  interface of UEFI configuration tables. (ACPI, SMBIOS, ...)
++
++For actually enabling [U]EFI support, enable:
++- CONFIG_EFI=y
++- CONFIG_EFI_VARS=y or m
++
++The implementation depends on receiving information about the UEFI environment
++in a Flattened Device Tree (FDT) - so is only available with CONFIG_OF.
++
++UEFI stub
++=========
++The "stub" is a feature that extends the Image/zImage into a valid UEFI
++PE/COFF executable, including a loader application that makes it possible to
++load the kernel directly from the UEFI shell, boot menu, or one of the
++lightweight bootloaders like Gummiboot or rEFInd.
++
++The kernel image built with stub support remains a valid kernel image for
++booting in non-UEFI environments.
++
++UEFI kernel support on ARM
++==========================
++UEFI kernel support on the ARM architectures (arm and arm64) is only available
++when boot is performed through the stub.
++
++When booting in UEFI mode, the stub deletes any memory nodes from a provided DT.
++Instead, the kernel reads the UEFI memory map.
++
++The stub populates the FDT /chosen node with (and the kernel scans for) the
++following parameters:
++________________________________________________________________________________
++Name                      | Size   | Description
++================================================================================
++linux,uefi-system-table   | 64-bit | Physical address of the UEFI System Table.
++--------------------------------------------------------------------------------
++linux,uefi-mmap-start     | 64-bit | Physical address of the UEFI memory map,
++                          |        | populated by the UEFI GetMemoryMap() call.
++--------------------------------------------------------------------------------
++linux,uefi-mmap-size      | 32-bit | Size in bytes of the UEFI memory map
++                          |        | pointed to in previous entry.
++--------------------------------------------------------------------------------
++linux,uefi-mmap-desc-size | 32-bit | Size in bytes of each entry in the UEFI
++                          |        | memory map.
++--------------------------------------------------------------------------------
++linux,uefi-mmap-desc-ver  | 32-bit | Version of the mmap descriptor format.
++--------------------------------------------------------------------------------
++linux,uefi-stub-kern-ver  | string | Copy of linux_banner from build.
++--------------------------------------------------------------------------------
++
++For verbose debug messages, specify 'uefi_debug' on the kernel command line.
 -- 
 1.7.10.4
 
