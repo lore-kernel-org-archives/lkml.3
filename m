@@ -1,119 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaDDLHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 07:07:30 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64510 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752402AbaDDLHZ (ORCPT
+	id S1752631AbaDDLIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 07:08:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32587 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581AbaDDLHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 07:07:25 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
-        alex.shi@linaro.org, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com
-Subject: Re: [RFC PATCHC 0/3] sched/idle : find the idlest cpu with cpuidle info
-Date: Fri, 04 Apr 2014 13:23:17 +0200
-Message-ID: <1529331.DNJJHlmQ1T@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <533BC9B7.3010501@linaro.org>
-References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <22904760.5rGZuP5nsx@vostro.rjw.lan> <533BC9B7.3010501@linaro.org>
+	Fri, 4 Apr 2014 07:07:37 -0400
+Date: Fri, 4 Apr 2014 14:07:07 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kumar Amit Mehta <gmate.amit@gmail.com>
+Cc: abbotti@mev.co.uk, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] staging: comedi: drivers: pcl812.c: fixed a coding style
+ issue
+Message-ID: <20140404110707.GT6991@mwanda>
+References: <1396605929-10514-1-git-send-email-gmate.amit@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396605929-10514-1-git-send-email-gmate.amit@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 02, 2014 10:26:31 AM Daniel Lezcano wrote:
-> On 04/02/2014 01:01 AM, Rafael J. Wysocki wrote:
-> > On Friday, March 28, 2014 01:29:53 PM Daniel Lezcano wrote:
-> >> The following patchset provides an interaction between cpuidle and the scheduler.
-> >>
-> >> The first patch encapsulate the needed information for the scheduler in a
-> >> separate cpuidle structure. The second one stores the pointer to this structure
-> >> when entering idle. The third one, use this information to take the decision to
-> >> find the idlest cpu.
-> >>
-> >> After some basic testing with hackbench, it appears there is an improvement for
-> >> the performances (small) and for the duration of the idle states (which provides
-> >> a better power saving).
-> >>
-> >> The measurement has been done with the 'idlestat' tool previously posted in this
-> >> mailing list.
-> >>
-> >> So the benefit is good for both sides performance and power saving.
-> >>
-> >> The select_idle_sibling could be also improved in the same way.
-> >
-> > Well, quite frankly, I don't really like this series.  Not the idea itself, but
-> > the way it has been implemented.
-> >
-> > First off, if the scheduler is to access idle state data stored in struct
-> > cpuidle_state, I'm not sure why we need a separate new structure for that?
-> > Couldn't there be a pointer to a whole struct cpuidle_state from struct rq
-> > instead?  [->exit_latency is the only field that find_idlest_cpu() in your
-> > third patch seems to be using anyway.]
+On Fri, Apr 04, 2014 at 01:05:29PM +0300, Kumar Amit Mehta wrote:
+> Fixed a coding style issue. Reported by checkpatch.pl
 > 
-> Hi Rafael,
-> 
-> thank you very much for reviewing the patchset.
-> 
-> I created a specific structure to encapsulate the informations needed 
-> for the scheduler and to prevent to export unneeded data. This is purely 
-> for code design. Also it was to separate the idle's energy 
-> characteristics from the cpuidle framework data (flags, name, etc ...).
-> 
-> The exit_latency field is only used in this patchset but the 
-> target_residency will be used also (eg. prevent to wakeup a cpu before 
-> the minimum idle time target residency).
 
-OK
+It's better if the commit messages are more specific than this.
 
-It would be good to add that heuristics upfront so that we can see the full
-picture.
+regards,
+dan carpenter
 
-> The power field is ... hum ... not filled by any board (except for 
-> calxeda). Vendors do not like to share this information, so very likely 
-> that would be changed to a normalized value, I don't know.
-
-I'm not sure if that field is ever going to be used by everyone to be honest.
-
-> I agree we can put a pointer to the struct cpuidle_state instead if that 
-> reduce the impact of the patchset.
-
-Yes, it will, in my opinion.
-
-> > Second, is accessing the idle state information for all CPUs from find_idlest_cpu()
-> > guaranteed to be non-racy?  I mean, what if a CPU changes its state from idle to
-> > non-idle while another one is executing find_idlest_cpu()?  In other words,
-> > where's the read memory barrier corresponding to the write ones in the modified
-> > cpu_idle_call()?  And is the memory barrier actually sufficient?  After all,
-> > you need to guarantee that the CPU is still idle after you have evaluated
-> > idle_cpu() on it.
-> 
-> Well, as Nicolas mentioned it in another mail, we can live with races, 
-> the scheduler will take a wrong decision but nothing worth than what we 
-
-I guess you mean "worse"?  I'm not sure about that.
-
-> have today. In any case we want to prevent any lock in the code.
-
-Of course. :-)
-
-> > Finally, is really the heuristics used by find_idlest_cpu() to select the "idlest"
-> > CPU the best one?  What about deeper vs shallower idle states, for example?
-> 
-> I believe it is what is supposed to do the patchset. 1. if the cpu is 
-> idle, pick the shallower, 2. if the cpu is not idle pick the less 
-> loaded. But may be there is something wrong in the routine as pointed 
-> Nico, I have to double check it.
-
-Yes, that routine doesn't look entirely correct then.
-
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
