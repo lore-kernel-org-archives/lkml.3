@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaDDN6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:58:49 -0400
-Received: from fieldses.org ([174.143.236.118]:59586 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752449AbaDDN6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:58:47 -0400
-Date: Fri, 4 Apr 2014 09:58:43 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Mark Lord <mlord@pobox.com>, "J. Bruce Fields" <bfields@redhat.com>,
-        Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-3.14 nfsd regression
-Message-ID: <20140404135842.GB17594@fieldses.org>
-References: <533D8D73.1090603@pobox.com>
- <20140403171643.GB28790@pad.redhat.com>
- <533D9F8A.6030001@pobox.com>
- <20140403145504.3b04170e@tlielax.poochiereds.net>
- <20140403201627.GC8343@fieldses.org>
- <20140403192146.79679909@tlielax.poochiereds.net>
+	id S1753160AbaDDOCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:02:45 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:63265 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049AbaDDOCn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 10:02:43 -0400
+Message-ID: <533EBB80.4080307@linaro.org>
+Date: Fri, 04 Apr 2014 15:02:40 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140403192146.79679909@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>, linaro-kernel@lists.linaro.org
+CC: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: Fix DEBUG_LL for multi-platform kernels (without
+ PL01X)
+References: <1396610269-11580-1-git-send-email-daniel.thompson@linaro.org> <8799740.0uZJLUBGY1@wuerfel>
+In-Reply-To: <8799740.0uZJLUBGY1@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 07:21:46PM -0400, Jeff Layton wrote:
-> So according to the RFC you have to encode both the mode bits and the
-> ftype for v2. The type bits seem to be removed from the mode in NFSv3
-> though, so perhaps we should only be doing that masking in versions
-> above v2?
-
-Right, the problematic patch applied the same mask in both v2 and v3
-cases, so I'm reverting just the v2 part (see below).
-
-> With a quick check, it looks like the v3 code doesn't rely on those bits
-> and I imagine v4 doesn't either.
+On 04/04/14 12:39, Arnd Bergmann wrote:
+>> Problem is fixed by only deploying the compatibility options for SPEAr
+>> when ARCH_MULTIPLATFORM is not set.
 > 
-> It might also be nice to have the client v2 decode_fattr function to
-> throw a warning if the server sends us mismatched type bits and ftype
-> values. That would have helped us catch this sooner...
+> The assumption is actually wrong: SPEAr does not support single
+> platform builds any more. The PLAT_SPEAR_SINGLE symbol in Kconfig
+> is a leftover from an earlier patch I did that never got merged,
+> and we should just remove that.
 
-Yes, that might be a reasonable thing to do, though I don't know if it's
-worth it.
+Thanks. I did make a wrong conclusion based on that symbol.
 
---b.
 
-commit 35a8dff14e76c00e5b52140290cfb498dc2454a0
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Thu Apr 3 15:10:35 2014 -0400
+>> ---
+>>  arch/arm/Kconfig.debug | 6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>> index 0531da8..f10c784 100644
+>> --- a/arch/arm/Kconfig.debug
+>> +++ b/arch/arm/Kconfig.debug
+>> @@ -991,9 +991,9 @@ config DEBUG_LL_INCLUDE
+>>  config DEBUG_UART_PL01X
+>>         def_bool ARCH_EP93XX || \
+>>                 ARCH_INTEGRATOR || \
+>> -               ARCH_SPEAR3XX || \
+>> -               ARCH_SPEAR6XX || \
+>> -               ARCH_SPEAR13XX || \
+>> +               (ARCH_SPEAR3XX && !ARCH_MULTIPLATFORM) || \
+>> +               (ARCH_SPEAR6XX && !ARCH_MULTIPLATFORM) || \
+>> +               (ARCH_SPEAR13XX && !ARCH_MULTIPLATFORM) || \
+>>                 ARCH_VERSATILE
+> 
+> Removing the SPEAR lines seems correct here, but the lines
+> you add don't make any sense.
 
-    nfsd: revert v2 half of "nfsd: don't return high mode bits"
-    
-    This reverts the part of commit 6e14b46b91fee8a049b0940333ce13a820beaaa5
-    that changes NFSv2 behavior.
-    
-    Mark Lord found that it broke nfs-root for Linux clients, because it
-    broke NFSv2.
-    
-    In fact, from RFC 1094:
-    
-    	"Notice that the file type is specified both in the mode bits
-    	and in the file type.  This is really a bug in the protocol and
-    	will be fixed in future versions."
-    
-    So NFSv2 clients really are expected to depend on the high bits of the
-    mode.
-    
-    Cc: stable@kernel.org
-    Reported-by: Mark Lord <mlord@pobox.com>
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Will fix.
 
-diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-index b17d932..9c769a4 100644
---- a/fs/nfsd/nfsxdr.c
-+++ b/fs/nfsd/nfsxdr.c
-@@ -152,7 +152,7 @@ encode_fattr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp,
- 	type = (stat->mode & S_IFMT);
- 
- 	*p++ = htonl(nfs_ftypes[type >> 12]);
--	*p++ = htonl((u32) (stat->mode & S_IALLUGO));
-+	*p++ = htonl((u32) stat->mode);
- 	*p++ = htonl((u32) stat->nlink);
- 	*p++ = htonl((u32) from_kuid(&init_user_ns, stat->uid));
- 	*p++ = htonl((u32) from_kgid(&init_user_ns, stat->gid));
