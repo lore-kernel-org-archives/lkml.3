@@ -1,126 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaDDDtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 23:49:08 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:47488 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814AbaDDDtB (ORCPT
+	id S1752185AbaDDDtv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 23:49:51 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:41607 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048AbaDDDtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 23:49:01 -0400
-Message-ID: <533E2BA2.6000107@linux.vnet.ibm.com>
-Date: Fri, 04 Apr 2014 11:48:50 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 3 Apr 2014 23:49:25 -0400
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        benh@kernel.crashing.org, paulus@samba.org, nfont@linux.vnet.ibm.com,
-        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
-        rcj@linux.vnet.ibm.com, jlarrew@linux.vnet.ibm.com,
-        alistair@popple.id.au, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] power, sched: stop updating inside arch_update_cpu_topology()
- when nothing to be update
-References: <533B8431.8090507@linux.vnet.ibm.com> <533D20E1.4000008@linux.vnet.ibm.com>
-In-Reply-To: <533D20E1.4000008@linux.vnet.ibm.com>
+In-Reply-To: <20140403214322.GC14763@sirena.org.uk>
+References: <1396523431-14519-1-git-send-email-harinik@xilinx.com>
+	<20140403214322.GC14763@sirena.org.uk>
+Date: Fri, 4 Apr 2014 09:19:23 +0530
+Message-ID: <CAFcVEC+3QZ0CiBtPM7b-qGugraWpx4zSuQ-ct4Q=Ywbn4ick+w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] SPI: Add driver for Cadence SPI controller
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040403-5816-0000-0000-00000D32ADA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Srivatsa
+Hi Mark
 
-Thanks for your reply :)
+On Fri, Apr 4, 2014 at 3:13 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Apr 03, 2014 at 04:40:30PM +0530, Harini Katakam wrote:
+>> Add driver for Cadence SPI controller. This is used in Xilinx Zynq.
+>
+> I just reviewed a driver for "Zynq Quad SPI controller" from Punnaiah
+> Choudary Kalluri (CCed) which seems *very* similar to this one.  Are
+> there opportunities for code sharing here (I'm not entirely sure the
+> hardware blocks are different, though I didn't check in detail).
+>
 
-On 04/03/2014 04:50 PM, Srivatsa S. Bhat wrote:
-[snip]
-> 
-> Now, the interesting thing to note here is that, if CPU0's node was already
-> set as node0, *nothing* should go wrong, since its just a redundant update.
-> However, if CPU0's original node mapping was something different, or if
-> node0 doesn't even exist in the machine, then the system can crash.
+Thanks for the review.
 
-By printk I confirmed all cpus was belong to node 1 at very beginning,
-and things become magically after the wrong updating...
+QSPI is a Xilinx IP built on top of cadence SPI  with
+considerable functional changes.
+As explained in the QSPI patch, there are three configurations
+QSPI supports :
 
-> 
-> Have you verified that CPU0's node mapping is different from node 0?
-> That is, boot the kernel with "numa=debug" in the kernel command line and
-> it will print out the cpu-to-node associativity during boot. That way you
-> can figure out what was the original associativity that was set. This will
-> confirm the theory that the hypervisor sent a redundant update, but because
-> of the weird pre-allocation using kzalloc that we do inside
-> arch_update_cpu_topology(), we wrongly updated CPU0's mapping as CPU0 <-> Node0.
+- A single flash device connected with 1 CS and 4 IO lines
+- Two flash devices connected over two separate sets of 4 IO lines
+  and two CS lines which are driven together.
+- Two flash devices connected with two separate CS line and one
+  common set of 4 IO lines.
 
-Associativity should changes, otherwise we won't continue the updating,
-and empty updates[] was confirmed to show up inside
-arch_update_cpu_topology().
+This first set of QSPI patches is only for the single flash configuration.
+As the next two configurations follow, QSPI driver will differ from SPI
+even more. That's why it might be better to have two separate drivers.
+It will avoid a lot of "if spi/ if qspi" checks.
 
-What I can't make sure is whether this is legal, notify changes but no
-changes happen sounds weird...however, even if it's legal, a check in
-here still make sense IMHO.
+I will send an RFC with proposed changes for all QSPI configurations.
+
+Also, I've replied to your comments on the QSPI driver.
+(The QSPI driver already addresses the comments for SPI v1)
+Except in two places where the comment was only applicable to QSPI driver,
+the replies hold good for both SPI and QSPI drivers.
+If you would like to continue the discussion on that thread, I'm ok with it.
+FYI, I'll be sending the next versions for both drivers after further
+discussion concludes.
 
 Regards,
-Michael Wang
-
-> 
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
->> Thus we should stop the updating in such cases, this patch will achieve
->> this and fix the issue.
->>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Nathan Fontenot <nfont@linux.vnet.ibm.com>
->> CC: Stephen Rothwell <sfr@canb.auug.org.au>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: Robert Jennings <rcj@linux.vnet.ibm.com>
->> CC: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
->> CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
->> CC: Alistair Popple <alistair@popple.id.au>
->> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
->> ---
->>  arch/powerpc/mm/numa.c |    9 +++++++++
->>  1 file changed, 9 insertions(+)
->>
->> diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
->> index 30a42e2..6757690 100644
->> --- a/arch/powerpc/mm/numa.c
->> +++ b/arch/powerpc/mm/numa.c
->> @@ -1591,6 +1591,14 @@ int arch_update_cpu_topology(void)
->>  		cpu = cpu_last_thread_sibling(cpu);
->>  	}
->>
->> +	/*
->> +	 * The 'cpu_associativity_changes_mask' could be cleared if
->> +	 * all the cpus it indicates won't change their node, in
->> +	 * which case the 'updated_cpus' will be empty.
->> +	 */
->> +	if (!cpumask_weight(&updated_cpus))
->> +		goto out;
->> +
->>  	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
->>
->>  	/*
->> @@ -1612,6 +1620,7 @@ int arch_update_cpu_topology(void)
->>  		changed = 1;
->>  	}
->>
->> +out:
->>  	kfree(updates);
->>  	return changed;
->>  }
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Harini
