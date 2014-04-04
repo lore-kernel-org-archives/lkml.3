@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbaDDDTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 23:19:21 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:30321 "EHLO
+	id S1752170AbaDDDTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 23:19:33 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:9649 "EHLO
 	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751215AbaDDDTR (ORCPT
+	by vger.kernel.org with ESMTP id S1751999AbaDDDTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 23:19:17 -0400
+	Thu, 3 Apr 2014 23:19:30 -0400
 From: Lei Wen <leiwen@marvell.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
         Stephen Boyd <sboyd@codeaurora.org>,
@@ -16,10 +16,12 @@ To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
         Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>,
         Petr Mladek <pmladek@suse.cz>, <linux-kernel@vger.kernel.org>,
         <leiwen@marvell.com>
-Subject: [PATCH 0/3] switch printk timestamp to use booting time
-Date: Fri, 4 Apr 2014 11:18:39 +0800
-Message-ID: <1396581522-3309-1-git-send-email-leiwen@marvell.com>
+Subject: [PATCH 3/3] printk: using booting time as the timestamp
+Date: Fri, 4 Apr 2014 11:18:42 +0800
+Message-ID: <1396581522-3309-4-git-send-email-leiwen@marvell.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396581522-3309-1-git-send-email-leiwen@marvell.com>
+References: <1396581522-3309-1-git-send-email-leiwen@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
@@ -31,29 +33,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is very common to have many processor to run over the same machine
-but run different OS actually, so that timestamp alignment is key
-to do the right debugging when find something wrong.
+As people may want to align the kernel log with some other processor
+running over the same machine but not the same copy of linux, we
+need to keep their log aligned, so that it would not make debug
+process hard and confused.
 
-Linux adopt schedule clock stopped, so that printk timestamp would get
-during suspend period which break such assumption in the old days.
-So this patch set is supposed to recover such behavior again.
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/printk/printk.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-BTW, I am not sure whether we could add additional member in printk
-log structure, so that we could print out two piece of log with
-one including suspend time, while another not?
-
-Lei Wen (3):
-  time: create __get_monotonic_boottime for WARNless calls
-  timekeeping: move clocksource init to the early place
-  printk: using booting time as the timestamp
-
- include/linux/time.h      |  2 ++
- init/main.c               |  1 +
- kernel/printk/printk.c    |  4 ++--
- kernel/time/timekeeping.c | 55 ++++++++++++++++++++++++++++++++++++-----------
- 4 files changed, 48 insertions(+), 14 deletions(-)
-
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index a45b509..af96fbd 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -349,7 +349,7 @@ static void log_store(int facility, int level,
+ 	if (ts_nsec > 0)
+ 		msg->ts_nsec = ts_nsec;
+ 	else
+-		msg->ts_nsec = local_clock();
++		msg->ts_nsec = ktime_to_ns(ktime_get_boottime());
+ 	memset(log_dict(msg) + dict_len, 0, pad_len);
+ 	msg->len = size;
+ 
+@@ -1440,7 +1440,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 		cont.facility = facility;
+ 		cont.level = level;
+ 		cont.owner = current;
+-		cont.ts_nsec = local_clock();
++		cont.ts_nsec = ktime_to_ns(ktime_get_boottime());
+ 		cont.flags = 0;
+ 		cont.cons = 0;
+ 		cont.flushed = false;
 -- 
 1.8.3.2
 
