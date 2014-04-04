@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaDDVkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:40:41 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:37962 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbaDDVkk (ORCPT
+	id S1752694AbaDDVoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:44:18 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54285 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486AbaDDVoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:40:40 -0400
-X-Greylist: delayed 917 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Apr 2014 17:40:40 EDT
+	Fri, 4 Apr 2014 17:44:15 -0400
+Date: Fri, 4 Apr 2014 15:44:10 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Ryan Desfosses <ryan@desfo.org>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] pci: changed '...pci_bus* bus' to '...pci_bus *bus'
+Message-ID: <20140404214410.GB13931@google.com>
+References: <1396646614-6458-1-git-send-email-ryan@desfo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <21311.8533.138063.744673@quad.stoffel.home>
-Date: Fri, 4 Apr 2014 17:17:09 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Joerg Roedel <joro@8bytes.org>, Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-In-Reply-To: <CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
-	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
-	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
-	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
-	<CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
-	<CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
-	<20140403104308.GP13491@8bytes.org>
-	<20140403170541.GA19010@thunk.org>
-	<533EF832.1030902@mit.edu>
-	<CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
-X-Mailer: VM 8.2.0b under 23.2.1 (x86_64-pc-linux-gnu)
+Content-Disposition: inline
+In-Reply-To: <1396646614-6458-1-git-send-email-ryan@desfo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Linus" == Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Fri, Apr 04, 2014 at 05:23:34PM -0400, Ryan Desfosses wrote:
+> change made to resolve following checkpatch message:
+>     drivers/pci/pci.c:109: ERROR: "foo* bar" should be "foo *bar"
+> branch: Linux 3.14-rc8
+> 
+> Signed-off-by: Ryan Desfosses <ryan@desfo.org>
 
-Linus> On Fri, Apr 4, 2014 at 11:21 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> 
->> The other thing I've used /dev/kmsg for is to shove a "I'm starting
->> something now" message in.  This is only really necessary because the
->> current kernel log timestamps are unusable crap.  (We could fix that,
->> hint hint.)
+Applied (folded into your other patch), thanks!
 
-Linus> I'd actually love to fix that, but I disagree with the "we could fix
-Linus> it". There are tons of people who know how to parse them (admittedly
-Linus> often only to ignore them), so changing the format is not likely to
-Linus> work.
-
-Linus> The good news is that "dmesg -H" does help if you're
-Linus> human. While at the same time being an example of that very
-Linus> "there are tools that know about the current horrid format"
-Linus> issue.. D'oh.
-
-I think you mean "dmesg -T", and unfortunately it seems Debian 6.0.9
-(or older) doesn ship a new enough linux-util since I've only got
-2.17.2-9 install.  
-
-And RHEL/Centos 5.6 and 6.5 don't seem to ship that by default either,
-they have got util-linux-2.13-0.56.el5 and
-util-linux-ng-2.17.2-12.14.el6.x86_64 respectively.  Blech!  It's in
-Linux Mint 16 at least, haven't checked older versions.
-
-John
-
-
-
+> ---
+>  drivers/pci/pci.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index fdbc294..a50d542 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -106,7 +106,7 @@ static bool pcie_ari_disabled;
+>   * Given a PCI bus, returns the highest PCI bus number present in the set
+>   * including the given PCI bus and its list of child PCI buses.
+>   */
+> -unsigned char pci_bus_max_busnr(struct pci_bus* bus)
+> +unsigned char pci_bus_max_busnr(struct pci_bus *bus)
+>  {
+>  	struct list_head *tmp;
+>  	unsigned char max, n;
+> -- 
+> 1.9.1
+> 
