@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799AbaDEAVR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 20:21:17 -0400
+	id S1753657AbaDEAVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 20:21:14 -0400
 Received: from mga11.intel.com ([192.55.52.93]:61940 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753634AbaDEAVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 20:21:14 -0400
+	id S1751215AbaDEAVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 20:21:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,798,1389772800"; 
-   d="scan'208";a="507336601"
-Date: Fri, 4 Apr 2014 21:56:33 +0800
+   d="scan'208";a="507336610"
+Date: Fri, 4 Apr 2014 21:59:08 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [loopback] b17c706987f: +197.7% qperf.sctp.bw
-Message-ID: <20140404135633.GA22386@localhost>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: [mm] e04ddfd12aa: +9.4% ebizzy.throughput
+Message-ID: <20140404135908.GB22386@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,127 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi Davidlohr,
 
-We are glad to find big SCTP performance improvements
+FYI, there are noticeable ebizzy throughput increases on commit
+e04ddfd12aa03471eff7daf3bc2435c7cea8e21f ("mm: per-thread vma caching")
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next.git master
-commit b17c706987fa6f28bdc1771c8266e7a69e22adcb ("loopback: sctp: add NETIF_F_SCTP_CSUM to device features")
+test case: lkp-st02/micro/ebizzy/200%-100-10
 
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
+700141f349f2b05  e04ddfd12aa03471eff7daf3b  
 ---------------  -------------------------  
- 3.848e+08 ~ 6%    +197.7%  1.146e+09 ~ 5%  bens/micro/qperf/600s
- 3.848e+08 ~ 6%    +197.7%  1.146e+09 ~ 5%  TOTAL qperf.sctp.bw
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-     39.30 ~ 3%     +91.0%      75.06 ~11%  lkp-a06/micro/qperf/600s
-     39.30 ~ 3%     +91.0%      75.06 ~11%  TOTAL qperf.sctp.bw
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-       126 ~ 0%      -3.2%        122 ~ 0%  lkp-a06/micro/qperf/600s
-       126 ~ 0%      -3.2%        122 ~ 0%  TOTAL qperf.sctp.latency
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-    216270 ~ 2%     -46.5%     115740 ~ 4%  lkp-a06/micro/qperf/600s
-    216270 ~ 2%     -46.5%     115740 ~ 4%  TOTAL cpuidle.C4.usage
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-  48722971 ~ 5%     +45.1%   70681678 ~ 7%  lkp-a06/micro/qperf/600s
-  48722971 ~ 5%     +45.1%   70681678 ~ 7%  TOTAL cpuidle.C2.time
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-    370655 ~ 2%     +46.8%     543952 ~ 7%  lkp-a06/micro/qperf/600s
-    370655 ~ 2%     +46.8%     543952 ~ 7%  TOTAL cpuidle.C2.usage
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-      1.00 ~13%     -22.8%       0.77 ~15%  lkp-a06/micro/qperf/600s
-      1.00 ~13%     -22.8%       0.77 ~15%  TOTAL perf-profile.cpu-cycles.acpi_processor_ffh_cstate_enter.acpi_idle_enter_bm.cpuidle_enter_state.cpuidle_idle_call.arch_cpu_idle
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-  18055616 ~ 4%     +28.5%   23205101 ~ 2%  bens/micro/qperf/600s
-  18055616 ~ 4%     +28.5%   23205101 ~ 2%  TOTAL proc-vmstat.numa_local
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-  18055616 ~ 4%     +28.5%   23205101 ~ 2%  bens/micro/qperf/600s
-  18055616 ~ 4%     +28.5%   23205101 ~ 2%  TOTAL proc-vmstat.numa_hit
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-  51480524 ~ 4%     +37.7%   70886229 ~ 2%  bens/micro/qperf/600s
-  15233974 ~ 0%     +14.2%   17397187 ~ 3%  lkp-a06/micro/qperf/600s
-  66714498 ~ 3%     +32.3%   88283417 ~ 2%  TOTAL proc-vmstat.pgalloc_normal
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
- 2.109e+08 ~ 4%     +37.7%  2.904e+08 ~ 2%  bens/micro/qperf/600s
-  24268359 ~ 0%     +14.2%   27716949 ~ 3%  lkp-a06/micro/qperf/600s
- 2.352e+08 ~ 3%     +35.3%  3.181e+08 ~ 2%  TOTAL proc-vmstat.pgfree
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
- 1.594e+08 ~ 4%     +37.7%  2.195e+08 ~ 2%  bens/micro/qperf/600s
-   9034872 ~ 0%     +14.2%   10321019 ~ 3%  lkp-a06/micro/qperf/600s
- 1.685e+08 ~ 4%     +36.4%  2.299e+08 ~ 2%  TOTAL proc-vmstat.pgalloc_dma32
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-     51262 ~ 2%     -10.0%      46151 ~ 3%  lkp-a06/micro/qperf/600s
-     51262 ~ 2%     -10.0%      46151 ~ 3%  TOTAL time.involuntary_context_switches
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-     65268 ~ 1%      +6.8%      69676 ~ 0%  bens/micro/qperf/600s
-     65268 ~ 1%      +6.8%      69676 ~ 0%  TOTAL vmstat.system.in
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-  33939624 ~29%     +22.6%   41609509 ~ 0%  bens/micro/qperf/600s
-   4125867 ~ 1%      +3.9%    4285302 ~ 0%  lkp-a06/micro/qperf/600s
-  38065492 ~26%     +20.6%   45894812 ~ 0%  TOTAL time.voluntary_context_switches
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-    129649 ~ 1%      +6.8%     138432 ~ 0%  bens/micro/qperf/600s
-     13874 ~ 1%      +4.8%      14540 ~ 0%  lkp-a06/micro/qperf/600s
-    143523 ~ 1%      +6.6%     152972 ~ 0%  TOTAL vmstat.system.cs
-
-72f8e06f3ea022d  b17c706987fa6f28bdc1771c8  
----------------  -------------------------  
-       739 ~19%     +12.0%        827 ~ 0%  bens/micro/qperf/600s
-       812 ~ 0%      -3.4%        784 ~ 1%  lkp-a06/micro/qperf/600s
-      1551 ~ 9%      +3.9%       1612 ~ 0%  TOTAL time.system_time
-
+     23726 ~ 0%      +9.4%      25955 ~ 0%  TOTAL ebizzy.throughput
+      1525 ~ 0%      +9.3%       1667 ~ 0%  TOTAL ebizzy.throughput.per_thread.max
+      1428 ~ 0%      +9.1%       1558 ~ 0%  TOTAL ebizzy.throughput.per_thread.min
+     14.42 ~ 0%      +8.1%      15.59 ~ 0%  TOTAL ebizzy.time.user
+     65.29 ~ 0%      -1.8%      64.12 ~ 0%  TOTAL ebizzy.time.sys
+      4290 ~17%     -28.4%       3073 ~22%  TOTAL slabinfo.buffer_head.active_objs
+      4313 ~17%     -28.8%       3073 ~22%  TOTAL slabinfo.buffer_head.num_objs
+    165372 ~ 0%      +9.2%     180527 ~ 0%  TOTAL vmstat.system.in
+      1443 ~ 0%      +8.1%       1560 ~ 0%  TOTAL time.user_time
+      6529 ~ 0%      -1.8%       6413 ~ 0%  TOTAL time.system_time
 
 Legend:
 	~XX%    - stddev percent
 	[+-]XX% - change percent
 
 
-                                     qperf.sctp.bw
+                                  ebizzy.throughput
 
-   1.3e+09 ++---------------------------------------------------------------+
-   1.2e+09 ++O                                             O                |
-           |   O  O O                  O O        O   O  O                  |
-   1.1e+09 O+         O O O O  O O O        O O O   O        O              |
-     1e+09 ++                        O                                      |
-           |                                                                |
-     9e+08 ++                                                               |
-     8e+08 ++                                                               |
-     7e+08 ++                                                               |
-           |                                                                |
-     6e+08 ++                                                               |
-     5e+08 ++                                                               |
-           |                                         .*..     .*.    .*.    |
-     4e+08 *+*.*..*.*.*. .*.*..*.*.*.*.*.*..*.*.*.*.*    *.*.*   *.*.   *.*.*
-     3e+08 ++-----------*---------------------------------------------------+
+   26500 ++O-----------O---O------------------------------------------------+
+         O   O O O O     O   O O O     O O                                  |
+   26000 ++          O             O O      O     O                         |
+         |                                 O  O O                           |
+         |                                                                  |
+   25500 ++                                                                 |
+         |                                                                  |
+   25000 ++                                                                 |
+         |                                                                  |
+   24500 ++                                                                 |
+         |                                                                  |
+         *.*.*.   .*. .*.*.*.   .*.*.       *.*.*.*.                        |
+   24000 ++    *.*   *       *.*     *.*.*.*        *.*.*.*.*.*.            |
+         |                                                      *.*.*.*.*.*.*
+   23500 ++-----------------------------------------------------------------+
 
 
 	[*] bisect-good sample
