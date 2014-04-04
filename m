@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbaDDPiq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:38:46 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:52859 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246AbaDDPio (ORCPT
+	id S1753790AbaDDPjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:39:22 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:51087 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722AbaDDPjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:38:44 -0400
+	Fri, 4 Apr 2014 11:39:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140404151203.GA12370@srcf.ucam.org>
-References: <533D7C4F.4010504@zytor.com>
-	<533D7C93.7080105@zytor.com>
-	<20140403113921.23dceb75@gandalf.local.home>
-	<533D8516.1040803@zytor.com>
-	<20140403121314.246b03a7@gandalf.local.home>
-	<533DED74.6050202@linux.intel.com>
-	<20140403194018.7c67aec7@gandalf.local.home>
-	<533DF455.4040908@linux.intel.com>
-	<533DF8D2.9060508@zytor.com>
-	<533E0A94.5040007@linux.intel.com>
-	<20140404151203.GA12370@srcf.ucam.org>
-Date: Fri, 4 Apr 2014 08:38:42 -0700
-X-Google-Sender-Auth: mp9_8Ex-7p9K_hDt_odmvU45ZnE
-Message-ID: <CA+55aFx+6ODkyueA2iHLhO8-eo95QYCBybhR63owxUMbhXh8wQ@mail.gmail.com>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20140404141319.GB2147@redhat.com>
+References: <1396536536-26423-1-git-send-email-richard.genoud@gmail.com>
+ <20140404080453.GA1448@redhat.com> <533E8242.8080203@gmail.com> <20140404141319.GB2147@redhat.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Fri, 4 Apr 2014 17:38:58 +0200
+Message-ID: <CACQ1gAgMNM89mM_m_=G85-DAD1xSoo0j6E8vWTZ2cYhg48zNsA@mail.gmail.com>
+Subject: Re: [PATCH] rt2x00: Endless loop on hub port power down
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 8:12 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+2014-04-04 16:13 GMT+02:00 Stanislaw Gruszka <sgruszka@redhat.com>:
+> On Fri, Apr 04, 2014 at 11:58:26AM +0200, Richard Genoud wrote:
+>> On 04/04/2014 10:04, Stanislaw Gruszka wrote:
+>> > On Thu, Apr 03, 2014 at 04:48:56PM +0200, Richard Genoud wrote:
+>> >> I've met an endless (or at least very long) loop if I power down the usb
+>> >> port on witch a usb wifi key is plugged.
+>> >> (Ok, it's not very smart to power down a usb port when a usb key is in
+>> >> used... but still, I think that should not lead to an endless loop).
+>> >>
+>> >> I have a lot of:
+>> >> ieee80211 phy1: rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x0438 with error -71
+>> >>
+>> >> (-71==-EPROTO)
+>> >>
+>> >> How to reproduce:
+>> >> - plug an usb wifi key
+>> >> - ip link set wlan0 up
+>> >> - hub-ctrl -b usb_bus -d usb_device -P usb_port -p 0
+>> >>
+>> >> hub-ctrl source: https://github.com/codazoda/hub-ctrl.c/blob/master/hub-ctrl.c
+>> >>
+>> >> The following patch prevents the endless loop, but I'm really not sure
+>> >> that The Right Way To Do It (R)
+>> >
+>> > If device disappear, we should get -ENODEV status, why we get -EPROTO ?
+>>
+>> I trace it down, and the EPROTO status comes from ctx.status (returned from usb_start_wait_urb() in drivers/usb/core/message.c)
+>> And, in my case, the ctx.status is set to EPROTO in qtd_copy_status() ( drivers/usb/host/ehci-q.c )
+>> in the code:
+>> } else if (token & QTD_STS_XACT) {
+>>       /* timeout, bad CRC, wrong PID, etc */
+>>       ehci_dbg(ehci, "devpath %s ep%d%s 3strikes\n",
+>>               urb->dev->devpath,
+>>               usb_pipeendpoint(urb->pipe),
+>>               usb_pipein(urb->pipe) ? "in" : "out");
+>>       status = -EPROTO;
+>>
+>> enabling this log, I get:
+>> atmel-ehci 700000.ehci: devpath 2.1 ep1in 3strikes
+>> atmel-ehci 700000.ehci: devpath 2.1 ep0in 3strikes
+>> atmel-ehci 700000.ehci: devpath 2.1 ep1in 3strikes
+>> atmel-ehci 700000.ehci: devpath 2.1 ep0in 3strikes
+>> ieee80211 phy0: rt2800usb_tx_sta_fifo_read_completed: Warning - TX status read failed -71
 >
-> Production hardware should never require CF9.
+> Thanks, ehci driver behaviour seems to be fine. Could you check if updating
+> rt2800 firmware (I assume you have some RT2800 usb dongle) change the situation,
+> i.e. we stop getting -EPROTO errors. To install new firmware, you can download
+> rt2870.bin blob from:
+> http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2013-January/005610.html
+> and need to replace /lib/firmware/rt2870.bin file.
+>
+> Stanislaw
+It's the same behaviour:
 
-That's total BS.
-
-The fact is, we may be doing something wrong, but ACPI fails on a
-*lot* of systems. A huge swath of Dell machines in particular for some
-reason (laptops, desktops, _and_ now there's tablet reports).
-
-And EFI isn't even in the running.
-
-The keyboard controller is sadly unreliable too, although I really
-don't understand why. Even when a legacy keyboard controller exists
-(which isn't as universal as you'd think, even though the *hardware*
-is pretty much guaranteed to be there in the chipset, it can be
-disabled) there seem to be machines where the reset line isn't hooked
-up. Don't ask me why. Same goes for the triple fault failure case.
-
-End result: there's a *lot* of machines that seem to want the PCI or
-legacy BIOS reboot. And it has absolutely _zero_ to do with
-"production hardware".
-
-It would be interesting if somebody can figure out *exactly* what
-Windows does, because the fact that a lot of Dell machines need quirks
-almost certainly means that it's _us_ doing something wrong. Dell
-doesn't generally do lots of fancy odd things. I pretty much guarantee
-it's because we've done something odd that Windows doesn't do.
-
-Anyway, claiming that the PCI method shouldn't be needed is living in
-some kind of dream-land. The fact is, all the other methods are
-equally broken, or more so.
-
-                 Linus
+dmesg | grep firm
+[   13.648437] ieee80211 phy0: rt2x00lib_request_firmware: Info -
+Loading firmware file 'rt2870.bin'
+[   13.656250] ieee80211 phy0: rt2x00lib_request_firmware: Info -
+Firmware detected - version: 0.33
+# disable_usb_port 1
+# [   31.398437] ieee80211 phy0: rt2x00usb_vendor_request: Error -
+Vendor Request 0x07 failed for offset 0x1700 with error -71
+[   31.804687] ieee80211 phy0: rt2x00usb_vendor_request: Error -
+Vendor Request 0x07 failed for offset 0x0438 with error -71
+[   32.226562] ieee80211 phy0: rt2x00usb_vendor_request: Error -
+Vendor Request 0x07 failed for offset 0x0438 with error -71
+[   32.640625] ieee80211 phy0: rt2x00usb_vendor_request: Error -
+Vendor Request 0x06 failed for offset 0x0408 with error -71
+[   33.062500] ieee80211 phy0: rt2x00usb_vendor_request: Error -
+Vendor Request 0x06 failed for offset 0x0408 with error -71
+[   33.617187] ieee80211 phy0: rt2x00usb_vendor_request: Error -
+Vendor Request 0x07 failed for offset 0x1700 with error -71
