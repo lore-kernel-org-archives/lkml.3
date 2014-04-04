@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaDDXGW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 19:06:22 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:47215 "HELO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751879AbaDDXGU (ORCPT
+	id S1752682AbaDDXOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 19:14:40 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:63065 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879AbaDDXOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 19:06:20 -0400
+	Fri, 4 Apr 2014 19:14:38 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH v2 0/5] ARM: zynq: DT update
+Date: Fri,  4 Apr 2014 16:14:11 -0700
+Message-Id: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.9.1.1.gbb9f595
 MIME-Version: 1.0
-In-Reply-To: <1396398194-4163-1-git-send-email-asuka.com@163.com>
-References: <1396398194-4163-1-git-send-email-asuka.com@163.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Fri, 4 Apr 2014 16:05:59 -0700
-Message-ID: <CAEP_g=9WRyaSmRKHDZmWXwzjDyex8NheyveGzfH4qmMbhgGHdQ@mail.gmail.com>
-Subject: Re: [PATCH v2] openvswitch: supply a dummy err_handler of
- gre_cisco_protocol to prevent kernel crash
-To: Wei Zhang <asuka.com@163.com>
-Cc: David Miller <davem@davemloft.net>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 5:23 PM, Wei Zhang <asuka.com@163.com> wrote:
-> When use gre vport, openvswitch register a gre_cisco_protocol but does not
-> supply a err_handler with it. The gre_cisco_err() in net/ipv4/gre_demux.c expect
-> err_handler be provided with the gre_cisco_protocol implementation, and call
-> ->err_handler() without existence check, cause the kernel crash.
->
-> This patch provide a err_handler to fix this bug.
->
-> v2 -> v1: use the same logic of the gre_rcv() to distinguish which packet is
-> intended to us!
+Hi,
 
-As a tip on kernel process: if you put the version information after
-three dashes below the signed-off-by line then git will automatically
-remove it when the final patch is applied.
+here's the complete series now. One fix for cpufreq from our vendor tree
+and migration to pre-processor syntax.
 
-> diff --git a/net/openvswitch/vport-gre.c b/net/openvswitch/vport-gre.c
-> index a3d6951..f391df1 100644
-> --- a/net/openvswitch/vport-gre.c
-> +++ b/net/openvswitch/vport-gre.c
-> @@ -110,6 +110,21 @@ static int gre_rcv(struct sk_buff *skb,
->         return PACKET_RCVD;
->  }
->
-> +/* Called with rcu_read_lock and BH disabled. */
-> +static int gre_err(struct sk_buff *skb, u32 info,
-> +                  const struct tnl_ptk_info *tpi)
-> +{
-> +       struct ovs_net *ovs_net;
-> +       struct vport *vport;
-> +
-> +       ovs_net = net_generic(dev_net(skb->dev), ovs_net_id);
-> +       vport = rcu_dereference(ovs_net->vport_net.gre_vport);
-> +       if (unlikely(!vport))
-> +               return PACKET_REJECT;
-> +       else
-> +               return PACKET_RCVD;
+	Thanks,
+	Sören
 
-Sorry, I forgot to say this before - if we receive the packet then we
-should also call consume_skb() on it.
+Changes in v2:
+ - Send full series (added patches 1, 4, 5)
+
+Soren Brinkmann (5):
+  ARM: zynq: DT: Add 'clock-latency' property
+  ARM: zynq: dt: Convert to preprocessor includes
+  ARM: zynq: dt: Use #defines for interrupt specifiers
+  dt-bindings: clock: Add Zynq-7000 header
+  ARM: zynq: dt: Use #defines for clock specifiers
+
+ arch/arm/boot/dts/zynq-7000.dtsi      | 64 ++++++++++++++++++++++-------------
+ arch/arm/boot/dts/zynq-zc702.dts      |  2 +-
+ arch/arm/boot/dts/zynq-zc706.dts      |  2 +-
+ arch/arm/boot/dts/zynq-zed.dts        |  2 +-
+ include/dt-bindings/clock/zynq-7000.h | 64 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 107 insertions(+), 27 deletions(-)
+ create mode 100644 include/dt-bindings/clock/zynq-7000.h
+
+-- 
+1.9.1.1.gbb9f595
+
