@@ -1,40 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaDDV3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:29:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22119 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaDDV3s (ORCPT
+	id S1753488AbaDDVaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:30:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44474 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752766AbaDDVaE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:29:48 -0400
-Date: Sat, 5 Apr 2014 00:29:28 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kumar Amit Mehta <gmate.amit@gmail.com>
-Cc: abbotti@mev.co.uk, devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        joe@perches.com, wharms@bfs.de
-Subject: Re: [PATCH v2] staging: comedi: drivers: pcl812.c: add curly braces
- for checkpatch
-Message-ID: <20140404212928.GY6991@mwanda>
-References: <1396626284-15457-1-git-send-email-gmate.amit@gmail.com>
+	Fri, 4 Apr 2014 17:30:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,797,1389772800"; 
+   d="scan'208";a="507250731"
+From: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+To: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>,
+        David Miller <davem@davemloft.net>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        Hiroshi Baba <h-baba@ax.jp.nec.com>
+Subject: RE: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
+ enabled
+Thread-Topic: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is
+ enabled
+Thread-Index: AQHPTt1kUn7ZZo9UA0yceV8OFwKaP5r/mX6AgAJiRhA=
+Date: Fri, 4 Apr 2014 21:29:47 +0000
+Message-ID: <9B4A1B1917080E46B64F07F2989DADD65297912C@ORSMSX102.amr.corp.intel.com>
+References: <9DE5760509B7974286F38D93BF31DD62C7DF93@BPXM13GP.gisp.nec.co.jp>
+	<9B4A1B1917080E46B64F07F2989DADD652978166@ORSMSX102.amr.corp.intel.com>
+	<9DE5760509B7974286F38D93BF31DD62C7E125@BPXM13GP.gisp.nec.co.jp>
+ <20140402.213941.1530194697006154708.davem@davemloft.net>
+ <9DE5760509B7974286F38D93BF31DD62C7E200@BPXM13GP.gisp.nec.co.jp>
+In-Reply-To: <9DE5760509B7974286F38D93BF31DD62C7E200@BPXM13GP.gisp.nec.co.jp>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396626284-15457-1-git-send-email-gmate.amit@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 06:44:44PM +0300, Kumar Amit Mehta wrote:
-> Kernel style is that if one side of the if else statement gets has curly
-> braces then both side should have them.
+You can have more than 64 VLANs, but not for a single VF.
+
+Todd Fujinaka
+Software Application Engineer
+Networking Division (ND)
+Intel Corporation
+todd.fujinaka@intel.com
+(503) 712-4565
+
+
+-----Original Message-----
+From: Madoka Komatsubara [mailto:m-komatsubara@ab.jp.nec.com] 
+Sent: Wednesday, April 02, 2014 7:04 PM
+To: David Miller; Fujinaka, Todd; Skidmore, Donald C; linux-kernel@vger.kernel.org; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org
+Cc: Hiroshi Shimamoto; Hiroshi Baba
+Subject: RE: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is enabled
+
+
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Thursday, April 03, 2014 10:40 AM
+> To: Komatsubara Madoka(小松原 円)
+> Cc: todd.fujinaka@intel.com; donald.c.skidmore@intel.com; 
+> linux-kernel@vger.kernel.org; e1000-devel@lists.sourceforge.net;
+> netdev@vger.kernel.org; Shimamoto Hiroshi(島本 裕志); Baba Hiroshi(馬場 裕
+> 司)
+> Subject: Re: [E1000-devel] fail to add 64 VLANs or more when SR-IOV is 
+> enabled
 > 
-> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
+> From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
+> Date: Thu, 3 Apr 2014 01:12:13 +0000
+> 
+> > Thank you for the quick response.
+> > How can I increase the limit？
+> 
+> It's a hardware limit, you cannot increase it.
 
-Looks good, thanks.
 
-regards,
-dan carpenter
+Thank you for your information.
+Does it mean disabling filter is the only way to use over 64 VLANs and is it possible?
+
+Regards,
+Madoka
 
