@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaDDBlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 21:41:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43250 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891AbaDDBlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 21:41:16 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <533E0A94.5040007@linux.intel.com>
-References: <20140403021411.6236996f@gandalf.local.home> <070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com> <533D001A.5030802@linux.intel.com> <20140403094155.04cc00bc@gandalf.local.home> <533D6BE7.3020608@zytor.com> <20140403104721.5f6c32b6@gandalf.local.home> <20140403111711.5bed4ff7@gandalf.local.home> <533D7C4F.4010504@zytor.com> <533D7C93.7080105@zytor.com> <20140403113921.23dceb75@gandalf.local.home> <533D8516.1040803@zytor.com> <20140403121314.246b03a7@gandalf.local.home> <533DED74.6050202@linux.intel.com> <20140403194018.7c67aec7@gandalf.local.home> <533DF455.4040908@linux.intel.com> <533DF8D2.9060508@zytor.com> <533E0A94.5040007@linux.intel.com>
+	id S1752010AbaDDBon (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 21:44:43 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44476 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937AbaDDBoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 21:44:39 -0400
+Message-ID: <533E0E80.3080204@hitachi.com>
+Date: Fri, 04 Apr 2014 10:44:32 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [BUG] x86: reboot doesn't reboot
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 03 Apr 2014 18:40:51 -0700
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Message-ID: <091fb6ee-a7e1-4962-9382-7e3b14792797@email.android.com>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: Re: [PATCH 5/5] tracing: Add 'hash' event trigger command
+References: <cover.1395894625.git.tom.zanussi@linux.intel.com>  <b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>  <533D22E6.4000607@hitachi.com> <1396564999.3047.65.camel@empanada>
+In-Reply-To: <1396564999.3047.65.camel@empanada>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep in mind we already tried CF9 in the default flow and it broke things.  I'm willing to wait for reports about production machines, though, but I fully expect them.
+(2014/04/04 7:43), Tom Zanussi wrote:
+> Hi Masami,
+> 
+> On Thu, 2014-04-03 at 17:59 +0900, Masami Hiramatsu wrote:
+>> Hi Tom,
+>>
+>> (2014/03/27 13:54), Tom Zanussi wrote:
+>>> Hash triggers allow users to continually hash events which can then be
+>>> dumped later by simply reading the trigger file.  This is done
+>>> strictly via one-liners and without any kind of programming language.
+>>>
+>>> The syntax follows the existing trigger syntax:
+>>>
+>>>   # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
+>>>
+>>> The values used as keys and values are just the fields that define the
+>>> trace event and available in the event's 'format' file.  For example,
+>>> the kmalloc event:
+>>>
+>>> root@ie:/sys/kernel/debug/tracing/events/kmem/kmalloc# cat format
+>>> name: kmalloc
+>>> ID: 370
+>>> format:
+>>>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
+>>>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+>>>         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
+>>>         field:int common_pid;   offset:4;       size:4; signed:1;
+>>>
+>>>         field:unsigned long call_site;  offset:8;       size:4; signed:0;
+>>>         field:const void * ptr; offset:12;      size:4; signed:0;
+>>>         field:size_t bytes_req; offset:16;      size:4; signed:0;
+>>>         field:size_t bytes_alloc;       offset:20;      size:4; signed:0;
+>>>         field:gfp_t gfp_flags;  offset:24;      size:4; signed:0;
+>>>
+>>> The key can be made up of one or more of these fields and any number of
+>>> values can specified - these are automatically tallied in the hash entry
+>>> any time the event is hit.  Stacktraces can also be used as keys.
+>>>
+>>> For example, the following uses the stacktrace leading up to a kmalloc
+>>> as the key for hashing kmalloc events.  For each hash entry a tally of
+>>> the bytes_alloc field is kept.  Dumping out the trigger shows the sum
+>>> of bytes allocated for each execution path that led to a kmalloc:
+>>>
+>>>   # echo 'hash:call_site:bytes_alloc' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+>>>   # cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+>>
+>> I like the basic idea :) but I'm confused the interface what you're introduced.
+>> I suppose that the "trigger" file is for control triggers on the event, so that
+>> user can check what trigger rules are set on the event and remove it.
+>> But in this patch, that is also used for a data path.
+>>
+>> I'd like to suggest adding new "hash" file under events/GROUP/EVENT/, which is
+>> only for dumping the hash data, and keep the "trigger" as a control path.
+>> This makes users easier to build their own tools on the ftrace facility.
+>>
+> 
+> I was really trying to avoid adding a new file - my thinking was that
+> the trigger file is just sitting there doing nothing besides either
+> listing available triggers when inactive or listing active triggers when
+> active, which it would still do even if also providing a conduit for the
+> output.
 
-On April 3, 2014 6:27:48 PM PDT, "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
->On 2014/4/4 8:12, H. Peter Anvin wrote:
->> On 04/03/2014 04:52 PM, Li, Aubrey wrote:
->>> On 2014/4/4 7:40, Steven Rostedt wrote:
->>>> On Fri, 04 Apr 2014 07:23:32 +0800
->>>> "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
->>>>
->>>>> Can you please send the dmi table out?
->>>>
->>>> I already did as a gz attachment to H. Peter. You were on the Cc,
->did
->>>> you not receive it?
->>>>
->>> Oh, I got it. This is a Preproduction machine.
->>> When reboot failed via a method (=e or =p), there are two case.
->>>
->>> Case 1: this method do nothing, pass the attempt chance to the next
->method
->>> Case 2: this method hangs the system
->>>
->>> I want to know if CF9 is case 1 or case 2. Could you please try the
->following
->>> patch *without* any reboot parameters?
->>>
->>> (1) If we didn't see any string, then EFI hangs your box.
->>> (2) if we see the first string but not the second one, CF9 hangs
->your box
->>> (3) if we see both, couldn't be, because BIOS works on your box.
->>>
->> 
->> Given that this machine doesn't have EFI, it seems kind of obvious,
->no?
->> 
->> 	-hpa
->
->Yes. it should be but I want to confirm.
->
->The current situation is,
->- we have one(do we know more?) preproduction machine hangs by CF9.
->- We have more than one(could be thousand known) production machine
->works by CF9.
->
->So, if I understand correctly(please correct me if I was wrong), I
->don't
->think the justification is enough to revert the patch. The patch
->includes EFI, CF9 and BIOS.
->
->I'm open to make Steven's machine work:
->(1) remove CF9
->(2) add DMI table
->(3) any other idea without a regression.
->
->I prefer (2) or (3) if better because if we do (1) we will probably
->receive some other regression reports.
->
->Thanks,
->-Aubrey
+You don't need to avoid it unless it is really meaningless :)
+Since the available triggers are limited and it doesn't relay on event
+type, I think it is enough to prepare tracing/available_triggers.
+
+> I agree that it would be cleaner to have a separate file, but I don't
+> know if it's worth a dedicated file.  Another possibility would be to
+> have it exist only when a hash trigger is active..
+
+Agreed. That's a good idea :)
+
+Thank you,
+
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
