@@ -1,178 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774AbaDDXPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 19:15:04 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:55163 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753426AbaDDXOy (ORCPT
+	id S1753894AbaDDXP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 19:15:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44724 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821AbaDDXPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 19:14:54 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH v2 5/5] ARM: zynq: dt: Use #defines for clock specifiers
-Date: Fri,  4 Apr 2014 16:14:16 -0700
-Message-Id: <1396653256-28397-6-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.1.1.gbb9f595
-In-Reply-To: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
+	Fri, 4 Apr 2014 19:15:25 -0400
+Date: Fri, 4 Apr 2014 16:17:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: John Stoffel <john@stoffel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Joerg Roedel <joro@8bytes.org>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-ID: <20140404231749.GA20437@kroah.com>
+References: <20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
+ <CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
+ <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
+ <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
+ <CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
+ <20140403104308.GP13491@8bytes.org>
+ <20140403170541.GA19010@thunk.org>
+ <533EF832.1030902@mit.edu>
+ <CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
+ <21311.8533.138063.744673@quad.stoffel.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21311.8533.138063.744673@quad.stoffel.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use symbolic names instead of bare numbers to specify clocks.
+On Fri, Apr 04, 2014 at 05:17:09PM -0400, John Stoffel wrote:
+> >>>>> "Linus" == Linus Torvalds <torvalds@linux-foundation.org> writes:
+> 
+> Linus> On Fri, Apr 4, 2014 at 11:21 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> 
+> >> The other thing I've used /dev/kmsg for is to shove a "I'm starting
+> >> something now" message in.  This is only really necessary because the
+> >> current kernel log timestamps are unusable crap.  (We could fix that,
+> >> hint hint.)
+> 
+> Linus> I'd actually love to fix that, but I disagree with the "we could fix
+> Linus> it". There are tons of people who know how to parse them (admittedly
+> Linus> often only to ignore them), so changing the format is not likely to
+> Linus> work.
+> 
+> Linus> The good news is that "dmesg -H" does help if you're
+> Linus> human. While at the same time being an example of that very
+> Linus> "there are tools that know about the current horrid format"
+> Linus> issue.. D'oh.
+> 
+> I think you mean "dmesg -T", and unfortunately it seems Debian 6.0.9
+> (or older) doesn ship a new enough linux-util since I've only got
+> 2.17.2-9 install.  
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
+No, 'dmesg -H' is the right thing, you just need a modern version of
+util-linux :)
 
-Changes in v2:
- - this patch has been added
+> And RHEL/Centos 5.6 and 6.5 don't seem to ship that by default either,
+> they have got util-linux-2.13-0.56.el5 and
+> util-linux-ng-2.17.2-12.14.el6.x86_64 respectively.  Blech!  It's in
+> Linux Mint 16 at least, haven't checked older versions.
 
----
- arch/arm/boot/dts/zynq-7000.dtsi | 33 +++++++++++++++++++++------------
- 1 file changed, 21 insertions(+), 12 deletions(-)
+util-linux is on version 2.24.1 at the moment:
+	https://www.kernel.org/pub/linux/utils/util-linux/v2.24/
+2.17.2 was from back in 2012, I think it's time to switch to a modern
+distro...
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 36a34ffa30af..9a54b49d0fd2 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -13,6 +13,7 @@
- 
- #include "skeleton.dtsi"
- #include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/clock/zynq-7000.h>
- 
- / {
- 	compatible = "xlnx,zynq-7000";
-@@ -25,8 +26,8 @@
- 			compatible = "arm,cortex-a9";
- 			device_type = "cpu";
- 			reg = <0>;
--			clocks = <&clkc 3>;
- 			clock-latency = <1000>;
-+			clocks = <&clkc ZYNQ_CLK_CPU_6OR4X>;
- 			operating-points = <
- 				/* kHz    uV */
- 				666667  1000000
-@@ -39,7 +40,7 @@
- 			compatible = "arm,cortex-a9";
- 			device_type = "cpu";
- 			reg = <1>;
--			clocks = <&clkc 3>;
-+			clocks = <&clkc ZYNQ_CLK_CPU_6OR4X>;
- 		};
- 	};
- 
-@@ -78,7 +79,8 @@
- 		uart0: uart@e0000000 {
- 			compatible = "xlnx,xuartps";
- 			status = "disabled";
--			clocks = <&clkc 23>, <&clkc 40>;
-+			clocks = <&clkc ZYNQ_CLK_UART0>,
-+				 <&clkc ZYNQ_CLK_UART0_APER>;
- 			clock-names = "ref_clk", "aper_clk";
- 			reg = <0xE0000000 0x1000>;
- 			interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
-@@ -87,7 +89,8 @@
- 		uart1: uart@e0001000 {
- 			compatible = "xlnx,xuartps";
- 			status = "disabled";
--			clocks = <&clkc 24>, <&clkc 41>;
-+			clocks = <&clkc ZYNQ_CLK_UART1>,
-+				 <&clkc ZYNQ_CLK_UART1_APER>;
- 			clock-names = "ref_clk", "aper_clk";
- 			reg = <0xE0001000 0x1000>;
- 			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
-@@ -98,7 +101,9 @@
- 			reg = <0xe000b000 0x4000>;
- 			status = "disabled";
- 			interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&clkc 30>, <&clkc 30>, <&clkc 13>;
-+			clocks = <&clkc ZYNQ_CLK_GEM0_APER>,
-+				 <&clkc ZYNQ_CLK_GEM0_APER>,
-+				 <&clkc ZYNQ_CLK_GEM0>;
- 			clock-names = "pclk", "hclk", "tx_clk";
- 		};
- 
-@@ -107,7 +112,9 @@
- 			reg = <0xe000c000 0x4000>;
- 			status = "disabled";
- 			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&clkc 31>, <&clkc 31>, <&clkc 14>;
-+			clocks = <&clkc ZYNQ_CLK_GEM1_APER>,
-+				 <&clkc ZYNQ_CLK_GEM1_APER>,
-+				 <&clkc ZYNQ_CLK_GEM1>;
- 			clock-names = "pclk", "hclk", "tx_clk";
- 		};
- 
-@@ -115,7 +122,8 @@
- 			compatible = "arasan,sdhci-8.9a";
- 			status = "disabled";
- 			clock-names = "clk_xin", "clk_ahb";
--			clocks = <&clkc 21>, <&clkc 32>;
-+			clocks = <&clkc ZYNQ_CLK_SDIO0>,
-+				 <&clkc ZYNQ_CLK_SDIO0_APER>;
- 			interrupt-parent = <&intc>;
- 			interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
- 			reg = <0xe0100000 0x1000>;
-@@ -125,7 +133,8 @@
- 			compatible = "arasan,sdhci-8.9a";
- 			status = "disabled";
- 			clock-names = "clk_xin", "clk_ahb";
--			clocks = <&clkc 22>, <&clkc 33>;
-+			clocks = <&clkc ZYNQ_CLK_SDIO1>,
-+				 <&clkc ZYNQ_CLK_SDIO1_APER>;
- 			interrupt-parent = <&intc>;
- 			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
- 			reg = <0xe0101000 0x1000>;
-@@ -163,7 +172,7 @@
- 			reg = <0xf8f00200 0x20>;
- 			interrupts = <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_EDGE_RISING)>;
- 			interrupt-parent = <&intc>;
--			clocks = <&clkc 4>;
-+			clocks = <&clkc ZYNQ_CLK_CPU_3OR2X>;
- 		};
- 
- 		ttc0: ttc0@f8001000 {
-@@ -172,7 +181,7 @@
- 				     <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>,
- 				     <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
- 			compatible = "cdns,ttc";
--			clocks = <&clkc 6>;
-+			clocks = <&clkc ZYNQ_CLK_CPU_1X>;
- 			reg = <0xF8001000 0x1000>;
- 		};
- 
-@@ -182,7 +191,7 @@
- 				     <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>,
- 				     <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
- 			compatible = "cdns,ttc";
--			clocks = <&clkc 6>;
-+			clocks = <&clkc ZYNQ_CLK_CPU_1X>;
- 			reg = <0xF8002000 0x1000>;
- 		};
- 		scutimer: scutimer@f8f00600 {
-@@ -190,7 +199,7 @@
- 			interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_EDGE_RISING)>;
- 			compatible = "arm,cortex-a9-twd-timer";
- 			reg = < 0xf8f00600 0x20 >;
--			clocks = <&clkc 4>;
-+			clocks = <&clkc ZYNQ_CLK_CPU_3OR2X>;
- 		} ;
- 	};
- };
--- 
-1.9.1.1.gbb9f595
+thanks,
 
+greg k-h
