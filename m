@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaDDSTE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:19:04 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57913 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbaDDSTA (ORCPT
+	id S1754072AbaDDSTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:19:32 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56767 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638AbaDDST1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:19:00 -0400
-Message-ID: <533EF793.3050104@codeaurora.org>
-Date: Fri, 04 Apr 2014 11:18:59 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 4 Apr 2014 14:19:27 -0400
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>, Mike Turquette <mturquette@linaro.org>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] clk: qcom: Various fixes for MSM8960's global clock controller
-References: <1396629176-7413-1-git-send-email-galak@codeaurora.org>
-In-Reply-To: <1396629176-7413-1-git-send-email-galak@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140404162108.GA17393@srcf.ucam.org>
+References: <20140403121314.246b03a7@gandalf.local.home>
+	<533DED74.6050202@linux.intel.com>
+	<20140403194018.7c67aec7@gandalf.local.home>
+	<533DF455.4040908@linux.intel.com>
+	<533DF8D2.9060508@zytor.com>
+	<533E0A94.5040007@linux.intel.com>
+	<20140404151203.GA12370@srcf.ucam.org>
+	<CA+55aFx+6ODkyueA2iHLhO8-eo95QYCBybhR63owxUMbhXh8wQ@mail.gmail.com>
+	<20140404154520.GA14980@srcf.ucam.org>
+	<CA+55aFwiO2kcNF4=ph9UWhPB7Vd6sRZ5B6g7qFV2yAwKBLP+2Q@mail.gmail.com>
+	<20140404162108.GA17393@srcf.ucam.org>
+Date: Fri, 4 Apr 2014 11:19:26 -0700
+X-Google-Sender-Auth: JflZECSKn349ycBmiTcsEur5xAI
+Message-ID: <CA+55aFzbBYV=R+7HJXMRL0+E8rgvHt0cFXoh++Y9716Yv_9Xfw@mail.gmail.com>
+Subject: Re: [BUG] x86: reboot doesn't reboot
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/14 09:32, Kumar Gala wrote:
-> * Remove CE2_SLEEP_CLK, doesn't exist on 8960 family SoCs
-> * Fix incorrect offset for PMIC_SSBI2_RESET
-> * Fix typo:
-> 	SIC_TIC -> SPS_TIC_H
-> 	SFAB_ADM0_M2_A_CLK -> SFAB_ADM0_M2_H_CLK
-> * Fix naming convention:
-> 	SFAB_CFPB_S_HCLK -> SFAB_CFPB_S_H_CLK
-> 	SATA_SRC_CLK -> SATA_CLK_SRC
+On Fri, Apr 4, 2014 at 9:21 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 >
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
->
+> Because Windows doesn't use CF9 but machines reboot anyway. That
+> shouldn't be a controversial point of view.
 
-Thanks
+No, that's not a controversial view.
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+But it's not the case for us, and I haven't seen a patch to make us
+work more like Windows, so for *us*, and in this universe (rather than
+some make-believe one), the fact that we need to use pci to reboot is
+simply a fact. Including, very much, on "production hardware".
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+So I repeat: I'd love to fix whatever it is that we do that is
+different and triggers problems (particularly on Dell, but there are
+certainly other vendors too). But in the absense of that (and I
+haven't actually seen a serious patch for it), denying that reboot=pci
+is sometimes the right thing - regardless of "production" hardware or
+not is not valid. That's what I reacted to.
 
+               Linus
