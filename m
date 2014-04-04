@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbaDDP1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:27:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52468 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753AbaDDP1P (ORCPT
+	id S1753693AbaDDP1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:27:51 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25211 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753629AbaDDP1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:27:15 -0400
-Date: Fri, 04 Apr 2014 11:28:50 -0400 (EDT)
-Message-Id: <20140404.112850.1541183418380443600.davem@davemloft.net>
-To: peterz@infradead.org
-Cc: eric.dumazet@gmail.com, tglx@linutronix.de, ben@decadent.org.uk,
-        mkl@pengutronix.de, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] net: sched: dev_deactivate_many(): use msleep(1)
- instead of yield() to wait for outstanding qdisc_run callsb
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140404151942.GI10526@twins.programming.kicks-ass.net>
-References: <20140402110743.GG27965@twins.programming.kicks-ass.net>
-	<1396437459.3989.39.camel@edumazet-glaptop2.roam.corp.google.com>
-	<20140404151942.GI10526@twins.programming.kicks-ass.net>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 04 Apr 2014 08:27:15 -0700 (PDT)
+	Fri, 4 Apr 2014 11:27:49 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19toWYHynrlKW2nSv0929S9QyrGAE/u690=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 288FD551EFF
+Date: Fri, 4 Apr 2014 11:27:46 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: fakeroot make-kpkg is broken in 3.14
+Message-ID: <20140404152746.GC28334@titan.lakedaemon.net>
+References: <CAMEtUuyLOFOfJDOjsx8+L35_ULnmY+oBCMc5nqerncXe=FGH_w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuyLOFOfJDOjsx8+L35_ULnmY+oBCMc5nqerncXe=FGH_w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, 4 Apr 2014 17:19:42 +0200
+Alexei,
 
-> And the above loop in tcp_output() is a plain memory deadlock, you
-> should not loop on allocations like that. If the allocation fails;
-> propagate the error.
+Thanks for the heads up.
 
-There is nothing to "propagate" it to.  We have no "event" that will
-trigger so that we have a second chance to send the FIN out, it really
-must go out before we progress any further at this stage.
+On Thu, Apr 03, 2014 at 03:12:38PM -0700, Alexei Starovoitov wrote:
+> It seems commit f4d4ffc03efc ("kbuild: dtbs_install: new make target")
+> breaks 'fakeroot make-kpkg' package creation on ubuntu.
+> Didn't investigate the root cause yet, just heads up.
+
+Grant's version differs significantly from what I had proposed.  Which
+isn't a big deal, except that I'm not familiar with why he added the
+'prepare' target to dtbs dtbs_install.  It's also clear from the patch
+that he is _much_ more familiar with the guts of the kernel Makefile
+system than I am ;-)
+
+> The errors I see:
+> update-initramfs: Generating
+> /w/net/debian/linux-image-3.14.0+//boot/initrd.img-3.14.0+
+> grep: /boot/config-3.14.0+: No such file or directory
+> WARNING: missing /lib/modules/3.14.0+
+> Device driver support needs thus be built-in linux image!
+> WARNING: Couldn't open directory /lib/modules/3.14.0+: No such file or directory
+> FATAL: Could not open /lib/modules/3.14.0+/modules.dep.temp for
+> writing: No such file or directory
+> ERROR: ld.so: object 'libfakeroot-sysv.so' from LD_PRELOAD cannot be
+> preloaded: ignored.
+> ERROR: ld.so: object 'libfakeroot-sysv.so' from LD_PRELOAD cannot be
+> preloaded: ignored.
+> /dev/sda1: Permission denied
+> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
+> or directory
+> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
+> or directory
+> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
+> or directory
+> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
+> or directory
+> FATAL: Could not load /lib/modules/3.14.0+/modules.dep: No such file
+> or directory
+
+This really doesn't tell us much as I'm not familiar with make-kpkg and
+the assumptions it makes.  Please provide more details once you've
+investigated a bit more.
+
+On a side note: It's a bit concerning to see make-kpkg grepping the
+config.  In general, one should directly test for features as config
+symbols are not ABI and can change at any time.
+
+thx,
+
+Jason.
