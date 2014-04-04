@@ -1,106 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaDDQ4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 12:56:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41595 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaDDQ4S (ORCPT
+	id S1753540AbaDDQ46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 12:56:58 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:54417 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067AbaDDQ44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 12:56:18 -0400
-Date: Fri, 4 Apr 2014 12:55:24 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <waiman.long@hp.com>,
-        Marcos Matsunaga <Marcos.Matsunaga@oracle.com>
-Cc: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV
- support
-Message-ID: <20140404165523.GP19478@phenom.dumpdata.com>
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com>
- <20140402143201.GF12188@phenom.dumpdata.com>
- <533C7485.3030203@hp.com>
- <533CC309.3020607@hp.com>
- <20140403172333.GA3877@localhost.localdomain>
- <533E1F8E.5040600@hp.com>
+	Fri, 4 Apr 2014 12:56:56 -0400
+Date: Fri, 4 Apr 2014 12:56:52 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
+ the idlest cpu
+In-Reply-To: <1967882.uTPDmTW56C@vostro.rjw.lan>
+Message-ID: <alpine.LFD.2.11.1404041223330.1571@knanqh.ubzr>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr> <1967882.uTPDmTW56C@vostro.rjw.lan>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533E1F8E.5040600@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 10:57:18PM -0400, Waiman Long wrote:
-> On 04/03/2014 01:23 PM, Konrad Rzeszutek Wilk wrote:
-> >On Wed, Apr 02, 2014 at 10:10:17PM -0400, Waiman Long wrote:
-> >>On 04/02/2014 04:35 PM, Waiman Long wrote:
-> >>>On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
-> >>>>On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
-> >>>>>N.B. Sorry for the duplicate. This patch series were resent as the
-> >>>>>      original one was rejected by the vger.kernel.org list server
-> >>>>>      due to long header. There is no change in content.
-> >>>>>
-> >>>>>v7->v8:
-> >>>>>   - Remove one unneeded atomic operation from the slowpath, thus
-> >>>>>     improving performance.
-> >>>>>   - Simplify some of the codes and add more comments.
-> >>>>>   - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
-> >>>>>     unfair lock.
-> >>>>>   - Reduce unfair lock slowpath lock stealing frequency depending
-> >>>>>     on its distance from the queue head.
-> >>>>>   - Add performance data for IvyBridge-EX CPU.
-> >>>>FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
-> >>>>HVM guest under Xen after a while stops working. The workload
-> >>>>is doing 'make -j32' on the Linux kernel.
-> >>>>
-> >>>>Completely unresponsive. Thoughts?
-> >>>>
-> >>>Thank for reporting that. I haven't done that much testing on Xen.
-> >>>My focus was in KVM. I will perform more test on Xen to see if I
-> >>>can reproduce the problem.
-> >>>
-> >>BTW, does the halting and sending IPI mechanism work in HVM? I saw
-> >Yes.
-> >>that in RHEL7, PV spinlock was explicitly disabled when in HVM mode.
-> >>However, this piece of code isn't in upstream code. So I wonder if
-> >>there is problem with that.
-> >The PV ticketlock fixed it for HVM. It was disabled before because
-> >the PV guests were using bytelocks while the HVM were using ticketlocks
-> >and you couldnt' swap in PV bytelocks for ticketlocks during startup.
+On Fri, 4 Apr 2014, Rafael J. Wysocki wrote:
+
+> On Tuesday, April 01, 2014 11:05:49 PM Nicolas Pitre wrote:
+> > On Fri, 28 Mar 2014, Daniel Lezcano wrote:
+> > 
+> > > As we know in which idle state the cpu is, we can investigate the following:
+> > > 
+> > > 1. when did the cpu entered the idle state ? the longer the cpu is idle, the
+> > > deeper it is idle
+> > > 2. what exit latency is ? the greater the exit latency is, the deeper it is
+> > > 
+> > > With both information, when all cpus are idle, we can choose the idlest cpu.
+> > > 
+> > > When one cpu is not idle, the old check against weighted load applies.
+> > > 
+> > > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > 
+> > There seems to be some problems with the implementation.
+> > 
+> > > @@ -4336,20 +4337,53 @@ static int
+> > >  find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+> > >  {
+> > >  	unsigned long load, min_load = ULONG_MAX;
+> > > -	int idlest = -1;
+> > > +	unsigned int min_exit_latency = UINT_MAX;
+> > > +	u64 idle_stamp, min_idle_stamp = ULONG_MAX;
+> > 
+> > I don't think you really meant to assign an u64 variable with ULONG_MAX.
+> > You probably want ULLONG_MAX here.  And probably not in fact (more 
+> > later).
+> > 
+> > > +
+> > > +	struct rq *rq;
+> > > +	struct cpuidle_power *power;
+> > > +
+> > > +	int cpu_idle = -1;
+> > > +	int cpu_busy = -1;
+> > >  	int i;
+> > >  
+> > >  	/* Traverse only the allowed CPUs */
+> > >  	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
+> > > -		load = weighted_cpuload(i);
+> > >  
+> > > -		if (load < min_load || (load == min_load && i == this_cpu)) {
+> > > -			min_load = load;
+> > > -			idlest = i;
+> > > +		if (idle_cpu(i)) {
+> > > +
+> > > +			rq = cpu_rq(i);
+> > > +			power = rq->power;
+> > > +			idle_stamp = rq->idle_stamp;
+> > > +
+> > > +			/* The cpu is idle since a shorter time */
+> > > +			if (idle_stamp < min_idle_stamp) {
+> > > +				min_idle_stamp = idle_stamp;
+> > > +				cpu_idle = i;
+> > > +				continue;
+> > 
+> > Don't you want the highest time stamp in order to select the most 
+> > recently idled CPU?  Favoring the CPU which has been idle the longest 
+> > makes little sense.
 > 
-> The RHEL7 code has used PV ticketlock already. RHEL7 uses a single
-> kernel for all configurations. So PV ticketlock as well as Xen and
-> KVM support was compiled in. I think booting the kernel on bare
-> metal will cause the Xen code to work in HVM mode thus activating
-> the PV spinlock code which has a negative impact on performance.
+> It may make sense if the hardware can auto-promote CPUs to deeper C-states.
 
-Huh? -EPARSE
+If so the promotion will happen over time, no?  What I'm saying here is 
+that those CPUs which have been idle longer should not be favored when 
+it is time to select a CPU for a task to run. More recently idled CPUs 
+are more likely to be in a shallower C-state.
 
-> That may be why it was disabled so that the bare metal performance
-> will not be impacted.
+> Something like that happens with package C-states that are only entered when
+> all cores have entered a particular core C-state already.  In that case the
+> probability of the core being in a deeper state grows with time.
 
-I am not following you.
+Exactly what I'm saying.
+
+Also here it is worth remembering that the scheduling domains should 
+represent those packages that share common C-states at a higher level.  
+The scheduler can then be told not to balance across domains if it 
+doesn't need to in order to favor the conditions for those package 
+C-states to be used.  That's what the task packing patch series is 
+about, independently of this one.
+
+> That said I would just drop this heuristics for the time being.  If auto-promotion
+> is disregarded, it doesn't really matter how much time the given CPU has been idle
+> except for one case: When the target residency of its idle state hasn't been
+> reached yet, waking up the CPU may be a mistake (depending on how deep the state
+> actually is, but for the majority of drivers in the tree we don't have any measure
+> of that).
+
+There is one reason for considering the time a CPU has been idle, 
+assuming equivalent C-state, and that is cache snooping.  The longer a 
+CPU is idle, the more likely its cache content will have been claimed 
+and migrated by other CPUs.  Of course that doesn't make much difference 
+for deeper C-states where the cache isn't preserved, but it is probably 
+simpler and cheaper to apply this heuristic in all cases.
+
+> > > +			}
+> > > +
+> > > +			/* The cpu is idle but the exit_latency is shorter */
+> > > +			if (power && power->exit_latency < min_exit_latency) {
+> > > +				min_exit_latency = power->exit_latency;
+> > > +				cpu_idle = i;
+> > > +				continue;
+> > > +			}
+> > 
+> > I think this is wrong.  This gives priority to CPUs which have been idle 
+> > for a (longer... although this should have been) shorter period of time 
+> > over those with a shallower idle state.  I think this should rather be:
+> > 
+> > 	if (power && power->exit_latency < min_exit_latency) {
+> > 		min_exit_latency = power->exit_latency;
+> > 		latest_idle_stamp = idle_stamp;
+> > 	       	cpu_idle = i;
+> > 	} else if ((!power || power->exit_latency == min_exit_latency) &&
+> > 		   idle_stamp > latest_idle_stamp) {
+> > 		latest_idle_stamp = idle_stamp;
+> > 		cpu_idle = i;
+> > 	}
+> > 
+> > So the CPU with the shallowest idle state is selected in priority, and 
+> > if many CPUs are in the same state then the time stamp is used to 
+> > select the most recent one.
 > 
-> BTW, could you send me more information about the configuration of
-> the machine, like the .config file that you used?
+> Again, if auto-promotion is disregarded, it doesn't really matter which of them
+> is woken up.
 
-Marcos, could you please send that information to Peter. Thanks!
+If it doesn't matter then it doesn't hurt.  But in some cases it 
+matters.
+
+> > Whenever a shallower idle state is found then the latest_idle_stamp is reset for 
+> > that state even if it is further in the past.
+> > 
+> > > +		} else {
+> > > +
+> > > +			load = weighted_cpuload(i);
+> > > +
+> > > +			if (load < min_load ||
+> > > +			    (load == min_load && i == this_cpu)) {
+> > > +				min_load = load;
+> > > +				cpu_busy = i;
+> > > +				continue;
+> > > +			}
+> > >  		}
+> > 
+> > I think this is wrong to do an if-else based on idle_cpu() here.  What 
+> > if a CPU is heavily loaded, but for some reason it happens to be idle at 
+> > this very moment?  With your patch it could be selected as an idle CPU 
+> > while it would be discarded as being too busy otherwise.
 > 
-> -Longman
+> But see below ->
+> 
+> > It is important to determine both cpu_busy and cpu_idle for all CPUs.
+> > 
+> > And cpu_busy is a bad name for this.  Something like least_loaded would 
+> > be more self explanatory.  Same thing for cpu_idle which could be 
+> > clearer if named shalloest_idle.
+> 
+> shallowest_idle?
+
+Something that means the CPU with the shallowest C-state.  Using 
+"cpu_idle" for this variable doesn't cut it.
+
+> > > -	return idlest;
+> > > +	/* Busy cpus are considered less idle than idle cpus ;) */
+> > > +	return cpu_busy != -1 ? cpu_busy : cpu_idle;
+> > 
+> > And finally it is a policy decision whether or not we want to return 
+> > least_loaded over shallowest_idle e.g do we pack tasks on non idle CPUs 
+> > first or not.  That in itself needs more investigation.  To keep the 
+> > existing policy unchanged for now the above condition should have its 
+> > variables swapped.
+> 
+> Which means that once we've find the first idle CPU, it is not useful to
+> continue computing least_loaded, because we will return the idle one anyway,
+> right?
+
+Good point.  Currently, that should be the case.
+
+Eventually we'll want to put new tasks on lightly loaded CPUs instead of 
+waking up a fully idle CPU in order to favor deeper C-states. But that 
+requires a patch series of its own just to determine how loaded a CPU is 
+and how much work it can still accommodate before being oversubscribed, 
+etc.
+
+
+Nicolas
