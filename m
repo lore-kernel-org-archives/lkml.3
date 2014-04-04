@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaDDVPf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:15:35 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:16640 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837AbaDDVPd (ORCPT
+	id S1752960AbaDDVYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:24:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18334 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaDDVYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:15:33 -0400
-Message-ID: <533F20EB.2040500@oracle.com>
-Date: Fri, 04 Apr 2014 17:15:23 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 4 Apr 2014 17:24:20 -0400
+Date: Sat, 5 Apr 2014 00:24:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Camille Begue <camille.begue44@gmail.com>
+Cc: devel@driverdev.osuosl.org, Ian Abbott <abbotti@mev.co.uk>,
+        open list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/1] staging: comedi: Fix checkpatch warning
+Message-ID: <20140404212410.GW6991@mwanda>
+References: <1396638941-16099-1-git-send-email-camille.begue44@gmail.com>
 MIME-Version: 1.0
-To: Jeff Mahoney <jeffm@suse.com>, dsterba@suse.cz, clm@fb.com, jbacik@fb.com,
-        linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs: lock inversion between delayed_node->mutex and found->groups_sem
-References: <53239AE0.8030306@oracle.com> <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com>
-In-Reply-To: <533307ED.8030700@suse.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396638941-16099-1-git-send-email-camille.begue44@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
-> On 3/17/14, 9:05 AM, David Sterba wrote:
->>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
->>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
->>>>> 
->>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
->>> 
->>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
-> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
+On Fri, Apr 04, 2014 at 09:15:39PM +0200, Camille Begue wrote:
+> This patch is part of eudyptula challenge
+> 
 
-Is that fix available anywhere? I'm still seeing the issue in -next.
+The changelog should mention something about lines over 80 characte
+long.
 
+> Signed-off-by: Camille Begue <camille.begue44@gmail.com>
+> ---
+>  drivers/staging/comedi/comedi_fops.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+> index ea6dc36..0f05e87 100644
+> --- a/drivers/staging/comedi/comedi_fops.c
+> +++ b/drivers/staging/comedi/comedi_fops.c
+> @@ -1435,13 +1435,16 @@ static int __comedi_get_user_cmd(struct comedi_device *dev,
+>  	s = &dev->subdevices[cmd->subdev];
+>  
+>  	if (s->type == COMEDI_SUBD_UNUSED) {
+> -		dev_dbg(dev->class_dev, "%d not valid subdevice\n", cmd->subdev);
+> +		dev_dbg(dev->class_dev,
+> +			"%d not valid subdevice\n",
+> +			cmd->subdev);
 
-Thanks,
-Sasha
+Do this instead:
+
+		dev_dbg(dev->class_dev, "%d not valid subdevice\n",
+			cmd->subdev);
+
+>  		return -EIO;
+>  	}
+>  
+
+regards,
+dan carpenter
+
