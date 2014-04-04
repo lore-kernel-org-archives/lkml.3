@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaDDT2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 15:28:33 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:44642 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097AbaDDT2c (ORCPT
+	id S1754358AbaDDT3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 15:29:47 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:57634 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305AbaDDT3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 15:28:32 -0400
+	Fri, 4 Apr 2014 15:29:43 -0400
+Message-ID: <533F0847.6050909@linaro.org>
+Date: Fri, 04 Apr 2014 14:30:15 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140404191000.GA13496@sergelap>
-References: <5266BEA3.6020008@execulink.com> <20131022193718.GA18463@ac100>
- <874n89rsoc.fsf@xmission.com> <20140402172049.GA13240@sergelap>
- <20140402173248.GA22804@mail.hallyn.com> <533EF65E.6050508@mit.edu>
- <20140404183022.GA6728@sergelap> <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
- <20140404191000.GA13496@sergelap>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 4 Apr 2014 12:28:11 -0700
-Message-ID: <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
-Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sean Pajot <sean.pajot@execulink.com>,
-        lxc-devel@lists.linuxcontainers.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>, mporter@linaro.org, bcm@fixthebug.org,
+        devicetree@vger.kernel.org, arnd@arndb.de
+CC: bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] ARM: add SMP support for Broadcom mobile SoCs
+References: <1396577891-2713-1-git-send-email-elder@linaro.org> <1396577891-2713-3-git-send-email-elder@linaro.org> <533EF21C.6000909@codeaurora.org>
+In-Reply-To: <533EF21C.6000909@codeaurora.org>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 12:10 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> Quoting Andy Lutomirski (luto@amacapital.net):
->> On Fri, Apr 4, 2014 at 11:30 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
->> > Quoting Andy Lutomirski (luto@amacapital.net):
->> >> On 04/02/2014 10:32 AM, Serge E. Hallyn wrote:
->> >> > (Sorry - the lxc-devel list has moved, so replying to all with the
->> >> > correct list address;   please reply to this rather than my previous
->> >> > email)
->> >> >
->> >> > Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
->> >> >> Hi Eric,
->> >> >>
->> >> >> (sorry, I don't seem to have the email I actually wanted to reply
->> >> >> to in my mbox, but it is
->> >> >> https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-October/005857.html)
->> >> >>
->> >> >> You'd said,
->> >> >>> Someone needs to read and think through all of the corner cases and see
->> >> >>> if we can ever have a time when task_dumpable is false but root in the
->> >> >>> container would not or should not be able to see everything.
->> >> >>>
->> >> >>> In particular I am worried about the case of a setuid app calling setns,
->> >> >>> and entering a lesser privileged user namespace.  In my foggy mind that
->> >> >>> might be a security problem.  And there might be other similar crazy
->> >> >>> cases.
->> >> >>
->> >> >> Can we make use of current->mm->exe_file->f_cred->user_ns?
->> >> >>
->> >> >> So either always use
->> >> >> make_kgid(current->mm->exe_file->f_cred->user_ns, 0)
->> >> >> instead of make_kuid(cred->user_ns, 0), or check that
->> >> >> (current->mm->exe_file->f_cred->user_ns == cred->user_ns)
->> >> >> and, if not, assume that the caller has done a setns?
->> >>
->> >> Do you have a summary of the issue?  I'm a little lost here.
->> >
->> > Sure - when running an unprivileged container, tasks which become
->> > !dumpable end up with /proc/$pid/fd/ being owned by the global
->> > root user, which inside the container is nobody:nogroup.  Examples
->> > are the user's sshd threads and apache, and in the past I think I've
->> > seen it with logind or getty too.
->>
->> Other than the aesthetics, why does this matter?  Things in the
->> container who are actually mapped to nobody still can't access those
->> files?
->
-> Bc root cannot look at the fds.
+On 04/04/2014 12:55 PM, Stephen Boyd wrote:
+> On 04/03/14 19:18, Alex Elder wrote:
+>> +
+>> +/*
+>> + * Secondary startup method setup routine to extract the location of
+>> + * the secondary boot register from a "cpu" or "cpus" device tree
+>> + * node.  Only the first seen secondary boot register value is used;
+>> + * any others are ignored.  The secondary boot register value must be
+>> + * non-zero.
+>> + *
+>> + * Returns 0 if successful or an error code otherwise.
+>> + */
+>> +static int __init of_enable_method_setup(struct device_node *node)
+>> +{
+>> +	int ret;
+>> +
+>> +	/* Ignore all but the first one specified */
+>> +	if (secondary_boot)
+>> +		return 0;
+>> +
+>> +	ret = of_property_read_u32(node, OF_SECONDARY_BOOT, &secondary_boot);
+>> +	if (ret)
+>> +		pr_err("%s: missing/invalid " OF_SECONDARY_BOOT " property\n",
+>> +			node->name);
+>> +
+>> +	return ret;
+>> +}
+> 
+> I don't understand why we need this. Why can't we get the secondary boot
+> address from the /cpus node in the smp_prepare_cpus op. It isn't that
+> hard to get access to the cpus node there via of_find_node_by_path().
+> Then we don't need patch 1 at all. If it turns out to be common stuff,
+> we can always have the common function live in arm common code or maybe
+> even be a devicetree API.
 
-Right.  I guess this is a problem.
+You're right, that is one of several ways this could have
+also been done.
 
->
->> The alternative (using the container's owner) sounds a bit scary.
->
-> If the file being run belongs to the container, why would it be scary?
-> Bc some fds may have been not closed when the task did execve, where
-> the previous bprm file may have been on the host?
+Part of my thinking about this was affected by seeing how
+arm_dt_init_cpu_maps() works.  (Well, at least how it's
+structured.)  It looks for an enable method in each "cpu"
+node, then falls back to looking for one in the "cpus" node
+if none was seen.  It doesn't assume the extra properties
+are in the "cpus" node (or a "cpu" node for that matter).
+It directly supplies a node that's known to have a matching
+"enable-method" property--at the time that match is found--to
+make it possible to extract other relevant information from
+that matching node.
 
-Meh.  I'm not worried about that case, and that one probably doesn't
-cause !dumpable anyway.  The nasty cases are unshare and setns.
+(As an aside, the documentation doesn't mention that "cpus"
+nodes will contain "enable-method" properties, even though
+it seems that's more a function of "cpus" than each individual
+"cpu".)
 
-I'm starting to think that we need to extend dumpable to something
-much more general like a list of struct creds that someone needs to be
-able to ptrace, *in addition to current creds* in order to access
-sensitive /proc files, coredumps, etc.  If you get started as setuid,
-then you start with two struct creds in the list (or maybe just your
-euid and uid).  If you get started !setuid, then your initial creds
-are in the list.  It's possible that few or no things will need to
-change that list after execve.
+I think it offers useful flexibility to do it this way,
+and I like that it is unambiguous which node should be
+searched for the additional information.
 
-If all of the entries and current->cred are in the same user_ns, then
-we can dump as userns root.  If they're in different usernses, then we
-dump as global root or maybe the common ancestor root.
-setuid(getuid()) and other such nastiness may have to empty the list,
-or maybe we can just use a prctl for that.
-
-If this idea works, it would be straightforward to implement, it might
-solve a number of problems.
-
---Andy
+					-Alex
