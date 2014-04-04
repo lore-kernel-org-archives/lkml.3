@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaDDOMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:12:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090AbaDDOM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:12:27 -0400
-Date: Fri, 4 Apr 2014 10:12:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, hpa@zytor.com,
-        "K. Y. Srinivasan" <kys@microsoft.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/1] x86/platform/hyperv: When on Hyper-v use NULL legacy
- PIC
-Message-ID: <20140404141218.GA2161@redhat.com>
-References: <1396574193-12043-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396574193-12043-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753409AbaDDOOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:14:09 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:63529 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752989AbaDDOOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 10:14:08 -0400
+Message-ID: <1396620845.19661.14.camel@x220>
+Subject: Re: [PATCH] arm: Fix DEBUG_LL for multi-platform kernels (without
+ PL01X)
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-kernel@lists.linaro.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 04 Apr 2014 16:14:05 +0200
+In-Reply-To: <8799740.0uZJLUBGY1@wuerfel>
+References: <1396610269-11580-1-git-send-email-daniel.thompson@linaro.org>
+	 <8799740.0uZJLUBGY1@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Apr 2014 14:14:06.0511 (UTC) FILETIME=[23AA83F0:01CF5010]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 06:16:33PM -0700, K. Y. Srinivasan wrote:
-> Use the NULL legacy PIC when on Hyper-V. With this change we can support kexec
-> even when booting on EFI firmware. This patch has been tested on both EFI as
-> well as non-EFI firmware stacks on Hyper-V.
-> 
-> This patch is required to support kexec on EFI firmware on Hyper-V. Please
-> apply.
+On Fri, 2014-04-04 at 13:39 +0200, Arnd Bergmann wrote:
+> The PLAT_SPEAR_SINGLE symbol in Kconfig
+> is a leftover from an earlier patch I did that never got merged,
+> and we should just remove that.
 
-Can you give some more details about what's the problem we run into with
-kexec on EFI on hyper-V.
+Correct, see http://thread.gmane.org/gmane.linux.kernel/1646112 . It
+seems nothing happened after that. I'm planning on sending a reminder if
+PLAT_SPEAR_SINGLE is still mentioned in v3.15-rc1.
 
-Now EFI should be enabled in kexeced kernel. That means
-efi_enabled(EFI_BOOT) should be true and that means you would set
-legacy_pic to null anyway.
 
-So with this patch, what changed w.r.t kexec on EFI.
+Paul Bolle
 
-Thansk
-Vivek
-
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: <stable@vger.kernel.org>        [3.13+]
-> ---
->  arch/x86/kernel/cpu/mshyperv.c |   10 ++--------
->  1 files changed, 2 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-> index 76f98fe..47359f7 100644
-> --- a/arch/x86/kernel/cpu/mshyperv.c
-> +++ b/arch/x86/kernel/cpu/mshyperv.c
-> @@ -133,14 +133,8 @@ static void __init ms_hyperv_init_platform(void)
->  		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
->  				lapic_timer_frequency);
->  
-> -		/*
-> -		 * On Hyper-V, when we are booting off an EFI firmware stack,
-> -		 * we do not have many legacy devices including PIC, PIT etc.
-> -		 */
-> -		if (efi_enabled(EFI_BOOT)) {
-> -			printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
-> -			legacy_pic = &null_legacy_pic;
-> -		}
-> +		printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
-> +		legacy_pic = &null_legacy_pic;
->  	}
->  #endif
->  
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
