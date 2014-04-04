@@ -1,140 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaDDHf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:35:59 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:60225 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaDDHfz (ORCPT
+	id S1752302AbaDDHgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:36:25 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:38638 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaDDHgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:35:55 -0400
-Message-ID: <533E60D6.2000704@gmail.com>
-Date: Fri, 04 Apr 2014 09:35:50 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 4 Apr 2014 03:36:20 -0400
+Date: Fri, 4 Apr 2014 09:36:17 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>,
+        Geoff Levand <geoff@infradead.org>
+Subject: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool for
+ Linux
+Message-ID: <20140404073616.GC1637@gmail.com>
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+ <20140331071749.GA1252@gmail.com>
+ <CAGdX0WEV5OEfk4vfMKYeEpHP_7XqpUKk2-iwTVoTup1ObYu3eg@mail.gmail.com>
+ <CAMEtUuw24=+CkcdwDnJ4AbSCjGBBFx+8pTFzn5gXbQAy=KYWng@mail.gmail.com>
+ <CAGdX0WEvsPqWjE8Uade5_i58AepKxGndM0eSg=viB+UYGOSkJw@mail.gmail.com>
+ <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com>
+ <CAGdX0WE_xtUY7=CH7Qzxn9Oe8Mz=60wb6izD-APbF5d3caEthA@mail.gmail.com>
+ <20140402074322.GA22744@gmail.com>
+ <CAGdX0WHh3UqiCLbz+18_fj5s4PMpTfy638HA=LHpgLfVc2JpOg@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: mtk.manpages@gmail.com, John McCutchan <john@johnmccutchan.com>,
-        Robert Love <rlove@rlove.org>, Eric Paris <eparis@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
-        daniel@veillard.com, Christoph Hellwig <hch@infradead.org>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        inotify-tools-general@lists.sourceforge.net
-Subject: Re: Things I wish I'd known about Inotify
-References: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com> <20140403205236.GE14107@quack.suse.cz>
-In-Reply-To: <20140403205236.GE14107@quack.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGdX0WHh3UqiCLbz+18_fj5s4PMpTfy638HA=LHpgLfVc2JpOg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 10:52 PM, Jan Kara wrote:
-> On Thu 03-04-14 08:34:44, Michael Kerrisk (man-pages) wrote:
->>    Limitations and caveats
->>        The inotify API provides no information about the user or process
->>        that triggered the inotify event.  In  particular,  there  is  no
->>        easy  way  for a process that is monitoring events via inotify to
->>        distinguish events that it triggers itself from  those  that  are
->>        triggered by other processes.
->>
->>        The  inotify API identifies affected files by filename.  However,
->>        by the time an application processes an inotify event, the  file‐
->>        name may already have been deleted or renamed.
->>
->>        The  inotify  API identifies events via watch descriptors.  It is
->>        the application's responsibility to cache a mapping  (if  one  is
->>        needed)  between  watch descriptors and pathnames.  Be aware that
->>        directory renamings may affect multiple cached pathnames.
->>
->>        Inotify monitoring of directories is not  recursive:  to  monitor
->>        subdirectories under a directory, additional watches must be cre‐
->>        ated.  This can take a significant amount time for  large  direc‐
->>        tory trees.
->   And also there's a problem with the limit on the number of watches a user
-> can have.
 
-What is the problem exactly (given that the limit is configurable)?
+* Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
 
->>        If monitoring an entire directory subtree, and a new subdirectory
->>        is created in that tree or an existing directory is renamed  into
->>        that  tree,  be aware that by the time you create a watch for the
->>        new subdirectory, new  files  (and  subdirectories)  may  already
->>        exist  inside  the subdirectory.  Therefore, you may want to scan
->>        the contents of the subdirectory  immediately  after  adding  the
->>        watch (and, if desired, recursively add watches for any subdirec‐
->>        tories that it contains).
->>
->>        Note that the event queue can overflow.  In this case, events are
->>        lost.   Robust applications should handle the possibility of lost
->>        events gracefully.  For example, it may be necessary  to  rebuild
->>        part  or all of the application cache.  (One simple, but possibly
->>        expensive, approach is to  close  the  inotify  file  descriptor,
->>        empty  the  cache, create a new inotify file descriptor, and then
->>        re-create watches and cache entries for the objects to  be  moni‐
->>        tored.)
->>
->>    Dealing with rename() events
->>        The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
->>        rename(2) are usually available as consecutive events when  read‐
->>        ing from the inotify file descriptor.  However, this is not guar‐
->>        anteed.  If multiple processes are triggering  events  for  moni‐
->>        tored  objects,  then  (on rare occasions) an arbitrary number of
->>        other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
->>        events.
->>
->>        Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‐
->>        ated by rename(2) is thus inherently racy.  (Don't forget that if
->>        an  object is renamed outside of a monitored directory, there may
->>        not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
->>        assume the events are always consecutive) can be used to ensure a
->>        match in most cases, but will inevitably miss some cases, causing
->>        the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
->>        events as being unrelated.  If watch  descriptors  are  destroyed
->>        and  re-created as a result, then those watch descriptors will be
->>        inconsistent with the watch descriptors in  any  pending  events.
->>        (Re-creating the inotify file descriptor and rebuilding the cache
->>        may be useful to deal with this scenario.)
->   Well, but there's 'cookie' value meant exactly for matching up
-> IN_MOVED_FROM and IN_MOVED_TO events. And 'cookie' is guaranteed to be
-> unique at least within the inotify instance (in fact currently it is unique
-> within the whole system but I don't think we want to give that promise).
+> On Wed, Apr 2, 2014 at 3:43 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+> >
+> >> So based on all these input, I suggest:
+> >>
+> >> Put all these community efforts together, figure out the proper
+> >> design implementation of dynamic tracing tool, ktap can be a good
+> >> start to build upon it, evolve to a unified kernel script engine
+> >> with ebpf together, finally service for dynamic tracing and
+> >> network(if possible).
+> >>
+> >> Our goal is same and very clearly, we really want a "simple &
+> >> flexible & safe" dynamic scripting tracing tool for Linux, which
+> >> could compare or even better than Dtrace, this is the motivation of
+> >> ktap project.
+> >>
+> >> Two solution may be take:
+> >>
+> >> 1). upstream ktap into core trace and evolve it step by step, and
+> >>     finally make a integrated bytecode engine, it's a long process,
+> >>     but I think it's worth.
+> >>
+> >> 2). move ktap back into staging, and graduate from staging after the
+> >>     code make tracing people and ebpf people both happy.
+> >>
+> >> The benefit is the process will be under the eyes of community.
+> >>
+> >> Ingo, steven, Greg, what do you think?
+> >
+> > For now I'm opting for a third option:
+> >
+> >   3) Maintain my NAK on the ktap patches until they address the
+> >      fundamental design concerns outlined by Alexei and others in
+> >      their review feedback:
+> >
+>
+> There is no fundamental design concerns outlined about ktap, [...]
 
-Yes, that's already assumed by my discussion above (its described elsewhere
-in the page). But your comment makes me think I should add a few words to
-remind the reader of that fact. I'll do that.
+Well, the concerns that were outlined do raise to fundamental in my 
+book. But as long as they are addressed it does not matter how we 
+classify them.
 
-But, the point is that even with the cookie, matching the events is 
-nontrivial, since:
+> I don't see any suggestion about integrating BPF before this review 
+> cycle.
 
-* There may not even be an IN_MOVED_FROM event
-* There may be an arbitrary number of other events in between the 
-  IN_MOVED_FROM and the IN_MOVED_TO.
+Hm, I mentioned it at the kernel summit to folks who raised the ktap 
+subject, but apparently not over email. I assumed a new ktap 
+submission would come quickly.
 
-Therefore, one has to use heuristic approaches such as "allow at least
-N millisconds" or "check the next N events" to see if there is an
-IN_MOVED_FROM that matches the IN_MOVED_TO. I can't see any way around
-that being inherently racy. (It's unfortunate that the kernel can't 
-provide a guarantee that the two events are always consecutive, since
-that would simply user space's life considerably.)
+Anyway, considering how BPF is integrating with (and hopefully 
+replacing) tracing filters, it makes sense to apply the same concept 
+in the ktap case as well.
 
-Cheers,
+Thanks,
 
-Michael
-
-
->>        Applications should also  allow  for  the  possibility  that  the
->>        IN_MOVED_FROM event was the last event that could fit in the buf‐
->>        fer returned by the current call to read(2), and the accompanying
->>        IN_MOVED_TO event might be fetched only on the next read(2).
-> 
-> 								Honza
-> 
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+	Ingo
