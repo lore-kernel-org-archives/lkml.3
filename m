@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070AbaDDNKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:10:34 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:56308 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934AbaDDNKc (ORCPT
+	id S1752796AbaDDNP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 09:15:29 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:35362 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473AbaDDNP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:10:32 -0400
+	Fri, 4 Apr 2014 09:15:26 -0400
+Message-ID: <533EB077.6000005@cogentembedded.com>
+Date: Fri, 04 Apr 2014 17:15:35 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CABt9es8=oycaqfWmNuCY3p5CWCsN95+cLWAbSnLtFTTceDkqgA@mail.gmail.com>
-References: <CABt9es_uq1ixwcyHcL8ptYi2fXQjVFHvaOp71uu2epoQk_ToPw@mail.gmail.com>
-	<CALFYKtAGBizs8gDariQH2NJACjoRD=2-1u-zwnPfo7D5bVvy3Q@mail.gmail.com>
-	<CABt9es8=oycaqfWmNuCY3p5CWCsN95+cLWAbSnLtFTTceDkqgA@mail.gmail.com>
-Date: Fri, 4 Apr 2014 17:10:32 +0400
-Message-ID: <CALFYKtDjby_U+m4p5Lmu6UYVYt8V3zpNRbyvMhkV05w+W71GWg@mail.gmail.com>
-Subject: Re: Crash in rbd, need advice
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Hannes Landeholm <hannes@jumpstarter.io>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>, Sage Weil <sage@newdream.net>,
-        Alex Elder <elder@inktank.com>, Yehuda Sadeh <yehuda@hq.newdream.net>,
-        Thorwald Lundqvist <thorwald@jumpstarter.io>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org
+CC: davinci-linux-open-source@linux.davincidsp.com, linux-doc@vger.kernel.org,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        santosh.shilimkar@ti.com, "David S. Miller" <davem@davemloft.net>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH 1/2] mdio_bus: implement devm_mdiobus_alloc/devm_mdiobus_free
+References: <1396618825-4241-1-git-send-email-grygorii.strashko@ti.com> <1396618825-4241-2-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1396618825-4241-2-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 4:25 PM, Hannes Landeholm <hannes@jumpstarter.io> wrote:
-> On Fri, Apr 4, 2014 at 1:08 PM, Ilya Dryomov <ilya.dryomov@inktank.com> wrote:
->> On Wed, Apr 2, 2014 at 12:18 AM, Hannes Landeholm <hannes@jumpstarter.io> wrote:
->>> Hello,
->>>
->>> We're running a couple of Arch Linux servers of version 3.13.5-1 in
->>> production and suddenly one of them had a strange problem after
->>> running for a few days. One process (pid 319) was running with a few
->>> threads, one of those threads (pid 322) was eating 100% cpu. I assumed
->>> it was stuck in an infinite loop (this was our own software so I
->>> assumed we had a bug) so I sent a SIGKILL to 319 which caused all
->>> other threads to exit and it turning into a zombie, but thread 322 was
->>> still running. After trying to stop some other services and failing I
->>> realized that sending any signals to any process now didn't work at
->>> all in the system.
->>>
->>> This was the process stack output:
->>>
->>> $ cat /proc/319/stack
->>> [<ffffffff810642fa>] do_exit+0x73a/0xa80
->>> [<ffffffff810646bf>] do_group_exit+0x3f/0xa0
->>> [<ffffffff81073295>] get_signal_to_deliver+0x295/0x5f0
->>> [<ffffffff810144a8>] do_signal+0x48/0x950
->>> [<ffffffff81014e18>] do_notify_resume+0x68/0xa0
->>> [<ffffffff8152326a>] int_signal+0x12/0x17
->>> [<ffffffffffffffff>] 0xffffffffffffffff
->>> $ cat /proc/319/task/322/stack
->>> [<ffffffff8151c11a>] error_exit+0x2a/0x60
->>> [<ffffffffffffffff>] 0xffffffffffffffff
->>>
->>> We're using ceph + rbd and this happened right after doing a rbd
->>> mapping (mounting it) or during the mapping itself, so we suspected
->>> rbd.
->>>
->>> A few days later (today) we had a server crash in another server, same
->>> version+distro and it had also just been running a few days as well.
->>> After starting it again we found the following in the system log:
->>>
->>> hostname kernel: BUG: unable to handle kernel paging request at ffff87fff75ad450
->>> hostname kernel: IP: [<ffffffffa018c196>] rbd_img_request_fill+0x126/0x930 [rbd]
->>
->> Can you try gdb'ing that exact rbd.ko and
->>
->> (gdb) list *rbd_img_request_fill+0x126
->>
->> Also, the entire stack trace pertaining to rbd_img_request_fill would
->> help.
->>
->> Thanks,
->>
->>                 Ilya
+Hello.
+
+On 04-04-2014 17:40, Grygorii Strashko wrote:
+
+> Add a resource managed devm_mdiobus_alloc()/devm_mdiobus_free()
+> to automatically clean up MDIO bus alocations made by MDIO drivers,
+> thus leading to simplified MDIO drivers code.
+
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+[...]
+
+> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+> index 76f54b3..fdcd6d1 100644
+> --- a/drivers/net/phy/mdio_bus.c
+> +++ b/drivers/net/phy/mdio_bus.c
+> @@ -69,6 +69,74 @@ struct mii_bus *mdiobus_alloc_size(size_t size)
+>   }
+>   EXPORT_SYMBOL(mdiobus_alloc_size);
 >
-> Sorry, rbd was not built with any symbols and there was no other
-> output in the journal.
->
-> We're building a debug version of Linux 3.14 (with symbols) now that
-> is currently being tested and we hope that we can roll it out today. I
-> saw that at least one commit (638c323 rbd: drop an unsafe assertion)
-> looks like something that could fix a crash that has been happening
-> regularly on one of our development servers:
-> http://i.imgur.com/pEKsmql.jpg (rbd_img_obj_callback in the stack
-> trace). It might be related to the production crash we had.
+> +static void _devm_mdiobus_free(struct device *dev, void *res)
+> +{
+> +	mdiobus_free(*(struct mii_bus **)res);
+> +}
+> +
+> +static int devm_mdiobus_match(struct device *dev, void *res, void *data)
+> +{
+> +	struct mii_bus **r = res;
 
-Yeah, it most probably is.  However, a bogus dereference in
-rbd_img_request_fill is something I haven't seen before.  If you have
-that rbd.ko lying around, send it along, just in case.
+    Please insert an empty line after declaration.
 
-Thanks,
+> +	if (!r || !*r) {
+> +		WARN_ON(!r || !*r);
 
-                Ilya
+    Hm, why we need the duplicate check This condition is always true.
+
+[...]
+> +/**
+> + * devm_mdiobus_free - Resource-managed mdiobus_free()
+> + * @dev:		Device this mii_bus belongs to
+> + * @bus:		the mii_bus associated with the device
+> + *
+> + * Free mii_bus allocated with devm_mdiobus_alloc().
+> + */
+> +void devm_mdiobus_free(struct device *dev, struct mii_bus *bus)
+> +{
+> +	int rc;
+> +
+> +	rc = devres_release(dev, _devm_mdiobus_free,
+> +		devm_mdiobus_match, bus);
+
+    Please make this line start under 'dev', according to the networking 
+coding style.
+
+[...]
+
+WBR, Sergei
+
