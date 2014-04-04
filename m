@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaDDAMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 20:12:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42577 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754019AbaDDAMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 20:12:39 -0400
-Message-ID: <533DF8D2.9060508@zytor.com>
-Date: Thu, 03 Apr 2014 17:12:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-References: <20140403021411.6236996f@gandalf.local.home>	<070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>	<533D001A.5030802@linux.intel.com>	<20140403094155.04cc00bc@gandalf.local.home>	<533D6BE7.3020608@zytor.com>	<20140403104721.5f6c32b6@gandalf.local.home>	<20140403111711.5bed4ff7@gandalf.local.home>	<533D7C4F.4010504@zytor.com>	<533D7C93.7080105@zytor.com>	<20140403113921.23dceb75@gandalf.local.home>	<533D8516.1040803@zytor.com>	<20140403121314.246b03a7@gandalf.local.home>	<533DED74.6050202@linux.intel.com> <20140403194018.7c67aec7@gandalf.local.home> <533DF455.4040908@linux.intel.com>
-In-Reply-To: <533DF455.4040908@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754165AbaDDANX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 20:13:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51127 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753681AbaDDANU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Apr 2014 20:13:20 -0400
+Message-ID: <1396570392.22689.90.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.5 71/71] ioat: fix tasklet tear down
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Date: Fri, 04 Apr 2014 01:13:12 +0100
+In-Reply-To: <1396272197-13394-72-git-send-email-luis.henriques@canonical.com>
+References: <1396272197-13394-1-git-send-email-luis.henriques@canonical.com>
+	 <1396272197-13394-72-git-send-email-luis.henriques@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-a77gw+I5PysO1m9xcQ82"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2014 04:52 PM, Li, Aubrey wrote:
-> On 2014/4/4 7:40, Steven Rostedt wrote:
->> On Fri, 04 Apr 2014 07:23:32 +0800
->> "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
->>
->>> Can you please send the dmi table out?
->>
->> I already did as a gz attachment to H. Peter. You were on the Cc, did
->> you not receive it?
->>
-> Oh, I got it. This is a Preproduction machine.
-> When reboot failed via a method (=e or =p), there are two case.
-> 
-> Case 1: this method do nothing, pass the attempt chance to the next method
-> Case 2: this method hangs the system
-> 
-> I want to know if CF9 is case 1 or case 2. Could you please try the following
-> patch *without* any reboot parameters?
-> 
-> (1) If we didn't see any string, then EFI hangs your box.
-> (2) if we see the first string but not the second one, CF9 hangs your box
-> (3) if we see both, couldn't be, because BIOS works on your box.
-> 
 
-Given that this machine doesn't have EFI, it seems kind of obvious, no?
+--=-a77gw+I5PysO1m9xcQ82
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-	-hpa
+On Mon, 2014-03-31 at 14:23 +0100, Luis Henriques wrote:
+> 3.5.7.33 -stable review patch.  If anyone has any objections, please let =
+me know.
+>=20
+> ------------------
+>=20
+> From: Ben Hutchings <ben@decadent.org.uk>
+[...]
 
+Should be From: Dan Williams <dan.j.williams@intel.com>
 
+I think you must have got my name by applying the 3.2 review mail...
+
+Ben.
+
+--=20
+Ben Hutchings
+If you seem to know what you are doing, you'll be given more to do.
+
+--=-a77gw+I5PysO1m9xcQ82
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUz35GOe/yOyVhhEJAQrjrRAAh5qCKUJm5Lup2qq/O/g06R9Iu0U2RAsx
+tY0bJpglerFHvEgFULFF616o5aYKUAh532Hi1BUqy3UJDtTQJwU6BCsPjHPBjNP4
+BcvRh66g0KD2cBjnv5fLVHeURPyVuEQOO/hl+itbMzTrvrnZIWZdmMroUuQit7di
+AkMcFvvJFb/vpbhcbo5CUuHLXsFa2/MQHuRdVx+2nmvjlkgoLBxdf72pUcOrgBqv
+AYbW68opbbQk1fVIrirErV55zGRNqp7tALajiqvJhEsyNxnKOaM651Xq/oBpNfw+
+6QunKInJ/s+/jdpdtqds59zZlYX+zYRxn8XSVty7UgfCd2w8STLv93vs1A42Q90Y
+x1TEVETSR1IK9cZJJAqA5syu0Yh+Y+bcmzPtr/+V8BLmPncSUN8F/BTYNvZdBaMX
+L4ynaSavF+ErX6ytLLwJOlUVJ7rmqHmrPBVJjGzUVQQ8sbgaAItq7ksOIMuDZSLr
+sP8v4lF3fKPNVX5p4LH3AX3H6dLvUVfya2liMcQQa+jFKFLGU9sIUfSIQpgjMpdG
+ylAWBrQRoh+oi9Uj6MnANzXe6wU0s3d/t442JqoyyGZf3ofHmA8atYK1J+IN0I33
+5rUQAcmHopMQsLc1kUNPjNONjuka8PvtUHbywril7XqGcDvTf0h/jrh4+Z31fvxS
+EhcWXFEsSpI=
+=Hqvn
+-----END PGP SIGNATURE-----
+
+--=-a77gw+I5PysO1m9xcQ82--
