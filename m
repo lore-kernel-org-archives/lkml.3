@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaDDBon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 21:44:43 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44476 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaDDBoj (ORCPT
+	id S1751933AbaDDBtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 21:49:45 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60216 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbaDDBtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 21:44:39 -0400
-Message-ID: <533E0E80.3080204@hitachi.com>
-Date: Fri, 04 Apr 2014 10:44:32 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 3 Apr 2014 21:49:43 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <533E0FB3.6070305@roeck-us.net>
+Date: Thu, 03 Apr 2014 18:49:39 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: [PATCH 5/5] tracing: Add 'hash' event trigger command
-References: <cover.1395894625.git.tom.zanussi@linux.intel.com>  <b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>  <533D22E6.4000607@hitachi.com> <1396564999.3047.65.camel@empanada>
-In-Reply-To: <1396564999.3047.65.camel@empanada>
-Content-Type: text/plain; charset=UTF-8
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+CC: "wim@iguana.be" <wim@iguana.be>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 2/2] watchdog: imx2_wdt: convert to use regmap API.
+References: <1396487059-15298-1-git-send-email-Li.Xiubo@freescale.com> <1396487059-15298-3-git-send-email-Li.Xiubo@freescale.com> <20140403163604.GA11832@roeck-us.net> <6563b26412a7457ba38e2dcf0bdcb643@BY2PR03MB505.namprd03.prod.outlook.com>
+In-Reply-To: <6563b26412a7457ba38e2dcf0bdcb643@BY2PR03MB505.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/04 7:43), Tom Zanussi wrote:
-> Hi Masami,
-> 
-> On Thu, 2014-04-03 at 17:59 +0900, Masami Hiramatsu wrote:
->> Hi Tom,
+On 04/03/2014 06:13 PM, Li.Xiubo@freescale.com wrote:
+>>> +	base = devm_ioremap_resource(&pdev->dev, res);
+>>> +	if (IS_ERR(base))
+>>> +		return PTR_ERR(base);
+>>> +
+>>> +	imx2_wdt.regmap = devm_regmap_init_mmio_clk(&pdev->dev, NULL, base,
+>>> +						    &imx2_wdt_regmap_config);
 >>
->> (2014/03/27 13:54), Tom Zanussi wrote:
->>> Hash triggers allow users to continually hash events which can then be
->>> dumped later by simply reading the trigger file.  This is done
->>> strictly via one-liners and without any kind of programming language.
->>>
->>> The syntax follows the existing trigger syntax:
->>>
->>>   # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
->>>
->>> The values used as keys and values are just the fields that define the
->>> trace event and available in the event's 'format' file.  For example,
->>> the kmalloc event:
->>>
->>> root@ie:/sys/kernel/debug/tracing/events/kmem/kmalloc# cat format
->>> name: kmalloc
->>> ID: 370
->>> format:
->>>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
->>>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
->>>         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
->>>         field:int common_pid;   offset:4;       size:4; signed:1;
->>>
->>>         field:unsigned long call_site;  offset:8;       size:4; signed:0;
->>>         field:const void * ptr; offset:12;      size:4; signed:0;
->>>         field:size_t bytes_req; offset:16;      size:4; signed:0;
->>>         field:size_t bytes_alloc;       offset:20;      size:4; signed:0;
->>>         field:gfp_t gfp_flags;  offset:24;      size:4; signed:0;
->>>
->>> The key can be made up of one or more of these fields and any number of
->>> values can specified - these are automatically tallied in the hash entry
->>> any time the event is hit.  Stacktraces can also be used as keys.
->>>
->>> For example, the following uses the stacktrace leading up to a kmalloc
->>> as the key for hashing kmalloc events.  For each hash entry a tally of
->>> the bytes_alloc field is kept.  Dumping out the trigger shows the sum
->>> of bytes allocated for each execution path that led to a kmalloc:
->>>
->>>   # echo 'hash:call_site:bytes_alloc' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
->>>   # cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+>> This patch causes the following buiild failure:
 >>
->> I like the basic idea :) but I'm confused the interface what you're introduced.
->> I suppose that the "trigger" file is for control triggers on the event, so that
->> user can check what trigger rules are set on the event and remove it.
->> But in this patch, that is also used for a data path.
+>> Building arm:imx_v4_v5_defconfig ... failed
+>> --------------
+>> Error log:
+>> drivers/built-in.o: In function `imx2_wdt_probe':
+>> clk-composite.c:(.init.text+0x82c4): undefined reference to
+>> `devm_regmap_init_mmio_clk'
+>> make: *** [vmlinux] Error 1
+>> --------------
 >>
->> I'd like to suggest adding new "hash" file under events/GROUP/EVENT/, which is
->> only for dumping the hash data, and keep the "trigger" as a control path.
->> This makes users easier to build their own tools on the ftrace facility.
+>> This is on top of
 >>
-> 
-> I was really trying to avoid adding a new file - my thinking was that
-> the trigger file is just sitting there doing nothing besides either
-> listing available triggers when inactive or listing active triggers when
-> active, which it would still do even if also providing a conduit for the
-> output.
+>> b33ce44 Merge branch 'for-3.15/drivers' of git://git.kernel.dk/linux-block
+>>
+>> Does it have build dependencies on code which is (or was) not yet available
+>> in mainline ?
+>>
+>
+> This is caused by not compiling the regmap core.
+>
+> Could you add the following patch to have a try ?
+> ==========================
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 79d2589..3e55fa9 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -369,6 +369,7 @@ config MAX63XX_WATCHDOG
+>   config IMX2_WDT
+>          tristate "IMX2+ Watchdog"
+>          depends on ARCH_MXC
+> +       select REGMAP_MMIO
+>          help
+>            This is the driver for the hardware watchdog
+>            on the Freescale IMX2 and later processors.
+> --------------------------
+>
+> If it's okey, I'll sent the v5 series to fix this.
+>
+Yes, that fixes the problem.
 
-You don't need to avoid it unless it is really meaningless :)
-Since the available triggers are limited and it doesn't relay on event
-type, I think it is enough to prepare tracing/available_triggers.
-
-> I agree that it would be cleaner to have a separate file, but I don't
-> know if it's worth a dedicated file.  Another possibility would be to
-> have it exist only when a hash trigger is active..
-
-Agreed. That's a good idea :)
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Guenter
 
 
