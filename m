@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427AbaDDJWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 05:22:40 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:53015 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaDDJWU (ORCPT
+	id S1752469AbaDDJX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 05:23:26 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62743 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066AbaDDJXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 05:22:20 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Inki Dae <inki.dae@samsung.com>, dri-devel@lists.freedesktop.org
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 2/2] drm/exynos/fbdev: don't set mode_config.fb_base
-Date: Fri,  4 Apr 2014 17:22:02 +0800
-Message-Id: <1396603322-13585-2-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1396603322-13585-1-git-send-email-djkurtz@chromium.org>
-References: <1396603322-13585-1-git-send-email-djkurtz@chromium.org>
+	Fri, 4 Apr 2014 05:23:20 -0400
+Message-ID: <533E7A05.9060806@linaro.org>
+Date: Fri, 04 Apr 2014 10:23:17 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/9] crypto: qce: Add register defines
+References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com> <1396541886-10966-3-git-send-email-svarbanov@mm-sol.com>
+In-Reply-To: <1396541886-10966-3-git-send-email-svarbanov@mm-sol.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AFAICT, the fb_base of a drm_device's mode_config is never used.  It isn't
-accessed by core drm, it isn't used by fbmem, and it isn't exposed to user
-space.
 
-Furthermore, it is probably supposed to be a physical address, not the
-dma address mapped to the display controller, so this is just wrong.
+Minor nitpicks.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/gpu/drm/exynos/exynos_drm_fbdev.c | 1 -
- 1 file changed, 1 deletion(-)
+On 03/04/14 17:17, Stanimir Varbanov wrote:
+> +#define REQ_SIZE			17 /* bit 20-17 */
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
-index 2dcc589..3270a36 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
-@@ -121,7 +121,6 @@ static int exynos_drm_fbdev_update(struct drm_fb_helper *helper,
- 	offset = fbi->var.xoffset * (fb->bits_per_pixel >> 3);
- 	offset += fbi->var.yoffset * fb->pitches[0];
- 
--	dev->mode_config.fb_base = (resource_size_t)buffer->dma_addr;
- 	fbi->screen_base = buffer->kvaddr + offset;
- 	fbi->screen_size = size;
- 
--- 
-1.9.1.423.g4596e3a
+I would have defined macros like this with _SHIFT at the end, something 
+like this:
+
+#define REQ_SIZE_SHIFT 		17
+
+> +#define REQ_SIZE_MASK			(0xf << REQ_SIZE)
+You could possibly use GENMASK macro for this, its much readable, in 
+*some cases* it could reduce few more lines in header too.
+
+#define REQ_SIZE_MASK		GENMASK(20, 17)
+
+
+My comments are equally applicable to most macros in this header file.
+
+--
+srini
+Linaro Qualcomm Landing Team.
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
