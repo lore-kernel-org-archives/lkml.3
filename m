@@ -1,212 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365AbaDDFS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 01:18:59 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:36580 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713AbaDDFSz (ORCPT
+	id S1752026AbaDDFiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 01:38:52 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:44515 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaDDFiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 01:18:55 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-Subject: =?UTF-8?q?=5BPATCH=5D=20Shiraz=20has=20moved?=
-Date: Fri,  4 Apr 2014 10:48:44 +0530
-Message-Id: <b71ed4809df98a3e091ef727379835aeb44ba800.1396588666.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Fri, 4 Apr 2014 01:38:07 -0400
+Message-ID: <533E4538.70107@monstr.eu>
+Date: Fri, 04 Apr 2014 07:38:00 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Harini Katakam <harinikatakamlinux@gmail.com>
+CC: Mark Brown <broonie@kernel.org>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Punnaiah Choudary <kpc528@gmail.com>,
+        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: Re: [PATCH 1/2] devicetree: Add devicetree bindings documentation
+ for Zynq Quad SPI
+References: <ee057d8c-50d9-4d4b-ac86-d7c5fc44b1b0@TX2EHSMHS034.ehs.local> <20140403210135.GX14763@sirena.org.uk> <CAFcVEC+sqB9VQUEgiFN_MwHcvYFqEifh6EuHPLAkKZOnBiaQ9A@mail.gmail.com>
+In-Reply-To: <CAFcVEC+sqB9VQUEgiFN_MwHcvYFqEifh6EuHPLAkKZOnBiaQ9A@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="StdWMl9Q0AaEu5jNiAqw8S3odGLnk4Rfx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shiraz.hashim@st.com email-id doesn't exist anymore as he has left the
-company. Replace ST's id with shiraz.linux.kernel@gmail.com.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--StdWMl9Q0AaEu5jNiAqw8S3odGLnk4Rfx
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It also updates .mailmap file to fix address for 'git shortlog'.
+Hi Mark and Harini,
 
-Cc: Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- .mailmap                           | 1 +
- MAINTAINERS                        | 2 +-
- arch/arm/boot/dts/spear320-hmi.dts | 2 +-
- arch/arm/mach-spear/headsmp.S      | 2 +-
- arch/arm/mach-spear/platsmp.c      | 2 +-
- arch/arm/mach-spear/time.c         | 2 +-
- drivers/gpio/gpio-spear-spics.c    | 4 ++--
- drivers/irqchip/spear-shirq.c      | 2 +-
- drivers/mtd/devices/spear_smi.c    | 4 ++--
- drivers/pwm/pwm-spear.c            | 4 ++--
- include/linux/mtd/spear_smi.h      | 2 +-
- 11 files changed, 14 insertions(+), 13 deletions(-)
+On 04/04/2014 05:01 AM, Harini Katakam wrote:
+> Hi Mark,
+>=20
+> On Fri, Apr 4, 2014 at 2:31 AM, Mark Brown <broonie@kernel.org> wrote:
+>> On Thu, Apr 03, 2014 at 10:33:06PM +0530, Punnaiah Choudary Kalluri wr=
+ote:
+>>
+>>> +Optional properties:
+>>> +- num-cs             : Number of chip selects used.
+>>
+>> What does this translate into?
+>>
+>>> +             num-cs =3D /bits/ 16 <1>;
+>>
+>> Why the odd specification in the example - why not just specify it as =
+a
+>> number?
+>=20
+> Same as discussed on SPI cadence thread.
 
-diff --git a/.mailmap b/.mailmap
-index 658003a..df1baba 100644
---- a/.mailmap
-+++ b/.mailmap
-@@ -99,6 +99,7 @@ Sachin P Sant <ssant@in.ibm.com>
- Sam Ravnborg <sam@mars.ravnborg.org>
- Sascha Hauer <s.hauer@pengutronix.de>
- S.Çağlar Onur <caglar@pardus.org.tr>
-+Shiraz Hashim <shiraz.linux.kernel@gmail.com> <shiraz.hashim@st.com>
- Simon Kelley <simon@thekelleys.org.uk>
- Stéphane Witzmann <stephane.witzmann@ubpmes.univ-bpclermont.fr>
- Stephen Hemminger <shemminger@osdl.org>
-diff --git a/MAINTAINERS b/MAINTAINERS
-index edd6139..014e5d6 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8143,7 +8143,7 @@ F:	include/linux/compiler.h
- 
- SPEAR PLATFORM SUPPORT
- M:	Viresh Kumar <viresh.linux@gmail.com>
--M:	Shiraz Hashim <shiraz.hashim@st.com>
-+M:	Shiraz Hashim <shiraz.linux.kernel@gmail.com>
- L:	spear-devel@list.st.com
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.st.com/spear
-diff --git a/arch/arm/boot/dts/spear320-hmi.dts b/arch/arm/boot/dts/spear320-hmi.dts
-index 3075d2d..0aa6fef 100644
---- a/arch/arm/boot/dts/spear320-hmi.dts
-+++ b/arch/arm/boot/dts/spear320-hmi.dts
-@@ -1,7 +1,7 @@
- /*
-  * DTS file for SPEAr320 Evaluation Baord
-  *
-- * Copyright 2012 Shiraz Hashim <shiraz.hashim@st.com>
-+ * Copyright 2012 Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * The code contained herein is licensed under the GNU General Public
-  * License. You may obtain a copy of the GNU General Public License
-diff --git a/arch/arm/mach-spear/headsmp.S b/arch/arm/mach-spear/headsmp.S
-index ed85473..c52192d 100644
---- a/arch/arm/mach-spear/headsmp.S
-+++ b/arch/arm/mach-spear/headsmp.S
-@@ -3,7 +3,7 @@
-  *
-  * Picked from realview
-  * Copyright (c) 2012 ST Microelectronics Limited
-- * Shiraz Hashim <shiraz.hashim@st.com>
-+ * Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-diff --git a/arch/arm/mach-spear/platsmp.c b/arch/arm/mach-spear/platsmp.c
-index 5c4a198..c19751f 100644
---- a/arch/arm/mach-spear/platsmp.c
-+++ b/arch/arm/mach-spear/platsmp.c
-@@ -4,7 +4,7 @@
-  * based upon linux/arch/arm/mach-realview/platsmp.c
-  *
-  * Copyright (C) 2012 ST Microelectronics Ltd.
-- * Shiraz Hashim <shiraz.hashim@st.com>
-+ * Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-diff --git a/arch/arm/mach-spear/time.c b/arch/arm/mach-spear/time.c
-index d449673..e43516d 100644
---- a/arch/arm/mach-spear/time.c
-+++ b/arch/arm/mach-spear/time.c
-@@ -2,7 +2,7 @@
-  * arch/arm/plat-spear/time.c
-  *
-  * Copyright (C) 2010 ST Microelectronics
-- * Shiraz Hashim<shiraz.hashim@st.com>
-+ * Shiraz Hashim<shiraz.linux.kernel@gmail.com>
-  *
-  * This file is licensed under the terms of the GNU General Public
-  * License version 2. This program is licensed "as is" without any
-diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
-index e9a0415..30bcc53 100644
---- a/drivers/gpio/gpio-spear-spics.c
-+++ b/drivers/gpio/gpio-spear-spics.c
-@@ -2,7 +2,7 @@
-  * SPEAr platform SPI chipselect abstraction over gpiolib
-  *
-  * Copyright (C) 2012 ST Microelectronics
-- * Shiraz Hashim <shiraz.hashim@st.com>
-+ * Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * This file is licensed under the terms of the GNU General Public
-  * License version 2. This program is licensed "as is" without any
-@@ -205,6 +205,6 @@ static int __init spics_gpio_init(void)
- }
- subsys_initcall(spics_gpio_init);
- 
--MODULE_AUTHOR("Shiraz Hashim <shiraz.hashim@st.com>");
-+MODULE_AUTHOR("Shiraz Hashim <shiraz.linux.kernel@gmail.com>");
- MODULE_DESCRIPTION("ST Microlectronics SPEAr SPI Chip Select Abstraction");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/irqchip/spear-shirq.c b/drivers/irqchip/spear-shirq.c
-index 8527743..3fdda3a 100644
---- a/drivers/irqchip/spear-shirq.c
-+++ b/drivers/irqchip/spear-shirq.c
-@@ -5,7 +5,7 @@
-  * Viresh Kumar <viresh.linux@gmail.com>
-  *
-  * Copyright (C) 2012 ST Microelectronics
-- * Shiraz Hashim <shiraz.hashim@st.com>
-+ * Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * This file is licensed under the terms of the GNU General Public
-  * License version 2. This program is licensed "as is" without any
-diff --git a/drivers/mtd/devices/spear_smi.c b/drivers/mtd/devices/spear_smi.c
-index 4238214..e52c880 100644
---- a/drivers/mtd/devices/spear_smi.c
-+++ b/drivers/mtd/devices/spear_smi.c
-@@ -6,7 +6,7 @@
-  *
-  * Copyright © 2010 STMicroelectronics.
-  * Ashish Priyadarshi
-- * Shiraz Hashim <shiraz.hashim@st.com>
-+ * Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * This file is licensed under the terms of the GNU General Public
-  * License version 2. This program is licensed "as is" without any
-@@ -1091,5 +1091,5 @@ static struct platform_driver spear_smi_driver = {
- module_platform_driver(spear_smi_driver);
- 
- MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Ashish Priyadarshi, Shiraz Hashim <shiraz.hashim@st.com>");
-+MODULE_AUTHOR("Ashish Priyadarshi, Shiraz Hashim <shiraz.linux.kernel@gmail.com>");
- MODULE_DESCRIPTION("MTD SMI driver for serial nor flash chips");
-diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
-index 8ad26b8..cb2d4f0 100644
---- a/drivers/pwm/pwm-spear.c
-+++ b/drivers/pwm/pwm-spear.c
-@@ -2,7 +2,7 @@
-  * ST Microelectronics SPEAr Pulse Width Modulator driver
-  *
-  * Copyright (C) 2012 ST Microelectronics
-- * Shiraz Hashim <shiraz.hashim@st.com>
-+ * Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * This file is licensed under the terms of the GNU General Public
-  * License version 2. This program is licensed "as is" without any
-@@ -264,6 +264,6 @@ static struct platform_driver spear_pwm_driver = {
- module_platform_driver(spear_pwm_driver);
- 
- MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Shiraz Hashim <shiraz.hashim@st.com>");
-+MODULE_AUTHOR("Shiraz Hashim <shiraz.linux.kernel@gmail.com>");
- MODULE_AUTHOR("Viresh Kumar <viresh.kumar@linaro.com>");
- MODULE_ALIAS("platform:spear-pwm");
-diff --git a/include/linux/mtd/spear_smi.h b/include/linux/mtd/spear_smi.h
-index 8ae1726..581603a 100644
---- a/include/linux/mtd/spear_smi.h
-+++ b/include/linux/mtd/spear_smi.h
-@@ -1,6 +1,6 @@
- /*
-  * Copyright © 2010 ST Microelectronics
-- * Shiraz Hashim <shiraz.hashim@st.com>
-+ * Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-  *
-  * This file is licensed under the terms of the GNU General Public
-  * License version 2. This program is licensed "as is" without any
--- 
-1.7.12.rc2.18.g61b472e
+I have discussed this briefly with Rob and it is more up to Mark
+if he wants to have this with 16bit width or not. I expect that
+"num-cs" is getting to be shared across spi drivers
+and maybe in near future you will move "num-cs" of probe to spi core
+that's why it should stay 32bit for easier integration.
 
+I have asked Harini some weeks ago to try to do it just with
+of_property_read_u16 because you can directly setup
+master->num_chipselect and you don't need to read it as u32
+and saving to u16.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--StdWMl9Q0AaEu5jNiAqw8S3odGLnk4Rfx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlM+RTgACgkQykllyylKDCFYHACfRnVIuDYW4iKWeGhw3YWDRwAu
+jsEAniwyjNmI2fVlwuieSK+osHzM8dR2
+=lwtq
+-----END PGP SIGNATURE-----
+
+--StdWMl9Q0AaEu5jNiAqw8S3odGLnk4Rfx--
