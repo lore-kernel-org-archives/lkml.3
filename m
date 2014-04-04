@@ -1,228 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366AbaDDJwk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 05:52:40 -0400
-Received: from 8bytes.org ([85.214.48.195]:45947 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752112AbaDDJwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 05:52:38 -0400
-Date: Fri, 4 Apr 2014 11:52:34 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU Updates for Linux v3.15
-Message-ID: <20140404095233.GA3692@8bytes.org>
+	id S1752548AbaDDJxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 05:53:00 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:58095
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752439AbaDDJww convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 05:52:52 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "timur@tabi.org" <timur@tabi.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>
+Subject: RE: [PATCH v2 2/2] ARM: dts: Append clock bindings for sai2 on
+ VF610 platform
+Thread-Topic: [PATCH v2 2/2] ARM: dts: Append clock bindings for sai2 on
+ VF610 platform
+Thread-Index: AQHPTlukgmr0/pW6C0WbBlkEfNifiZr+Sw0AgAAKTACAAuO8sA==
+Date: Fri, 4 Apr 2014 09:52:48 +0000
+Message-ID: <1ce55f756ee04609a2d8ea1f14ad1f3f@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <cover.1396432924.git.Guangyu.Chen@freescale.com>
+ <d09da3eb629143abd3f61ae037af4ddaf7286a83.1396432924.git.Guangyu.Chen@freescale.com>
+ <20140402130302.GC8558@dragon> <20140402133955.GB29440@MrMyself>
+In-Reply-To: <20140402133955.GB29440@MrMyself>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01713B2841
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(199002)(189002)(24454002)(164054003)(94946001)(95416001)(81342001)(80976001)(87266001)(85852003)(99396002)(99286001)(69226001)(81686001)(94316002)(46102001)(81816001)(74876001)(47446002)(74662001)(93516002)(86362001)(81542001)(97186001)(95666003)(65816001)(80022001)(56816005)(93136001)(90146001)(2656002)(66066001)(87936001)(83072002)(97336001)(98676001)(19580405001)(83322001)(74316001)(76786001)(63696002)(76796001)(51856001)(54356001)(85306002)(76482001)(74366001)(54316002)(56776001)(77982001)(59766001)(76576001)(20776003)(74706001)(47736001)(49866001)(33646001)(79102001)(50986001)(74502001)(4396001)(47976001)(19580395003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB443;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:2CDAF256.8F29D08.F1E11649.CEE0FA91.203A0;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Apr  4 11:52:36 2014
-X-DSPAM-Confidence: 0.9992
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 533e80e420861397221422
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---0F1p//8PRICkK4MW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Subject: Re: [PATCH v2 2/2] ARM: dts: Append clock bindings for sai2 on VF610
+> platform
+> 
+> Hi Shawn,
+> 
+>    Thanks for the comments, but...
+> 
+> On Wed, Apr 02, 2014 at 09:03:04PM +0800, Shawn Guo wrote:
+> > On Wed, Apr 02, 2014 at 06:10:20PM +0800, Nicolin Chen wrote:
+> > > Since we added fours clock to the DT binding, we should update the current
+> > > SAI dts/dtsi so as not to break their functions.
+> > >
+> > > Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> > > ---
+> > >  arch/arm/boot/dts/vf610.dtsi | 6 ++++--
+> > >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> > > index d31ce1b..9fd0007 100644
+> > > --- a/arch/arm/boot/dts/vf610.dtsi
+> > > +++ b/arch/arm/boot/dts/vf610.dtsi
+> > > @@ -139,8 +139,10 @@
+> > >  				compatible = "fsl,vf610-sai";
+> > >  				reg = <0x40031000 0x1000>;
+> > >  				interrupts = <0 86 0x04>;
+> > > -				clocks = <&clks VF610_CLK_SAI2>;
+> > > -				clock-names = "sai";
+> > > +				clocks = <&clks VF610_CLK_SAI2>,
+> > > +				       <&clks VF610_CLK_SAI2>,
+> > > +				       <&clks 0>, <&clks 0>;
+> >
+> > So it seems that SAI on vf610 does work with only one clock.  So the
+> > driver change will break old DTB for vf610?  If that's case, we will
+> > have to need a new compatible for cases where 4 clocks are needed.
+> 
+> According to Vybrid's RM Chapter 9.11.12 SAI clocking, the SoC actually
+> connects SAI with two clocks: SAI_CLK and Platform Bus Clock. So the DT
+> binding here still needs to be corrected even if ignoring driver change.
+> 
+> Besides, I've checked both SAI on imx and vf610 and found that they are
+> seemly identical, especially for the clock part -- "The transmitter and
+> receiver can independently select between the bus clock and up to three
+> audio master clocks to generate the bit clock." And the driver that was
+> designed for vf610 already contains the code to switch the clock between
+> Bus Clock and Three MCLKs. What I want to say is, even if SAI on vf610
+> does work with only one clock, it still doesn't have the full function
+> on vf610 -- driving clock from Platform Bus Clock unless we make this
+> improvement to the DT binding.
+> 
+> So I think it's fair to complete the code here for both platforms, even
+> though we might take the risk of merging conflict. And I understand
+> your point to avoid function break on those platform both of us aren't
+> convenient to test. But I've already involved Xiubo in the list. And
+> we can wait for his test result.
+> 
 
-Hi Linus,
-
-The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
-
-  Linux 3.14 (2014-03-30 20:40:15 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-updates-v3.15
-
-for you to fetch changes up to e172b81222548b856ecbe59b305d2cb733d512c4:
-
-  Merge branches 'iommu/fixes', 'arm/smmu', 'x86/amd', 'arm/omap', 'arm/shmobile' and 'x86/vt-d' into next (2014-04-02 19:13:12 +0200)
-
-----------------------------------------------------------------
-
-IOMMU Upates for Linux v3.15
-
-This time a few more updates queued up.
-
-	* Rework VT-d code to support ACPI devices
-
-	* Improvements for memory and PCI hotplug support
-	  in the VT-d driver
-
-	* Device-tree support for OMAP IOMMU
-
-	* Convert OMAP IOMMU to use devm_* interfaces
-
-	* Fixed PASID support for AMD IOMMU
-
-	* Other random cleanups and fixes for OMAP, ARM-SMMU
-	  and SHMOBILE IOMMU
-
-Most of the changes are in the VT-d driver because some rework was
-necessary for better hotplug and ACPI device support.
-
-----------------------------------------------------------------
-Andreas Herrmann (3):
-      iommu/arm-smmu: set MAX_MASTER_STREAMIDS to MAX_PHANDLE_ARGS
-      iommu/arm-smmu: support buggy implementations with secure cfg accesses
-      documentation/iommu: update description of ARM System MMU binding
-
-Dan Carpenter (1):
-      iommu/vt-d: returning free pointer in get_domain_for_dev()
-
-David Woodhouse (39):
-      iommu/vt-d: Clean up size handling for intel_iommu_unmap()
-      iommu/vt-d: Clean up and fix page table clear/free behaviour
-      iommu/vt-d: Honour intel_iommu=sp_off for non-VMM domains
-      iommu/vt-d: Be less pessimistic about domain coherency where possible
-      iommu/vt-d: Add ACPI namespace device reporting structures
-      iommu/vt-d: Parse ANDD records
-      iommu/vt-d: Allocate space for ACPI devices
-      iommu/vt-d: Change scope lists to struct device, bus, devfn
-      iommu/vt-d: Add ACPI devices into dmaru->devices[] array
-      iommu/vt-d: Make iommu_dummy() take struct device instead of struct pci_dev
-      iommu/vt-d: Make dmar_insert_dev_info() take struct device instead of struct pci_dev
-      iommu/vt-d: Use struct device in device_domain_info, not struct pci_dev
-      iommu/vt-d: Pass iommu to domain_context_mapping_one() and iommu_support_dev_iotlb()
-      iommu/vt-d: Stop dmar_insert_dev_info() freeing domains on losing race
-      iommu/vt-d: use dmar_insert_dev_info() from dma_add_dev_info()
-      iommu/vt-d: Use domain_remove_one_dev_info() in domain_add_dev_info() error path
-      iommu/vt-d: Always store iommu in device_domain_info
-      iommu/vt-d: Simplify iommu check in domain_remove_one_dev_info()
-      iommu/vt-d: Remove device_to_iommu() call from domain_remove_dev_info()
-      iommu/vt-d: Store PCI segment number in struct intel_iommu
-      iommu/vt-d: Remove segment from struct device_domain_info()
-      iommu/vt-d: Make identity_mapping() take struct device not struct pci_dev
-      iommu/vt-d: Make device_to_iommu() cope with non-PCI devices
-      iommu/vt-d: Make domain_context_mapp{ed,ing}() take struct device
-      iommu/vt-d: Make get_domain_for_dev() take struct device
-      iommu/vt-d: Handle RMRRs for non-PCI devices
-      iommu/vt-d: Make iommu_should_identity_map() take struct device
-      iommu/vt-d: Make get_valid_domain_for_dev() take struct device
-      iommu/vt-d: Remove some pointless to_pci_dev() calls
-      iommu/vt-d: Rename 'hwdev' variables to 'dev' now that that's the norm
-      iommu/vt-d: Make domain_remove_one_dev_info() take struct device
-      iommu/vt-d: Make domain_add_dev_info() take struct device
-      iommu/vt-d: Remove pdev from iommu_no_mapping()
-      iommu/vt-d: Remove pdev from intel_iommu_attach_device()
-      iommu/vt-d: Remove to_pci_dev() in intel_map_page()
-      iommu/vt-d: Finally enable translation for non-PCI devices
-      iommu/vt-d: Include ACPI devices in iommu=pt
-      iommu/vt-d: Only call dmar_acpi_dev_scope_init() if DRHD units present
-      iommu/vt-d: Fix error handling in ANDD processing
-
-Florian Vaussard (3):
-      iommu/omap: Allow enable/disable even without pdata
-      Documentation: dt: add OMAP iommu bindings
-      iommu/omap: Add devicetree support
-
-Jay Cornwall (1):
-      iommu/amd: Fix PASID format in INVALIDATE_IOTLB_PAGES command
-
-Jiang Liu (17):
-      iommu/vt-d: Avoid double free of g_iommus on error recovery path
-      iommu/vt-d: Avoid caching stale domain_device_info and fix memory leak
-      iommu/vt-d: Avoid caching stale domain_device_info when hot-removing PCI device
-      iommu/vt-d: Factor out dmar_alloc_dev_scope() for later reuse
-      iommu/vt-d: Move private structures and variables into intel-iommu.c
-      iommu/vt-d: Simplify function get_domain_for_dev()
-      iommu/vt-d: Free resources if failed to create domain for PCIe endpoint
-      iommu/vt-d: Reduce duplicated code to handle virtual machine domains
-      iommu/vt-d: Fix incorrect iommu_count for si_domain
-      iommu/vt-d: Check for NULL pointer when freeing IOMMU data structure
-      iommu/vt-d: Fix error in detect ATS capability
-      iommu/vt-d: Introduce macro for_each_dev_scope() to walk device scope entries
-      iommu/vt-d: Introduce a rwsem to protect global data structures
-      iommu/vt-d: Use RCU to protect global resources in interrupt context
-      iommu/vt-d: Update DRHD/RMRR/ATSR device scope caches when PCI hotplug happens
-      iommu/vt-d: Unify the way to process DMAR device scope array
-      iommu/vt-d: Update IOMMU state when memory hotplug happens
-
-Joerg Roedel (3):
-      Merge branch 'for-joerg/arm-smmu/updates' of git://git.kernel.org/.../will/linux into arm/smmu
-      iommu/vt-d: Check for NULL pointer in dmar_acpi_dev_scope_init()
-      Merge branches 'iommu/fixes', 'arm/smmu', 'x86/amd', 'arm/omap', 'arm/shmobile' and 'x86/vt-d' into next
-
-Laurent Pinchart (1):
-      iommu/omap: Allocate archdata on the fly for DT-based devices
-
-Paul Bolle (1):
-      iommu/shmobile: Depend on ARCH_SHMOBILE
-
-Suman Anna (3):
-      iommu/omap: Convert to devm_* interfaces
-      iommu/omap: Fix error return paths in omap_iommu_attach()
-      iommu/omap: Enable bus-error back on supported iommus
-
-Suravee Suthikulpanit (1):
-      iommu/amd: Fix logic to determine and checking max PASID
-
-Will Deacon (3):
-      iommu/arm-smmu: clean up use of `flags' in page table handling code
-      iommu/arm-smmu: provide option to dsb macro when publishing tables
-      iommu/arm-smmu: fix incorrect comment regarding TLB invalidation
-
-Zhouyi Zhou (1):
-      iommu/omap: Check for NULL in iopte_free()
-
- .../devicetree/bindings/iommu/arm,smmu.txt         |    6 +
- .../devicetree/bindings/iommu/ti,omap-iommu.txt    |   26 +
- arch/arm/mach-omap2/omap-iommu.c                   |    5 +
- drivers/iommu/Kconfig                              |    2 +-
- drivers/iommu/amd_iommu.c                          |    8 +-
- drivers/iommu/amd_iommu_init.c                     |   16 +-
- drivers/iommu/amd_iommu_types.h                    |   11 +-
- drivers/iommu/arm-smmu.c                           |  105 +-
- drivers/iommu/dmar.c                               |  513 +++++--
- drivers/iommu/intel-iommu.c                        | 1610 +++++++++++---------
- drivers/iommu/intel_irq_remapping.c                |  108 +-
- drivers/iommu/iova.c                               |   64 +-
- drivers/iommu/omap-iommu.c                         |  162 +-
- drivers/iommu/omap-iommu.h                         |    5 +
- drivers/iommu/omap-iommu2.c                        |    3 +
- include/acpi/actbl2.h                              |   15 +-
- include/linux/dmar.h                               |   82 +-
- include/linux/intel-iommu.h                        |    1 +
- include/linux/iova.h                               |    2 +
- 19 files changed, 1754 insertions(+), 990 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/iommu/ti,omap-iommu.txt
-
-Please pull.
+This has been test on my Vybird-TWR board and it's fine.
 
 Thanks,
 
-	Joerg
+Brs
+Xiubo
 
 
---0F1p//8PRICkK4MW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTPoDgAAoJECvwRC2XARrjeQMP/R11mX+bs2ZSU8LdzD2ckRf1
-FRe2f9KypR94vWXrb9xt3RbJlqEY9RbZUJ5hgwcOK3zdiV8VvkI+0eHE7+2d4U4+
-IuKjP5enetnctV8iGVqLB3+zVtw5JbxpYc6jjjP5GeGr8Na9CS7Wkm41qXlLfCAE
-9WKPhbPJ8OPRVrhoJfLKXlvc4bOaQWheeoFnn0QHvJOsQO/g0u/4bloSneiytXJH
-BEhLbDV1KPXbVdKwYkPbPHGQakbAA2KoxRTfZ0Qc9jO+QELjy2y1xAP3DaPQRG39
-t5dGIxXKKWMv3JPath8zl6rC+7Pu3HbqUClgiFrZDWmdJergb0gUcR6vAQ+e0K+v
-CNpqBWqyBfa9l1Gkz4/dTY5DFSKbfbRKeF0yqObRMpdKaUdIkt6dxUVen8QPzYs7
-pihbWdO4aDCmINLXfLIZNT5GO2Zyfroc1+fP3X+9vOJt7teV3zk6ID8kIpBeE0vY
-mi3f/jI/+G2o3xA/hMvlmFFRHjupqvu7iXMdZPE3y0ZEq0gse0Nhx5LWclcRhF/i
-z6XZFe4+SFH9i/UvECCNTTLCTPdBcULpYwAPv88RK/7n9Qjo+cZjwv9cU6xjiJza
-VS/2mgF6ezpMZY/u5SVwQ6BMbSaVQ3mlbSBhT7CPv8e48XHhCkrp6G0Edo6ksN73
-UeFbYobiguwGrKoTm/Je
-=InVo
------END PGP SIGNATURE-----
-
---0F1p//8PRICkK4MW--
-
+> Hope you can understand the circumstance,
+> Nicolin
 
