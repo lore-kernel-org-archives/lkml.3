@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570AbaDDSw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:52:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42334 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168AbaDDSvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754280AbaDDSw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:52:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39143 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754522AbaDDSvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Apr 2014 14:51:42 -0400
-Date: Fri, 4 Apr 2014 11:51:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Joerg Roedel <joro@8bytes.org>, Jiri Kosina <jkosina@suse.cz>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-Id: <20140404115139.3ea3d53126094f41bc0579a0@linux-foundation.org>
-In-Reply-To: <CA+55aFz=rnGo_DvtYa4aonm_JUyWe5cynLcsCYDfr+jMZ91+Sg@mail.gmail.com>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
-	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
-	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
-	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
-	<CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
-	<CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
-	<20140403104308.GP13491@8bytes.org>
-	<20140403170541.GA19010@thunk.org>
-	<533EF832.1030902@mit.edu>
-	<CA+55aFz=rnGo_DvtYa4aonm_JUyWe5cynLcsCYDfr+jMZ91+Sg@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Date: Fri, 4 Apr 2014 20:51:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 9/9] uprobes/x86: Teach arch_uprobe_post_xol() to
+	restart if possible
+Message-ID: <20140404185142.GA14756@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140404185038.GA14679@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Apr 2014 11:42:51 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+SIGILL after the failed arch_uprobe_post_xol() should only be used as
+a last resort, we should try to restart the probed insn if possible.
 
-> Most users will never notice. The whole "writable /dev/kmsg" may go
-> back to 2002, but there aren't _that_ many users, and pretty much all
-> I've ever seen tend to write the occasional "I started up" messages or
-> other very small notes. I had to write a test-script to trigger even
-> the (very draconian) default ratelimits.
+Currently only adjust_ret_addr() can fail, and this can only happen if
+another thread unmapped our stack after we executed "call" out-of-line.
+Most probably the application if buggy, but even in this case it can
+have a handler for SIGSEGV/etc. And in theory it can be even correct
+and do something non-trivial with its memory.
 
-Is there anything here that we really need to fix?  What goes wrong if
-we leave kmsg as-is and systemd gets fixed?
+Of course we can't restart unconditionally, so arch_uprobe_post_xol()
+does this only if ->post_xol() returns -ERESTART even if currently this
+is the only possible error.
+
+Note: this is not "perfect", we do not want the extra handler_chain()
+after restart, but I think this is the best solution we can realistically
+do without too much uglifications.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/uprobes.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index e72903e..b820668 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -443,16 +443,17 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+ {
+ 	struct uprobe_task *utask = current->utask;
+ 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
+-	int ret = 0;
+ 
+ 	handle_riprel_post_xol(auprobe, regs, &correction);
+ 	if (auprobe->fixups & UPROBE_FIX_IP)
+ 		regs->ip += correction;
+ 
+-	if (auprobe->fixups & UPROBE_FIX_CALL)
+-		ret = adjust_ret_addr(regs->sp, correction);
++	if (auprobe->fixups & UPROBE_FIX_CALL) {
++		if (adjust_ret_addr(regs->sp, correction))
++			return -ERESTART;
++	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static struct uprobe_xol_ops default_xol_ops = {
+@@ -599,6 +600,12 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		int err = auprobe->ops->post_xol(auprobe, regs);
+ 		if (err) {
+ 			arch_uprobe_abort_xol(auprobe, regs);
++			/*
++			 * Restart the probed insn. ->post_xol() must ensure
++			 * this is really possible if it returns -ERESTART.
++			 */
++			if (err == -ERESTART)
++				return 0;
+ 			return err;
+ 		}
+ 	}
+-- 
+1.5.5.1
 
