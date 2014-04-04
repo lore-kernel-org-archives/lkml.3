@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805AbaDDP32 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:29:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49676 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998AbaDDP30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:29:26 -0400
-Message-ID: <533ECFB0.9060903@zytor.com>
-Date: Fri, 04 Apr 2014 08:28:48 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753821AbaDDPaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:30:20 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:53101 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521AbaDDPaR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 11:30:17 -0400
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Li, Aubrey" <aubrey.li@linux.intel.com>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
- the PCI reboot method
-References: <20140404064120.GB11877@gmail.com> <tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org> <20140404080006.GB6944@gmail.com> <533EB5F1.8060002@linux.intel.com> <20140404151359.GB12370@srcf.ucam.org>
-In-Reply-To: <20140404151359.GB12370@srcf.ucam.org>
-X-Enigmail-Version: 1.6
+In-Reply-To: <1396577891-2713-3-git-send-email-elder@linaro.org>
+References: <1396577891-2713-1-git-send-email-elder@linaro.org>
+	<1396577891-2713-3-git-send-email-elder@linaro.org>
+Date: Fri, 4 Apr 2014 08:30:16 -0700
+Message-ID: <CAAYSxhqOh4F=vSDJYUwFE85og-Tgc9Hi8c79biEZYYjb8z1Qkg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] ARM: add SMP support for Broadcom mobile SoCs
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Alex Elder <elder@linaro.org>
+Cc: Matt Porter <mporter@linaro.org>, Christian Daudt <bcm@fixthebug.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, sboyd@codeaurora.org,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2014 08:13 AM, Matthew Garrett wrote:
-> On Fri, Apr 04, 2014 at 09:38:57PM +0800, Li, Aubrey wrote:
-> 
->> I don't think there is enough justification to revert the patch. We
->> introduce EFI into the default list, we didn't see any reason to remove
->> it out so far.
-> 
-> We should be using the EFI method, yes. But it seems that CF9 isn't 
-> safe, so we should drop that.
-> 
+On Thu, Apr 3, 2014 at 7:18 PM, Alex Elder <elder@linaro.org> wrote:
 
-As I said, I'm willing to hear about production hardware having problems
-before killing it off, but we should dig into the history of the past
-removal.
+> diff --git a/arch/arm/mach-bcm/platsmp.c b/arch/arm/mach-bcm/platsmp.c
+> new file mode 100644
+> index 0000000..46a64f2
+> --- /dev/null
+> +++ b/arch/arm/mach-bcm/platsmp.c
 
-	-hpa
+> +/* Size of mapped Cortex A9 SCU address space */
+> +#define SCU_SIZE               0x58
 
+> +/*
+> + * Enable the Cortex A9 Snoop Control Unit
+> + *
+> + * By the time this is called we already know there are multiple
+> + * cores present.  We assume we're running on a Cortex A9 processor,
+> + * so any trouble getting the base address register or getting the
+> + * SCU base is a problem.
+> + *
+> + * Return 0 if successful or an error code otherwise.
+> + */
+> +static int __init scu_a9_enable(void)
+> +{
+> +       unsigned long config_base;
+> +       void __iomem *scu_base;
+> +
+> +       if (!scu_a9_has_base()) {
+> +               pr_err("no configuration base address register!\n");
+> +               return -ENXIO;
+> +       }
+> +
+> +       /* Config base address register value is zero for uniprocessor */
+> +       config_base = scu_a9_get_base();
+> +       if (!config_base) {
+> +               pr_err("hardware reports only one core; disabling SMP\n");
+> +               return -ENOENT;
+> +       }
+> +
+> +       scu_base = ioremap((phys_addr_t)config_base, SCU_SIZE);
+> +       if (!scu_base) {
+> +               pr_err("failed to remap config base (%lu/%u) for SCU\n",
+> +                       config_base, SCU_SIZE);
+> +               return -ENOMEM;
+> +       }
+> +
+> +       scu_enable(scu_base);
+> +
+> +       iounmap(scu_base);      /* That's the last we'll need of this */
+> +
+> +       return 0;
+> +}
+
+This function seems useful for Cortex A9 MPCore in general.
+
+While you gave it a generic name, you put it in a Broadcom file.
+
+Is there a better location for this code?
