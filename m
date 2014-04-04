@@ -1,113 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaDDFQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 01:16:34 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:60886 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaDDFQd (ORCPT
+	id S1752170AbaDDFRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 01:17:47 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:36470 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaDDFRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 01:16:33 -0400
-Message-ID: <533E4028.7040505@monstr.eu>
-Date: Fri, 04 Apr 2014 07:16:24 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Insop Song <Insop.Song@gainspeed.com>, Paul Bolle <pebolle@tiscali.nl>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'insop.song@gmail.com'" <insop.song@gmail.com>
-Subject: Re: [GIT PULL] Staging driver patches for 3.15-rc1
-References: <20140401184817.GA21855@kroah.com> <1396427043.18431.20.camel@x220> <20140402200428.GE26966@kroah.com> <7731bd53be4b49e2924a7002f74dc090@BY2PR07MB011.namprd07.prod.outlook.com> <20140402230837.GA24324@kroah.com>
-In-Reply-To: <20140402230837.GA24324@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="d9jGXqO4gUX3OA3ppH8Tq2532Kx9EMfpj"
+	Fri, 4 Apr 2014 01:17:44 -0400
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Lad Prabhakar <prabhakar.csengg@gmail.com>
+Subject: [PATCH v2 0/2] DaVinci: VPIF: upgrade with v4l helpers
+Date: Fri,  4 Apr 2014 10:47:34 +0530
+Message-Id: <1396588656-6660-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---d9jGXqO4gUX3OA3ppH8Tq2532Kx9EMfpj
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-On 04/03/2014 01:08 AM, Greg KH wrote:
-> On Wed, Apr 02, 2014 at 08:52:18PM +0000, Insop Song wrote:
->> On Wed, April 02, 2014 1:04 PM, Greg KH wrote:
->>> On Wed, Apr 02, 2014 at 10:24:03AM +0200, Paul Bolle wrote:
->>>> On Tue, 2014-04-01 at 11:48 -0700, Greg KH wrote:
->>>>> Staging driver pull request for 3.15-rc1
->>>>>
->>>>> Here's the huge drivers/staging/ update for 3.15-rc1.
->>>>>
->>>>> Loads of cleanup fixes, a few drivers removed, and some new ones
->>> added.
->>>>>
->>>>> All have been in linux-next for a while.
->>>>>
->>>>> [...]
->>>>>
->>>>> Insop Song (1):
->>>>>       staging: fpgaboot: Xilinx FPGA firmware download driver
->>>>
->>>> This commit adds checks for CONFIG_B4860G100. Is a patch to add a
->>>> Kconfig symbol B4860G100 perhaps queued somewhere?
->>>
->>> Insop, I thought this config option was coming from some other place,=
- right?
->>>
->>
->> Paul,
->> I didn't include CONFIG_B4860G100 in Kconfig in original patch set,
->> since programming FPGA method can vary in different system, and this
->> was discussed during the review with Greg as well.
->>
->> However, actual fpga programming method is well contained in io.c with=
+Hi All,
 
->> ifdef-ed CONFIG_B4860G100, now I think I might better to update
->> Kconfig to include CONFIG_B4860G100.
->>
->> Greg, what do you think? Any harm to add custom board CONFIG* to
->> staging Kconfig? Let me know.
->=20
-> Let's see what it would look like and we can go from there.
+This patch series upgrades the vpif capture & display
+driver with the all the helpers provided by v4l, this makes
+the driver much simpler and cleaner. This also includes few
+checkpatch issues.
 
-That's interesting driver. Maybe good time to refresh my work
-around fpga manager.
-http://permalink.gmane.org/gmane.linux.kernel/1573330
+Sending them as single patch one for capture and another for
+display, splitting them would have caused a huge number small
+patches.
 
-It is the framework which just provides what you have done there.
-
-I need to finish some work and let me look at it next week.
-It should be easy for you to switch to it.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Changes for v2:
+a> Added a copyright.
+b> Dropped buf_init() callback from vb2_ops.
+c> Fixed enabling & disabling of interrupts in case of HD formats.
 
 
+Lad, Prabhakar (2):
+  media: davinci: vpif capture: upgrade the driver with v4l offerings
+  media: davinci: vpif display: upgrade the driver with v4l offerings
 
---d9jGXqO4gUX3OA3ppH8Tq2532Kx9EMfpj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+ drivers/media/platform/davinci/vpif_capture.c |  931 +++++++------------------
+ drivers/media/platform/davinci/vpif_capture.h |   32 +-
+ drivers/media/platform/davinci/vpif_display.c |  800 ++++++---------------
+ drivers/media/platform/davinci/vpif_display.h |   31 +-
+ 4 files changed, 455 insertions(+), 1339 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+-- 
+1.7.9.5
 
-iEYEARECAAYFAlM+QCgACgkQykllyylKDCF1dwCdEtd/GvbjtSBKkT9x0qquui90
-8vIAn3jTUtlFWq9pAqauWwnlmZzsqWo8
-=zuaX
------END PGP SIGNATURE-----
-
---d9jGXqO4gUX3OA3ppH8Tq2532Kx9EMfpj--
