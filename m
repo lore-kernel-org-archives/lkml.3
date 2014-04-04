@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaDDObz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:31:55 -0400
-Received: from smtprelay0194.hostedemail.com ([216.40.44.194]:34232 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753169AbaDDObx (ORCPT
+	id S1753375AbaDDOft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:35:49 -0400
+Received: from linux-libre.fsfla.org ([208.118.235.54]:55285 "EHLO
+	linux-libre.fsfla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881AbaDDOfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:31:53 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3867:3868:4250:4321:4605:5007:7652:9040:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: leg94_8486af860335a
-X-Filterd-Recvd-Size: 1906
-Message-ID: <1396621909.2863.1.camel@joe-AO722>
-Subject: Re: [PATCH 4/5] efi: Add shared printk wrapper for consistent
- prefixing
-From: Joe Perches <joe@perches.com>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-efi@vger.kernel.org, matt.fleming@intel.com,
-        linux-kernel@vger.kernel.org, Roy Franz <roy.franz@linaro.org>
-Date: Fri, 04 Apr 2014 07:31:49 -0700
-In-Reply-To: <1396614350-20889-5-git-send-email-leif.lindholm@linaro.org>
-References: <1396614350-20889-1-git-send-email-leif.lindholm@linaro.org>
-	 <1396614350-20889-5-git-send-email-leif.lindholm@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Apr 2014 10:35:46 -0400
+From: Alexandre Oliva <oliva@gnu.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq\@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: loongson2_cpufreq: don't declare local variable as static
+Organization: Free thinker, not speaking for the GNU Project
+References: <254471b8cee296f860d24368cc467c00b5a07336.1396413826.git.viresh.kumar@linaro.org>
+	<or61mqio12.fsf@livre.home>
+	<CAKohpo=HfZMmSsHdNyZ5cGhOAyMHkHNH8bBrOwk7kC9eBK_VbQ@mail.gmail.com>
+Date: Fri, 04 Apr 2014 11:34:51 -0300
+In-Reply-To: <CAKohpo=HfZMmSsHdNyZ5cGhOAyMHkHNH8bBrOwk7kC9eBK_VbQ@mail.gmail.com>
+	(Viresh Kumar's message of "Thu, 3 Apr 2014 20:14:24 +0530")
+Message-ID: <or1txd88ok.fsf@livre.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-04 at 13:25 +0100, Leif Lindholm wrote:
-> Add a wrapper for printk to standardize the prefix for informational and
-> error messages from the EFI stub.
-[]
-> diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-[]
-> @@ -33,6 +33,9 @@ static void efi_printk(efi_system_table_t *sys_table_arg, char *str)
-[]
-> +#define pr_efi(sys_table, msg)     efi_printk(sys_table, "EFI stub: "msg)
-> +#define pr_efi_err(sys_table, msg) efi_printk(sys_table, "EFI stub: ERROR: "msg)
-[]
-> @@ -486,7 +489,7 @@ static efi_status_t efi_relocate_kernel(efi_system_table_t *sys_table_arg,
->  				       &new_addr);
->  	}
->  	if (status != EFI_SUCCESS) {
-> -		efi_printk(sys_table_arg, "ERROR: Failed to allocate usable memory for kernel.\n");
-> +		pr_efi_err(sys_table_arg, "ERROR: Failed to allocate usable memory for kernel.\n");
+On Apr  3, 2014, Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-Author! Author! "ERROR: ERROR:"!
+> On 3 April 2014 18:10, Alexandre Oliva <oliva@gnu.org> wrote:
+>> FWIW, the same mistake is present in at32.
 
-One too many "ERROR:" prefixes.
+> I will check others as well now :)
 
+Thanks!
+
+>> Reverting all the changes to loongson2_cpufreq.c in 652ed95d5fa makes
+>> cpufreq work again, as opposed to printing nan% in all cpufreq stats in
+>> cpufreq-info's output, and freezing shortly thereafter.
+
+> You must have a look at this:
+
+> https://lkml.org/lkml/2014/4/2/426 : [PATCH] MIPS/loongson2_cpufreq:
+> fix CPU clock rate setting
+
+Thanks, I confirm that patch is enough to avoid the symptoms I'd
+described.
+
+-- 
+Alexandre Oliva, freedom fighter    http://FSFLA.org/~lxoliva/
+You must be the change you wish to see in the world. -- Gandhi
+Be Free! -- http://FSFLA.org/   FSF Latin America board member
+Free Software Evangelist|Red Hat Brasil GNU Toolchain Engineer
