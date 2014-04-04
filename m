@@ -1,74 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaDDV2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:28:35 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:56118 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960AbaDDV2Y (ORCPT
+	id S1753205AbaDDV2a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:28:30 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64235 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaDDV21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:28:24 -0400
+	Fri, 4 Apr 2014 17:28:27 -0400
 From: Rabin Vincent <rabin@rab.in>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
         Laura Abbott <lauraa@codeaurora.org>, Jon Medhurst <tixy@linaro.org>,
         Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 1/2] arm: fixmap: implement __set_fixmap()
-Date: Fri,  4 Apr 2014 23:27:49 +0200
-Message-Id: <1396646870-29695-1-git-send-email-rabin@rab.in>
+Subject: [PATCH 2/2] arm: use fixmap for text patching when text is RO
+Date: Fri,  4 Apr 2014 23:27:50 +0200
+Message-Id: <1396646870-29695-2-git-send-email-rabin@rab.in>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396646870-29695-1-git-send-email-rabin@rab.in>
+References: <1396646870-29695-1-git-send-email-rabin@rab.in>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is used from set_fixmap() and clear_fixmap() via
-asm-generic/fixmap.h.
+Use fixmaps for text patching when the kernel text is read-only,
+inspired by x86.  This makes jump labels and kprobes work with the
+currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
+CONFIG_DEBUG_RODATA options.
 
 Signed-off-by: Rabin Vincent <rabin@rab.in>
 ---
-Needs "arm: use generic fixmap.h", available in linux-next.
-
- arch/arm/include/asm/fixmap.h | 2 ++
- arch/arm/mm/mmu.c             | 7 +++++++
- 2 files changed, 9 insertions(+)
+ arch/arm/include/asm/fixmap.h |  3 ++
+ arch/arm/kernel/jump_label.c  |  2 +-
+ arch/arm/kernel/patch.c       | 66 ++++++++++++++++++++++++++++++++++++++-----
+ arch/arm/kernel/patch.h       | 12 +++++++-
+ 4 files changed, 74 insertions(+), 9 deletions(-)
 
 diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index 68ea615..55ed076 100644
+index 55ed076..79c1719 100644
 --- a/arch/arm/include/asm/fixmap.h
 +++ b/arch/arm/include/asm/fixmap.h
-@@ -23,6 +23,8 @@ enum fixed_addresses {
+@@ -18,6 +18,9 @@
+ #define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
+ 
+ enum fixed_addresses {
++	FIX_TEXT_POKE0,
++	FIX_TEXT_POKE1,
++
+ 	FIX_KMAP_BEGIN,
+ 	FIX_KMAP_END = (FIXADDR_TOP - FIXADDR_START) >> PAGE_SHIFT,
  	__end_of_fixed_addresses
+diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
+index 4ce4f78..afeeb9e 100644
+--- a/arch/arm/kernel/jump_label.c
++++ b/arch/arm/kernel/jump_label.c
+@@ -19,7 +19,7 @@ static void __arch_jump_label_transform(struct jump_entry *entry,
+ 		insn = arm_gen_nop();
+ 
+ 	if (is_static)
+-		__patch_text(addr, insn);
++		__patch_text_early(addr, insn);
+ 	else
+ 		patch_text(addr, insn);
+ }
+diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+index 07314af..761c5b6 100644
+--- a/arch/arm/kernel/patch.c
++++ b/arch/arm/kernel/patch.c
+@@ -1,8 +1,11 @@
+ #include <linux/kernel.h>
++#include <linux/spinlock.h>
+ #include <linux/kprobes.h>
++#include <linux/mm.h>
+ #include <linux/stop_machine.h>
+ 
+ #include <asm/cacheflush.h>
++#include <asm/fixmap.h>
+ #include <asm/smp_plat.h>
+ #include <asm/opcodes.h>
+ 
+@@ -13,21 +16,67 @@ struct patch {
+ 	unsigned int insn;
  };
  
-+void __set_fixmap(enum fixed_addresses idx, unsigned long phys, pgprot_t prot);
+-void __kprobes __patch_text(void *addr, unsigned int insn)
++static DEFINE_SPINLOCK(patch_lock);
 +
- #include <asm-generic/fixmap.h>
- 
- #endif
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 3e16307..61bdfb1 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -22,6 +22,7 @@
- #include <asm/cputype.h>
- #include <asm/sections.h>
- #include <asm/cachetype.h>
-+#include <asm/fixmap.h>
- #include <asm/sections.h>
- #include <asm/setup.h>
- #include <asm/smp_plat.h>
-@@ -388,6 +389,12 @@ SET_MEMORY_FN(rw, pte_set_rw)
- SET_MEMORY_FN(x, pte_set_x)
- SET_MEMORY_FN(nx, pte_set_nx)
- 
-+void __set_fixmap(enum fixed_addresses idx, unsigned long phys, pgprot_t prot)
++static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
 +{
-+	BUG_ON(idx >= __end_of_fixed_addresses);
-+	set_top_pte(__fix_to_virt(idx), pfn_pte(__phys_to_pfn(phys), prot));
++	unsigned int uintaddr = (uintptr_t) addr;
++	bool module = !core_kernel_text(uintaddr);
++	struct page *page;
++
++	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX)) {
++		page = vmalloc_to_page(addr);
++	} else if (!module && IS_ENABLED(CONFIG_ARM_KERNMEM_PERMS)) {
++		page = virt_to_page(addr);
++	} else {
++		return addr;
++	}
++
++	if (flags)
++		spin_lock_irqsave(&patch_lock, *flags);
++
++	set_fixmap(fixmap, page_to_phys(page));
++
++	return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
 +}
 +
- /*
-  * Adjust the PMD section entries according to the CPU in use.
-  */
++static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
++{
++	clear_fixmap(fixmap);
++
++	if (flags)
++		spin_unlock_irqrestore(&patch_lock, *flags);
++}
++
++void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
+ {
+ 	bool thumb2 = IS_ENABLED(CONFIG_THUMB2_KERNEL);
++	unsigned int uintaddr = (uintptr_t) addr;
++	unsigned long flags;
++	void *waddr = addr;
+ 	int size;
+ 
++	if (remap)
++		waddr = patch_map(addr, FIX_TEXT_POKE0, &flags);
++
+ 	if (thumb2 && __opcode_is_thumb16(insn)) {
+-		*(u16 *)addr = __opcode_to_mem_thumb16(insn);
++		*(u16 *)waddr = __opcode_to_mem_thumb16(insn);
+ 		size = sizeof(u16);
+-	} else if (thumb2 && ((uintptr_t)addr & 2)) {
++	} else if (thumb2 && (uintaddr & 2)) {
++		bool twopage = (uintaddr & ~PAGE_MASK) == PAGE_SIZE - 2;
+ 		u16 first = __opcode_thumb32_first(insn);
+ 		u16 second = __opcode_thumb32_second(insn);
+-		u16 *addrh = addr;
++		u16 *addrh0 = waddr;
++		u16 *addrh1 = waddr + 2;
++
++		if (remap && twopage)
++			addrh1 = patch_map(addr + 2, FIX_TEXT_POKE1, NULL);
+ 
+-		addrh[0] = __opcode_to_mem_thumb16(first);
+-		addrh[1] = __opcode_to_mem_thumb16(second);
++		*addrh0 = __opcode_to_mem_thumb16(first);
++		*addrh1 = __opcode_to_mem_thumb16(second);
++
++		if (twopage && addrh1 != addr + 2)
++			patch_unmap(FIX_TEXT_POKE1, NULL);
+ 
+ 		size = sizeof(u32);
+ 	} else {
+@@ -36,10 +85,13 @@ void __kprobes __patch_text(void *addr, unsigned int insn)
+ 		else
+ 			insn = __opcode_to_mem_arm(insn);
+ 
+-		*(u32 *)addr = insn;
++		*(u32 *)waddr = insn;
+ 		size = sizeof(u32);
+ 	}
+ 
++	if (waddr != addr)
++		patch_unmap(FIX_TEXT_POKE0, &flags);
++
+ 	flush_icache_range((uintptr_t)(addr),
+ 			   (uintptr_t)(addr) + size);
+ }
+diff --git a/arch/arm/kernel/patch.h b/arch/arm/kernel/patch.h
+index b4731f2..77e054c 100644
+--- a/arch/arm/kernel/patch.h
++++ b/arch/arm/kernel/patch.h
+@@ -2,6 +2,16 @@
+ #define _ARM_KERNEL_PATCH_H
+ 
+ void patch_text(void *addr, unsigned int insn);
+-void __patch_text(void *addr, unsigned int insn);
++void __patch_text_real(void *addr, unsigned int insn, bool remap);
++
++static inline void __patch_text(void *addr, unsigned int insn)
++{
++	__patch_text_real(addr, insn, true);
++}
++
++static inline void __patch_text_early(void *addr, unsigned int insn)
++{
++	__patch_text_real(addr, insn, false);
++}
+ 
+ #endif
 -- 
 1.9.1
 
