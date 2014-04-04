@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaDDS7X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:59:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59324 "EHLO
+	id S1754515AbaDDS7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:59:53 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59318 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038AbaDDSpl (ORCPT
+	with ESMTP id S1754005AbaDDSpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Apr 2014 14:45:41 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
+To: Kumar Gala <galak@codeaurora.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH 4/4] devicetree: bindings: qcom,mmcc: Document GDSC binding
-Date: Fri,  4 Apr 2014 11:45:36 -0700
-Message-Id: <1396637136-29974-5-git-send-email-sboyd@codeaurora.org>
+        Saravana Kannan <skannan@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3/4] ARM: dts: qcom: Add GDSC nodes underneath clock controller
+Date: Fri,  4 Apr 2014 11:45:35 -0700
+Message-Id: <1396637136-29974-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1396637136-29974-1-git-send-email-sboyd@codeaurora.org>
 References: <1396637136-29974-1-git-send-email-sboyd@codeaurora.org>
@@ -22,65 +23,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the GDSC nodes present within the multimedia clock
-controller.
+Add nodes for the GDSCs present on the multimedia clock
+controller in 8974.
 
-Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- .../devicetree/bindings/clock/qcom,mmcc.txt        | 42 ++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ arch/arm/boot/dts/qcom-apq8074-dragonboard.dts | 18 ++++++++++++++++++
+ arch/arm/boot/dts/qcom-msm8974.dtsi            | 26 ++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/clock/qcom,mmcc.txt b/Documentation/devicetree/bindings/clock/qcom,mmcc.txt
-index d572e9964c54..695f86ad94ea 100644
---- a/Documentation/devicetree/bindings/clock/qcom,mmcc.txt
-+++ b/Documentation/devicetree/bindings/clock/qcom,mmcc.txt
-@@ -19,3 +19,45 @@ Example:
- 		#clock-cells = <1>;
- 		#reset-cells = <1>;
- 	};
+diff --git a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+index 13ac3e222495..478e89de0f38 100644
+--- a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
++++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+@@ -3,4 +3,22 @@
+ / {
+ 	model = "Qualcomm APQ8074 Dragonboard";
+ 	compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
 +
-+Qualcomm Global Distributed Switch Controller (GDSC) Binding
-+------------------------------------------------------------
++};
 +
-+The GDSC is responsible for safely collapsing and restoring power to
-+peripheral cores on chipsets like msm8974 for power savings.
++&gdsc_venus {
++	qcom,skip-logic-collapse;
++	qcom,retain-periph;
++	qcom,retain-mem;
++};
 +
-+Required properties:
-+ - regulator-name:  A string used as a descriptive name for regulator outputs
++&gdsc_mdss {
++	qcom,skip-logic-collapse;
++	qcom,retain-periph;
++	qcom,retain-mem;
++};
 +
-+Optional properties:
-+ - parent-supply:   phandle to the parent supply/regulator node
-+ - qcom,retain-mem:  Presence denotes a hardware requirement to leave the
-+		     forced core memory retention signals in the core's clock
-+		     branch control registers asserted.
-+ - qcom,retain-periph: Presence denotes a hardware requirement to leave the
-+		     forced periph memory retention signal in the core's clock
-+		     branch control registers asserted.
-+ - qcom,skip-logic-collapse: Presence denotes a requirement to leave power to
-+                             the core's logic enabled.
-+ - qcom,support-hw-trigger: Presence denotes a hardware feature to switch
-+			    on/off this regulator based on internal HW signals
-+			    to save more power.
++&gdsc_oxili_gx {
++	qcom,retain-mem;
++	qcom,retain-periph;
+ };
+diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+index 9e5dadb101eb..e38ae30930b2 100644
+--- a/arch/arm/boot/dts/qcom-msm8974.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+@@ -108,6 +108,32 @@
+ 			#clock-cells = <1>;
+ 			#reset-cells = <1>;
+ 			reg = <0xfd8c0000 0x6000>;
 +
-+Example:
-+	clock-controller@4000000 {
-+		compatible = "qcom,mmcc-msm8974";
-+		reg = <0x4000000 0x1000>;
-+		#clock-cells = <1>;
-+		#reset-cells = <1>;
++			regulators {
++				gdsc_venus: gdsc_venus {
++					regulator-name = "gdsc_venus";
++				};
 +
-+		regulators {
-+			gdsc_oxili_gx: gdsc_oxili_gx {
-+				regulator-name = "gdsc_oxili_gx";
-+				parent-supply = <&pm8841_s4>;
-+				qcom,retain-mem;
-+				qcom,retain-periph;
-+				qcom,skip-logic-collapse;
-+				qcom,support-hw-trigger;
++				gdsc_mdss: gdsc_mdss {
++					regulator-name = "gdsc_mdss";
++				};
++
++				gdsc_jpeg: gdsc_jpeg {
++					regulator-name = "gdsc_jpeg";
++				};
++
++				gdsc_vfe: gdsc_vfe {
++					regulator-name = "gdsc_vfe";
++				};
++
++				gdsc_oxili_gx: gdsc_oxili_gx {
++					regulator-name = "gdsc_oxili_gx";
++				};
++
++				gdsc_oxili_cx: gdsc_oxili_cx {
++					regulator-name = "gdsc_oxili_cx";
++				};
 +			};
-+		};
-+	};
+ 		};
+ 
+ 		serial@f991e000 {
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
