@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaDDRhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 13:37:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51200 "EHLO mail.zytor.com"
+	id S1754030AbaDDRkV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 13:40:21 -0400
+Received: from sauhun.de ([89.238.76.85]:60049 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998AbaDDRhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 13:37:37 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140404173431.GA25173@gmail.com>
-References: <533D8516.1040803@zytor.com> <20140403121314.246b03a7@gandalf.local.home> <533DED74.6050202@linux.intel.com> <20140403194018.7c67aec7@gandalf.local.home> <533DF455.4040908@linux.intel.com> <533DF8D2.9060508@zytor.com> <533E0A94.5040007@linux.intel.com> <20140404151203.GA12370@srcf.ucam.org> <533ECC2C.6090505@zytor.com> <20140404153634.GA14519@srcf.ucam.org> <20140404173431.GA25173@gmail.com>
+	id S1753154AbaDDRkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 13:40:18 -0400
+Date: Fri, 4 Apr 2014 19:40:11 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Yao Yuan <yao.yuan@freescale.com>
+Cc: Marek Vasut <marex@denx.de>, "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH v4 1/2] i2c: add DMA support for freescale i2c driver
+Message-ID: <20140404174011.GA8489@katana>
+References: <1396579272-19542-1-git-send-email-yao.yuan@freescale.com>
+ <1396579272-19542-2-git-send-email-yao.yuan@freescale.com>
+ <201404041628.55471.marex@denx.de>
+ <aab78696ac364d9c832993c08915bad3@BL2PR03MB338.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [BUG] x86: reboot doesn't reboot
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 04 Apr 2014 10:37:07 -0700
-To: Ingo Molnar <mingo@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <bca5033b-bd33-4e5e-8893-3c9dcf76be7d@email.android.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Disposition: inline
+In-Reply-To: <aab78696ac364d9c832993c08915bad3@BL2PR03MB338.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment header is bogus... it describes what we do, not what Windows does.
 
-On April 4, 2014 10:34:31 AM PDT, Ingo Molnar <mingo@kernel.org> wrote:
->
->* Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
->> On Fri, Apr 04, 2014 at 08:13:48AM -0700, H. Peter Anvin wrote:
->> > On 04/04/2014 08:12 AM, Matthew Garrett wrote:
->> > > On Fri, Apr 04, 2014 at 09:27:48AM +0800, Li, Aubrey wrote:
->> > > 
->> > >> The current situation is,
->> > >> - we have one(do we know more?) preproduction machine hangs by
->CF9.
->> > >> - We have more than one(could be thousand known) production
->machine
->> > >> works by CF9.
->> > > 
->> > > Production hardware should never require CF9.
->> > > 
->> > 
->> > There are a lot of things that shouldn't be.
->> 
->> Windows doesn't hit CF9, and production hardware is always tested
->with 
->> Windows, so. [...]
->
->So why the hell does the reboot function comment claim that the 
->Windows reboot sequence (which is the de facto hardware standard)
->uses 0xcf9:
->
->/*
-> * Windows compatible x86 hardware expects the following on reboot:
-> *
-> * 1) If the FADT has the ACPI reboot register flag set, try it
-> * 2) If still alive, write to the keyboard controller
-> * 3) If still alive, write to the ACPI reboot register again
-> * 4) If still alive, write to the keyboard controller again
-> * 5) If still alive, call the EFI runtime service to reboot
-> * 6) If still alive, write to the PCI IO port 0xCF9 to reboot
-> * 7) If still alive, inform BIOS to do a proper reboot
-> *
->
->??
->
->Thanks,
->
->	Ingo
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+> The ugly is my work or even the ability but not the attitude, I think.
+
+Explaining which tests were done is what I wanted to request more often
+=66rom submitters anyhow. Your leftover (yes, this can happen) just
+reminded me to actually do that :)
+
+
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTPu57AAoJEBQN5MwUoCm2WoAP/0G6GSOFn46x5qDlXOtkB5WB
+u5LnuEkt+VHkf8rhXoFIZlDdvGukstUnV0Q7ZMBqI2kp8EHiLiIaAYeKfp+SHxdT
+623GmJ0m8omcyeJhGVDOvNtF3OrryxIvP02g/QDouf01oxg56KzTeLY2LcyFNgd7
+zjhMPVpKLbYMuOBNnwbAybVYGasRZuuBf03UVU1iBHa3eop0bT6gGiva9CWBxLlY
+DR3OpP8XVF3OtP0+1fxzWmtKKCztyNQftpt/n/nMpe7CZiVnTxXl5DI6xEZ6o1na
+INA5LnPwEfWmlVhtAQZR/Nd8XQ0KnuPvu4uDuYprrgVFH4OZqaLiNwnQyBVp3Sll
+QATDybeJiAi+mwQFKpsR+5Vrx5/FF041n62ZNhARZ/KfVFBIqGfBMGjNp+g2bfpN
+Kdn+s/3OPmFuo0ubiCPKb4TYikJ/VyIUvfPgc/gQySCn2RGIJ68ophB4qIN4gpTw
+4t46a7Os3xJWxrpq0bBqyl6iYVtgSKMHB3wP2T+F77xX4p3Dtxh8UN5lp2j/546V
+Wwm85RjgFUuvXsH/pbheG0YiROYLIKngzpYUOXGUp6uXKAObeQbIdY4f9tEGiVdq
+sKZUvPlJ7kHpFHaV6ZZ/vpxzU5cNxz2w2gMbDfOcy+mLCdYKdECn3jAkegCBFPOu
+TwGDOzQQtdhHHBLD4InG
+=VQvf
+-----END PGP SIGNATURE-----
+
+--+QahgC5+KEYLbs62--
