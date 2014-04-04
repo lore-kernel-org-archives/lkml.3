@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaDDJAo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 05:00:44 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:50540 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaDDJAh (ORCPT
+	id S1752244AbaDDJBQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 05:01:16 -0400
+Received: from mx4.wp.pl ([212.77.101.12]:31888 "EHLO mx4.wp.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752109AbaDDJBL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 05:00:37 -0400
+	Fri, 4 Apr 2014 05:01:11 -0400
+Date: Fri, 4 Apr 2014 11:01:06 +0200
+From: Jakub =?utf-8?B?S2ljacWEc2tp?= <moorray3@wp.pl>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rt2x00: BUG: remove double loop on REGISTER_BUSY_COUNT
+Message-ID: <20140404110106.6d249615@north>
+In-Reply-To: <20140404081908.GB1448@redhat.com>
+References: <1396534327-12971-1-git-send-email-richard.genoud@gmail.com>
+	<20140403173701.75c1f497@north>
+	<20140404081908.GB1448@redhat.com>
+X-Mailer: Claws Mail 3.9.3-24-gf407e3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAD6G_RTVPip-G34AxLRpFbs50WFFtWS6yth-r-E889h2B2Cd-w@mail.gmail.com>
-References: <CAD6G_RTVPip-G34AxLRpFbs50WFFtWS6yth-r-E889h2B2Cd-w@mail.gmail.com>
-Date: Fri, 4 Apr 2014 14:30:36 +0530
-Message-ID: <CAD6G_RSwHQT5vDQJMSfYpfHbdckuFGZtx7ghM-89q=8rw85iXw@mail.gmail.com>
-Subject: Re: Link up issue on ethernet/realtek/r8169.c
-From: Jagan Teki <jagannadh.teki@gmail.com>
-To: nic_swsd@realtek.com, romieu@fr.zoreil.com
-Cc: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
+X-WP-SPAM: NO 0000000 [QTOE]                               
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 12:17 PM, Jagan Teki <jagannadh.teki@gmail.com> wrote:
-> Hi,
->
-> I'm using TP-LINK PCIe NIC card on my PCIe Root Complex.
->
-> Probing looks fine by setting:
-> r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
-> PCI: enabling device 0000:00:00.0 (0140 -> 0143)
-> PCI: enabling device 0000:01:00.0 (0140 -> 0143)
-> r8169 0000:01:00.0 eth0: RTL8168e/8111e at 0xf006a000,
-> c0:4a:00:07:18:d4, XID 0c200000 IRQ 89
-> r8169 0000:01:00.0 eth0: jumbo features [frames: 9200 bytes, tx
-> checksumming: ko]
->
-> But I have an issue while in link is up
->
-> $ ifconfig 192.168.1.10 up
-> r8169 0000:01:00.0: Direct firmware load failed with error -2
-> r8169 0000:01:00.0: Falling back to user helper
-> r8169 0000:01:00.0 eth0: unable to load firmware patch
-> rtl_nic/rtl8168e-2.fw (-2)
-> r8169 0000:01:00.0 eth0: link down
->
-> Looks like firmware loading is failed in open call, Can any one
-> suggest how to debug further.
+On Fri, 4 Apr 2014 10:19:09 +0200, Stanislaw Gruszka wrote:
+> On Thu, Apr 03, 2014 at 05:37:01PM +0200, Jakub Kiciński wrote:
+> > On Thu,  3 Apr 2014 16:12:07 +0200, Richard Genoud wrote:
+> > > rt2x00usb_register_read_lock() calls rt2x00usb_vendor_req_buff_lock()
+> > > that calls rt2x00usb_vendor_request() which is already looping up to
+> > > REGISTER_BUSY_COUNT times.
+> > > 
+> > > So this loop is not needed.
+> > 
+> > Not true.  rt2x00usb_vendor_request() busy-waits for usb_control_msg()
+> > to succeed, rt2x00usb_register_read_lock() busy-waits for the register
+> > field itself to become 0.
+> 
+> Yeah, but still we are looping REGISTER_BUSY_COUNT*REGISTER_BUSY_COUNT
+> what seems to be far too long.
 
-Got the fix! I have updated .config with firmware details from [1]
+Yes, the busy waiting itself takes roughly 1s (100*100*100us) and then
+there are transfer times, so it might be too long indeed.  Vendor driver
+waits only 10 * 5ms in RTUSB_VendorRequest() so
+rt2x00usb_vendor_request() seems like a better place to cut down the
+number of loops.
 
-CONFIG_EXTRA_FIRMWARE="rtl_nic/rtl8168e-2.fw"
-CONFIG_EXTRA_FIRMWARE_DIR="/opt"
+Alternatively we could make rt2x00usb_regbusy_read() check the retval
+from rt2x00usb_vendor_request() and exit early?
 
-[1] http://git.exherbo.org/summer/packages/firmware/rtl_nic/index.html
+	-- kuba
 
-thanks!
--- 
-Jagan.
