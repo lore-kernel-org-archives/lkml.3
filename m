@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287AbaDDN5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 09:57:39 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:46687 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaDDN5h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 09:57:37 -0400
+	id S1753330AbaDDN6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 09:58:49 -0400
+Received: from fieldses.org ([174.143.236.118]:59586 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449AbaDDN6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 09:58:47 -0400
+Date: Fri, 4 Apr 2014 09:58:43 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Mark Lord <mlord@pobox.com>, "J. Bruce Fields" <bfields@redhat.com>,
+        Albert Fluegel <af@muc.de>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-3.14 nfsd regression
+Message-ID: <20140404135842.GB17594@fieldses.org>
+References: <533D8D73.1090603@pobox.com>
+ <20140403171643.GB28790@pad.redhat.com>
+ <533D9F8A.6030001@pobox.com>
+ <20140403145504.3b04170e@tlielax.poochiereds.net>
+ <20140403201627.GC8343@fieldses.org>
+ <20140403192146.79679909@tlielax.poochiereds.net>
 MIME-Version: 1.0
-In-Reply-To: <1396618417-9560-1-git-send-email-gautam.vivek@samsung.com>
-References: <1396618417-9560-1-git-send-email-gautam.vivek@samsung.com>
-Date: Fri, 4 Apr 2014 19:27:36 +0530
-Message-ID: <CAFp+6iGwMhQT=atd_u0-qA-cEnnwPMHkOEB=9ooqtPOj8QOcvg@mail.gmail.com>
-Subject: Re: [PATCH] usb: ohci-exynos: Remove locks for 'ohci' in suspend callback
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Manjunath Goudar <csmanjuvijay@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403192146.79679909@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 7:03 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
-> Patch : 14982e3 USB: OHCI: Properly handle ohci-exynos suspend
-> has already removed 'ohci_hcd' settings from exynos glue layer
-> as a part of streamlining the ohci controller's suspend.
-> So we don't need the locks for 'ohci_hcd' anymore.
->
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Cc: Manjunath Goudar <csmanjuvijay@gmail.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> ---
+On Thu, Apr 03, 2014 at 07:21:46PM -0400, Jeff Layton wrote:
+> So according to the RFC you have to encode both the mode bits and the
+> ftype for v2. The type bits seem to be removed from the mode in NFSv3
+> though, so perhaps we should only be doing that masking in versions
+> above v2?
 
-Please ignore this patch, WIP, got sent by mistake :-(
-Sorry for spamming.
+Right, the problematic patch applied the same mask in both v2 and v3
+cases, so I'm reverting just the v2 part (see below).
 
->  drivers/usb/host/ohci-exynos.c |    4 ----
->  1 file changed, 4 deletions(-)
->
-> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-> index 68588d8..7f5e779 100644
-> --- a/drivers/usb/host/ohci-exynos.c
-> +++ b/drivers/usb/host/ohci-exynos.c
-> @@ -199,8 +199,6 @@ static int exynos_ohci_suspend(struct device *dev)
->         if (rc)
->                 return rc;
->
-> -       spin_lock_irqsave(&ohci->lock, flags);
-> -
->         if (exynos_ohci->otg)
->                 exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
->
-> @@ -208,8 +206,6 @@ static int exynos_ohci_suspend(struct device *dev)
->
->         clk_disable_unprepare(exynos_ohci->clk);
->
-> -       spin_unlock_irqrestore(&ohci->lock, flags);
-> -
->         return 0;
->  }
->
-> --
-> 1.7.10.4
->
+> With a quick check, it looks like the v3 code doesn't rely on those bits
+> and I imagine v4 doesn't either.
+> 
+> It might also be nice to have the client v2 decode_fattr function to
+> throw a warning if the server sends us mismatched type bits and ftype
+> values. That would have helped us catch this sooner...
 
+Yes, that might be a reasonable thing to do, though I don't know if it's
+worth it.
 
+--b.
 
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+commit 35a8dff14e76c00e5b52140290cfb498dc2454a0
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Thu Apr 3 15:10:35 2014 -0400
+
+    nfsd: revert v2 half of "nfsd: don't return high mode bits"
+    
+    This reverts the part of commit 6e14b46b91fee8a049b0940333ce13a820beaaa5
+    that changes NFSv2 behavior.
+    
+    Mark Lord found that it broke nfs-root for Linux clients, because it
+    broke NFSv2.
+    
+    In fact, from RFC 1094:
+    
+    	"Notice that the file type is specified both in the mode bits
+    	and in the file type.  This is really a bug in the protocol and
+    	will be fixed in future versions."
+    
+    So NFSv2 clients really are expected to depend on the high bits of the
+    mode.
+    
+    Cc: stable@kernel.org
+    Reported-by: Mark Lord <mlord@pobox.com>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
+index b17d932..9c769a4 100644
+--- a/fs/nfsd/nfsxdr.c
++++ b/fs/nfsd/nfsxdr.c
+@@ -152,7 +152,7 @@ encode_fattr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp,
+ 	type = (stat->mode & S_IFMT);
+ 
+ 	*p++ = htonl(nfs_ftypes[type >> 12]);
+-	*p++ = htonl((u32) (stat->mode & S_IALLUGO));
++	*p++ = htonl((u32) stat->mode);
+ 	*p++ = htonl((u32) stat->nlink);
+ 	*p++ = htonl((u32) from_kuid(&init_user_ns, stat->uid));
+ 	*p++ = htonl((u32) from_kgid(&init_user_ns, stat->gid));
