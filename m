@@ -1,110 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791AbaDDOt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:49:58 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:60785 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766AbaDDOtv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:49:51 -0400
+	id S1753818AbaDDOvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:51:07 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:11143 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414AbaDDOvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 10:51:03 -0400
+X-IronPort-AV: E=Sophos;i="4.97,795,1389744000"; 
+   d="scan'208";a="118036947"
+Message-ID: <1396623059.4211.255.camel@kazak.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] grant-table, xen-netback: Introduce helper
+ functions for grant copy operations
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Paul Durrant <Paul.Durrant@citrix.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "boris.ostrovsky@oracle.com" <boris.ostrovsky@oracle.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jonathan Davies <Jonathan.Davies@citrix.com>
+Date: Fri, 4 Apr 2014 15:50:59 +0100
+In-Reply-To: <533D2E8A.90101@citrix.com>
+References: <1396458349-30112-1-git-send-email-zoltan.kiss@citrix.com>
+	 <9AAE0902D5BC7E449B7C8E4E778ABCD02BB106@AMSPEX01CL01.citrite.net>
+	 <533D2E8A.90101@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-X-Originating-IP: [5.150.199.142]
-In-Reply-To: <CALFYKtDjby_U+m4p5Lmu6UYVYt8V3zpNRbyvMhkV05w+W71GWg@mail.gmail.com>
-References: <CABt9es_uq1ixwcyHcL8ptYi2fXQjVFHvaOp71uu2epoQk_ToPw@mail.gmail.com>
-	<CALFYKtAGBizs8gDariQH2NJACjoRD=2-1u-zwnPfo7D5bVvy3Q@mail.gmail.com>
-	<CABt9es8=oycaqfWmNuCY3p5CWCsN95+cLWAbSnLtFTTceDkqgA@mail.gmail.com>
-	<CALFYKtDjby_U+m4p5Lmu6UYVYt8V3zpNRbyvMhkV05w+W71GWg@mail.gmail.com>
-Date: Fri, 4 Apr 2014 16:49:49 +0200
-Message-ID: <CABt9es-fczec=dF22xd-deiUjTDZTCZrCAA0uMBpY82BLbRzNA@mail.gmail.com>
-Subject: Re: Crash in rbd, need advice
-From: Hannes Landeholm <hannes@jumpstarter.io>
-To: Ilya Dryomov <ilya.dryomov@inktank.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>, Sage Weil <sage@newdream.net>,
-        Yehuda Sadeh <yehuda@hq.newdream.net>,
-        Thorwald Lundqvist <thorwald@jumpstarter.io>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 3:10 PM, Ilya Dryomov <ilya.dryomov@inktank.com> wrote:
-> On Fri, Apr 4, 2014 at 4:25 PM, Hannes Landeholm <hannes@jumpstarter.io> wrote:
->> On Fri, Apr 4, 2014 at 1:08 PM, Ilya Dryomov <ilya.dryomov@inktank.com> wrote:
->>> On Wed, Apr 2, 2014 at 12:18 AM, Hannes Landeholm <hannes@jumpstarter.io> wrote:
->>>> Hello,
->>>>
->>>> We're running a couple of Arch Linux servers of version 3.13.5-1 in
->>>> production and suddenly one of them had a strange problem after
->>>> running for a few days. One process (pid 319) was running with a few
->>>> threads, one of those threads (pid 322) was eating 100% cpu. I assumed
->>>> it was stuck in an infinite loop (this was our own software so I
->>>> assumed we had a bug) so I sent a SIGKILL to 319 which caused all
->>>> other threads to exit and it turning into a zombie, but thread 322 was
->>>> still running. After trying to stop some other services and failing I
->>>> realized that sending any signals to any process now didn't work at
->>>> all in the system.
->>>>
->>>> This was the process stack output:
->>>>
->>>> $ cat /proc/319/stack
->>>> [<ffffffff810642fa>] do_exit+0x73a/0xa80
->>>> [<ffffffff810646bf>] do_group_exit+0x3f/0xa0
->>>> [<ffffffff81073295>] get_signal_to_deliver+0x295/0x5f0
->>>> [<ffffffff810144a8>] do_signal+0x48/0x950
->>>> [<ffffffff81014e18>] do_notify_resume+0x68/0xa0
->>>> [<ffffffff8152326a>] int_signal+0x12/0x17
->>>> [<ffffffffffffffff>] 0xffffffffffffffff
->>>> $ cat /proc/319/task/322/stack
->>>> [<ffffffff8151c11a>] error_exit+0x2a/0x60
->>>> [<ffffffffffffffff>] 0xffffffffffffffff
->>>>
->>>> We're using ceph + rbd and this happened right after doing a rbd
->>>> mapping (mounting it) or during the mapping itself, so we suspected
->>>> rbd.
->>>>
->>>> A few days later (today) we had a server crash in another server, same
->>>> version+distro and it had also just been running a few days as well.
->>>> After starting it again we found the following in the system log:
->>>>
->>>> hostname kernel: BUG: unable to handle kernel paging request at ffff87fff75ad450
->>>> hostname kernel: IP: [<ffffffffa018c196>] rbd_img_request_fill+0x126/0x930 [rbd]
->>>
->>> Can you try gdb'ing that exact rbd.ko and
->>>
->>> (gdb) list *rbd_img_request_fill+0x126
->>>
->>> Also, the entire stack trace pertaining to rbd_img_request_fill would
->>> help.
->>>
->>> Thanks,
->>>
->>>                 Ilya
->>
->> Sorry, rbd was not built with any symbols and there was no other
->> output in the journal.
->>
->> We're building a debug version of Linux 3.14 (with symbols) now that
->> is currently being tested and we hope that we can roll it out today. I
->> saw that at least one commit (638c323 rbd: drop an unsafe assertion)
->> looks like something that could fix a crash that has been happening
->> regularly on one of our development servers:
->> http://i.imgur.com/pEKsmql.jpg (rbd_img_obj_callback in the stack
->> trace). It might be related to the production crash we had.
->
-> Yeah, it most probably is.  However, a bogus dereference in
-> rbd_img_request_fill is something I haven't seen before.  If you have
-> that rbd.ko lying around, send it along, just in case.
+On Thu, 2014-04-03 at 10:48 +0100, David Vrabel wrote:
+> On 03/04/14 09:12, Paul Durrant wrote:
+> > Zoltan Kiss wrote:
+> >>
+> >> Create helper functions for grant copy operations and use them in netback.
+> >>
+> [...]
+> >> --- a/drivers/net/xen-netback/netback.c
+> >> +++ b/drivers/net/xen-netback/netback.c
+> >> @@ -275,23 +275,29 @@ static void xenvif_gop_frag_copy(struct xenvif *vif,
+> >> struct sk_buff *skb,
+> >>  			bytes = MAX_BUFFER_OFFSET - npo->copy_off;
+> >>
+> >>  		copy_gop = npo->copy + npo->copy_prod++;
+> >> -		copy_gop->flags = GNTCOPY_dest_gref;
+> >> -		copy_gop->len = bytes;
+> >>
+> >>  		if (foreign_vif) {
+> >> -			copy_gop->source.domid = foreign_vif->domid;
+> >> -			copy_gop->source.u.ref = foreign_gref;
+> >> -			copy_gop->flags |= GNTCOPY_source_gref;
+> >> +			gnttab_set_copy_op_ref_to_ref(copy_gop,
+> >> +						      foreign_gref,
+> >> +						      npo->copy_gref,
+> >> +						      foreign_vif->domid,
+> >> +						      offset,
+> >> +						      vif->domid,
+> >> +						      npo->copy_off,
+> >> +						      bytes,
+> >> +						      GNTCOPY_dest_gref |
+> >> +						      GNTCOPY_source_gref);
+> > 
+> > Can't you lose the flags here (and in the other variants)? Since
+> > they are implied by the variant of the function they could just be hardcoded
+> > there, couldn't they?
+> 
+> Even with that change these are still functions with 7 or 8 parameters
+> with no obvious order.  That's just awful.  The open-coded struct
+> initialization is better.
 
-Unfortunately it got overwritten when we upgraded the kernel.
+Yes, I think this was a failed experiment.
 
-The crash could be something caused by running the osd's and the
-client on the same machine. We're not doing that in production so we
-assumed the development machine crashes was caused by that since we
-heard that this didn't work very well and was not recommended.
+The original code would likely still be improvable by using a temporary
+variable to hold "vif->tx_copy_ops[*copy_ops]", basically the way the
+mapping ops are via mop->.
 
-If we get more crashes in 3.14 we should have much better backtraces now though.
+Ian.
 
-Thank you for your time,
-Hannes
