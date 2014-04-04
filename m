@@ -1,288 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaDDT7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 15:59:31 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:41813 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894AbaDDT71 (ORCPT
+	id S1754189AbaDDT7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 15:59:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37913 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444AbaDDT5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 15:59:27 -0400
-From: Roger Zanoni <rogerzanoni@gmail.com>
-To: rupesh.gujare@atmel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] staging: ozwpan: Fix checkpatch warnings
-Date: Fri,  4 Apr 2014 15:57:45 -0400
-Message-Id: <1396641465-14657-1-git-send-email-rogerzanoni@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 4 Apr 2014 15:57:37 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH v6 4/5] edac: Add support for Krait CPU cache error detection
+Date: Fri,  4 Apr 2014 12:57:29 -0700
+Message-Id: <1396641450-12854-5-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
+References: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add blank lines after declarations.
+Add support for the Krait CPU cache error detection. This is a
+simplified version of the code originally written by Stepan
+Moskovchenko[1] ported to the EDAC device framework.
 
-Signed-off-by: Roger Zanoni <rogerzanoni@gmail.com>
+[1] https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/arch/arm/mach-msm/cache_erp.c?h=msm-3.4
+
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/staging/ozwpan/ozcdev.c    |  4 ++++
- drivers/staging/ozwpan/ozeltbuf.c  |  2 ++
- drivers/staging/ozwpan/ozhcd.c     | 10 ++++++++++
- drivers/staging/ozwpan/ozpd.c      |  4 ++++
- drivers/staging/ozwpan/ozproto.c   |  3 +++
- drivers/staging/ozwpan/ozusbsvc.c  |  1 +
- drivers/staging/ozwpan/ozusbsvc1.c |  4 ++++
- 7 files changed, 28 insertions(+)
+ drivers/edac/Kconfig      |   8 +
+ drivers/edac/Makefile     |   2 +
+ drivers/edac/krait_edac.c | 370 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 380 insertions(+)
+ create mode 100644 drivers/edac/krait_edac.c
 
-diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-index 10c0a96..bfea31f 100644
---- a/drivers/staging/ozwpan/ozcdev.c
-+++ b/drivers/staging/ozwpan/ozcdev.c
-@@ -263,6 +263,7 @@ static long oz_cdev_ioctl(struct file *filp, unsigned int cmd,
- 	switch (cmd) {
- 	case OZ_IOCTL_GET_PD_LIST: {
- 			struct oz_pd_list list;
-+
- 			oz_dbg(ON, "OZ_IOCTL_GET_PD_LIST\n");
- 			memset(&list, 0, sizeof(list));
- 			list.count = oz_get_pd_list(list.addr, OZ_MAX_PDS);
-@@ -273,6 +274,7 @@ static long oz_cdev_ioctl(struct file *filp, unsigned int cmd,
- 		break;
- 	case OZ_IOCTL_SET_ACTIVE_PD: {
- 			u8 addr[ETH_ALEN];
-+
- 			oz_dbg(ON, "OZ_IOCTL_SET_ACTIVE_PD\n");
- 			if (copy_from_user(addr, (void __user *)arg, ETH_ALEN))
- 				return -EFAULT;
-@@ -281,6 +283,7 @@ static long oz_cdev_ioctl(struct file *filp, unsigned int cmd,
- 		break;
- 	case OZ_IOCTL_GET_ACTIVE_PD: {
- 			u8 addr[ETH_ALEN];
-+
- 			oz_dbg(ON, "OZ_IOCTL_GET_ACTIVE_PD\n");
- 			spin_lock_bh(&g_cdev.lock);
- 			ether_addr_copy(addr, g_cdev.active_addr);
-@@ -292,6 +295,7 @@ static long oz_cdev_ioctl(struct file *filp, unsigned int cmd,
- 	case OZ_IOCTL_ADD_BINDING:
- 	case OZ_IOCTL_REMOVE_BINDING: {
- 			struct oz_binding_info b;
-+
- 			if (copy_from_user(&b, (void __user *)arg,
- 				sizeof(struct oz_binding_info))) {
- 				return -EFAULT;
-diff --git a/drivers/staging/ozwpan/ozeltbuf.c b/drivers/staging/ozwpan/ozeltbuf.c
-index bd560c6..cd811d1 100644
---- a/drivers/staging/ozwpan/ozeltbuf.c
-+++ b/drivers/staging/ozwpan/ozeltbuf.c
-@@ -235,6 +235,7 @@ int oz_queue_elt_info(struct oz_elt_buf *buf, u8 isoc, u8 id,
- 			== OZ_USB_ENDPOINT_DATA) &&
- 			(body->format == OZ_DATA_F_ISOC_FIXED)) {
- 			u8 unit_count = body->frame_number;
-+
- 			body->frame_number = st->frame_number;
- 			st->frame_number += unit_count;
- 		}
-@@ -253,6 +254,7 @@ int oz_queue_elt_info(struct oz_elt_buf *buf, u8 isoc, u8 id,
- 			struct oz_elt_info *ei2 =
- 				list_first_entry(&st->elt_list,
- 					struct oz_elt_info, link);
-+
- 			list_del_init(&ei2->link);
- 			list_del_init(&ei2->link_order);
- 			st->buf_count -= ei2->length;
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index b3d401a..41c45f3 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -294,6 +294,7 @@ static void oz_free_urb_link(struct oz_urb_link *urbl)
- {
- 	if (urbl) {
- 		unsigned long irq_state;
-+
- 		spin_lock_irqsave(&g_link_lock, irq_state);
- 		if (g_link_pool_size < OZ_MAX_LINK_POOL_SIZE) {
- 			urbl->link.next = g_link_pool;
-@@ -815,6 +816,7 @@ void oz_hcd_get_desc_cnf(void *hport, u8 req_id, int status, const u8 *desc,
- 	if (status == 0) {
- 		int copy_len;
- 		int required_size = urb->transfer_buffer_length;
-+
- 		if (required_size > total_size)
- 			required_size = total_size;
- 		copy_len = required_size-offset;
-@@ -826,6 +828,7 @@ void oz_hcd_get_desc_cnf(void *hport, u8 req_id, int status, const u8 *desc,
- 			struct usb_ctrlrequest *setup =
- 				(struct usb_ctrlrequest *)urb->setup_packet;
- 			unsigned wvalue = le16_to_cpu(setup->wValue);
-+
- 			if (oz_enqueue_ep_urb(port, 0, 0, urb, req_id))
- 				err = -ENOMEM;
- 			else if (oz_usb_get_desc_req(port->hpd, req_id,
-@@ -974,6 +977,7 @@ void oz_hcd_control_cnf(void *hport, u8 req_id, u8 rcode, const u8 *data,
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index 878f09005fad..4dae3d353ea9 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -368,4 +368,12 @@ config EDAC_OCTEON_PCI
+ 	  Support for error detection and correction on the
+ 	  Cavium Octeon family of SOCs.
  
- 	} else {
- 		int copy_len;
++config EDAC_KRAIT_CACHE
++	tristate "Krait L1/L2 Cache"
++	depends on EDAC_MM_EDAC && ARM && OF
++	select KRAIT_L2_ACCESSORS
++	help
++	  Support for error detection and correction on the
++	  Krait L1/L2 cache controller.
 +
- 		oz_dbg(ON, "VENDOR-CLASS - cnf\n");
- 		if (data_len) {
- 			if (data_len <= urb->transfer_buffer_length)
-@@ -1047,6 +1051,7 @@ void oz_hcd_data_ind(void *hport, u8 endpoint, const u8 *data, int data_len)
- 					struct oz_urb_link, link);
- 			struct urb *urb;
- 			int copy_len;
+ endif # EDAC
+diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+index 4154ed6a02c6..b6ea50564223 100644
+--- a/drivers/edac/Makefile
++++ b/drivers/edac/Makefile
+@@ -64,3 +64,5 @@ obj-$(CONFIG_EDAC_OCTEON_PC)		+= octeon_edac-pc.o
+ obj-$(CONFIG_EDAC_OCTEON_L2C)		+= octeon_edac-l2c.o
+ obj-$(CONFIG_EDAC_OCTEON_LMC)		+= octeon_edac-lmc.o
+ obj-$(CONFIG_EDAC_OCTEON_PCI)		+= octeon_edac-pci.o
 +
- 			list_del_init(&urbl->link);
- 			spin_unlock_bh(&ozhcd->hcd_lock);
- 			urb = urbl->urb;
-@@ -1160,6 +1165,7 @@ int oz_hcd_heartbeat(void *hport)
- 			int len = 0;
- 			int copy_len;
- 			int i;
++obj-$(CONFIG_EDAC_KRAIT_CACHE)		+= krait_edac.o
+diff --git a/drivers/edac/krait_edac.c b/drivers/edac/krait_edac.c
+new file mode 100644
+index 000000000000..90ec0e982927
+--- /dev/null
++++ b/drivers/edac/krait_edac.c
+@@ -0,0 +1,370 @@
++/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
- 			if (ep->credit  < urb->number_of_packets)
- 				break;
- 			if (ep->buffered_units < urb->number_of_packets)
-@@ -1557,6 +1563,7 @@ static void oz_process_ep0_urb(struct oz_hcd *ozhcd, struct urb *urb,
- 	}
- 	if (!rc && !complete) {
- 		int data_len = 0;
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/cpu.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
 +
- 		if ((setup->bRequestType & USB_DIR_IN) == 0)
- 			data_len = wlength;
- 		urb->actual_length = data_len;
-@@ -1645,6 +1652,7 @@ static void oz_urb_process_tasklet(unsigned long unused)
- 		struct oz_urb_link *urbl =
- 			list_first_entry(&ozhcd->urb_pending_list,
- 				struct oz_urb_link, link);
++#include <asm/krait-l2-accessors.h>
 +
- 		list_del_init(&urbl->link);
- 		spin_unlock_irqrestore(&g_tasklet_lock, irq_state);
- 		urb = urbl->urb;
-@@ -1742,6 +1750,7 @@ static void oz_urb_cancel_tasklet(unsigned long unused)
- 		struct oz_urb_link *urbl =
- 			list_first_entry(&ozhcd->urb_cancel_list,
- 				struct oz_urb_link, link);
++#include "edac_core.h"
 +
- 		list_del_init(&urbl->link);
- 		spin_unlock_irqrestore(&g_tasklet_lock, irq_state);
- 		urb = urbl->urb;
-@@ -1761,6 +1770,7 @@ static void oz_hcd_clear_orphanage(struct oz_hcd *ozhcd, int status)
- {
- 	if (ozhcd) {
- 		struct oz_urb_link *urbl;
++#define CESR_DCTPE		BIT(0)
++#define CESR_DCDPE		BIT(1)
++#define CESR_ICTPE		BIT(2)
++#define CESR_ICDPE		BIT(3)
++#define CESR_DCTE		(BIT(4) | BIT(5))
++#define CESR_ICTE		(BIT(6) | BIT(7))
++#define CESR_TLBMH		BIT(16)
++#define CESR_I_MASK		0x000000cc
++/* Print a message for everything but TLB MH events */
++#define CESR_PRINT_MASK		0x000000ff
 +
- 		while (!list_empty(&ozhcd->orphanage)) {
- 			urbl = list_first_entry(&ozhcd->orphanage,
- 				struct oz_urb_link, link);
-diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
-index 10f1b3a..69771b4 100644
---- a/drivers/staging/ozwpan/ozpd.c
-+++ b/drivers/staging/ozwpan/ozpd.c
-@@ -168,6 +168,7 @@ struct oz_pd *oz_pd_alloc(const u8 *mac_addr)
- 
- 	if (pd) {
- 		int i;
++#define L2ESR			0x204
++#define L2ESR_MPDCD		BIT(0)
++#define L2ESR_MPSLV		BIT(1)
++#define L2ESR_TSESB		BIT(2)
++#define L2ESR_TSEDB		BIT(3)
++#define L2ESR_DSESB		BIT(4)
++#define L2ESR_DSEDB		BIT(5)
++#define L2ESR_MSE		BIT(6)
++#define L2ESR_MPLDREXNOK	BIT(8)
++#define L2ESR_CPU_MASK		0xf
++#define L2ESR_CPU_SHIFT		16
++#define L2ESR_SP		BIT(20)
 +
- 		atomic_set(&pd->ref_count, 2);
- 		for (i = 0; i < OZ_APPID_MAX; i++)
- 			spin_lock_init(&pd->app_lock[i]);
-@@ -336,6 +337,7 @@ void oz_pd_heartbeat(struct oz_pd *pd, u16 apps)
- 		hrtimer_cancel(&pd->heartbeat);
- 	if (pd->mode & OZ_F_ISOC_ANYTIME) {
- 		int count = 8;
++#define L2ESYNR0		0x208
++#define L2ESYNR1		0x209
++#define L2EAR0			0x20c
++#define L2EAR1			0x20d
 +
- 		while (count-- && (oz_send_isoc_frame(pd) >= 0))
- 			;
- 	}
-@@ -884,6 +886,7 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, const u8 *data, int len)
- 	} else {
- 		struct oz_hdr oz;
- 		struct oz_isoc_large iso;
++struct krait_edac {
++	int l1_irq;
++	struct edac_device_ctl_info * __percpu *edev;
++	struct notifier_block notifier;
++};
 +
- 		spin_lock_bh(&pd->stream_lock);
- 		iso.frame_number = st->frame_num;
- 		st->frame_num += nb_units;
-@@ -906,6 +909,7 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, const u8 *data, int len)
- 		if (!(pd->mode & OZ_F_ISOC_ANYTIME)) {
- 			struct oz_tx_frame *isoc_unit = NULL;
- 			int nb = pd->nb_queued_isoc_frames;
++struct krait_edac_error {
++	const char * const msg;
++	void (*func)(struct edac_device_ctl_info *edac_dev,
++			int inst_nr, int block_nr, const char *msg);
++};
 +
- 			if (nb >= pd->isoc_latency) {
- 				struct list_head *e;
- 				struct oz_tx_frame *f;
-diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index f09acd0..c614d70 100644
---- a/drivers/staging/ozwpan/ozproto.c
-+++ b/drivers/staging/ozwpan/ozproto.c
-@@ -260,6 +260,7 @@ done:
- 		u16 start_apps = new_apps & ~pd->total_apps & ~0x1;
- 		u16 stop_apps = pd->total_apps & ~new_apps & ~0x1;
- 		u16 resume_apps = new_apps & pd->paused_apps  & ~0x1;
++static unsigned int read_cesr(void)
++{
++	unsigned int cesr;
 +
- 		spin_unlock_bh(&g_polling_lock);
- 		oz_pd_set_state(pd, OZ_PD_S_CONNECTED);
- 		oz_dbg(ON, "new_apps=0x%x total_apps=0x%x paused_apps=0x%x\n",
-@@ -381,6 +382,7 @@ static void oz_rx_frame(struct sk_buff *skb)
- 		if ((oz_hdr->control & OZ_F_ACK_REQUESTED) &&
- 				(pd->state == OZ_PD_S_CONNECTED)) {
- 			int backlog = pd->nb_queued_frames;
++	asm volatile ("mrc p15, 7, %0, c15, c0, 1 @ cesr" : "=r" (cesr));
++	return cesr;
++}
 +
- 			pd->trigger_pkt_num = pkt_num;
- 			/* Send queued frames */
- 			oz_send_queued_frames(pd, backlog);
-@@ -769,6 +771,7 @@ int oz_protocol_init(char *devs)
- 		oz_binding_add(NULL);
- 	} else {
- 		char d[32];
++static void write_cesr(unsigned int cesr)
++{
++	asm volatile ("mcr p15, 7, %0, c15, c0, 1 @ cesr" : : "r" (cesr));
++}
 +
- 		while (*devs) {
- 			devs = oz_get_next_device_name(devs, d, sizeof(d));
- 			if (d[0])
-diff --git a/drivers/staging/ozwpan/ozusbsvc.c b/drivers/staging/ozwpan/ozusbsvc.c
-index edd44c4..3915e80 100644
---- a/drivers/staging/ozwpan/ozusbsvc.c
-+++ b/drivers/staging/ozwpan/ozusbsvc.c
-@@ -128,6 +128,7 @@ void oz_usb_stop(struct oz_pd *pd, int pause)
- 	spin_unlock_bh(&pd->app_lock[OZ_APPID_USB-1]);
- 	if (usb_ctx) {
- 		struct timespec ts, now;
++static unsigned int read_cesynr(void)
++{
++	unsigned int cesynr;
 +
- 		getnstimeofday(&ts);
- 		oz_dbg(ON, "USB service stopping...\n");
- 		usb_ctx->stopped = 1;
-diff --git a/drivers/staging/ozwpan/ozusbsvc1.c b/drivers/staging/ozwpan/ozusbsvc1.c
-index f32d014..20f8af5 100644
---- a/drivers/staging/ozwpan/ozusbsvc1.c
-+++ b/drivers/staging/ozwpan/ozusbsvc1.c
-@@ -213,6 +213,7 @@ int oz_usb_control_req(void *hpd, u8 req_id, struct usb_ctrlrequest *setup,
- 		case USB_REQ_SET_INTERFACE: {
- 				u8 if_num = (u8)windex;
- 				u8 alt = (u8)wvalue;
++	asm volatile ("mrc p15, 7, %0, c15, c0, 3 @ cesynr" : "=r" (cesynr));
++	return cesynr;
++}
 +
- 				rc = oz_usb_set_interface_req(hpd, req_id,
- 					if_num, alt);
- 			}
-@@ -254,6 +255,7 @@ int oz_usb_send_isoc(void *hpd, u8 ep_num, struct urb *urb)
- 	if (pd->mode & OZ_F_ISOC_NO_ELTS) {
- 		for (i = 0; i < urb->number_of_packets; i++) {
- 			u8 *data;
++static irqreturn_t krait_l1_irq(int irq, void *dev_id)
++{
++	struct edac_device_ctl_info **edac_p = dev_id;
++	struct edac_device_ctl_info *edac = *edac_p;
++	unsigned int cesr = read_cesr();
++	unsigned int i_cesynr, d_cesynr;
++	unsigned int cpu = smp_processor_id();
++	int print_regs = cesr & CESR_PRINT_MASK;
++	int i;
++	static const struct krait_edac_error errors[] = {
++		{ "D-cache tag parity error", edac_device_handle_ue },
++		{ "D-cache data parity error", edac_device_handle_ue },
++		{ "I-cache tag parity error", edac_device_handle_ce },
++		{ "I-cache data parity error", edac_device_handle_ce },
++		{ "D-cache tag timing error", edac_device_handle_ue },
++		{ "D-cache data timing error", edac_device_handle_ue },
++		{ "I-cache tag timing error", edac_device_handle_ce },
++		{ "I-cache data timing error", edac_device_handle_ce }
++	};
 +
- 			desc = &urb->iso_frame_desc[i];
- 			data = ((u8 *)urb->transfer_buffer)+desc->offset;
- 			oz_send_isoc_unit(pd, ep_num, data, desc->length);
-@@ -271,6 +273,7 @@ int oz_usb_send_isoc(void *hpd, u8 ep_num, struct urb *urb)
- 		int unit_count;
- 		int unit_size;
- 		int rem;
++	if (print_regs) {
++		pr_alert("L1 / TLB Error detected on CPU %d!\n", cpu);
++		pr_alert("CESR      = 0x%08x\n", cesr);
++	}
 +
- 		if (ei == NULL)
- 			return -1;
- 		rem = MAX_ISOC_FIXED_DATA;
-@@ -340,6 +343,7 @@ static void oz_usb_handle_ep_data(struct oz_usb_ctx *usb_ctx,
- 			u8 *data = body->data;
- 			int count;
- 			int i;
++	for (i = 0; i < ARRAY_SIZE(errors); i++)
++		if (BIT(i) & cesr)
++			errors[i].func(edac, cpu, 0, errors[i].msg);
 +
- 			if (!unit_size)
- 				break;
- 			count = data_len/unit_size;
++	if (cesr & CESR_TLBMH) {
++		asm ("mcr p15, 0, r0, c8, c7, 0");
++		edac_device_handle_ce(edac, cpu, 0, "TLB Multi-Hit error");
++	}
++
++	if (cesr & (CESR_ICTPE | CESR_ICDPE | CESR_ICTE)) {
++		i_cesynr = read_cesynr();
++		pr_alert("I-side CESYNR = 0x%08x\n", i_cesynr);
++		write_cesr(CESR_I_MASK);
++
++		/*
++		 * Clear the I-side bits from the captured CESR value so that we
++		 * don't accidentally clear any new I-side errors when we do
++		 * the CESR write-clear operation.
++		 */
++		cesr &= ~CESR_I_MASK;
++	}
++
++	if (cesr & (CESR_DCTPE | CESR_DCDPE | CESR_DCTE)) {
++		d_cesynr = read_cesynr();
++		pr_alert("D-side CESYNR = 0x%08x\n", d_cesynr);
++	}
++
++	/* Clear the interrupt bits we processed */
++	write_cesr(cesr);
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t krait_l2_irq(int irq, void *dev_id)
++{
++	struct edac_device_ctl_info *edac = dev_id;
++	unsigned int l2esr;
++	unsigned int l2esynr0;
++	unsigned int l2esynr1;
++	unsigned int l2ear0;
++	unsigned int l2ear1;
++	unsigned long cpu;
++	int i;
++	static const struct krait_edac_error errors[] = {
++		{ "master port decode error", edac_device_handle_ce },
++		{ "master port slave error", edac_device_handle_ce },
++		{ "tag soft error, single-bit", edac_device_handle_ce },
++		{ "tag soft error, double-bit", edac_device_handle_ue },
++		{ "data soft error, single-bit", edac_device_handle_ce },
++		{ "data soft error, double-bit", edac_device_handle_ue },
++		{ "modified soft error", edac_device_handle_ce },
++		{ "slave port exclusive monitor not available",
++			edac_device_handle_ue},
++		{ "master port LDREX received Normal OK response",
++			edac_device_handle_ce },
++	};
++
++	l2esr = krait_get_l2_indirect_reg(L2ESR);
++	pr_alert("Error detected!\n");
++	pr_alert("L2ESR    = 0x%08x\n", l2esr);
++
++	if (l2esr & (L2ESR_TSESB | L2ESR_TSEDB | L2ESR_MSE | L2ESR_SP)) {
++		l2esynr0 = krait_get_l2_indirect_reg(L2ESYNR0);
++		l2esynr1 = krait_get_l2_indirect_reg(L2ESYNR1);
++		l2ear0 = krait_get_l2_indirect_reg(L2EAR0);
++		l2ear1 = krait_get_l2_indirect_reg(L2EAR1);
++
++		pr_alert("L2ESYNR0 = 0x%08x\n", l2esynr0);
++		pr_alert("L2ESYNR1 = 0x%08x\n", l2esynr1);
++		pr_alert("L2EAR0   = 0x%08x\n", l2ear0);
++		pr_alert("L2EAR1   = 0x%08x\n", l2ear1);
++	}
++
++	cpu = (l2esr >> L2ESR_CPU_SHIFT) & L2ESR_CPU_MASK;
++	cpu = __ffs(cpu);
++	if (cpu)
++		cpu--;
++	for (i = 0; i < ARRAY_SIZE(errors); i++)
++		if (BIT(i) & l2esr)
++			errors[i].func(edac, cpu, 1, errors[i].msg);
++
++	krait_set_l2_indirect_reg(L2ESR, l2esr);
++
++	return IRQ_HANDLED;
++}
++
++static void enable_l1_irq(void *info)
++{
++	const struct krait_edac *k = info;
++
++	enable_percpu_irq(k->l1_irq, IRQ_TYPE_LEVEL_HIGH);
++}
++
++static void disable_l1_irq(void *info)
++{
++	const struct krait_edac *k = info;
++
++	disable_percpu_irq(k->l1_irq);
++}
++
++static int
++krait_edac_notify(struct notifier_block *nfb, unsigned long action, void *hcpu)
++{
++	struct krait_edac *p = container_of(nfb, struct krait_edac, notifier);
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_STARTING:
++		enable_l1_irq(p);
++		break;
++
++	case CPU_DYING:
++		disable_l1_irq(p);
++		break;
++	}
++	return NOTIFY_OK;
++}
++
++static int krait_edac_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct edac_device_ctl_info *edev;
++	struct krait_edac *p;
++	int l1_irq, l2_irq;
++	int ret, cpu;
++	struct device_node *cpunode, *l1node, *l2node;
++
++	cpunode = of_get_cpu_node(0, NULL);
++	if (!cpunode)
++		return -ENODEV;
++
++	l1node = of_parse_phandle(cpunode, "next-level-cache", 0);
++	of_node_put(cpunode);
++	if (!l1node)
++		return -ENODEV;
++
++	l1_irq = irq_of_parse_and_map(l1node, 0);
++	l2node = of_parse_phandle(l1node, "next-level-cache", 0);
++	of_node_put(l1node);
++	if (!l2node)
++		return -ENODEV;
++
++	l2_irq = irq_of_parse_and_map(l2node, 0);
++	of_node_put(l2node);
++
++	if (l1_irq < 0)
++		return l1_irq;
++	if (l2_irq < 0)
++		return l2_irq;
++
++	p = devm_kzalloc(dev, sizeof(*p), GFP_KERNEL);
++	if (!p)
++		return -ENOMEM;
++	platform_set_drvdata(pdev, p);
++	p->l1_irq = l1_irq;
++
++	p->edev = alloc_percpu(struct edac_device_ctl_info *);
++	if (!p->edev)
++		return -ENOMEM;
++
++	edev = edac_device_alloc_ctl_info(0, "cpu", num_possible_cpus(),
++						 "L", 2, 1, NULL, 0,
++						 edac_device_alloc_index());
++	if (!edev) {
++		ret = -ENOMEM;
++		goto err_alloc;
++	}
++
++	edev->dev = dev;
++	edev->mod_name = dev_name(dev);
++	edev->dev_name = dev_name(dev);
++	edev->ctl_name = "cache";
++
++	for_each_possible_cpu(cpu)
++		*per_cpu_ptr(p->edev, cpu) = edev;
++
++	ret = edac_device_add_device(edev);
++	if (ret)
++		goto err_add;
++
++	ret = request_percpu_irq(l1_irq, krait_l1_irq, "L1 err",
++				p->edev);
++	if (ret)
++		goto err_l1_irq;
++
++	ret = devm_request_irq(dev, l2_irq, krait_l2_irq, 0, "L2 err",
++				edev);
++	if (ret)
++		goto err_l2_irq;
++
++	p->notifier.notifier_call = krait_edac_notify;
++	register_hotcpu_notifier(&p->notifier);
++	on_each_cpu(enable_l1_irq, p, true);
++
++	return 0;
++err_l2_irq:
++	free_percpu_irq(p->l1_irq, p->edev);
++err_l1_irq:
++	edac_device_del_device(dev);
++err_add:
++	edac_device_free_ctl_info(edev);
++err_alloc:
++	free_percpu(p->edev);
++	return ret;
++}
++
++static int krait_edac_remove(struct platform_device *pdev)
++{
++	struct krait_edac *p = platform_get_drvdata(pdev);
++
++	unregister_hotcpu_notifier(&p->notifier);
++	on_each_cpu(disable_l1_irq, p, true);
++	free_percpu_irq(p->l1_irq, p->edev);
++	edac_device_del_device(&pdev->dev);
++	edac_device_free_ctl_info(*__this_cpu_ptr(p->edev));
++	free_percpu(p->edev);
++
++	return 0;
++}
++
++static struct platform_driver krait_edac_driver = {
++	.probe = krait_edac_probe,
++	.remove = krait_edac_remove,
++	.driver = {
++		.name = "krait_edac",
++		.owner = THIS_MODULE,
++	},
++};
++
++static struct platform_device *krait_edacp;
++
++static int __init krait_edac_driver_init(void)
++{
++	struct device_node *np;
++
++	np = of_get_cpu_node(0, NULL);
++	if (!np)
++		return 0;
++
++	if (!krait_edacp && of_device_is_compatible(np, "qcom,krait"))
++		krait_edacp = of_platform_device_create(np, "krait_edac", NULL);
++	of_node_put(np);
++
++	return platform_driver_register(&krait_edac_driver);
++}
++module_init(krait_edac_driver_init);
++
++static void __exit krait_edac_driver_exit(void)
++{
++	platform_driver_unregister(&krait_edac_driver);
++	platform_device_unregister(krait_edacp);
++}
++module_exit(krait_edac_driver_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Krait CPU cache error reporting driver");
++MODULE_ALIAS("platform:krait_edac");
 -- 
-1.9.1
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
