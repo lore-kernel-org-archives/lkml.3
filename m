@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaDDPkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:40:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49789 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753021AbaDDPkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:40:19 -0400
-Message-ID: <533ED247.9040602@zytor.com>
-Date: Fri, 04 Apr 2014 08:39:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] x86: reboot doesn't reboot
-References: <20140403113921.23dceb75@gandalf.local.home> <533D8516.1040803@zytor.com> <20140403121314.246b03a7@gandalf.local.home> <533DED74.6050202@linux.intel.com> <20140403194018.7c67aec7@gandalf.local.home> <533DF455.4040908@linux.intel.com> <533DF8D2.9060508@zytor.com> <533E0A94.5040007@linux.intel.com> <20140404151203.GA12370@srcf.ucam.org> <533ECC2C.6090505@zytor.com> <20140404153634.GA14519@srcf.ucam.org>
-In-Reply-To: <20140404153634.GA14519@srcf.ucam.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753869AbaDDPmM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:42:12 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:42039 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616AbaDDPmL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 11:42:11 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [PATCH v3] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+Date: Fri,  4 Apr 2014 16:41:42 +0100
+Message-Id: <1396626102-13991-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1396622847-12718-1-git-send-email-daniel.thompson@linaro.org>
+References: <1396622847-12718-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2014 08:36 AM, Matthew Garrett wrote:
-> On Fri, Apr 04, 2014 at 08:13:48AM -0700, H. Peter Anvin wrote:
->> On 04/04/2014 08:12 AM, Matthew Garrett wrote:
->>> On Fri, Apr 04, 2014 at 09:27:48AM +0800, Li, Aubrey wrote:
->>>
->>>> The current situation is,
->>>> - we have one(do we know more?) preproduction machine hangs by CF9.
->>>> - We have more than one(could be thousand known) production machine
->>>> works by CF9.
->>>
->>> Production hardware should never require CF9.
->>>
->>
->> There are a lot of things that shouldn't be.
-> 
-> Windows doesn't hit CF9, and production hardware is always tested with 
-> Windows, so. Adding CF9 may make things work in some situations but it 
-> clearly breaks them in others - we'd be better off spending our time 
-> figuring out why systems that appear to need CF9 won't otherwise work.
-> 
+When building a multi_v7_defconfig kernel it is not possible to configure
+DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
+accurately and worse, it is possible to configure a different serial
+device but KConfig does not honour this request. In fact this also
+overrides the user selection for some of the single platform kernels, for
+example I don't think DEBUG_LL can be targetted at ICE or semihosted
+supervisor for ARCH_VERSATILE.
 
-There are several platforms where the default boot method invokes an SMM
-handler which blithly assumes that the hardware is in whatever state
-Windows leaves it in, and hangs otherwise.  This seems to include nearly
-all Dell systems.  So it isn't really quite that simple...
+This happens because DEBUG_UART_PL01X is automatically enabled by
+some architectures and this means user decisions made regarding
+the DEBUG_LL backend will be overriden. Problem is fixed by removing the
+automatic enabling of this option.
 
-	-hpa
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+
+Notes:
+    v3: Switch from def_bool to bool (thanks Russell King)
+    v2: Remove pointless single platform support (thanks Arnd Bergmann)
+
+ arch/arm/Kconfig.debug | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 0531da8..7e19c94 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -989,12 +989,7 @@ config DEBUG_LL_INCLUDE
+ 
+ # Compatibility options for PL01x
+ config DEBUG_UART_PL01X
+-	def_bool ARCH_EP93XX || \
+-		ARCH_INTEGRATOR || \
+-		ARCH_SPEAR3XX || \
+-		ARCH_SPEAR6XX || \
+-		ARCH_SPEAR13XX || \
+-		ARCH_VERSATILE
++	bool
+ 
+ # Compatibility options for 8250
+ config DEBUG_UART_8250
+-- 
+1.9.0
 
