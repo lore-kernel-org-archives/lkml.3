@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaDDUrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 16:47:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45554 "EHLO mx1.redhat.com"
+	id S1752356AbaDDUsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 16:48:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28005 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500AbaDDUrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751797AbaDDUrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Apr 2014 16:47:20 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: akpm@linux-foundation.org, x86@kernel.org, davem@davemloft.net,
         sparclinux@vger.kernel.org, mguzik@redhat.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 0/4 V2] Print traces on softlockups
-Date: Fri,  4 Apr 2014 16:47:06 -0400
-Message-Id: <1396644430-70649-1-git-send-email-dzickus@redhat.com>
+        Aaron Tomlin <atomlin@redhat.com>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 1/4 v2] nmi: Provide the option to issue an NMI back trace to every cpu but current
+Date: Fri,  4 Apr 2014 16:47:07 -0400
+Message-Id: <1396644430-70649-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1396644430-70649-1-git-send-email-dzickus@redhat.com>
+References: <1396644430-70649-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Version 2 of this patchset.
+From: Aaron Tomlin <atomlin@redhat.com>
 
-Added more patches to handle the 'uniprocessor' panic case by sending NMIs
-to every cpu but self.  Only affects x86, sparc.
+Some times it is preferred not to use the
+trigger_all_cpu_backtrace() routine when one wants
+to avoid capturing a back trace for current.
+For instance if one was previously captured
+recently.
 
-Aaron Tomlin (4):
-  nmi: Provide the option to issue an NMI back trace to every cpu but
-    current
-  x86, nmi: Add more flexible NMI back trace support
-  sparc64, nmi: Add more flexible NMI back trace support
-  watchdog: Printing traces for all cpus on lockup detection
+This patch provides a new routine namely
+trigger_allbutself_cpu_backtrace() which offers
+the flexibility to issue an NMI to every cpu but
+current and capture a back trace accordingly.
 
- Documentation/kernel-parameters.txt |    5 +++++
- Documentation/sysctl/kernel.txt     |   17 +++++++++++++++++
- arch/sparc/include/asm/irq_64.h     |    2 +-
- arch/sparc/kernel/process_64.c      |   14 +++++++++-----
- arch/x86/include/asm/irq.h          |    2 +-
- arch/x86/kernel/apic/hw_nmi.c       |   16 +++++++++++++---
- include/linux/nmi.h                 |   12 +++++++++++-
- kernel/sysctl.c                     |    9 +++++++++
- kernel/watchdog.c                   |   32 ++++++++++++++++++++++++++++++++
- 9 files changed, 98 insertions(+), 11 deletions(-)
+[Added stub in #else clause - dcz]
+
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ include/linux/nmi.h |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index 6a45fb5..a17ab63 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -32,15 +32,24 @@ static inline void touch_nmi_watchdog(void)
+ #ifdef arch_trigger_all_cpu_backtrace
+ static inline bool trigger_all_cpu_backtrace(void)
+ {
+-	arch_trigger_all_cpu_backtrace();
++	arch_trigger_all_cpu_backtrace(true);
+ 
+ 	return true;
+ }
++static inline bool trigger_allbutself_cpu_backtrace(void)
++{
++	arch_trigger_all_cpu_backtrace(false);
++	return true;
++}
+ #else
+ static inline bool trigger_all_cpu_backtrace(void)
+ {
+ 	return false;
+ }
++static inline bool trigger_allbutself_cpu_backtrace(void)
++{
++	return false;
++}
+ #endif
+ 
+ #ifdef CONFIG_LOCKUP_DETECTOR
+-- 
+1.7.1
 
