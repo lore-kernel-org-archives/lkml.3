@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaDDCJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Apr 2014 22:09:22 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:41809
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751794AbaDDCJR convert rfc822-to-8bit (ORCPT
+	id S1751949AbaDDCQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Apr 2014 22:16:15 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:31088 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751175AbaDDCQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Apr 2014 22:09:17 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "wim@iguana.be" <wim@iguana.be>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv4 2/2] watchdog: imx2_wdt: convert to use regmap API.
-Thread-Topic: [PATCHv4 2/2] watchdog: imx2_wdt: convert to use regmap API.
-Thread-Index: AQHPTt69R9PCJUUK7UW+0eH2KtDmx5sAF94AgACOdvCAAAw2gIAABUqA
-Date: Fri, 4 Apr 2014 02:09:14 +0000
-Message-ID: <45be66f717074e4b85c5fc531e05045f@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1396487059-15298-1-git-send-email-Li.Xiubo@freescale.com>
- <1396487059-15298-3-git-send-email-Li.Xiubo@freescale.com>
- <20140403163604.GA11832@roeck-us.net>
- <6563b26412a7457ba38e2dcf0bdcb643@BY2PR03MB505.namprd03.prod.outlook.com>
- <533E0FB3.6070305@roeck-us.net>
-In-Reply-To: <533E0FB3.6070305@roeck-us.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01713B2841
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(54316002)(56816005)(90146001)(74706001)(47446002)(51856001)(87266001)(76576001)(74316001)(74366001)(74502001)(74662001)(31966008)(74876001)(56776001)(87936001)(76482001)(46102001)(76796001)(95666003)(95416001)(81342001)(94316002)(83072002)(81686001)(81542001)(80022001)(97186001)(97336001)(66066001)(65816001)(33646001)(69226001)(85852003)(93516002)(99396002)(94946001)(98676001)(47736001)(49866001)(54356001)(2656002)(50986001)(53806001)(83322001)(47976001)(80976001)(99286001)(81816001)(77982001)(59766001)(92566001)(93136001)(86362001)(85306002)(20776003)(79102001)(63696002)(4396001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:4A53F022.4028C19.A8E880A0.47C6AEB9.20129;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Apr 2014 22:16:09 -0400
+Date: Thu, 3 Apr 2014 22:16:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [BUG] x86: reboot doesn't reboot
+Message-ID: <20140403221607.7a1b5952@gandalf.local.home>
+In-Reply-To: <533DF455.4040908@linux.intel.com>
+References: <20140403021411.6236996f@gandalf.local.home>
+	<070BEF4AC20468458C22969097656CD91163106C@shsmsx102.ccr.corp.intel.com>
+	<533D001A.5030802@linux.intel.com>
+	<20140403094155.04cc00bc@gandalf.local.home>
+	<533D6BE7.3020608@zytor.com>
+	<20140403104721.5f6c32b6@gandalf.local.home>
+	<20140403111711.5bed4ff7@gandalf.local.home>
+	<533D7C4F.4010504@zytor.com>
+	<533D7C93.7080105@zytor.com>
+	<20140403113921.23dceb75@gandalf.local.home>
+	<533D8516.1040803@zytor.com>
+	<20140403121314.246b03a7@gandalf.local.home>
+	<533DED74.6050202@linux.intel.com>
+	<20140403194018.7c67aec7@gandalf.local.home>
+	<533DF455.4040908@linux.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This is caused by not compiling the regmap core.
-> >
-> > Could you add the following patch to have a try ?
-> > ==========================
-> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> > index 79d2589..3e55fa9 100644
-> > --- a/drivers/watchdog/Kconfig
-> > +++ b/drivers/watchdog/Kconfig
-> > @@ -369,6 +369,7 @@ config MAX63XX_WATCHDOG
-> >   config IMX2_WDT
-> >          tristate "IMX2+ Watchdog"
-> >          depends on ARCH_MXC
-> > +       select REGMAP_MMIO
-> >          help
-> >            This is the driver for the hardware watchdog
-> >            on the Freescale IMX2 and later processors.
-> > --------------------------
-> >
-> > If it's okey, I'll sent the v5 series to fix this.
-> >
-> Yes, that fixes the problem.
+On Fri, 04 Apr 2014 07:52:53 +0800
+"Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
+
+> On 2014/4/4 7:40, Steven Rostedt wrote:
+> > On Fri, 04 Apr 2014 07:23:32 +0800
+> > "Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
+> > 
+> >> Can you please send the dmi table out?
+> > 
+> > I already did as a gz attachment to H. Peter. You were on the Cc, did
+> > you not receive it?
+> > 
+> Oh, I got it. This is a Preproduction machine.
+> When reboot failed via a method (=e or =p), there are two case.
 > 
+> Case 1: this method do nothing, pass the attempt chance to the next method
+> Case 2: this method hangs the system
+> 
+> I want to know if CF9 is case 1 or case 2. Could you please try the following
+> patch *without* any reboot parameters?
+> 
+> (1) If we didn't see any string, then EFI hangs your box.
+> (2) if we see the first string but not the second one, CF9 hangs your box
+> (3) if we see both, couldn't be, because BIOS works on your box.
 
+Here's the output:
 
-I'll send the v5 series to fix this.
+[  114.445327] reboot: Restarting system
+[  114.449002] reboot: machine restart
+[  114.453495] reboot: reboot via CF9...
 
-Thanks very much.
+-- Steve
