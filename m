@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbaDDXRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 19:17:15 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:39177 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854AbaDDXOp (ORCPT
+	id S1753150AbaDDXj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 19:39:56 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:53058 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546AbaDDXjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 19:14:45 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
-Date: Fri,  4 Apr 2014 16:14:13 -0700
-Message-Id: <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.1.1.gbb9f595
-In-Reply-To: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
+	Fri, 4 Apr 2014 19:39:52 -0400
+Date: Fri, 4 Apr 2014 17:39:48 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 5/6] pci: Export find_pci_host_bridge() function.
+Message-ID: <20140404233948.GC15806@google.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811272-1547-6-git-send-email-Liviu.Dudau@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394811272-1547-6-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all Zynq DT files to the dtc preprocessor include syntax.
-This allows to include header files in the devicetrees like other
-SoC-types already do.
+On Fri, Mar 14, 2014 at 03:34:31PM +0000, Liviu Dudau wrote:
+> This is a useful function and we should make it visible outside the
+> generic PCI code. Export it as a GPL symbol.
+> 
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> ---
+>  drivers/pci/host-bridge.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+> index 06ace62..8708b652 100644
+> --- a/drivers/pci/host-bridge.c
+> +++ b/drivers/pci/host-bridge.c
+> @@ -17,12 +17,13 @@ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
+>  	return bus;
+>  }
+>  
+> -static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
+> +struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
+>  {
+>  	struct pci_bus *root_bus = find_pci_root_bus(bus);
+>  
+>  	return to_pci_host_bridge(root_bus->bridge);
+>  }
+> +EXPORT_SYMBOL_GPL(find_pci_host_bridge);
 
-Inspired-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-(http://www.spinics.net/lists/arm-kernel/msg319832.html)
+Do you have a place where you actually need to use find_pci_host_bridge()?
+I'd rather not export it, even as _GPL, unless we have a user.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
+If we *do* export it, I'd like it to have a more conventional name, e.g.,
+something starting with "pci_".
 
-Changes in v2: None
-
- arch/arm/boot/dts/zynq-7000.dtsi | 3 ++-
- arch/arm/boot/dts/zynq-zc702.dts | 2 +-
- arch/arm/boot/dts/zynq-zc706.dts | 2 +-
- arch/arm/boot/dts/zynq-zed.dts   | 2 +-
- 4 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 20a13cba65a3..66613d04de5d 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -10,7 +10,8 @@
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-  */
--/include/ "skeleton.dtsi"
-+
-+#include "skeleton.dtsi"
- 
- / {
- 	compatible = "xlnx,zynq-7000";
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index c913f77a21eb..07713d3c716a 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -12,7 +12,7 @@
-  * GNU General Public License for more details.
-  */
- /dts-v1/;
--/include/ "zynq-7000.dtsi"
-+#include "zynq-7000.dtsi"
- 
- / {
- 	model = "Zynq ZC702 Development Board";
-diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-index 88f62c50382e..cf6566cdb02a 100644
---- a/arch/arm/boot/dts/zynq-zc706.dts
-+++ b/arch/arm/boot/dts/zynq-zc706.dts
-@@ -13,7 +13,7 @@
-  * GNU General Public License for more details.
-  */
- /dts-v1/;
--/include/ "zynq-7000.dtsi"
-+#include "zynq-7000.dtsi"
- 
- / {
- 	model = "Zynq ZC706 Development Board";
-diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
-index 82d7ef1a9a9c..1541716e2cfb 100644
---- a/arch/arm/boot/dts/zynq-zed.dts
-+++ b/arch/arm/boot/dts/zynq-zed.dts
-@@ -13,7 +13,7 @@
-  * GNU General Public License for more details.
-  */
- /dts-v1/;
--/include/ "zynq-7000.dtsi"
-+#include "zynq-7000.dtsi"
- 
- / {
- 	model = "Zynq Zed Development Board";
--- 
-1.9.1.1.gbb9f595
-
+>  
+>  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+>  				 void (*release_fn)(struct pci_host_bridge *),
+> -- 
+> 1.9.0
+> 
