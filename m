@@ -1,74 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaDDXoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 19:44:08 -0400
-Received: from imap.thunk.org ([74.207.234.97]:50212 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752487AbaDDXoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 19:44:07 -0400
-Date: Fri, 4 Apr 2014 19:43:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Jan Kara <jack@suse.cz>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-Message-ID: <20140404234358.GE10275@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <20140403191558.GA8745@thunk.org>
- <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
- <20140404035308.GC2525@thunk.org>
- <20140404134429.GB26806@quack.suse.cz>
- <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1753548AbaDDXog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 19:44:36 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:37067 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaDDXoc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 19:44:32 -0400
+Subject: Re: [PATCH v2 0/9] uprobes/x86: preparations to fix the reprel
+ jmp/call handling.
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140404193226.GA23092@redhat.com>
+References: <20140404185038.GA14679@redhat.com>
+	 <20140404193226.GA23092@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Apr 2014 16:44:25 -0700
+Message-ID: <1396655065.4769.8.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040423-1542-0000-0000-000000DF9625
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 07:16:25PM +0200, Miklos Szeredi wrote:
+On Fri, 2014-04-04 at 21:32 +0200, Oleg Nesterov wrote:
+> On 04/04, Oleg Nesterov wrote:
+> >
+> > Now let me send the draft RFC patch which fixes the "call" handling...
 > 
-> http://marc.info/?l=linux-kernel&m=139523745403081&w=2
+> Damn. apparently I can't understand lib/insn.c...
+> 
+> Please see the draft below. Lets ignore 32bit tasks, lets ignore jmp's,
+> please ignore how the (pseudo) code written, I'll change it anyway.
+> 
+> Questions:
 
-I tried applying this patch on top of xfstests commit 3948694eb1, but
-running on ext4.git's test branch, which has the your cross-rename
-patches applied:
+So far, I have answers for just #1 and #2.
 
-http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/commit/?h=test&id=b7bcc46d4f80139930c2e6bd04ff8ebbff121bc9
+> 
+> 	1. Why insn_get_displacement() doesn't work? See "HELP!!!"
+> 	   below.
 
-I see the following:
+insn->moffset1.value seems to be what you want.
 
-BEGIN TEST: Ext4 4k block Fri Apr  4 23:21:50 UTC 2014
-Device: /dev/vdb
-mk2fs options: -q
-mount options: -o block_validity
-FSTYP         -- ext4
-PLATFORM      -- Linux/i686 candygram 3.14.0-00061-gb7bcc46
-MKFS_OPTIONS  -- -q /dev/vdc
-MOUNT_OPTIONS -- -o acl,user_xattr -o block_validity /dev/vdc /vdc
+> 
+> 	2. Do I use lib/insn.c correctly (ignoring displacement) ?
 
-generic/323		[23:22:03] [23:22:04] [not run]
-	generic/323 -- kernel doesn't support renameat2 syscall
-generic/324		[23:22:04] [23:22:05] [not run]
-	generic/324 -- kernel doesn't support renameat2 syscall
-generic/325		[23:22:05] [23:22:06] [not run]
-	generic/325 -- kernel doesn't support renameat2 syscall
-Not run: generic/323 generic/324 generic/325
+insn_get_length() has the side-effect of processing the entire
+instruction, so just calling that should be sufficient.  Looks OK
+otherwise -- but I checked very quickly.
 
-Is there anything obvious that I might be doing wrong?
+More in a day or two.
 
-Thanks,
+Jim
 
-							- Ted
+> 
+>            In particular, is 'turn this insn into "1: call 1b;"'
+>            below correct?
+> 
+> 	3. Jim, do you still think it would be better to rewrite the
+> 	   call insns using a scratch register ?
+> 
+> 	4. Is there other call insns with OPCODE1() != 0xe8 which
+> 	   should be fixed too?
+> 
+> Thanks,
+> 
+> Oleg.
+> 
+> 
+> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+> index 9f8210b..cca62c5 100644
+> --- a/arch/x86/include/asm/uprobes.h
+> +++ b/arch/x86/include/asm/uprobes.h
+> @@ -44,9 +44,15 @@ struct arch_uprobe {
+>  	u16				fixups;
+>  	const struct uprobe_xol_ops	*ops;
+> 
+> +	union {
+>  #ifdef CONFIG_X86_64
+> -	unsigned long			rip_rela_target_address;
+> +		unsigned long			rip_rela_target_address;
+>  #endif
+> +		struct {
+> +			s32	disp;
+> +			u8	ilen;
+> +		}				ttt;
+> +	};
+>  };
+> 
+>  struct arch_uprobe_task {
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index b820668..423ae86 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -461,6 +461,52 @@ static struct uprobe_xol_ops default_xol_ops = {
+>  	.post_xol = default_post_xol_op,
+>  };
+> 
+> +static bool ttt_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> +{
+> +
+> +	if (put_user(regs->ip + auprobe->ttt.ilen, (long __user *)(regs->sp - 8)))
+> +		return false;
+> +
+> +	regs->sp -= 8;
+> +	regs->ip += auprobe->ttt.ilen + auprobe->ttt.disp;
+> +
+> +	return true;
+> +}
+> +
+> +static int ttt_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> +{
+> +	regs->sp += 8;
+> +	if (ttt_emulate_op(auprobe, regs))
+> +		return 0;
+> +	return -ERESTART;
+> +}
+> +
+> +static struct uprobe_xol_ops ttt_xol_ops = {
+> +	.emulate  = ttt_emulate_op,
+> +	.post_xol = ttt_post_xol_op,
+> +};
+> +
+> +static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+> +{
+> +	s32 *disp;
+> +
+> +	insn_get_length(insn);
+> +	auprobe->ttt.ilen = insn->length;
+> +
+> +	insn_get_displacement(insn);
+> +	auprobe->ttt.disp = insn->displacement.value;
+> +	// HELP!!! the above doesn't work, ->displacement.value == 0
+> +	auprobe->ttt.disp = *(s32 *)(auprobe->insn + 1);
+> +
+> +	// turn this insn into "1: call 1b;", we only need to xol it
+> +	// to expand the stack if ->emulate() fails.
+> +	disp = (void *)auprobe->insn + insn_offset_displacement(insn);
+> +	*disp = -(s32)auprobe->ttt.ilen;
+> +
+> +	auprobe->ops = &ttt_xol_ops;
+> +	return 0;
+> +}
+> +
+>  /**
+>   * arch_uprobe_analyze_insn - instruction analysis including validity and fixups.
+>   * @mm: the probed address space.
+> @@ -484,6 +530,9 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  	 * is either zero or it reflects rip-related fixups.
+>  	 */
+>  	switch (OPCODE1(&insn)) {
+> +	case 0xe8:		/* call relative - has its own xol_ops */
+> +		return ttt_setup_xol_ops(auprobe, &insn);
+> +
+>  	case 0x9d:		/* popf */
+>  		auprobe->fixups |= UPROBE_FIX_SETF;
+>  		break;
+> @@ -493,9 +542,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  	case 0xca:
+>  		fix_ip = false;
+>  		break;
+> -	case 0xe8:		/* call relative - Fix return addr */
+> -		fix_call = true;
+> -		break;
+>  	case 0x9a:		/* call absolute - Fix return addr, not ip */
+>  		fix_call = true;
+>  		fix_ip = false;
+> 
+
+
