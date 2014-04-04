@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476AbaDDOOj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 10:14:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53280 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753212AbaDDOOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 10:14:38 -0400
-Date: Fri, 4 Apr 2014 16:13:21 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
+	id S1753370AbaDDOR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 10:17:28 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:59141 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaDDOR0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 10:17:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140404140614.GA2147@redhat.com>
+References: <1396534327-12971-1-git-send-email-richard.genoud@gmail.com>
+ <20140403173701.75c1f497@north> <20140404081908.GB1448@redhat.com>
+ <20140404110106.6d249615@north> <20140404140614.GA2147@redhat.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Fri, 4 Apr 2014 16:17:04 +0200
+Message-ID: <CACQ1gAimN_Y8cfaZNFx0Cj1yCoLMdauc4T0vp3Pxaqh5TeXqDg@mail.gmail.com>
+Subject: Re: [PATCH] rt2x00: BUG: remove double loop on REGISTER_BUSY_COUNT
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: =?UTF-8?Q?Jakub_Kici=C5=84ski?= <moorray3@wp.pl>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
         Gertjan van Wingerde <gwingerde@gmail.com>,
         Helmut Schaa <helmut.schaa@googlemail.com>,
         "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rt2x00: Endless loop on hub port power down
-Message-ID: <20140404141319.GB2147@redhat.com>
-References: <1396536536-26423-1-git-send-email-richard.genoud@gmail.com>
- <20140404080453.GA1448@redhat.com>
- <533E8242.8080203@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <533E8242.8080203@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-wireless@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 11:58:26AM +0200, Richard Genoud wrote:
-> On 04/04/2014 10:04, Stanislaw Gruszka wrote:
-> > On Thu, Apr 03, 2014 at 04:48:56PM +0200, Richard Genoud wrote:
-> >> I've met an endless (or at least very long) loop if I power down the usb
-> >> port on witch a usb wifi key is plugged.
-> >> (Ok, it's not very smart to power down a usb port when a usb key is in
-> >> used... but still, I think that should not lead to an endless loop).
-> >>
-> >> I have a lot of:
-> >> ieee80211 phy1: rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x0438 with error -71
-> >>
-> >> (-71==-EPROTO)
-> >>
-> >> How to reproduce:
-> >> - plug an usb wifi key
-> >> - ip link set wlan0 up
-> >> - hub-ctrl -b usb_bus -d usb_device -P usb_port -p 0
-> >>
-> >> hub-ctrl source: https://github.com/codazoda/hub-ctrl.c/blob/master/hub-ctrl.c
-> >>
-> >> The following patch prevents the endless loop, but I'm really not sure
-> >> that The Right Way To Do It (R)
-> > 
-> > If device disappear, we should get -ENODEV status, why we get -EPROTO ?
-> 
-> I trace it down, and the EPROTO status comes from ctx.status (returned from usb_start_wait_urb() in drivers/usb/core/message.c)
-> And, in my case, the ctx.status is set to EPROTO in qtd_copy_status() ( drivers/usb/host/ehci-q.c )
-> in the code:
-> } else if (token & QTD_STS_XACT) {
-> 	/* timeout, bad CRC, wrong PID, etc */
-> 	ehci_dbg(ehci, "devpath %s ep%d%s 3strikes\n",
-> 		urb->dev->devpath,
-> 		usb_pipeendpoint(urb->pipe),
-> 		usb_pipein(urb->pipe) ? "in" : "out");
-> 	status = -EPROTO;
-> 
-> enabling this log, I get:
-> atmel-ehci 700000.ehci: devpath 2.1 ep1in 3strikes
-> atmel-ehci 700000.ehci: devpath 2.1 ep0in 3strikes
-> atmel-ehci 700000.ehci: devpath 2.1 ep1in 3strikes
-> atmel-ehci 700000.ehci: devpath 2.1 ep0in 3strikes
-> ieee80211 phy0: rt2800usb_tx_sta_fifo_read_completed: Warning - TX status read failed -71
+2014-04-04 16:06 GMT+02:00 Stanislaw Gruszka <sgruszka@redhat.com>:
+> On Fri, Apr 04, 2014 at 11:01:06AM +0200, Jakub Kiciński wrote:
+>> On Fri, 4 Apr 2014 10:19:09 +0200, Stanislaw Gruszka wrote:
+>> > On Thu, Apr 03, 2014 at 05:37:01PM +0200, Jakub Kiciński wrote:
+>> > > On Thu,  3 Apr 2014 16:12:07 +0200, Richard Genoud wrote:
+>> > > > rt2x00usb_register_read_lock() calls rt2x00usb_vendor_req_buff_lock()
+>> > > > that calls rt2x00usb_vendor_request() which is already looping up to
+>> > > > REGISTER_BUSY_COUNT times.
+>> > > >
+>> > > > So this loop is not needed.
+>> > >
+>> > > Not true.  rt2x00usb_vendor_request() busy-waits for usb_control_msg()
+>> > > to succeed, rt2x00usb_register_read_lock() busy-waits for the register
+>> > > field itself to become 0.
+>> >
+>> > Yeah, but still we are looping REGISTER_BUSY_COUNT*REGISTER_BUSY_COUNT
+>> > what seems to be far too long.
+>>
+>> Yes, the busy waiting itself takes roughly 1s (100*100*100us) and then
+>> there are transfer times, so it might be too long indeed.  Vendor driver
+>> waits only 10 * 5ms in RTUSB_VendorRequest() so
+>
+> We use "timeout" argument which is set to 500ms , so perhaps that
+> could be the reason why Richard sees "infinite" loop i.e.
+> 100*100*(500ms + 100us)
+That's what I thougth at the begining, so I applied this patch, but it
+was still looping on errors -EPROTO.
 
-Thanks, ehci driver behaviour seems to be fine. Could you check if updating
-rt2800 firmware (I assume you have some RT2800 usb dongle) change the situation,
-i.e. we stop getting -EPROTO errors. To install new firmware, you can download
-rt2870.bin blob from:
-http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2013-January/005610.html
-and need to replace /lib/firmware/rt2870.bin file.
-
-Stanislaw
+>> rt2x00usb_vendor_request() seems like a better place to cut down the
+>> number of loops.
+>>
+>> Alternatively we could make rt2x00usb_regbusy_read() check the retval
+>> from rt2x00usb_vendor_request() and exit early?
+>
+> Make sense, but I think we should review the area and make some more
+> changes to fine tune the timeout of USB reg reading functions.
+>
+> Stanislaw
