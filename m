@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaDDVyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 17:54:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40392 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752578AbaDDVyf convert rfc822-to-8bit (ORCPT
+	id S1752933AbaDDVzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 17:55:41 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:33697 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283AbaDDVzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 17:54:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,797,1389772800"; 
-   d="scan'208";a="507263993"
-From: "Du, Wenkai" <wenkai.du@intel.com>
-To: "Westerberg, Mika" <mika.westerberg@intel.com>
-CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] i2c-designware: Mask interrupts during i2c controller
- enable
-Thread-Topic: [PATCH] i2c-designware: Mask interrupts during i2c controller
- enable
-Thread-Index: Ac9QJwrpXJhe4Vv7Q76dkBKVgbE+4AARZeWAAA7Jh9D//5EOAIAATf0Q
-Date: Fri, 4 Apr 2014 21:54:33 +0000
-Message-ID: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
-References: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70E1F@ORSMSX109.amr.corp.intel.com>
- <20140404181613.GB19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
- <20140404184232.GC19349@intel.com>
-In-Reply-To: <20140404184232.GC19349@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Apr 2014 17:55:39 -0400
+Message-ID: <533F2A57.1060808@linaro.org>
+Date: Fri, 04 Apr 2014 14:55:35 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Lei Wen <leiwen@marvell.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/3] printk: using booting time as the timestamp
+References: <1396581522-3309-1-git-send-email-leiwen@marvell.com> <1396581522-3309-4-git-send-email-leiwen@marvell.com>
+In-Reply-To: <1396581522-3309-4-git-send-email-leiwen@marvell.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Interrupt masking is done already after each transaction.
+On 04/03/2014 08:18 PM, Lei Wen wrote:
+> As people may want to align the kernel log with some other processor
+> running over the same machine but not the same copy of linux, we
+> need to keep their log aligned, so that it would not make debug
+> process hard and confused.
+>
+> Signed-off-by: Lei Wen <leiwen@marvell.com>
+> ---
+>  kernel/printk/printk.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index a45b509..af96fbd 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -349,7 +349,7 @@ static void log_store(int facility, int level,
+>  	if (ts_nsec > 0)
+>  		msg->ts_nsec = ts_nsec;
+>  	else
+> -		msg->ts_nsec = local_clock();
+> +		msg->ts_nsec = ktime_to_ns(ktime_get_boottime());
 
-At end of transfer, the code uses __i2c_dw_enable(dev, false) to disable adapter. This function doesn't mask interrupts. There is another function i2c_dw_disable that masks and clears interrupts. This could be used, but that means we need to fix in 2 places: 
+No no... Since ktime_get_boottime() takes the timekeeping seqlock, this
+will cause any printk (or WARN_ON, etc) that is done while holding a
+write in the timekeeping seqlock to deadlock (which I mentioned last time).
 
-1. add interrupt masking to i2c_dw_init();
-2. change call __i2c_dw_enable(dev, false) to i2c_dw_disable;
+I think the better solution here is to have the timekeeping code provide
+the printk logic the offset value whenever the sleep time is updated.
+That way the printk logic can manage its own values w/o having to take
+any timekeeping locks.
 
-I think simply masking interrupt in i2c_dw_xfer_init is cleaner and safer.
+That said, I'm still not really fond of trying to add this
+functionality. The printk timestamping code was always a little fuzzy,
+using jiffies or sched_clock in order to give a rough estimate of boot
+delays (and didn't include ntp freq correction, etc). When it was
+introduced, I feel like folks were concerned about this, but folks
+agreed the rough estimates were worth it, and it didn't have to involve
+the real timekeeping code.  Now, trying to raise the bar here to make
+printk timestamps actually correlate with
+CLOCK_BOOTTIME/REALTIME/MONOTONIC (which I'll admit, seems quite
+reasonable given we have timestamps already - but ends up being feature
+creep) will add quite a bit of complexity due to the fact that printk is
+supposed to be safe to call from everywhere.
 
->The problem here is that after reset, the interrupt mask register gets 0x8ff value (HW default), which means that most of the interrupts are left unmasked.
->That is the reason why this only happens right after we resume from system sleep. Masking interrupts on that path fixes the problem.
+And again, syslog can add timestamps to the kernel messages relatively
+well in userland. So I'm not sure the need is clear.
 
-The time out also happened in case of going into suspend and during normal operations. But at much less occurrence at 1-2 per 1000 cycles. 
-
+thanks
+-john
 
