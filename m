@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaDDPMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 11:12:42 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11508 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661AbaDDPMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 11:12:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18cpaYxfX+A3OXp9SnZbbBKkMAvOaHmQOk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 6F1A0551EAD
-Date: Fri, 4 Apr 2014 11:12:33 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Levente Kurusa <levex@linux.com>
-Cc: Teodora =?utf-8?B?QsSDbHXFo8SD?= <teobaluta@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-Message-ID: <20140404151233.GA28334@titan.lakedaemon.net>
-References: <20140319201838.GA11403@redhat.com>
- <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
- <20140321132816.GW15608@titan.lakedaemon.net>
- <532DC3D3.9060008@linux.com>
- <CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
- <20140323193839.GY15608@titan.lakedaemon.net>
- <CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
- <20140401142051.GO28304@titan.lakedaemon.net>
- <CACV2jQB3S71eeLRnvDxy0TAm0Zr+s5KHAKCjwBGQv1GJCiNq6Q@mail.gmail.com>
- <CAAsK9AGW+L4GswAEAZeZEcqUDb+H9b=qu98znsM6XSU3B2fuGw@mail.gmail.com>
+	id S1753090AbaDDPN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 11:13:57 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:1780 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202AbaDDPN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 11:13:56 -0400
+X-IronPort-AV: E=Sophos;i="4.97,795,1389744000"; 
+   d="scan'208";a="116834038"
+Message-ID: <533ECC32.5070302@citrix.com>
+Date: Fri, 4 Apr 2014 17:13:54 +0200
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAsK9AGW+L4GswAEAZeZEcqUDb+H9b=qu98znsM6XSU3B2fuGw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH] xen-blkback: only attach blkback if the required features
+ are met
+References: <1396622471-13114-1-git-send-email-roger.pau@citrix.com> <533EC966.7030101@citrix.com>
+In-Reply-To: <533EC966.7030101@citrix.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 10:21:39PM +0200, Levente Kurusa wrote:
-...
-> Oh and I had an idea of adding a new kernel parameter, something
-> like 'qr_oops.*'. (Looking for a better name! :-) )
-> Basically, I thought of the following options so far:
+On 04/04/14 17:01, David Vrabel wrote:
+> On 04/04/14 15:41, Roger Pau Monne wrote:
+>> Blkback cannot work properly on auto-translated guests if Xen doesn't
+>> update the IOMMU when performing grant maps/unmaps, so only attach if
+>> the newly introduced XENFEAT_hvm_gntmap_supports_iommu is found.
 > 
-> *  qr_oops.disable=1  - disable it
-> *  qr_oops.scale=600x600 - scale the qr code so its easier to read
->    with a phone. In my testing I had huge difficulties reading the
->    QR codes, but when scaled to be a bit bigger it worked magically.
->    This might not be so easy to implement this way, but with preset
->    values, i.e. 4x4 squares instead of a pixel, it could work.
+> Can you explain the problem in more detail and which guest
+> configurations are affected?
+> 
+> This isn't a problem that is specific to blkback, but any backend that
+> grant maps and passes the foreign pages to a device so there needs to be
+> a generic solution.
+> 
+> Why can't this be fixed by having the swiotlb bounce foreign pages?
 
-oops.qr=0 - disabled
-oops.qr=3 - make each QR pixel 3x3 screen pixels.
+Yes, it could be fixed with that, FreeBSD has been doing it for a long time.
 
-I've found 3x3 works well for business cards and such.
+But since nobody has complained about this, and the issue has been there
+for a long time, I'm not sure it's worth adding all the bounce buffer
+code for what seems to be an unused configuration.
 
-0.02c...
+Also, since Linux also supports PV, I would just say that if you want to
+use driver domains you are forced to use PV guests (or have a recent Xen
+version that properly updates the IOMMU on grant map/unmap).
 
-thx,
+>> --- a/drivers/block/xen-blkback/blkback.c
+>> +++ b/drivers/block/xen-blkback/blkback.c
+>> @@ -1381,6 +1381,18 @@ static int __init xen_blkif_init(void)
+>>  	if (!xen_domain())
+>>  		return -ENODEV;
+>>  
+>> +#ifdef CONFIG_X86
+>> +	if (xen_feature(XENFEAT_auto_translated_physmap) &&
+>> +	    !xen_feature(XENFEAT_hvm_gntmap_supports_iommu)) {
+>> +		/*
+>> +		 * blkback cannot work properly on auto-translated guests
+>> +		 * if grant table mappings don't update the IOMMU entries.
+>> +		 */
+>> +		pr_debug(DRV_PFX "Disabling blkback because Xen is missing feature XENFEAT_hvm_gntmap_supports_iommu\n");
+>> +		return -ENODEV;
+>> +	}
+>> +#endif /* CONFIG_X86 */
+> 
+> Why CONFIG_X86?
 
-Jason.
+ARM has a bounce buffer for foreign pages, so this is not needed.
+
+> 
+> David
+> 
+
