@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbaDDHgZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:36:25 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:38638 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaDDHgU (ORCPT
+	id S1752380AbaDDHg5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:36:57 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:34679 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339AbaDDHgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:36:20 -0400
-Date: Fri, 4 Apr 2014 09:36:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>,
-        Geoff Levand <geoff@infradead.org>
-Subject: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool for
- Linux
-Message-ID: <20140404073616.GC1637@gmail.com>
-References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
- <20140331071749.GA1252@gmail.com>
- <CAGdX0WEV5OEfk4vfMKYeEpHP_7XqpUKk2-iwTVoTup1ObYu3eg@mail.gmail.com>
- <CAMEtUuw24=+CkcdwDnJ4AbSCjGBBFx+8pTFzn5gXbQAy=KYWng@mail.gmail.com>
- <CAGdX0WEvsPqWjE8Uade5_i58AepKxGndM0eSg=viB+UYGOSkJw@mail.gmail.com>
- <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com>
- <CAGdX0WE_xtUY7=CH7Qzxn9Oe8Mz=60wb6izD-APbF5d3caEthA@mail.gmail.com>
- <20140402074322.GA22744@gmail.com>
- <CAGdX0WHh3UqiCLbz+18_fj5s4PMpTfy638HA=LHpgLfVc2JpOg@mail.gmail.com>
+	Fri, 4 Apr 2014 03:36:52 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: About 'hash' event trigger patchset
+References: <CAM9d7ch-ZBYRHmhbHJEXQtS-V_kBPK5nMhtM3bPbHmnY+m-EeQ@mail.gmail.com>
+	<1396450314.11878.90.camel@empanada>
+Date: Fri, 04 Apr 2014 16:36:50 +0900
+In-Reply-To: <1396450314.11878.90.camel@empanada> (Tom Zanussi's message of
+	"Wed, 02 Apr 2014 09:51:54 -0500")
+Message-ID: <87vbupy299.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGdX0WHh3UqiCLbz+18_fj5s4PMpTfy638HA=LHpgLfVc2JpOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tom,
 
-* Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
-
-> On Wed, Apr 2, 2014 at 3:43 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
-> >
-> >> So based on all these input, I suggest:
-> >>
-> >> Put all these community efforts together, figure out the proper
-> >> design implementation of dynamic tracing tool, ktap can be a good
-> >> start to build upon it, evolve to a unified kernel script engine
-> >> with ebpf together, finally service for dynamic tracing and
-> >> network(if possible).
-> >>
-> >> Our goal is same and very clearly, we really want a "simple &
-> >> flexible & safe" dynamic scripting tracing tool for Linux, which
-> >> could compare or even better than Dtrace, this is the motivation of
-> >> ktap project.
-> >>
-> >> Two solution may be take:
-> >>
-> >> 1). upstream ktap into core trace and evolve it step by step, and
-> >>     finally make a integrated bytecode engine, it's a long process,
-> >>     but I think it's worth.
-> >>
-> >> 2). move ktap back into staging, and graduate from staging after the
-> >>     code make tracing people and ebpf people both happy.
-> >>
-> >> The benefit is the process will be under the eyes of community.
-> >>
-> >> Ingo, steven, Greg, what do you think?
-> >
-> > For now I'm opting for a third option:
-> >
-> >   3) Maintain my NAK on the ktap patches until they address the
-> >      fundamental design concerns outlined by Alexei and others in
-> >      their review feedback:
-> >
+On Wed, 02 Apr 2014 09:51:54 -0500, Tom Zanussi wrote:
+> Hi Namhyung,
 >
-> There is no fundamental design concerns outlined about ktap, [...]
+> On Wed, 2014-04-02 at 08:31 +0000, Namhyung Kim wrote:
+>> One thing I noticed in the main logic is that it seems there's no
+>> limit checking when adding/creating new entry.  In
+>> hash_trigger_entry_create(), there's a check against max_entries but
+>> if it goes beyond the max, it'd just access a NULL pointer AFAICS.  Am
+>> I missing something?  Also I don't know what the difference between
+>> ->n_entries and ->total_entries (in hash_data).
+>> 
+>> I guess you wanted to set ->drops in that case, but I cannot find
+>
+> Yes, the code is missing a very important snippet, which I realized
+> after hitting the problem.  My current code has this:
+>
+>         if (hash_data->drops)
+>                 return NULL;
 
-Well, the concerns that were outlined do raise to fundamental in my 
-book. But as long as they are addressed it does not matter how we 
-classify them.
+I think this part can be omitted since it's already checked earlier.
+But it's a minor issue.
 
-> I don't see any suggestion about integrating BPF before this review 
-> cycle.
 
-Hm, I mentioned it at the kernel summit to folks who raised the ktap 
-subject, but apparently not over email. I assumed a new ktap 
-submission would come quickly.
+>         else if (hash_data->n_entries == hash_data->max_entries) {
+>                 hash_data->drops = 1;
+>                 return NULL;
+>         }
+>
+> n_entries is the current number of entries used up, and max_entries is
+> the total number of available entries (a cached value to avoid
+> calculating it every time).
 
-Anyway, considering how BPF is integrating with (and hopefully 
-replacing) tracing filters, it makes sense to apply the same concept 
-in the ktap case as well.
+But there's "total_entries" - increased in hash_trigger_entry_insert() -
+too and I think it's just same as n_entries.
+
+>
+>> where it gets set.  And I'm not sure it's good to check ->drop first,
+>> since entry can find an existing entry and merged to it even if it
+>> reached the max already.
+>> 
+>
+> The assumption is that if you have any drops at all, you probably want
+> to redo the test with a bigger table, but regardless the data reflects
+> the situation up to the point the drops started happening.  Letting
+> events that already have a entry merge while rejecting those that don't
+> would invalidate the data you already have.
+
+Okay, I won't insist on it.
 
 Thanks,
-
-	Ingo
+Namhyung
