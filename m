@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452AbaDDHvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 03:51:41 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:60575 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337AbaDDHvf (ORCPT
+	id S1752541AbaDDHwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 03:52:00 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:15148 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaDDHvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 03:51:35 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-30-533e64831151
+	Fri, 4 Apr 2014 03:51:51 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-83-533e6494ead1
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/2] leds: 88pm860x: Fix missing refcount decrement for parent
- of_node
-Date: Fri, 04 Apr 2014 09:51:20 +0200
-Message-id: <1396597880-2325-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 2/2] power: max8925: Use of_get_child_by_name
+Date: Fri, 04 Apr 2014 09:51:42 +0200
+Message-id: <1396597902-2371-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1396597880-2325-1-git-send-email-k.kozlowski@samsung.com>
-References: <1396597880-2325-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t/xy7otKXbBBp84LY7unMhk8fqFocXl
-	XXPYLLa+WcdosXvXU1YHVo+ds+6ye+yZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDKm
-	/u5nLdjHWXH52hrGBsYf7F2MnBwSAiYSnxrOMEPYYhIX7q1n62Lk4hASWMoo8X3yGXYIp49J
-	YvuzZjaQKjYBY4nNy5eAVYkINDJKdD7azwSSYBYwlPj57g9QBweHsECExLyjwiBhFgFVidVL
-	z7GA2LwCbhKtJ16ClUgIKEjMmWQDEuYUcJf4PnUH2HghoJJjtyexTWDkXcDIsIpRNLU0uaA4
-	KT3XUK84Mbe4NC9dLzk/dxMjJGS+7GBcfMzqEKMAB6MSD29Cpm2wEGtiWXFl7iFGCQ5mJRHe
-	vkC7YCHelMTKqtSi/Pii0pzU4kOMTBycUg2MjFbGPqInduRdmdczbZpy3/2E0+s5fpmFTmCP
-	fn2/reS+QGVn0Mop05MXunlxulTqn9e16d6hs8N2u/qDEK4TYVPkVsl+aZ32bNIKLUWptYGT
-	z+2XOq/tNV/Lpa/KJf3cnJUKlSfmLjs18eTt2RNaVdiP6Gulb7/E/ty1YcPyQz5zH9x4WlM6
-	V4mlOCPRUIu5qDgRAJysYOX3AQAA
+In-reply-to: <1396597902-2371-1-git-send-email-k.kozlowski@samsung.com>
+References: <1396597902-2371-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xq7pTUuyCDSY+VbOY9OQ9s8XElZOZ
+	LV6/MLS4vGsOmwOLx85Zd9k9Nq/Q8ujbsorR4/MmuQCWKC6blNSczLLUIn27BK6Mi5uzCray
+	VayYdISpgXEraxcjB4eEgInEkj75LkZOIFNM4sK99WxdjFwcQgJLGSWaN/xgh3D6mCT6zvSz
+	g1SxCRhLbF6+hA3EFhGolPh2+gQLiM0sYCjx890fdpChwgK2ErOWGoOEWQRUJS7vWMMIYvMK
+	uEmsfbEJaq+CxJxJNiBhTgF3iQnzn4KVCAGVbJ30kGkCI+8CRoZVjKKppckFxUnpuUZ6xYm5
+	xaV56XrJ+bmbGCEh8nUH49JjVocYBTgYlXh4OdJtg4VYE8uKK3MPMUpwMCuJ8PYF2gUL8aYk
+	VlalFuXHF5XmpBYfYmTi4JRqYNzyQPvY/QXy5l+9fnSsaFV98LCeK/9pY6fMZ87CuZ6BIfY3
+	Vu1iPT7z5N8pvux+zWtEbpdsPKyXtK7t06ONe5rfZgeZHTp6UWLa6rjeSaZ937OZ0xh/L5gm
+	duX0Aa82oxcae0o+iT/nmneLuX+2yF/p7D/tlo+nnj7Jqqohv/Hl6yuR3oqLddcrsRRnJBpq
+	MRcVJwIAQMU9n+8BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver obtained the reference to parent->of_node but immediately it
-was overwritten by reference to child node 'leds'. The of_node_put at
-the end of DT parsing function decremented only the child 'leds' so
-effectively the reference to parent of_node leaked.
-
-Getting reference to parent->of_node is not needed at all so get rid of
-it to fix the reference count.
+Use of_get_child_by_name to obtain reference to charger node instead of
+of_find_node_by_name which can walk outside of the parent node.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/leds/leds-88pm860x.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/power/max8925_power.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
-index 2f9ee538f30d..fb7c310e9f20 100644
---- a/drivers/leds/leds-88pm860x.c
-+++ b/drivers/leds/leds-88pm860x.c
-@@ -131,10 +131,9 @@ static int pm860x_led_dt_init(struct platform_device *pdev,
- 	struct device_node *nproot, *np;
- 	int iset = 0;
+diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+index 0cf237808d47..a6d45eef64dd 100644
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@ -443,7 +443,7 @@ max8925_power_dt_init(struct platform_device *pdev)
+ 	if (!nproot)
+ 		return pdev->dev.platform_data;
  
--	nproot = of_node_get(pdev->dev.parent->of_node);
--	if (!nproot)
-+	if (!pdev->dev.parent->of_node)
- 		return -ENODEV;
--	nproot = of_get_child_by_name(nproot, "leds");
-+	nproot = of_get_child_by_name(pdev->dev.parent->of_node, "leds");
- 	if (!nproot) {
- 		dev_err(&pdev->dev, "failed to find leds node\n");
- 		return -ENODEV;
+-	np = of_find_node_by_name(nproot, "charger");
++	np = of_get_child_by_name(nproot, "charger");
+ 	if (!np) {
+ 		dev_err(&pdev->dev, "failed to find charger node\n");
+ 		return NULL;
 -- 
 1.7.9.5
 
