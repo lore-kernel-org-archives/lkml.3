@@ -1,168 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaDDT5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 15:57:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37896 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284AbaDDT5f (ORCPT
+	id S1753955AbaDDT62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 15:58:28 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:50181 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043AbaDDT6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 15:57:35 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: [PATCH v6 2/5] ARM: Add Krait L2 register accessor functions
-Date: Fri,  4 Apr 2014 12:57:27 -0700
-Message-Id: <1396641450-12854-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
-References: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 4 Apr 2014 15:58:25 -0400
+Date: Fri, 4 Apr 2014 21:58:18 +0200
+From: Rabin Vincent <rabin@rab.in>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org, Laura Abbott <lauraa@codeaurora.org>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: mm: make text and rodata read-only
+Message-ID: <20140404195818.GA21028@debian>
+References: <1396577719-14786-1-git-send-email-keescook@chromium.org>
+ <1396577719-14786-3-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396577719-14786-3-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krait CPUs have a handful of L2 cache controller registers that
-live behind a cp15 based indirection register. First you program
-the indirection register (l2cpselr) to point the L2 'window'
-register (l2cpdr) at what you want to read/write.  Then you
-read/write the 'window' register to do what you want. The
-l2cpselr register is not banked per-cpu so we must lock around
-accesses to it to prevent other CPUs from re-pointing l2cpdr
-underneath us.
+On Thu, Apr 03, 2014 at 07:15:19PM -0700, Kees Cook wrote:
+> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+> index 34e56647dcee..4ae343c1e2a3 100644
+> --- a/arch/arm/kernel/ftrace.c
+> +++ b/arch/arm/kernel/ftrace.c
+> @@ -14,6 +14,7 @@
+>  
+>  #include <linux/ftrace.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/stop_machine.h>
+>  
+>  #include <asm/cacheflush.h>
+>  #include <asm/opcodes.h>
+> @@ -34,6 +35,22 @@
+>  
+>  #define	OLD_NOP		0xe1a00000	/* mov r0, r0 */
+>  
+> +static int __ftrace_modify_code(void *data)
 
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Courtney Cavin <courtney.cavin@sonymobile.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/common/Kconfig                   |  3 ++
- arch/arm/common/Makefile                  |  1 +
- arch/arm/common/krait-l2-accessors.c      | 58 +++++++++++++++++++++++++++++++
- arch/arm/include/asm/krait-l2-accessors.h | 20 +++++++++++
- 4 files changed, 82 insertions(+)
- create mode 100644 arch/arm/common/krait-l2-accessors.c
- create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
+This is in the CONFIG_OLD_MCOUNT ifdef, but should be in the outer ifdef
+(CONFIG_DYNAMIC_FTRACE) instead, otherwise it will not get enabled for
+for example Thumb-2 kernels.  This was wrong in my example patch too.
 
-diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
-index c3a4e9ceba34..9da52dc6260b 100644
---- a/arch/arm/common/Kconfig
-+++ b/arch/arm/common/Kconfig
-@@ -9,6 +9,9 @@ config DMABOUNCE
- 	bool
- 	select ZONE_DMA
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 8539eb2a01ad..3baac4ad165f 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -681,30 +716,52 @@ static inline bool arch_has_strict_perms(void)
+>  	return true;
+>  }
+>  
+> +#define set_section_perms(perms, field)	{				\
+> +	size_t i;							\
+> +	unsigned long addr;						\
+> +									\
+> +	if (!arch_has_strict_perms())					\
+> +		return;							\
+> +									\
+> +	for (i = 0; i < ARRAY_SIZE(perms); i++) {			\
+> +		if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||	\
+> +		    !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {		\
+> +			pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
+> +				perms[i].start, perms[i].end,		\
+> +				SECTION_SIZE);				\
+> +			continue;					\
+> +		}							\
+> +									\
+> +		for (addr = perms[i].start;				\
+> +		     addr < perms[i].end;				\
+> +		     addr += SECTION_SIZE)				\
+> +			section_update(addr, perms[i].mask,		\
+> +				       perms[i].field);			\
+> +	}								\
+> +}
+> +
+>  static inline void fix_kernmem_perms(void)
+>  {
+> -	unsigned long addr;
+> -	unsigned int i;
+> +	set_section_perms(nx_perms, prot);
+> +}
+>  
+> -	if (!arch_has_strict_perms())
+> -		return;
+> +#ifdef CONFIG_DEBUG_RODATA
+> +void mark_rodata_ro(void)
+> +{
+> +	set_section_perms(ro_perms, prot);
+> +}
+>  
+> -	for (i = 0; i < ARRAY_SIZE(section_perms); i++) {
+> -		if (!IS_ALIGNED(section_perms[i].start, SECTION_SIZE) ||
+> -		    !IS_ALIGNED(section_perms[i].end, SECTION_SIZE)) {
+> -			pr_err("BUG: section %lx-%lx not aligned to %lx\n",
+> -				section_perms[i].start, section_perms[i].end,
+> -				SECTION_SIZE);
+> -			continue;
+> -		}
+> +void set_kernel_text_rw(void)
+> +{
+> +	set_section_perms(ro_perms, clear);
+> +}
+
+You need a TLB flush.  I had a flush_tlb_all() in my example patch,
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/244335.html,
+but the following is probably nicer (on top of this patch):
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 9bea524..a92c45a 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -741,6 +741,8 @@ static inline bool arch_has_strict_perms(void)
+ 		     addr += SECTION_SIZE)				\
+ 			section_update(addr, perms[i].mask,		\
+ 				       perms[i].field);			\
++									\
++		flush_tlb_kernel_range(perms[i].start, perms[i].end);	\
+ 	}								\
+ }
  
-+config KRAIT_L2_ACCESSORS
-+	bool
-+
- config SHARP_LOCOMO
- 	bool
- 
-diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
-index 70b1eff477b3..6b2cddf6e8d0 100644
---- a/arch/arm/common/Makefile
-+++ b/arch/arm/common/Makefile
-@@ -7,6 +7,7 @@ obj-y				+= firmware.o
- obj-$(CONFIG_ICST)		+= icst.o
- obj-$(CONFIG_SA1111)		+= sa1111.o
- obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
-+obj-$(CONFIG_KRAIT_L2_ACCESSORS) += krait-l2-accessors.o
- obj-$(CONFIG_SHARP_LOCOMO)	+= locomo.o
- obj-$(CONFIG_SHARP_PARAM)	+= sharpsl_param.o
- obj-$(CONFIG_SHARP_SCOOP)	+= scoop.o
-diff --git a/arch/arm/common/krait-l2-accessors.c b/arch/arm/common/krait-l2-accessors.c
-new file mode 100644
-index 000000000000..5d514bbc88a6
---- /dev/null
-+++ b/arch/arm/common/krait-l2-accessors.c
-@@ -0,0 +1,58 @@
-+/*
-+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/spinlock.h>
-+#include <linux/export.h>
-+
-+#include <asm/barrier.h>
-+#include <asm/krait-l2-accessors.h>
-+
-+static DEFINE_RAW_SPINLOCK(krait_l2_lock);
-+
-+void krait_set_l2_indirect_reg(u32 addr, u32 val)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&krait_l2_lock, flags);
-+	/*
-+	 * Select the L2 window by poking l2cpselr, then write to the window
-+	 * via l2cpdr.
-+	 */
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
-+	isb();
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 7 @ l2cpdr" : : "r" (val));
-+	isb();
-+
-+	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
-+}
-+EXPORT_SYMBOL(krait_set_l2_indirect_reg);
-+
-+u32 krait_get_l2_indirect_reg(u32 addr)
-+{
-+	u32 val;
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&krait_l2_lock, flags);
-+	/*
-+	 * Select the L2 window by poking l2cpselr, then read from the window
-+	 * via l2cpdr.
-+	 */
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
-+	isb();
-+	asm volatile ("mrc p15, 3, %0, c15, c0, 7 @ l2cpdr" : "=r" (val));
-+
-+	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(krait_get_l2_indirect_reg);
-diff --git a/arch/arm/include/asm/krait-l2-accessors.h b/arch/arm/include/asm/krait-l2-accessors.h
-new file mode 100644
-index 000000000000..48fe5527bc01
---- /dev/null
-+++ b/arch/arm/include/asm/krait-l2-accessors.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __ASMARM_KRAIT_L2_ACCESSORS_H
-+#define __ASMARM_KRAIT_L2_ACCESSORS_H
-+
-+extern void krait_set_l2_indirect_reg(u32 addr, u32 val);
-+extern u32 krait_get_l2_indirect_reg(u32 addr);
-+
-+#endif
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
