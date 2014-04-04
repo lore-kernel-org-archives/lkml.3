@@ -1,126 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaDDM5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 08:57:18 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:8689
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752306AbaDDM5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 08:57:16 -0400
-X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03b.oce.net;RD:smtp02.oce.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h2148h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah21bch1fc6hzz1de098h8275bh1de097hz31h87h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah224fh1c0dh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h129fi1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Kaushal Butala <kaushalkernelmailinglist@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Shawn Guo <shawn.guo@freescale.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Kaushal Butala <kaushalkernelmailinglist@gmail.com>
-Subject: [RFC PATCH-v2] SMBus block read support to imx_i2c
-Date: Fri, 4 Apr 2014 14:56:10 +0200
-Message-ID: <1396616170-6659-1-git-send-email-kaushalkernelmailinglist@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20140402083046.GB8753@dragon>
-References: <20140402083046.GB8753@dragon>
-X-OriginalArrivalTime: 04 Apr 2014 12:57:11.0919 (UTC) FILETIME=[6527A7F0:01CF5005]
+	id S1752814AbaDDM60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 08:58:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48102 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752388AbaDDM6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 08:58:23 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140404080006.GB6944@gmail.com>
+References: <20140404064120.GB11877@gmail.com> <tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org> <20140404080006.GB6944@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: oce.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before the PCI reboot method
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 04 Apr 2014 05:37:42 -0700
+To: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, mjg59@srcf.ucam.org,
+        aubrey.li@linux.intel.com, rostedt@goodmis.org, tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org
+Message-ID: <ce8e2a0c-c9be-4b74-af7c-8c3efe6769b8@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The smbus block read is not currently supported for imx i2c devices.
-This patchset adds the support to imx i2c bus so that blocks of data
-can be read using SMbus block reads.(using i2c_smbus_read_block_data()
-function from the i2c_core.c.). Tested with 3.10.9 kernel.
+Trying anything at all after BIOS is meaningless as BIOS is terminal... it will either work or it will hang.  Triplefault is the same way.
 
-Reviewed-by: Shawn Guo <shawn.guo@freescale.com>
+On April 4, 2014 1:00:07 AM PDT, Ingo Molnar <mingo@kernel.org> wrote:
+>
+>* tip-bot for Ingo Molnar <tipbot@zytor.com> wrote:
+>
+>> Commit-ID:  d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3
+>> Gitweb:    
+>http://git.kernel.org/tip/d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3
+>> Author:     Ingo Molnar <mingo@kernel.org>
+>> AuthorDate: Fri, 4 Apr 2014 08:41:26 +0200
+>> Committer:  Ingo Molnar <mingo@kernel.org>
+>> CommitDate: Fri, 4 Apr 2014 08:48:03 +0200
+>> 
+>> [PATCH] x86: Try the BIOS reboot method before the PCI reboot method
+>
+>So, JFYI, I have put this into x86/reboot to get it tested, but it's 
+>not queued up for upstream yet until there's concensus.
+>
+>(Steve testing it wouldn't hurt either.)
+>
+>Thanks,
+>
+>	Ingo
 
-Signed-off-by: Kaushal Butala <kaushalkernelmailinglist@gmail.com>
----
-v2:
-Updated after review comments from Shawn Guo. Removed unnecessary parenthesis
-around 'block_data'.
-
- drivers/i2c/busses/i2c-imx.c |   31 ++++++++++++++++++++++++++++---
- 1 file changed, 28 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index db895fb..886217f 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -462,6 +462,7 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
- {
- 	int i, result;
- 	unsigned int temp;
-+	int block_data = msgs->flags & I2C_M_RECV_LEN;
- 
- 	dev_dbg(&i2c_imx->adapter.dev,
- 		"<%s> write slave address: addr=0x%x\n",
-@@ -481,7 +482,12 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
- 	/* setup bus to read data */
- 	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
- 	temp &= ~I2CR_MTX;
--	if (msgs->len - 1)
-+
-+	/*
-+	 * Reset the I2CR_TXAK flag initially for SMBus block read since the
-+	 * length is unknown
-+	 */
-+	if ((msgs->len - 1) || block_data)
- 		temp &= ~I2CR_TXAK;
- 	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
- 	imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR); /* dummy read */
-@@ -490,9 +496,24 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
- 
- 	/* read data */
- 	for (i = 0; i < msgs->len; i++) {
-+		u8 len = 0;
- 		result = i2c_imx_trx_complete(i2c_imx);
- 		if (result)
- 			return result;
-+		/*
-+		 * First byte is the length of remaining packet
-+		 * in the SMBus block data read. Add it to
-+		 * msgs->len.
-+		 */
-+		if ((!i) && block_data) {
-+			len = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-+			if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX))
-+				return -EPROTO;
-+			dev_dbg(&i2c_imx->adapter.dev,
-+				"<%s> read length: 0x%X\n",
-+				__func__, len);
-+			msgs->len += len;
-+		}
- 		if (i == (msgs->len - 1)) {
- 			/* It must generate STOP before read I2DR to prevent
- 			   controller from generating another clock cycle */
-@@ -510,7 +531,10 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
- 			temp |= I2CR_TXAK;
- 			imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
- 		}
--		msgs->buf[i] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-+		if ((!i) && block_data)
-+			msgs->buf[0] = len;
-+		else
-+			msgs->buf[i] =  imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
- 		dev_dbg(&i2c_imx->adapter.dev,
- 			"<%s> read byte: B%d=0x%X\n",
- 			__func__, i, msgs->buf[i]);
-@@ -583,7 +607,8 @@ fail0:
- 
- static u32 i2c_imx_func(struct i2c_adapter *adapter)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
-+		| I2C_FUNC_SMBUS_READ_BLOCK_DATA;
- }
- 
- static struct i2c_algorithm i2c_imx_algo = {
 -- 
-1.7.9.5
-
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
