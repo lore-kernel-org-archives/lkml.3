@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaDDUsR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 16:48:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22543 "EHLO mx1.redhat.com"
+	id S1752158AbaDDUsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 16:48:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49115 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064AbaDDUrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 16:47:22 -0400
+	id S1751940AbaDDUrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 16:47:21 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: akpm@linux-foundation.org, x86@kernel.org, davem@davemloft.net,
         sparclinux@vger.kernel.org, mguzik@redhat.com,
         Aaron Tomlin <atomlin@redhat.com>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 3/4 v2] sparc64, nmi: Add more flexible NMI back trace support
-Date: Fri,  4 Apr 2014 16:47:09 -0400
-Message-Id: <1396644430-70649-4-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 2/4 v2] x86, nmi: Add more flexible NMI back trace support
+Date: Fri,  4 Apr 2014 16:47:08 -0400
+Message-Id: <1396644430-70649-3-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1396644430-70649-1-git-send-email-dzickus@redhat.com>
 References: <1396644430-70649-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,80 +22,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Aaron Tomlin <atomlin@redhat.com>
 
-This patch introduces the sparc specific implementation
+This patch introduces the x86 specific implementation
 changes to the arch_trigger_all_cpu_backtrace() routine.
 Now users have the ability to choose whether or not to
 issue an NMI back trace which includes current.
 
-Update sysrq_handle_globreg() to use the new interface
-
-[squash two sparc patches, update changelog - dcz]
+[Don't print message in single processor case - dcz]
 
 Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/sparc/include/asm/irq_64.h |    2 +-
- arch/sparc/kernel/process_64.c  |   14 +++++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/irq.h    |    2 +-
+ arch/x86/kernel/apic/hw_nmi.c |   16 +++++++++++++---
+ 2 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/arch/sparc/include/asm/irq_64.h b/arch/sparc/include/asm/irq_64.h
-index abf6afe..4f072b9 100644
---- a/arch/sparc/include/asm/irq_64.h
-+++ b/arch/sparc/include/asm/irq_64.h
-@@ -89,7 +89,7 @@ static inline unsigned long get_softint(void)
- 	return retval;
- }
+diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
+index cb6cfcd..a80cbb8 100644
+--- a/arch/x86/include/asm/irq.h
++++ b/arch/x86/include/asm/irq.h
+@@ -43,7 +43,7 @@ extern int vector_used_by_percpu_irq(unsigned int vector);
+ extern void init_ISA_irqs(void);
  
+ #ifdef CONFIG_X86_LOCAL_APIC
 -void arch_trigger_all_cpu_backtrace(void);
 +void arch_trigger_all_cpu_backtrace(bool);
  #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+ #endif
  
- extern void *hardirq_stack[NR_CPUS];
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index 32a280e..3d61b98 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -237,7 +237,7 @@ static void __global_reg_poll(struct global_reg_snapshot *gp)
- 	}
- }
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index a698d71..3614e34 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -33,7 +33,7 @@ static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+ /* "in progress" flag of arch_trigger_all_cpu_backtrace */
+ static unsigned long backtrace_flag;
  
 -void arch_trigger_all_cpu_backtrace(void)
 +void arch_trigger_all_cpu_backtrace(bool include_self)
  {
- 	struct thread_info *tp = current_thread_info();
- 	struct pt_regs *regs = get_irq_regs();
-@@ -249,15 +249,19 @@ void arch_trigger_all_cpu_backtrace(void)
+ 	int i;
  
- 	spin_lock_irqsave(&global_cpu_snapshot_lock, flags);
+@@ -46,8 +46,18 @@ void arch_trigger_all_cpu_backtrace(void)
  
--	memset(global_cpu_snapshot, 0, sizeof(global_cpu_snapshot));
--
- 	this_cpu = raw_smp_processor_id();
+ 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
  
--	__global_reg_self(tp, regs, this_cpu);
-+	memset(global_cpu_snapshot, 0, sizeof(global_cpu_snapshot));
+-	printk(KERN_INFO "sending NMI to all CPUs:\n");
+-	apic->send_IPI_all(NMI_VECTOR);
++	if (include_self) {
++		printk(KERN_INFO "sending NMI to all CPUs:\n");
++		apic->send_IPI_all(NMI_VECTOR);
++	} else {
++		cpumask_clear_cpu(smp_processor_id(),
++			to_cpumask(backtrace_mask));
 +
-+	if (include_self)
-+		__global_reg_self(tp, regs, this_cpu);
++		if (!cpumask_empty(to_cpumask(backtrace_mask))) {
++			printk(KERN_INFO "sending NMI to other CPUs:\n");
++			apic->send_IPI_allbutself(NMI_VECTOR);
++		}
++	}
  
- 	smp_fetch_global_regs();
- 
- 	for_each_online_cpu(cpu) {
-+		if (!include_self && cpu == this_cpu)
-+			continue;
-+
- 		struct global_reg_snapshot *gp = &global_cpu_snapshot[cpu].reg;
- 
- 		__global_reg_poll(gp);
-@@ -290,7 +294,7 @@ void arch_trigger_all_cpu_backtrace(void)
- 
- static void sysrq_handle_globreg(int key)
- {
--	arch_trigger_all_cpu_backtrace();
-+	arch_trigger_all_cpu_backtrace(true);
- }
- 
- static struct sysrq_key_op sparc_globalreg_op = {
+ 	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
+ 	for (i = 0; i < 10 * 1000; i++) {
 -- 
 1.7.1
 
