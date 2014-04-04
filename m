@@ -1,151 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaDDQy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 12:54:58 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:39701 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752060AbaDDQy5 (ORCPT
+	id S1753485AbaDDQ4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 12:56:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41595 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367AbaDDQ4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 12:54:57 -0400
-Date: Fri, 4 Apr 2014 18:54:47 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: "Theodore Ts'o" <tytso@mit.edu>, "Luck, Tony" <tony.luck@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, tglx@linutronix.de,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>,
-        shawn.guo@linaro.org
-Subject: Re: [PATCH 01/11] random: don't feed stack data into pool when
- interrupt regs NULL
-Message-ID: <20140404165447.GA28040@breakpoint.cc>
-References: <1380572952-30729-1-git-send-email-andi@firstfloor.org>
- <1380572952-30729-2-git-send-email-andi@firstfloor.org>
- <3908561D78D1C84285E8C5FCA982C28F31D1F249@ORSMSX106.amr.corp.intel.com>
- <20131001124424.GA2097@thunk.org>
+	Fri, 4 Apr 2014 12:56:18 -0400
+Date: Fri, 4 Apr 2014 12:55:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Waiman Long <waiman.long@hp.com>,
+        Marcos Matsunaga <Marcos.Matsunaga@oracle.com>
+Cc: Marcos Matsunaga <Marcos.Matsunaga@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV
+ support
+Message-ID: <20140404165523.GP19478@phenom.dumpdata.com>
+References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com>
+ <20140402143201.GF12188@phenom.dumpdata.com>
+ <533C7485.3030203@hp.com>
+ <533CC309.3020607@hp.com>
+ <20140403172333.GA3877@localhost.localdomain>
+ <533E1F8E.5040600@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131001124424.GA2097@thunk.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <533E1F8E.5040600@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-10-01 08:44:24 [-0400], Theodore Ts'o wrote:
-> The changes queued for the next merge window in the random tree solve
-> this problem slightly differently:
+On Thu, Apr 03, 2014 at 10:57:18PM -0400, Waiman Long wrote:
+> On 04/03/2014 01:23 PM, Konrad Rzeszutek Wilk wrote:
+> >On Wed, Apr 02, 2014 at 10:10:17PM -0400, Waiman Long wrote:
+> >>On 04/02/2014 04:35 PM, Waiman Long wrote:
+> >>>On 04/02/2014 10:32 AM, Konrad Rzeszutek Wilk wrote:
+> >>>>On Wed, Apr 02, 2014 at 09:27:29AM -0400, Waiman Long wrote:
+> >>>>>N.B. Sorry for the duplicate. This patch series were resent as the
+> >>>>>      original one was rejected by the vger.kernel.org list server
+> >>>>>      due to long header. There is no change in content.
+> >>>>>
+> >>>>>v7->v8:
+> >>>>>   - Remove one unneeded atomic operation from the slowpath, thus
+> >>>>>     improving performance.
+> >>>>>   - Simplify some of the codes and add more comments.
+> >>>>>   - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
+> >>>>>     unfair lock.
+> >>>>>   - Reduce unfair lock slowpath lock stealing frequency depending
+> >>>>>     on its distance from the queue head.
+> >>>>>   - Add performance data for IvyBridge-EX CPU.
+> >>>>FYI, your v7 patch with 32 VCPUs (on a 32 cpu socket machine) on an
+> >>>>HVM guest under Xen after a while stops working. The workload
+> >>>>is doing 'make -j32' on the Linux kernel.
+> >>>>
+> >>>>Completely unresponsive. Thoughts?
+> >>>>
+> >>>Thank for reporting that. I haven't done that much testing on Xen.
+> >>>My focus was in KVM. I will perform more test on Xen to see if I
+> >>>can reproduce the problem.
+> >>>
+> >>BTW, does the halting and sending IPI mechanism work in HVM? I saw
+> >Yes.
+> >>that in RHEL7, PV spinlock was explicitly disabled when in HVM mode.
+> >>However, this piece of code isn't in upstream code. So I wonder if
+> >>there is problem with that.
+> >The PV ticketlock fixed it for HVM. It was disabled before because
+> >the PV guests were using bytelocks while the HVM were using ticketlocks
+> >and you couldnt' swap in PV bytelocks for ticketlocks during startup.
 > 
-> 	...
-> 	input[0] = cycles ^ j_high ^ irq;
-> 	input[1] = now ^ c_high;
-> 	ip = regs ? instruction_pointer(regs) : _RET_IP_;
-> 	input[2] = ip;
-> 	input[3] = ip >> 32;
+> The RHEL7 code has used PV ticketlock already. RHEL7 uses a single
+> kernel for all configurations. So PV ticketlock as well as Xen and
+> KVM support was compiled in. I think booting the kernel on bare
+> metal will cause the Xen code to work in HVM mode thus activating
+> the PV spinlock code which has a negative impact on performance.
+
+Huh? -EPARSE
+
+> That may be why it was disabled so that the bare metal performance
+> will not be impacted.
+
+I am not following you.
 > 
-> 	fast_mix(fast_pool, input);
-> 	...
+> BTW, could you send me more information about the configuration of
+> the machine, like the .config file that you used?
+
+Marcos, could you please send that information to Peter. Thanks!
 > 
-> (Note the lack of nbytes parameter in fast_mix --- there are some
-> optimizations so that we mix in the changes by 32-bit words, instead
-> of bytes, and the number of 32-bit words is fixed to 4, since it's the
-> only way fast_mix is called).
-> 
-> _RET_IP_ isn't that much better than 0, but it's at least kernel
-> specific, and I figured it was better to shut up bogus warnings, as
-> opposed to trying to depend on stack garbage (which would likely be
-> kernel specific anyway).
-
-That ip pointer was earlier optional. Now with _RET_IP_ it is a
-constant since there is _one_ caller. Plus on 32bit the upper bits are
-always zero. It probably didn't get worse because the four bytes on
-stack were mostlikly constant as well. [2] is constant if _RET_IP_ is
-used. The IP is kind of random. The lower bits are mostlikely 0 due to
-32bit alignment (not on x86, okay).
-Lets look further. c_high is != 0 only if cycles is larger than 4 bytes.
-This is in most cases a long which makes 4 bytes on all 32bit arches.
-This makes [1] the lower bytes of jiffies. And you can imagine how often
-the upper 16bit change.
-Which brings me to [0]. The irq number changes now and then and mostlikely
-only the lower 8 bit. j_high is 0 on 32bit platforms. Even on 64bit
-with HZ=250 the lower 32bit overflows every ~198 days unless I miscalculated.
-Doesn't this make it a constant?
-And finally cycles which is random_get_entropy(). On ARM (as previously on
-MIPS) this returns 0. Well not always but for all platforms which do not
-implement register_current_timer_delay() which makes a lot of them.
-This makes
-[0] = irq (8 bit)
-[1] = jiffies
-[2] = a constant unless regs is available and
-[3] = 0 
-
-from looking at the code it reads like 16 random bytes are fed but now it
-looks a little different.
-
-May I kill this and save a few cycles in irq context?
-Why don't you take a small amount of randomness and use that as a key and
-feed into a block cipher in CTR mode instead of giving it to user right
-away? This _can_ work in parallell and should provide *good* pseudo random
-numbers on demand with a high performance.
-
-But seriously. What about this:
-
->From 082dab5c482728a9ef695aa5b42217dcec8e3dd5 Mon Sep 17 00:00:00 2001
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Fri, 4 Apr 2014 18:49:29 +0200
-Subject: [PATCH] random: yell if random_get_entropy() returns a constant
-
-A few architectures still return 0 (i.e. a constant) if
-random_get_entropy() is invoked. Make them aware of this so they may fix
-this.
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/char/random.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 429b75b..48775f8 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -241,6 +241,7 @@
- #include <linux/major.h>
- #include <linux/string.h>
- #include <linux/fcntl.h>
-+#include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/random.h>
- #include <linux/poll.h>
-@@ -1675,3 +1676,23 @@ randomize_range(unsigned long start, unsigned long end, unsigned long len)
- 		return 0;
- 	return PAGE_ALIGN(get_random_int() % range + start);
- }
-+
-+static int check_random_get_entropy(void)
-+{
-+	cycles_t cyc1;
-+	cycles_t cyc2;
-+
-+	cyc1 = random_get_entropy();
-+	cyc2 = random_get_entropy();
-+	if (cyc1 != cyc2)
-+		return 0;
-+	udelay(1);
-+	cyc2 = random_get_entropy();
-+
-+	if (cyc1 != cyc2)
-+		return 0;
-+	pr_err("Error: random_get_entropy() does not return anything random\n");
-+	WARN_ON(1);
-+	return -EINVAL;
-+}
-+late_initcall(check_random_get_entropy);
--- 
-1.9.1
-
-
-> Cheers,
-> 						- Ted
-
-Sebastian
+> -Longman
