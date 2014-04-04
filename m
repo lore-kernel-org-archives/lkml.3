@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaDDIiS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 04:38:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60576 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752122AbaDDIiN (ORCPT
+	id S1752555AbaDDIim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 04:38:42 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:52125 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417AbaDDIga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 04:38:13 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: [PATCH] regulator: core: Fix typo in of_regulator.h
-Date: Fri,  4 Apr 2014 09:29:58 +0100
-Message-Id: <1396600198-7288-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 4 Apr 2014 04:36:30 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de, fweisbec@gmail.com, peterz@infradead.org,
+        mingo@kernel.org, tj@kernel.org, lizefan@huawei.com
+Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
+        Arvind.Chauhan@arm.com, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 5/8] hrtimer: don't migrate pinned timers
+Date: Fri,  4 Apr 2014 14:05:32 +0530
+Message-Id: <62698fe1c1f632338b0441f63897372dc0f4cd13.1396599474.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1396599474.git.viresh.kumar@linaro.org>
+References: <cover.1396599474.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1396599474.git.viresh.kumar@linaro.org>
+References: <cover.1396599474.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a typo from my patch adding of_regulator_put_match in the patch:
+migrate_hrtimer() is called when a CPU goes down and its timers are required to
+be migrated to some other CPU. Its the responsibility of the users of the
+hrtimer to remove it before control reaches to migrate_hrtimer().
 
-regulator: core: Add helper to put of_nodes from matches
+As these were the pinned hrtimers, the best we can do is: don't migrate these
+and report to the user as well.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+That's all this patch does.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- include/linux/regulator/of_regulator.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/hrtimer.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
-index 0652851..a5abd83 100644
---- a/include/linux/regulator/of_regulator.h
-+++ b/include/linux/regulator/of_regulator.h
-@@ -38,7 +38,7 @@ static inline int of_regulator_match(struct device *dev,
- 	return 0;
- }
- static inline int of_regulator_put_match(struct of_regulator_match *matches,
--					 unsigned int num_matches);
-+					 unsigned int num_matches)
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index c5a4bf4..853dd8c 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1640,6 +1640,7 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
  {
- 	return 0;
- }
+ 	struct hrtimer *timer;
+ 	struct timerqueue_node *node;
++	int is_pinned;
+ 
+ 	while ((node = timerqueue_getnext(&old_base->active))) {
+ 		timer = container_of(node, struct hrtimer, node);
+@@ -1652,6 +1653,15 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
+ 		 * under us on another CPU
+ 		 */
+ 		__remove_hrtimer(timer, HRTIMER_STATE_MIGRATE, 0);
++
++		is_pinned = timer->state & HRTIMER_STATE_PINNED;
++
++		/* Check if CPU still has pinned timers */
++		if (unlikely(WARN(is_pinned,
++				  "%s: can't migrate pinned timer: %p, deactivating it\n",
++				  __func__, timer)))
++			continue;
++
+ 		timer->base = new_base;
+ 		/*
+ 		 * Enqueue the timers on the new cpu. This does not
 -- 
-1.7.2.5
+1.7.12.rc2.18.g61b472e
 
