@@ -1,159 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbaDDIjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 04:39:45 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:54681 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170AbaDDIgR (ORCPT
+	id S1752031AbaDDIrF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 04:47:05 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43282 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713AbaDDIq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 04:36:17 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de, fweisbec@gmail.com, peterz@infradead.org,
-        mingo@kernel.org, tj@kernel.org, lizefan@huawei.com
-Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        Arvind.Chauhan@arm.com, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 3/8] timer: create timer_quiesce_cpu() to isolate CPU from timers
-Date: Fri,  4 Apr 2014 14:05:30 +0530
-Message-Id: <12833475ef32cb4ee832e40dbbc0445c4d8ab3e7.1396599474.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1396599474.git.viresh.kumar@linaro.org>
-References: <cover.1396599474.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1396599474.git.viresh.kumar@linaro.org>
-References: <cover.1396599474.git.viresh.kumar@linaro.org>
+	Fri, 4 Apr 2014 04:46:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140404074800.GD1637@gmail.com>
+References: <CAGdX0WEeZJ9hxq1y-gmGC=kdtU0ecLbs5gVYb_8ZE6sOW_PPvg@mail.gmail.com>
+	<CAMEtUuyQZo6fSMTZ5XKPfPBdjR13916Rd3=z5dip3N_WOzvr6Q@mail.gmail.com>
+	<CAGdX0WFm2wccs30q1=eduLdzjAjfxz-6oL-zGvumY6BigQ-a4g@mail.gmail.com>
+	<20140404074800.GD1637@gmail.com>
+Date: Fri, 4 Apr 2014 16:46:58 +0800
+Message-ID: <CAGdX0WGcx3aF6Uhsh=K2bG5CDD5iNqCyPUcf=RZWHsDehmE-qQ@mail.gmail.com>
+Subject: Re: ktap and ebpf integration
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To isolate CPUs (isolate from timers) from sysfs using cpusets, we need some
-support from the timer core. i.e. A routine timer_quiesce_cpu() which would
-migrate away all the unpinned timers, but shouldn't touch the pinned ones.
+On Fri, Apr 4, 2014 at 3:48 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+>
+>> On Fri, Apr 4, 2014 at 2:26 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> > On Thu, Apr 3, 2014 at 6:21 PM, Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+>> >> Hi Alexei,
+>> >>
+>> >> We talked a lot on ktap and ebpf integration in these days,
+>> >> Now I think we can put into deeply to thinking out some
+>> >> technical issues in there.
+>> >>
+>> >> Firstly, I want to make sure you are support this ktap and
+>> >> ebpf integration direction, I aware you have ongoing 'bpf filter'
+>> >> patch set work, which actually overlapping with ktap integration
+>> >> efforts (IMO the interface should be unified and simple for user,
+>> >>  so I think filter debugfs file is not a good interface), so please let
+>> >> me know your answer about this.
+>> >
+>> > I think the more choices users have the better.
+>> > I'll continue with C based filters and you can continue with ktap
+>> > syntax. That's ok. We can share all kernel pieces.
+>>
+>> Now I understand that there is no way to integrate ktap and ibpf in
+>> technical point of view, the kernel side and interface is completely
+>> different, and obviously you don't want to change current per-event
+>> filter file based interface and kernel part, that make impossible to
+>> let ktap could integrate or share with ibpf.
+>
+> In my reading that's not what Alexei wrote: he just suggested that as
+> long as the kernel bits are largely shared, the user-space bits
+> (syntax, etc.) can stay completely orthogonal and independent.
+>
+Actually I also agree this, kernel part should be unified and well
+designed, I also agree that userspace part should have unified program
+in long term, we can start from C initially, and make some part
+more simile and flexible for end user(like provide associative array
+and aggregation syntax, that's addon for C syntax)
 
-This patch creates this routine.
+> It also does not mean that ktap is forced to use the per event filter
+> file based interface to pass BPF scripts to the kernel. BPF is already
+> used by various facilities in the kernel, with different user-space
+> APIs to interface with it.
+>
+The issue is one-event mapping with one-program design in BPF, which
+Alexei already mentioned clear on this, I'm really don't like this design,
+how about support multi-events with same probe callback? current
+ktap support this: "trace *:* {}", it means it trace all tracepoints events,
+this ktap design is constantly match with perf does now, but it will
+be strongly conflicts current BPF "one-event mapping with one-program" design
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- include/linux/timer.h |  3 +++
- kernel/timer.c        | 54 ++++++++++++++++++++++++++++++++++++++++-----------
- 2 files changed, 46 insertions(+), 11 deletions(-)
+This is why the interface really matters.
 
-diff --git a/include/linux/timer.h b/include/linux/timer.h
-index 2962403..1588a4f 100644
---- a/include/linux/timer.h
-+++ b/include/linux/timer.h
-@@ -196,6 +196,9 @@ extern void set_timer_slack(struct timer_list *time, int slack_hz);
-  */
- extern unsigned long get_next_timer_interrupt(unsigned long now);
- 
-+/* To be used from cpusets, only */
-+extern void timer_quiesce_cpu(void *cpup);
-+
- /*
-  * Timer-statistics info:
-  */
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 6c3a371..4676a07 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1602,18 +1602,27 @@ static int init_timers_cpu(int cpu)
- 	return 0;
- }
- 
--#ifdef CONFIG_HOTPLUG_CPU
--static void migrate_timer_list(struct tvec_base *new_base, struct list_head *head)
-+#if defined(CONFIG_HOTPLUG_CPU) || defined(CONFIG_CPUSETS)
-+static void migrate_timer_list(struct tvec_base *new_base,
-+			       struct list_head *head, bool remove_pinned)
- {
- 	struct timer_list *timer;
-+	struct list_head pinned_list;
- 	int is_pinned;
- 
-+	INIT_LIST_HEAD(&pinned_list);
-+
- 	while (!list_empty(head)) {
- 		timer = list_first_entry(head, struct timer_list, entry);
--		/* We ignore the accounting on the dying cpu */
--		detach_timer(timer, false);
- 
- 		is_pinned = tbase_get_pinned(timer->base);
-+		if (!remove_pinned && is_pinned) {
-+			list_move_tail(&timer->entry, &pinned_list);
-+			continue;
-+		} else {
-+			/* We ignore the accounting on the dying cpu */
-+			detach_timer(timer, false);
-+		}
- 
- 		/* Check if CPU still has pinned timers */
- 		if (unlikely(WARN(is_pinned,
-@@ -1624,15 +1633,18 @@ static void migrate_timer_list(struct tvec_base *new_base, struct list_head *hea
- 		timer_set_base(timer, new_base);
- 		internal_add_timer(new_base, timer);
- 	}
-+
-+	if (!list_empty(&pinned_list))
-+		list_splice_tail(&pinned_list, head);
- }
- 
--static void migrate_timers(int cpu)
-+/* Migrate timers from 'cpu' to this_cpu */
-+static void __migrate_timers(int cpu, bool remove_pinned)
- {
- 	struct tvec_base *old_base;
- 	struct tvec_base *new_base;
- 	int i;
- 
--	BUG_ON(cpu_online(cpu));
- 	old_base = per_cpu(tvec_bases, cpu);
- 	new_base = get_cpu_var(tvec_bases);
- 	/*
-@@ -1645,20 +1657,40 @@ static void migrate_timers(int cpu)
- 	BUG_ON(old_base->running_timer);
- 
- 	for (i = 0; i < TVR_SIZE; i++)
--		migrate_timer_list(new_base, old_base->tv1.vec + i);
-+		migrate_timer_list(new_base, old_base->tv1.vec + i,
-+				remove_pinned);
- 	for (i = 0; i < TVN_SIZE; i++) {
--		migrate_timer_list(new_base, old_base->tv2.vec + i);
--		migrate_timer_list(new_base, old_base->tv3.vec + i);
--		migrate_timer_list(new_base, old_base->tv4.vec + i);
--		migrate_timer_list(new_base, old_base->tv5.vec + i);
-+		migrate_timer_list(new_base, old_base->tv2.vec + i,
-+				remove_pinned);
-+		migrate_timer_list(new_base, old_base->tv3.vec + i,
-+				remove_pinned);
-+		migrate_timer_list(new_base, old_base->tv4.vec + i,
-+				remove_pinned);
-+		migrate_timer_list(new_base, old_base->tv5.vec + i,
-+				remove_pinned);
- 	}
- 
- 	spin_unlock(&old_base->lock);
- 	spin_unlock_irq(&new_base->lock);
- 	put_cpu_var(tvec_bases);
- }
-+#endif /* CONFIG_HOTPLUG_CPU || CONFIG_CPUSETS */
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+static void migrate_timers(int cpu)
-+{
-+	BUG_ON(cpu_online(cpu));
-+	__migrate_timers(cpu, true);
-+}
- #endif /* CONFIG_HOTPLUG_CPU */
- 
-+#ifdef CONFIG_CPUSETS
-+void timer_quiesce_cpu(void *cpup)
-+{
-+	__migrate_timers(*(int *)cpup, false);
-+}
-+#endif /* CONFIG_CPUSETS */
-+
- static int timer_cpu_notify(struct notifier_block *self,
- 				unsigned long action, void *hcpu)
- {
--- 
-1.7.12.rc2.18.g61b472e
+> So the main technical question is: why should ktap have its own
+> separate in-kernel code execution engine, if we already have the BPF
+> virtual machine (which is well-maintained, has excellent performance
+> through JIT, etc.), which could be reused and/or enhanced?
+>
+I already mentioned I agree maintain one bytecode engine in kernel.
 
+> Is there any aspect of ktap's virtual machine that BPF does not have?
+>
+Already said, I don't want to bring ktap virtual machine to kernel even though
+I like it and putted endless effort on it, what I really want is we should
+have a well designed dynamic tracing framework, so I hope I can bring
+ktap "features"(not bytecode engine and ktap compiler) to enhance BPF:
+
+- Tracing framework which unified with perf(make possible to integrate
+with perf someday)
+  trace *"* {}
+  trace syscalls:* {}
+  trace probe:libc.so:* {}
+  trace ftrace:function {}
+
+  This basic framework is well designed and loved by ktap end user.
+  (This design heavily conflicts with BPF one-event one program.)
+
+- timer event
+  BPF insist timer should move to userspace, I doubt that, that even make
+  BPF can not profiling kernel(userspace) stack, time event must fired
+  in kernel space to get stack, this is so easy to understand, but BPF object.
+
+- Global variable access
+  I also doubt how to access global variable if BPF use one-event one-function
+  one-program design.
+
+- Flexible associative array(kernel part)
+- Ring buffer (based on ftrace rb)
+- Library and built-in functions
+  Those part also could be reused by move to BPF.
+
+- Samples
+  samples could be reuse (of course syntax need to change),
+  I think BPF should look more ktap samples before form its finial design.
+
+These is what I want to bring to current BPF design and implementation.
+But obviously these "features" could not work on BPF, the kernel part
+cannot shared between ktap and BPF, this make ktap have to
+leave away from BPF.
+
+I guess I already claim my concerns clearly on BPF design.
+
+Thanks.
+
+Jovi
