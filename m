@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374AbaDDSzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 14:55:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22254 "EHLO mx1.redhat.com"
+	id S1754600AbaDDS4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 14:56:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61810 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754475AbaDDSvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 14:51:21 -0400
-Date: Fri, 4 Apr 2014 20:51:24 +0200
+	id S1754453AbaDDSvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 14:51:15 -0400
+Date: Fri, 4 Apr 2014 20:51:16 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,8 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/9] uprobes/x86: Gather "riprel" functions together
-Message-ID: <20140404185124.GA14726@redhat.com>
+Subject: [PATCH v2 2/9] uprobes/x86: Fold prepare_fixups() into
+	arch_uprobe_analyze_insn()
+Message-ID: <20140404185116.GA14715@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,174 +28,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cosmetic. Move pre_xol_rip_insn() and handle_riprel_post_xol() up to
-the closely related handle_riprel_insn(). This way it is simpler to
-read and understand this code, and this lessens the number of ifdef's.
+No functional changes, preparation.
 
-While at it, update the comment in handle_riprel_post_xol() as Jim
-suggested.
+Shift the code from prepare_fixups() to arch_uprobe_analyze_insn()
+with the following modifications:
 
-TODO: rename them somehow to make the naming consistent.
+	- Do not call insn_get_opcode() again, it was already called
+	  by validate_insn_bits().
+
+	- Move "case 0xea" up. This way "case 0xff" can fall through
+	  to default case.
+
+	- change "case 0xff" to use the nested "switch (MODRM_REG)",
+	  this way the code looks a bit simpler.
+
+	- Make the comments look consistent.
+
+While at it, kill the initialization of rip_rela_target_address and
+->fixups, we can rely on kzalloc(). We will add the new members into
+arch_uprobe, it would be better to assume that everything is zero by
+default.
+
+TODO: cleanup/fix the mess in validate_insn_bits() paths:
+
+	- validate_insn_64bits() and validate_insn_32bits() should be
+	  unified.
+
+	- "ifdef" is not used consistently; if good_insns_64 depends
+	  on CONFIG_X86_64, then probably good_insns_32 should depend
+	  on CONFIG_X86_32/EMULATION
+
+	- the usage of mm->context.ia32_compat looks wrong if the task
+	  is TIF_X32.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |  118 ++++++++++++++++++++-------------------------
- 1 files changed, 53 insertions(+), 65 deletions(-)
+ arch/x86/kernel/uprobes.c |  110 +++++++++++++++++++--------------------------
+ 1 files changed, 47 insertions(+), 63 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 963c121..c52c30f 100644
+index 2ed8459..098e56e 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -313,6 +313,48 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
- 	}
+@@ -53,7 +53,7 @@
+ #define OPCODE1(insn)		((insn)->opcode.bytes[0])
+ #define OPCODE2(insn)		((insn)->opcode.bytes[1])
+ #define OPCODE3(insn)		((insn)->opcode.bytes[2])
+-#define MODRM_REG(insn)		X86_MODRM_REG(insn->modrm.value)
++#define MODRM_REG(insn)		X86_MODRM_REG((insn)->modrm.value)
+ 
+ #define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
+ 	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
+@@ -229,63 +229,6 @@ static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
+ 	return -ENOTSUPP;
  }
  
-+/*
-+ * If we're emulating a rip-relative instruction, save the contents
-+ * of the scratch register and store the target address in that register.
-+ */
-+static void
-+pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
-+				struct arch_uprobe_task *autask)
-+{
-+	if (auprobe->fixups & UPROBE_FIX_RIP_AX) {
-+		autask->saved_scratch_register = regs->ax;
-+		regs->ax = current->utask->vaddr;
-+		regs->ax += auprobe->rip_rela_target_address;
-+	} else if (auprobe->fixups & UPROBE_FIX_RIP_CX) {
-+		autask->saved_scratch_register = regs->cx;
-+		regs->cx = current->utask->vaddr;
-+		regs->cx += auprobe->rip_rela_target_address;
-+	}
-+}
-+
-+static void
-+handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
-+{
-+	if (auprobe->fixups & (UPROBE_FIX_RIP_AX | UPROBE_FIX_RIP_CX)) {
-+		struct arch_uprobe_task *autask;
-+
-+		autask = &current->utask->autask;
-+		if (auprobe->fixups & UPROBE_FIX_RIP_AX)
-+			regs->ax = autask->saved_scratch_register;
-+		else
-+			regs->cx = autask->saved_scratch_register;
-+
-+		/*
-+		 * The original instruction includes a displacement, and so
-+		 * is 4 bytes longer than what we've just single-stepped.
-+		 * Caller may need to apply other fixups to handle stuff
-+		 * like "jmpq *...(%rip)" and "callq *...(%rip)".
-+		 */
-+		if (correction)
-+			*correction += 4;
-+	}
-+}
-+
- static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
- {
- 	insn_init(insn, auprobe->insn, true);
-@@ -339,9 +381,19 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	return validate_insn_64bits(auprobe, insn);
- }
- #else /* 32-bit: */
-+/*
-+ * No RIP-relative addressing on 32-bit
-+ */
- static void handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
- {
--	/* No RIP-relative addressing on 32-bit */
-+}
-+static void pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
-+				struct arch_uprobe_task *autask)
-+{
-+}
-+static void handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs,
-+					long *correction)
-+{
- }
- 
- static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,  struct insn *insn)
-@@ -415,34 +467,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	return 0;
- }
- 
--#ifdef CONFIG_X86_64
 -/*
-- * If we're emulating a rip-relative instruction, save the contents
-- * of the scratch register and store the target address in that register.
+- * Figure out which fixups arch_uprobe_post_xol() will need to perform, and
+- * annotate arch_uprobe->fixups accordingly.  To start with,
+- * arch_uprobe->fixups is either zero or it reflects rip-related fixups.
 - */
--static void
--pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
--				struct arch_uprobe_task *autask)
+-static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
 -{
--	if (auprobe->fixups & UPROBE_FIX_RIP_AX) {
--		autask->saved_scratch_register = regs->ax;
--		regs->ax = current->utask->vaddr;
--		regs->ax += auprobe->rip_rela_target_address;
--	} else if (auprobe->fixups & UPROBE_FIX_RIP_CX) {
--		autask->saved_scratch_register = regs->cx;
--		regs->cx = current->utask->vaddr;
--		regs->cx += auprobe->rip_rela_target_address;
--	}
--}
--#else
--static void
--pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
--				struct arch_uprobe_task *autask)
--{
--	/* No RIP-relative addressing on 32-bit */
--}
--#endif
+-	bool fix_ip = true, fix_call = false;	/* defaults */
+-	int reg;
 -
+-	insn_get_opcode(insn);	/* should be a nop */
+-
+-	switch (OPCODE1(insn)) {
+-	case 0x9d:
+-		/* popf */
+-		auprobe->fixups |= UPROBE_FIX_SETF;
+-		break;
+-	case 0xc3:		/* ret/lret */
+-	case 0xcb:
+-	case 0xc2:
+-	case 0xca:
+-		/* ip is correct */
+-		fix_ip = false;
+-		break;
+-	case 0xe8:		/* call relative - Fix return addr */
+-		fix_call = true;
+-		break;
+-	case 0x9a:		/* call absolute - Fix return addr, not ip */
+-		fix_call = true;
+-		fix_ip = false;
+-		break;
+-	case 0xff:
+-		insn_get_modrm(insn);
+-		reg = MODRM_REG(insn);
+-		if (reg == 2 || reg == 3) {
+-			/* call or lcall, indirect */
+-			/* Fix return addr; ip is correct. */
+-			fix_call = true;
+-			fix_ip = false;
+-		} else if (reg == 4 || reg == 5) {
+-			/* jmp or ljmp, indirect */
+-			/* ip is correct. */
+-			fix_ip = false;
+-		}
+-		break;
+-	case 0xea:		/* jmp absolute -- ip is correct */
+-		fix_ip = false;
+-		break;
+-	default:
+-		break;
+-	}
+-	if (fix_ip)
+-		auprobe->fixups |= UPROBE_FIX_IP;
+-	if (fix_call)
+-		auprobe->fixups |= UPROBE_FIX_CALL;
+-}
+-
+ #ifdef CONFIG_X86_64
  /*
-  * arch_uprobe_pre_xol - prepare to execute out of line.
-  * @auprobe: the probepoint information.
-@@ -492,42 +516,6 @@ static int adjust_ret_addr(unsigned long sp, long correction)
+  * If arch_uprobe->insn doesn't use rip-relative addressing, return
+@@ -318,7 +261,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct ins
+ 	if (mm->context.ia32_compat)
+ 		return;
+ 
+-	auprobe->rip_rela_target_address = 0x0;
+ 	if (!insn_rip_relative(insn))
+ 		return;
+ 
+@@ -421,16 +363,58 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+  */
+ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
+ {
+-	int ret;
+ 	struct insn insn;
++	bool fix_ip = true, fix_call = false;
++	int ret;
+ 
+-	auprobe->fixups = 0;
+ 	ret = validate_insn_bits(auprobe, mm, &insn);
+-	if (ret != 0)
++	if (ret)
+ 		return ret;
+ 
++	/*
++	 * Figure out which fixups arch_uprobe_post_xol() will need to perform,
++	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
++	 * is either zero or it reflects rip-related fixups.
++	 */
+ 	handle_riprel_insn(auprobe, mm, &insn);
+-	prepare_fixups(auprobe, &insn);
++
++	switch (OPCODE1(&insn)) {
++	case 0x9d:		/* popf */
++		auprobe->fixups |= UPROBE_FIX_SETF;
++		break;
++	case 0xc3:		/* ret or lret -- ip is correct */
++	case 0xcb:
++	case 0xc2:
++	case 0xca:
++		fix_ip = false;
++		break;
++	case 0xe8:		/* call relative - Fix return addr */
++		fix_call = true;
++		break;
++	case 0x9a:		/* call absolute - Fix return addr, not ip */
++		fix_call = true;
++		fix_ip = false;
++		break;
++	case 0xea:		/* jmp absolute -- ip is correct */
++		fix_ip = false;
++		break;
++	case 0xff:
++		insn_get_modrm(&insn);
++		switch (MODRM_REG(&insn)) {
++		case 2: case 3:			/* call or lcall, indirect */
++			fix_call = true;
++		case 4: case 5:			/* jmp or ljmp, indirect */
++			fix_ip = false;
++		}
++		break;
++	default:
++		break;
++	}
++
++	if (fix_ip)
++		auprobe->fixups |= UPROBE_FIX_IP;
++	if (fix_call)
++		auprobe->fixups |= UPROBE_FIX_CALL;
+ 
  	return 0;
  }
- 
--#ifdef CONFIG_X86_64
--static bool is_riprel_insn(struct arch_uprobe *auprobe)
--{
--	return ((auprobe->fixups & (UPROBE_FIX_RIP_AX | UPROBE_FIX_RIP_CX)) != 0);
--}
--
--static void
--handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
--{
--	if (is_riprel_insn(auprobe)) {
--		struct arch_uprobe_task *autask;
--
--		autask = &current->utask->autask;
--		if (auprobe->fixups & UPROBE_FIX_RIP_AX)
--			regs->ax = autask->saved_scratch_register;
--		else
--			regs->cx = autask->saved_scratch_register;
--
--		/*
--		 * The original instruction includes a displacement, and so
--		 * is 4 bytes longer than what we've just single-stepped.
--		 * Fall through to handle stuff like "jmpq *...(%rip)" and
--		 * "callq *...(%rip)".
--		 */
--		if (correction)
--			*correction += 4;
--	}
--}
--#else
--static void
--handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
--{
--	/* No RIP-relative addressing on 32-bit */
--}
--#endif
--
- /*
-  * If xol insn itself traps and generates a signal(Say,
-  * SIGILL/SIGSEGV/etc), then detect the case where a singlestepped
 -- 
 1.5.5.1
 
