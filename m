@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaDDGoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 02:44:18 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35795 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982AbaDDGnH (ORCPT
+	id S1753156AbaDDGow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 02:44:52 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47890 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931AbaDDGmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 02:43:07 -0400
+	Fri, 4 Apr 2014 02:42:55 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, fweisbec@gmail.com,
         linaro-networking@linaro.org, Arvind.Chauhan@arm.com,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 34/36] hrtimer: make enqueue_hrtimer() return void
-Date: Fri,  4 Apr 2014 12:06:17 +0530
-Message-Id: <2ea42c62aa005f9d3aa593e10ff8bd51dafbe989.1396592516.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 32/36] hrtimer: make switch_hrtimer_base() return void
+Date: Fri,  4 Apr 2014 12:06:15 +0530
+Message-Id: <7cdbe065e7f05587461b21583ca76b63cee5f16e.1396592516.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1396592516.git.viresh.kumar@linaro.org>
 References: <cover.1396592516.git.viresh.kumar@linaro.org>
@@ -24,80 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enqueue_hrtimer() routine is called from three places and only one of them
-effectively uses its return value. Also, by its name enqueue_hrtimer() isn't
-supposed to return "if the queued timer is the leftmost". So it makes more sense
-to separate this routine into two parts, first one enqueues a timer and the
-other one tells if the timer is leftmost or not.
+switch_hrtimer_base() always sets timer->base to the right base and so the
+caller can obtain it easily. So, this routine doesn't need to return anything.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- include/linux/hrtimer.h |  5 +++++
- kernel/hrtimer.c        | 10 ++++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ kernel/hrtimer.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index d1836cb..435ac4c 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -263,6 +263,11 @@ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
- 	return ktime_sub(timer->node.expires, timer->base->get_time());
- }
- 
-+static inline int hrtimer_is_leftmost(struct hrtimer *timer)
-+{
-+	return &timer->node == timer->base->active.next;
-+}
-+
- #ifdef CONFIG_HIGH_RES_TIMERS
- struct clock_event_device;
- 
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index ea620e5..d62fe32 100644
+index fcbabcf..e581bba 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -856,7 +856,7 @@ EXPORT_SYMBOL_GPL(hrtimer_forward);
-  *
-  * Returns 1 when the new timer is the leftmost timer in the tree.
+@@ -211,8 +211,7 @@ hrtimer_check_target(struct hrtimer *timer, struct hrtimer_clock_base *new_base)
+ /*
+  * Switch the timer base to the current CPU when possible.
   */
--static int enqueue_hrtimer(struct hrtimer *timer)
-+static void enqueue_hrtimer(struct hrtimer *timer)
+-static inline struct hrtimer_clock_base *
+-switch_hrtimer_base(struct hrtimer *timer, int pinned)
++static inline void switch_hrtimer_base(struct hrtimer *timer, int pinned)
  {
- 	struct hrtimer_clock_base *base = timer->base;
+ 	struct hrtimer_clock_base *new_base, *base = timer->base;
+ 	struct hrtimer_cpu_base *new_cpu_base;
+@@ -224,7 +223,7 @@ again:
+ 	new_base = &new_cpu_base->clock_base[base->index];
  
-@@ -870,8 +870,6 @@ static int enqueue_hrtimer(struct hrtimer *timer)
- 	 * state of a possibly running callback.
+ 	if (base == new_base)
+-		return base;
++		return;
+ 
+ 	/*
+ 	 * We are trying to move timer to new_base. However we can't change
+@@ -235,7 +234,7 @@ again:
+ 	 * timer is enqueued.
  	 */
- 	timer->state |= HRTIMER_STATE_ENQUEUED;
--
--	return (&timer->node == base->active.next);
+ 	if (unlikely(hrtimer_callback_running(timer)))
+-		return base;
++		return;
+ 
+ 	/* See the comment in lock_timer_base() */
+ 	timer->base = NULL;
+@@ -251,7 +250,6 @@ again:
+ 	}
+ 
+ 	timer->base = new_base;
+-	return new_base;
  }
  
- /*
-@@ -943,7 +941,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- {
- 	struct hrtimer_clock_base *base;
- 	unsigned long flags;
--	int ret, leftmost;
-+	int ret;
+ #else /* CONFIG_SMP */
+@@ -266,7 +264,7 @@ lock_hrtimer_base(const struct hrtimer *timer, unsigned long *flags)
+ 	return base;
+ }
  
- 	lock_hrtimer_base(timer, &flags);
- 	base = timer->base;
-@@ -972,7 +970,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+-# define switch_hrtimer_base(t, p)	(t->base)
++static inline void switch_hrtimer_base(struct hrtimer *timer, int pinned) {}
+ 
+ #endif	/* !CONFIG_SMP */
+ 
+@@ -949,7 +947,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 		unsigned long delta_ns, const enum hrtimer_mode mode,
+ 		int wakeup)
+ {
+-	struct hrtimer_clock_base *base, *new_base;
++	struct hrtimer_clock_base *base;
+ 	unsigned long flags;
+ 	int ret, leftmost;
+ 
+@@ -975,7 +973,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+ 
+ 	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, mode & HRTIMER_MODE_PINNED);
++	switch_hrtimer_base(timer, mode & HRTIMER_MODE_PINNED);
  
  	timer_stats_hrtimer_set_start_info(timer);
  
--	leftmost = enqueue_hrtimer(timer);
-+	enqueue_hrtimer(timer);
- 
- 	/*
- 	 * Only allow reprogramming if the new base is on this CPU.
-@@ -980,7 +978,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+@@ -987,7 +985,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
  	 *
  	 * XXX send_remote_softirq() ?
  	 */
--	if (leftmost && base_on_this_cpu(timer->base)
-+	if (hrtimer_is_leftmost(timer) && base_on_this_cpu(timer->base)
+-	if (leftmost && base_on_this_cpu(new_base)
++	if (leftmost && base_on_this_cpu(timer->base)
  		&& hrtimer_enqueue_reprogram(timer)) {
  		if (wakeup) {
  			/*
