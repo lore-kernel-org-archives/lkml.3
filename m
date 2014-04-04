@@ -1,115 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaDDQdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 12:33:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47543 "EHLO
+	id S1754030AbaDDQdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 12:33:44 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47686 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031AbaDDQdB (ORCPT
+	with ESMTP id S1753031AbaDDQdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 12:33:01 -0400
+	Fri, 4 Apr 2014 12:33:39 -0400
 From: Kumar Gala <galak@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        sboyd@codeaurora.org, linux-kernel@vger.kernel.org,
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH] clk: qcom: Various fixes for MSM8960's global clock controller
-Date: Fri,  4 Apr 2014 11:32:56 -0500
-Message-Id: <1396629176-7413-1-git-send-email-galak@codeaurora.org>
+Subject: [PATCH] ARM: qcom: Add initial APQ8064 SoC and IFC6410 board device trees
+Date: Fri,  4 Apr 2014 11:33:34 -0500
+Message-Id: <1396629214-7466-1-git-send-email-galak@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Remove CE2_SLEEP_CLK, doesn't exist on 8960 family SoCs
-* Fix incorrect offset for PMIC_SSBI2_RESET
-* Fix typo:
-	SIC_TIC -> SPS_TIC_H
-	SFAB_ADM0_M2_A_CLK -> SFAB_ADM0_M2_H_CLK
-* Fix naming convention:
-	SFAB_CFPB_S_HCLK -> SFAB_CFPB_S_H_CLK
-	SATA_SRC_CLK -> SATA_CLK_SRC
+Add basic APQ8064 SoC include device tree and support for basic booting on
+the IFC6410 board.
 
 Signed-off-by: Kumar Gala <galak@codeaurora.org>
 ---
- drivers/clk/qcom/gcc-msm8960.c               | 4 ++--
- include/dt-bindings/clock/qcom,gcc-msm8960.h | 7 +++----
- include/dt-bindings/reset/qcom,gcc-msm8960.h | 2 +-
- 3 files changed, 6 insertions(+), 7 deletions(-)
+ arch/arm/boot/dts/Makefile                 |   1 +
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |  12 +++
+ arch/arm/boot/dts/qcom-apq8064.dtsi        | 151 +++++++++++++++++++++++++++++
+ arch/arm/mach-qcom/board.c                 |   1 +
+ 4 files changed, 165 insertions(+)
+ create mode 100644 arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+ create mode 100644 arch/arm/boot/dts/qcom-apq8064.dtsi
 
-diff --git a/drivers/clk/qcom/gcc-msm8960.c b/drivers/clk/qcom/gcc-msm8960.c
-index 8e2b6dd..f4ffd91 100644
---- a/drivers/clk/qcom/gcc-msm8960.c
-+++ b/drivers/clk/qcom/gcc-msm8960.c
-@@ -2810,7 +2810,7 @@ static const struct qcom_reset_map gcc_msm8960_resets[] = {
- 	[PPSS_PROC_RESET] = { 0x2594, 1 },
- 	[PPSS_RESET] = { 0x2594},
- 	[DMA_BAM_RESET] = { 0x25c0, 7 },
--	[SIC_TIC_RESET] = { 0x2600, 7 },
-+	[SPS_TIC_H_RESET] = { 0x2600, 7 },
- 	[SLIMBUS_H_RESET] = { 0x2620, 7 },
- 	[SFAB_CFPB_M_RESET] = { 0x2680, 7 },
- 	[SFAB_CFPB_S_RESET] = { 0x26c0, 7 },
-@@ -2823,7 +2823,7 @@ static const struct qcom_reset_map gcc_msm8960_resets[] = {
- 	[SFAB_SFPB_M_RESET] = { 0x2780, 7 },
- 	[SFAB_SFPB_S_RESET] = { 0x27a0, 7 },
- 	[RPM_PROC_RESET] = { 0x27c0, 7 },
--	[PMIC_SSBI2_RESET] = { 0x270c, 12 },
-+	[PMIC_SSBI2_RESET] = { 0x280c, 12 },
- 	[SDC1_RESET] = { 0x2830 },
- 	[SDC2_RESET] = { 0x2850 },
- 	[SDC3_RESET] = { 0x2870 },
-diff --git a/include/dt-bindings/clock/qcom,gcc-msm8960.h b/include/dt-bindings/clock/qcom,gcc-msm8960.h
-index 03bbf49..f9f5471 100644
---- a/include/dt-bindings/clock/qcom,gcc-msm8960.h
-+++ b/include/dt-bindings/clock/qcom,gcc-msm8960.h
-@@ -51,7 +51,7 @@
- #define QDSS_TSCTR_CLK				34
- #define SFAB_ADM0_M0_A_CLK			35
- #define SFAB_ADM0_M1_A_CLK			36
--#define SFAB_ADM0_M2_A_CLK			37
-+#define SFAB_ADM0_M2_H_CLK			37
- #define ADM0_CLK				38
- #define ADM0_PBUS_CLK				39
- #define MSS_XPU_CLK				40
-@@ -99,7 +99,7 @@
- #define CFPB2_H_CLK				82
- #define SFAB_CFPB_M_H_CLK			83
- #define CFPB_MASTER_H_CLK			84
--#define SFAB_CFPB_S_HCLK			85
-+#define SFAB_CFPB_S_H_CLK			85
- #define CFPB_SPLITTER_H_CLK			86
- #define TSIF_H_CLK				87
- #define TSIF_INACTIVITY_TIMERS_CLK		88
-@@ -110,7 +110,6 @@
- #define CE1_SLEEP_CLK				93
- #define CE2_H_CLK				94
- #define CE2_CORE_CLK				95
--#define CE2_SLEEP_CLK				96
- #define SFPB_H_CLK_SRC				97
- #define SFPB_H_CLK				98
- #define SFAB_SFPB_M_H_CLK			99
-@@ -252,7 +251,7 @@
- #define MSS_S_H_CLK				235
- #define MSS_CXO_SRC_CLK				236
- #define SATA_H_CLK				237
--#define SATA_SRC_CLK				238
-+#define SATA_CLK_SRC				238
- #define SATA_RXOOB_CLK				239
- #define SATA_PMALIVE_CLK			240
- #define SATA_PHY_REF_CLK			241
-diff --git a/include/dt-bindings/reset/qcom,gcc-msm8960.h b/include/dt-bindings/reset/qcom,gcc-msm8960.h
-index a840e68..07edd0e 100644
---- a/include/dt-bindings/reset/qcom,gcc-msm8960.h
-+++ b/include/dt-bindings/reset/qcom,gcc-msm8960.h
-@@ -58,7 +58,7 @@
- #define PPSS_PROC_RESET					41
- #define PPSS_RESET					42
- #define DMA_BAM_RESET					43
--#define SIC_TIC_RESET					44
-+#define SPS_TIC_H_RESET					44
- #define SLIMBUS_H_RESET					45
- #define SFAB_CFPB_M_RESET				46
- #define SFAB_CFPB_S_RESET				47
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 0591ed0..1223fa89 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -232,6 +232,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
+ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
+ dtb-$(CONFIG_ARCH_QCOM) += \
++	qcom-apq8064-ifc6410.dtb \
+ 	qcom-apq8074-dragonboard.dtb \
+ 	qcom-ipq8064-ap148.dtb \
+ 	qcom-msm8660-surf.dtb \
+diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+new file mode 100644
+index 0000000..c5fda40
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+@@ -0,0 +1,12 @@
++#include "qcom-apq8064.dtsi"
++
++/ {
++	model = "Qualcomm APQ8064/IFC6410";
++	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
++
++	soc {
++		serial@16640000 {
++			status = "ok";
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
+new file mode 100644
+index 0000000..60b89e5
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+@@ -0,0 +1,151 @@
++/dts-v1/;
++
++/include/ "skeleton.dtsi"
++
++#include <dt-bindings/clock/qcom,gcc-msm8960.h>
++
++/ {
++	model = "Qualcomm APQ8064";
++	compatible = "qcom,apq8064";
++	interrupt-parent = <&intc>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		interrupts = <1 14 0x304>;
++		compatible = "qcom,krait";
++		enable-method = "qcom,kpss-acc-v1";
++
++		cpu@0 {
++			device_type = "cpu";
++			reg = <0>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc0>;
++			qcom,saw = <&saw0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			reg = <1>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc1>;
++			qcom,saw = <&saw1>;
++		};
++
++		cpu@2 {
++			device_type = "cpu";
++			reg = <2>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc2>;
++			qcom,saw = <&saw2>;
++		};
++
++		cpu@3 {
++			device_type = "cpu";
++			reg = <3>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc3>;
++			qcom,saw = <&saw3>;
++		};
++
++		L2: l2-cache {
++			compatible = "cache";
++			cache-level = <2>;
++			interrupts = <0 2 0x4>;
++		};
++	};
++
++	soc: soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		compatible = "simple-bus";
++
++
++		intc: interrupt-controller@2000000 {
++			compatible = "qcom,msm-qgic2";
++			interrupt-controller;
++			#interrupt-cells = <3>;
++			reg = < 0x02000000 0x1000 >,
++			      < 0x02002000 0x1000 >;
++		};
++
++		timer@200a000 {
++			compatible = "qcom,kpss-timer", "qcom,msm-timer";
++			interrupts = <1 1 0x301>,
++				     <1 2 0x301>,
++				     <1 3 0x301>;
++			reg = <0x0200a000 0x100>;
++			clock-frequency = <27000000>,
++					  <32768>;
++			cpu-offset = <0x80000>;
++		};
++
++		acc0: clock-controller@2088000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		acc1: clock-controller@2098000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x02098000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		acc2: clock-controller@20a8000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x020a8000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		acc3: clock-controller@20b8000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x020b8000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		saw0: regulator@2089000 {
++			compatible = "qcom,saw2";
++			reg = <0x02089000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		saw1: regulator@2099000 {
++			compatible = "qcom,saw2";
++			reg = <0x02099000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		saw2: regulator@20a9000 {
++			compatible = "qcom,saw2";
++			reg = <0x020a9000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		saw3: regulator@20b9000 {
++			compatible = "qcom,saw2";
++			reg = <0x020b9000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		serial@16640000 {
++			compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
++			reg = <0x16640000 0x1000>,
++			      <0x16600000 0x1000>;
++			interrupts = <0 158 0x0>;
++			clocks = <&gcc GSBI7_UART_CLK>, <&gcc GSBI7_H_CLK>;
++			clock-names = "core", "iface";
++			status = "disabled";
++		};
++
++		qcom,ssbi@500000 {
++			compatible = "qcom,ssbi";
++			reg = <0x00500000 0x1000>;
++			qcom,controller-type = "pmic-arbiter";
++		};
++
++		gcc: clock-controller@900000 {
++			compatible = "qcom,gcc-apq8064";
++			reg = <0x00900000 0x4000>;
++			#clock-cells = <1>;
++			#reset-cells = <1>;
++		};
++	};
++};
+diff --git a/arch/arm/mach-qcom/board.c b/arch/arm/mach-qcom/board.c
+index cb3c07c..333dced5 100644
+--- a/arch/arm/mach-qcom/board.c
++++ b/arch/arm/mach-qcom/board.c
+@@ -15,6 +15,7 @@
+ #include <asm/mach/arch.h>
+ 
+ static const char * const qcom_dt_match[] __initconst = {
++	"qcom,apq8064",
+ 	"qcom,apq8074-dragonboard",
+ 	"qcom,ipq8062",
+ 	"qcom,ipq8064",
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
