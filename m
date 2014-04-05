@@ -1,51 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaDEGGA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 02:06:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56851 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321AbaDEGF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 02:05:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,799,1389772800"; 
-   d="scan'208";a="487701985"
-Date: Sat, 5 Apr 2014 09:13:16 +0300
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: "Du, Wenkai" <wenkai.du@intel.com>
-Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller
- enable
-Message-ID: <20140405061316.GF19349@intel.com>
-References: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70E1F@ORSMSX109.amr.corp.intel.com>
- <20140404181613.GB19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
- <20140404184232.GC19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
+	id S1753645AbaDEG0v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 02:26:51 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:38063 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353AbaDEG0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 02:26:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <533F86D4.10007@intel.com>
+References: <20140404031928.GC11828@localhost>
+	<CAKohponbGFFo+W7X24e4h3ub2L8Tkb89eP6_F17CRYELk0yeRQ@mail.gmail.com>
+	<533E635F.9050803@intel.com>
+	<CAKohpon+THY2NXEEOcWRbmrpfQUZYbHfO+Lw=D9TaJWk+_-J2g@mail.gmail.com>
+	<533F86D4.10007@intel.com>
+Date: Sat, 5 Apr 2014 11:56:48 +0530
+Message-ID: <CAKohpokStOgdO-KFn8hcyV+neaNCvHLSG9od=qyi2-4rV62DRw@mail.gmail.com>
+Subject: Re: WARNING: CPU: 0 PID: 1935 at kernel/timer.c:1621 migrate_timer_list()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=089e0118254420864a04f645b8b2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 05, 2014 at 12:54:33AM +0300, Du, Wenkai wrote:
-> >Interrupt masking is done already after each transaction.
-> 
-> At end of transfer, the code uses __i2c_dw_enable(dev, false) to disable
-> adapter. This function doesn't mask interrupts. There is another function
-> i2c_dw_disable that masks and clears interrupts. This could be used, but
-> that means we need to fix in 2 places: 
+--089e0118254420864a04f645b8b2
+Content-Type: text/plain; charset=ISO-8859-1
 
-Please check i2c_dw_isr() and tell me in which code path interrupts are not
-getting masked. Or am I missing something fundamental here?
+On 5 April 2014 10:00, Jet Chen <jet.chen@intel.com> wrote:
+> vmlinuz from our build system doesn't have debug information. It is hard to
+> use objdump to identify which routine is timer->function.
 
-In case of abort, we mask interrupts. Also whenever the transaction
-completes we mask interrupts (in i2c_dw_xfer_msg()).
+I see...
 
-Only place where we didn't do that, as far as I can tell, is right after
-reset because of the HW default value that unmasks most of them.
+> But after several times trials, I get below dmesg messages.
+> It is clear to see address of "timer->function" is 0xffffffff810d7010.
+> In calling stack, " [<ffffffff810d7010>] ?
+> clocksource_watchdog_kthread+0x40/0x40 ". So I guess timer->function is
+> clocksource_watchdog_kthread.
+
+Hmm.. not exactly this function as this isn't timer->function for any timer.
+But I think I have found the right function with this hint:
+clocksource_watchdog()
+
+Can you please try to test the attached patch, which must fix it.
+Untested. I will
+then post it with your Tested-by :)
+
+--
+viresh
+
+--089e0118254420864a04f645b8b2
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-clocksource-register-cpu-notifier-to-remove-timer-fr.patch"
+Content-Disposition: attachment; 
+	filename="0001-clocksource-register-cpu-notifier-to-remove-timer-fr.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_htmiq8ik1
+
+RnJvbSBhYmQzODE1NWY4MjkzOTIzZGU1OTUzY2MwNjNmOWUyZDdlY2IzZjA0IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8YWJkMzgxNTVmODI5MzkyM2RlNTk1M2NjMDYzZjll
+MmQ3ZWNiM2YwNC4xMzk2Njc5MTcwLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogU2F0LCA1IEFwciAy
+MDE0IDExOjQzOjI1ICswNTMwClN1YmplY3Q6IFtQQVRDSF0gY2xvY2tzb3VyY2U6IHJlZ2lzdGVy
+IGNwdSBub3RpZmllciB0byByZW1vdmUgdGltZXIgZnJvbQogZHlpbmcgQ1BVCgpjbG9ja3NvdXJj
+ZSBjb3JlIGlzIHVzaW5nIGFkZF90aW1lcl9vbigpIHRvIHJ1biBjbG9ja3NvdXJjZV93YXRjaGRv
+ZygpIG9uIGFsbApDUFVzIG9uZSBieSBvbmUuIEJ1dCB3aGVuIGEgY29yZSBpcyBicm91Z2h0IGRv
+d24sIGNsb2Nrc291cmNlIGNvcmUgZG9lc24ndApyZW1vdmUgdGhpcyB0aW1lciBmcm9tIHRoZSBk
+eWluZyBDUFUuIEFuZCBpbiB0aGlzIGNhc2UgdGltZXIgY29yZSBnaXZlcyB0aGlzCihHaXZlcyB0
+aGlzIG9ubHkgd2l0aCB1bm1lcmdlZCBjb2RlLCBhbnl3YXkgaW4gdGhlIGN1cnJlbnQgY29kZSBh
+cyB3ZWxsIHRpbWVyCmNvcmUgaXMgbWlncmF0aW5nIGEgcGlubmVkIHRpbWVyIHRvIG90aGVyIENQ
+VXMsIHdoaWNoIGlzIGFsc28gd3Jvbmc6Cmh0dHA6Ly93d3cuZ29zc2FtZXItdGhyZWFkcy5jb20v
+bGlzdHMvbGludXgva2VybmVsLzE4OTgxMTcpCgptaWdyYXRlX3RpbWVyX2xpc3Q6IGNhbid0IG1p
+Z3JhdGUgcGlubmVkIHRpbWVyOiBmZmZmZmZmZjgxZjA2YTYwLAp0aW1lci0+ZnVuY3Rpb246IGZm
+ZmZmZmZmODEwZDcwMTAsZGVhY3RpdmF0aW5nIGl0IE1vZHVsZXMgbGlua2VkIGluOgoKQ1BVOiAw
+IFBJRDogMTkzMiBDb21tOiAwMS1jcHUtaG90cGx1ZyBOb3QgdGFpbnRlZCAzLjE0LjAtcmMxLTAw
+MDg4LWdhYjNjNGZkICM0CkhhcmR3YXJlIG5hbWU6IEJvY2hzIEJvY2hzLCBCSU9TIEJvY2hzIDAx
+LzAxLzIwMTEKIDAwMDAwMDAwMDAwMDAwMDkgZmZmZjg4MDAxZDQwN2MzOCBmZmZmZmZmZjgxNzIz
+N2JkIGZmZmY4ODAwMWQ0MDdjODAKIGZmZmY4ODAwMWQ0MDdjNzAgZmZmZmZmZmY4MTA2YTFkZCAw
+MDAwMDAwMDAwMDAwMDEwIGZmZmZmZmZmODFmMDZhNjAKIGZmZmY4ODAwMWUwNGQwNDAgZmZmZmZm
+ZmY4MWUzZDRjMCBmZmZmODgwMDFlMDRkMDMwIGZmZmY4ODAwMWQ0MDdjZDAKQ2FsbCBUcmFjZToK
+IFs8ZmZmZmZmZmY4MTcyMzdiZD5dIGR1bXBfc3RhY2srMHg0ZC8weDY2CiBbPGZmZmZmZmZmODEw
+NmExZGQ+XSB3YXJuX3Nsb3dwYXRoX2NvbW1vbisweDdkLzB4YTAKIFs8ZmZmZmZmZmY4MTA2YTI0
+Yz5dIHdhcm5fc2xvd3BhdGhfZm10KzB4NGMvMHg1MAogWzxmZmZmZmZmZjgxMDc2MWMzPl0gPyBf
+X2ludGVybmFsX2FkZF90aW1lcisweDExMy8weDEzMAogWzxmZmZmZmZmZjgxMGQ3MDEwPl0gPyBj
+bG9ja3NvdXJjZV93YXRjaGRvZ19rdGhyZWFkKzB4NDAvMHg0MAogWzxmZmZmZmZmZjgxMDc3NTNi
+Pl0gbWlncmF0ZV90aW1lcl9saXN0KzB4ZGIvMHhmMAogWzxmZmZmZmZmZjgxMDc4MmRjPl0gdGlt
+ZXJfY3B1X25vdGlmeSsweGZjLzB4MWYwCiBbPGZmZmZmZmZmODE3MzA0NmM+XSBub3RpZmllcl9j
+YWxsX2NoYWluKzB4NGMvMHg3MAogWzxmZmZmZmZmZjgxMDkzNDBlPl0gX19yYXdfbm90aWZpZXJf
+Y2FsbF9jaGFpbisweGUvMHgxMAogWzxmZmZmZmZmZjgxMDZhM2YzPl0gY3B1X25vdGlmeSsweDIz
+LzB4NTAKIFs8ZmZmZmZmZmY4MTA2YTQ0ZT5dIGNwdV9ub3RpZnlfbm9mYWlsKzB4ZS8weDIwCiBb
+PGZmZmZmZmZmODE3MTJhNWQ+XSBfY3B1X2Rvd24rMHgxYWQvMHgyZTAKIFs8ZmZmZmZmZmY4MTcx
+MmJjND5dIGNwdV9kb3duKzB4MzQvMHg1MAogWzxmZmZmZmZmZjgxM2ZlYzU0Pl0gY3B1X3N1YnN5
+c19vZmZsaW5lKzB4MTQvMHgyMAogWzxmZmZmZmZmZjgxM2Y5ZjY1Pl0gZGV2aWNlX29mZmxpbmUr
+MHg5NS8weGMwCiBbPGZmZmZmZmZmODEzZmEwNjA+XSBvbmxpbmVfc3RvcmUrMHg0MC8weDkwCiBb
+PGZmZmZmZmZmODEzZjc1ZDg+XSBkZXZfYXR0cl9zdG9yZSsweDE4LzB4MzAKIFs8ZmZmZmZmZmY4
+MTIzMzA5ZD5dIHN5c2ZzX2tmX3dyaXRlKzB4M2QvMHg1MAoKVGhpcyBwYXRjaCB0cmllcyB0byBm
+aXggdGhpcyBieSByZWdpc3RlcmluZyBjcHUgbm90aWZpZXJzIGZyb20gY2xvY2tzb3VyY2UgY29y
+ZSwKb25seSB3aGVuIHdlIHN0YXJ0IGNsb2Nrc291cmNlLXdhdGNoZG9nLiBBbmQgaWYgb24gdGhl
+IENQVV9ERUFEIG5vdGlmaWNhdGlvbiBpdAppcyBmb3VuZCB0aGF0IGR5aW5nIENQVSB3YXMgdGhl
+IENQVSBvbiB3aGljaCB0aGlzIHRpbWVyIGlzIHF1ZXVlZCBvbiwgdGhlbiBpdCBpcwpyZW1vdmVk
+IGZyb20gdGhhdCBDUFUgYW5kIHF1ZXVlZCB0byBuZXh0IENQVS4KClJlcG9ydGVkLWJ5OiBKZXQg
+Q2hlbiA8amV0LmNoZW5AaW50ZWwuY29tPgpSZXBvcnRlZC1ieTogRmVuZ2d1YW5nIFd1IDxmZW5n
+Z3Vhbmcud3VAaW50ZWwuY29tPgpTaWduZWQtb2ZmLWJ5OiBWaXJlc2ggS3VtYXIgPHZpcmVzaC5r
+dW1hckBsaW5hcm8ub3JnPgotLS0KIGtlcm5lbC90aW1lL2Nsb2Nrc291cmNlLmMgfCA2NCArKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLQogMSBmaWxlIGNoYW5n
+ZWQsIDUzIGluc2VydGlvbnMoKyksIDExIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2tlcm5l
+bC90aW1lL2Nsb2Nrc291cmNlLmMgYi9rZXJuZWwvdGltZS9jbG9ja3NvdXJjZS5jCmluZGV4IGJh
+M2U1MDIuLjllOTY4NTMgMTAwNjQ0Ci0tLSBhL2tlcm5lbC90aW1lL2Nsb2Nrc291cmNlLmMKKysr
+IGIva2VybmVsL3RpbWUvY2xvY2tzb3VyY2UuYwpAQCAtMjMsMTYgKzIzLDIxIEBACiAgKiAgIG8g
+QWxsb3cgY2xvY2tzb3VyY2UgZHJpdmVycyB0byBiZSB1bnJlZ2lzdGVyZWQKICAqLwogCisjaW5j
+bHVkZSA8bGludXgvY3B1Lmg+CiAjaW5jbHVkZSA8bGludXgvZGV2aWNlLmg+CiAjaW5jbHVkZSA8
+bGludXgvY2xvY2tzb3VyY2UuaD4KICNpbmNsdWRlIDxsaW51eC9pbml0Lmg+CiAjaW5jbHVkZSA8
+bGludXgvbW9kdWxlLmg+CisjaW5jbHVkZSA8bGludXgvbm90aWZpZXIuaD4KICNpbmNsdWRlIDxs
+aW51eC9zY2hlZC5oPiAvKiBmb3Igc3Bpbl91bmxvY2tfaXJxKCkgdXNpbmcgcHJlZW1wdF9jb3Vu
+dCgpIG02OGsgKi8KICNpbmNsdWRlIDxsaW51eC90aWNrLmg+CiAjaW5jbHVkZSA8bGludXgva3Ro
+cmVhZC5oPgogCiAjaW5jbHVkZSAidGljay1pbnRlcm5hbC5oIgogCisvKiBUcmFja3MgbmV4dCBD
+UFUgdG8gcXVldWUgd2F0Y2hkb2cgdGltZXIgb24gKi8KK3N0YXRpYyBpbnQgdGltZXJfY3B1Owor
+CiB2b2lkIHRpbWVjb3VudGVyX2luaXQoc3RydWN0IHRpbWVjb3VudGVyICp0YywKIAkJICAgICAg
+Y29uc3Qgc3RydWN0IGN5Y2xlY291bnRlciAqY2MsCiAJCSAgICAgIHU2NCBzdGFydF90c3RhbXAp
+CkBAIC0yNDYsMTIgKzI1MSwyNSBAQCB2b2lkIGNsb2Nrc291cmNlX21hcmtfdW5zdGFibGUoc3Ry
+dWN0IGNsb2Nrc291cmNlICpjcykKIAlzcGluX3VubG9ja19pcnFyZXN0b3JlKCZ3YXRjaGRvZ19s
+b2NrLCBmbGFncyk7CiB9CiAKK3ZvaWQgcXVldWVfdGltZXJfb25fbmV4dF9jcHUodm9pZCkKK3sK
+KwkvKgorCSAqIEN5Y2xlIHRocm91Z2ggQ1BVcyB0byBjaGVjayBpZiB0aGUgQ1BVcyBzdGF5IHN5
+bmNocm9uaXplZCB0byBlYWNoCisJICogb3RoZXIuCisJICovCisJdGltZXJfY3B1ID0gY3B1bWFz
+a19uZXh0KHRpbWVyX2NwdSwgY3B1X29ubGluZV9tYXNrKTsKKwlpZiAodGltZXJfY3B1ID49IG5y
+X2NwdV9pZHMpCisJCXRpbWVyX2NwdSA9IGNwdW1hc2tfZmlyc3QoY3B1X29ubGluZV9tYXNrKTsK
+Kwl3YXRjaGRvZ190aW1lci5leHBpcmVzID0gamlmZmllcyArIFdBVENIRE9HX0lOVEVSVkFMOwor
+CWFkZF90aW1lcl9vbigmd2F0Y2hkb2dfdGltZXIsIHRpbWVyX2NwdSk7Cit9CisKIHN0YXRpYyB2
+b2lkIGNsb2Nrc291cmNlX3dhdGNoZG9nKHVuc2lnbmVkIGxvbmcgZGF0YSkKIHsKIAlzdHJ1Y3Qg
+Y2xvY2tzb3VyY2UgKmNzOwogCWN5Y2xlX3QgY3Nub3csIHdkbm93OwogCWludDY0X3Qgd2RfbnNl
+YywgY3NfbnNlYzsKLQlpbnQgbmV4dF9jcHUsIHJlc2V0X3BlbmRpbmc7CisJaW50IHJlc2V0X3Bl
+bmRpbmc7CiAKIAlzcGluX2xvY2soJndhdGNoZG9nX2xvY2spOwogCWlmICghd2F0Y2hkb2dfcnVu
+bmluZykKQEAgLTMzNiwyNyArMzU0LDUwIEBAIHN0YXRpYyB2b2lkIGNsb2Nrc291cmNlX3dhdGNo
+ZG9nKHVuc2lnbmVkIGxvbmcgZGF0YSkKIAlpZiAocmVzZXRfcGVuZGluZykKIAkJYXRvbWljX2Rl
+Yygmd2F0Y2hkb2dfcmVzZXRfcGVuZGluZyk7CiAKLQkvKgotCSAqIEN5Y2xlIHRocm91Z2ggQ1BV
+cyB0byBjaGVjayBpZiB0aGUgQ1BVcyBzdGF5IHN5bmNocm9uaXplZAotCSAqIHRvIGVhY2ggb3Ro
+ZXIuCi0JICovCi0JbmV4dF9jcHUgPSBjcHVtYXNrX25leHQocmF3X3NtcF9wcm9jZXNzb3JfaWQo
+KSwgY3B1X29ubGluZV9tYXNrKTsKLQlpZiAobmV4dF9jcHUgPj0gbnJfY3B1X2lkcykKLQkJbmV4
+dF9jcHUgPSBjcHVtYXNrX2ZpcnN0KGNwdV9vbmxpbmVfbWFzayk7Ci0Jd2F0Y2hkb2dfdGltZXIu
+ZXhwaXJlcyArPSBXQVRDSERPR19JTlRFUlZBTDsKLQlhZGRfdGltZXJfb24oJndhdGNoZG9nX3Rp
+bWVyLCBuZXh0X2NwdSk7CisJcXVldWVfdGltZXJfb25fbmV4dF9jcHUoKTsKIG91dDoKIAlzcGlu
+X3VubG9jaygmd2F0Y2hkb2dfbG9jayk7CiB9CiAKK3N0YXRpYyBpbnQgY2xvY2tzb3VyY2VfY3B1
+X25vdGlmeShzdHJ1Y3Qgbm90aWZpZXJfYmxvY2sgKnNlbGYsCisJCQkJdW5zaWduZWQgbG9uZyBh
+Y3Rpb24sIHZvaWQgKmhjcHUpCit7CisJbG9uZyBjcHUgPSAobG9uZyloY3B1OworCisJc3Bpbl9s
+b2NrKCZ3YXRjaGRvZ19sb2NrKTsKKwlpZiAoIXdhdGNoZG9nX3J1bm5pbmcpCisJCWdvdG8gbm90
+aWZ5X291dDsKKworCXN3aXRjaCAoYWN0aW9uKSB7CisJY2FzZSBDUFVfREVBRDoKKwljYXNlIENQ
+VV9ERUFEX0ZST1pFTjoKKwkJaWYgKGNwdSAhPSB0aW1lcl9jcHUpCisJCQlicmVhazsKKwkJZGVs
+X3RpbWVyKCZ3YXRjaGRvZ190aW1lcik7CisJCXF1ZXVlX3RpbWVyX29uX25leHRfY3B1KCk7CisJ
+CWJyZWFrOworCX0KKworbm90aWZ5X291dDoKKwlzcGluX3VubG9jaygmd2F0Y2hkb2dfbG9jayk7
+CisJcmV0dXJuIE5PVElGWV9PSzsKK30KKworc3RhdGljIHN0cnVjdCBub3RpZmllcl9ibG9jayBj
+bG9ja3NvdXJjZV9uYiA9IHsKKwkubm90aWZpZXJfY2FsbAk9IGNsb2Nrc291cmNlX2NwdV9ub3Rp
+ZnksCisJLnByaW9yaXR5ID0gMSwKK307CisKIHN0YXRpYyBpbmxpbmUgdm9pZCBjbG9ja3NvdXJj
+ZV9zdGFydF93YXRjaGRvZyh2b2lkKQogewogCWlmICh3YXRjaGRvZ19ydW5uaW5nIHx8ICF3YXRj
+aGRvZyB8fCBsaXN0X2VtcHR5KCZ3YXRjaGRvZ19saXN0KSkKIAkJcmV0dXJuOworCXRpbWVyX2Nw
+dSA9IGNwdW1hc2tfZmlyc3QoY3B1X29ubGluZV9tYXNrKTsKKwlyZWdpc3Rlcl9jcHVfbm90aWZp
+ZXIoJmNsb2Nrc291cmNlX25iKTsKIAlpbml0X3RpbWVyKCZ3YXRjaGRvZ190aW1lcik7CiAJd2F0
+Y2hkb2dfdGltZXIuZnVuY3Rpb24gPSBjbG9ja3NvdXJjZV93YXRjaGRvZzsKIAl3YXRjaGRvZ190
+aW1lci5leHBpcmVzID0gamlmZmllcyArIFdBVENIRE9HX0lOVEVSVkFMOwotCWFkZF90aW1lcl9v
+bigmd2F0Y2hkb2dfdGltZXIsIGNwdW1hc2tfZmlyc3QoY3B1X29ubGluZV9tYXNrKSk7CisJYWRk
+X3RpbWVyX29uKCZ3YXRjaGRvZ190aW1lciwgdGltZXJfY3B1KTsKIAl3YXRjaGRvZ19ydW5uaW5n
+ID0gMTsKIH0KIApAQCAtMzY1LDYgKzQwNiw3IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBjbG9ja3Nv
+dXJjZV9zdG9wX3dhdGNoZG9nKHZvaWQpCiAJaWYgKCF3YXRjaGRvZ19ydW5uaW5nIHx8ICh3YXRj
+aGRvZyAmJiAhbGlzdF9lbXB0eSgmd2F0Y2hkb2dfbGlzdCkpKQogCQlyZXR1cm47CiAJZGVsX3Rp
+bWVyKCZ3YXRjaGRvZ190aW1lcik7CisJdW5yZWdpc3Rlcl9jcHVfbm90aWZpZXIoJmNsb2Nrc291
+cmNlX25iKTsKIAl3YXRjaGRvZ19ydW5uaW5nID0gMDsKIH0KIAotLSAKMS43LjEyLnJjMi4xOC5n
+NjFiNDcyZQoK
+--089e0118254420864a04f645b8b2--
