@@ -1,144 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaDEMqV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 08:46:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60781 "EHLO mx1.redhat.com"
+	id S1752773AbaDEMvw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 08:51:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48065 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528AbaDEMqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 08:46:18 -0400
-Date: Sat, 5 Apr 2014 14:46:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 9/9] uprobes/x86: Teach arch_uprobe_post_xol() to
-	restart if possible
-Message-ID: <20140405124614.GA31950@redhat.com>
-References: <20140404185142.GA14756@redhat.com> <1396648607.4769.3.camel@oc7886638347.ibm.com.usor.ibm.com>
+	id S1752543AbaDEMvu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 08:51:50 -0400
+Date: Sat, 5 Apr 2014 08:51:43 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Toralf =?ISO-8859-1?B?RvZyc3Rlcg==?= <toralf.foerster@gmx.de>
+Cc: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: NFSv2 directory cannot longer be exported in 3.14, 3.13 works
+ fine
+Message-ID: <20140405085143.59e578ff@tlielax.poochiereds.net>
+In-Reply-To: <533FF457.5080907@gmx.de>
+References: <533F2ABF.2030107@gmx.de>
+	<533FF457.5080907@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396648607.4769.3.camel@oc7886638347.ibm.com.usor.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04, Jim Keniston wrote:
->
-> On Fri, 2014-04-04 at 20:51 +0200, Oleg Nesterov wrote:
-> >
-> > Currently only adjust_ret_addr() can fail, and this can only happen if
-> > another thread unmapped our stack after we executed "call" out-of-line.
-> > Most probably the application if buggy, but even in this case it can
-> > have a handler for SIGSEGV/etc. And in theory it can be even correct
-> > and do something non-trivial with its memory.
-> >
-> > Of course we can't restart unconditionally, so arch_uprobe_post_xol()
-> > does this only if ->post_xol() returns -ERESTART even if currently this
-> > is the only possible error.
->
-> When re-executing the call instruction, I'd think the stack pointer
-> would be wrong the second time around, unless you pop off the return
-> address from the first try.
+On Sat, 05 Apr 2014 14:17:27 +0200
+Toralf Förster <toralf.foerster@gmx.de> wrote:
 
-Of course! Like ttt_post_xol_op() in the next patch does, can't understand
-how I forgot.
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA256
+> 
+> On 04/04/2014 11:57 PM, Toralf Förster wrote:
+> > At a user mode linux image (32 bit Gentoo Linux) the recent kernel gives this error while trying to mount a NFSv2 directory:
+> > mount.nfs: mount point /mnt/nfsv2 is not a directory
+> > 
+> 
+> A bisect points to :
+> 
+> 6e14b46b91fee8a049b0940333ce13a820beaaa5 is the first bad commit
+> commit 6e14b46b91fee8a049b0940333ce13a820beaaa5
+> Author: Albert Fluegel <af@muc.de>
+> Date:   Mon Nov 18 12:18:01 2013 -0500
+> 
+>     nfsd: don't return high mode bits
+> 
+>     The Linux NFS server replies among other things to a "Check access permission"
+>     the following:
+> 
+>     NFS:    File type = 2 (Directory)
+>     NFS:    Mode = 040755
+> 
+>     A netapp server replies here:
+>     NFS:    File type = 2 (Directory)
+>     NFS:    Mode = 0755
+> 
+>     The RFC 1813 i read:
+>        fattr3
+> 
+>           struct fattr3 {
+>              ftype3     type;
+>              mode3      mode;
+>              uint32     nlink;
+>     ...
+>     For the mode bits only the lowest 9 are defined in the RFC
+> 
+>     As far as I can tell, knfsd has always done this, so apparently it's harmless.
+>     Nevertheless, it appears to be wrong.
+> 
+>     Note this is already correct in the NFSv4 case, only v2 and v3 need
+>     fixing.
+> 
+>     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> 
+> :040000 040000 a60e55f5a9749db3977e12e8baa08d45fadba225 b982c02ec1069c5d969ccb71197e5569fe93b075 M fs
+> 
+> - -- 
+> MfG/Sincerely
+> Toralf Förster
+> pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v2.0.22 (GNU/Linux)
+> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+> 
+> iF4EAREIAAYFAlM/9FcACgkQxOrN3gB26U5F1AD+JAP4cDM+rT9nk9Q8q681RywT
+> Ejxq7d0tnVUfWyDFDTgA/1sIUtpv9GSK8SeAJFu7oAhMt4e6eeIdbpMT2qUEQv6q
+> =Sles
+> -----END PGP SIGNATURE-----
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks a lot! Please see v3 below.
+This was already tracked down earlier this week. Bruce has a patch
+queued to fix it in his nfsd-next branch. See this thread from earlier
+this week:
 
-I also updated the changelog. Please do not ask me to cleanup the games
-with ->sp now. I'll try to do this later when we finish the bug fixes.
-The current code should be unified with the code we will add. And I think
-that adjust_ret_address() should die. What we need is uprobe_push(), there
-is no need for copy_from_user() afaics. The value we need to push is
-utask->vaddr + correction-calculated-at-analyze-time.
+    Subject: Re: linux-3.14 nfsd regression
 
-
--------------------------------------------------------------------------------
-Subject: [PATCH v3 9/9] uprobes/x86: Teach arch_uprobe_post_xol() to restart if possible
-
-SIGILL after the failed arch_uprobe_post_xol() should only be used as
-a last resort, we should try to restart the probed insn if possible.
-
-Currently only adjust_ret_addr() can fail, and this can only happen if
-another thread unmapped our stack after we executed "call" out-of-line.
-Most probably the application if buggy, but even in this case it can
-have a handler for SIGSEGV/etc. And in theory it can be even correct
-and do something non-trivial with its memory.
-
-Of course we can't restart unconditionally, so arch_uprobe_post_xol()
-does this only if ->post_xol() returns -ERESTART even if currently this
-is the only possible error.
-
-default_post_xol_op(UPROBE_FIX_CALL) can always restart, but as Jim
-pointed out it should not forget to pop off the return address pushed
-by this insn executed out-of-line.
-
-Note: this is not "perfect", we do not want the extra handler_chain()
-after restart, but I think this is the best solution we can realistically
-do without too much uglifications.
-
-TODO: This adds yet another is_ia32_task() check, and the next patches
-will add more. I will try cleanup this later, after we fix the pending
-problems. And to remind, it seems that adjust_ret_addr() should die.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index e72903e..cdd6909 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -443,16 +443,22 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
- {
- 	struct uprobe_task *utask = current->utask;
- 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
--	int ret = 0;
- 
- 	handle_riprel_post_xol(auprobe, regs, &correction);
- 	if (auprobe->fixups & UPROBE_FIX_IP)
- 		regs->ip += correction;
- 
--	if (auprobe->fixups & UPROBE_FIX_CALL)
--		ret = adjust_ret_addr(regs->sp, correction);
-+	if (auprobe->fixups & UPROBE_FIX_CALL) {
-+		if (adjust_ret_addr(regs->sp, correction)) {
-+			if (is_ia32_task())
-+				regs->sp += 4;
-+			else
-+				regs->sp += 8;
-+			return -ERESTART;
-+		}
-+	}
- 
--	return ret;
-+	return 0;
- }
- 
- static struct uprobe_xol_ops default_xol_ops = {
-@@ -599,6 +605,12 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		int err = auprobe->ops->post_xol(auprobe, regs);
- 		if (err) {
- 			arch_uprobe_abort_xol(auprobe, regs);
-+			/*
-+			 * Restart the probed insn. ->post_xol() must ensure
-+			 * this is really possible if it returns -ERESTART.
-+			 */
-+			if (err == -ERESTART)
-+				return 0;
- 			return err;
- 		}
- 	}
 -- 
-1.5.5.1
-
-
+Jeff Layton <jlayton@redhat.com>
