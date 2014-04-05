@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaDEBLu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 21:11:50 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:60765 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671AbaDEBLs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 21:11:48 -0400
+	id S1754151AbaDEBNe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 21:13:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62962 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514AbaDEBNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Apr 2014 21:13:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,798,1389772800"; 
+   d="scan'208";a="515211432"
+Date: Fri, 4 Apr 2014 18:13:32 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, tpowa@archlinux.org
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+Message-ID: <20140405011332.GR32556@tassilo.jf.intel.com>
+References: <52E4CF03.8030208@archlinux.org>
+ <5339F739.2060207@archlinux.org>
+ <20140331233450.GI32556@tassilo.jf.intel.com>
+ <5339FC62.8060207@archlinux.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyGz2q4iDEt56Bw+x_ri_-DQYLAKPJvk3Uxj9z-y+0uPw@mail.gmail.com>
-References: <20140403164911.GE24119@htj.dyndns.org>
-	<CA+55aFyGz2q4iDEt56Bw+x_ri_-DQYLAKPJvk3Uxj9z-y+0uPw@mail.gmail.com>
-Date: Fri, 4 Apr 2014 18:11:47 -0700
-X-Google-Sender-Auth: wJt23xtzf4hkWTlkQX-FqkM-zAE
-Message-ID: <CA+55aFy+Jt0B32kj=Ldz9Krp4DXcXSP4r-o3f-2LPcVs4udGVA@mail.gmail.com>
-Subject: Re: [GIT PULL] cgroup changes for v3.15-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        cgroups@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5339FC62.8060207@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 6:06 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Will report back soon when I've narrowed it down more.
+On Tue, Apr 01, 2014 at 01:38:10AM +0200, Thomas Bächler wrote:
+> Am 01.04.2014 01:34, schrieb Andi Kleen:
+> >> This problem persists in v3.14, i.e. I still have to revert
+> >> 83460ec8dcac14142e7860a01fa59c267ac4657c in order to get a working
+> >> kernel on i686. I would really appreciate if someone would actually read
+> >> my original mail from about 3 months ago and write an answer.
+> > 
+> > Can you resend it please?
+> 
+> It's available here: https://lkml.org/lkml/2014/1/26/22
+> 
+> For convenience, here is a copy-and-paste of the full text:
 
-Ok, that may end up being harder than it looked. Commit
-a755180bab81c038a6989d7ab746c702f1b3ec03 doesn't boot for me at all,
-so apparently there are some really broken points in that whole
-development chain.
+I did some experiments know and I can't find any 32bit modules 
+that do not load with 32bit MODVERSIONS on or off with 
+a current tree.
 
-I'll try to pick kernels away from that, but that makes bisection much
-less effective.
+Do you have a specific config?
+Specific compiler version?
 
-                Linus
+Thanks,
+
+-Andi
