@@ -1,131 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaDEAQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 20:16:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41352 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbaDEAQf (ORCPT
+	id S1753568AbaDEAUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 20:20:00 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47291 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020AbaDEAT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 20:16:35 -0400
-Message-ID: <533F4B60.1020702@infradead.org>
-Date: Fri, 04 Apr 2014 17:16:32 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 4 Apr 2014 20:19:58 -0400
+Date: Fri, 4 Apr 2014 18:19:53 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper
+ function.
+Message-ID: <20140405001953.GE15806@google.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811272-1547-2-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
-To: Carlos Garcia <carlos@cgarcia.org>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH] Documentation: spelling error changes
-References: <1396302992-13582-1-git-send-email-carlos@cgarcia.org>
-In-Reply-To: <1396302992-13582-1-git-send-email-carlos@cgarcia.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394811272-1547-2-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2014 02:56 PM, Carlos Garcia wrote:
-> Fixed multiple spelling errors.
-> 
-> Signed-off-by: Carlos E. Garcia <carlos@cgarcia.org>
+On Fri, Mar 14, 2014 at 03:34:27PM +0000, Liviu Dudau wrote:
+> Some architectures do not share x86 simple view of the PCI I/O space
+> and instead use a range of addresses that map to bus addresses. For
+> some architectures these ranges will be expressed by OF bindings
+> in a device tree file.
+
+It's true that the current Linux "x86 view of PCI I/O space" is pretty
+simple and limited.  But I don't think that's a fundamental x86 limitation
+(other than the fact that the actual INB/OUTB/etc. CPU instructions
+themselves are limited to a single 64K I/O port space).
+
+Host bridges on x86 could have MMIO apertures that turn CPU memory accesses
+into PCI port accesses.  We could implement any number of I/O port spaces
+this way, by making the kernel inb()/outb()/etc. interfaces smart enough to
+use the memory-mapped space instead of (or in addition to) the
+INB/OUTB/etc. instructions.
+
+ia64 does this (see arch/ia64/include/asm/io.h for a little description)
+and I think maybe one or two other arches have something similar.
+
+> Introduce a pci_register_io_range() helper function that can be used
+> by the architecture code to keep track of the I/O ranges described by the
+> PCI bindings. If the PCI_IOBASE macro is not defined that signals
+> lack of support for PCI and we return an error.
+
+I don't quite see how you intend to use this, because this series doesn't
+include any non-stub implementation of pci_register_io_range().
+
+Is this anything like the ia64 strategy I mentioned above?  If so, it would
+be really nice to unify some of this stuff.
+
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Acked-by: Grant Likely <grant.likely@linaro.org>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
 > ---
->  Documentation/DMA-attributes.txt                             |  2 +-
->  Documentation/devicetree/bindings/arm/omap/omap.txt          |  2 +-
->  Documentation/devicetree/bindings/bus/mvebu-mbus.txt         |  2 +-
->  Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt     |  2 +-
->  Documentation/devicetree/bindings/mmc/k3-dw-mshc.txt         |  2 +-
->  Documentation/devicetree/bindings/mmc/samsung-sdhci.txt      |  2 +-
->  Documentation/devicetree/bindings/mtd/gpmc-nand.txt          |  2 +-
->  Documentation/devicetree/bindings/mtd/gpmc-nor.txt           |  2 +-
->  Documentation/devicetree/bindings/mtd/gpmc-onenand.txt       |  2 +-
->  .../devicetree/bindings/pinctrl/brcm,bcm11351-pinctrl.txt    | 12 ++++++------
->  Documentation/devicetree/bindings/powerpc/4xx/reboot.txt     |  2 +-
->  Documentation/devicetree/bindings/powerpc/fsl/dcsr.txt       |  2 +-
->  Documentation/devicetree/bindings/regulator/regulator.txt    |  2 +-
->  Documentation/devicetree/bindings/spi/spi-bus.txt            |  2 +-
->  Documentation/dma-buf-sharing.txt                            |  2 +-
->  Documentation/dynamic-debug-howto.txt                        |  2 +-
->  Documentation/edac.txt                                       |  2 +-
->  Documentation/fb/sm501.txt                                   |  2 +-
->  Documentation/fb/sstfb.txt                                   |  2 +-
->  Documentation/filesystems/proc.txt                           |  4 ++--
->  Documentation/filesystems/sharedsubtree.txt                  |  2 +-
->  Documentation/gpio/consumer.txt                              |  2 +-
->  Documentation/hid/uhid.txt                                   |  2 +-
->  Documentation/input/alps.txt                                 |  2 +-
->  Documentation/input/input.txt                                |  2 +-
->  Documentation/mtd/nand/pxa3xx-nand.txt                       |  2 +-
->  Documentation/networking/can.txt                             |  2 +-
->  Documentation/networking/dccp.txt                            |  2 +-
->  Documentation/powerpc/transactional_memory.txt               |  2 +-
->  Documentation/rbtree.txt                                     |  2 +-
->  Documentation/rfkill.txt                                     |  2 +-
->  Documentation/robust-futexes.txt                             |  2 +-
->  Documentation/s390/monreader.txt                             |  2 +-
->  Documentation/security/Yama.txt                              |  2 +-
->  Documentation/sound/alsa/ALSA-Configuration.txt              |  4 ++--
->  Documentation/trace/events.txt                               |  2 +-
->  Documentation/usb/mass-storage.txt                           |  2 +-
->  Documentation/virtual/kvm/api.txt                            |  2 +-
->  Documentation/vm/transhuge.txt                               |  4 ++--
->  Documentation/x86/earlyprintk.txt                            |  2 +-
->  Documentation/x86/i386/IO-APIC.txt                           |  2 +-
->  41 files changed, 49 insertions(+), 49 deletions(-)
-
-> diff --git a/Documentation/devicetree/bindings/spi/spi-bus.txt b/Documentation/devicetree/bindings/spi/spi-bus.txt
-> index e5a4d1b..0ff87d1 100644
-> --- a/Documentation/devicetree/bindings/spi/spi-bus.txt
-> +++ b/Documentation/devicetree/bindings/spi/spi-bus.txt
-> @@ -61,7 +61,7 @@ contain the following properties.
->                        used for MISO. Defaults to 1 if not present.
+>  drivers/of/address.c       | 9 +++++++++
+>  include/linux/of_address.h | 1 +
+>  2 files changed, 10 insertions(+)
+> 
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index 1a54f1f..be958ed 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -619,6 +619,15 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
+>  }
+>  EXPORT_SYMBOL(of_get_address);
 >  
->  Some SPI controllers and devices support Dual and Quad SPI transfer mode.
-> -It allows data in SPI system transfered in 2 wires(DUAL) or 4 wires(QUAD).
-> +It allows data in SPI system transferred in 2 wires(DUAL) or 4 wires(QUAD).
-
-The spelling change is correct, but that sentence is still awkward.
-How about:
-
-  It allows data in the SPI system to be transferred in 2 wires (DUAL) or 4 wires (QUAD).
-
-
->  Now the value that spi-tx-bus-width and spi-rx-bus-width can receive is
->  only 1(SINGLE), 2(DUAL) and 4(QUAD).
->  Dual/Quad mode is not allowed when 3-wire mode is used.
-
-> diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
-> index 4a63953..aeea1b14 100644
-> --- a/Documentation/vm/transhuge.txt
-> +++ b/Documentation/vm/transhuge.txt
-> @@ -360,13 +360,13 @@ on any tail page, would mean having to split all hugepages upfront in
->  get_user_pages which is unacceptable as too many gup users are
->  performance critical and they must work natively on hugepages like
->  they work natively on hugetlbfs already (hugetlbfs is simpler because
-> -hugetlbfs pages cannot be splitted so there wouldn't be requirement of
-> +hugetlbfs pages cannot be splitt so there wouldn't be requirement of
-
-                             split
-
->  accounting the pins on the tail pages for hugetlbfs). If we wouldn't
->  account the gup refcounts on the tail pages during gup, we won't know
->  anymore which tail page is pinned by gup and which is not while we run
->  split_huge_page. But we still have to add the gup pin to the head page
->  too, to know when we can free the compound page in case it's never
-> -splitted during its lifetime. That requires changing not just
-> +splitt during its lifetime. That requires changing not just
-
-   split
-
->  get_page, but put_page as well so that when put_page runs on a tail
->  page (and only on a tail page) it will find its respective head page,
->  and then it will decrease the head page refcount in addition to the
-
-
-Carlos, would you make those few changes and send a v3?
-And with those changes, you can include this line:
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-
-thanks,
--- 
-~Randy
+> +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
+> +{
+> +#ifndef PCI_IOBASE
+> +	return -EINVAL;
+> +#else
+> +	return 0;
+> +#endif
+> +}
+> +
+>  unsigned long __weak pci_address_to_pio(phys_addr_t address)
+>  {
+>  	if (address > IO_SPACE_LIMIT)
+> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+> index 5f6ed6b..40c418d 100644
+> --- a/include/linux/of_address.h
+> +++ b/include/linux/of_address.h
+> @@ -56,6 +56,7 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
+>  extern const __be32 *of_get_address(struct device_node *dev, int index,
+>  			   u64 *size, unsigned int *flags);
+>  
+> +extern int pci_register_io_range(phys_addr_t addr, resource_size_t size);
+>  extern unsigned long pci_address_to_pio(phys_addr_t addr);
+>  
+>  extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
+> -- 
+> 1.9.0
+> 
