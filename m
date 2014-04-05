@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaDENNp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 09:13:45 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:33918 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690AbaDENNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 09:13:43 -0400
-X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Apr 2014 09:13:43 EDT
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <arc-linux-dev@synopsys.com>, <stable@vger.kernel.org>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH 0/2] ARC: unbork nsimosci serial console
-Date: Sat, 5 Apr 2014 18:39:09 +0530
-Message-ID: <1396703351-8423-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752918AbaDENXN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 09:23:13 -0400
+Received: from mout.gmx.net ([212.227.15.19]:62710 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752697AbaDENXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 09:23:11 -0400
+Message-ID: <534003B9.5020003@gmx.de>
+Date: Sat, 05 Apr 2014 15:23:05 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.226]
+To: Jeff Layton <jlayton@redhat.com>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: NFSv2 directory cannot longer be exported in 3.14, 3.13 works
+ fine
+References: <533F2ABF.2030107@gmx.de>	<533FF457.5080907@gmx.de> <20140405085143.59e578ff@tlielax.poochiereds.net>
+In-Reply-To: <20140405085143.59e578ff@tlielax.poochiereds.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:ulhFZ6dUZGiLBGzEv17IOL8dYXWdKGevIvFri1xHVp/1NAMZRM2
+ JYfHTXz4IBqAddJhQu4F4gUeak0h9d/W5Kw1IVcbRjhaUfVfUNExNoLI7rfg8GsMp7rIbs3
+ +OfQirXTMXJafBRDzbuMeST7jNjCEj2eHpZoSETKcM8S2WV2k66zcS54KjMQ/rxenExX/Pb
+ HyNAnbolBTha3UpZ1bXmg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-This is basically stable team fodder. I'll be sending these patches to
-Linus as part of ARC 3.15 merge window changes early next week.
+On 04/05/2014 02:51 PM, Jeff Layton wrote:
+> This was already tracked down earlier this week. Bruce has a patch 
+> queued to fix it in his nfsd-next branch. See this thread from
+> earlier this week:
+> 
+> Subject: Re: linux-3.14 nfsd regression
+yep - fixed the issue here
 
-Thx,
--Vineet
+- -- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Mischa Jonker (1):
-  ARC: [nsimosci] Change .dts to use generic 8250 UART
-
-Vineet Gupta (1):
-  ARC: [nsimosci] Unbork console
-
- arch/arc/boot/dts/nsimosci.dts      | 12 +++++++-----
- arch/arc/configs/nsimosci_defconfig |  1 +
- 2 files changed, 8 insertions(+), 5 deletions(-)
-
--- 
-1.8.3.2
-
+iF4EAREIAAYFAlNAA7kACgkQxOrN3gB26U5UiwD/X/ONRaFIMGyxHLZd7cwrN4zh
+QADbpEhyT+N6KwH6m2wA/j++6yigdEtV7k9pjEWMwlCZUyT8reUbNzZOhxMl10+i
+=WGBv
+-----END PGP SIGNATURE-----
