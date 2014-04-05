@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaDEO3j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 10:29:39 -0400
-Received: from gerolde.archlinux.org ([66.211.214.132]:56404 "EHLO
-	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711AbaDEO3i (ORCPT
+	id S1752975AbaDEOic (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 10:38:32 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:39382 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853AbaDEOib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 10:29:38 -0400
-Message-ID: <5340134B.4010705@archlinux.org>
-Date: Sat, 05 Apr 2014 16:29:31 +0200
-From: =?ISO-8859-1?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 5 Apr 2014 10:38:31 -0400
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <21312.5447.611685.217995@quad.stoffel.home>
+Date: Sat, 5 Apr 2014 10:37:59 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: John Stoffel <john@stoffel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, tpowa@archlinux.org
-Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
-References: <52E4CF03.8030208@archlinux.org> <5339F739.2060207@archlinux.org> <20140331233450.GI32556@tassilo.jf.intel.com> <5339FC62.8060207@archlinux.org> <20140405011332.GR32556@tassilo.jf.intel.com>
-In-Reply-To: <20140405011332.GR32556@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc"
+        Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Joerg Roedel <joro@8bytes.org>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+In-Reply-To: <20140404231749.GA20437@kroah.com>
+References: <20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
+	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
+	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
+	<CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
+	<CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
+	<20140403104308.GP13491@8bytes.org>
+	<20140403170541.GA19010@thunk.org>
+	<533EF832.1030902@mit.edu>
+	<CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
+	<21311.8533.138063.744673@quad.stoffel.home>
+	<20140404231749.GA20437@kroah.com>
+X-Mailer: VM 8.2.0b under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+>>>>> "Greg" == Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-Am 05.04.2014 03:13, schrieb Andi Kleen:
-> On Tue, Apr 01, 2014 at 01:38:10AM +0200, Thomas B=E4chler wrote:
->> Am 01.04.2014 01:34, schrieb Andi Kleen:
->>>> This problem persists in v3.14, i.e. I still have to revert
->>>> 83460ec8dcac14142e7860a01fa59c267ac4657c in order to get a working
->>>> kernel on i686. I would really appreciate if someone would actually =
-read
->>>> my original mail from about 3 months ago and write an answer.
->>>
->>> Can you resend it please?
->>
->> It's available here: https://lkml.org/lkml/2014/1/26/22
->>
->> For convenience, here is a copy-and-paste of the full text:
->=20
-> I did some experiments know and I can't find any 32bit modules=20
-> that do not load with 32bit MODVERSIONS on or off with=20
-> a current tree.
->=20
-> Do you have a specific config?
-> Specific compiler version?
+Greg> On Fri, Apr 04, 2014 at 05:17:09PM -0400, John Stoffel wrote:
+>> >>>>> "Linus" == Linus Torvalds <torvalds@linux-foundation.org> writes:
+>> 
+Linus> On Fri, Apr 4, 2014 at 11:21 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> >> 
+>> >> The other thing I've used /dev/kmsg for is to shove a "I'm starting
+>> >> something now" message in.  This is only really necessary because the
+>> >> current kernel log timestamps are unusable crap.  (We could fix that,
+>> >> hint hint.)
+>> 
+Linus> I'd actually love to fix that, but I disagree with the "we could fix
+Linus> it". There are tons of people who know how to parse them (admittedly
+Linus> often only to ignore them), so changing the format is not likely to
+Linus> work.
+>> 
+Linus> The good news is that "dmesg -H" does help if you're
+Linus> human. While at the same time being an example of that very
+Linus> "there are tools that know about the current horrid format"
+Linus> issue.. D'oh.
+>> 
+>> I think you mean "dmesg -T", and unfortunately it seems Debian 6.0.9
+>> (or older) doesn ship a new enough linux-util since I've only got
+>> 2.17.2-9 install.  
 
-Using gcc 4.8 from Arch Linux with the configuration at [1] and Linux 3.1=
-4.
+Greg> No, 'dmesg -H' is the right thing, you just need a modern version of
+Greg> util-linux :)
 
-[1]
-https://projects.archlinux.org/svntogit/packages.git/tree/trunk/config?h=3D=
-packages/linux
+Probably.  But I'm working within my limitations, esp at work we can
+upgrade too aggresively because of support needs for the tools we
+use.  And at home... usually Debian is pretty good about updates like
+this, but for my main NAS box, I'm not aggresive either.
 
+>> And RHEL/Centos 5.6 and 6.5 don't seem to ship that by default either,
+>> they have got util-linux-2.13-0.56.el5 and
+>> util-linux-ng-2.17.2-12.14.el6.x86_64 respectively.  Blech!  It's in
+>> Linux Mint 16 at least, haven't checked older versions.
 
---ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Greg> util-linux is on version 2.24.1 at the moment:
+Greg> 	https://www.kernel.org/pub/linux/utils/util-linux/v2.24/
+Greg> 	2.17.2 was from back in 2012, I think it's time to switch to a
+Greg> 	modern distro...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+2012 isn't ancient... :-)  2002 is ancient.  And I still run some
+Solaris 5.8 hosts at work from that era.  
 
-iQIcBAEBAgAGBQJTQBNNAAoJEChPw0yOSxolYa8QANc+us6moP42uNloCY3pWN/y
-mlV1ljXZZZe32R8SUWoOrVEOfJKx7Yg0ayt9qcfPI2dZ44VjnXJTPWRC0ZoFKYbI
-vEHIdrQrk+Uxcrt+RG9/cKIH5GbfICUlcebI8E2Y7YCIZ2dfUJSWelQ85D7WVHn6
-pIKhYKBDqOZG1ZWGLgpkpRLLD9mtr4Do/l6UXscDzMNjDS7sjWoAbgshRU1tStkV
-VT13K8iXIi5gbnRehmvZh50sjGhDmaQBpcpYoJy0TTPPwDtRnrHQmskC9v3KuX49
-R5CIca4wotoJDCRKzJe893XmCLy+5966d18PM+9P8tYG4XZODywU2x4gyf0dcK6W
-U6m/6JmNdPLJ52/u7t47hJ7UKoxKej6XGfwoZXHp36yHGkgq+Zf5TfqOZ3HHmAZT
-YEgs3KVr3dX9vimXregCweksOAjAOUgsdsTnwDBPWsjzAIj0s0BX2yLa9HV9SlrM
-hPlQXXEIsWr6k+GrWfPG11JItoJ1WEr8g7/gjRkXLbRGkGqXPAD4m277p2zOWfub
-7HeYRfwb8JLGRK37qdv8En2ohJYmSTGvHp0q9ky6f5P9f3wnEtIX9SFTe/kEiC9Z
-HWuS+AQKAO4xYp20vBTrCgSgZYdqCNfZ6hNyhxyIACsZojBbcvy9WvlVH038aQB1
-vx2XtPdspuRUhJzGlxD4
-=nPLS
------END PGP SIGNATURE-----
-
---ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc--
+John
