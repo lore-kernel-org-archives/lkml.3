@@ -1,130 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaDESYH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 14:24:07 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:58909 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265AbaDESYF (ORCPT
+	id S1753387AbaDESYs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 14:24:48 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:55285 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265AbaDESYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 14:24:05 -0400
+	Sat, 5 Apr 2014 14:24:47 -0400
 MIME-Version: 1.0
-Date: Sat, 5 Apr 2014 20:24:04 +0200
-Message-ID: <CAPF_0gn1r1R0eatLDqKUqmMc=n9xYufxbg==zv3RS4wS8fbJpA@mail.gmail.com>
-Subject: [PATCH 1/1] staging: sep: Fix coding style
-From: Camille Bordignon <camille.bordignon@gmail.com>
-To: paul.gortmaker@windriver.com, rashika.kheria@gmail.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1396587632.2499.5.camel@buesod1.americas.hpqcorp.net>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+ <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+ <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+ <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+ <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+ <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+ <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+ <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+ <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com>
+ <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com>
+ <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net> <533DB03D.7010308@colorfullife.com>
+ <1396554637.2550.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rT7WswD0LOxVeDDpae-Ahaz4wEcpE8HLmDwOBw598z8g@mail.gmail.com>
+ <1396587632.2499.5.camel@buesod1.americas.hpqcorp.net>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sat, 5 Apr 2014 14:24:26 -0400
+Message-ID: <CAHGf_=pvN96SgLYdR3jPn8VaEfAjq-LX=r=PQRvPGqi6xFJoxQ@mail.gmail.com>
+Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes coding style warning "Missing a blank line after
-declarations" in files sep_dev.h and sep_crypto.c.
+On Fri, Apr 4, 2014 at 1:00 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> On Thu, 2014-04-03 at 19:39 -0400, KOSAKI Motohiro wrote:
+>> On Thu, Apr 3, 2014 at 3:50 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>> > On Thu, 2014-04-03 at 21:02 +0200, Manfred Spraul wrote:
+>> >> Hi Davidlohr,
+>> >>
+>> >> On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
+>> >> > The default size for shmmax is, and always has been, 32Mb.
+>> >> > Today, in the XXI century, it seems that this value is rather small,
+>> >> > making users have to increase it via sysctl, which can cause
+>> >> > unnecessary work and userspace application workarounds[1].
+>> >> >
+>> >> > Instead of choosing yet another arbitrary value, larger than 32Mb,
+>> >> > this patch disables the use of both shmmax and shmall by default,
+>> >> > allowing users to create segments of unlimited sizes. Users and
+>> >> > applications that already explicitly set these values through sysctl
+>> >> > are left untouched, and thus does not change any of the behavior.
+>> >> >
+>> >> > So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+>> >> > implies unlimited memory, as opposed to disabling sysv shared memory.
+>> >> > This is safe as 0 cannot possibly be used previously as SHMMIN is
+>> >> > hardcoded to 1 and cannot be modified.
+>> >
+>> >> Are we sure that no user space apps uses shmctl(IPC_INFO) and prints a
+>> >> pretty error message if shmall is too small?
+>> >> We would break these apps.
+>> >
+>> > Good point. 0 bytes/pages would definitely trigger an unexpected error
+>> > message if users did this. But on the other hand I'm not sure this
+>> > actually is a _real_ scenario, since upon overflow the value can still
+>> > end up being 0, which is totally bogus and would cause the same
+>> > breakage.
+>> >
+>> > So I see two possible workarounds:
+>> > (i) Use ULONG_MAX for the shmmax default instead. This would make shmall
+>> > default to 1152921504606846720 and 268435456, for 64 and 32bit systems,
+>> > respectively.
+>> >
+>> > (ii) Keep the 0 bytes, but add a new a "transition" tunable that, if set
+>> > (default off), would allow 0 bytes to be unlimited. With time, users
+>> > could hopefully update their applications and we could eventually get
+>> > rid of it. This _seems_ to be the less aggressive way to go.
+>>
+>> Do you mean
+>>
+>> set 0: IPC_INFO return shmmax = 0.
+>> set 1: IPC_INFO return shmmax = ULONG_MAX.
+>>
+>> ?
+>>
+>> That makes sense.
+>
+> Well I was mostly referring to:
+>
+> set 0: leave things as there are now.
+> set 1: this patch.
 
-Signed-off-by: Camille Bordignon <camille.bordignon@gmail.com>
----
-diff --git a/drivers/staging/sep/sep_crypto.c b/drivers/staging/sep/sep_crypto.c
-index 965485f..415f8ec 100644
---- a/drivers/staging/sep/sep_crypto.c
-+++ b/drivers/staging/sep/sep_crypto.c
-@@ -93,6 +93,7 @@ static void sep_do_callback(struct work_struct *work)
- {
-     struct sep_work_struct *sep_work = container_of(work,
-         struct sep_work_struct, work);
-+
-     if (sep_work != NULL) {
-         (sep_work->callback)(sep_work->data);
-         kfree(sep_work);
-@@ -649,6 +650,7 @@ weak:
- static u32 sep_sg_nents(struct scatterlist *sg)
- {
-     u32 ct1 = 0;
-+
-     while (sg) {
-         ct1 += 1;
-         sg = sg_next(sg);
-@@ -666,6 +668,7 @@ static u32 sep_sg_nents(struct scatterlist *sg)
- static u32 sep_start_msg(struct this_task_ctx *ta_ctx)
- {
-     u32 *word_ptr;
-+
-     ta_ctx->msg_len_words = 2;
-     ta_ctx->msgptr = ta_ctx->msg;
-     memset(ta_ctx->msg, 0, SEP_DRIVER_MESSAGE_SHARED_AREA_SIZE_IN_BYTES);
-@@ -740,6 +743,7 @@ static void sep_write_msg(struct this_task_ctx
-*ta_ctx, void *in_addr,
- {
-     u32 *word_ptr;
-     void *void_ptr;
-+
-     void_ptr = ta_ctx->msgptr + *msg_offset;
-     word_ptr = (u32 *)void_ptr;
-     memcpy(void_ptr, in_addr, size);
-@@ -748,6 +752,7 @@ static void sep_write_msg(struct this_task_ctx
-*ta_ctx, void *in_addr,
-     /* Do we need to manipulate endian? */
-     if (byte_array) {
-         u32 i;
-+
-         for (i = 0; i < ((size + 3) / 4); i += 1)
-             *(word_ptr + i) = CHG_ENDIAN(*(word_ptr + i));
-     }
-@@ -788,12 +793,14 @@ static void sep_read_msg(struct this_task_ctx
-*ta_ctx, void *in_addr,
- {
-     u32 *word_ptr;
-     void *void_ptr;
-+
-     void_ptr = ta_ctx->msgptr + *msg_offset;
-     word_ptr = (u32 *)void_ptr;
+I don't recommend this approach because many user never switch 1 and
+finally getting API fragmentation.
 
-     /* Do we need to manipulate endian? */
-     if (byte_array) {
-         u32 i;
-+
-         for (i = 0; i < ((size + 3) / 4); i += 1)
-             *(word_ptr + i) = CHG_ENDIAN(*(word_ptr + i));
-     }
-@@ -865,6 +872,7 @@ static void sep_read_context(struct this_task_ctx
-*ta_ctx, u32 *msg_offset,
-     void *dst, u32 len)
- {
-     u32 max_length = ((len + 3) / sizeof(u32)) * sizeof(u32);
-+
-     sep_read_msg(ta_ctx, dst, len, max_length, msg_offset, 0);
- }
 
-@@ -884,6 +892,7 @@ static void sep_write_context(struct this_task_ctx
-*ta_ctx, u32 *msg_offset,
-     void *src, u32 len)
- {
-     u32 max_length = ((len + 3) / sizeof(u32)) * sizeof(u32);
-+
-     sep_write_msg(ta_ctx, src, len, max_length, msg_offset, 0);
- }
+> I don't think it makes much sense to set unlimited for both 0 and
+> ULONG_MAX, that would probably just create even more confusion.
+>
+> But then again, we shouldn't even care about breaking things with shmmax
+> or shmall with 0 value, it just makes no sense from a user PoV. shmmax
+> cannot be 0 unless there's an overflow, which voids any valid cases, and
+> thus shmall cannot be 0 either as it would go against any values set for
+> shmmax. I think it's safe to ignore this.
 
-@@ -3893,6 +3902,7 @@ static struct crypto_alg crypto_algs[] = {
- int sep_crypto_setup(void)
- {
-     int err, i, j, k;
-+
-     tasklet_init(&sep_dev->finish_tasklet, sep_finish,
-         (unsigned long)sep_dev);
-
-diff --git a/drivers/staging/sep/sep_dev.h b/drivers/staging/sep/sep_dev.h
-index 5f6a07f..bf56c06 100644
---- a/drivers/staging/sep/sep_dev.h
-+++ b/drivers/staging/sep/sep_dev.h
-@@ -152,6 +152,7 @@ static inline u32 sep_read_reg(struct sep_device
-*dev, int reg)
- static inline void sep_wait_sram_write(struct sep_device *dev)
- {
-     u32 reg_val;
-+
-     do {
-         reg_val = sep_read_reg(dev, HW_SRAM_DATA_READY_REG_ADDR);
-     } while (!(reg_val & 1));
-
--- 
-Camille Bordignon
+Agreed.
+IMHO, until you find out any incompatibility issue of this, we don't
+need the switch
+because we can't make good workaround for that. I'd suggest to merge your patch
+and see what happen.
