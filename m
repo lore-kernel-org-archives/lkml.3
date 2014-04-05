@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaDERY0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 13:24:26 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:62333 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183AbaDERYY (ORCPT
+	id S1753319AbaDERvD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 13:51:03 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:56009 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230AbaDERvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 13:24:24 -0400
-X-Nat-Received: from [202.181.97.72]:53603 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1396718617.19278
-To: thomas@archlinux.org, ak@linux.intel.com
-Cc: viro@ZenIV.linux.org.uk, geert@linux-m68k.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        tpowa@archlinux.org
-Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <5339F739.2060207@archlinux.org>
-	<20140331233450.GI32556@tassilo.jf.intel.com>
-	<5339FC62.8060207@archlinux.org>
-	<20140405011332.GR32556@tassilo.jf.intel.com>
-	<5340134B.4010705@archlinux.org>
-In-Reply-To: <5340134B.4010705@archlinux.org>
-Message-Id: <201404060223.FJI17489.LFMOVtOSFQFOHJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 6 Apr 2014 02:23:32 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 05042014 #7774726, status: clean
+	Sat, 5 Apr 2014 13:51:02 -0400
+Date: Sat, 5 Apr 2014 19:50:59 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ktap and ebpf integration
+Message-ID: <20140405175059.GT22728@two.firstfloor.org>
+References: <CAGdX0WEeZJ9hxq1y-gmGC=kdtU0ecLbs5gVYb_8ZE6sOW_PPvg@mail.gmail.com>
+ <CAMEtUuyQZo6fSMTZ5XKPfPBdjR13916Rd3=z5dip3N_WOzvr6Q@mail.gmail.com>
+ <CAGdX0WFm2wccs30q1=eduLdzjAjfxz-6oL-zGvumY6BigQ-a4g@mail.gmail.com>
+ <20140404074800.GD1637@gmail.com>
+ <CAGdX0WGcx3aF6Uhsh=K2bG5CDD5iNqCyPUcf=RZWHsDehmE-qQ@mail.gmail.com>
+ <CAMEtUuxuTXo9Q-KMvZsH96Uzt5VsCLh1wHGtwn+k_P4iM8FTaw@mail.gmail.com>
+ <CAGdX0WEbUszQv=xVK35aes=Qcw=D-0HztML0jBJsKy6hVCH8cA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGdX0WEbUszQv=xVK35aes=Qcw=D-0HztML0jBJsKy6hVCH8cA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas B臘hler wrote:
-> >> For convenience, here is a copy-and-paste of the full text:
-> > 
-> > I did some experiments know and I can't find any 32bit modules 
-> > that do not load with 32bit MODVERSIONS on or off with 
-> > a current tree.
-> > 
-> > Do you have a specific config?
-> > Specific compiler version?
-> 
-> Using gcc 4.8 from Arch Linux with the configuration at [1] and Linux 3.14.
-> 
-> [1]
-> https://projects.archlinux.org/svntogit/packages.git/tree/trunk/config?h=packages/linux
-> 
+> 4) var i = 0; trace *:* { i += 1}
+> Assign global variable in here, there also can assign other
+> value not 0, please show me how BPF do this.
+> (See complex global usage example in samples/schedule/schedtimes.kp)
 
-I installed ArchLinux i686 and compiled
-https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.tar.xz using [1]
-as of commit bbf3d68a without any changes.
+That's what I meant. BPF is essentially a statically typed
+language. KTAP is dynamically typed. It's a very different
+model.
 
-It seems to me that everything is working well.
-Which modules you cannot load?
+Yes they are both Turing complete and likely could 
+be somehow translated into each other, but would
+it be efficient and simple? No.
 
-[root@localhost ~]# ls -lrt /boot/*3.14.0-ARCH*
--rw-r--r-- 1 root root 3619792 Apr  6 10:44 /boot/vmlinuz-3.14.0-ARCH
--rw-r--r-- 1 root root 3076964 Apr  6 11:08 /boot/initramfs-3.14.0-ARCH.img
-[root@localhost ~]# cat /proc/version
-Linux version 3.14.0-ARCH (root@localhost) (gcc version 4.8.2 20140206 (prerelease) (GCC) ) #3 SMP PREEMPT Sun Apr 6 10:28:24 JST 2014
-[root@localhost ~]# lsmod | grep ext4
-ext4                  434862  1
-crc16                   1091  1 ext4
-mbcache                 4458  1 ext4
-jbd2                   70413  1 ext4
+[essentially it's the "UNCOL problem" -- see
+http://en.wikipedia.org/wiki/UNCOL
+One size doesn't fit all in immediate languages]
+
+-Andi
+
