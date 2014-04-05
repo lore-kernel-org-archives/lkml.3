@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaDEVgm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 17:36:42 -0400
-Received: from ring0.de ([5.45.105.125]:47043 "EHLO ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753758AbaDEVgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 17:36:39 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@kernel.org>
-To: Sebastian Reichel <sre@ring0.de>, Mark Brown <broonie@kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org, Sebastian Reichel <sre@kernel.org>
-Subject: [PATCH 0/5] DT support for N900 soundcard (rx51-audio)
-Date: Sat,  5 Apr 2014 23:35:48 +0200
-Message-Id: <1396733753-9820-1-git-send-email-sre@kernel.org>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753796AbaDEVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 17:34:09 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:61158 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738AbaDEVdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 17:33:50 -0400
+From: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        silentquote@gmail.com,
+        Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+Subject: [PATCH 02/10] driver: staging: wlan-ng: Removed unnecessary typedefs from hfa384x_usb.c
+Date: Sat,  5 Apr 2014 23:33:45 +0200
+Message-Id: <1396733625-15801-1-git-send-email-shehabaldin.sherif@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Removed unnecessary typedefs from hfa384x_usb.c
 
-This patchset adds DT support in rx51-audio. I tested it on my
-Nokia N900 and was able to play a wav file using aplay. I have
-not tested the whole functionality, but output via speakers,
-headphones and the related enable controls seem to work.
+Signed-off-by: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>
+---
+ drivers/staging/wlan-ng/hfa384x_usb.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-The patches can be applied cleanly to torvalds/linux.git:master
-and broonie/sound.git:for-next.
-
--- Sebastian
-
-Pali Rohár (1):
-  ASoC: omap: rx51: Use devm_snd_soc_register_card
-
-Sebastian Reichel (4):
-  ASoC: Allow Aux Codecs to be specified using DT
-  ASoC: RX-51: Add DT support to sound driver
-  ASoC: RX-51: Convert to table based DAPM setup
-  ASoC: tlv320aic3x: fix shared reset pin for DT
-
- .../devicetree/bindings/sound/nokia,rx51.txt       |  27 +++
- include/sound/rx51.h                               |  18 ++
- include/sound/soc.h                                |  13 +-
- sound/soc/codecs/tlv320aic3x.c                     |   9 +-
- sound/soc/omap/omap-mcbsp.c                        |   5 +-
- sound/soc/omap/omap-mcbsp.h                        |   2 +-
- sound/soc/omap/rx51.c                              | 248 +++++++++++++--------
- sound/soc/soc-core.c                               |  68 +++---
- 8 files changed, 266 insertions(+), 124 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/sound/nokia,rx51.txt
- create mode 100644 include/sound/rx51.h
-
+diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
+index 646c29e..943de9c 100644
+--- a/drivers/staging/wlan-ng/hfa384x_usb.c
++++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+@@ -744,14 +744,12 @@ static inline struct usbctlx_completor *init_rrid_completor(
+ * Completor object:
+ * Interprets the results of a synchronous RID-write
+ ----------------------------------------------------------------*/
+-typedef struct usbctlx_cmd_completor usbctlx_wrid_completor_t;
+ #define init_wrid_completor  init_cmd_completor
+ 
+ /*----------------------------------------------------------------
+ * Completor object:
+ * Interprets the results of a synchronous memory-write
+ ----------------------------------------------------------------*/
+-typedef struct usbctlx_cmd_completor usbctlx_wmem_completor_t;
+ #define init_wmem_completor  init_cmd_completor
+ 
+ /*----------------------------------------------------------------
+@@ -765,11 +763,11 @@ struct usbctlx_rmem_completor {
+ 	void *data;
+ 	unsigned int len;
+ };
+-typedef struct usbctlx_rmem_completor usbctlx_rmem_completor_t;
+ 
+ static int usbctlx_rmem_completor_fn(struct usbctlx_completor *head)
+ {
+-	usbctlx_rmem_completor_t *complete = (usbctlx_rmem_completor_t *) head;
++	struct usbctlx_rmem_completor *complete =
++		(struct usbctlx_rmem_completor *)head;
+ 
+ 	pr_debug("rmemresp:len=%d\n", complete->rmemresp->frmlen);
+ 	memcpy(complete->data, complete->rmemresp->data, complete->len);
+@@ -777,7 +775,7 @@ static int usbctlx_rmem_completor_fn(struct usbctlx_completor *head)
+ }
+ 
+ static inline struct usbctlx_completor *init_rmem_completor(
+-						usbctlx_rmem_completor_t
++						struct usbctlx_rmem_completor
+ 							*completor,
+ 						hfa384x_usb_rmemresp_t
+ 							*rmemresp,
+@@ -1562,7 +1560,7 @@ hfa384x_dowrid(hfa384x_t *hw,
+ 	if (result != 0) {
+ 		kfree(ctlx);
+ 	} else if (mode == DOWAIT) {
+-		usbctlx_wrid_completor_t completor;
++		struct usbctlx_cmd_completor completor;
+ 		hfa384x_cmdresult_t wridresult;
+ 
+ 		result = hfa384x_usbctlx_complete_sync(hw,
+@@ -1654,7 +1652,7 @@ hfa384x_dormem(hfa384x_t *hw,
+ 	if (result != 0) {
+ 		kfree(ctlx);
+ 	} else if (mode == DOWAIT) {
+-		usbctlx_rmem_completor_t completor;
++		struct usbctlx_rmem_completor completor;
+ 
+ 		result =
+ 		    hfa384x_usbctlx_complete_sync(hw, ctlx,
+@@ -1744,7 +1742,7 @@ hfa384x_dowmem(hfa384x_t *hw,
+ 	if (result != 0) {
+ 		kfree(ctlx);
+ 	} else if (mode == DOWAIT) {
+-		usbctlx_wmem_completor_t completor;
++		struct usbctlx_cmd_completor completor;
+ 		hfa384x_cmdresult_t wmemresult;
+ 
+ 		result = hfa384x_usbctlx_complete_sync(hw,
 -- 
-1.9.1
+1.7.9.5
 
