@@ -1,150 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaDEPtI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 11:49:08 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:53669 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaDEPtB (ORCPT
+	id S1753102AbaDEPs6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 11:48:58 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:45691 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995AbaDEPs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 11:49:01 -0400
-Message-ID: <534025D9.7030204@ahsoftware.de>
-Date: Sat, 05 Apr 2014 17:48:41 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Optimising IS_ERR_OR_NULL
-References: <20140405144337.GA5727@linux.intel.com>
-In-Reply-To: <20140405144337.GA5727@linux.intel.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Apr 2014 11:48:56 -0400
+From: Azat Khuzhin <a3at.mail@gmail.com>
+To: linux-ext4@vger.kernel.org
+Cc: Azat Khuzhin <a3at.mail@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v4] ext4: initialize multi-block allocator before checking block descriptors
+Date: Sat,  5 Apr 2014 19:48:36 +0400
+Message-Id: <1396712916-6296-1-git-send-email-a3at.mail@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.04.2014 16:43, schrieb Matthew Wilcox:
->
-> (4 days too late for April Fools ... oh well :-)
->
-> I don't like the look of IS_ERR_OR_NULL.  It does two tests when (due to
-> the bit patterns used to represent errors and NULL pointers) it could
-> use just one:
->
-> #define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
->
-> static inline long __must_check IS_ERR_OR_NULL(__force const void *ptr)
-> {
-> 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
-> }
->
-> It needs some performance testing to be sure that it's a win, but I'm
-> essentially suggesting this:
->
-> +++ b/include/linux/err.h
-> @@ -34,10 +34,8 @@ static inline long __must_check IS_ERR(__force const void *pt
->          return IS_ERR_VALUE((unsigned long)ptr);
->   }
->
-> -static inline long __must_check IS_ERR_OR_NULL(__force const void *ptr)
-> -{
-> -       return !ptr || IS_ERR_VALUE((unsigned long)ptr);
-> -}
-> +#define IS_ERR_OR_NULL(ptr) \
-> +       unlikely(((unsigned long)PTR_ERR(ptr) + MAX_ERRNO) <= MAX_ERRNO)
->
->   /**
->    * ERR_CAST - Explicitly cast an error-valued pointer to another pointer type
->
-> (deliberately whitespace-damaged to ensure it doesn't get applied
-> without thought).
->
-> Comments, before I go off and run some perf tests?
->
+With EXT4FS_DEBUG ext4_count_free_clusters() will call
+ext4_read_block_bitmap() without s_group_info initialized, so we need to
+initialize multi-block allocator before.
 
-(... x86 asm)
+And dependencies that must be solved, to allow this:
+- multi-block allocator needs in group descriptors
+- need to install s_op before initializing multi-block allocator,
+  because in ext4_mb_init_backend() new inode is created.
+- initialize number of group desc blocks (s_gdb_count) otherwise
+  number of clusters returned by ext4_free_clusters_after_init() is not correct.
+  (see ext4_bg_num_gdb_nometa())
 
-> Now that's a genuine improvement; we saved one instruction (lea, cmp,
-> jbe vs test, je, cmp, ja), and due to various alignment / padding / etc.
-> we ended up saving 4 bytes on the length of the function which turns
-> into 16 bytes due to function alignment.
+Here is bt:
+(gdb) bt
+ #0  ext4_get_group_info (group=0, sb=0xffff880079a10000) at ext4.h:2430
+ #1  ext4_validate_block_bitmap (sb=sb@entry=0xffff880079a10000, desc=desc@entry=0xffff880056510000, block_group=block_group@entry=0,
+     bh=bh@entry=0xffff88007bf2b2d8) at balloc.c:358
+ #2  0xffffffff81232202 in ext4_wait_block_bitmap (sb=sb@entry=0xffff880079a10000, block_group=block_group@entry=0,
+     bh=bh@entry=0xffff88007bf2b2d8) at balloc.c:476
+ #3  0xffffffff81232eaf in ext4_read_block_bitmap (sb=sb@entry=0xffff880079a10000, block_group=block_group@entry=0) at balloc.c:489
+ #4  0xffffffff81232fc0 in ext4_count_free_clusters (sb=sb@entry=0xffff880079a10000) at balloc.c:665
+ #5  0xffffffff81259ffa in ext4_check_descriptors (first_not_zeroed=<synthetic pointer>, sb=0xffff880079a10000) at super.c:2143
+ #6  ext4_fill_super (sb=sb@entry=0xffff880079a10000, data=<optimized out>, data@entry=0x0 <irq_stack_union>, silent=silent@entry=0)
+     at super.c:3851
+ #7  0xffffffff811b8340 in mount_bdev (fs_type=<optimized out>, flags=0, dev_name=<optimized out>, data=0x0 <irq_stack_union>,
+     fill_super=fill_super@entry=0xffffffff812589c0 <ext4_fill_super>) at super.c:987
+ #8  0xffffffff8124ec35 in ext4_mount (fs_type=<optimized out>, flags=<optimized out>, dev_name=<optimized out>, data=<optimized out>)
+     at super.c:5365
+ #9  0xffffffff811b8cf9 in mount_fs (type=type@entry=0xffffffff81c71840 <ext4_fs_type>, flags=flags@entry=0,
+     name=name@entry=0xffff880077a80c70 "/dev/loop4", data=data@entry=0x0 <irq_stack_union>) at super.c:1090
+ #10 0xffffffff811d2ff3 in vfs_kern_mount (type=type@entry=0xffffffff81c71840 <ext4_fs_type>, flags=0,
+     name=name@entry=0xffff880077a80c70 "/dev/loop4", data=data@entry=0x0 <irq_stack_union>) at namespace.c:813
+ #11 0xffffffff811d55de in do_new_mount (data=0x0 <irq_stack_union>, name=0xffff880077a80c70 "/dev/loop4", mnt_flags=32,
+     flags=<optimized out>, fstype=0xffff880077a80ca0 "ext4-insane", path=0xffff88007a5b1ed0) at namespace.c:2068
+ #12 do_mount (dev_name=0xffff880077a80c70 "/dev/loop4", dir_name=<optimized out>, type_page=0xffff880077a80ca0 "ext4-insane",
+     flags=<optimized out>, flags@entry=3236757504, data_page=0x0 <irq_stack_union>) at namespace.c:2392
+ #13 0xffffffff811d6183 in SYSC_mount (data=0x0 <irq_stack_union>, flags=3236757504, type=<optimized out>, dir_name=<optimized out>,
+     dev_name=0x7ffad9649c20 "/dev/loop4") at namespace.c:2586
+ #14 SyS_mount (dev_name=140715365800992, dir_name=<optimized out>, type=<optimized out>, flags=3236757504, data=0) at namespace.c:2559
 
-A first comment, if that really will be changed, please leave to old 
-function as comment for the lazy reader. The new one is pretty ugly and 
-needs a turned on brain to understand (besides that the new one discards 
-the __must_check, but I would assume that no one uses IS_ERR_OR_NULL() 
-without checking the return value).
+Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+---
+Link: http://marc.info/?l=linux-ext4&m=139493754530149&w=2
+v5: initialize number of group desc blocks (s_gdb_count) otherwise
+    number of clusters returned by ext4_free_clusters_after_init() is not correct.
 
-As I just was a bit bored, here's what happens on ARM so that others 
-don't have to compile it on ARM:
+ fs/ext4/super.c | 51 +++++++++++++++++++++++++++------------------------
+ 1 file changed, 27 insertions(+), 24 deletions(-)
 
-armv5 old:
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index f3c6670..6f9e6fa 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3869,19 +3869,38 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 			goto failed_mount2;
+ 		}
+ 	}
++
++	/*
++	 * set up enough so that it can read an inode,
++	 * and create new inode for buddy allocator
++	 */
++	sbi->s_gdb_count = db_count;
++	if (!test_opt(sb, NOLOAD) &&
++	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
++		sb->s_op = &ext4_sops;
++	else
++		sb->s_op = &ext4_nojournal_sops;
++
++	ext4_ext_init(sb);
++	err = ext4_mb_init(sb);
++	if (err) {
++		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
++			 err);
++		goto failed_mount2;
++	}
++
+ 	if (!ext4_check_descriptors(sb, &first_not_zeroed)) {
+ 		ext4_msg(sb, KERN_ERR, "group descriptors corrupted!");
+-		goto failed_mount2;
++		goto failed_mount2a;
+ 	}
+ 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG))
+ 		if (!ext4_fill_flex_info(sb)) {
+ 			ext4_msg(sb, KERN_ERR,
+ 			       "unable to initialize "
+ 			       "flex_bg meta info!");
+-			goto failed_mount2;
++			goto failed_mount2a;
+ 		}
+ 
+-	sbi->s_gdb_count = db_count;
+ 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
+ 	spin_lock_init(&sbi->s_next_gen_lock);
+ 
+@@ -3916,14 +3935,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	sbi->s_stripe = ext4_get_stripe_size(sbi);
+ 	sbi->s_extent_max_zeroout_kb = 32;
+ 
+-	/*
+-	 * set up enough so that it can read an inode
+-	 */
+-	if (!test_opt(sb, NOLOAD) &&
+-	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
+-		sb->s_op = &ext4_sops;
+-	else
+-		sb->s_op = &ext4_nojournal_sops;
+ 	sb->s_export_op = &ext4_export_ops;
+ 	sb->s_xattr = ext4_xattr_handlers;
+ #ifdef CONFIG_QUOTA
+@@ -4113,21 +4124,13 @@ no_journal:
+ 	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "failed to reserve %llu clusters for "
+ 			 "reserved pool", ext4_calculate_resv_clusters(sb));
+-		goto failed_mount4a;
++		goto failed_mount5;
+ 	}
+ 
+ 	err = ext4_setup_system_zone(sb);
+ 	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "failed to initialize system "
+ 			 "zone (%d)", err);
+-		goto failed_mount4a;
+-	}
+-
+-	ext4_ext_init(sb);
+-	err = ext4_mb_init(sb);
+-	if (err) {
+-		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
+-			 err);
+ 		goto failed_mount5;
+ 	}
+ 
+@@ -4204,11 +4207,8 @@ failed_mount8:
+ failed_mount7:
+ 	ext4_unregister_li_request(sb);
+ failed_mount6:
+-	ext4_mb_release(sb);
+-failed_mount5:
+-	ext4_ext_release(sb);
+ 	ext4_release_system_zone(sb);
+-failed_mount4a:
++failed_mount5:
+ 	dput(sb->s_root);
+ 	sb->s_root = NULL;
+ failed_mount4:
+@@ -4232,11 +4232,14 @@ failed_mount3:
+ 	percpu_counter_destroy(&sbi->s_extent_cache_cnt);
+ 	if (sbi->s_mmp_tsk)
+ 		kthread_stop(sbi->s_mmp_tsk);
++failed_mount2a:
++	ext4_mb_release(sb);
+ failed_mount2:
+ 	for (i = 0; i < db_count; i++)
+ 		brelse(sbi->s_group_desc[i]);
+ 	ext4_kvfree(sbi->s_group_desc);
+ failed_mount:
++	ext4_ext_release(sb);
+ 	if (sbi->s_chksum_driver)
+ 		crypto_free_shash(sbi->s_chksum_driver);
+ 	if (sbi->s_proc) {
+-- 
+1.9.1
 
-000011e0 <kern_unmount>:
-     11e0:       e92d4010        push    {r4, lr}
-     11e4:       e2504000        subs    r4, r0, #0
-     11e8:       0a000007        beq     120c <kern_unmount+0x2c>
-     11ec:       e3740a01        cmn     r4, #4096       ; 0x1000
-     11f0:       8a000005        bhi     120c <kern_unmount+0x2c>
-     11f4:       e3a03000        mov     r3, #0
-     11f8:       e5843064        str     r3, [r4, #100]  ; 0x64
-     11fc:       ebfffffe        bl      0 <synchronize_rcu>
-     1200:       e1a00004        mov     r0, r4
-     1204:       e8bd4010        pop     {r4, lr}
-     1208:       eafffffe        b       c78 <mntput>
-     120c:       e8bd8010        pop     {r4, pc}
-
-armv5 new:
-
-00000c98 <kern_unmount>:
-      c98:       e2803eff        add     r3, r0, #4080   ; 0xff0
-      c9c:       e283300f        add     r3, r3, #15
-      ca0:       e3530a01        cmp     r3, #4096       ; 0x1000
-      ca4:       e92d4010        push    {r4, lr}
-      ca8:       e1a04000        mov     r4, r0
-      cac:       3a000005        bcc     cc8 <kern_unmount+0x30>
-      cb0:       e3a03000        mov     r3, #0
-      cb4:       e5803064        str     r3, [r0, #100]  ; 0x64
-      cb8:       ebfffffe        bl      0 <synchronize_rcu>
-      cbc:       e1a00004        mov     r0, r4
-      cc0:       e8bd4010        pop     {r4, lr}
-      cc4:       eafffffe        b       c78 <mntput>
-      cc8:       e8bd8010        pop     {r4, pc}
-
-And armv7 old:
-
-00000e60 <kern_unmount>:
-      e60:       e92d4010        push    {r4, lr}
-      e64:       e2504000        subs    r4, r0, #0
-      e68:       08bd8010        popeq   {r4, pc}
-      e6c:       e3740a01        cmn     r4, #4096       ; 0x1000
-      e70:       88bd8010        pophi   {r4, pc}
-      e74:       e3a03000        mov     r3, #0
-      e78:       e5843064        str     r3, [r4, #100]  ; 0x64
-      e7c:       ebfffffe        bl      0 <synchronize_sched>
-      e80:       e1a00004        mov     r0, r4
-      e84:       e8bd4010        pop     {r4, lr}
-      e88:       eafffffe        b       a3c <mntput>
-
-armv7 new:
-
-00000a5c <kern_unmount>:
-      a5c:       e2803eff        add     r3, r0, #4080   ; 0xff0
-      a60:       e283300f        add     r3, r3, #15
-      a64:       e3530a01        cmp     r3, #4096       ; 0x1000
-      a68:       e92d4010        push    {r4, lr}
-      a6c:       e1a04000        mov     r4, r0
-      a70:       38bd8010        popcc   {r4, pc}
-      a74:       e3a03000        mov     r3, #0
-      a78:       e5803064        str     r3, [r0, #100]  ; 0x64
-      a7c:       ebfffffe        bl      0 <synchronize_sched>
-      a80:       e1a00004        mov     r0, r4
-      a84:       e8bd4010        pop     {r4, lr}
-      a88:       eafffffe        b       a3c <mntput>
-
-Unfortunately I'm bad in interpreting assembler (I prefer higher 
-languages like C++), therefor I don't even try it and leave further 
-comments on the ARM assembler to other people. ;)
-
-Regards,
-
-Alexander Holler
