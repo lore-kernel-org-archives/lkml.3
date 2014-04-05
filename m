@@ -1,117 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016AbaDEPVJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 11:21:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29025 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955AbaDEPVH (ORCPT
+	id S1753164AbaDEPtI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 11:49:08 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:53669 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106AbaDEPtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 11:21:07 -0400
-Message-ID: <53401F56.5090507@oracle.com>
-Date: Sat, 05 Apr 2014 11:20:54 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
+	Sat, 5 Apr 2014 11:49:01 -0400
+Message-ID: <534025D9.7030204@ahsoftware.de>
+Date: Sat, 05 Apr 2014 17:48:41 +0200
+From: Alexander Holler <holler@ahsoftware.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: slub: gpf in deactivate_slab
-References: <53208A87.2040907@oracle.com> <5331A6C3.2000303@oracle.com> <20140325165247.GA7519@dhcp22.suse.cz> <alpine.DEB.2.10.1403251205140.24534@nuc> <5331B9C8.7080106@oracle.com> <alpine.DEB.2.10.1403251308590.26471@nuc> <53321CB6.5050706@oracle.com> <alpine.DEB.2.10.1403261042360.2057@nuc>
-In-Reply-To: <alpine.DEB.2.10.1403261042360.2057@nuc>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Optimising IS_ERR_OR_NULL
+References: <20140405144337.GA5727@linux.intel.com>
+In-Reply-To: <20140405144337.GA5727@linux.intel.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 11:43 AM, Christoph Lameter wrote:
-> On Tue, 25 Mar 2014, Sasha Levin wrote:
-> 
->> I'm not sure if there's anything special about this cache, codewise it's
->> created as follows:
->>
->>
->>         inode_cachep = kmem_cache_create("inode_cache",
->>                                          sizeof(struct inode),
->>                                          0,
->>                                          (SLAB_RECLAIM_ACCOUNT|SLAB_PANIC|
->>                                          SLAB_MEM_SPREAD),
->>                                          init_once);
->>
->>
->> I'd be happy to dig up any other info required, I'm just not too sure
->> what you mean by options for the cache?
-> 
-> Slab parameters can be change in /sys/kernel/slab/inode. Any debug
-> parameters active? More information about what was actually going on when
-> the gpf occured?
+Am 05.04.2014 16:43, schrieb Matthew Wilcox:
+>
+> (4 days too late for April Fools ... oh well :-)
+>
+> I don't like the look of IS_ERR_OR_NULL.  It does two tests when (due to
+> the bit patterns used to represent errors and NULL pointers) it could
+> use just one:
+>
+> #define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
+>
+> static inline long __must_check IS_ERR_OR_NULL(__force const void *ptr)
+> {
+> 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+> }
+>
+> It needs some performance testing to be sure that it's a win, but I'm
+> essentially suggesting this:
+>
+> +++ b/include/linux/err.h
+> @@ -34,10 +34,8 @@ static inline long __must_check IS_ERR(__force const void *pt
+>          return IS_ERR_VALUE((unsigned long)ptr);
+>   }
+>
+> -static inline long __must_check IS_ERR_OR_NULL(__force const void *ptr)
+> -{
+> -       return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+> -}
+> +#define IS_ERR_OR_NULL(ptr) \
+> +       unlikely(((unsigned long)PTR_ERR(ptr) + MAX_ERRNO) <= MAX_ERRNO)
+>
+>   /**
+>    * ERR_CAST - Explicitly cast an error-valued pointer to another pointer type
+>
+> (deliberately whitespace-damaged to ensure it doesn't get applied
+> without thought).
+>
+> Comments, before I go off and run some perf tests?
+>
 
-Unfortunately I've been unable to reproduce the issue to get more debug info
-out of it. However, I've hit something that seems to be somewhat similar
-to that:
+(... x86 asm)
 
-[ 1035.176692] BUG: unable to handle kernel paging request at ffff8801377e4000
-[ 1035.177893] IP: memset (arch/x86/lib/memset_64.S:105)
-[ 1035.178651] PGD 3d91c067 PUD 102f7ff067 PMD 102f643067 PTE 80000001377e4060
-[ 1035.179740] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1035.180063] Dumping ftrace buffer:
-[ 1035.180063]    (ftrace buffer empty)
-[ 1035.180063] Modules linked in:
-[ 1035.180063] CPU: 2 PID: 27857 Comm: modprobe Not tainted 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376
-[ 1035.180063] task: ffff8800a1918000 ti: ffff8800a4650000 task.ti: ffff8800a4650000
-[ 1035.180063] RIP: memset (arch/x86/lib/memset_64.S:105)
-[ 1035.180063] RSP: 0018:ffff8800a4651b60  EFLAGS: 00010046
-[ 1035.180063] RAX: bbbbbbbbbbbbbbbb RBX: ffff88007d852ec0 RCX: 0000000000000000
-[ 1035.180063] RDX: 0000000000000008 RSI: 00000000000000bb RDI: ffff8801377e4000
-[ 1035.180063] RBP: ffff8800a4651b88 R08: 0000000000000001 R09: 0000000000000000
-[ 1035.180063] R10: ffff8801377e4000 R11: ffffffffffffffce R12: ffff8801377e3000
-[ 1035.180063] R13: 00000000000000bb R14: ffff8801377e3000 R15: ffffffffffffffff
-[ 1035.180063] FS:  00007f2e098d6700(0000) GS:ffff8801abc00000(0000) knlGS:0000000000000000
-[ 1035.180063] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1035.180063] CR2: ffff8801377e4000 CR3: 000000061feec000 CR4: 00000000000006a0
-[ 1035.193166] DR0: 0000000000696000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1035.193166] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 1035.193166] Stack:
-[ 1035.193166]  ffffffffb62dabee ffff8800a4651b78 ffff88007d852ec0 ffff8801377e3000
-[ 1035.193166]  ffffea0004ddf8c0 ffff8800a4651ba8 ffffffffb62db1c0 ffff88007d852ec0
-[ 1035.193166]  ffff8801377e3000 ffff8800a4651be8 ffffffffb62dd1a6 ffff8800a4651bd8
-[ 1035.193166] Call Trace:
-[ 1035.193166] ? init_object (mm/slub.c:679)
-[ 1035.193166] setup_object.isra.34 (mm/slub.c:1071 mm/slub.c:1399)
-[ 1035.193166] new_slab (mm/slub.c:286 mm/slub.c:1439)
-[ 1035.193166] __slab_alloc (mm/slub.c:2203 mm/slub.c:2363)
-[ 1035.193166] ? kmem_cache_alloc (mm/slub.c:2469 mm/slub.c:2480 mm/slub.c:2485)
-[ 1035.193166] ? getname_flags (fs/namei.c:145)
-[ 1035.193166] ? get_parent_ip (kernel/sched/core.c:2472)
-[ 1035.193166] kmem_cache_alloc (mm/slub.c:2469 mm/slub.c:2480 mm/slub.c:2485)
-[ 1035.193166] ? getname_flags (fs/namei.c:145)
-[ 1035.193166] getname_flags (fs/namei.c:145)
-[ 1035.193166] user_path_at_empty (fs/namei.c:2121)
-[ 1035.193166] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
-[ 1035.193166] ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[ 1035.193166] ? sched_clock_local (kernel/sched/clock.c:214)
-[ 1035.193166] ? vtime_account_user (kernel/sched/cputime.c:687)
-[ 1035.193166] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
-[ 1035.193166] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-[ 1035.193166] user_path_at (fs/namei.c:2137)
-[ 1035.193166] vfs_fstatat (fs/stat.c:107)
-[ 1035.193166] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
-[ 1035.193166] vfs_stat (fs/stat.c:124)
-[ 1035.193166] SYSC_newstat (fs/stat.c:272)
-[ 1035.193166] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-[ 1035.193166] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
-[ 1035.193166] ? tracesys (arch/x86/kernel/entry_64.S:738)
-[ 1035.193166] SyS_newstat (fs/stat.c:267)
-[ 1035.193166] tracesys (arch/x86/kernel/entry_64.S:749)
-[ 1035.193166] Code: 89 47 28 48 89 47 30 48 89 47 38 48 8d 7f 40 75 d8 0f 1f 84 00 00 00 00 00 89 d1 83 e1 38 74 14 c1 e9 03 66 0f 1f 44 00 00 ff c9 <48> 89 07 48 8d 7f 08 75 f5 83 e2 07 74 0a ff ca 88 07 48 8d 7f
-[ 1035.193166] RIP memset (arch/x86/lib/memset_64.S:105)
-[ 1035.193166]  RSP <ffff8800a4651b60>
-[ 1035.193166] CR2: ffff8801377e4000
+> Now that's a genuine improvement; we saved one instruction (lea, cmp,
+> jbe vs test, je, cmp, ja), and due to various alignment / padding / etc.
+> we ended up saving 4 bytes on the length of the function which turns
+> into 16 bytes due to function alignment.
 
+A first comment, if that really will be changed, please leave to old 
+function as comment for the lazy reader. The new one is pretty ugly and 
+needs a turned on brain to understand (besides that the new one discards 
+the __must_check, but I would assume that no one uses IS_ERR_OR_NULL() 
+without checking the return value).
 
-Thanks,
-Sasha
+As I just was a bit bored, here's what happens on ARM so that others 
+don't have to compile it on ARM:
+
+armv5 old:
+
+000011e0 <kern_unmount>:
+     11e0:       e92d4010        push    {r4, lr}
+     11e4:       e2504000        subs    r4, r0, #0
+     11e8:       0a000007        beq     120c <kern_unmount+0x2c>
+     11ec:       e3740a01        cmn     r4, #4096       ; 0x1000
+     11f0:       8a000005        bhi     120c <kern_unmount+0x2c>
+     11f4:       e3a03000        mov     r3, #0
+     11f8:       e5843064        str     r3, [r4, #100]  ; 0x64
+     11fc:       ebfffffe        bl      0 <synchronize_rcu>
+     1200:       e1a00004        mov     r0, r4
+     1204:       e8bd4010        pop     {r4, lr}
+     1208:       eafffffe        b       c78 <mntput>
+     120c:       e8bd8010        pop     {r4, pc}
+
+armv5 new:
+
+00000c98 <kern_unmount>:
+      c98:       e2803eff        add     r3, r0, #4080   ; 0xff0
+      c9c:       e283300f        add     r3, r3, #15
+      ca0:       e3530a01        cmp     r3, #4096       ; 0x1000
+      ca4:       e92d4010        push    {r4, lr}
+      ca8:       e1a04000        mov     r4, r0
+      cac:       3a000005        bcc     cc8 <kern_unmount+0x30>
+      cb0:       e3a03000        mov     r3, #0
+      cb4:       e5803064        str     r3, [r0, #100]  ; 0x64
+      cb8:       ebfffffe        bl      0 <synchronize_rcu>
+      cbc:       e1a00004        mov     r0, r4
+      cc0:       e8bd4010        pop     {r4, lr}
+      cc4:       eafffffe        b       c78 <mntput>
+      cc8:       e8bd8010        pop     {r4, pc}
+
+And armv7 old:
+
+00000e60 <kern_unmount>:
+      e60:       e92d4010        push    {r4, lr}
+      e64:       e2504000        subs    r4, r0, #0
+      e68:       08bd8010        popeq   {r4, pc}
+      e6c:       e3740a01        cmn     r4, #4096       ; 0x1000
+      e70:       88bd8010        pophi   {r4, pc}
+      e74:       e3a03000        mov     r3, #0
+      e78:       e5843064        str     r3, [r4, #100]  ; 0x64
+      e7c:       ebfffffe        bl      0 <synchronize_sched>
+      e80:       e1a00004        mov     r0, r4
+      e84:       e8bd4010        pop     {r4, lr}
+      e88:       eafffffe        b       a3c <mntput>
+
+armv7 new:
+
+00000a5c <kern_unmount>:
+      a5c:       e2803eff        add     r3, r0, #4080   ; 0xff0
+      a60:       e283300f        add     r3, r3, #15
+      a64:       e3530a01        cmp     r3, #4096       ; 0x1000
+      a68:       e92d4010        push    {r4, lr}
+      a6c:       e1a04000        mov     r4, r0
+      a70:       38bd8010        popcc   {r4, pc}
+      a74:       e3a03000        mov     r3, #0
+      a78:       e5803064        str     r3, [r0, #100]  ; 0x64
+      a7c:       ebfffffe        bl      0 <synchronize_sched>
+      a80:       e1a00004        mov     r0, r4
+      a84:       e8bd4010        pop     {r4, lr}
+      a88:       eafffffe        b       a3c <mntput>
+
+Unfortunately I'm bad in interpreting assembler (I prefer higher 
+languages like C++), therefor I don't even try it and leave further 
+comments on the ARM assembler to other people. ;)
+
+Regards,
+
+Alexander Holler
