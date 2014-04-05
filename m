@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaDEDWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 23:22:25 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:45409 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753286AbaDEDWY (ORCPT
+	id S1753729AbaDED1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 23:27:19 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51180 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871AbaDED1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 23:22:24 -0400
-Date: Fri, 4 Apr 2014 21:22:16 -0600
-From: Jens Axboe <axboe@fb.com>
-To: <akpm@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Fix bad percpu counter state during suspend
-Message-ID: <20140405032216.GA18464@kernel.dk>
+	Fri, 4 Apr 2014 23:27:17 -0400
+Message-ID: <533F77F2.1050107@oracle.com>
+Date: Fri, 04 Apr 2014 23:26:42 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-04-04_08:2014-04-04,2014-04-04,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.16962973195633e-08 kscore.compositescore=0
- circleOfTrustscore=37.7501936418875 compositescore=0.998981209195878
- urlsuspect_oldscore=0.998981209195878 suspectscore=3
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998981209195878 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404040273
-X-FB-Internal: deliver
+To: Alessandro Zummo <a.zummo@towertech.it>,
+        Lars-Peter Clausen <lars@metafoo.de>
+CC: Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
+        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>
+Subject: rtc: hang on boot during unregistration
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all,
 
-I got a bug report yesterday from Laszlo Ersek <lersek@redhat.com>, in
-which he states that his kvm instance fails to suspend. He Laszlo
-bisected it down to this commit:
+I got the following spew while booting. My VM proceeded to hang and die.
 
-commit 1cf7e9c68fe84248174e998922b39e508375e7c1
-  Author: Jens Axboe <axboe@kernel.dk>
-  Date:   Fri Nov 1 10:52:52 2013 -0600
+[   16.620530] =============================================
+[   16.621059] [ INFO: possible recursive locking detected ]
+[   16.622024] 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376 Not tainted
+[   16.624145] ---------------------------------------------
+[   16.625261] kworker/0:1/1069 is trying to acquire lock:
+[   16.626300] ((&(&kobj->release)->work)){+.+.+.}, at: flush_work (kernel/workqueue.c:2880)
+[   16.628258]
+[   16.628258] but task is already holding lock:
+[   16.629415] ((&(&kobj->release)->work)){+.+.+.}, at: process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
+[   16.630106]
+[   16.630106] other info that might help us debug this:
+[   16.630106]  Possible unsafe locking scenario:
+[   16.630106]
+[   16.630106]        CPU0
+[   16.630106]        ----
+[   16.630106]   lock((&(&kobj->release)->work));
+[   16.630106]   lock((&(&kobj->release)->work));
+[   16.630106]
+[   16.630106]  *** DEADLOCK ***
+[   16.630106]
+[   16.630106]  May be due to missing lock nesting notation
+[   16.630106]
+[   16.630106] 2 locks held by kworker/0:1/1069:
+[   16.630106] #0: ("events"){.+.+.+}, at: process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
+[   16.630106] #1: ((&(&kobj->release)->work)){+.+.+.}, at: process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
+[   16.630106]
+[   16.630106] stack backtrace:
+[   16.630106] CPU: 0 PID: 1069 Comm: kworker/0:1 Not tainted 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376
+[   16.630106] Workqueue: events kobject_delayed_cleanup
+[   16.630106]  ffffffffb59d09d0 ffff88007c6a58d8 ffffffffb24bfb2f 0000000000000000
+[   16.630106]  ffffffffb59d09d0 ffff88007c6a59d8 ffffffffaf1c4c8a ffff88007c5a3d98
+[   16.630106]  ffff88007c5a3000 ffff880000000001 ffffffffaf1c0e18 ffff88007c5a3d60
+[   16.630106] Call Trace:
+[   16.630106] dump_stack (lib/dump_stack.c:52)
+[   16.630106] __lock_acquire (kernel/locking/lockdep.c:1740 kernel/locking/lockdep.c:1783 kernel/locking/lockdep.c:2115 kernel/locking/lockdep.c:3182)
+[   16.630106] ? check_irq_usage (kernel/locking/lockdep.c:1638)
+[   16.630106] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+[   16.630106] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[   16.630106] ? flush_work (kernel/workqueue.c:2880)
+[   16.630106] flush_work (kernel/workqueue.c:2884)
+[   16.630106] ? flush_work (kernel/workqueue.c:2880)
+[   16.630106] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+[   16.630106] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+[   16.630106] ? try_to_grab_pending (kernel/workqueue.c:1260 kernel/workqueue.c:1259)
+[   16.630106] ? __cancel_work_timer (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/workqueue.c:2913 (discriminator 2))
+[   16.630106] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[   16.630106] __cancel_work_timer (arch/x86/include/asm/bitops.h:313 kernel/workqueue.c:610 kernel/workqueue.c:644 kernel/workqueue.c:2916)
+[   16.630106] cancel_work_sync (kernel/workqueue.c:2941)
+[   16.630106] work_fixup_free (kernel/workqueue.c:479)
+[   16.630106] __debug_check_no_obj_freed (lib/debugobjects.c:277 lib/debugobjects.c:700)
+[   16.630106] debug_check_no_obj_freed (lib/debugobjects.c:726)
+[   16.630106] kfree (mm/slub.c:2679 mm/slub.c:3401)
+[   16.630106] ? rtc_device_release (drivers/rtc/class.c:35)
+[   16.630106] rtc_device_release (drivers/rtc/class.c:35)
+[   16.630106] device_release (drivers/base/core.c:246)
+[   16.630106] kobject_delayed_cleanup (lib/kobject.c:629 lib/kobject.c:638)
+[   16.630106] process_one_work (kernel/workqueue.c:2221 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2226)
+[   16.630106] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
+[   16.630106] worker_thread (kernel/workqueue.c:2348)
+[   16.630106] ? rescuer_thread (kernel/workqueue.c:2297)
+[   16.630106] kthread (kernel/kthread.c:219)
+[   16.630106] ? kthread_create_on_node (kernel/kthread.c:185)
+[   16.630106] ret_from_fork (arch/x86/kernel/entry_64.S:555)
+[   16.630106] ? kthread_create_on_node (kernel/kthread.c:185)
 
-      virtio_blk: blk-mq support
 
-where virtio-blk is converted to use the blk-mq infrastructure. After
-digging a bit, it became clear that the issue was with the queue drain.
-blk-mq tracks queue usage in a percpu counter, which is incremented on
-request alloc and decremented when the request is freed. The initial
-hunt was for an inconsistency in blk-mq, but everything seemed fine. In
-fact, the counter only returned crazy values when suspend was in
-progress. When a CPU is unplugged, the percpu counters merges that CPU
-state with the general state. blk-mq takes care to register a hotcpu
-notifier with the appropriate priority, so we know it runs after the
-percpu counter notifier. However, the percpu counter notifier only
-merges the state when the CPU is fully gone. This leaves a state
-transition where the CPU going away is no longer in the online mask, yet
-it still holds private values. This means that in this state,
-percpu_counter_sum() returns invalid results, and the suspend then hangs
-waiting for abs(dead-cpu-value) requests to complete which of course
-will never happen.
-
-Fix this by clearing the state earlier, so we never have a case where
-the CPU isn't in online mask but still holds private state. This bug has
-been there since forever, I guess we don't have a lot of users where
-percpu counters needs to be reliable during the suspend cycle.
-
-Reported-by: Laszlo Ersek <lersek@redhat.com>
-Tested-by: Laszlo Ersek <lersek@redhat.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
-
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index 8280a5dd1727..7dd33577b905 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -169,7 +169,7 @@ static int percpu_counter_hotcpu_callback(struct notifier_block *nb,
- 	struct percpu_counter *fbc;
- 
- 	compute_batch_value();
--	if (action != CPU_DEAD)
-+	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
- 		return NOTIFY_OK;
- 
- 	cpu = (unsigned long)hcpu;
-
--- 
-Jens Axboe
-
+Thanks,
+Sasha
