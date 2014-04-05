@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaDELxU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 07:53:20 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63324 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215AbaDELxS (ORCPT
+	id S1752622AbaDEMCa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 08:02:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38642 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbaDEMC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 07:53:18 -0400
-Message-ID: <533FEE9B.5090806@gmail.com>
-Date: Sat, 05 Apr 2014 17:22:59 +0530
-From: Balakumaran Kannan <kumaran.4353@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Sat, 5 Apr 2014 08:02:29 -0400
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, davem@davemloft.net, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net IPv6]: Fix maximum IPv6 address limit violation
+In-Reply-To: <1396685343-94097-1-git-send-email-jet.chen@intel.com>
+References: <abd38155f8293923de5953cc063f9e2d7ecb3f04.1396679170.git.viresh.kumar@linaro.org>
+	<1396685343-94097-1-git-send-email-jet.chen@intel.com>
+Date: Sat, 5 Apr 2014 17:32:28 +0530
+Message-ID: <CAKohpok=Bnb+CCPc0jCxwetaTv3nNmtMZKfc3ZP3QGccpiKTxw@mail.gmail.com>
+Subject: Re: [PATCH] queue_timer_on_next_cpu() should be static
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel doesn't check with max IPv6 address limit before adding IPv6 temporary
-address.
+On 5 April 2014 13:39, Jet Chen <jet.chen@intel.com> wrote:
+> the new introduced function queue_timer_on_next_cpu() should be defined as static
+>
+> Signed-off-by: Jet Chen <jet.chen@intel.com>
+> ---
+>  kernel/time/clocksource.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index 9e96853..1c00e10 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -251,7 +251,7 @@ void clocksource_mark_unstable(struct clocksource *cs)
+>         spin_unlock_irqrestore(&watchdog_lock, flags);
+>  }
+>
+> -void queue_timer_on_next_cpu(void)
+> +static void queue_timer_on_next_cpu(void)
+>  {
+>         /*
+>          * Cycle through CPUs to check if the CPUs stay synchronized to each
 
-Security fix CVE-2013-0343 removes max_addresses check from ipv6_create_tempaddr
-function as this is handled before in addrconf_prefix_rcv function. But
-addrconf_prefix_rcv does max_addresses check only before adding MAC based RA
-address and if limit is already reached, it stops processing the prefix.
-
-When IPv6 privacy extension is enabled, two addresses will be created for a
-new prefix received through RA. So if a machine has (max_addresses - 1) number
-of  IPv6 addresses, after receiving an RA with new prefix the machine will have
-(max_addresses + 1) number of IPv6 addresses.
-
-So it is better to use a new prefix only if two IPv6 address slots available
-in case IPv6 privacy extension is enabled.
-
-Severity: Less
-
-Signed-off-by: Balakumaran Kannan <kumaran.4353@gmail.com>
----
-How to reproduce:
-        1. Enable IPv6 privacy extension by setting value of
-           /proc/sys/net/ipv6/conf/<iface>/use_tempaddr to 2.
-        2. Flood RA with different prefixes.
-        3. Check total number of IPv6 address assigned for your iface.
-           By default max_addresses will be 16. So after receiving 8 RAs, there
-           will be 17 IPv6 addresses including link-local address.
----
- net/ipv6/addrconf.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 6c7fa08..8a7e4ba 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2278,6 +2278,15 @@ ok:
-            /* Do not allow to create too much of autoconfigured
-             * addresses; this would be too easy way to crash kernel.
-             */
-+#ifdef CONFIG_IPV6_PRIVACY
-+           /* When IPv6 privacy extension is enabled, there must
-+            * be two IPv6 address slots available.
-+            * - One for MAC based address
-+            * - Another for temporary address
-+            */
-+           if (max_addresses > 1)
-+               max_addresses--;
-+#endif
-            if (!max_addresses ||
-                ipv6_count_addresses(in6_dev) < max_addresses)
-                ifp = ipv6_add_addr(in6_dev, &addr, NULL,
--- 
-1.7.9.5
-
+Thanks, will merge this into my patch.
