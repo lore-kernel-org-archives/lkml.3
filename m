@@ -1,193 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaDEAAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 20:00:14 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:57673 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468AbaDEAAM (ORCPT
+	id S1753229AbaDEAHy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 20:07:54 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:48909 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaDEAHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 20:00:12 -0400
-Date: Fri, 4 Apr 2014 18:00:07 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140405000007.GD15806@google.com>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
+	Fri, 4 Apr 2014 20:07:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140404195818.GA21028@debian>
+References: <1396577719-14786-1-git-send-email-keescook@chromium.org>
+	<1396577719-14786-3-git-send-email-keescook@chromium.org>
+	<20140404195818.GA21028@debian>
+Date: Fri, 4 Apr 2014 17:07:52 -0700
+X-Google-Sender-Auth: c9wQTOc25qUIfBcS-tpLA7fMbg8
+Message-ID: <CAGXu5jKPX2igsb2rQzdCZQZ8X3h4YZihCV9D+cDW3F+qii8H2A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: mm: make text and rodata read-only
+From: Kees Cook <keescook@chromium.org>
+To: Rabin Vincent <rabin@rab.in>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 03:34:30PM +0000, Liviu Dudau wrote:
-> Make it easier to discover the domain number of a bus by storing
-> the number in pci_host_bridge for the root bus. Several architectures
-> have their own way of storing this information, so it makes sense
-> to try to unify the code. 
+On Fri, Apr 4, 2014 at 12:58 PM, Rabin Vincent <rabin@rab.in> wrote:
+> On Thu, Apr 03, 2014 at 07:15:19PM -0700, Kees Cook wrote:
+>> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+>> index 34e56647dcee..4ae343c1e2a3 100644
+>> --- a/arch/arm/kernel/ftrace.c
+>> +++ b/arch/arm/kernel/ftrace.c
+>> @@ -14,6 +14,7 @@
+>>
+>>  #include <linux/ftrace.h>
+>>  #include <linux/uaccess.h>
+>> +#include <linux/stop_machine.h>
+>>
+>>  #include <asm/cacheflush.h>
+>>  #include <asm/opcodes.h>
+>> @@ -34,6 +35,22 @@
+>>
+>>  #define      OLD_NOP         0xe1a00000      /* mov r0, r0 */
+>>
+>> +static int __ftrace_modify_code(void *data)
+>
+> This is in the CONFIG_OLD_MCOUNT ifdef, but should be in the outer ifdef
+> (CONFIG_DYNAMIC_FTRACE) instead, otherwise it will not get enabled for
+> for example Thumb-2 kernels.  This was wrong in my example patch too.
 
-I like the idea of unifying the way we handle the domain number.  But 
-I'd like to see more of the strategy before committing to this approach.
+Ah! Yes, good point. I've moved this now.
 
-This patch adds struct pci_host_bridge.domain_nr, but of course
-pci_domain_nr() doesn't use it.  It can't today, because
-pci_create_root_bus() relies on pci_domain_nr() to fill in
-pci_host_bridge.domain_nr.
-
-But I suppose the intent is that someday we can make pci_domain_nr()
-arch-independent somehow.  I'd just like to see more of the path to
-that happening.
-
-> While at this, add a new function that
-> creates a root bus in a given domain and make pci_create_root_bus()
-> a wrapper around this function.
-
-I'm a little concerned about adding a new "create root bus" interface,
-partly because we have quite a few already, and I'd like to reduce the
-number of them instead of adding more.  And I think there might be other
-similar opportunities for unification, so I could easily see us adding new
-functions in the future to unify NUMA node info, ECAM info, etc.
-
-I wonder if we need some sort of descriptor structure that the arch could
-fill in and pass to the PCI core.  Then we could add new members without
-having to create new interfaces each time.
-
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> ---
->  drivers/pci/probe.c | 41 +++++++++++++++++++++++++++++++++--------
->  include/linux/pci.h |  4 ++++
->  2 files changed, 37 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index fd11c12..172c615 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1714,8 +1714,9 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
->  {
+>> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+>> index 8539eb2a01ad..3baac4ad165f 100644
+>> --- a/arch/arm/mm/init.c
+>> +++ b/arch/arm/mm/init.c
+>> @@ -681,30 +716,52 @@ static inline bool arch_has_strict_perms(void)
+>>       return true;
+>>  }
+>>
+>> +#define set_section_perms(perms, field)      {                               \
+>> +     size_t i;                                                       \
+>> +     unsigned long addr;                                             \
+>> +                                                                     \
+>> +     if (!arch_has_strict_perms())                                   \
+>> +             return;                                                 \
+>> +                                                                     \
+>> +     for (i = 0; i < ARRAY_SIZE(perms); i++) {                       \
+>> +             if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||        \
+>> +                 !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {          \
+>> +                     pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
+>> +                             perms[i].start, perms[i].end,           \
+>> +                             SECTION_SIZE);                          \
+>> +                     continue;                                       \
+>> +             }                                                       \
+>> +                                                                     \
+>> +             for (addr = perms[i].start;                             \
+>> +                  addr < perms[i].end;                               \
+>> +                  addr += SECTION_SIZE)                              \
+>> +                     section_update(addr, perms[i].mask,             \
+>> +                                    perms[i].field);                 \
+>> +     }                                                               \
+>> +}
+>> +
+>>  static inline void fix_kernmem_perms(void)
+>>  {
+>> -     unsigned long addr;
+>> -     unsigned int i;
+>> +     set_section_perms(nx_perms, prot);
+>> +}
+>>
+>> -     if (!arch_has_strict_perms())
+>> -             return;
+>> +#ifdef CONFIG_DEBUG_RODATA
+>> +void mark_rodata_ro(void)
+>> +{
+>> +     set_section_perms(ro_perms, prot);
+>> +}
+>>
+>> -     for (i = 0; i < ARRAY_SIZE(section_perms); i++) {
+>> -             if (!IS_ALIGNED(section_perms[i].start, SECTION_SIZE) ||
+>> -                 !IS_ALIGNED(section_perms[i].end, SECTION_SIZE)) {
+>> -                     pr_err("BUG: section %lx-%lx not aligned to %lx\n",
+>> -                             section_perms[i].start, section_perms[i].end,
+>> -                             SECTION_SIZE);
+>> -                     continue;
+>> -             }
+>> +void set_kernel_text_rw(void)
+>> +{
+>> +     set_section_perms(ro_perms, clear);
+>> +}
+>
+> You need a TLB flush.  I had a flush_tlb_all() in my example patch,
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/244335.html,
+> but the following is probably nicer (on top of this patch):
+>
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 9bea524..a92c45a 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -741,6 +741,8 @@ static inline bool arch_has_strict_perms(void)
+>                      addr += SECTION_SIZE)                              \
+>                         section_update(addr, perms[i].mask,             \
+>                                        perms[i].field);                 \
+> +                                                                       \
+> +               flush_tlb_kernel_range(perms[i].start, perms[i].end);   \
+>         }                                                               \
 >  }
->  
-> -struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> -		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-> +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-> +		int domain, int bus, struct pci_ops *ops, void *sysdata,
-> +		struct list_head *resources)
->  {
->  	int error;
->  	struct pci_host_bridge *bridge;
-> @@ -1728,30 +1729,34 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  
->  	bridge = pci_alloc_host_bridge();
->  	if (!bridge)
-> -		return NULL;
-> +		return ERR_PTR(-ENOMEM);
->  
->  	bridge->dev.parent = parent;
->  	bridge->dev.release = pci_release_host_bridge_dev;
-> +	bridge->domain_nr = domain;
->  	error = pcibios_root_bridge_prepare(bridge);
->  	if (error)
->  		goto err_out;
->  
->  	b = pci_alloc_bus();
-> -	if (!b)
-> +	if (!b) {
-> +		error = -ENOMEM;
->  		goto err_out;
-> +	}
->  
->  	b->sysdata = sysdata;
->  	b->ops = ops;
->  	b->number = b->busn_res.start = bus;
-> -	b2 = pci_find_bus(pci_domain_nr(b), bus);
-> +	b2 = pci_find_bus(bridge->domain_nr, bus);
->  	if (b2) {
->  		/* If we already got to this bus through a different bridge, ignore it */
->  		dev_dbg(&b2->dev, "bus already known\n");
-> +		error = -EEXIST;
->  		goto err_bus_out;
->  	}
->  
->  	bridge->bus = b;
-> -	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-> +	dev_set_name(&bridge->dev, "pci%04x:%02x", bridge->domain_nr, bus);
->  	error = device_register(&bridge->dev);
->  	if (error) {
->  		put_device(&bridge->dev);
-> @@ -1766,7 +1771,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  
->  	b->dev.class = &pcibus_class;
->  	b->dev.parent = b->bridge;
-> -	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-> +	dev_set_name(&b->dev, "%04x:%02x", bridge->domain_nr, bus);
->  	error = device_register(&b->dev);
->  	if (error)
->  		goto class_dev_reg_err;
-> @@ -1816,7 +1821,27 @@ err_bus_out:
->  	kfree(b);
->  err_out:
->  	kfree(bridge);
-> -	return NULL;
-> +	return ERR_PTR(error);
-> +}
-> +
-> +struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> +		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-> +{
-> +	int domain_nr;
-> +	struct pci_bus *b = pci_alloc_bus();
-> +	if (!b)
-> +		return NULL;
-> +
-> +	b->sysdata = sysdata;
-> +	domain_nr = pci_domain_nr(b);
-> +	kfree(b);
-> +
-> +	b = pci_create_root_bus_in_domain(parent, domain_nr, bus,
-> +				ops, sysdata, resources);
-> +	if (IS_ERR(b))
-> +		return NULL;
-> +
-> +	return b;
->  }
->  
->  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 33aa2ca..1eed009 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -394,6 +394,7 @@ struct pci_host_bridge_window {
->  struct pci_host_bridge {
->  	struct device dev;
->  	struct pci_bus *bus;		/* root bus */
-> +	int domain_nr;
->  	struct list_head windows;	/* pci_host_bridge_windows */
->  	void (*release_fn)(struct pci_host_bridge *);
->  	void *release_data;
-> @@ -747,6 +748,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
->  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  				    struct pci_ops *ops, void *sysdata,
->  				    struct list_head *resources);
-> +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-> +			int domain, int bus, struct pci_ops *ops,
-> +			void *sysdata, struct list_head *resources);
->  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
->  int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
->  void pci_bus_release_busn_res(struct pci_bus *b);
-> -- 
-> 1.9.0
-> 
+>
+
+When I do this, I hang the system, and get a WARN due to the tlb call
+attempting to flush on all CPUs, I think:
+
+[   34.246034] WARNING: at
+/mnt/host/source/src/third_party/kernel-next/kernel/smp.c:466
+smp_call_function_many+0xac/0x26c()
+...
+[   34.246617] Backtrace:
+[   34.246697] [<c010d3b8>] (unwind_backtrace+0x0/0x118) from
+[<c060b9d8>] (dump_stack+0x28/0x30)
+[   34.246765] [<c060b9d8>] (dump_stack+0x28/0x30) from [<c0123044>]
+(warn_slowpath_null+0x44/0x5c)
+[   34.246824] [<c0123044>] (warn_slowpath_null+0x44/0x5c) from
+[<c017426c>] (smp_call_function_many+0xac/0x26c)
+[   34.246881] [<c017426c>] (smp_call_function_many+0xac/0x26c) from
+[<c0174468>] (smp_call_function+0x3c/0x48)
+[   34.246937] [<c0174468>] (smp_call_function+0x3c/0x48) from
+[<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c)
+[   34.246994] [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c) from
+[<c010c590>] (flush_tlb_kernel_range+0x74/0xa0)
+[   34.247046] [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0) from
+[<c011403c>] (set_kernel_text_rw+0xd8/0xec)
+[   34.247099] [<c011403c>] (set_kernel_text_rw+0xd8/0xec) from
+[<c010c878>] (__ftrace_modify_code+0x14/0x28)
+[   34.247156] [<c010c878>] (__ftrace_modify_code+0x14/0x28) from
+[<c0184318>] (stop_machine_cpu_stop+0xc0/0x114)
+[   34.247212] [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114) from
+[<c01841cc>] (cpu_stopper_thread+0xd8/0x164)
+[   34.247266] [<c01841cc>] (cpu_stopper_thread+0xd8/0x164) from
+[<c0145c14>] (kthread+0xc8/0xd8)
+[   34.247323] [<c0145c14>] (kthread+0xc8/0xd8) from [<c0106118>]
+(ret_from_fork+0x14/0x20)
+
+Using local_flush_tlb_kernel_range() fixed it though. Thank you for
+your help on this! :)
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
