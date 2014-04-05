@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbaDEBHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 21:07:48 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:36378 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133AbaDEBG4 (ORCPT
+	id S1754136AbaDEBLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 21:11:50 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:60765 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671AbaDEBLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 21:06:56 -0400
+	Fri, 4 Apr 2014 21:11:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140403164911.GE24119@htj.dyndns.org>
+In-Reply-To: <CA+55aFyGz2q4iDEt56Bw+x_ri_-DQYLAKPJvk3Uxj9z-y+0uPw@mail.gmail.com>
 References: <20140403164911.GE24119@htj.dyndns.org>
-Date: Fri, 4 Apr 2014 18:06:54 -0700
-X-Google-Sender-Auth: 2u3eBrpd_1Wup3ZsmgaNt-Oc02c
-Message-ID: <CA+55aFyGz2q4iDEt56Bw+x_ri_-DQYLAKPJvk3Uxj9z-y+0uPw@mail.gmail.com>
+	<CA+55aFyGz2q4iDEt56Bw+x_ri_-DQYLAKPJvk3Uxj9z-y+0uPw@mail.gmail.com>
+Date: Fri, 4 Apr 2014 18:11:47 -0700
+X-Google-Sender-Auth: wJt23xtzf4hkWTlkQX-FqkM-zAE
+Message-ID: <CA+55aFy+Jt0B32kj=Ldz9Krp4DXcXSP4r-o3f-2LPcVs4udGVA@mail.gmail.com>
 Subject: Re: [GIT PULL] cgroup changes for v3.15-rc1
 From: Linus Torvalds <torvalds@linux-foundation.org>
 To: Tejun Heo <tj@kernel.org>
@@ -25,19 +26,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 3, 2014 at 9:49 AM, Tejun Heo <tj@kernel.org> wrote:
+On Fri, Apr 4, 2014 at 6:06 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> A lot updates for cgroup [...]
+> Will report back soon when I've narrowed it down more.
 
-Btw, just a heads up to let you know: I'm in the middle of bisecting
-why my machine no longer reboots cleanly, and while I'm a few boots
-away from pinpointing it exactly, it has now drilled down to the point
-that the only remaining commits are from your cgroup pull that I
-pulled yesterday.
+Ok, that may end up being harder than it looked. Commit
+a755180bab81c038a6989d7ab746c702f1b3ec03 doesn't boot for me at all,
+so apparently there are some really broken points in that whole
+development chain.
 
-Maybe I screwed something up in the bisection and it's not 100%
-reliable, but I don't think so.
+I'll try to pick kernels away from that, but that makes bisection much
+less effective.
 
-Will report back soon when I've narrowed it down more.
-
-               Linus
+                Linus
