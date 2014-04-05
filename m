@@ -1,36 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaDEMF0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 08:05:26 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:39170 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaDEMFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 08:05:24 -0400
+	id S1752697AbaDEMRd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 08:17:33 -0400
+Received: from mout.gmx.net ([212.227.17.22]:52364 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752213AbaDEMRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 08:17:31 -0400
+Message-ID: <533FF457.5080907@gmx.de>
+Date: Sat, 05 Apr 2014 14:17:27 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <533FAE29.4080209@intel.com>
-References: <20140404031928.GC11828@localhost>
-	<CAKohponbGFFo+W7X24e4h3ub2L8Tkb89eP6_F17CRYELk0yeRQ@mail.gmail.com>
-	<533E635F.9050803@intel.com>
-	<CAKohpon+THY2NXEEOcWRbmrpfQUZYbHfO+Lw=D9TaJWk+_-J2g@mail.gmail.com>
-	<533F86D4.10007@intel.com>
-	<CAKohpokStOgdO-KFn8hcyV+neaNCvHLSG9od=qyi2-4rV62DRw@mail.gmail.com>
-	<533FAE29.4080209@intel.com>
-Date: Sat, 5 Apr 2014 17:35:24 +0530
-Message-ID: <CAKohpo=F=wmy=x_v8WYMuUEUO+K=_JSUwhAr28vUPm_yHr0K6g@mail.gmail.com>
-Subject: Re: WARNING: CPU: 0 PID: 1935 at kernel/timer.c:1621 migrate_timer_list()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jet Chen <jet.chen@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux NFS mailing list <linux-nfs@vger.kernel.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: NFSv2 directory cannot longer be exported in 3.14, 3.13 works
+ fine
+References: <533F2ABF.2030107@gmx.de>
+In-Reply-To: <533F2ABF.2030107@gmx.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:Wy3fXXJNPJ5Sb/cRMIxrUp/S/ykClktVtE7FhEH4yCFkYVXThN3
+ /XgLnier+Xqxr4GQXOyiQR9vI2/rkOnk+is54EKWn3nTRy8/4G4eBLPRrrS5fyITQ/8a48P
+ Ybn8r2NumwBd4QMGxWUrxH1q8oYRlWcUOFzBr0l4cF0AcBrXvRLhOMPxYdSXBzVtgBxCUhc
+ K5fCIsYb03H1U2P5edJgg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 April 2014 12:48, Jet Chen <jet.chen@intel.com> wrote:
-> Your patch fixes it!
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-Thanks for all your efforts on reporting/testing this patch.. I have
-sent the final patch to list.
+On 04/04/2014 11:57 PM, Toralf Förster wrote:
+> At a user mode linux image (32 bit Gentoo Linux) the recent kernel gives this error while trying to mount a NFSv2 directory:
+> mount.nfs: mount point /mnt/nfsv2 is not a directory
+> 
+
+A bisect points to :
+
+6e14b46b91fee8a049b0940333ce13a820beaaa5 is the first bad commit
+commit 6e14b46b91fee8a049b0940333ce13a820beaaa5
+Author: Albert Fluegel <af@muc.de>
+Date:   Mon Nov 18 12:18:01 2013 -0500
+
+    nfsd: don't return high mode bits
+
+    The Linux NFS server replies among other things to a "Check access permission"
+    the following:
+
+    NFS:    File type = 2 (Directory)
+    NFS:    Mode = 040755
+
+    A netapp server replies here:
+    NFS:    File type = 2 (Directory)
+    NFS:    Mode = 0755
+
+    The RFC 1813 i read:
+       fattr3
+
+          struct fattr3 {
+             ftype3     type;
+             mode3      mode;
+             uint32     nlink;
+    ...
+    For the mode bits only the lowest 9 are defined in the RFC
+
+    As far as I can tell, knfsd has always done this, so apparently it's harmless.
+    Nevertheless, it appears to be wrong.
+
+    Note this is already correct in the NFSv4 case, only v2 and v3 need
+    fixing.
+
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+:040000 040000 a60e55f5a9749db3977e12e8baa08d45fadba225 b982c02ec1069c5d969ccb71197e5569fe93b075 M fs
+
+- -- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlM/9FcACgkQxOrN3gB26U5F1AD+JAP4cDM+rT9nk9Q8q681RywT
+Ejxq7d0tnVUfWyDFDTgA/1sIUtpv9GSK8SeAJFu7oAhMt4e6eeIdbpMT2qUEQv6q
+=Sles
+-----END PGP SIGNATURE-----
