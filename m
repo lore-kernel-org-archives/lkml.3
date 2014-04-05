@@ -1,178 +1,468 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaDEAHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 20:07:54 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:48909 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbaDEAHw (ORCPT
+	id S1753309AbaDEAMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Apr 2014 20:12:12 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:15719 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbaDEAMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 20:07:52 -0400
+	Fri, 4 Apr 2014 20:12:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 04 Apr 2014 17:05:18 -0700
+From: Arun Shamanna Lakshmi <aruns@nvidia.com>
+To: <lars@metafoo.de>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <swarren@wwwdotorg.org>
+CC: <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>,
+        Arun Shamanna Lakshmi <aruns@nvidia.com>,
+        Songhee Baek <sbaek@nvidia.com>
+Subject: [PATCH] ASoC: dapm: Add support for multi register mux
+Date: Fri, 4 Apr 2014 17:12:10 -0700
+Message-ID: <1396656730-30145-1-git-send-email-aruns@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <20140404195818.GA21028@debian>
-References: <1396577719-14786-1-git-send-email-keescook@chromium.org>
-	<1396577719-14786-3-git-send-email-keescook@chromium.org>
-	<20140404195818.GA21028@debian>
-Date: Fri, 4 Apr 2014 17:07:52 -0700
-X-Google-Sender-Auth: c9wQTOc25qUIfBcS-tpLA7fMbg8
-Message-ID: <CAGXu5jKPX2igsb2rQzdCZQZ8X3h4YZihCV9D+cDW3F+qii8H2A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: mm: make text and rodata read-only
-From: Kees Cook <keescook@chromium.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 12:58 PM, Rabin Vincent <rabin@rab.in> wrote:
-> On Thu, Apr 03, 2014 at 07:15:19PM -0700, Kees Cook wrote:
->> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
->> index 34e56647dcee..4ae343c1e2a3 100644
->> --- a/arch/arm/kernel/ftrace.c
->> +++ b/arch/arm/kernel/ftrace.c
->> @@ -14,6 +14,7 @@
->>
->>  #include <linux/ftrace.h>
->>  #include <linux/uaccess.h>
->> +#include <linux/stop_machine.h>
->>
->>  #include <asm/cacheflush.h>
->>  #include <asm/opcodes.h>
->> @@ -34,6 +35,22 @@
->>
->>  #define      OLD_NOP         0xe1a00000      /* mov r0, r0 */
->>
->> +static int __ftrace_modify_code(void *data)
->
-> This is in the CONFIG_OLD_MCOUNT ifdef, but should be in the outer ifdef
-> (CONFIG_DYNAMIC_FTRACE) instead, otherwise it will not get enabled for
-> for example Thumb-2 kernels.  This was wrong in my example patch too.
+1. Modify soc_enum struct to handle pointers for reg and mask
+2. Add dapm get and put APIs for multi register one hot encoded mux
+3. Update snd_soc_dapm_update struct to support multiple reg update
 
-Ah! Yes, good point. I've moved this now.
+Signed-off-by: Arun S L <aruns@nvidia.com>
+Signed-off-by: Songhee Baek <sbaek@nvidia.com>
+---
+ include/sound/soc-dapm.h |   20 ++++-
+ include/sound/soc.h      |   33 +++++++--
+ sound/soc/soc-core.c     |   12 +--
+ sound/soc/soc-dapm.c     |  181 +++++++++++++++++++++++++++++++++++++++-------
+ 4 files changed, 203 insertions(+), 43 deletions(-)
 
->> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
->> index 8539eb2a01ad..3baac4ad165f 100644
->> --- a/arch/arm/mm/init.c
->> +++ b/arch/arm/mm/init.c
->> @@ -681,30 +716,52 @@ static inline bool arch_has_strict_perms(void)
->>       return true;
->>  }
->>
->> +#define set_section_perms(perms, field)      {                               \
->> +     size_t i;                                                       \
->> +     unsigned long addr;                                             \
->> +                                                                     \
->> +     if (!arch_has_strict_perms())                                   \
->> +             return;                                                 \
->> +                                                                     \
->> +     for (i = 0; i < ARRAY_SIZE(perms); i++) {                       \
->> +             if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||        \
->> +                 !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {          \
->> +                     pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
->> +                             perms[i].start, perms[i].end,           \
->> +                             SECTION_SIZE);                          \
->> +                     continue;                                       \
->> +             }                                                       \
->> +                                                                     \
->> +             for (addr = perms[i].start;                             \
->> +                  addr < perms[i].end;                               \
->> +                  addr += SECTION_SIZE)                              \
->> +                     section_update(addr, perms[i].mask,             \
->> +                                    perms[i].field);                 \
->> +     }                                                               \
->> +}
->> +
->>  static inline void fix_kernmem_perms(void)
->>  {
->> -     unsigned long addr;
->> -     unsigned int i;
->> +     set_section_perms(nx_perms, prot);
->> +}
->>
->> -     if (!arch_has_strict_perms())
->> -             return;
->> +#ifdef CONFIG_DEBUG_RODATA
->> +void mark_rodata_ro(void)
->> +{
->> +     set_section_perms(ro_perms, prot);
->> +}
->>
->> -     for (i = 0; i < ARRAY_SIZE(section_perms); i++) {
->> -             if (!IS_ALIGNED(section_perms[i].start, SECTION_SIZE) ||
->> -                 !IS_ALIGNED(section_perms[i].end, SECTION_SIZE)) {
->> -                     pr_err("BUG: section %lx-%lx not aligned to %lx\n",
->> -                             section_perms[i].start, section_perms[i].end,
->> -                             SECTION_SIZE);
->> -                     continue;
->> -             }
->> +void set_kernel_text_rw(void)
->> +{
->> +     set_section_perms(ro_perms, clear);
->> +}
->
-> You need a TLB flush.  I had a flush_tlb_all() in my example patch,
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/244335.html,
-> but the following is probably nicer (on top of this patch):
->
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 9bea524..a92c45a 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -741,6 +741,8 @@ static inline bool arch_has_strict_perms(void)
->                      addr += SECTION_SIZE)                              \
->                         section_update(addr, perms[i].mask,             \
->                                        perms[i].field);                 \
-> +                                                                       \
-> +               flush_tlb_kernel_range(perms[i].start, perms[i].end);   \
->         }                                                               \
->  }
->
-
-When I do this, I hang the system, and get a WARN due to the tlb call
-attempting to flush on all CPUs, I think:
-
-[   34.246034] WARNING: at
-/mnt/host/source/src/third_party/kernel-next/kernel/smp.c:466
-smp_call_function_many+0xac/0x26c()
-...
-[   34.246617] Backtrace:
-[   34.246697] [<c010d3b8>] (unwind_backtrace+0x0/0x118) from
-[<c060b9d8>] (dump_stack+0x28/0x30)
-[   34.246765] [<c060b9d8>] (dump_stack+0x28/0x30) from [<c0123044>]
-(warn_slowpath_null+0x44/0x5c)
-[   34.246824] [<c0123044>] (warn_slowpath_null+0x44/0x5c) from
-[<c017426c>] (smp_call_function_many+0xac/0x26c)
-[   34.246881] [<c017426c>] (smp_call_function_many+0xac/0x26c) from
-[<c0174468>] (smp_call_function+0x3c/0x48)
-[   34.246937] [<c0174468>] (smp_call_function+0x3c/0x48) from
-[<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c)
-[   34.246994] [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c) from
-[<c010c590>] (flush_tlb_kernel_range+0x74/0xa0)
-[   34.247046] [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0) from
-[<c011403c>] (set_kernel_text_rw+0xd8/0xec)
-[   34.247099] [<c011403c>] (set_kernel_text_rw+0xd8/0xec) from
-[<c010c878>] (__ftrace_modify_code+0x14/0x28)
-[   34.247156] [<c010c878>] (__ftrace_modify_code+0x14/0x28) from
-[<c0184318>] (stop_machine_cpu_stop+0xc0/0x114)
-[   34.247212] [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114) from
-[<c01841cc>] (cpu_stopper_thread+0xd8/0x164)
-[   34.247266] [<c01841cc>] (cpu_stopper_thread+0xd8/0x164) from
-[<c0145c14>] (kthread+0xc8/0xd8)
-[   34.247323] [<c0145c14>] (kthread+0xc8/0xd8) from [<c0106118>]
-(ret_from_fork+0x14/0x20)
-
-Using local_flush_tlb_kernel_range() fixed it though. Thank you for
-your help on this! :)
-
--Kees
-
+diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+index ef78f56..c255349 100644
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -305,6 +305,12 @@ struct device;
+  	.get = snd_soc_dapm_get_enum_double, \
+  	.put = snd_soc_dapm_put_enum_double, \
+   	.private_value = (unsigned long)&xenum }
++#define SOC_DAPM_ENUM_ONEHOT(xname, xenum) \
++{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
++	.info = snd_soc_info_enum_double, \
++	.get = snd_soc_dapm_get_enum_onehot, \
++	.put = snd_soc_dapm_put_enum_onehot, \
++	.private_value = (unsigned long)&xenum }
+ #define SOC_DAPM_ENUM_VIRT(xname, xenum) \
+ 	SOC_DAPM_ENUM(xname, xenum)
+ #define SOC_DAPM_ENUM_EXT(xname, xenum, xget, xput) \
+@@ -352,6 +358,9 @@ struct device;
+ /* regulator widget flags */
+ #define SND_SOC_DAPM_REGULATOR_BYPASS     0x1     /* bypass when disabled */
+ 
++/* maximum registers to update */
++#define SND_SOC_DAPM_UPDATE_MAX_REG		3
++
+ struct snd_soc_dapm_widget;
+ enum snd_soc_dapm_type;
+ struct snd_soc_dapm_path;
+@@ -378,6 +387,10 @@ int snd_soc_dapm_get_enum_double(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol);
+ int snd_soc_dapm_put_enum_double(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol);
++int snd_soc_dapm_get_enum_onehot(struct snd_kcontrol *kcontrol,
++	struct snd_ctl_elem_value *ucontrol);
++int snd_soc_dapm_put_enum_onehot(struct snd_kcontrol *kcontrol,
++	struct snd_ctl_elem_value *ucontrol);
+ int snd_soc_dapm_info_pin_switch(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_info *uinfo);
+ int snd_soc_dapm_get_pin_switch(struct snd_kcontrol *kcontrol,
+@@ -590,9 +603,10 @@ struct snd_soc_dapm_widget {
+ 
+ struct snd_soc_dapm_update {
+ 	struct snd_kcontrol *kcontrol;
+-	int reg;
+-	int mask;
+-	int val;
++	int reg[SND_SOC_DAPM_UPDATE_MAX_REG];
++	int mask[SND_SOC_DAPM_UPDATE_MAX_REG];
++	int val[SND_SOC_DAPM_UPDATE_MAX_REG];
++	unsigned int num_regs;
+ };
+ 
+ /* DAPM context */
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 0b83168..dcdf1cb 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -177,18 +177,24 @@
+ 		{.reg = xreg, .min = xmin, .max = xmax, \
+ 		 .platform_max = xmax} }
+ #define SOC_ENUM_DOUBLE(xreg, xshift_l, xshift_r, xitems, xtexts) \
+-{	.reg = xreg, .shift_l = xshift_l, .shift_r = xshift_r, \
++{	.reg = &(int){(xreg)}, .shift_l = xshift_l, .shift_r = xshift_r, \
+ 	.items = xitems, .texts = xtexts, \
+-	.mask = xitems ? roundup_pow_of_two(xitems) - 1 : 0}
++	.mask = &(unsigned int){(xitems ? roundup_pow_of_two(xitems) - 1 : 0)}, \
++	.num_regs = 1, .type = SND_SOC_ENUM_BINARY }
+ #define SOC_ENUM_SINGLE(xreg, xshift, xitems, xtexts) \
+ 	SOC_ENUM_DOUBLE(xreg, xshift, xshift, xitems, xtexts)
+ #define SOC_ENUM_SINGLE_EXT(xitems, xtexts) \
+ {	.items = xitems, .texts = xtexts }
+ #define SOC_VALUE_ENUM_DOUBLE(xreg, xshift_l, xshift_r, xmask, xitems, xtexts, xvalues) \
+-{	.reg = xreg, .shift_l = xshift_l, .shift_r = xshift_r, \
+-	.mask = xmask, .items = xitems, .texts = xtexts, .values = xvalues}
++{	.reg = &(int){(xreg)}, .shift_l = xshift_l, .shift_r = xshift_r, \
++	.mask = &(unsigned int){(xmask)}, .items = xitems, .texts = xtexts, \
++	.values = xvalues, .num_regs = 1, .type = SND_SOC_ENUM_BINARY }
+ #define SOC_VALUE_ENUM_SINGLE(xreg, xshift, xmask, xnitmes, xtexts, xvalues) \
+ 	SOC_VALUE_ENUM_DOUBLE(xreg, xshift, xshift, xmask, xnitmes, xtexts, xvalues)
++#define SOC_VALUE_ENUM_ONEHOT(xregs, xmasks, xnum_regs, xitems, xtexts, xvalues) \
++{	.reg = xregs, .mask = xmasks, .num_regs = xnum_regs, \
++	.items = xitems, .texts = xtexts, .values = xvalues, \
++	.type = SND_SOC_ENUM_ONEHOT }
+ #define SOC_ENUM_SINGLE_VIRT(xitems, xtexts) \
+ 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, xitems, xtexts)
+ #define SOC_ENUM(xname, xenum) \
+@@ -293,6 +299,9 @@
+ #define SOC_VALUE_ENUM_DOUBLE_DECL(name, xreg, xshift_l, xshift_r, xmask, xtexts, xvalues) \
+ 	const struct soc_enum name = SOC_VALUE_ENUM_DOUBLE(xreg, xshift_l, xshift_r, xmask, \
+ 							ARRAY_SIZE(xtexts), xtexts, xvalues)
++#define SOC_VALUE_ENUM_ONEHOT_DECL(name, xregs, xmasks, xnum_regs, xtexts, xvalues) \
++	const struct soc_enum name = SOC_VALUE_ENUM_ONEHOT(xregs, xmasks, xnum_regs, \
++							ARRAY_SIZE(xtexts), xtexts, xvalues)
+ #define SOC_VALUE_ENUM_SINGLE_DECL(name, xreg, xshift, xmask, xtexts, xvalues) \
+ 	SOC_VALUE_ENUM_DOUBLE_DECL(name, xreg, xshift, xshift, xmask, xtexts, xvalues)
+ #define SOC_ENUM_SINGLE_VIRT_DECL(name, xtexts) \
+@@ -326,6 +335,16 @@ enum snd_soc_bias_level {
+ 	SND_SOC_BIAS_ON = 3,
+ };
+ 
++/*
++ * enum snd_soc_enum_type - Type of ASoC enum control
++ * @SND_SOC_ENUM_BINARY: soc_enum type for SINGLE, DOUBLE or VIRTUAL mux
++ * @SND_SOC_ENUM_ONEHOT: soc_enum type for ONEHOT encoding mux
++ */
++enum snd_soc_enum_type {
++	SND_SOC_ENUM_BINARY = 0,
++	SND_SOC_ENUM_ONEHOT = 1,
++};
++
+ struct device_node;
+ struct snd_jack;
+ struct snd_soc_card;
+@@ -1098,13 +1117,15 @@ struct soc_mreg_control {
+ 
+ /* enumerated kcontrol */
+ struct soc_enum {
+-	int reg;
++	int *reg;
+ 	unsigned char shift_l;
+ 	unsigned char shift_r;
+ 	unsigned int items;
+-	unsigned int mask;
++	unsigned int *mask;
+ 	const char * const *texts;
+ 	const unsigned int *values;
++	enum snd_soc_enum_type type;
++	unsigned int num_regs;
+ };
+ 
+ /**
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index caebd63..cf29722 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -2601,12 +2601,12 @@ int snd_soc_get_enum_double(struct snd_kcontrol *kcontrol,
+ 	unsigned int val, item;
+ 	unsigned int reg_val;
+ 
+-	reg_val = snd_soc_read(codec, e->reg);
+-	val = (reg_val >> e->shift_l) & e->mask;
++	reg_val = snd_soc_read(codec, e->reg[0]);
++	val = (reg_val >> e->shift_l) & e->mask[0];
+ 	item = snd_soc_enum_val_to_item(e, val);
+ 	ucontrol->value.enumerated.item[0] = item;
+ 	if (e->shift_l != e->shift_r) {
+-		val = (reg_val >> e->shift_l) & e->mask;
++		val = (reg_val >> e->shift_l) & e->mask[0];
+ 		item = snd_soc_enum_val_to_item(e, val);
+ 		ucontrol->value.enumerated.item[1] = item;
+ 	}
+@@ -2636,15 +2636,15 @@ int snd_soc_put_enum_double(struct snd_kcontrol *kcontrol,
+ 	if (item[0] >= e->items)
+ 		return -EINVAL;
+ 	val = snd_soc_enum_item_to_val(e, item[0]) << e->shift_l;
+-	mask = e->mask << e->shift_l;
++	mask = e->mask[0] << e->shift_l;
+ 	if (e->shift_l != e->shift_r) {
+ 		if (item[1] >= e->items)
+ 			return -EINVAL;
+ 		val |= snd_soc_enum_item_to_val(e, item[1]) << e->shift_r;
+-		mask |= e->mask << e->shift_r;
++		mask |= e->mask[0] << e->shift_r;
+ 	}
+ 
+-	return snd_soc_update_bits_locked(codec, e->reg, mask, val);
++	return snd_soc_update_bits_locked(codec, e->reg[0], mask, val);
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_put_enum_double);
+ 
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index c8a780d..be9cd63 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -511,13 +511,26 @@ static int dapm_connect_mux(struct snd_soc_dapm_context *dapm,
+ 	const struct snd_kcontrol_new *kcontrol)
+ {
+ 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+-	unsigned int val, item;
++	unsigned int val, item, bit_pos = 0;
+ 	int i;
+ 
+-	if (e->reg != SND_SOC_NOPM) {
+-		soc_widget_read(dest, e->reg, &val);
+-		val = (val >> e->shift_l) & e->mask;
+-		item = snd_soc_enum_val_to_item(e, val);
++	if (e->reg[0] != SND_SOC_NOPM) {
++		if (e->type == SND_SOC_ENUM_ONEHOT) {
++			for (i = 0; i < e->num_regs; i++) {
++				soc_widget_read(dest, e->reg[i], &val);
++				val = val & e->mask[i];
++				if (val != 0) {
++					bit_pos = ffs(val) +
++						(8 * dest->codec->val_bytes * i);
++					break;
++				}
++			}
++			item = snd_soc_enum_val_to_item(e, bit_pos);
++		} else {
++			soc_widget_read(dest, e->reg[0], &val);
++			val = (val >> e->shift_l) & e->mask[0];
++			item = snd_soc_enum_val_to_item(e, val);
++		}
+ 	} else {
+ 		/* since a virtual mux has no backing registers to
+ 		 * decide which path to connect, it will try to match
+@@ -1553,8 +1566,8 @@ static void dapm_widget_update(struct snd_soc_card *card)
+ 	struct snd_soc_dapm_update *update = card->update;
+ 	struct snd_soc_dapm_widget_list *wlist;
+ 	struct snd_soc_dapm_widget *w = NULL;
+-	unsigned int wi;
+-	int ret;
++	unsigned int wi, i;
++	int ret = 0;
+ 
+ 	if (!update || !dapm_kcontrol_is_powered(update->kcontrol))
+ 		return;
+@@ -1575,11 +1588,16 @@ static void dapm_widget_update(struct snd_soc_card *card)
+ 	if (!w)
+ 		return;
+ 
+-	ret = soc_widget_update_bits_locked(w, update->reg, update->mask,
+-				  update->val);
+-	if (ret < 0)
+-		dev_err(w->dapm->dev, "ASoC: %s DAPM update failed: %d\n",
+-			w->name, ret);
++	/* dapm update for multiple registers */
++	for (i = 0; i < update->num_regs; i++) {
++		ret = soc_widget_update_bits_locked(w, update->reg[i],
++					update->mask[i], update->val[i]);
++		if (ret < 0) {
++			dev_err(w->dapm->dev, "ASoC: %s DAPM update failed: %d\n",
++				w->name, ret);
++			break;
++		}
++	}
+ 
+ 	for (wi = 0; wi < wlist->num_widgets; wi++) {
+ 		w = wlist->widgets[wi];
+@@ -2866,10 +2884,10 @@ int snd_soc_dapm_put_volsw(struct snd_kcontrol *kcontrol,
+ 	if (change) {
+ 		if (reg != SND_SOC_NOPM) {
+ 			update.kcontrol = kcontrol;
+-			update.reg = reg;
+-			update.mask = mask;
+-			update.val = val;
+-
++			update.reg[0] = reg;
++			update.mask[0] = mask;
++			update.val[0] = val;
++			update.num_regs = 1;
+ 			card->update = &update;
+ 		}
+ 
+@@ -2903,15 +2921,15 @@ int snd_soc_dapm_get_enum_double(struct snd_kcontrol *kcontrol,
+ 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+ 	unsigned int reg_val, val;
+ 
+-	if (e->reg != SND_SOC_NOPM)
+-		reg_val = snd_soc_read(codec, e->reg);
++	if (e->reg[0] != SND_SOC_NOPM)
++		reg_val = snd_soc_read(codec, e->reg[0]);
+ 	else
+ 		reg_val = dapm_kcontrol_get_value(kcontrol);
+ 
+-	val = (reg_val >> e->shift_l) & e->mask;
++	val = (reg_val >> e->shift_l) & e->mask[0];
+ 	ucontrol->value.enumerated.item[0] = snd_soc_enum_val_to_item(e, val);
+ 	if (e->shift_l != e->shift_r) {
+-		val = (reg_val >> e->shift_r) & e->mask;
++		val = (reg_val >> e->shift_r) & e->mask[0];
+ 		val = snd_soc_enum_val_to_item(e, val);
+ 		ucontrol->value.enumerated.item[1] = val;
+ 	}
+@@ -2945,27 +2963,28 @@ int snd_soc_dapm_put_enum_double(struct snd_kcontrol *kcontrol,
+ 		return -EINVAL;
+ 
+ 	val = snd_soc_enum_item_to_val(e, item[0]) << e->shift_l;
+-	mask = e->mask << e->shift_l;
++	mask = e->mask[0] << e->shift_l;
+ 	if (e->shift_l != e->shift_r) {
+ 		if (item[1] > e->items)
+ 			return -EINVAL;
+ 		val |= snd_soc_enum_item_to_val(e, item[1]) << e->shift_l;
+-		mask |= e->mask << e->shift_r;
++		mask |= e->mask[0] << e->shift_r;
+ 	}
+ 
+ 	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+ 
+-	if (e->reg != SND_SOC_NOPM)
+-		change = snd_soc_test_bits(codec, e->reg, mask, val);
++	if (e->reg[0] != SND_SOC_NOPM)
++		change = snd_soc_test_bits(codec, e->reg[0], mask, val);
+ 	else
+ 		change = dapm_kcontrol_set_value(kcontrol, val);
+ 
+ 	if (change) {
+-		if (e->reg != SND_SOC_NOPM) {
++		if (e->reg[0] != SND_SOC_NOPM) {
+ 			update.kcontrol = kcontrol;
+-			update.reg = e->reg;
+-			update.mask = mask;
+-			update.val = val;
++			update.reg[0] = e->reg[0];
++			update.mask[0] = mask;
++			update.val[0] = val;
++			update.num_regs = 1;
+ 			card->update = &update;
+ 		}
+ 
+@@ -2984,6 +3003,112 @@ int snd_soc_dapm_put_enum_double(struct snd_kcontrol *kcontrol,
+ EXPORT_SYMBOL_GPL(snd_soc_dapm_put_enum_double);
+ 
+ /**
++ * snd_soc_dapm_get_enum_onehot - dapm enumerated onehot mixer get callback
++ * @kcontrol: mixer control
++ * @ucontrol: control element information
++ *
++ * Callback to get the value of a dapm enumerated onehot encoded mixer control
++ *
++ * Returns 0 for success.
++ */
++int snd_soc_dapm_get_enum_onehot(struct snd_kcontrol *kcontrol,
++			struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
++	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
++	unsigned int reg_val, val, bit_pos = 0, reg_idx;
++
++	for (reg_idx = 0; reg_idx < e->num_regs; reg_idx++) {
++		reg_val = snd_soc_read(codec, e->reg[reg_idx]);
++		val = reg_val & e->mask[reg_idx];
++		if (val != 0) {
++			bit_pos = ffs(val) + (8 * codec->val_bytes * reg_idx);
++			break;
++		}
++	}
++
++	ucontrol->value.enumerated.item[0] =
++			snd_soc_enum_val_to_item(e, bit_pos);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_get_enum_onehot);
++
++/**
++ * snd_soc_dapm_put_enum_onehot - dapm enumerated onehot mixer put callback
++ * @kcontrol: mixer control
++ * @ucontrol: control element information
++ *
++ * Callback to put the value of a dapm enumerated onehot encoded mixer control
++ *
++ * Returns 0 for success.
++ */
++int snd_soc_dapm_put_enum_onehot(struct snd_kcontrol *kcontrol,
++			struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
++	struct snd_soc_card *card = codec->card;
++	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
++	unsigned int *item = ucontrol->value.enumerated.item;
++	unsigned int change = 0, reg_idx = 0, value, bit_pos;
++	unsigned int i, reg_val = 0, update_idx = 0;
++	struct snd_soc_dapm_update update;
++	int ret = 0;
++
++	if (item[0] >= e->items || e->num_regs > SND_SOC_DAPM_UPDATE_MAX_REG)
++		return -EINVAL;
++
++	value = snd_soc_enum_item_to_val(e, item[0]);
++
++	if (value) {
++		/* get the register index and value to set */
++		reg_idx = (value - 1) / (8 * codec->val_bytes);
++		bit_pos = (value - 1) % (8 * codec->val_bytes);
++		reg_val = BIT(bit_pos);
++	}
++
++	for (i = 0; i < e->num_regs; i++) {
++		if (i == reg_idx) {
++			change |= snd_soc_test_bits(codec, e->reg[i],
++							e->mask[i], reg_val);
++			/* set the selected register */
++			update.reg[e->num_regs - 1] = e->reg[reg_idx];
++			update.mask[e->num_regs - 1] = e->mask[reg_idx];
++			update.val[e->num_regs - 1] = reg_val;
++		} else {
++			/* accumulate the change to update the DAPM path
++			    when none is selected */
++			change |= snd_soc_test_bits(codec, e->reg[i],
++							e->mask[i], 0);
++
++			/* clear the register when not selected */
++			update.reg[update_idx] = e->reg[i];
++			update.mask[update_idx] = e->mask[i];
++			update.val[update_idx++] = 0;
++		}
++	}
++
++	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
++
++	if (change) {
++		update.kcontrol = kcontrol;
++		update.num_regs = e->num_regs;
++		card->update = &update;
++
++		ret = soc_dapm_mux_update_power(card, kcontrol, item[0], e);
++		card->update = NULL;
++	}
++
++	mutex_unlock(&card->dapm_mutex);
++
++	if (ret > 0)
++		soc_dpcm_runtime_update(card);
++
++	return change;
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_put_enum_onehot);
++
++/**
+  * snd_soc_dapm_info_pin_switch - Info for a pin switch
+  *
+  * @kcontrol: mixer control
 -- 
-Kees Cook
-Chrome OS Security
+1.7.9.5
+
