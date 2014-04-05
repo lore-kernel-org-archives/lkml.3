@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaDED2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Apr 2014 23:28:30 -0400
-Received: from numascale.com ([213.162.240.84]:55886 "EHLO numascale.com"
+	id S1751654AbaDEEVE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 00:21:04 -0400
+Received: from m13-72.163.com ([220.181.13.72]:47186 "EHLO m13-72.163.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228AbaDED22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Apr 2014 23:28:28 -0400
-Message-ID: <533F7851.30803@numascale.com>
-Date: Sat, 05 Apr 2014 11:28:17 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751083AbaDEEVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 00:21:02 -0400
+X-Originating-IP: [124.193.170.118]
+Date: Sat, 5 Apr 2014 12:20:27 +0800 (CST)
+From: "wei zhang" <asuka.com@163.com>
+To: "Jesse Gross" <jesse@nicira.com>
+Cc: "David Miller" <davem@davemloft.net>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] openvswitch: supply a dummy err_handler of
+ gre_cisco_protocol to prevent kernel crash
+X-Priority: 3
+X-Mailer: Coremail Webmail Server Version SP_ntes V3.5 build
+ 20131204(24406.5820.5783) Copyright (c) 2002-2014 www.mailtech.cn 163com
+In-Reply-To: <CAEP_g=9WRyaSmRKHDZmWXwzjDyex8NheyveGzfH4qmMbhgGHdQ@mail.gmail.com>
+References: <1396398194-4163-1-git-send-email-asuka.com@163.com>
+ <CAEP_g=9WRyaSmRKHDZmWXwzjDyex8NheyveGzfH4qmMbhgGHdQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Subject: Re: ext4 performance falloff
-References: <533EE547.3030504@numascale.com> <20140404205604.GC10275@thunk.org>
-In-Reply-To: <20140404205604.GC10275@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OutGoing-Spam-Status: No, score=-2.9
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Message-ID: <158dbf4d.1b3c.145301dbf7a.Coremail.asuka.com@163.com>
+X-CM-TRANSID: SMGowACXDjWMhD9Tdy4MAA--.5430W
+X-CM-SenderInfo: 5dvxytoofrzqqrwthudrp/1tbiMhZk1lD-r0lyagABsG
+X-Coremail-Antispam: 1U5529EdanIXcx71UUUUU7vcSsGvfC2KfnxnUU==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s354LNXE028159
 
-On 04/05/2014 04:56 AM, Theodore Ts'o wrote:
-> On Sat, Apr 05, 2014 at 01:00:55AM +0800, Daniel J Blueman wrote:
->> On a larger system 1728 cores/4.5TB memory and 3.13.9, I'm seeing very low
->> 600KB/s cached write performance to a local ext4 filesystem:
-
- > Thanks for the heads up.  Most (all?) of the ext4 don't have systems
- > with thousands of cores, so these issues generally don't come up for
- > us, and so we're not likely (hell, very unlikely!) to notice potential
- > problems cause by these sorts of uber-large systems.
-
-Hehe. It's not every day we get access to these systems also.
-
->> Analysis shows that ext4 is reading from all cores' cpu-local data (thus
->> expensive off-NUMA-node access) for each block written:
+At 2014-04-05 07:05:59,"Jesse Gross" <jesse@nicira.com> wrote:
+>On Tue, Apr 1, 2014 at 5:23 PM, Wei Zhang <asuka.com@163.com> wrote:
 >>
->> if (free_clusters - (nclusters + rsv + dirty_clusters) <
->> 				EXT4_FREECLUSTERS_WATERMARK) {
->> 	free_clusters  = percpu_counter_sum_positive(fcc);
->> 	dirty_clusters = percpu_counter_sum_positive(dcc);
->> }
->>
->> This threshold is defined as:
->>
->> #define EXT4_FREECLUSTERS_WATERMARK (4 * (percpu_counter_batch *
->> nr_cpu_ids))
-...
-> The problem we are trying to solve here is that when we do delayed
-> allocation, we're making an implicit promise that there will be space
-> available
+>> v2 -> v1: use the same logic of the gre_rcv() to distinguish which packet is
+>> intended to us!
 >
-> I've done the calculations, and 4 * 32 * 1728 cores = 221184 blocks,
-> or 864 megabytes.  That would mean that the file system is over 98%
-> full, so that's actually pretty reasonable; most of the time there's
-> more free space than that.
+>As a tip on kernel process: if you put the version information after
+>three dashes below the signed-off-by line then git will automatically
+>remove it when the final patch is applied.
 
-The filesystem is empty after the mkfs; the approach here may make sense 
-if we want to allow all cores to write to this FS, but here we have one.
+Thanks, should I modify it and send a v3 patch?
 
-Instrumenting shows that free_clusters=16464621 nclusters=1 rsv=842790 
-dirty_clusters=0 percpu_counter_batch=3456 nr_cpu_ids=1728; below 91GB 
-space, we'd hit this issue. It feels more sensible to start this 
-behaviour when the FS is say 98% full, irrespective of the number of 
-cores, but that's not why the behaviour is there.
-
-Since these block devices are attached to a single NUMA node's IO link, 
-there is a scaling limitation there anyway, so there may be rationale in 
-limiting this to use min(256,nr_cpu_ids) maybe?
-
-> It looks like the real problem is that we're using nr_cpu_ids, which
-> is the maximum possible number of cpu's that the system can support,
-> which is different from the number of cpu's that you currently have.
-> For normal kernels nr_cpu_ids is small, so that has never been a
-> problem, but I bet you have nr_cpu_ids set to something really large,
-> right?
 >
-> If you change nr_cpu_ids to total_cpus in the definition of
-> EXT4_FREECLUSTERS_WATERMARK, does that make things better for your
-> system?
+>> diff --git a/net/openvswitch/vport-gre.c b/net/openvswitch/vport-gre.c
+>> index a3d6951..f391df1 100644
+>> --- a/net/openvswitch/vport-gre.c
+>> +++ b/net/openvswitch/vport-gre.c
+>> @@ -110,6 +110,21 @@ static int gre_rcv(struct sk_buff *skb,
+>>         return PACKET_RCVD;
+>>  }
+>>
+>> +/* Called with rcu_read_lock and BH disabled. */
+>> +static int gre_err(struct sk_buff *skb, u32 info,
+>> +                  const struct tnl_ptk_info *tpi)
+>> +{
+>> +       struct ovs_net *ovs_net;
+>> +       struct vport *vport;
+>> +
+>> +       ovs_net = net_generic(dev_net(skb->dev), ovs_net_id);
+>> +       vport = rcu_dereference(ovs_net->vport_net.gre_vport);
+>> +       if (unlikely(!vport))
+>> +               return PACKET_REJECT;
+>> +       else
+>> +               return PACKET_RCVD;
+>
+>Sorry, I forgot to say this before - if we receive the packet then we
+>should also call consume_skb() on it.
 
-I have reproduced this with CPU hotplug disabled, so nr_cpu_ids is 
-nicely at 1728.
+Maybe there is no need to call consume_skb()? The icmp_rcv() would
+call kfree_skb() for us. I also checked the ipgre_err(), it return 
+PACKET_RCVD without call consume_skb() too.
 
-Thanks,
-   Daniel
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+Regards,
+Wei Zhang���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
