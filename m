@@ -1,87 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198AbaDEXYS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 19:24:18 -0400
-Received: from imap.thunk.org ([74.207.234.97]:50522 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753565AbaDEXYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 19:24:11 -0400
-Date: Sat, 5 Apr 2014 19:23:42 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: John Stoffel <john@stoffel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, Joerg Roedel <joro@8bytes.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-ID: <20140405232342.GA6805@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	John Stoffel <john@stoffel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Joerg Roedel <joro@8bytes.org>, Jiri Kosina <jkosina@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mateusz Guzik <mguzik@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-	Kay Sievers <kay@vrfy.org>
-References: <CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
- <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
- <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
- <CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
- <20140403104308.GP13491@8bytes.org>
- <20140403170541.GA19010@thunk.org>
- <533EF832.1030902@mit.edu>
- <CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
- <21311.8533.138063.744673@quad.stoffel.home>
- <20140404231749.GA20437@kroah.com>
+	id S1754059AbaDEXnf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 19:43:35 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:63740 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911AbaDEXn1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 19:43:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140404231749.GA20437@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CAFcVEC+vWwepHgsCAP63YG2F_0ZXKMck1YYwi7XU3JQdpC9ZQw@mail.gmail.com>
+References: <1396523431-14519-1-git-send-email-harinik@xilinx.com>
+	<1396523431-14519-2-git-send-email-harinik@xilinx.com>
+	<20140403213446.GB14763@sirena.org.uk>
+	<CAFcVEC+mpHh_d2j6_sdhWS3d2KyXrDYUq6L6jO2Q=SS68Hda2g@mail.gmail.com>
+	<20140404100919.GO14763@sirena.org.uk>
+	<CAFcVECLDyfFSZFk9fzFKsr6pM=f1nwzGAhjX17z=NsbvWpiDew@mail.gmail.com>
+	<20140404124637.GT14763@sirena.org.uk>
+	<CAFcVEC+FAAxxxxA8PgcTzLU5UFu=pkDEM4Li06dRmEwA95sz_g@mail.gmail.com>
+	<CAFcVECJYdW0=r425tWs8y6DJDNh3c75TAzg7+UCNRgLP8WHf+A@mail.gmail.com>
+	<CAEgOgz56hhFCy6sjZmw+Wn6uT4rU8mXSpazscPG_uJ-==-uXLw@mail.gmail.com>
+	<CAFcVEC+vWwepHgsCAP63YG2F_0ZXKMck1YYwi7XU3JQdpC9ZQw@mail.gmail.com>
+Date: Sun, 6 Apr 2014 09:43:25 +1000
+X-Google-Sender-Auth: 2Sfl2ngpjFTGxdU4bY1Ialh8LvM
+Message-ID: <CAEgOgz5XsOYXyPTpUzx_j=+Z19oksTT5TB8G3r9KbYakrQvgHw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] devicetree: Add devicetree bindings documentation
+ for Cadence SPI
+From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+To: Harini Katakam <harinikatakamlinux@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 04:17:49PM -0700, Greg Kroah-Hartman wrote:
-> > I think you mean "dmesg -T", and unfortunately it seems Debian 6.0.9
-> > (or older) doesn ship a new enough linux-util since I've only got
-> > 2.17.2-9 install.  
-> 
-> No, 'dmesg -H' is the right thing, you just need a modern version of
-> util-linux :)
+On Sat, Apr 5, 2014 at 4:05 PM, Harini Katakam
+<harinikatakamlinux@gmail.com> wrote:
+> Hi Peter,
+>
+> On Sat, Apr 5, 2014 at 4:44 AM, Peter Crosthwaite
+> <peter.crosthwaite@xilinx.com> wrote:
+>> On Sat, Apr 5, 2014 at 12:30 AM, Harini Katakam
+>> <harinikatakamlinux@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> On Fri, Apr 4, 2014 at 7:38 PM, Harini Katakam
+>>> <harinikatakamlinux@gmail.com> wrote:
+>>>> Hi Mark,
+>>>>
+>>>> On Fri, Apr 4, 2014 at 6:16 PM, Mark Brown <broonie@kernel.org> wrote:
+>>>>> On Fri, Apr 04, 2014 at 05:44:23PM +0530, Harini Katakam wrote:
+>>>>>> On Fri, Apr 4, 2014 at 3:39 PM, Mark Brown <broonie@kernel.org> wrote:
+>>>>>> > On Fri, Apr 04, 2014 at 08:30:38AM +0530, Harini Katakam wrote:
+>>>>>
+>>>>>> >> This IP can drive 4 slaves.
+>>>>>> >> The sCS line to be driven is selected in spi device structure and
+>>>>>> >> that is driven by the software.
+>>>>>
+>>>>>> > So why specify this in the binding at all?  If the device always has the
+>>>>>> > same number of chip selects it's redundant.
+>>>>>
+>>>>>> I'm sorry, I should have explained that better.
+>>>>>> The IP can support upto 4 chip selects.
+>>>>>> The num-cs value here is the number of chip selects actually used on the board.
+>>
+>> Shouldnt it be a property of the controller not the board? How for
+>> example do we differentiate between different implementations of
+>> cadence SPI controller that only supports up to two CS lines? My
+>> thinking is that this property should always be present and = 4 in the
+>> Zynq case as the controller always has 4 physical CS lines coming out
+>> (before any decoders, pin muxes or slaves etc.).
+>>
+>>>>>
+>>>>> Why does that need to be configured?  Surely the presence of slaves is
+>>>>> enough information.
+>>
+>> And presence of slaves / board info is inferable from subnodes.
+>>
+>>>>
+>>>> OK. I understand.
+>>>> Can you comment on the case where a decoder is used?
+>>>>
+>>>> There is support for adding a decoder where extended slaves can be selected
+>>>> through the IP's control register.
+>>>> (This is not currently implemented in the driver but will be in the future.)
+>>>>
+>>
+>> I think thats seperate information. is-decoded-cs property of something.
+>>
+>>>> How should the driver know whether it is 4 or 16 select lines for example?
+>>>> This has to be written to master->num_chipselect.
+>>>>
+>>
+>> If you only have one property (== 4) how do you tell the difference
+>> between 4 un-decoded CS lines vs 2 decoded CS lines?
+>>
+>
+> If an SoC implements 2 CS and sets "decoder" property,
+> then we'd configure the register with "select decode" bit and write
+> 0b0011 to the slave select field to select 4th slave.
+>
+> If decoder property is not set, then we'd write 0b1000 to select 4th slave.
+>
 
-I've been poking the Debian folks.  Hopefully they'll be able to ship
-a newer util-linux soon.  Unfortunately, the previous package
-maintainer had something like a thousand local patches, and it's not
-clear which patches got pushed upstream, which have been resolved some
-other way, which are now moot, and which might result in an actual
-regression if Debian were to go to the latest version of util-linux.
+What are your proposed dt bindings for these differing options - what
+is num-cs in each case?
 
-Most Debian packages are better maintained; hopefully this issue will
-be resolved soon.  I believe the right way at this point is to declare
-"patch bankruptcy", ala "inbox bankruptcy", and then fix up the bugs
-as users report them.  And I think the new maintainer believes that
-too; he just has to convince a few other people of that.
+> But yes, if the SoC only implements 2 CS, doesn't use decoder but
+> if there is an erroneous input to set_cs for 4th slave, it would be a problem.
+>
 
-Anyway, that's largely out of scope for LKML, except that many us
-kernel developers who use Debian have been rather handicapped by this.
-(I keep a set of binaries of the latest util-linux when I need modern
-functionality.)
+Sure, that's an error condition though that should be caught by SPI
+because master->num_chipselect would only be 2 right?
 
-     	     	    	       	   	 - Ted
+Regards,
+Peter
+
+>>
+>> I think num-cs has validity as the number of CS lines implemented in
+>> the controller. For any given SoC, it's constant but could differ
+>> between SoCs.
+>>
+>
+> I dint consider that this property will be useful to SoC's implementing <4 CS;
+> master->num_chipselect (when set to this property's value)
+> will be used to check error conditions.
+>
+> Regards,
+> Harini
