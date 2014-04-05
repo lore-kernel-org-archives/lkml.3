@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaDEO0l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 10:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718AbaDEO0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 10:26:40 -0400
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>
-Subject: [PATCH] arm64: fix !CONFIG_COMPAT build failures
-Date: Sat,  5 Apr 2014 10:25:49 -0400
-Message-Id: <1396707949-397-1-git-send-email-msalter@redhat.com>
+	id S1753060AbaDEO3j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 10:29:39 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:56404 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711AbaDEO3i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 10:29:38 -0400
+Message-ID: <5340134B.4010705@archlinux.org>
+Date: Sat, 05 Apr 2014 16:29:31 +0200
+From: =?ISO-8859-1?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Andi Kleen <ak@linux.intel.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, tpowa@archlinux.org
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+References: <52E4CF03.8030208@archlinux.org> <5339F739.2060207@archlinux.org> <20140331233450.GI32556@tassilo.jf.intel.com> <5339FC62.8060207@archlinux.org> <20140405011332.GR32556@tassilo.jf.intel.com>
+In-Reply-To: <20140405011332.GR32556@tassilo.jf.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent arm64 builds using CONFIG_ARM64_64K_PAGES are failing with:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-  arch/arm64/kernel/perf_regs.c: In function ‘perf_reg_abi’:
-  arch/arm64/kernel/perf_regs.c:41:2: error: implicit declaration of function ‘is_compat_thread’
+Am 05.04.2014 03:13, schrieb Andi Kleen:
+> On Tue, Apr 01, 2014 at 01:38:10AM +0200, Thomas B=E4chler wrote:
+>> Am 01.04.2014 01:34, schrieb Andi Kleen:
+>>>> This problem persists in v3.14, i.e. I still have to revert
+>>>> 83460ec8dcac14142e7860a01fa59c267ac4657c in order to get a working
+>>>> kernel on i686. I would really appreciate if someone would actually =
+read
+>>>> my original mail from about 3 months ago and write an answer.
+>>>
+>>> Can you resend it please?
+>>
+>> It's available here: https://lkml.org/lkml/2014/1/26/22
+>>
+>> For convenience, here is a copy-and-paste of the full text:
+>=20
+> I did some experiments know and I can't find any 32bit modules=20
+> that do not load with 32bit MODVERSIONS on or off with=20
+> a current tree.
+>=20
+> Do you have a specific config?
+> Specific compiler version?
 
-  arch/arm64/kernel/perf_event.c:1398:2: error: unknown type name ‘compat_uptr_t’
+Using gcc 4.8 from Arch Linux with the configuration at [1] and Linux 3.1=
+4.
 
-This is due to some recent arm64 perf commits with compat support:
+[1]
+https://projects.archlinux.org/svntogit/packages.git/tree/trunk/config?h=3D=
+packages/linux
 
-  commit 23c7d70d55c6d9:
-    ARM64: perf: add support for frame pointer unwinding in compat mode
 
-  commit 2ee0d7fd36a3f8:
-    ARM64: perf: add support for perf registers API
+--ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Those patches make the arm64 kernel unbuildable if CONFIG_COMPAT is not
-defined and CONFIG_ARM64_64K_PAGES depends on !CONFIG_COMPAT. This patch
-allows the arm64 kernel to build with and without CONFIG_COMPAT.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
----
- arch/arm64/kernel/perf_event.c | 4 ++++
- arch/arm64/kernel/perf_regs.c  | 2 ++
- 2 files changed, 6 insertions(+)
+iQIcBAEBAgAGBQJTQBNNAAoJEChPw0yOSxolYa8QANc+us6moP42uNloCY3pWN/y
+mlV1ljXZZZe32R8SUWoOrVEOfJKx7Yg0ayt9qcfPI2dZ44VjnXJTPWRC0ZoFKYbI
+vEHIdrQrk+Uxcrt+RG9/cKIH5GbfICUlcebI8E2Y7YCIZ2dfUJSWelQ85D7WVHn6
+pIKhYKBDqOZG1ZWGLgpkpRLLD9mtr4Do/l6UXscDzMNjDS7sjWoAbgshRU1tStkV
+VT13K8iXIi5gbnRehmvZh50sjGhDmaQBpcpYoJy0TTPPwDtRnrHQmskC9v3KuX49
+R5CIca4wotoJDCRKzJe893XmCLy+5966d18PM+9P8tYG4XZODywU2x4gyf0dcK6W
+U6m/6JmNdPLJ52/u7t47hJ7UKoxKej6XGfwoZXHp36yHGkgq+Zf5TfqOZ3HHmAZT
+YEgs3KVr3dX9vimXregCweksOAjAOUgsdsTnwDBPWsjzAIj0s0BX2yLa9HV9SlrM
+hPlQXXEIsWr6k+GrWfPG11JItoJ1WEr8g7/gjRkXLbRGkGqXPAD4m277p2zOWfub
+7HeYRfwb8JLGRK37qdv8En2ohJYmSTGvHp0q9ky6f5P9f3wnEtIX9SFTe/kEiC9Z
+HWuS+AQKAO4xYp20vBTrCgSgZYdqCNfZ6hNyhxyIACsZojBbcvy9WvlVH038aQB1
+vx2XtPdspuRUhJzGlxD4
+=nPLS
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-index e868c72..baf5afb 100644
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -1386,6 +1386,7 @@ user_backtrace(struct frame_tail __user *tail,
- 	return buftail.fp;
- }
- 
-+#ifdef CONFIG_COMPAT
- /*
-  * The registers we're interested in are at the end of the variable
-  * length saved register structure. The fp points at the end of this
-@@ -1430,6 +1431,7 @@ compat_user_backtrace(struct compat_frame_tail __user *tail,
- 
- 	return (struct compat_frame_tail __user *)compat_ptr(buftail.fp) - 1;
- }
-+#endif /* CONFIG_COMPAT */
- 
- void perf_callchain_user(struct perf_callchain_entry *entry,
- 			 struct pt_regs *regs)
-@@ -1451,6 +1453,7 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 		       tail && !((unsigned long)tail & 0xf))
- 			tail = user_backtrace(tail, entry);
- 	} else {
-+#ifdef CONFIG_COMPAT
- 		/* AARCH32 compat mode */
- 		struct compat_frame_tail __user *tail;
- 
-@@ -1459,6 +1462,7 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 		while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
- 			tail && !((unsigned long)tail & 0x3))
- 			tail = compat_user_backtrace(tail, entry);
-+#endif
- 	}
- }
- 
-diff --git a/arch/arm64/kernel/perf_regs.c b/arch/arm64/kernel/perf_regs.c
-index f2d6f0a..422ebd6 100644
---- a/arch/arm64/kernel/perf_regs.c
-+++ b/arch/arm64/kernel/perf_regs.c
-@@ -2,6 +2,8 @@
- #include <linux/kernel.h>
- #include <linux/perf_event.h>
- #include <linux/bug.h>
-+
-+#include <asm/compat.h>
- #include <asm/perf_regs.h>
- #include <asm/ptrace.h>
- 
--- 
-1.8.5.3
-
+--ChHVkm7AeePCD7KsCKxFviMG4U7Ca5evc--
