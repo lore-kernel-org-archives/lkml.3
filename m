@@ -1,158 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaDEJLK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 05:11:10 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41085 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124AbaDEJLG (ORCPT
+	id S1754163AbaDEKIW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 06:08:22 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:42042 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572AbaDEKIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 05:11:06 -0400
-Message-ID: <533FC8A6.6050905@linux.com>
-Date: Sat, 05 Apr 2014 11:11:02 +0200
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sat, 5 Apr 2014 06:08:20 -0400
+Date: Sat, 5 Apr 2014 12:08:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] nohz: use seqlock to avoid race on idle time stats v2
+Message-ID: <20140405100813.GA16696@localhost.localdomain>
+References: <5338CC86.9080602@jp.fujitsu.com>
+ <5338CE0B.1050100@jp.fujitsu.com>
+ <CAK1hOcMmmq=5EVLBrAd44HC+EHrnztABU48gd9BgK+LUNBJSOQ@mail.gmail.com>
+ <20140404160328.GA10042@localhost.localdomain>
+ <CAK1hOcMZPDhUzvJk0Q0rkkBh1tS=O+HU9ufEmX7VwnjhsSgQeA@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?VGVvZG9yYSBCxINsdcWjxIM=?= <teobaluta@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: David Lang <david@lang.hm>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>	<20140319201838.GA11403@redhat.com>	<CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>	<20140321132816.GW15608@titan.lakedaemon.net>	<532DC3D3.9060008@linux.com>	<CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>	<20140323193839.GY15608@titan.lakedaemon.net>	<CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>	<20140401142051.GO28304@titan.lakedaemon.net>	<alpine.DEB.2.02.1404031353280.14073@nftneq.ynat.uz>	<20140404151542.GB28334@titan.lakedaemon.net>	<533EDB15.40305@linux.com> <CACV2jQCxfQzRydFD6KizFnquasqtqaz1O_yNnVDBetFA5UryrA@mail.gmail.com>
-In-Reply-To: <CACV2jQCxfQzRydFD6KizFnquasqtqaz1O_yNnVDBetFA5UryrA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK1hOcMZPDhUzvJk0Q0rkkBh1tS=O+HU9ufEmX7VwnjhsSgQeA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 04/04/2014 11:42 PM, Teodora Băluţă wrote:
-> On Fri, Apr 4, 2014 at 7:17 PM, Levente Kurusa <levex@linux.com> wrote:
->> Hi,
->>
->> On 04/04/2014 05:15 PM, Jason Cooper wrote:
->>> On Thu, Apr 03, 2014 at 01:57:04PM -0700, David Lang wrote:
->>>> On Tue, 1 Apr 2014, Jason Cooper wrote:
->>>>
->>>>>> Now I guess we need to think how to make it work without a
->>>>>> framebuffer. I already suggested using the ASCII characters,
->>>>>> but seeing the resolution of this QR code for example (147x147),
->>>>>> made me realize that we can't shuffle that into a 80x25 textmode
->>>>>> display. Any ideas how to fix that or should we just simply depend
->>>>>> on a framebuffer being present?
->>>>>
->>>>> I think depending on the framebuffer being present (via kconfig) is
->>>>> sane.  Folks running old systems know what they're in for, like missing
->>>>> shiny new features. ;-)
->>>>
->>>> First get it working and into acceptable form, but after that, take
->>>> a look at the various ASCII-art tools out there. While the display
->>>> may be limited to 80x25, that's not a hard requirement (and I'd
->>>> happily run systems with a smaller text console if this was an
->>>> option), and then you can look at the possibility of using
->>>> characters that represent more than one pixel per character. While
->>>> this may not be able to render everything perfectly, remember that
->>>> qr codes can include redundancy to correct for bad pixels, you may
->>>> be able to get something working.
->>
->> I am not sure depending on the error recovery is good practice.
->> We also have to take into account that scanners themselves also
->> create noise and may not be perfect. Better reserve the error
->> recovery for those details instead of messing the QR code with
->> characters...
+On Fri, Apr 04, 2014 at 07:02:43PM +0200, Denys Vlasenko wrote:
+> On Fri, Apr 4, 2014 at 6:03 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >> However, if we would put ourselves into admin's seat, iowait
+> >> immediately starts to make sense: for admin, the system state
+> >> where a lot of CPU time is genuinely idle is qualitatively different
+> >> form the state where a lot of CPU time is "idle" because
+> >> we are I/O bound.
+> >>
+> >> Admins probably wouldn't insist that iowait accounting must be
+> >> very accurate. I would hazard to guess that admins would settle
+> >> for the following rules:
+> >
+> > Iowait makes sense but not per cpu. Eventually it's a global
+> > stat. Or per task.
 > 
-> You do have the option of error recovery for up to 30% recovery (H
-> level), but that means the space you get for storing is smaller.
+> There a lot of situations where admins want to know
+> how much, on average, their CPUs are idle because
+> they wait for IO.
 > 
->>
->>>
->>> I'm not sure this will work.  The screen space allocated to a single
->>> character isn't square.  However, the QR pixels are square.  I see a lot
->>> of fragile complexity ahead...
->>>
->>
->> ... not to mention this as well.
->>
->>
->> IMHO supporting textmode is just not worth the effort. Besides,
->> what would we gain from it? Supporting those devices without
->> a framebuffer? Do devices like that even exist anymore? In fact,
->> even to make this you need a screen, and AFAIK most screens come
->> with some kind of a framebuffer to drive them.
-> 
-> Guys, first things first is cleaning the library up. I haven't managed
-> to do anything yet as I am working on my thesis (bachelor's degree,
-> yay!). I will do some this weekend and that is removing the kanji mode
-> support. So, Levente, pleaso do that parameter thing you mentioned.
-> Merging that with the cleanup shouldn't be a problem. :-)
+> If you are running, say, a Web cache,
+> you need to know that stat in order to be able to
+> conjecture "looks like I'm IO bound, perhaps caching
+> some data in RAM will speed it up".
 
-Awesome, good luck on your thesis, take your time, we are not
-rushing. :-)
+But then accounting iowait time waited until completion on the CPU
+that the task wakes up should work for that.
 
-Yea, I began the work on the parameter and scaling but using
-'oops.qr=' isn't easy to use in a file called 'print_oops.c'.
-Reason is that KBUILD_MODNAME will become 'print_oops' and then
-MODULE_PARAM_PREFIX will be 'print_oops.' (note the dot character)
-and so the final parameter will be 'print_oops.qr'. I have solved
-this with:
-
-#undef MODULE_PARAM_PREFIX
-#define MODULE_PARAM_PREFIX "oops."
-
-but I think this is ugly and is a hack. The good solution
-would be to change KBUILD_MODNAME to 'oops' but I am not sure
-how to do that, since I have little to no knowledge (and
-experience) in how kbuild works.
-
-Or, we could use core_param and simply have 'oops_qr' or
-'qr_oops'. In my humble opinion the latter sounds better.
-
-Or, there is __setup as well and that could achieve 'oops.qr',
-but that is for *very* core stuff and this is probably not *that*
-core. :-)
-
-So, yea, if anyone knows how to change KBUILD_MODNAME without
-ugly hacks, I would be grateful to be informed.
-
+Doesn't it?
 
 > 
-> I think writing the QR to the frame buffer is the way to do it for
-> now. Doing a QR in text mode (as in displaying it, not as previously
-> mentioned idea with the link base64 encoding &/ compression) would
-> mean that for each square you get an ASCII character filling up your
-> screen. To get an idea of how the QR looks on the frame buffer I've
-> made a screenshot. That's the whole Oops message being encoded and
-> compressed. [0]
+> Global stat will give such data to admin. Per-task won't -
+> there can be an efficient Web cache design which uses
+> many parallel tasks to hide IO latency. Thus, such
+> Web cache can be nearly optimal despite its tasks,
+> individually, having significant iowait counts each.
 
-I am not sure if we ever wanted to output a link, but yes filling the
-screen with ASCII characters and relying on the error recovery to
-ensure readability is very bad.
+I don't see how it's an issue. Just add up the cumulated iowait among
+all these tasks and you get the global iowait time.
 
-Nice screenshot, I had as well successfully set up a testsuite
-with qemu that allows me to test if it displays correctly. I can
-share the testsuite if needed.
+Anyway that's not a problem, the goal is still to display that per CPU.
 
 > 
-> The problem with frame buffer is that I currently implemented it using
-> the generic frame buffer API. There are some issues as mentioned in
-> the first post of this RFC [1]. Would making it work with KMS be
-> better? Any opinions?
+> > I've sratched my head a lot on this. And I think we can't continue
+> > with the current semantics. If we had to keep the current semantics
+> > and enforce correctness at the same time, we are going to run into
+> > big scalability and performance issues. This can't be done without
+> > locking updates to nr_iowait() with seqlock:
+> >
+> > * when a task blocks on IO and goes idle, lock some per cpu iowait_seq,
+> > increase nr_iowait, save curr CPU number, save time.
+> >
+> > * when a task io completes and it gets enqueued on another CPU: retrieve
+> > old CPU, lock its iowait_seq, decrease nr_iowait, flush delta iowait .
+> >
+> > And all that just to maintain stats which semantics are wrong, this
+> > would be pure madness.
+> >
+> > OTOH we must stay compatible with user ABI in /proc/stat (the one in /proc/timers_list
+> > matters less).  But if we make it a per task stat, we are free to account it
+> > on the CPU we want.
+> >
+> > So what we can do for example is to account it per task and update stats
+> > on the CPU where the blocking task wakes up. This way we guarantee
+> > that we only account locally, which is good for scalability.
+> 
+> When IO-bound task wakes on some CPU,
+> how exactly do you propose to update counters -
+> add total waited time of this task to this CPU's counter?
 
-Not sure, since we are already in a very bad situation when the
-Oops happens, I think it is better use something that has existed
-for ages and seems to be a bit more simple, and has less chance to
-fail. Adding a lot of new code to a fragile part of the kernel
-is a hotbed for a recursive oops so I would say just stick with
-fb for now...
+So we save, per task, the time when the task went to sleep. And when it wakes up
+we just flush the pending time since that sleep time to the waking CPU:
+iowait[$CPU] += NOW() - tsk->sleeptime;
 
-Oh and another suggestion, I think placing it in the bottom-right
-corner would be better since then we wouldn't overwrite some of
-the timestamps and messages.
+> Is such counter meaningful for the admin?
 
+Well, you get the iowait time accounting.
 
--- 
-Regards,
-Levente Kurusa
+> 
+> > This is going to be an ABI change on a /proc/stat field semantic.
+> > We usually can not do that as it can break userspace. But I think
+> > we have a reasonable exception here:
+> >
+> > 1) On a performance POV we don't have the choice.
+> >
+> > 2) It has always been a buggy stat on SMP. Given the possible fast iowait update
+> > rate, I doubt it has ever dumped correct stats. So I guess that few user apps
+> > have ever correctly relied on it.
+> 
+> In busybox project, the following tools use iowait counter:
+> 
+> top,mpstat: in order to show "%iowait"
+> 
+> nmeter: to show "waiting for disk" part of CPU bar.
+> Example:
+> $ nmeter '%t %70c'
+> 18:57:33 SUU...................................................................
+> 18:57:34 SUUUUUUUUUUI..........................................................
+> 18:57:35 SUUUII................................................................
+> 18:57:36 SUUU..................................................................
+> 18:57:37 SSUDDD................................................................
+>   (^^^^^^ IO-intensive task starts)
+> 18:57:38 SSSSSSUDDDDDDDDDDDDIi.................................................
+> 18:57:39 SSSSSSSSUDDDDDDDDDi...................................................
+> 18:57:40 SSSSSUUDDDDDDDDDDDDi..................................................
+> 18:57:41 SSSSSUUUUUDDDDDDDDDDDDi...............................................
+> 18:57:42 SSSSSUDDDDDDDDDDDDDIi.................................................
+> 18:57:43 SSSUUDDDDDDDi.........................................................
+>   (^^^^^^ IO-intensive task ends)
+> 18:57:44 SUUUI.................................................................
+> 18:57:45 SUUU..................................................................
+> 18:57:46 UU....................................................................
+> 18:57:47 U.....................................................................
+> 
+> This doesn't look bogus to me.
+> It does give me information I need to know.
+
+Hmm, but the iowait and idle stats are so racy that I would personally not trust such a
+report.
+
+Races are just too likely and potentially high frequency cumulated bugs. Imagine this simple one:
+
+Imagine io task A sleeps on CPU 0. Then it wakes up elsewhere, runs for a while,
+sleeps but not on IO for, say 1 minute.
+During this time CPU 0 still sleeps.
+Task A does short IO again and wakes up on CPU 0.
+Cpu 0 just accounted more than 1 minute of iowait spuriously.
+
+But I also realize that userspace code like this must rely on the fact that idle
+time and iowait time are mutually exclusive. So perhaps we can't break the ABI
+as easily as I thought.
+
+Also the !NO_HZ behaviour still has the old semantics.
+
+Haha, this interface is such well designed nightmare :-(
+
+> 
+> > Also it decouples iowait from idle time. Running time is also accounted
+> > as iowait.
+> 
+> The time when CPUs are busy while there is IO-wait
+> are usually not a sign of badly tuned software/system.
+> 
+> Only when CPUs are idle and there is IO-wait is.
+>
+> That's how it looks from userspace.
+
+That's actually an artificial view that we made for userspace
+because its implementation was convenient on !CONFIG_NO_HZ time.
+
+In fact when I look at the history:
+
+* Introduction of the buggy accounting 0224cf4c5ee0d7faec83956b8e21f7d89e3df3bd
+* Use it for /proc/stat 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f
+
+We tried to mimic the way we account iowait time in !CONFIG_NO_HZ
+configurations where it's easy to distinguish idle/iowait time and to account
+the iowait time per blocking CPU source using the periodic tick. Because it's
+always there anyway. So we can tick on the blocking CPU source and poll on the
+number of tasks that blocked there for the last time until they are
+woken up somewhere else. Updates on iowait stats are then always local.
+
+So we did it that way because it was handy to do so. Somehow the implementation
+ease influenced the view.
+
+Now with CONFIG_NO_HZ this artificial view doesn't scale anymore.
+If we want to mimic the !CONFIG_NO_HZ  behaviour and do it correctly, we must
+use remote updates instead of local updates helped by polling tick.
+
+Thought?
