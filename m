@@ -1,186 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaDEPs6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 11:48:58 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:45691 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaDEPs4 (ORCPT
+	id S1753234AbaDEPtq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 11:49:46 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:56453 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184AbaDEPtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 11:48:56 -0400
-From: Azat Khuzhin <a3at.mail@gmail.com>
-To: linux-ext4@vger.kernel.org
-Cc: Azat Khuzhin <a3at.mail@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v4] ext4: initialize multi-block allocator before checking block descriptors
-Date: Sat,  5 Apr 2014 19:48:36 +0400
-Message-Id: <1396712916-6296-1-git-send-email-a3at.mail@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	Sat, 5 Apr 2014 11:49:43 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Healy <cphealy@gmail.com>, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] mfd: lpc_ich: Enable GPIO for Panther Point
+Date: Sat,  5 Apr 2014 08:49:34 -0700
+Message-Id: <1396712974-13853-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With EXT4FS_DEBUG ext4_count_free_clusters() will call
-ext4_read_block_bitmap() without s_group_info initialized, so we need to
-initialize multi-block allocator before.
+Panther Point PCH GPIO configuration is similar to V5 PCHs.
 
-And dependencies that must be solved, to allow this:
-- multi-block allocator needs in group descriptors
-- need to install s_op before initializing multi-block allocator,
-  because in ext4_mb_init_backend() new inode is created.
-- initialize number of group desc blocks (s_gdb_count) otherwise
-  number of clusters returned by ext4_free_clusters_after_init() is not correct.
-  (see ext4_bg_num_gdb_nometa())
-
-Here is bt:
-(gdb) bt
- #0  ext4_get_group_info (group=0, sb=0xffff880079a10000) at ext4.h:2430
- #1  ext4_validate_block_bitmap (sb=sb@entry=0xffff880079a10000, desc=desc@entry=0xffff880056510000, block_group=block_group@entry=0,
-     bh=bh@entry=0xffff88007bf2b2d8) at balloc.c:358
- #2  0xffffffff81232202 in ext4_wait_block_bitmap (sb=sb@entry=0xffff880079a10000, block_group=block_group@entry=0,
-     bh=bh@entry=0xffff88007bf2b2d8) at balloc.c:476
- #3  0xffffffff81232eaf in ext4_read_block_bitmap (sb=sb@entry=0xffff880079a10000, block_group=block_group@entry=0) at balloc.c:489
- #4  0xffffffff81232fc0 in ext4_count_free_clusters (sb=sb@entry=0xffff880079a10000) at balloc.c:665
- #5  0xffffffff81259ffa in ext4_check_descriptors (first_not_zeroed=<synthetic pointer>, sb=0xffff880079a10000) at super.c:2143
- #6  ext4_fill_super (sb=sb@entry=0xffff880079a10000, data=<optimized out>, data@entry=0x0 <irq_stack_union>, silent=silent@entry=0)
-     at super.c:3851
- #7  0xffffffff811b8340 in mount_bdev (fs_type=<optimized out>, flags=0, dev_name=<optimized out>, data=0x0 <irq_stack_union>,
-     fill_super=fill_super@entry=0xffffffff812589c0 <ext4_fill_super>) at super.c:987
- #8  0xffffffff8124ec35 in ext4_mount (fs_type=<optimized out>, flags=<optimized out>, dev_name=<optimized out>, data=<optimized out>)
-     at super.c:5365
- #9  0xffffffff811b8cf9 in mount_fs (type=type@entry=0xffffffff81c71840 <ext4_fs_type>, flags=flags@entry=0,
-     name=name@entry=0xffff880077a80c70 "/dev/loop4", data=data@entry=0x0 <irq_stack_union>) at super.c:1090
- #10 0xffffffff811d2ff3 in vfs_kern_mount (type=type@entry=0xffffffff81c71840 <ext4_fs_type>, flags=0,
-     name=name@entry=0xffff880077a80c70 "/dev/loop4", data=data@entry=0x0 <irq_stack_union>) at namespace.c:813
- #11 0xffffffff811d55de in do_new_mount (data=0x0 <irq_stack_union>, name=0xffff880077a80c70 "/dev/loop4", mnt_flags=32,
-     flags=<optimized out>, fstype=0xffff880077a80ca0 "ext4-insane", path=0xffff88007a5b1ed0) at namespace.c:2068
- #12 do_mount (dev_name=0xffff880077a80c70 "/dev/loop4", dir_name=<optimized out>, type_page=0xffff880077a80ca0 "ext4-insane",
-     flags=<optimized out>, flags@entry=3236757504, data_page=0x0 <irq_stack_union>) at namespace.c:2392
- #13 0xffffffff811d6183 in SYSC_mount (data=0x0 <irq_stack_union>, flags=3236757504, type=<optimized out>, dir_name=<optimized out>,
-     dev_name=0x7ffad9649c20 "/dev/loop4") at namespace.c:2586
- #14 SyS_mount (dev_name=140715365800992, dir_name=<optimized out>, type=<optimized out>, flags=3236757504, data=0) at namespace.c:2559
-
-Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-Link: http://marc.info/?l=linux-ext4&m=139493754530149&w=2
-v5: initialize number of group desc blocks (s_gdb_count) otherwise
-    number of clusters returned by ext4_free_clusters_after_init() is not correct.
+ drivers/mfd/lpc_ich.c |    1 +
+ 1 file changed, 1 insertion(+)
 
- fs/ext4/super.c | 51 +++++++++++++++++++++++++++------------------------
- 1 file changed, 27 insertions(+), 24 deletions(-)
-
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index f3c6670..6f9e6fa 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3869,19 +3869,38 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 			goto failed_mount2;
- 		}
- 	}
-+
-+	/*
-+	 * set up enough so that it can read an inode,
-+	 * and create new inode for buddy allocator
-+	 */
-+	sbi->s_gdb_count = db_count;
-+	if (!test_opt(sb, NOLOAD) &&
-+	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
-+		sb->s_op = &ext4_sops;
-+	else
-+		sb->s_op = &ext4_nojournal_sops;
-+
-+	ext4_ext_init(sb);
-+	err = ext4_mb_init(sb);
-+	if (err) {
-+		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
-+			 err);
-+		goto failed_mount2;
-+	}
-+
- 	if (!ext4_check_descriptors(sb, &first_not_zeroed)) {
- 		ext4_msg(sb, KERN_ERR, "group descriptors corrupted!");
--		goto failed_mount2;
-+		goto failed_mount2a;
- 	}
- 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG))
- 		if (!ext4_fill_flex_info(sb)) {
- 			ext4_msg(sb, KERN_ERR,
- 			       "unable to initialize "
- 			       "flex_bg meta info!");
--			goto failed_mount2;
-+			goto failed_mount2a;
- 		}
- 
--	sbi->s_gdb_count = db_count;
- 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
- 	spin_lock_init(&sbi->s_next_gen_lock);
- 
-@@ -3916,14 +3935,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	sbi->s_stripe = ext4_get_stripe_size(sbi);
- 	sbi->s_extent_max_zeroout_kb = 32;
- 
--	/*
--	 * set up enough so that it can read an inode
--	 */
--	if (!test_opt(sb, NOLOAD) &&
--	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
--		sb->s_op = &ext4_sops;
--	else
--		sb->s_op = &ext4_nojournal_sops;
- 	sb->s_export_op = &ext4_export_ops;
- 	sb->s_xattr = ext4_xattr_handlers;
- #ifdef CONFIG_QUOTA
-@@ -4113,21 +4124,13 @@ no_journal:
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "failed to reserve %llu clusters for "
- 			 "reserved pool", ext4_calculate_resv_clusters(sb));
--		goto failed_mount4a;
-+		goto failed_mount5;
- 	}
- 
- 	err = ext4_setup_system_zone(sb);
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "failed to initialize system "
- 			 "zone (%d)", err);
--		goto failed_mount4a;
--	}
--
--	ext4_ext_init(sb);
--	err = ext4_mb_init(sb);
--	if (err) {
--		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
--			 err);
- 		goto failed_mount5;
- 	}
- 
-@@ -4204,11 +4207,8 @@ failed_mount8:
- failed_mount7:
- 	ext4_unregister_li_request(sb);
- failed_mount6:
--	ext4_mb_release(sb);
--failed_mount5:
--	ext4_ext_release(sb);
- 	ext4_release_system_zone(sb);
--failed_mount4a:
-+failed_mount5:
- 	dput(sb->s_root);
- 	sb->s_root = NULL;
- failed_mount4:
-@@ -4232,11 +4232,14 @@ failed_mount3:
- 	percpu_counter_destroy(&sbi->s_extent_cache_cnt);
- 	if (sbi->s_mmp_tsk)
- 		kthread_stop(sbi->s_mmp_tsk);
-+failed_mount2a:
-+	ext4_mb_release(sb);
- failed_mount2:
- 	for (i = 0; i < db_count; i++)
- 		brelse(sbi->s_group_desc[i]);
- 	ext4_kvfree(sbi->s_group_desc);
- failed_mount:
-+	ext4_ext_release(sb);
- 	if (sbi->s_chksum_driver)
- 		crypto_free_shash(sbi->s_chksum_driver);
- 	if (sbi->s_proc) {
+diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+index 37edf9e..d096cca 100644
+--- a/drivers/mfd/lpc_ich.c
++++ b/drivers/mfd/lpc_ich.c
+@@ -484,6 +484,7 @@ static struct lpc_ich_info lpc_chipset_info[] = {
+ 	[LPC_PPT] = {
+ 		.name = "Panther Point",
+ 		.iTCO_version = 2,
++		.gpio_version = ICH_V5_GPIO,
+ 	},
+ 	[LPC_LPT] = {
+ 		.name = "Lynx Point",
 -- 
-1.9.1
+1.7.9.7
 
