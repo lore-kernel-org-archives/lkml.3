@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899AbaDEWhE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 18:37:04 -0400
-Received: from mout.gmx.net ([212.227.15.18]:65523 "EHLO mout.gmx.net"
+	id S1754198AbaDEXYS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Apr 2014 19:24:18 -0400
+Received: from imap.thunk.org ([74.207.234.97]:50522 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753778AbaDEWhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 18:37:01 -0400
-Date: Sun, 6 Apr 2014 00:36:49 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Rusty Russell <rusty@rustcorp.com.au>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] modpost: Fix ressource leak in read_dump()
-Message-ID: <20140406003649.1ba3c993@spike>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/K/Q6=w.Begg1bhk1B4iX5RC"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:uDPmdjWyP/yiOjWCkyBnDF/Jdbfex5dIaqN165udzjFmsy1CCKH
- m09LEQHbhfe1N//wLEemKAim3JWKLMTHczDIGft7rJEZ2P+hBTx6p633yW9uLuqf4M+fQJP
- N1ja2qSFCxwS4vtjcvvdbXALqbrrrzkpkuPVJI0vr9kS9xfK+Bm2eBHL/Mxy1h0u1WW4FSt
- F5Eqwa2WSXRwdYgpQgxLg==
+	id S1753565AbaDEXYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Apr 2014 19:24:11 -0400
+Date: Sat, 5 Apr 2014 19:23:42 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: John Stoffel <john@stoffel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, Joerg Roedel <joro@8bytes.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-ID: <20140405232342.GA6805@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	John Stoffel <john@stoffel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Joerg Roedel <joro@8bytes.org>, Jiri Kosina <jkosina@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Mateusz Guzik <mguzik@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+	Kay Sievers <kay@vrfy.org>
+References: <CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
+ <alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
+ <CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
+ <CA+55aFyphF8kd4OwWdar4p5M1=Sxc54sfk0RWFPpO6zrezZwJA@mail.gmail.com>
+ <20140403104308.GP13491@8bytes.org>
+ <20140403170541.GA19010@thunk.org>
+ <533EF832.1030902@mit.edu>
+ <CA+55aFxC_+zCD8BQ637WJLf2VXWjhJOQB7uUkVARneSKsQ2+Hg@mail.gmail.com>
+ <21311.8533.138063.744673@quad.stoffel.home>
+ <20140404231749.GA20437@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140404231749.GA20437@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/K/Q6=w.Begg1bhk1B4iX5RC
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Apr 04, 2014 at 04:17:49PM -0700, Greg Kroah-Hartman wrote:
+> > I think you mean "dmesg -T", and unfortunately it seems Debian 6.0.9
+> > (or older) doesn ship a new enough linux-util since I've only got
+> > 2.17.2-9 install.  
+> 
+> No, 'dmesg -H' is the right thing, you just need a modern version of
+> util-linux :)
 
-Function read_dump() memory maps the input via grab_file(), but fails to ca=
-ll
-the corresponding unmap function. Add the missing call to release_file().
-Detected by Coverity: CID 1192419
+I've been poking the Debian folks.  Hopefully they'll be able to ship
+a newer util-linux soon.  Unfortunately, the previous package
+maintainer had something like a thousand local patches, and it's not
+clear which patches got pushed upstream, which have been resolved some
+other way, which are now moot, and which might result in an actual
+regression if Debian were to go to the latest version of util-linux.
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
----
-Compile tested - Applies against v3.14 as well as linux-next.
----
- scripts/mod/modpost.c | 2 ++
- 1 file changed, 2 insertions(+)
+Most Debian packages are better maintained; hopefully this issue will
+be resolved soon.  I believe the right way at this point is to declare
+"patch bankruptcy", ala "inbox bankruptcy", and then fix up the bugs
+as users report them.  And I think the new maintainer believes that
+too; he just has to convince a few other people of that.
 
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 0663556..ea3e2bd 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -2113,8 +2113,10 @@ static void read_dump(const char *fname, unsigned in=
-t kernel)
- 		s->preloaded =3D 1;
- 		sym_update_crc(symname, mod, crc, export_no(export));
- 	}
-+	release_file(file, size);
- 	return;
- fail:
-+	release_file(file, size);
- 	fatal("parse error in symbol dump file\n");
- }
-=20
---=20
-1.8.3.2
+Anyway, that's largely out of scope for LKML, except that many us
+kernel developers who use Debian have been rather handicapped by this.
+(I keep a set of binaries of the latest util-linux when I need modern
+functionality.)
 
---Sig_/K/Q6=w.Begg1bhk1B4iX5RC
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTQIWBAAoJEKssnEpaPQKEZY8P/17wdX2Cn53C6G1U3yZouFd8
-dLiJ6vyqhJ0Esg0E9aZr4VKDFB+ZMm1+ihqe/Tnks+cjRKFjEnlwjYOrKUNS4sMS
-jaiFjztlkwiZksr/LXMYS7Ta7xEbCG/6nPXaJhGf4l24Wn5331uVDd9hRanwuqVX
-v8mDjTfK/IPczJmh9H6+Q38oH1EHzo+G+9FAKa9xgioOHQJW9nv3yrawqJxUe//i
-htb2hUsGQaGNRRJ1NI3hMp6X4aJ2VAW+wdmjW227wDLjlihw5PHM1kSNReEHp52c
-Gh8i9sBP1UDaV160rxWYJXBy2wAl8wWzrO+zAvYCbNf3gLp84UQHqBagmpDE4YBV
-/t5SIug0YJZmL7XHbjufgXGMNwo67xr3siLd/JjRDSV9lFCNrLA0r1qTaNG71Nfc
-1auywMifZ3TChdv5+VHl6mtADvEZi/iBVOCVS3X7frMDBSP4okPJnw7j34VowlWj
-MBlJheILYDwEaw1DdmX8+W4lhsTy9GbR8cgQzN2FzkBzGQJj3s+aCAhQDTbBBKQC
-EV3ZWqC5rQVf2rLKjy8xjUh75IRfWTbMSU67aHBqyLFeSbt1ZTpIjv+gbuE0ihhE
-3KHTfIXzFmvkk5x5NTksidPtUGCw7oT8APFIOd0j1tgfJEofwJI5fjwCeulLmNjw
-4x/KJyzIFSyAj9zmDbiP
-=UjVE
------END PGP SIGNATURE-----
-
---Sig_/K/Q6=w.Begg1bhk1B4iX5RC--
+     	     	    	       	   	 - Ted
