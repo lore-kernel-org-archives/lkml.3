@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310AbaDFL5E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 07:57:04 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:45771 "EHLO smtp.gentoo.org"
+	id S1754299AbaDFMHo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 08:07:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8073 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312AbaDFL5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 07:57:02 -0400
-From: Sergei Trofimovich <slyich@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sergei Trofimovich <slyfox@gentoo.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH] cpts: add missing <linux/if_vlan.h>
-Date: Sun,  6 Apr 2014 14:55:31 +0300
-Message-Id: <1396785331-26875-1-git-send-email-slyich@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	id S1754059AbaDFMHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 08:07:42 -0400
+Date: Sun, 6 Apr 2014 14:07:28 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] tools/perf: allow overriding sysfs and proc finding with
+ env var
+Message-ID: <20140406120728.GA1164@krava.brq.redhat.com>
+References: <1396641598-525-1-git-send-email-cody@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396641598-525-1-git-send-email-cody@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergei Trofimovich <slyfox@gentoo.org>
+On Fri, Apr 04, 2014 at 12:59:25PM -0700, Cody P Schafer wrote:
+> SYSFS_PATH and PROC_PATH environment variables now let the user override
+> the detection of sysfs and proc locations for testing purposes.
 
-gcc complains as:
-    drivers/net/ethernet/ti/cpts.c: In function 'cpts_match':
-    drivers/net/ethernet/ti/cpts.c:266:12: error: 'ETH_HLEN' undeclared (first use in this function)
-    drivers/net/ethernet/ti/cpts.c:266:12: note: each undeclared identifier is reported only once for each function it appears in
-    drivers/net/ethernet/ti/cpts.c:276:23: error: 'VLAN_HLEN' undeclared (first use in this function)
+seems usefull, but this code was moved to tools/lib/api/fs/fs.c
 
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org
----
- drivers/net/ethernet/ti/cpts.c | 1 +
- 1 file changed, 1 insertion(+)
+please rebase to the latest Arnaldo's perf/core branch
+(git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux)
 
-diff --git a/drivers/net/ethernet/ti/cpts.c b/drivers/net/ethernet/ti/cpts.c
-index a3bbf59..c413e79 100644
---- a/drivers/net/ethernet/ti/cpts.c
-+++ b/drivers/net/ethernet/ti/cpts.c
-@@ -19,6 +19,7 @@
-  */
- #include <linux/err.h>
- #include <linux/if.h>
-+#include <linux/if_vlan.h>
- #include <linux/hrtimer.h>
- #include <linux/module.h>
- #include <linux/net_tstamp.h>
--- 
-1.9.0
+thanks,
+jirka
 
+> 
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  tools/perf/util/fs.c | 36 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+> 
+> diff --git a/tools/perf/util/fs.c b/tools/perf/util/fs.c
+> index f5be1f2..dccbd26 100644
+> --- a/tools/perf/util/fs.c
+> +++ b/tools/perf/util/fs.c
+> @@ -91,8 +91,44 @@ static bool fs__check_mounts(struct fs *fs)
+>  	return false;
+>  }
+>  
+> +static void mem_toupper(char *f, size_t len)
+> +{
+> +	while (len) {
+> +		*f = toupper(*f);
+> +		f++;
+> +		len--;
+> +	}
+> +}
+> +
+> +/*
+> + * Check for "NAME_PATH" environment variable to override fs location (for
+> + * testing). This matches the recommendation in Documentation/sysfs-rules.txt
+> + * for SYSFS_PATH.
+> + */
+> +static bool fs__env_override(struct fs *fs)
+> +{
+> +	char *override_path;
+> +	size_t name_len = strlen(fs->name);
+> +	/* name + "_PATH" + '\0' */
+> +	char upper_name[name_len + 5 + 1];
+> +	memcpy(upper_name, fs->name, name_len);
+> +	mem_toupper(upper_name, name_len);
+> +	strcpy(&upper_name[name_len], "_PATH");
+> +
+> +	override_path = getenv(upper_name);
+> +	if (!override_path)
+> +		return false;
+> +
+> +	fs->found = true;
+> +	strcpy(fs->path, override_path);
+
+please use strncpy with size of fs->path
