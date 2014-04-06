@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584AbaDFVh4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 17:37:56 -0400
-Received: from smtp208.alice.it ([82.57.200.104]:15872 "EHLO smtp208.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057AbaDFVhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 17:37:52 -0400
-Date: Sun, 6 Apr 2014 23:37:44 +0200
-From: Antonio Ospite <ao2@ao2.it>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org,
-        Daniel Ribeiro <drwyrm@gmail.com>,
-        Ilya Petrov <ilya.muromec@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: Re: [PATCH] input: pcap2: avoid calling mutex_lock() in irq handler
-Message-Id: <20140406233744.c40387e9bead51ee48e5ebd1@ao2.it>
-In-Reply-To: <20140406202436.GA16739@core.coreip.homeip.net>
-References: <1396731290-7062-1-git-send-email-khoroshilov@ispras.ru>
-	<20140406202436.GA16739@core.coreip.homeip.net>
-X-Mailer: Sylpheed 3.4.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S1754576AbaDFVnv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 17:43:51 -0400
+Received: from smtprelay0079.hostedemail.com ([216.40.44.79]:41867 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750935AbaDFVns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 17:43:48 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2282:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3872:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: work33_5b39240469f32
+X-Filterd-Recvd-Size: 3157
+Message-ID: <1396820625.2874.23.camel@joe-AO722>
+Subject: Re: [PATCH 2/2] Staging: rtl8192e: Fix sparse warning
+From: Joe Perches <joe@perches.com>
+To: Joel Pelaez Jorge <joelpelaez@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Silvan Jegen <s.jegen@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 06 Apr 2014 14:43:45 -0700
+In-Reply-To: <5341C760.3080508@gmail.com>
+References: <5341C643.4050700@gmail.com> <5341C760.3080508@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Apr 2014 13:24:36 -0700
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-
-> On Sun, Apr 06, 2014 at 12:54:50AM +0400, Alexey Khoroshilov wrote:
-> > pcap_keys_handler() calls ezx_pcap_read() that calls mutex_lock().
-> > pcap_keys_handler() is registered as nonthreaded irq handler,
-> > that means sleeping function is called in irq handler.
-> > 
-> > The patch makes a switch to threaded irq handling.
-> > Compile tested only.
-> > 
-> > Found by Linux Driver Verification project (linuxtesting.org).
-> > 
-> > Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> > ---
-> >  drivers/input/misc/pcap_keys.c | 10 ++++++----
-> >  1 file changed, 6 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/input/misc/pcap_keys.c b/drivers/input/misc/pcap_keys.c
-> > index cd230365166e..2a10f3a30969 100644
-> > --- a/drivers/input/misc/pcap_keys.c
-> > +++ b/drivers/input/misc/pcap_keys.c
-> > @@ -79,13 +79,15 @@ static int pcap_keys_probe(struct platform_device *pdev)
-> >  	if (err)
-> >  		goto fail_allocate;
-> >  
-> > -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
-> > -			pcap_keys_handler, 0, "Power key", pcap_keys);
-> > +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
-> > +				   NULL, pcap_keys_handler, 0,
-> > +				   "Power key", pcap_keys);
-> >  	if (err)
-> >  		goto fail_register;
-> >  
-> > -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
-> > -			pcap_keys_handler, 0, "Headphone button", pcap_keys);
-> > +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
-> > +				   NULL, pcap_keys_handler, 0,
-> > +				   "Headphone button", pcap_keys);
+On Sun, 2014-04-06 at 16:30 -0500, Joel Pelaez Jorge wrote:
+> Include the header 'rtl_wx.h' to 'rtl_wx.c'
 > 
-> So I guess we do need threaded IRQ here, but I do not see the pcap's
-> irqchip specifying IRQCHIP_ONESHOT_SAFE so I do not think
-> request_threaded_irq() without IRQF_ONESHOT would succeed.
+> 'rtl_wx.h' has the declarations used for some source files of
+> the driver. It has:
 > 
-> Can someone test the change to be sure?
-> 
+> extern struct iw_handler_def r8192_wx_handlers_def;
 
-I can try to test it in a couple of weeks, I don't have the hardware
-at hand right now.
+Likely this extern should be
+extern const struct iw_handler_def ...
 
-Ciao,
-   Antonio
+---
 
--- 
-Antonio Ospite
-http://ao2.it
+ drivers/staging/rtl8192e/rtl8192e/rtl_core.c | 3 +--
+ drivers/staging/rtl8192e/rtl8192e/rtl_wx.c   | 2 +-
+ drivers/staging/rtl8192e/rtl8192e/rtl_wx.h   | 2 +-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+index c01abc2..fa087b6 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+@@ -2926,8 +2926,7 @@ static int rtl8192_pci_probe(struct pci_dev *pdev,
+ 
+ 	dev->netdev_ops = &rtl8192_netdev_ops;
+ 
+-	dev->wireless_handlers = (struct iw_handler_def *)
+-				 &r8192_wx_handlers_def;
++	dev->wireless_handlers = &r8192_wx_handlers_def;
+ 	dev->ethtool_ops = &rtl819x_ethtool_ops;
+ 
+ 	dev->type = ARPHRD_ETHER;
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+index 498995d..2ba5e5c 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+@@ -1320,7 +1320,7 @@ static struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
+ 	return wstats;
+ }
+ 
+-struct iw_handler_def  r8192_wx_handlers_def = {
++const struct iw_handler_def r8192_wx_handlers_def = {
+ 	.standard = r8192_wx_handlers,
+ 	.num_standard = ARRAY_SIZE(r8192_wx_handlers),
+ 	.private = r8192_private_handler,
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
+index 6a51a25..83747eb 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
+@@ -24,7 +24,7 @@ struct net_device;
+ struct iw_handler_def;
+ struct iw_statistics;
+ 
+-extern struct iw_handler_def r8192_wx_handlers_def;
++extern const struct iw_handler_def r8192_wx_handlers_def;
+ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev);
+ u16 rtl8192_11n_user_show_rates(struct net_device *dev);
+ 
+
+
