@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219AbaDFFj1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 01:39:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19837 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619AbaDFFjG (ORCPT
+	id S1754248AbaDFFjg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 01:39:36 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19254 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753597AbaDFFjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 01:39:06 -0400
+	Sun, 6 Apr 2014 01:39:05 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [RFC PATCH 5/5] genirq: Kill irq_reserve_irq/irq_reserve_irqs
-Date: Sat,  5 Apr 2014 22:39:26 -0700
-Message-Id: <1396762766-4942-6-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com
+Subject: [RFC PATCH 4/5] s390: Mark bits in allocated_irqs in general code
+Date: Sat,  5 Apr 2014 22:39:25 -0700
+Message-Id: <1396762766-4942-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1396762766-4942-1-git-send-email-yinghai@kernel.org>
 References: <1396762766-4942-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No user any more.
+Second irq_reserve_irqs calling is from arch s390, and
+s390 does not use SPARSE_IRQ yet.
+
+We could set bits for legacy bits early in !SPARSE_IRQ version
+early_irq_init() directly instead of calling irq_reserve_irqs later.
+
+Adding weak version arch_proble_early_allocate_nr_irqs() for
+!SPARESE_IRQ, and let s390 to have specific version to
+pass correct irq number that need to be marked in allocated_irqs.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com
 ---
- include/linux/irq.h  |  6 ------
- kernel/irq/irqdesc.c | 25 -------------------------
- 2 files changed, 31 deletions(-)
+ arch/s390/kernel/irq.c |  6 +++++-
+ include/linux/irq.h    |  1 +
+ kernel/irq/irqdesc.c   | 10 ++++++++++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
 
+diff --git a/arch/s390/kernel/irq.c b/arch/s390/kernel/irq.c
+index d42b14c..2838928 100644
+--- a/arch/s390/kernel/irq.c
++++ b/arch/s390/kernel/irq.c
+@@ -90,9 +90,13 @@ static const struct irq_class irqclass_sub_desc[NR_ARCH_IRQS] = {
+ 	[CPU_RST]    = {.name = "RST", .desc = "[CPU] CPU Restart"},
+ };
+ 
++int arch_probe_early_allocate_nr_irqs(void)
++{
++	return THIN_INTERRUPT;
++}
++
+ void __init init_IRQ(void)
+ {
+-	irq_reserve_irqs(0, THIN_INTERRUPT);
+ 	init_cio_interrupts();
+ 	init_airq_interrupts();
+ 	init_ext_interrupts();
 diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 7588ee9..84ce41a 100644
+index d278838..7588ee9 100644
 --- a/include/linux/irq.h
 +++ b/include/linux/irq.h
-@@ -622,7 +622,6 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 	irq_alloc_descs(-1, from, cnt, node)
+@@ -623,6 +623,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
  
  void irq_free_descs(unsigned int irq, unsigned int cnt);
--int irq_reserve_irqs(unsigned int from, unsigned int cnt);
- int arch_probe_early_allocate_nr_irqs(void);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
++int arch_probe_early_allocate_nr_irqs(void);
  
  static inline void irq_free_desc(unsigned int irq)
-@@ -630,11 +629,6 @@ static inline void irq_free_desc(unsigned int irq)
- 	irq_free_descs(irq, 1);
- }
- 
--static inline int irq_reserve_irq(unsigned int irq)
--{
--	return irq_reserve_irqs(irq, 1);
--}
--
- #ifndef irq_reg_writel
- # define irq_reg_writel(val, addr)	writel(val, addr)
- #endif
+ {
 diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index dfb971c..49bf891 100644
+index a7174617..dfb971c 100644
 --- a/kernel/irq/irqdesc.c
 +++ b/kernel/irq/irqdesc.c
-@@ -400,31 +400,6 @@ err:
- EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+@@ -248,10 +248,16 @@ struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
+ 	}
+ };
  
- /**
-- * irq_reserve_irqs - mark irqs allocated
-- * @from:	mark from irq number
-- * @cnt:	number of irqs to mark
-- *
-- * Returns 0 on success or an appropriate error code
-- */
--int irq_reserve_irqs(unsigned int from, unsigned int cnt)
--{
--	unsigned int start;
--	int ret = 0;
--
--	if (!cnt || (from + cnt) > nr_irqs)
--		return -EINVAL;
--
--	mutex_lock(&sparse_irq_lock);
--	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
--	if (start == from)
--		bitmap_set(allocated_irqs, start, cnt);
--	else
--		ret = -EEXIST;
--	mutex_unlock(&sparse_irq_lock);
--	return ret;
--}
--
--/**
-  * irq_get_next_irq - get next allocated irq number
-  * @offset:	where to start the search
-  *
++int __weak arch_probe_early_allocate_nr_irqs(void)
++{
++	return 0;
++}
++
+ int __init early_irq_init(void)
+ {
+ 	int count, i, node = first_online_node;
+ 	struct irq_desc *desc;
++	int nr = arch_probe_early_allocate_nr_irqs();
+ 
+ 	init_irq_default_affinity();
+ 
+@@ -267,6 +273,10 @@ int __init early_irq_init(void)
+ 		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
+ 		desc_set_defaults(i, &desc[i], node, NULL);
+ 	}
++
++	for (i = 0; i < nr; i++)
++		set_bit(i, allocated_irqs);
++
+ 	return arch_early_irq_init();
+ }
+ 
 -- 
 1.8.4.5
 
