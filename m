@@ -1,197 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaDFR5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 13:57:25 -0400
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:61328 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273AbaDFR5W convert rfc822-to-8bit (ORCPT
+	id S1754544AbaDFR62 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 13:58:28 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33869 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178AbaDFR60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 13:57:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <53418E98.8030505@gmx.de>
-References: <53418E98.8030505@gmx.de>
-From: Roger Heflin <rogerheflin@gmail.com>
-Date: Sun, 6 Apr 2014 12:57:01 -0500
-Message-ID: <CAAMCDec1OJFPKWPz-qnFedYiHXpag3=2qRYPwNHdQCC4tqaQ_Q@mail.gmail.com>
-Subject: Re: NFS V4 calls for a NFS v3 mount
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 6 Apr 2014 13:58:26 -0400
+Date: Sun, 6 Apr 2014 18:58:18 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "Westerberg, Mika" <mika.westerberg@intel.com>
+Cc: "Du, Wenkai" <wenkai.du@intel.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller
+ enable
+Message-ID: <20140406185818.3aaca03d@alan.etchedpixels.co.uk>
+In-Reply-To: <20140405061316.GF19349@intel.com>
+References: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70E1F@ORSMSX109.amr.corp.intel.com>
+	<20140404181613.GB19349@intel.com>
+	<7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
+	<20140404184232.GC19349@intel.com>
+	<7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
+	<20140405061316.GF19349@intel.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No where in the mount command did you tell it that this was a
-nfsversion 3 only mount, the mount name itself means nothing to mount,
-so it tired nfs version 4 first then nfs version 3.
+On Sat, 5 Apr 2014 09:13:16 +0300
+"Westerberg, Mika" <mika.westerberg@intel.com> wrote:
 
-Note this in the man page for nfs:
-nfsvers=n      The NFS protocol version number used to contact the
-server's NFS service.  If the server does  not  support
-                      the  requested  version, the mount request
-fails.  If this option is not specified, the client negotiates a
-                      suitable version with the server, trying version
-4 first, version 3 second, and version 2 last.
+> On Sat, Apr 05, 2014 at 12:54:33AM +0300, Du, Wenkai wrote:
+> > >Interrupt masking is done already after each transaction.
+> > 
+> > At end of transfer, the code uses __i2c_dw_enable(dev, false) to disable
+> > adapter. This function doesn't mask interrupts. There is another function
+> > i2c_dw_disable that masks and clears interrupts. This could be used, but
+> > that means we need to fix in 2 places: 
+> 
+> Please check i2c_dw_isr() and tell me in which code path interrupts are not
+> getting masked. Or am I missing something fundamental here?
+> 
+> In case of abort, we mask interrupts. Also whenever the transaction
+> completes we mask interrupts (in i2c_dw_xfer_msg()).
 
-On Sun, Apr 6, 2014 at 12:27 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA256
->
-> Probably a question better suited for a NFS noobs mailing list (is there any around ?) ...
->
-> While playing with kernel 3.13.x, wireshark and NFS I realized, that mounting a NFS v3 share results in NFS V4 Calls - is this indented or a wireshark dissector issue ?
->
->
-> $ cat /etc/exports
-> # /etc/exports: NFS file systems being exported.  See exports(5).
-> /mnt/ramdisk    192.168.0.0/16(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)
->
->
-> $ grep nfsv3 /etc/fstab
-> n22:/mnt/ramdisk    /mnt/nfsv3      nfs     auto,bg,intr,soft
->
->
-> $ ~/devel/wireshark/tshark -r /var/tmp/nfsv3.pcapng.gz
->   1 0.000000000    127.0.0.1 -> 127.0.0.1    DNS 73 Standard query 0x50bd  A n22.fritz.box
->   2 0.000465000    127.0.0.1 -> 127.0.0.1    DNS 73 Standard query 0xa14f  AAAA n22.fritz.box
->   3 0.006264000    127.0.0.1 -> 127.0.0.1    DNS 119 Standard query response 0x50bd  A 192.168.178.21
->   4 0.007134000    127.0.0.1 -> 127.0.0.1    DNS 115 Standard query response 0xa14f
->   5 0.017775000 192.168.178.21 -> 192.168.178.21 TCP 74 733 → nfs [SYN] Seq=0 Win=43690 Len=0
->   6 0.017791000 192.168.178.21 -> 192.168.178.21 TCP 74 nfs → 733 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0
->   7 0.017808000 192.168.178.21 -> 192.168.178.21 TCP 66 733 → nfs [ACK] Seq=1 Ack=1 Win=342 Len=0
->   8 0.022889000 192.168.178.21 -> 192.168.178.21 NFS 110 V4 NULL Call
->   9 0.022953000 192.168.178.21 -> 192.168.178.21 TCP 66 nfs → 733 [ACK] Seq=1 Ack=45 Win=1024 Len=0
->  10 0.023021000 192.168.178.21 -> 192.168.178.21 NFS 94 V4 NULL Reply (Call In 8)
->  11 0.023049000 192.168.178.21 -> 192.168.178.21 TCP 66 733 → nfs [ACK] Seq=45 Ack=29 Win=342 Len=0
->  12 0.030779000 192.168.178.21 -> 192.168.178.21 NFS 254 V4 Call SETCLIENTID
->  13 0.030892000 192.168.178.21 -> 192.168.178.21 NFS 130 V4 Reply (Call In 12) SETCLIENTID
->  14 0.031247000 192.168.178.21 -> 192.168.178.21 NFS 166 V4 Call SETCLIENTID_CONFIRM
->  15 0.031433000 192.168.178.21 -> 192.168.178.21 NFS 114 V4 Reply (Call In 14) SETCLIENTID_CONFIRM
->  16 0.031455000 192.168.178.21 -> 192.168.178.21 TCP 74 945 → 48964 [SYN] Seq=0 Win=43690 Len=0
->  17 0.031469000 192.168.178.21 -> 192.168.178.21 TCP 74 48964 → 945 [SYN, ACK] Seq=0 Ack=1 Win=32768 Len=0
->  18 0.031482000 192.168.178.21 -> 192.168.178.21 TCP 66 945 → 48964 [ACK] Seq=1 Ack=1 Win=342 Len=0
->  19 0.031506000 192.168.178.21 -> 192.168.178.21 NFS 134 V1 CB_NULL Call
->  20 0.031514000 192.168.178.21 -> 192.168.178.21 TCP 66 48964 → 945 [ACK] Seq=1 Ack=69 Win=256 Len=0
->  21 0.031527000 192.168.178.21 -> 192.168.178.21 NFS 94 V1 CB_NULL Reply (Call In 19)
->  22 0.031538000 192.168.178.21 -> 192.168.178.21 TCP 66 945 → 48964 [ACK] Seq=69 Ack=29 Win=342 Len=0
->  23 0.060368000 192.168.178.21 -> 192.168.178.21 NFS 222 V4 Call PUTROOTFH | GETATTR
->  24 0.060433000 192.168.178.21 -> 192.168.178.21 NFS 278 V4 Reply (Call In 23) PUTROOTFH | GETATTR
->  25 0.060500000 192.168.178.21 -> 192.168.178.21 NFS 226 V4 Call GETATTR FH: 0x62d40c52
->  26 0.060550000 192.168.178.21 -> 192.168.178.21 NFS 162 V4 Reply (Call In 25) GETATTR
->  27 0.060590000 192.168.178.21 -> 192.168.178.21 NFS 230 V4 Call GETATTR FH: 0x62d40c52
->  28 0.060632000 192.168.178.21 -> 192.168.178.21 NFS 178 V4 Reply (Call In 27) GETATTR
->  29 0.060674000 192.168.178.21 -> 192.168.178.21 NFS 226 V4 Call GETATTR FH: 0x62d40c52
->  30 0.060714000 192.168.178.21 -> 192.168.178.21 NFS 162 V4 Reply (Call In 29) GETATTR
->  31 0.060787000 192.168.178.21 -> 192.168.178.21 NFS 230 V4 Call GETATTR FH: 0x62d40c52
->  32 0.060815000 192.168.178.21 -> 192.168.178.21 NFS 178 V4 Reply (Call In 31) GETATTR
->  33 0.060857000 192.168.178.21 -> 192.168.178.21 NFS 226 V4 Call GETATTR FH: 0x62d40c52
->  34 0.060885000 192.168.178.21 -> 192.168.178.21 NFS 142 V4 Reply (Call In 33) GETATTR
->  35 0.061002000 192.168.178.21 -> 192.168.178.21 NFS 226 V4 Call GETATTR FH: 0x62d40c52
->  36 0.061032000 192.168.178.21 -> 192.168.178.21 NFS 162 V4 Reply (Call In 35) GETATTR
->  37 0.061074000 192.168.178.21 -> 192.168.178.21 NFS 230 V4 Call GETATTR FH: 0x62d40c52
->  38 0.061101000 192.168.178.21 -> 192.168.178.21 NFS 258 V4 Reply (Call In 37) GETATTR
->  39 0.061186000 192.168.178.21 -> 192.168.178.21 NFS 238 V4 Call ACCESS FH: 0x62d40c52, [Check: RD LU MD XT DL]
->  40 0.061247000 192.168.178.21 -> 192.168.178.21 NFS 194 V4 Reply (Call In 39) ACCESS, [Allowed: RD LU MD XT DL]
->  41 0.061295000 192.168.178.21 -> 192.168.178.21 NFS 246 V4 Call LOOKUP DH: 0x62d40c52/mnt
->  42 0.061345000 192.168.178.21 -> 192.168.178.21 NFS 122 V4 Reply (Call In 41) LOOKUP Status: NFS4ERR_NOENT
->  43 0.081322000 192.168.178.21 -> 192.168.178.21 TCP 66 48964 → 945 [FIN, ACK] Seq=29 Ack=69 Win=256 Len=0
->  44 0.081520000 192.168.178.21 -> 192.168.178.21 TCP 66 945 → 48964 [FIN, ACK] Seq=69 Ack=30 Win=342 Len=0
->  45 0.081538000 192.168.178.21 -> 192.168.178.21 TCP 66 48964 → 945 [ACK] Seq=30 Ack=70 Win=256 Len=0
->  46 0.082241000 192.168.178.21 -> 192.168.178.21 TCP 66 733 → nfs [FIN, ACK] Seq=1973 Ack=1317 Win=367 Len=0
->  47 0.083260000    127.0.0.1 -> 127.0.0.1    Portmap 98 V2 GETPORT Call STAT(100024) V:1 UDP
->  48 0.083470000 192.168.178.21 -> 192.168.178.21 TCP 66 nfs → 733 [FIN, ACK] Seq=1317 Ack=1974 Win=1116 Len=0
->  49 0.083490000 192.168.178.21 -> 192.168.178.21 TCP 66 733 → nfs [ACK] Seq=1974 Ack=1318 Win=367 Len=0
->  50 0.083660000    127.0.0.1 -> 127.0.0.1    Portmap 70 V2 GETPORT Reply (Call In 47) Port:56333
->  51 0.083851000    127.0.0.1 -> 127.0.0.1    STAT 82 V1 NULL Call
->  52 0.083936000    127.0.0.1 -> 127.0.0.1    STAT 66 V1 NULL Reply (Call In 51)
->  53 0.084347000 192.168.178.21 -> 192.168.178.21 TCP 74 45166 → sunrpc [SYN] Seq=0 Win=43690 Len=0
->  54 0.084369000 192.168.178.21 -> 192.168.178.21 TCP 74 sunrpc → 45166 [SYN, ACK] Seq=0 Ack=1 Win=43690 Len=0
->  55 0.084387000 192.168.178.21 -> 192.168.178.21 TCP 66 45166 → sunrpc [ACK] Seq=1 Ack=1 Win=342 Len=0
->  56 0.085096000 192.168.178.21 -> 192.168.178.21 Portmap 126 V2 GETPORT Call NFS(100003) V:3 TCP
->  57 0.085119000 192.168.178.21 -> 192.168.178.21 TCP 66 sunrpc → 45166 [ACK] Seq=1 Ack=61 Win=342 Len=0
->  58 0.085383000 192.168.178.21 -> 192.168.178.21 Portmap 98 V2 GETPORT Reply (Call In 56) Port:2049
->  59 0.085405000 192.168.178.21 -> 192.168.178.21 TCP 66 45166 → sunrpc [ACK] Seq=61 Ack=33 Win=342 Len=0
->  60 0.085518000 192.168.178.21 -> 192.168.178.21 TCP 66 45166 → sunrpc [FIN, ACK] Seq=61 Ack=33 Win=342 Len=0
->  61 0.085555000 192.168.178.21 -> 192.168.178.21 TCP 66 sunrpc → 45166 [FIN, ACK] Seq=33 Ack=62 Win=342 Len=0
->  62 0.085566000 192.168.178.21 -> 192.168.178.21 TCP 66 45166 → sunrpc [ACK] Seq=62 Ack=34 Win=342 Len=0
->  63 0.085677000 192.168.178.21 -> 192.168.178.21 TCP 74 34541 → nfs [SYN] Seq=0 Win=43690 Len=0
->  64 0.085691000 192.168.178.21 -> 192.168.178.21 TCP 74 nfs → 34541 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0
->  65 0.085705000 192.168.178.21 -> 192.168.178.21 TCP 66 34541 → nfs [ACK] Seq=1 Ack=1 Win=342 Len=0
->  66 0.085854000 192.168.178.21 -> 192.168.178.21 NFS 110 V3 NULL Call
->  67 0.085866000 192.168.178.21 -> 192.168.178.21 TCP 66 nfs → 34541 [ACK] Seq=1 Ack=45 Win=1024 Len=0
->  68 0.085888000 192.168.178.21 -> 192.168.178.21 NFS 94 V3 NULL Reply (Call In 66)
->  69 0.085899000 192.168.178.21 -> 192.168.178.21 TCP 66 34541 → nfs [ACK] Seq=45 Ack=29 Win=342 Len=0
->  70 0.085931000 192.168.178.21 -> 192.168.178.21 TCP 66 34541 → nfs [FIN, ACK] Seq=45 Ack=29 Win=342 Len=0
->  71 0.085946000 192.168.178.21 -> 192.168.178.21 TCP 66 nfs → 34541 [FIN, ACK] Seq=29 Ack=46 Win=1024 Len=0
->  72 0.085954000 192.168.178.21 -> 192.168.178.21 TCP 66 34541 → nfs [ACK] Seq=46 Ack=30 Win=342 Len=0
->  73 0.086219000 192.168.178.21 -> 192.168.178.21 Portmap 98 V2 GETPORT Call MOUNT(100005) V:3 UDP
->  74 0.086324000 192.168.178.21 -> 192.168.178.21 Portmap 70 V2 GETPORT Reply (Call In 73) Port:36479
->  75 0.086409000 192.168.178.21 -> 192.168.178.21 MOUNT 82 V3 NULL Call
->  76 0.086482000 192.168.178.21 -> 192.168.178.21 MOUNT 66 V3 NULL Reply (Call In 75)
->  77 0.086803000 192.168.178.21 -> 192.168.178.21 MOUNT 82 V3 NULL Call
->  78 0.086871000 192.168.178.21 -> 192.168.178.21 MOUNT 66 V3 NULL Reply (Call In 77)
->  79 0.086915000 192.168.178.21 -> 192.168.178.21 MOUNT 174 V3 MNT Call /mnt/ramdisk
->  80 0.088420000 192.168.178.21 -> 192.168.178.21 MOUNT 90 V3 MNT Reply (Call In 79)
->  81 0.088718000 192.168.178.21 -> 192.168.178.21 TCP 74 56459 → sunrpc [SYN] Seq=0 Win=43690 Len=0
->  82 0.088733000 192.168.178.21 -> 192.168.178.21 TCP 74 sunrpc → 56459 [SYN, ACK] Seq=0 Ack=1 Win=43690 Len=0
->  83 0.088750000 192.168.178.21 -> 192.168.178.21 TCP 66 56459 → sunrpc [ACK] Seq=1 Ack=1 Win=342 Len=0
->  84 0.088776000 192.168.178.21 -> 192.168.178.21 Portmap 150 V2 GETPORT Call NFS(100003) V:3 TCP
->  85 0.088783000 192.168.178.21 -> 192.168.178.21 TCP 66 sunrpc → 56459 [ACK] Seq=1 Ack=85 Win=342 Len=0
->  86 0.088934000 192.168.178.21 -> 192.168.178.21 Portmap 98 V2 GETPORT Reply (Call In 84) Port:2049
->  87 0.088944000 192.168.178.21 -> 192.168.178.21 TCP 66 56459 → sunrpc [ACK] Seq=85 Ack=33 Win=342 Len=0
->  88 0.088989000 192.168.178.21 -> 192.168.178.21 TCP 66 56459 → sunrpc [FIN, ACK] Seq=85 Ack=33 Win=342 Len=0
->  89 0.089028000 192.168.178.21 -> 192.168.178.21 TCP 66 sunrpc → 56459 [FIN, ACK] Seq=33 Ack=86 Win=342 Len=0
->  90 0.089036000 192.168.178.21 -> 192.168.178.21 TCP 66 56459 → sunrpc [ACK] Seq=86 Ack=34 Win=342 Len=0
->  91 0.089189000 192.168.178.21 -> 192.168.178.21 TCP 74 957 → nfs [SYN] Seq=0 Win=43690 Len=0
->  92 0.089201000 192.168.178.21 -> 192.168.178.21 TCP 74 nfs → 957 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0
->  93 0.089213000 192.168.178.21 -> 192.168.178.21 TCP 66 957 → nfs [ACK] Seq=1 Ack=1 Win=342 Len=0
->  94 0.089269000 192.168.178.21 -> 192.168.178.21 NFS 110 V3 NULL Call
->  95 0.089277000 192.168.178.21 -> 192.168.178.21 TCP 66 nfs → 957 [ACK] Seq=1 Ack=45 Win=1024 Len=0
->  96 0.089318000 192.168.178.21 -> 192.168.178.21 NFS 94 V3 NULL Reply (Call In 94)
->  97 0.089325000 192.168.178.21 -> 192.168.178.21 TCP 66 957 → nfs [ACK] Seq=45 Ack=29 Win=342 Len=0
->  98 0.089492000 192.168.178.21 -> 192.168.178.21 NFS 198 V3 FSINFO Call, FH: 0x62d40c52
->  99 0.089537000 192.168.178.21 -> 192.168.178.21 NFS 150 V3 FSINFO Reply (Call In 98)
-> 100 0.089574000 192.168.178.21 -> 192.168.178.21 NFS 198 V3 PATHCONF Call, FH: 0x62d40c52
-> 101 0.089607000 192.168.178.21 -> 192.168.178.21 NFS 126 V3 PATHCONF Reply (Call In 100)
-> 102 0.089638000 192.168.178.21 -> 192.168.178.21 NFS 198 V3 GETATTR Call, FH: 0x62d40c52
-> 103 0.089671000 192.168.178.21 -> 192.168.178.21 NFS 182 V3 GETATTR Reply (Call In 102)  Directory mode: 1777 uid: 0 gid: 0
-> 104 0.089781000 192.168.178.21 -> 192.168.178.21 NFS 198 V3 FSINFO Call, FH: 0x62d40c52
-> 105 0.089820000 192.168.178.21 -> 192.168.178.21 NFS 150 V3 FSINFO Reply (Call In 104)
-> 106 0.089856000 192.168.178.21 -> 192.168.178.21 NFS 198 V3 GETATTR Call, FH: 0x62d40c52
-> 107 0.089895000 192.168.178.21 -> 192.168.178.21 NFS 182 V3 GETATTR Reply (Call In 106)  Directory mode: 1777 uid: 0 gid: 0
-> 108 0.093882000 192.168.178.21 -> 192.168.178.21 NFS 210 V3 FSSTAT Call, FH: 0x62d40c52
-> 109 0.093925000 192.168.178.21 -> 192.168.178.21 NFS 154 V3 FSSTAT Reply (Call In 108)
-> 110 0.103099000 192.168.178.21 -> 192.168.178.21 NFS 210 V3 FSSTAT Call, FH: 0x62d40c52
-> 111 0.103256000 192.168.178.21 -> 192.168.178.21 NFS 154 V3 FSSTAT Reply (Call In 110)
-> 112 0.143185000 192.168.178.21 -> 192.168.178.21 TCP 66 957 → nfs [ACK] Seq=993 Ack=665 Win=342 Len=0
-> 113 0.161139000 192.168.178.21 -> 192.168.178.21 NFS 210 V3 FSSTAT Call, FH: 0x62d40c52
-> 114 0.161353000 192.168.178.21 -> 192.168.178.21 NFS 154 V3 FSSTAT Reply (Call In 113)
-> 115 0.161381000 192.168.178.21 -> 192.168.178.21 TCP 66 957 → nfs [ACK] Seq=1137 Ack=753 Win=342 Len=0
-> 116 2.214247000 192.168.178.21 -> 192.168.178.21 Portmap 98 V2 GETPORT Call MOUNT(100005) V:3 UDP
-> 117 2.214390000 192.168.178.21 -> 192.168.178.21 Portmap 70 V2 GETPORT Reply (Call In 116) Port:36479
-> 118 2.214489000 192.168.178.21 -> 192.168.178.21 MOUNT 82 V3 NULL Call
-> 119 2.214562000 192.168.178.21 -> 192.168.178.21 MOUNT 66 V3 NULL Reply (Call In 118)
-> 120 2.214662000 192.168.178.21 -> 192.168.178.21 MOUNT 126 V3 UMNT Call /mnt/ramdisk
-> 121 2.214951000 192.168.178.21 -> 192.168.178.21 MOUNT 66 V3 UMNT Reply (Call In 120)
-> 122 2.237210000 192.168.178.21 -> 192.168.178.21 TCP 66 957 → nfs [FIN, ACK] Seq=1137 Ack=753 Win=342 Len=0
-> 123 2.237278000 192.168.178.21 -> 192.168.178.21 TCP 66 nfs → 957 [FIN, ACK] Seq=753 Ack=1138 Win=1091 Len=0
-> 124 2.237288000 192.168.178.21 -> 192.168.178.21 TCP 66 957 → nfs [ACK] Seq=1138 Ack=754 Win=342 Len=0
->
-> - --
-> MfG/Sincerely
-> Toralf Förster
-> pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v2.0.22 (GNU/Linux)
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
->
-> iF4EAREIAAYFAlNBjpcACgkQxOrN3gB26U6LGwD/VeUeJikd6BgRXF/qGD9wr2Ys
-> U8hdnnFlTDEydsAvEfsA/0yooCnY8vyFx4JyRKHVCWhm8pBxE7H0JvPRNuP1zsu7
-> =HeIy
-> -----END PGP SIGNATURE-----
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Well actually you mask the IRQ at some point after the function returns
+if the bus allows the write to be posted. As i2c_dw_isr can then exit the
+IRQ handler before the write completes I suspect you have a race ?
+
+Alan
