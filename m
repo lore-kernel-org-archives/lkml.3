@@ -1,91 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576AbaDFVnv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 17:43:51 -0400
-Received: from smtprelay0079.hostedemail.com ([216.40.44.79]:41867 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750935AbaDFVns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 17:43:48 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2282:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3872:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: work33_5b39240469f32
-X-Filterd-Recvd-Size: 3157
-Message-ID: <1396820625.2874.23.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] Staging: rtl8192e: Fix sparse warning
-From: Joe Perches <joe@perches.com>
-To: Joel Pelaez Jorge <joelpelaez@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Silvan Jegen <s.jegen@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 06 Apr 2014 14:43:45 -0700
-In-Reply-To: <5341C760.3080508@gmail.com>
-References: <5341C643.4050700@gmail.com> <5341C760.3080508@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754630AbaDFVpl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 17:45:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56908 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754571AbaDFVpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 17:45:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,805,1389772800"; 
+   d="scan'208";a="508050185"
+Date: Sun, 6 Apr 2014 18:46:34 -0300
+From: Lucas De Marchi <lucas.demarchi@intel.com>
+To: <linux-modules@vger.kernel.org>
+CC: <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] kmod 17
+Message-ID: <20140406214632.GA14318@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-Originating-IP: [10.252.120.141]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-04-06 at 16:30 -0500, Joel Pelaez Jorge wrote:
-> Include the header 'rtl_wx.h' to 'rtl_wx.c'
-> 
-> 'rtl_wx.h' has the declarations used for some source files of
-> the driver. It has:
-> 
-> extern struct iw_handler_def r8192_wx_handlers_def;
+kmod 17 is out:
 
-Likely this extern should be
-extern const struct iw_handler_def ...
+	ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-17.tar.xz
+	ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-17.tar.sign
 
----
+Several fixes on this release, some new features and initial python
+bindings. The python bindings are still experimental and subject to
+change in future. You have to manually enable with --enable-python.
 
- drivers/staging/rtl8192e/rtl8192e/rtl_core.c | 3 +--
- drivers/staging/rtl8192e/rtl8192e/rtl_wx.c   | 2 +-
- drivers/staging/rtl8192e/rtl8192e/rtl_wx.h   | 2 +-
- 3 files changed, 3 insertions(+), 4 deletions(-)
+Copying here the relevant piece from NEWS:
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
-index c01abc2..fa087b6 100644
---- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
-@@ -2926,8 +2926,7 @@ static int rtl8192_pci_probe(struct pci_dev *pdev,
- 
- 	dev->netdev_ops = &rtl8192_netdev_ops;
- 
--	dev->wireless_handlers = (struct iw_handler_def *)
--				 &r8192_wx_handlers_def;
-+	dev->wireless_handlers = &r8192_wx_handlers_def;
- 	dev->ethtool_ops = &rtl819x_ethtool_ops;
- 
- 	dev->type = ARPHRD_ETHER;
-diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-index 498995d..2ba5e5c 100644
---- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-@@ -1320,7 +1320,7 @@ static struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
- 	return wstats;
- }
- 
--struct iw_handler_def  r8192_wx_handlers_def = {
-+const struct iw_handler_def r8192_wx_handlers_def = {
- 	.standard = r8192_wx_handlers,
- 	.num_standard = ARRAY_SIZE(r8192_wx_handlers),
- 	.private = r8192_private_handler,
-diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
-index 6a51a25..83747eb 100644
---- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
-+++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
-@@ -24,7 +24,7 @@ struct net_device;
- struct iw_handler_def;
- struct iw_statistics;
- 
--extern struct iw_handler_def r8192_wx_handlers_def;
-+extern const struct iw_handler_def r8192_wx_handlers_def;
- struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev);
- u16 rtl8192_11n_user_show_rates(struct net_device *dev);
- 
+- Bug fixes:
+	- Fix matching a "." in kernel cmdline, making garbage in the command
+	  line be parsed as kmod options
+	- Fix man pages to clarify we don't fallback to parsing modules.dep
+	  but instead we depend on modules.dep.bin (generated by depmod) to
+	  be present
+	- Fix ELF parsing on 32 bit systems assigning the wrong class.
+	- Fix partial matches of search directives in depmod. Previously having
+	  a line in depmod.conf such as "search foo foobar built-in" would cause
+	  unpretictable results because foo is a partial match of foobar as well.
+	- Fix unaligned access in modinfo when getting the signature from a
+	  module
+	- Make sure softdeps are treated as optional dependencies
+
+- New features:
+	- Accept special files given to "-C" switch in modprobe. This way it's
+	  possible to skip system configuration with "modprobe -C /dev/null"
+	- Do not require xsltproc on released tarballs
+	- Don't use Werror anymore
+	- Add experimental python bindings, merged from python-kmod repository
+	  (https://github.com/agrover/python-kmod)
+	- Parse softdeps exported by the kernel as
+	  /lib/modules/`uname -r`/modules.softdep
+
+- Improvements to testsuite:
+	- Check the list of loaded modules after a test
 
 
+And here is the shortlog:
+
+Andy Grover (17):
+      python: initial checkin
+      python: a skeleton that compiles
+      python: use c99 init for struct init
+      python: Add support for listing loaded modules, modprobe, rmmod
+      python: More cleanup and renaming of stuff. Add docstrings.
+      python: Add README
+      python: Make setup.py version match version in .c
+      python: Improve README's description of kmod
+      python: add proper error handling to loaded_modules()
+      python: whitespace
+      python: update FSF address in COPYING and COPYING.LESSER
+      python: Update README
+      python: update version to 0.9
+      python: Correct building for python 2.6
+      python: Add self as maintainer to setup.py
+      python: Make kmod.modprobe() raise an error if no modules found
+      python: update version to 0.9.1
+
+Anssi Hannula (2):
+      depmod: fix debug print parameter order
+      depmod: do not allow partial matches with "search" directive
+
+Guy Rozendorn (4):
+      python: Issue #13 skipping building extensions on non-Linux platforms
+      python: Issue #15 Cython is now a dependency
+      python: Issue #15: Cython needs to be in setup_requires
+      python: Issue #15: resovled by using setuptools_cython
+
+Lucas De Marchi (23):
+      man: Change my contact email address
+      Remove duplicate includes
+      testsuite: add test for kcmdline params with no value
+      testsuite: give a more suitable description to test
+      testsuite: add test to ignore unrelated strings in kcmdline
+      testsuite: add test for '.' correctly parsed in param's value
+      build-sys: add small redirecting Makefiles
+      build-sys: Do not require xsltproc for installation of man pages
+      man: clarify the support to modules.dep file
+      man: use systemd as example instead of udev
+      libkmod-elf: Fix check by class in get_modversions()
+      Add test for simple search order in depmod
+      Add test for depmod using search dirs with same prefix
+      build-sys: Remove bogus line causing warning
+      build-sys: Remove -Werror from CFLAGS
+      libkmod: Fix unaligned access
+      build-sys: try harder to shut up compiler wrt strict-aliasing
+      Merge branch 'master' of python-kmod
+      python: Remove unused files from import
+      build-sys: add hooks to build python bindings
+      build-sys: enable python in bootstrap-configure
+      testsuite: Remove duplicate test
+      kmod 17
+
+Lukas Berk (1):
+      man: insmod documentation fix
+
+Michal Marek (12):
+      testsuite: Check the list of loaded modules after a test
+      testsuite: Add test for modprobe --force
+      testsuite: Do not provide finit_module(2) on older kernels
+      Add some tests for kernels without finit_module(2)
+      libkmod-module: Simplify kmod_module_insert_module()
+      libkmod-config,depmod: Accept special files as configuration files, too
+      libkmod-config: Only match dot before '=' in /proc/cmdline
+      testsuite: Fix uname() during glibc startup
+      libkmod: Ignore errors from softdeps
+      testsuite: Uncompress most modules
+      testsuite: Do not run tests with *.ko.gz if zlib is not enabled
+      testsuite: Warn if sysconfdir is not /etc
+
+Oz (2):
+      python: add docstring to rmmod
+      python: add docstring to insert and remove methods
+
+Stephen Kitt (1):
+      Remove "rmmod -w" documentation and getopt entry
+
+Tom Gundersen (1):
+      config: also parse softdeps from modules
+
+W. Trevor King (22):
+      python: Convert to Cython.
+      python: Add additional out Module attributes (path, refcnt, ...).
+      python: MANIFEST.in: add missing source to the sdist tarball.
+      python: Add docstrings to kmod.kmod and kmod.kmod.Kmod.
+      python: Add missing copyright blurbs.
+      python: README: cleanup reStructuredText syntax.
+      python: README: mention Cython dependency.
+      python: README.rst: add .rst symlink for GitHub.
+      python: Add Module.versions attribute.
+      python: Use Cython's libc.errno for EEXIST.
+      python: Add Module.info attribute.
+      python: Use an OrderedDict for Module.info (preserving modinfo ordering).
+      python: Initialize Kmod.mod_dir to None in __cinit__().
+      python: module: fix versions -> info typo in Module._info_get() error message.
+      python: .update-copyright.conf: add copyright configuration.
+      python: .mailmap: consolidate Andy Grover email addresses.
+      python: .update-copyright.conf: add README.rst to ignored files.
+      python: .update-copyright.conf: add Red Hat alias for Andy Grover.
+      python: .update-copyright.conf: add MANIFEST.in to ignored files.
+      python: .update-copyright.conf: update to pipe separators.
+      python: Ran update-copyright.py.
+      python: MANIFEST.in: add AUTHORS to distibuted source files.
+
+
+-- 
+Lucas De Marchi
