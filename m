@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaDFPeC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 11:34:02 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33500 "EHLO
+	id S1754505AbaDFPeH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 11:34:07 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33518 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603AbaDFPd5 (ORCPT
+	with ESMTP id S1753603AbaDFPeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 11:33:57 -0400
+	Sun, 6 Apr 2014 11:34:03 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>
-Subject: [PATCH -mm 0/3] slab: cleanup mem hotplug synchronization
-Date: Sun, 6 Apr 2014 19:33:49 +0400
-Message-ID: <cover.1396779337.git.vdavydov@parallels.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH -mm 2/3] lockdep: mark rwsem_acquire_read as recursive
+Date: Sun, 6 Apr 2014 19:33:51 +0400
+Message-ID: <8c6473e959a4557d8622a6d7ff24888cb3f7512d.1396779337.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1396779337.git.vdavydov@parallels.com>
+References: <cover.1396779337.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.24.24.157]
@@ -21,51 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+rw_semaphore implementation allows recursing calls to down_read, but
+lockdep thinks that it doesn't. As a result, it will complain
+false-positively, e.g. if we do not observe some predefined locking
+order when taking an rw semaphore for reading and a mutex.
 
-kmem_cache_{create,destroy,shrink} need to get a stable value of
-cpu/node online mask, because they init/destroy/access per-cpu/node
-kmem_cache parts, which can be allocated or destroyed on cpu/mem
-hotplug. To protect against cpu hotplug, these functions use
-{get,put}_online_cpus. However, they do nothing to synchronize with
-memory hotplug - taking the slab_mutex does not eliminate the
-possibility of race as described in patch 3.
+This patch makes lockdep think rw semaphore is read-recursive, just like
+rw spin lock.
 
-What we need there is something like get_online_cpus, but for memory. We
-already have lock_memory_hotplug, which serves for the purpose, but it's
-a bit of a hammer right now, because it's backed by a mutex. As a
-result, it imposes some limitations to locking order, which are not
-desirable, and can't be used just like get_online_cpus. I propose to
-turn this mutex into an rw semaphore, which will be taken for reading in
-lock_memory_hotplug and for writing in memory hotplug code (that's what
-patch 1 does).
-
-When I tried to use this rw semaphore in the slab implementation, I came
-across a problem with lockdep: rw_semaphore is not marked as read
-recursive although it is (at least, it looks so to me), so lockdep
-complains about wrong ordering with a sysfs internal mutex in case of
-slub, because in contrast to recursive read lock, non-recursive one
-should always be taken in the same order with a mutex. That's why in
-patch 2 I mark rw semaphore as read-recursive, just like rw spin lock.
-
-Thanks,
-
-Vladimir Davydov (3):
-  mem-hotplug: turn mem_hotplug_mutex to rwsem
-  lockdep: mark rwsem_acquire_read as recursive
-  slab: lock_memory_hotplug for kmem_cache_{create,destroy,shrink}
-
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
  include/linux/lockdep.h |    2 +-
- include/linux/mmzone.h  |    7 ++---
- mm/memory_hotplug.c     |   70 +++++++++++++++++++++--------------------------
- mm/slab.c               |   26 ++----------------
- mm/slab.h               |    1 +
- mm/slab_common.c        |   35 ++++++++++++++++++++++--
- mm/slob.c               |    3 +-
- mm/slub.c               |    5 ++--
- mm/vmscan.c             |    2 +-
- 9 files changed, 75 insertions(+), 76 deletions(-)
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 008388f920d7..4b95fe85375e 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -500,7 +500,7 @@ static inline void print_irqtrace_events(struct task_struct *curr)
+ 
+ #define rwsem_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+ #define rwsem_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
+-#define rwsem_acquire_read(l, s, t, i)		lock_acquire_shared(l, s, t, NULL, i)
++#define rwsem_acquire_read(l, s, t, i)		lock_acquire_shared_recursive(l, s, t, NULL, i)
+ #define rwsem_release(l, n, i)			lock_release(l, n, i)
+ 
+ #define lock_map_acquire(l)			lock_acquire_exclusive(l, 0, 0, NULL, _THIS_IP_)
 -- 
 1.7.10.4
 
