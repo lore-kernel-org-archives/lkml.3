@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaDFNXP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 09:23:15 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:35731 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaDFNXK (ORCPT
+	id S1753780AbaDFNap (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 09:30:45 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:39037 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856AbaDFNam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 09:23:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK9yfHwNmN+M8ncSGjUwnfXs1p-e7pCy5Y-K7uX6JV5JyWYhEg@mail.gmail.com>
-References: <20140318110947.GR25478@lee--X1>
-	<1395148286-32002-1-git-send-email-k.kozlowski@samsung.com>
-	<CAK9yfHwNmN+M8ncSGjUwnfXs1p-e7pCy5Y-K7uX6JV5JyWYhEg@mail.gmail.com>
-Date: Sun, 6 Apr 2014 15:23:09 +0200
-X-Google-Sender-Auth: oU-Vf2Lvp6Fe4m-tAGoqAIkAxuc
-Message-ID: <CAMuHMdX2yCCSUn=t9BZ_+bHMcV11O35b2PDj1hS=NNHmiiG0eA@mail.gmail.com>
-Subject: Re: [PATCH] mfd: sec-core: Fix uninitialized 'regmap_rtc' on S2MPA01
+	Sun, 6 Apr 2014 09:30:42 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        Fariya Fatima <fariyaf@gmail.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] rsi: Add missing initialization of ii
+Date: Sun,  6 Apr 2014 15:30:39 +0200
+Message-Id: <1396791040-26816-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 9:27 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> On 18 March 2014 18:41, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
->> Initialize the 'regmap_rtc' on S2MPA01 to some sane value. Sane at least
->> for S5M87X chipsets, not S2MPS/S2MPA but it won't be used because
->> rtc-s5m driver does not support S2MPA01.
->>
->> This fixes following error:
->> drivers/mfd/sec-core.c:342:45: warning: 'regmap_rtc' may be used uninitialized in this function [-Wuninitialized]
->>
->> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->
-> From the point of suppressing this warning and considering how it is
-> done for S2MPS11,
-> Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+drivers/net/wireless/rsi/rsi_91x_core.c: In function ‘rsi_core_determine_hal_queue’:
+drivers/net/wireless/rsi/rsi_91x_core.c:91: warning: ‘ii’ may be used uninitialized in this function
 
-This is not just about suppressing a warning. The following may crash when
-passed a random pointer:
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+Is zero the correct initialization value?
 
-sec_pmic->regmap_rtc = devm_regmap_init_i2c(sec_pmic->rtc, regmap_rtc);
+ drivers/net/wireless/rsi/rsi_91x_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-and if regmap_rtc happens to be NULL, devm_regmap_init_i2c() will
-return -EINVAL.
+diff --git a/drivers/net/wireless/rsi/rsi_91x_core.c b/drivers/net/wireless/rsi/rsi_91x_core.c
+index e89535e86caf..20a62f36e89b 100644
+--- a/drivers/net/wireless/rsi/rsi_91x_core.c
++++ b/drivers/net/wireless/rsi/rsi_91x_core.c
+@@ -88,7 +88,7 @@ static u8 rsi_core_determine_hal_queue(struct rsi_common *common)
+ 	bool recontend_queue = false;
+ 	u32 q_len = 0;
+ 	u8 q_num = INVALID_QUEUE;
+-	u8 ii, min = 0;
++	u8 ii = 0, min = 0;
+ 
+ 	if (skb_queue_len(&common->tx_queue[MGMT_SOFT_Q])) {
+ 		if (!common->mgmt_q_block)
+-- 
+1.7.9.5
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
