@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaDFRCI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 13:02:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44953 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754355AbaDFRCF (ORCPT
+	id S1754475AbaDFRVH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 13:21:07 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33821 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390AbaDFRUs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 13:02:05 -0400
-Message-ID: <53418889.2050002@free-electrons.com>
-Date: Sun, 06 Apr 2014 19:02:01 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: Kconfig ARM_ERRATA_753970?
-References: <201404052101.19381.arnd@arndb.de>	 <201404052104.11363.arnd@arndb.de> <1396777049.30640.9.camel@x220>
-In-Reply-To: <1396777049.30640.9.camel@x220>
-X-Enigmail-Version: 1.6
+	Sun, 6 Apr 2014 13:20:48 -0400
+Date: Sun, 6 Apr 2014 18:19:37 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Borislav Petkov <bp@alien8.de>
+Cc: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+Message-ID: <20140406181937.0cd6298b@alan.etchedpixels.co.uk>
+In-Reply-To: <20140403110339.GD9616@pd.tnic>
+References: <20140402144219.4cafbe37@gandalf.local.home>
+	<20140402221212.GD16570@mguzik.redhat.com>
+	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
+	<alpine.LRH.2.00.1404030119270.23421@twin.jikos.cz>
+	<20140402162839.d3c00e9845e89d0f092c2ce3@linux-foundation.org>
+	<CA+55aFw7NyryF3F3x05rLjt6rFwD5xUoZB06CV2mpwwRxcVHxg@mail.gmail.com>
+	<alpine.LNX.2.00.1404030145490.32122@pobox.suse.cz>
+	<CA+55aFzo85-sdC_eDVRWcCdsK2p1JxCjswYidq-QSi5RieGmBA@mail.gmail.com>
+	<yw1xbnwik8go.fsf@unicorn.mansr.com>
+	<20140403110339.GD9616@pd.tnic>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Thu, 3 Apr 2014 13:03:39 +0200
+Borislav Petkov <bp@alien8.de> wrote:
 
-On 06/04/2014 11:37, Paul Bolle wrote:
-> On Sat, 2014-04-05 at 20:04 +0100, Arnd Bergmann wrote:
->> Gregory CLEMENT (1):
->>       ARM: mvebu: add initial support for the Armada 375 SOCs
->>
->> [...]
->>
->> Thomas Petazzoni (7):
->>       [...]
->>       ARM: mvebu: add initial support for the Armada 380/385 SOCs
+> On Thu, Apr 03, 2014 at 11:34:15AM +0100, Måns Rullgård wrote:
+> > Once is an accident.  Twice is incompetence.  Three times is malice.
 > 
-> These two commits added select statements for ARM_ERRATA_753970. But I
-> couldn't find that Kconfig symbol. (I checked master of Linus' tree and
-> current linux-next.) So it seems it was intended to select
-> PL310_ERRATA_753970 here. Is that correct?
-
-Yes it is correct. ARM_ERRATA_753970 was renamed to PL310_ERRATA_753970
-in kernel 3.2. I had just carry on the symbol name without noticed that
-it have changed.
-
-Do you want to send a fix, or do you prefer I take care of it?
-
-
-Thanks,
-
-Gregory
-
-
-> 
-> 
-> Paul Bolle
+> Yeah, maybe it is time Linus started his own init daemon project, like
+> that other thing, git, he did start a while ago. We can put it in
+> tools/. I'm sure it can get off the ground pretty quickly, judging by
+> other projects kernel people have jumped on in the past.
 > 
 
+We have a perfectly good, dependancy understanding, self ordering,
+paralleising startup, service level and event management tool.
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Its called "make"
+
+We shipped devices using it about fifteen years ago 8)
+
+Alan
