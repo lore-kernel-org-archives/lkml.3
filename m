@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaDFJn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 05:43:59 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:42303 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448AbaDFJny convert rfc822-to-8bit (ORCPT
+	id S1754253AbaDFJop (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 05:44:45 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:60940 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754204AbaDFJoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 05:43:54 -0400
+	Sun, 6 Apr 2014 05:44:13 -0400
+Message-ID: <534117AD.1030708@gmail.com>
+Date: Sun, 06 Apr 2014 11:00:29 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140328071743.GA17588@kroah.com>
-References: <20110102225741.GX5480@const.famille.thibault.fr>
- <20110112182702.GA9168@core.coreip.homeip.net> <20111114040613.GA4992@type.famille.thibault.fr>
- <20121221003449.GA6999@type.youpi.perso.aquilenet.fr> <20130713093552.GU8252@type>
- <20130715091230.GA8786@amd.pavel.ucw.cz> <CAHYPw2H94ej=FdqHAxXpyZt+34TwK1Qj7LWP_bMro-v3JREisg@mail.gmail.com>
- <20140316101946.GJ6436@type.youpi.perso.aquilenet.fr> <CAHYPw2EAgjdcNATy0d6DhbT9qHAHJLda7gsLrnSJ7F4Cj=a-JQ@mail.gmail.com>
- <20140328070136.GA15953@amd.pavel.ucw.cz> <20140328071743.GA17588@kroah.com>
-From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Sun, 6 Apr 2014 11:43:13 +0200
-Message-ID: <CAHYPw2FAVtxxt_6=LArC=T_Ca=+tTsE37U29mrY-=OViHXf_2g@mail.gmail.com>
-Subject: Re: 8 months to review a patch (was Re: [PATCH] Route kbd LEDs
- through the generic LEDs layer)
-To: Greg KH <greg@kroah.com>
-Cc: Pavel Machek <pavel@ucw.cz>, dtor@mail.ru,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, jslaby@suse.cz,
-        Richard Purdie <rpurdie@rpsys.net>,
-        LKML <linux-kernel@vger.kernel.org>, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+CC: mtk.manpages@gmail.com, John McCutchan <john@johnmccutchan.com>,
+        Robert Love <rlove@rlove.org>, Eric Paris <eparis@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>, radu.voicilas@gmail.com,
+        daniel@veillard.com, Christoph Hellwig <hch@infradead.org>,
+        Vegard Nossum <vegard.nossum@oracle.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>, gamin-list@gnome.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        inotify-tools-general@lists.sourceforge.net
+Subject: Re: Things I wish I'd known about Inotify
+References: <CAKgNAkjymzawYMKZGedK=fai55cwo4p=yeYe6GT8MdxWON__zw@mail.gmail.com> <20140403205236.GE14107@quack.suse.cz> <533E60D6.2000704@gmail.com> <20140404124338.GA26806@quack.suse.cz>
+In-Reply-To: <20140404124338.GA26806@quack.suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-28 8:17 GMT+01:00 Greg KH <greg@kroah.com>:
-> On Fri, Mar 28, 2014 at 08:01:36AM +0100, Pavel Machek wrote:
->> On Thu 2014-03-27 02:08:17, Pali Rohár wrote:
->> > 2014-03-16 11:19 GMT+01:00 Samuel Thibault <samuel.thibault@ens-lyon.org>:
->> > > Pali Rohár, le Sun 16 Mar 2014 11:16:25 +0100, a écrit :
->> > >> Hello, what happened with this patch? Is there any problem with accepting it?
->> > >
->> > > Dmitry finding time to review it, I guess.
->>
->> > Dmitry, can you look and review this patch?
->>
->> Dmitry, what happened to you, are you there? This patch is like 8
->> months old, and not too scary, either. Can you at least pinpoint some
->> typos in it, or run in through the checkpatch?
->>
->> If Dmitry does not respond, what are the next steps. Greg, could you
->> just take the patch? Linus?
->
-> No, work with Dmitry please.
->
+On 04/04/2014 02:43 PM, Jan Kara wrote:
+> On Fri 04-04-14 09:35:50, Michael Kerrisk (man-pages) wrote:
+>> On 04/03/2014 10:52 PM, Jan Kara wrote:
+>>> On Thu 03-04-14 08:34:44, Michael Kerrisk (man-pages) wrote:
 
-Greg, problem is that Dmitry does not respond and has not reviewed
-this patch for more that 8 months. From my point of view this looks
-like Dmitry does not have time for review anymore...
+[...]
 
-What to do if maintainer is busy for a long time?
-Really could not you look at this patch?
+>>>>    Dealing with rename() events
+>>>>        The  IN_MOVED_FROM  and  IN_MOVED_TO events that are generated by
+>>>>        rename(2) are usually available as consecutive events when  read‐
+>>>>        ing from the inotify file descriptor.  However, this is not guar‐
+>>>>        anteed.  If multiple processes are triggering  events  for  moni‐
+>>>>        tored  objects,  then  (on rare occasions) an arbitrary number of
+>>>>        other events may appear between the IN_MOVED_FROM and IN_MOVED_TO
+>>>>        events.
+>>>>
+>>>>        Matching  up  the IN_MOVED_FROM and IN_MOVED_TO event pair gener‐
+>>>>        ated by rename(2) is thus inherently racy.  (Don't forget that if
+>>>>        an  object is renamed outside of a monitored directory, there may
+>>>>        not even be an IN_MOVED_TO event.)  Heuristic  approaches  (e.g.,
+>>>>        assume the events are always consecutive) can be used to ensure a
+>>>>        match in most cases, but will inevitably miss some cases, causing
+>>>>        the  application  to  perceive  the IN_MOVED_FROM and IN_MOVED_TO
+>>>>        events as being unrelated.  If watch  descriptors  are  destroyed
+>>>>        and  re-created as a result, then those watch descriptors will be
+>>>>        inconsistent with the watch descriptors in  any  pending  events.
+>>>>        (Re-creating the inotify file descriptor and rebuilding the cache
+>>>>        may be useful to deal with this scenario.)
+>>>   Well, but there's 'cookie' value meant exactly for matching up
+>>> IN_MOVED_FROM and IN_MOVED_TO events. And 'cookie' is guaranteed to be
+>>> unique at least within the inotify instance (in fact currently it is unique
+>>> within the whole system but I don't think we want to give that promise).
+>>
+>> Yes, that's already assumed by my discussion above (its described elsewhere
+>> in the page). But your comment makes me think I should add a few words to
+>> remind the reader of that fact. I'll do that.
+>   Yes, that would be good.
+> 
+>> But, the point is that even with the cookie, matching the events is 
+>> nontrivial, since:
+>>
+>> * There may not even be an IN_MOVED_FROM event
+>> * There may be an arbitrary number of other events in between the 
+>>   IN_MOVED_FROM and the IN_MOVED_TO.
+>>
+>> Therefore, one has to use heuristic approaches such as "allow at least
+>> N millisconds" or "check the next N events" to see if there is an
+>> IN_MOVED_FROM that matches the IN_MOVED_TO. I can't see any way around
+>> that being inherently racy. (It's unfortunate that the kernel can't 
+>> provide a guarantee that the two events are always consecutive, since
+>> that would simply user space's life considerably.)
 
-https://lkml.org/lkml/2014/3/31/141
+>   Yeah, it's unpleasant but doing that would be quite costly/complex at the
+> kernel side. 
+
+Yep, I imagined that was probably the reason.
+
+> And the race would in the worst case lead to application
+> thinking there's been file moved outside of watched area & a file moved
+> somewhere else inside the watched area. So the application will have to
+> possibly inspect that file. That doesn't seem too bad.
+
+It's actually very bad. See the text above. The point is that one likely
+treatment on an IN_MOVED_FROM event that has no IN_MOVED_TO is to remove
+the watches for the moved out subtree. If it turns out that this really
+was just a rename(), then on the IN_MOVED_TO, the watches will be recreated
+*with different watch descriptors*, thus invalidating the watch descriptors
+in any queued but as yet unprocessed inotify events. See what I mean? 
+That's quite painful for user space.
+
+Cheers,
+
+Michael
+
+
 
 -- 
-Pali Rohár
-pali.rohar@gmail.com
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
