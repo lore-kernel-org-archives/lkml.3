@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbaDFDyH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Apr 2014 23:54:07 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:52071 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754090AbaDFDyA (ORCPT
+	id S1752145AbaDFFM1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 01:12:27 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:58512 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaDFFMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Apr 2014 23:54:00 -0400
-X-Sasl-enc: jFtxXFV4P3QpGkSjbMcrOr8/EB6ZYnY7HvfKQXHwC5ev 1396756439
-Message-ID: <1396756437.24991.6.camel@perseus.fritz.box>
-Subject: Re: [PATCH] autofs4: check dev ioctl size before allocating
-From: Ian Kent <raven@themaw.net>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        akpm@linux-foundation.org
-Date: Sun, 06 Apr 2014 11:53:57 +0800
-In-Reply-To: <5340C5C7.9010203@oracle.com>
-References: <1394934021-16965-1-git-send-email-sasha.levin@oracle.com>
-		 <53401C11.7010601@oracle.com> <1396753403.24991.3.camel@perseus.fritz.box>
-	 <5340C5C7.9010203@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Apr 2014 01:12:19 -0400
+Date: Sun, 6 Apr 2014 01:12:14 -0400 (EDT)
+From: "Michael L. Semon" <mlsemon35@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: 3.14.0+/x86: lockdep and mutexes not getting along
+Message-ID: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
+User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-04-05 at 23:11 -0400, Sasha Levin wrote:
-> On 04/05/2014 11:03 PM, Ian Kent wrote:
-> > On Sat, 2014-04-05 at 11:06 -0400, Sasha Levin wrote:
-> >> Ping? Anyone wants to take this?
-> > 
-> > Is this causing a problem for users?
-> > If it is I'll send it to Andrew straight away.
-> > 
-> > I do have this on my queue but don't have any other patches to send so
-> > it's just sitting there.
-> > 
-> > If it worries you I'll send it to Andrew now.
-> 
-> It's not really a pressing issue since /dev/autofs is accessible only to
-> root. I also doubt that it causes problems for actual users.
-> 
-> If there are no issues with the patch, I think it's best if you could
-> ack/sign off on it and if Andrew wants to take it now, he could. If he
-> doesn't, it could wait for whenever.
-> 
-> I just don't want it getting lost somewhere and never making it upstream.
+Hi!  Starting early in this merge window for 3.15, lockdep has been
+giving me trouble.  Normally, a splat will happen, lockdep will shut
+itself off, and my i686 Pentium 4 PC will continue.  Now, after the
+splat, it will allow one key of input at either a VGA console or over
+serial.  After that, only the magic SysRq keys and KDB still work.
+File activity stops, and many processes are stuck in the D state.
 
-OK, but since I'm going to send it I looked at it a bit closer.
-Shouldn't the E2BIG be ENAMETOOLONG since it's a file path that's being
-passed?
+Bisect brought me here:
 
-I can change that and send it if you agree with the change.
+root@plbearer:/usr/src/kernel-git/linux# git bisect good
+6f008e72cd111a119b5d8de8c5438d892aae99eb is the first bad commit
+commit 6f008e72cd111a119b5d8de8c5438d892aae99eb
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Wed Mar 12 13:24:42 2014 +0100
 
-Ian
+    locking/mutex: Fix debug checks
+
+    OK, so commit:
+
+      1d8fe7dc8078 ("locking/mutexes: Unlock the mutex without the wait_lock")
+
+    generates this boot warning when CONFIG_DEBUG_MUTEXES=y:
+
+      WARNING: CPU: 0 PID: 139 at /usr/src/linux-2.6/kernel/locking/mutex-debug.c:82 debug_mutex_unlock+0x155/0x180() DEBUG_LOCKS_WARN_ON(lock->owner != current)
+
+    And that makes sense, because as soon as we release the lock a
+    new owner can come in...
+
+    One would think that !__mutex_slowpath_needs_to_unlock()
+    implementations suffer the same, but for DEBUG we fall back to
+    mutex-null.h which has an unconditional 1 for that.
+
+    The mutex debug code requires the mutex to be unlocked after
+    doing the debug checks, otherwise it can find inconsistent
+    state.
+
+    Reported-by: Ingo Molnar <mingo@kernel.org>
+    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+    Cc: jason.low2@hp.com
+    Link: http://lkml.kernel.org/r/20140312122442.GB27965@twins.programming.kicks-ass.net
+    Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+:040000 040000 80e40c2009942a31f98127c4f9fa958f34b3947b f46ed4b70c4f30fc665fe8f810d3c13920cd765a M      kernel
+
+Indeed, my issues are solved (so far) simply by reverting this commit.
+
+Might someone test lockdep on x86 to see if this is a consistent
+issue that needs to be adjusted?  My lockdep splats are generated by
+running xfstests test generic/113 on XFS, but splats caused by other
+issues should still create the same symptoms.
+
+Otherwise, this 3.15 kernel has been rather kind to me so far.
+
+PC is an i686 Pentium 4 with 1280 MB RAM and old IDE hardware,
+running Slackware 14.1.
+
+Thanks!
+
+Michael
 
