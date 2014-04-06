@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066AbaDFXlR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:41:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59437 "EHLO
+	id S1755091AbaDFXlV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:41:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59436 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754668AbaDFXjG (ORCPT
+	by vger.kernel.org with ESMTP id S1754673AbaDFXjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Apr 2014 19:39:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "Hans de Goede" <hdegoede@redhat.com>
+CC: akpm@linux-foundation.org
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.948238718@decadent.org.uk>
+Message-ID: <lsq.1396827348.741115479@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 02/18] Input: synaptics - add manual min/max quirk for
- ThinkPad X240
+Subject: [PATCH 3.2 03/18] staging: speakup: Prefix set_mask_bits() symbol
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
+This is part of commit ca2beaf84d96 ('staging: speakup: Prefix
+externally-visible symbols') upstream.  It is required as preparation
+for commit 00a1a053ebe5 ('ext4: atomically set inode->i_flags in
+ext4_set_inode_flags()').
 
-This extends Benjamin Tissoires manual min/max quirk table with support for
-the ThinkPad X240.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/input/mouse/synaptics.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1386,6 +1386,14 @@ static const struct dmi_system_id min_ma
- 		.driver_data = (int []){1024, 5052, 2258, 4832},
- 	},
- 	{
-+		/* Lenovo ThinkPad X240 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
-+		},
-+		.driver_data = (int []){1232, 5710, 1156, 4696},
-+	},
-+	{
- 		/* Lenovo ThinkPad T440s */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+--- a/drivers/staging/speakup/kobjects.c
++++ b/drivers/staging/speakup/kobjects.c
+@@ -521,9 +521,9 @@ static ssize_t punc_store(struct kobject
+ 	spk_lock(flags);
+ 
+ 	if (*punc_buf == 'd' || *punc_buf == 'r')
+-		x = set_mask_bits(0, var->value, 3);
++		x = spk_set_mask_bits(0, var->value, 3);
+ 	else
+-		x = set_mask_bits(punc_buf, var->value, 3);
++		x = spk_set_mask_bits(punc_buf, var->value, 3);
+ 
+ 	spk_unlock(flags);
+ 	return count;
+--- a/drivers/staging/speakup/main.c
++++ b/drivers/staging/speakup/main.c
+@@ -2265,7 +2265,7 @@ static int __init speakup_init(void)
+ 	     (var->var_id >= 0) && (var->var_id < MAXVARS); var++)
+ 		speakup_register_var(var);
+ 	for (i = 1; punc_info[i].mask != 0; i++)
+-		set_mask_bits(0, i, 2);
++		spk_set_mask_bits(0, i, 2);
+ 
+ 	set_key_info(key_defaults, key_buf);
+ 	if (quiet_boot)
+--- a/drivers/staging/speakup/speakup.h
++++ b/drivers/staging/speakup/speakup.h
+@@ -71,7 +71,7 @@ extern struct st_var_header *var_header_
+ extern struct punc_var_t *get_punc_var(enum var_id_t var_id);
+ extern int set_num_var(int val, struct st_var_header *var, int how);
+ extern int set_string_var(const char *page, struct st_var_header *var, int len);
+-extern int set_mask_bits(const char *input, const int which, const int how);
++extern int spk_set_mask_bits(const char *input, const int which, const int how);
+ extern special_func special_handler;
+ extern int handle_help(struct vc_data *vc, u_char type, u_char ch, u_short key);
+ extern int synth_init(char *name);
+--- a/drivers/staging/speakup/varhandlers.c
++++ b/drivers/staging/speakup/varhandlers.c
+@@ -267,11 +267,11 @@ int set_string_var(const char *page, str
+ 	return ret;
+ }
+ 
+-/* set_mask_bits sets or clears the punc/delim/repeat bits,
++/* spk_set_mask_bits sets or clears the punc/delim/repeat bits,
+  * if input is null uses the defaults.
+  * values for how: 0 clears bits of chars supplied,
+  * 1 clears allk, 2 sets bits for chars */
+-int set_mask_bits(const char *input, const int which, const int how)
++int spk_set_mask_bits(const char *input, const int which, const int how)
+ {
+ 	u_char *cp;
+ 	short mask = punc_info[which].mask;
 
