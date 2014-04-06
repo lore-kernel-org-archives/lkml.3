@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819AbaDFXkK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:40:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59487 "EHLO
+	id S1754894AbaDFXks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:40:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59428 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754750AbaDFXjI (ORCPT
+	by vger.kernel.org with ESMTP id S1754148AbaDFXjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 19:39:08 -0400
+	Sun, 6 Apr 2014 19:39:06 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Konstantin Khlebnikov" <k.khlebnikov@samsung.com>
+CC: akpm@linux-foundation.org, "Jeff Layton" <jlayton@redhat.com>,
+        "Steve French" <smfrench@gmail.com>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Pavel Shilovsky" <piastry@etersoft.ru>
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.345065834@decadent.org.uk>
+Message-ID: <lsq.1396827348.486893332@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 06/18] ipc/msg: fix race around refcount
+Subject: [PATCH 3.2 17/18] cifs: ensure that uncached writes handle
+ unmapped areas correctly
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,60 +34,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-In older kernels (before v3.10) ipc_rcu_hdr->refcount was non-atomic int.
-There was possuble double-free bug: do_msgsnd() calls ipc_rcu_putref() under
-msq->q_perm->lock and RCU, while freequeue() calls it while it holds only
-'rw_mutex', so there is no sinchronization between them. Two function
-decrements '2' non-atomically, they both can get '0' as result.
+commit 5d81de8e8667da7135d3a32a964087c0faf5483f upstream.
 
-do_msgsnd()					freequeue()
+It's possible for userland to pass down an iovec via writev() that has a
+bogus user pointer in it. If that happens and we're doing an uncached
+write, then we can end up getting less bytes than we expect from the
+call to iov_iter_copy_from_user. This is CVE-2014-0069
 
-msq = msg_lock_check(ns, msqid);
-...
-ipc_rcu_getref(msq);
-msg_unlock(msq);
-schedule();
-						(caller locks spinlock)
-						expunge_all(msq, -EIDRM);
-						ss_wakeup(&msq->q_senders, 1);
-						msg_rmid(ns, msq);
-						msg_unlock(msq);
-ipc_lock_by_ptr(&msq->q_perm);
-ipc_rcu_putref(msq);				ipc_rcu_putref(msq);
-< both may get get --(...)->refcount == 0 >
+cifs_iovec_write isn't set up to handle that situation however. It'll
+blindly keep chugging through the page array and not filling those pages
+with anything useful. Worse yet, we'll later end up with a negative
+number in wdata->tailsz, which will confuse the sending routines and
+cause an oops at the very least.
 
-This patch locks ipc_lock and RCU around ipc_rcu_putref in freequeue.
-( RCU protects memory for spin_unlock() )
+Fix this by having the copy phase of cifs_iovec_write stop copying data
+in this situation and send the last write as a short one. At the same
+time, we want to avoid sending a zero-length write to the server, so
+break out of the loop and set rc to -EFAULT if that happens. This also
+allows us to handle the case where no address in the iovec is valid.
 
-Similar bugs might be in other users of ipc_rcu_putref().
+[Note: Marking this for stable on v3.4+ kernels, but kernels as old as
+       v2.6.38 may have a similar problem and may need similar fix]
 
-In the mainline this has been fixed in v3.10 indirectly in commmit
-6062a8dc0517bce23e3c2f7d2fea5e22411269a3
-("ipc,sem: fine grained locking for semtimedop") by Rik van Riel.
-That commit optimized locking and converted refcount into atomic.
-
-I'm not sure that anybody should care about this bug: it's very-very unlikely
-and no longer exists in actual mainline. I've found this just by looking into
-the code, probably this never happens in real life.
-
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/nr_pages/npages/
+ - s/wdata->pages/pages/
+ - In case of an error with no data copied, we must kunmap() page 0,
+   but in neither case should we free anything else]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- ipc/msg.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/cifs/file.c | 37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -296,7 +296,9 @@ static void freeque(struct ipc_namespace
- 	}
- 	atomic_sub(msq->q_cbytes, &ns->msg_bytes);
- 	security_msg_queue_free(msq);
-+	ipc_lock_by_ptr(&msq->q_perm);
- 	ipc_rcu_putref(msq);
-+	ipc_unlock(&msq->q_perm);
- }
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2107,7 +2107,7 @@ cifs_iovec_write(struct file *file, cons
+ {
+ 	unsigned int written;
+ 	unsigned long num_pages, npages, i;
+-	size_t copied, len, cur_len;
++	size_t bytes, copied, len, cur_len;
+ 	ssize_t total_written = 0;
+ 	struct kvec *to_send;
+ 	struct page **pages;
+@@ -2165,17 +2165,44 @@ cifs_iovec_write(struct file *file, cons
+ 	do {
+ 		size_t save_len = cur_len;
+ 		for (i = 0; i < npages; i++) {
+-			copied = min_t(const size_t, cur_len, PAGE_CACHE_SIZE);
++			bytes = min_t(const size_t, cur_len, PAGE_CACHE_SIZE);
+ 			copied = iov_iter_copy_from_user(pages[i], &it, 0,
+-							 copied);
++							 bytes);
+ 			cur_len -= copied;
+ 			iov_iter_advance(&it, copied);
+ 			to_send[i+1].iov_base = kmap(pages[i]);
+ 			to_send[i+1].iov_len = copied;
++			/*
++			 * If we didn't copy as much as we expected, then that
++			 * may mean we trod into an unmapped area. Stop copying
++			 * at that point. On the next pass through the big
++			 * loop, we'll likely end up getting a zero-length
++			 * write and bailing out of it.
++			 */
++			if (copied < bytes)
++				break;
+ 		}
  
- /*
+ 		cur_len = save_len - cur_len;
+ 
++		/*
++		 * If we have no data to send, then that probably means that
++		 * the copy above failed altogether. That's most likely because
++		 * the address in the iovec was bogus. Set the rc to -EFAULT,
++		 * free anything we allocated and bail out.
++		 */
++		if (!cur_len) {
++			kunmap(pages[0]);
++			rc = -EFAULT;
++			break;
++		}
++
++		/*
++		 * i + 1 now represents the number of pages we actually used in
++		 * the copy phase above.
++		 */
++		npages = i + 1;
++
+ 		do {
+ 			if (open_file->invalidHandle) {
+ 				rc = cifs_reopen_file(open_file, false);
 
