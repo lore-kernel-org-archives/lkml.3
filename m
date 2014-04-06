@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278AbaDFK23 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 06:28:29 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:56527 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754180AbaDFK20 (ORCPT
+	id S1754290AbaDFKk4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 06:40:56 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:64507 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181AbaDFKky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 06:28:26 -0400
-Message-ID: <1396780101.30640.21.camel@x220>
-Subject: Re: [GIT PULL] clk: changes for 3.15
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mike Turquette <mturquette@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Sun, 06 Apr 2014 12:28:21 +0200
-In-Reply-To: <20140404174715.8250.22335@quantum>
-References: <20140404174715.8250.22335@quantum>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Apr 2014 10:28:24.0819 (UTC) FILETIME=[F103CC30:01CF5182]
-X-RcptDomain: vger.kernel.org
+	Sun, 6 Apr 2014 06:40:54 -0400
+MIME-Version: 1.0
+X-Originating-IP: [218.164.142.85]
+In-Reply-To: <20140406093053.GH12170@pengutronix.de>
+References: <1396754381.13341.4.camel@phoenix>
+	<20140406093053.GH12170@pengutronix.de>
+Date: Sun, 6 Apr 2014 18:40:53 +0800
+Message-ID: <CAFRkauBRAmCpF+84bRhqB3hJinnt0apo4dpV+VfUELVXSr8+rg@mail.gmail.com>
+Subject: Re: [PATCH RFC] leds: pca9685: Remove leds-pca9685 driver
+From: Axel Lin <axel.lin@ingics.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        =?ISO-8859-1?Q?Maximilian_G=FCntner?= 
+	<maximilian.guentner@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-04 at 10:47 -0700, Mike Turquette wrote:
-> Haojian Zhuang (3):
->       [...]
->       clk: hip04: add clock driver
+2014-04-06 17:30 GMT+08:00 Steffen Trumtrar <s.trumtrar@pengutronix.de>:
+> Hi!
+>
+> On Sun, Apr 06, 2014 at 11:19:41AM +0800, Axel Lin wrote:
+>> This driver is replaced by pwm-pca9685 driver and there is no user uses this
+>> driver in current tree. So remove it.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> ---
+>> Hi,
+>> I found there is a modalias conflict between leds-pca9685.ko and pwm-pca9685.ko.
+>> I think this conflict will cause problem.
+>> After checking the code, I think leds-pca9685 is replaced by pwm-pca9685.
+>
+> This confused me for a second, as there was no driver to replace when I wrote
+> the pwm-pca9685 driver and I thought I missed something. But it seems I didn't
+> and the pwm-pca9685 is actually older.
 
-This clock driver is only built if CONFIG_ARCH_HIP04 is set. But I
-couldn't find a Kconfig symbol ARCH_HIP04. (I checked master of Linus'
-tree and current linux-next.)
+Ah.. right, leds-pca9685 is a newer driver.
 
-Is the code to add this symbol queued somewhere?
+2013-10-22 leds: Added driver for the NXP PCA9685 I2C chip
+2013-05-30 pwm: add pca9685 driver
 
+>
+>> Use git grep to check current tree and found there is no user uses leds-pca9685.
+>> So this patch removes leds-pca9685 driver.
+>>
+>
+> If the platform setup is needed, maybe this can be integrated into the pwm driver
+> instead of completely dropping it. I don't care for platform code, but if someone
+> does, I don't want him to lose the support for it.
 
-Paul Bolle
+Given the fact there is no user in current tree uses leds-pca9685,
+I suspect if we need to add platform setup to pwm-pca9685.
+( I think the trend is to use DT, not the reverse )
 
+>
+> Otherwise I am okay with this drop (okay, I'm completely biased of course ;-)).
+> But technically the pca9685 is not solely a LED driver IC, but a PWM IC, so it
+> is in the wrong place anyhow.
+
+I also think PWM subsystem is better for this chip which is a PWM IC.
+
+Thanks for the review,
+Axel
