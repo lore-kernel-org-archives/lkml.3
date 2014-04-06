@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145AbaDFFM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 01:12:27 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:58512 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaDFFMT (ORCPT
+	id S1751621AbaDFFiN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 01:38:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19726 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaDFFiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 01:12:19 -0400
-Date: Sun, 6 Apr 2014 01:12:14 -0400 (EDT)
-From: "Michael L. Semon" <mlsemon35@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: 3.14.0+/x86: lockdep and mutexes not getting along
-Message-ID: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
-User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 6 Apr 2014 01:38:05 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [RFC PATCH 0/5] irq: Kill irq_reserve_irq
+Date: Sat,  5 Apr 2014 22:39:21 -0700
+Message-Id: <1396762766-4942-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!  Starting early in this merge window for 3.15, lockdep has been
-giving me trouble.  Normally, a splat will happen, lockdep will shut
-itself off, and my i686 Pentium 4 PC will continue.  Now, after the
-splat, it will allow one key of input at either a VGA console or over
-serial.  After that, only the magic SysRq keys and KDB still work.
-File activity stops, and many processes are stuck in the D state.
+Hi,
 
-Bisect brought me here:
+During reviewing ioapic hotplug patchset, Thomas pointed out that
+should not extend irq_reserve_irq for that purpose as that is not
+actually reserve.
 
-root@plbearer:/usr/src/kernel-git/linux# git bisect good
-6f008e72cd111a119b5d8de8c5438d892aae99eb is the first bad commit
-commit 6f008e72cd111a119b5d8de8c5438d892aae99eb
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Wed Mar 12 13:24:42 2014 +0100
+Neet to clean up old irq_reserve_irq before introduce reserve/alloc_reserved
+method for ioapic hotplug.
 
-    locking/mutex: Fix debug checks
+So here patchset that kill irq_reserve_irq that actually set allocated_irqs.
 
-    OK, so commit:
+First remove irq_reserve_irqs for x86, and remove irq_reserve_irq
+for sh.
+Then in set_irq_chip use irq_alloc_desc instead of irq_reserve_irq.
+At last will mark bits in allocated_irqs early for init irqs in !SPARSE_IRQ
 
-      1d8fe7dc8078 ("locking/mutexes: Unlock the mutex without the wait_lock")
+Thanks
 
-    generates this boot warning when CONFIG_DEBUG_MUTEXES=y:
+Yinghai
 
-      WARNING: CPU: 0 PID: 139 at /usr/src/linux-2.6/kernel/locking/mutex-debug.c:82 debug_mutex_unlock+0x155/0x180() DEBUG_LOCKS_WARN_ON(lock->owner != current)
+Yinghai Lu (5):
+  x86, irq: Remove not needed irq_reserve_irqs calling
+  sh: Remove irq_reserve_irq calling
+  irq: Use irq_alloc_desc_at instead of irq_reserve_irq
+  s390: Mark bits in allocated_irqs in general code
+  genirq: Kill irq_reserve_irq/irq_reserve_irqs
 
-    And that makes sense, because as soon as we release the lock a
-    new owner can come in...
+ arch/s390/kernel/irq.c         |  6 +++++-
+ arch/x86/kernel/apic/io_apic.c |  3 ---
+ drivers/sh/intc/core.c         |  5 +----
+ include/linux/irq.h            |  7 +------
+ kernel/irq/chip.c              | 14 +++++++-------
+ kernel/irq/irqdesc.c           | 35 ++++++++++-------------------------
+ 6 files changed, 24 insertions(+), 46 deletions(-)
 
-    One would think that !__mutex_slowpath_needs_to_unlock()
-    implementations suffer the same, but for DEBUG we fall back to
-    mutex-null.h which has an unconditional 1 for that.
-
-    The mutex debug code requires the mutex to be unlocked after
-    doing the debug checks, otherwise it can find inconsistent
-    state.
-
-    Reported-by: Ingo Molnar <mingo@kernel.org>
-    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-    Cc: jason.low2@hp.com
-    Link: http://lkml.kernel.org/r/20140312122442.GB27965@twins.programming.kicks-ass.net
-    Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-:040000 040000 80e40c2009942a31f98127c4f9fa958f34b3947b f46ed4b70c4f30fc665fe8f810d3c13920cd765a M      kernel
-
-Indeed, my issues are solved (so far) simply by reverting this commit.
-
-Might someone test lockdep on x86 to see if this is a consistent
-issue that needs to be adjusted?  My lockdep splats are generated by
-running xfstests test generic/113 on XFS, but splats caused by other
-issues should still create the same symptoms.
-
-Otherwise, this 3.15 kernel has been rather kind to me so far.
-
-PC is an i686 Pentium 4 with 1280 MB RAM and old IDE hardware,
-running Slackware 14.1.
-
-Thanks!
-
-Michael
+-- 
+1.8.4.5
 
