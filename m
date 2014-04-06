@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaDFXkj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:40:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59454 "EHLO
+	id S1754837AbaDFXkf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:40:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59480 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754744AbaDFXjG (ORCPT
+	by vger.kernel.org with ESMTP id S1754747AbaDFXjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 19:39:06 -0400
+	Sun, 6 Apr 2014 19:39:07 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Paul Stewart" <pstew@chromium.org>,
-        "Aurelien Jacobs" <aurel@gnuage.org>,
-        "Trond Wuellner" <trond@chromium.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Emil Goode" <emilgoode@gmail.com>,
-        "Grant Grundler" <grundler@chromium.org>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Marcelo Ricardo Leitner" <mleitner@redhat.com>,
+        "Florian Westphal" <fw@strlen.de>
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.590224716@decadent.org.uk>
+Message-ID: <lsq.1396827348.608966197@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 12/18] asix: asix_rx_fixup surgery to reduce skb truesizes
+Subject: [PATCH 3.2 08/18] net: ip, ipv6: handle gso skbs in forwarding path
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -38,157 +33,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit a9e0aca4b37885b5599e52211f098bd7f565e749 upstream.
+commit fe6cc55f3a9a053482a76f5a6b2257cee51b4663 upstream.
 
-asix_rx_fixup() is complex, and does some unnecessary memory copies (at
-least on x86 where NET_IP_ALIGN is 0)
+[ use zero netdev_feature mask to avoid backport of
+  netif_skb_dev_features function ]
 
-Also, it tends to provide skbs with a big truesize (4096+256 with
-MTU=1500) to upper stack, so incoming trafic consume a lot of memory and
-I noticed early packet drops because we hit socket rcvbuf too fast.
+Marcelo Ricardo Leitner reported problems when the forwarding link path
+has a lower mtu than the incoming one if the inbound interface supports GRO.
 
-Switch to a different strategy, using copybreak so that we provide nice
-skbs to upper stack (including the NET_SKB_PAD to avoid future head
-reallocations in some paths)
+Given:
+Host <mtu1500> R1 <mtu1200> R2
 
-With this patch, I no longer see packets drops or tcp collapses on
-various tcp workload with a AX88772 adapter.
+Host sends tcp stream which is routed via R1 and R2.  R1 performs GRO.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Aurelien Jacobs <aurel@gnuage.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Trond Wuellner <trond@chromium.org>
-Cc: Grant Grundler <grundler@chromium.org>
-Cc: Paul Stewart <pstew@chromium.org>
-Reviewed-by: Grant Grundler <grundler@chromium.org>
-Reviewed-by: Grant Grundler <grundler@chromium.org>
+In this case, the kernel will fail to send ICMP fragmentation needed
+messages (or pkt too big for ipv6), as GSO packets currently bypass dstmtu
+checks in forward path. Instead, Linux tries to send out packets exceeding
+the mtu.
+
+When locking route MTU on Host (i.e., no ipv4 DF bit set), R1 does
+not fragment the packets when forwarding, and again tries to send out
+packets exceeding R1-R2 link mtu.
+
+This alters the forwarding dstmtu checks to take the individual gso
+segment lengths into account.
+
+For ipv6, we send out pkt too big error for gso if the individual
+segments are too big.
+
+For ipv4, we either send icmp fragmentation needed, or, if the DF bit
+is not set, perform software segmentation and let the output path
+create fragments when the packet is leaving the machine.
+It is not 100% correct as the error message will contain the headers of
+the GRO skb instead of the original/segmented one, but it seems to
+work fine in my (limited) tests.
+
+Eric Dumazet suggested to simply shrink mss via ->gso_size to avoid
+sofware segmentation.
+
+However it turns out that skb_segment() assumes skb nr_frags is related
+to mss size so we would BUG there.  I don't want to mess with it considering
+Herbert and Eric disagree on what the correct behavior should be.
+
+Hannes Frederic Sowa notes that when we would shrink gso_size
+skb_segment would then also need to deal with the case where
+SKB_MAX_FRAGS would be exceeded.
+
+This uses sofware segmentation in the forward path when we hit ipv4
+non-DF packets and the outgoing link mtu is too small.  Its not perfect,
+but given the lack of bug reports wrt. GRO fwd being broken this is a
+rare case anyway.  Also its not like this could not be improved later
+once the dust settles.
+
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ Emil: Backported to 3.2: fixed small conflict ]
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/asix.c |   88 +++++++++++-------------------------------------
- 1 file changed, 20 insertions(+), 68 deletions(-)
+ include/linux/skbuff.h | 17 +++++++++++++
+ net/ipv4/ip_forward.c  | 68 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ net/ipv6/ip6_output.c  | 13 +++++++++-
+ 3 files changed, 95 insertions(+), 3 deletions(-)
 
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -306,88 +306,40 @@ asix_write_cmd_async(struct usbnet *dev,
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2557,5 +2557,22 @@ static inline bool skb_is_recycleable(co
  
- static int asix_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	return true;
+ }
++
++/**
++ * skb_gso_network_seglen - Return length of individual segments of a gso packet
++ *
++ * @skb: GSO skb
++ *
++ * skb_gso_network_seglen is used to determine the real size of the
++ * individual segments, including Layer3 (IP, IPv6) and L4 headers (TCP/UDP).
++ *
++ * The MAC/L2 header is not accounted for.
++ */
++static inline unsigned int skb_gso_network_seglen(const struct sk_buff *skb)
++{
++	unsigned int hdr_len = skb_transport_header(skb) -
++			       skb_network_header(skb);
++	return hdr_len + skb_gso_transport_seglen(skb);
++}
+ #endif	/* __KERNEL__ */
+ #endif	/* _LINUX_SKBUFF_H */
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -39,6 +39,68 @@
+ #include <net/route.h>
+ #include <net/xfrm.h>
+ 
++static bool ip_may_fragment(const struct sk_buff *skb)
++{
++	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
++	       !skb->local_df;
++}
++
++static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
++{
++	if (skb->len <= mtu || skb->local_df)
++		return false;
++
++	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
++		return false;
++
++	return true;
++}
++
++static bool ip_gso_exceeds_dst_mtu(const struct sk_buff *skb)
++{
++	unsigned int mtu;
++
++	if (skb->local_df || !skb_is_gso(skb))
++		return false;
++
++	mtu = dst_mtu(skb_dst(skb));
++
++	/* if seglen > mtu, do software segmentation for IP fragmentation on
++	 * output.  DF bit cannot be set since ip_forward would have sent
++	 * icmp error.
++	 */
++	return skb_gso_network_seglen(skb) > mtu;
++}
++
++/* called if GSO skb needs to be fragmented on forward */
++static int ip_forward_finish_gso(struct sk_buff *skb)
++{
++	struct sk_buff *segs;
++	int ret = 0;
++
++	segs = skb_gso_segment(skb, 0);
++	if (IS_ERR(segs)) {
++		kfree_skb(skb);
++		return -ENOMEM;
++	}
++
++	consume_skb(skb);
++
++	do {
++		struct sk_buff *nskb = segs->next;
++		int err;
++
++		segs->next = NULL;
++		err = dst_output(segs);
++
++		if (err && ret == 0)
++			ret = err;
++		segs = nskb;
++	} while (segs);
++
++	return ret;
++}
++
+ static int ip_forward_finish(struct sk_buff *skb)
  {
--	u8  *head;
--	u32  header;
--	char *packet;
--	struct sk_buff *ax_skb;
--	u16 size;
--
--	head = (u8 *) skb->data;
--	memcpy(&header, head, sizeof(header));
--	le32_to_cpus(&header);
--	packet = head + sizeof(header);
-+	int offset = 0;
+ 	struct ip_options * opt	= &(IPCB(skb)->opt);
+@@ -48,6 +110,9 @@ static int ip_forward_finish(struct sk_b
+ 	if (unlikely(opt->optlen))
+ 		ip_forward_options(skb);
  
--	skb_pull(skb, 4);
-+	while (offset + sizeof(u32) < skb->len) {
-+		struct sk_buff *ax_skb;
-+		u16 size;
-+		u32 header = get_unaligned_le32(skb->data + offset);
++	if (ip_gso_exceeds_dst_mtu(skb))
++		return ip_forward_finish_gso(skb);
++
+ 	return dst_output(skb);
+ }
  
--	while (skb->len > 0) {
--		if ((header & 0x07ff) != ((~header >> 16) & 0x07ff))
--			netdev_err(dev->net, "asix_rx_fixup() Bad Header Length\n");
-+		offset += sizeof(u32);
+@@ -87,8 +152,7 @@ int ip_forward(struct sk_buff *skb)
+ 	if (opt->is_strictroute && opt->nexthop != rt->rt_gateway)
+ 		goto sr_failed;
  
- 		/* get the packet length */
--		size = (u16) (header & 0x000007ff);
--
--		if ((skb->len) - ((size + 1) & 0xfffe) == 0) {
--			u8 alignment = (unsigned long)skb->data & 0x3;
--			if (alignment != 0x2) {
--				/*
--				 * not 16bit aligned so use the room provided by
--				 * the 32 bit header to align the data
--				 *
--				 * note we want 16bit alignment as MAC header is
--				 * 14bytes thus ip header will be aligned on
--				 * 32bit boundary so accessing ipheader elements
--				 * using a cast to struct ip header wont cause
--				 * an unaligned accesses.
--				 */
--				u8 realignment = (alignment + 2) & 0x3;
--				memmove(skb->data - realignment,
--					skb->data,
--					size);
--				skb->data -= realignment;
--				skb_set_tail_pointer(skb, size);
--			}
--			return 2;
-+		size = (u16) (header & 0x7ff);
-+		if (size != ((~header >> 16) & 0x07ff)) {
-+			netdev_err(dev->net, "asix_rx_fixup() Bad Header Length\n");
-+			return 0;
- 		}
+-	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
+-		     (ip_hdr(skb)->frag_off & htons(IP_DF))) && !skb->local_df) {
++	if (!ip_may_fragment(skb) && ip_exceeds_mtu(skb, dst_mtu(&rt->dst))) {
+ 		IP_INC_STATS(dev_net(rt->dst.dev), IPSTATS_MIB_FRAGFAILS);
+ 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED,
+ 			  htonl(dst_mtu(&rt->dst)));
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -381,6 +381,17 @@ static inline int ip6_forward_finish(str
+ 	return dst_output(skb);
+ }
  
--		if (size > dev->net->mtu + ETH_HLEN + VLAN_HLEN) {
-+		if ((size > dev->net->mtu + ETH_HLEN + VLAN_HLEN) ||
-+		    (size + offset > skb->len)) {
- 			netdev_err(dev->net, "asix_rx_fixup() Bad RX Length %d\n",
- 				   size);
- 			return 0;
- 		}
--		ax_skb = skb_clone(skb, GFP_ATOMIC);
--		if (ax_skb) {
--			u8 alignment = (unsigned long)packet & 0x3;
--			ax_skb->len = size;
--
--			if (alignment != 0x2) {
--				/*
--				 * not 16bit aligned use the room provided by
--				 * the 32 bit header to align the data
--				 */
--				u8 realignment = (alignment + 2) & 0x3;
--				memmove(packet - realignment, packet, size);
--				packet -= realignment;
--			}
--			ax_skb->data = packet;
--			skb_set_tail_pointer(ax_skb, size);
--			usbnet_skb_return(dev, ax_skb);
--		} else {
-+		ax_skb = netdev_alloc_skb_ip_align(dev->net, size);
-+		if (!ax_skb)
- 			return 0;
--		}
--
--		skb_pull(skb, (size + 1) & 0xfffe);
++static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
++{
++	if (skb->len <= mtu || skb->local_df)
++		return false;
++
++	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
++		return false;
++
++	return true;
++}
++
+ int ip6_forward(struct sk_buff *skb)
+ {
+ 	struct dst_entry *dst = skb_dst(skb);
+@@ -504,7 +515,7 @@ int ip6_forward(struct sk_buff *skb)
+ 	if (mtu < IPV6_MIN_MTU)
+ 		mtu = IPV6_MIN_MTU;
  
--		if (skb->len < sizeof(header))
--			break;
-+		skb_put(ax_skb, size);
-+		memcpy(ax_skb->data, skb->data + offset, size);
-+		usbnet_skb_return(dev, ax_skb);
- 
--		head = (u8 *) skb->data;
--		memcpy(&header, head, sizeof(header));
--		le32_to_cpus(&header);
--		packet = head + sizeof(header);
--		skb_pull(skb, 4);
-+		offset += (size + 1) & 0xfffe;
- 	}
- 
--	if (skb->len < 0) {
-+	if (skb->len != offset) {
- 		netdev_err(dev->net, "asix_rx_fixup() Bad SKB Length %d\n",
- 			   skb->len);
- 		return 0;
-@@ -1538,7 +1490,7 @@ static const struct driver_info ax88772_
- 	.status = asix_status,
- 	.link_reset = ax88772_link_reset,
- 	.reset = ax88772_reset,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR | FLAG_MULTI_PACKET,
- 	.rx_fixup = asix_rx_fixup,
- 	.tx_fixup = asix_tx_fixup,
- };
+-	if (skb->len > mtu && !skb_is_gso(skb)) {
++	if (ip6_pkt_too_big(skb, mtu)) {
+ 		/* Again, force OUTPUT device used as source address */
+ 		skb->dev = dst->dev;
+ 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
 
