@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaDFFjg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 01:39:36 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19254 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597AbaDFFjF (ORCPT
+	id S1753352AbaDFG1I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 02:27:08 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46843 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaDFG1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 01:39:05 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com
-Subject: [RFC PATCH 4/5] s390: Mark bits in allocated_irqs in general code
-Date: Sat,  5 Apr 2014 22:39:25 -0700
-Message-Id: <1396762766-4942-5-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1396762766-4942-1-git-send-email-yinghai@kernel.org>
-References: <1396762766-4942-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Sun, 6 Apr 2014 02:27:06 -0400
+Message-ID: <5340F3B6.2050105@gmail.com>
+Date: Sun, 06 Apr 2014 11:57:02 +0530
+From: Balakumaran Kannan <kumaran.4353@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: netdev@vger.kernel.org, davem@davemloft.net, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hannes@stressinduktion.org
+Subject: Re: [PATCH net IPv6]: Fix maximum IPv6 address limit violation
+References: <533FEE9B.5090806@gmail.com>
+In-Reply-To: <533FEE9B.5090806@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Second irq_reserve_irqs calling is from arch s390, and
-s390 does not use SPARSE_IRQ yet.
+Hi Hannes,
 
-We could set bits for legacy bits early in !SPARSE_IRQ version
-early_irq_init() directly instead of calling irq_reserve_irqs later.
+>> Kernel doesn't check with max IPv6 address limit before adding IPv6 temporary
+>> address.
+>>
+>> Security fix CVE-2013-0343 removes max_addresses check from ipv6_create_tempaddr
+>> function as this is handled before in addrconf_prefix_rcv function. But
+>> addrconf_prefix_rcv does max_addresses check only before adding MAC based RA
+>> address and if limit is already reached, it stops processing the prefix.
+>>
+>> When IPv6 privacy extension is enabled, two addresses will be created for a
+>> new prefix received through RA. So if a machine has (max_addresses - 1) number
+>> of  IPv6 addresses, after receiving an RA with new prefix the machine will have
+>> (max_addresses + 1) number of IPv6 addresses.
+>>
+>> So it is better to use a new prefix only if two IPv6 address slots available
+>> in case IPv6 privacy extension is enabled.
+>
+> When I removed the check I did not think about any reason why the
+> max_addresses must count exact. It is merely there to prevent DoS attacks.
+> Is there a reason to revisit this? We don't care about locally added
+> addresses and I decided to do so for temporary addresses, too, because
+> only some small number will ever be generated for an autoconfigured one.
+>
+> Actually when rolling over privacy addresses we generate new ones before
+> the old ones expire, so there could be more of those. This depends on
+> the setting of the timers.
+>
+> IMHO we don't need this additional check and complexity or this there
+> a reason I don't currently see?
+>
+>Thanks for the submission,
+>
+>  Hannes
 
-Adding weak version arch_proble_early_allocate_nr_irqs() for
-!SPARESE_IRQ, and let s390 to have specific version to
-pass correct irq number that need to be marked in allocated_irqs.
+Thanks for the explanation. I agree with your argument that the reason behind
+max_addresses is to avoid DOS attack. But my humble opinion is when we impose
+some constrains, we must adhere to that. I don't think adding tolerance to an
+integer limit is a good policy.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
----
- arch/s390/kernel/irq.c |  6 +++++-
- include/linux/irq.h    |  1 +
- kernel/irq/irqdesc.c   | 10 ++++++++++
- 3 files changed, 16 insertions(+), 1 deletion(-)
+And before the security fix, there was an additional check while creating
+temporary address. I thought this additional check is a better way and try to
+make the code behave similar.
 
-diff --git a/arch/s390/kernel/irq.c b/arch/s390/kernel/irq.c
-index d42b14c..2838928 100644
---- a/arch/s390/kernel/irq.c
-+++ b/arch/s390/kernel/irq.c
-@@ -90,9 +90,13 @@ static const struct irq_class irqclass_sub_desc[NR_ARCH_IRQS] = {
- 	[CPU_RST]    = {.name = "RST", .desc = "[CPU] CPU Restart"},
- };
- 
-+int arch_probe_early_allocate_nr_irqs(void)
-+{
-+	return THIN_INTERRUPT;
-+}
-+
- void __init init_IRQ(void)
- {
--	irq_reserve_irqs(0, THIN_INTERRUPT);
- 	init_cio_interrupts();
- 	init_airq_interrupts();
- 	init_ext_interrupts();
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index d278838..7588ee9 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -623,6 +623,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 
- void irq_free_descs(unsigned int irq, unsigned int cnt);
- int irq_reserve_irqs(unsigned int from, unsigned int cnt);
-+int arch_probe_early_allocate_nr_irqs(void);
- 
- static inline void irq_free_desc(unsigned int irq)
- {
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index a7174617..dfb971c 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -248,10 +248,16 @@ struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
- 	}
- };
- 
-+int __weak arch_probe_early_allocate_nr_irqs(void)
-+{
-+	return 0;
-+}
-+
- int __init early_irq_init(void)
- {
- 	int count, i, node = first_online_node;
- 	struct irq_desc *desc;
-+	int nr = arch_probe_early_allocate_nr_irqs();
- 
- 	init_irq_default_affinity();
- 
-@@ -267,6 +273,10 @@ int __init early_irq_init(void)
- 		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
- 		desc_set_defaults(i, &desc[i], node, NULL);
- 	}
-+
-+	for (i = 0; i < nr; i++)
-+		set_bit(i, allocated_irqs);
-+
- 	return arch_early_irq_init();
- }
- 
--- 
-1.8.4.5
+But anyway the impact of this is very minimal or no impact at all. Thats why I
+kept the severity to less. I see this patch more policy oriented than technical. So
+either accepting or rejecting this is depending on 'how we code' than 'what we
+code'.
 
+Once again thanks for the detailed explanation.
+
+Regards,
+K.Balakumaran
