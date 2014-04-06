@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaDFUYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 16:24:43 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:65496 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543AbaDFUYj (ORCPT
+	id S1754390AbaDFUb1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 16:31:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33225 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445AbaDFUbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 16:24:39 -0400
-Date: Sun, 6 Apr 2014 13:24:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org, Daniel Ribeiro <drwyrm@gmail.com>,
-        Ilya Petrov <ilya.muromec@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: Re: [PATCH] input: pcap2: avoid calling mutex_lock() in irq handler
-Message-ID: <20140406202436.GA16739@core.coreip.homeip.net>
-References: <1396731290-7062-1-git-send-email-khoroshilov@ispras.ru>
+	Sun, 6 Apr 2014 16:31:25 -0400
+Message-ID: <5341B999.3050206@infradead.org>
+Date: Sun, 06 Apr 2014 13:31:21 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396731290-7062-1-git-send-email-khoroshilov@ispras.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kconfig circular dependency question
+References: <5341AFC7.1070001@lwfinger.net>
+In-Reply-To: <5341AFC7.1070001@lwfinger.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 06, 2014 at 12:54:50AM +0400, Alexey Khoroshilov wrote:
-> pcap_keys_handler() calls ezx_pcap_read() that calls mutex_lock().
-> pcap_keys_handler() is registered as nonthreaded irq handler,
-> that means sleeping function is called in irq handler.
+On 04/06/2014 12:49 PM, Larry Finger wrote:
+> A kernel build is reporting the following:
 > 
-> The patch makes a switch to threaded irq handling.
-> Compile tested only.
+> net/rfkill/Kconfig:4:error: recursive dependency detected!
+> net/rfkill/Kconfig:4:   symbol RFKILL is selected by R8723AU
+> drivers/staging/rtl8723au/Kconfig:1:    symbol R8723AU depends on USB
+> drivers/usb/Kconfig:41: symbol USB is selected by MOUSE_APPLETOUCH
+> drivers/input/mouse/Kconfig:162:        symbol MOUSE_APPLETOUCH depends on INPUT
+> drivers/input/Kconfig:8:        symbol INPUT is selected by ACPI_CMPC
+> drivers/platform/x86/Kconfig:635:       symbol ACPI_CMPC depends on RFKILL
 > 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/input/misc/pcap_keys.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/input/misc/pcap_keys.c b/drivers/input/misc/pcap_keys.c
-> index cd230365166e..2a10f3a30969 100644
-> --- a/drivers/input/misc/pcap_keys.c
-> +++ b/drivers/input/misc/pcap_keys.c
-> @@ -79,13 +79,15 @@ static int pcap_keys_probe(struct platform_device *pdev)
->  	if (err)
->  		goto fail_allocate;
->  
-> -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
-> -			pcap_keys_handler, 0, "Power key", pcap_keys);
-> +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
-> +				   NULL, pcap_keys_handler, 0,
-> +				   "Power key", pcap_keys);
->  	if (err)
->  		goto fail_register;
->  
-> -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
-> -			pcap_keys_handler, 0, "Headphone button", pcap_keys);
-> +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
-> +				   NULL, pcap_keys_handler, 0,
-> +				   "Headphone button", pcap_keys);
+> What is the recommended way to avoid this circularity? Of course, R8723AU could select USB rather than depending on it, but that does not seem quite right.
 
-So I guess we do need threaded IRQ here, but I do not see the pcap's
-irqchip specifying IRQCHIP_ONESHOT_SAFE so I do not think
-request_threaded_irq() without IRQF_ONESHOT would succeed.
+I don't know if it will fix the problem, but Linus has spoken (written)
+against selecting subsystems, like INPUT or USB.
 
-Can someone test the change to be sure?
+Does changing ACPI_CMPC to depend on INPUT instead of select INPUT
+help?
+and/or changing MOUSE_APPLETOUCH to depend on USB instead of select it?
 
-Thanks!
 
 -- 
-Dmitry
+~Randy
