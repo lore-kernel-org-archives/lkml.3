@@ -1,75 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaDFRga (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 13:36:30 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:44363 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbaDFRg1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 13:36:27 -0400
-From: Ming Lei <tom.leiming@gmail.com>
-To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Ming Lei <tom.leiming@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH] arm, kvm: fix double lock on cpu_add_remove_lock
-Date: Mon,  7 Apr 2014 01:36:08 +0800
-Message-Id: <1396805768-18669-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754558AbaDFRjs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 13:39:48 -0400
+Received: from smtp1.ngi.it ([88.149.128.112]:34712 "EHLO smtp1.ngi.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754407AbaDFRjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 13:39:44 -0400
+Message-ID: <53419174.7030004@katamail.com>
+Date: Sun, 06 Apr 2014 19:40:04 +0200
+From: Michele Ballabio <barra_cuda@katamail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+        linux-kernel@vger.kernel.org
+CC: fweisbec@gmail.com, mingo@kernel.org, peterz@infradead.org
+Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
+References: <5341707F.5000406@katamail.com> <5341784E.1020008@gmx.de>
+In-Reply-To: <5341784E.1020008@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch of "arm, kvm: Fix CPU hotplug callback registration"
-in -next tree holds the lock before calling the two functions:
+On 06/04/2014 17:52, Toralf Förster wrote:
+>> > Reverting either one of them solves the problem reported with kvm,
+>> > but revert is probably not the correct answer.
+>> > 
+>> > I wonder if the solution is as simple as this:
+>> > 
+>> > --->8---
+>> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> > index 0af5250..f3b985d 100644
+>> > --- a/arch/x86/Kconfig
+>> > +++ b/arch/x86/Kconfig
+>> > @@ -126,6 +126,7 @@ config X86
+>> >  	select RTC_LIB
+>> >  	select HAVE_DEBUG_STACKOVERFLOW
+>> >  	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+>> > +	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_32
+>> >  	select HAVE_CC_STACKPROTECTOR
+>> > 
+>> >  config INSTRUCTION_DECODER
+>> > ---8<---
+>> > 
+> applied both to 3.13.9 and 3.14.0 - issue does not happened any longer
+> 
+> Thanks !
 
-	kvm_vgic_hyp_init()
-	kvm_timer_hyp_init()
+You're welcome, but I'm not sure it's bug-free, I've only glanced at the
+code. Let's hear what other people think.
 
-and both the two functions are calling register_cpu_notifier()
-to register cpu notifier, so cause double lock on cpu_add_remove_lock.
+> P.S.. 'By rebasing the "sched/core" branch on "master" before the 
+> merge and going on with the bisection'
+> 
+> Probably off-topic but I'm really interested what did you do in 
+> detail ? I'm asking b/c using git for my own and to bisect a remote 
+> tree, but I'm not too familiar in bisecting bugs of this kind.
 
-Considered that both two functions are only called inside
-kvm_arch_init() with holding cpu_add_remove_lock, so simply use
-__register_cpu_notifier() to fix the problem.
+Let's say bisection blames the merge commit 'M' as the first bad
+commit:
 
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
----
- virt/kvm/arm/arch_timer.c |    2 +-
- virt/kvm/arm/vgic.c       |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+R---S---T---P---X---Y---Z---M
+             \             /
+              A---B---C---'
 
-diff --git a/virt/kvm/arm/arch_timer.c b/virt/kvm/arm/arch_timer.c
-index 5081e80..22fa819 100644
---- a/virt/kvm/arm/arch_timer.c
-+++ b/virt/kvm/arm/arch_timer.c
-@@ -277,7 +277,7 @@ int kvm_timer_hyp_init(void)
- 
- 	host_vtimer_irq = ppi;
- 
--	err = register_cpu_notifier(&kvm_timer_cpu_nb);
-+	err = __register_cpu_notifier(&kvm_timer_cpu_nb);
- 	if (err) {
- 		kvm_err("Cannot register timer CPU notifier\n");
- 		goto out_free;
-diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-index 8ca405c..47b2983 100644
---- a/virt/kvm/arm/vgic.c
-+++ b/virt/kvm/arm/vgic.c
-@@ -1496,7 +1496,7 @@ int kvm_vgic_hyp_init(void)
- 		goto out;
- 	}
- 
--	ret = register_cpu_notifier(&vgic_cpu_nb);
-+	ret = __register_cpu_notifier(&vgic_cpu_nb);
- 	if (ret) {
- 		kvm_err("Cannot register vgic CPU notifier\n");
- 		goto out_free_irq;
--- 
-1.7.9.5
+First, let's search for the merge base P:
+  git merge-base Z C
 
+Now: we know there are at least 2 patches (one on both sides of the
+merge) that are responsible for the regression.
+One is either X, Y or Z; the other is either A, B or C.
+
+To find the first one (between X, Y and Z), we can rebase Z on top of
+C, either with
+
+  git rebase C Z
+
+or with
+  git format-patch Z ^C
+  git am 00*
+(It's almost the same thing, sometimes you might want to do this to
+edit out some patches without using git bisect --interactive).
+
+The result should be:
+
+ P---X---Y---Z---M
+  \             /
+   A---B---C---'
+            \
+             X'---Y'---Z'
+
+At this point
+  git diff M Y'
+should show nothing.
+
+Now we can further our bisection:
+  git bisect start Z' C
+... should give us the first patch to blame: let's say it's Y'.
+
+Now we search for the other one: the sequence I used is
+
+# We know the other guilty commit is A, B or C
+  git bisect start C P
+# We will be brought on commit B.
+# We know the regression triggers only with Y, so we merge with it
+  git merge --no-commit Y
+# The result will be something like this:
+ P---X---Y---Z---M
+  \       \     /
+   A---B---N   /
+        \     /
+         C---'
+          \
+           X'---Y'---Z'
+# Where N is a merge, but it's not a commit.
+# 1st compile, install, reboot, test
+# We are about to search another commit to test, so let's remove the
+# temporary changes of the previous test
+  git reset --hard
+# What is the result of the 1st test?
+  git bisect good|bad
+# Here is another iteration
+  git merge --no-commit Y
+# 2nd compile, install, reboot, test
+
+... and so on. Of course, there are some variations: if Y does not
+depend on X, instead of a merge we could do:
+  git cherry-pick --no-commit Y
+
+In this case I used a merge because it was easier, and actually I
+didn't merge _exactly_ with the blamed commit, but with the last
+commit before the merge M, i.e. Z (I assumed it would be better
+this way).
+
+> Furthermore probably worth an own section in one of the TODO's ?
+
+I think this (a regression blamed on a merge) is quite unusual,
+and as such it could be useful on the man page of git-bisect,
+but it should be written better and shorter than what I did
+here.
