@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaDFUQs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 16:16:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10538 "EHLO mx1.redhat.com"
+	id S1754609AbaDFUQn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 16:16:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59443 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754452AbaDFUQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 16:16:29 -0400
-Date: Sun, 6 Apr 2014 22:16:21 +0200
+	id S1754497AbaDFUQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 16:16:30 -0400
+Date: Sun, 6 Apr 2014 22:16:25 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,8 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/6] uprobes/x86: Emulate nop's using ops->emulate()
-Message-ID: <20140406201621.GA497@redhat.com>
+Subject: [RFC PATCH 3/6] uprobes/x86: Introduce sizeof_long(), cleanup
+	adjust_ret_addr() and arch_uretprobe_hijack_return_addr()
+Message-ID: <20140406201625.GA504@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,58 +28,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally we can kill the ugly (and very limited) code in __skip_sstep().
-Just change ttt_setup_xol_ops() to treat "nop" as jmp to the next insn.
+1. Add the trivial sizeof_long() helper and change other callers of
+   is_ia32_task() to use it.
 
-Thanks to lib/insn.c, it is clever enough. OPCODE1() == 0x90 includes
-"(rep;)+ nop;" at least, and (afaics) much more.
+   TODO: is_ia32_task() is not what we actually want, TS_COMPAT does
+   not necessarily mean 32bit. Fortunately syscall-like insns can't be
+   probed so it actually works, but it would be better to rename and
+   use is_ia32_frame().
+
+2. As Jim pointed out "ncopied" in arch_uretprobe_hijack_return_addr()
+   and adjust_ret_addr() should be named "nleft". And in fact only the
+   last copy_to_user() in arch_uretprobe_hijack_return_addr() actually
+   needs to inspect the non-zero error code.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/uprobes.c |   20 +-------------------
- 1 files changed, 1 insertions(+), 19 deletions(-)
+ arch/x86/kernel/uprobes.c |   37 +++++++++++++++----------------------
+ 1 files changed, 15 insertions(+), 22 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 32ab147..dd5f51a 100644
+index dd5f51a..3bcc121 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -482,6 +482,7 @@ static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 	switch (OPCODE1(insn)) {
- 	case 0xeb:	/* jmp 8 */
- 	case 0xe9:	/* jmp 32 */
-+	case 0x90:	/* prefix* + nop; same as jmp with .disp = 0 */
- 		break;
- 	default:
- 		return -ENOSYS;
-@@ -717,29 +718,10 @@ void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		regs->flags &= ~X86_EFLAGS_TF;
- }
+@@ -408,6 +408,11 @@ struct uprobe_xol_ops {
+ 	int	(*post_xol)(struct arch_uprobe *, struct pt_regs *);
+ };
  
--/*
-- * Skip these instructions as per the currently known x86 ISA.
-- * rep=0x66*; nop=0x90
-- */
- static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
++static inline int sizeof_long(void)
++{
++	return is_ia32_task() ? 4 : 8;
++}
++
+ static int default_pre_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
  {
--	int i;
+ 	pre_xol_rip_insn(auprobe, regs, &current->utask->autask);
+@@ -419,21 +424,14 @@ static int default_pre_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+  */
+ static int adjust_ret_addr(unsigned long sp, long correction)
+ {
+-	int rasize, ncopied;
+-	long ra = 0;
 -
- 	if (auprobe->ops->emulate)
- 		return auprobe->ops->emulate(auprobe, regs);
--
--	/* TODO: move this code into ->emulate() hook */
--	for (i = 0; i < MAX_UINSN_BYTES; i++) {
--		if (auprobe->insn[i] == 0x66)
--			continue;
--
--		if (auprobe->insn[i] == 0x90) {
--			regs->ip += i + 1;
--			return true;
--		}
--
--		break;
--	}
- 	return false;
- }
+-	if (is_ia32_task())
+-		rasize = 4;
+-	else
+-		rasize = 8;
++	int rasize = sizeof_long();
++	long ra;
+ 
+-	ncopied = copy_from_user(&ra, (void __user *)sp, rasize);
+-	if (unlikely(ncopied))
++	if (copy_from_user(&ra, (void __user *)sp, rasize))
+ 		return -EFAULT;
+ 
+ 	ra += correction;
+-	ncopied = copy_to_user((void __user *)sp, &ra, rasize);
+-	if (unlikely(ncopied))
++	if (copy_to_user((void __user *)sp, &ra, rasize))
+ 		return -EFAULT;
+ 
+ 	return 0;
+@@ -450,10 +448,7 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+ 
+ 	if (auprobe->fixups & UPROBE_FIX_CALL) {
+ 		if (adjust_ret_addr(regs->sp, correction)) {
+-			if (is_ia32_task())
+-				regs->sp += 4;
+-			else
+-				regs->sp += 8;
++			regs->sp += sizeof_long();
+ 			return -ERESTART;
+ 		}
+ 	}
+@@ -738,23 +733,21 @@ if (ret) pr_crit("EMULATE: %lx -> %lx\n", ip, regs->ip);
+ unsigned long
+ arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs)
+ {
+-	int rasize, ncopied;
++	int rasize = sizeof_long(), nleft;
+ 	unsigned long orig_ret_vaddr = 0; /* clear high bits for 32-bit apps */
+ 
+-	rasize = is_ia32_task() ? 4 : 8;
+-	ncopied = copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize);
+-	if (unlikely(ncopied))
++	if (copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize))
+ 		return -1;
+ 
+ 	/* check whether address has been already hijacked */
+ 	if (orig_ret_vaddr == trampoline_vaddr)
+ 		return orig_ret_vaddr;
+ 
+-	ncopied = copy_to_user((void __user *)regs->sp, &trampoline_vaddr, rasize);
+-	if (likely(!ncopied))
++	nleft = copy_to_user((void __user *)regs->sp, &trampoline_vaddr, rasize);
++	if (likely(!nleft))
+ 		return orig_ret_vaddr;
+ 
+-	if (ncopied != rasize) {
++	if (nleft != rasize) {
+ 		pr_err("uprobe: return address clobbered: pid=%d, %%sp=%#lx, "
+ 			"%%ip=%#lx\n", current->pid, regs->sp, regs->ip);
  
 -- 
 1.5.5.1
