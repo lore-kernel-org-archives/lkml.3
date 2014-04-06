@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639AbaDFURc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 16:17:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16892 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568AbaDFUQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 16:16:37 -0400
-Date: Sun, 6 Apr 2014 22:16:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 6/6] uprobes/x86: Emulate rip-relative conditional
-	"near" jmp's
-Message-ID: <20140406201636.GA521@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140406201524.GA32694@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754358AbaDFUVV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 16:21:21 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:55492 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753076AbaDFUVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 16:21:19 -0400
+Message-ID: <1396815677.4886.16.camel@x220>
+Subject: Re: Kconfig circular dependency question
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linux-kernel@vger.kernel.org
+Date: Sun, 06 Apr 2014 22:21:17 +0200
+In-Reply-To: <1396815038.4886.11.camel@x220>
+References: <5341AFC7.1070001@lwfinger.net> <1396815038.4886.11.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Apr 2014 20:21:17.0601 (UTC) FILETIME=[C40B9110:01CF51D5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that 16bit conditional jmp is just
-0x0f + short_jump_opcode_incremented by 0x10.
+On Sun, 2014-04-06 at 22:10 +0200, Paul Bolle wrote:
+> On Sun, 2014-04-06 at 14:49 -0500, Larry Finger wrote:
+> > A kernel build is reporting the following:
+> > 
+> > net/rfkill/Kconfig:4:error: recursive dependency detected!
+> > net/rfkill/Kconfig:4:   symbol RFKILL is selected by R8723AU
+> > drivers/staging/rtl8723au/Kconfig:1:    symbol R8723AU depends on USB
+> > drivers/usb/Kconfig:41: symbol USB is selected by MOUSE_APPLETOUCH
+> > drivers/input/mouse/Kconfig:162:        symbol MOUSE_APPLETOUCH depends on INPUT
+> > drivers/input/Kconfig:8:        symbol INPUT is selected by ACPI_CMPC
+> > drivers/platform/x86/Kconfig:635:       symbol ACPI_CMPC depends on RFKILL
+> 
+> I must be having a slow day, but how should this be parsed to see the
+> recursive dependency?
 
-But I'll try to cleanup this patch...
+So it tells us ("depends on" vertical, "is selected by" horizontal):
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+                                  R8723AU -> RFKILL
+                                   |
+                                   v
+              MOUSE_APPLETOUCH -> USB
+                |
+                v
+ACPCI_CMPC -> INPUT
+  |
+  v
+RFKILL
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 797b8a4..8f92cbf 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -564,6 +564,19 @@ static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 	if (WARN_ON_ONCE(!insn_complete(insn)))
- 		return -ENOEXEC;
- 
-+#define CASE(op_y, op_n, cond)	\
-+		case 0x ## op_y: case 0x ## op_n:
-+
-+	if (insn->opcode.nbytes == 2 && opc1 == 0x0f) {
-+		opc1 = OPCODE2(insn) - 0x10;
-+
-+		switch (opc1) {
-+		X86_COND_OPCODES
-+		default:
-+			return -ENOSYS;
-+		}
-+	}
-+
- 	switch (opc1) {
- 	case 0xeb:	/* jmp 8 */
- 	case 0xe9:	/* jmp 32 */
-@@ -573,10 +586,7 @@ static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 	case 0xe8:	/* call relative */
- 		ttt_clear_displacement(auprobe, insn);
- 		/* fall through */
--	#define CASE(op_y, op_n, cond)	\
--			case 0x ## op_y: case 0x ## op_n:
- 	X86_COND_OPCODES
--	#undef CASE
- 		auprobe->ttt.opc1 = opc1;
- 		break;
- 
-@@ -584,6 +594,8 @@ static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 		return -ENOSYS;
- 	}
- 
-+#undef CASE
-+
- 	auprobe->ttt.ilen = insn->length;
- 	auprobe->ttt.disp = insn->moffset1.value;
- 	/* so far we assume that it fits into ->moffset1 */
--- 
-1.5.5.1
+doesn't it? And why is that a problem?
+
+
+Paul Bolle
 
