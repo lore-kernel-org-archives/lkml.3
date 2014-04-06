@@ -1,102 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaDFQJV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 12:09:21 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49490 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429AbaDFQJP (ORCPT
+	id S1754445AbaDFQNG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 12:13:06 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48921 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753480AbaDFQNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 12:09:15 -0400
-X-Originating-IP: 50.43.32.211
-Date: Sun, 6 Apr 2014 09:09:03 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jonas Hahnfeld <hahnjo@hahnjo.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ana Rey <anarey@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pablo Neira Ayuso <pablo@gnumonks.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Andreea-Cristina Bernat <bernat.ada@gmail.com>,
-        Andrea Merello <andrea.merello@gmail.com>,
-        Teodora Baluta <teobaluta@gmail.com>,
-        Dan LaManna <dan.lamanna@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8187se: Fix warning symbol should be static
-Message-ID: <20140406160903.GA8114@leaf>
-References: <1396799183-7412-1-git-send-email-hahnjo@hahnjo.de>
+	Sun, 6 Apr 2014 12:13:04 -0400
+X-Sasl-enc: Ap2ac1dbJZ5hVm/dHu064HqkIGiGKA9GLIyL7A8VN8e1 1396800782
+Date: Sun, 6 Apr 2014 09:15:31 -0700
+From: Greg KH <greg@kroah.com>
+To: Gmail <camille.bordignon@gmail.com>
+Cc: "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "rashika.kheria@gmail.com" <rashika.kheria@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 1/1] staging: sep: Fix coding style
+Message-ID: <20140406161531.GB1195@kroah.com>
+References: <1396799011.1468.12.camel@vash.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396799183-7412-1-git-send-email-hahnjo@hahnjo.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1396799011.1468.12.camel@vash.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 06, 2014 at 05:46:04PM +0200, Jonas Hahnfeld wrote:
-> This patch solves some sparse warnings about "symbol [...] was not
-> declared. Should it be static?" by including the correct header files.
-> 
-> Signed-off-by: Jonas Hahnfeld <hahnjo@hahnjo.de>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On Sun, Apr 06, 2014 at 05:43:31PM +0200, Gmail wrote:
 
-> Tested by compile only
+Your "From" line above doesn't match up with your "Signed-off-by:" line
+down below :(
+
+> This fixes coding style warning "Missing a blank line after
+> declarations" in files sep_dev.h and sep_crypto.c (linux-next).
 > 
->  drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c      | 1 +
->  drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_ccmp.c | 1 +
->  drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_wep.c  | 1 +
->  drivers/staging/rtl8187se/r8180_wx.c                       | 1 +
->  4 files changed, 4 insertions(+)
+> Sorry for the previous mail, tabs all got converted into spaces due to
+> gmail webclient ... (thanks Greg).
+
+This should go below the "---" line.
+
 > 
-> diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c
-> index 101f0c0..03462c3 100644
-> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c
-> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c
-> @@ -19,6 +19,7 @@
->  #include <linux/string.h>
->  #include <linux/errno.h>
->  
-> +#include "../r8180.h"
->  #include "ieee80211.h"
->  
->  MODULE_AUTHOR("Jouni Malinen");
-> diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_ccmp.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_ccmp.c
-> index 4fe2538..7eae3d9 100644
-> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_ccmp.c
-> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_ccmp.c
-> @@ -21,6 +21,7 @@
->  #include <linux/string.h>
->  #include <linux/wireless.h>
->  
-> +#include "../r8180.h"
->  #include "ieee80211.h"
->  
->  #include <linux/crypto.h>
-> diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_wep.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_wep.c
-> index f253672..288f86c 100644
-> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_wep.c
-> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt_wep.c
-> @@ -17,6 +17,7 @@
->  #include <linux/skbuff.h>
->  #include <linux/string.h>
->  
-> +#include "../r8180.h"
->  #include "ieee80211.h"
->  
->  #include <linux/crypto.h>
-> diff --git a/drivers/staging/rtl8187se/r8180_wx.c b/drivers/staging/rtl8187se/r8180_wx.c
-> index b552491..57bf01f 100644
-> --- a/drivers/staging/rtl8187se/r8180_wx.c
-> +++ b/drivers/staging/rtl8187se/r8180_wx.c
-> @@ -20,6 +20,7 @@
->  
->  #include "r8180.h"
->  #include "r8180_hw.h"
-> +#include "r8180_wx.h"
->  
->  #include <net/iw_handler.h>
->  #include "ieee80211/dot11d.h"
-> -- 
-> 1.9.1
-> 
+> Signed-off-by: Camille Bordignon <camille.bordignon@gmail.com>
+> ---
+
+Care to try it a third time to get it in a format I can apply it?
+
+thanks,
+
+greg k-h
