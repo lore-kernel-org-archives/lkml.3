@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaDFNRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 09:17:09 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:46538 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaDFNRH convert rfc822-to-8bit (ORCPT
+	id S1754022AbaDFNXP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 09:23:15 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:35731 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaDFNXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 09:17:07 -0400
+	Sun, 6 Apr 2014 09:23:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <1398516318.KXtUGEPAeQ@wuerfel>
-References: <1398516318.KXtUGEPAeQ@wuerfel>
-Date: Sun, 6 Apr 2014 15:17:05 +0200
-X-Google-Sender-Auth: 0Dj-1u39K_66E8B1H3slyVf9xlw
-Message-ID: <CAMuHMdU2izuWReTnuMxz=o7HYNuonYsvekAzd_RU7Qec7f0oug@mail.gmail.com>
-Subject: Re: [PATCH] staging: gs_fpgaboot: remove __TIMESTAMP__ macro
+In-Reply-To: <CAK9yfHwNmN+M8ncSGjUwnfXs1p-e7pCy5Y-K7uX6JV5JyWYhEg@mail.gmail.com>
+References: <20140318110947.GR25478@lee--X1>
+	<1395148286-32002-1-git-send-email-k.kozlowski@samsung.com>
+	<CAK9yfHwNmN+M8ncSGjUwnfXs1p-e7pCy5Y-K7uX6JV5JyWYhEg@mail.gmail.com>
+Date: Sun, 6 Apr 2014 15:23:09 +0200
+X-Google-Sender-Auth: oU-Vf2Lvp6Fe4m-tAGoqAIkAxuc
+Message-ID: <CAMuHMdX2yCCSUn=t9BZ_+bHMcV11O35b2PDj1hS=NNHmiiG0eA@mail.gmail.com>
+Subject: Re: [PATCH] mfd: sec-core: Fix uninitialized 'regmap_rtc' on S2MPA01
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Insop Song <insop.song@gainspeed.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 4:48 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> We specifically build the kernel with -Werror=date-time to detect
-> such macros, which gives us this error:
+On Wed, Mar 19, 2014 at 9:27 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> On 18 March 2014 18:41, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+>> Initialize the 'regmap_rtc' on S2MPA01 to some sane value. Sane at least
+>> for S5M87X chipsets, not S2MPS/S2MPA but it won't be used because
+>> rtc-s5m driver does not support S2MPA01.
+>>
+>> This fixes following error:
+>> drivers/mfd/sec-core.c:342:45: warning: 'regmap_rtc' may be used uninitialized in this function [-Wuninitialized]
+>>
+>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 >
-> gs_fpgaboot/gs_fpgaboot.c:376:44: error: macro "__TIMESTAMP__" might prevent reproducible builds [-Werror=date-time]
->   pr_info("built at %s UTC\n", __TIMESTAMP__);
+> From the point of suppressing this warning and considering how it is
+> done for S2MPS11,
+> Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-Worse, gcc 4.1.2 doesn't seem to understand __TIMESTAMP__:
+This is not just about suppressing a warning. The following may crash when
+passed a random pointer:
 
-drivers/staging/gs_fpgaboot/gs_fpgaboot.c: In function ‘gs_fpgaboot_init’:
-drivers/staging/gs_fpgaboot/gs_fpgaboot.c:376: error: ‘__TIMESTAMP__’
-undeclared (first use in this function)
-drivers/staging/gs_fpgaboot/gs_fpgaboot.c:376: error: (Each undeclared
-identifier is reported only once
-drivers/staging/gs_fpgaboot/gs_fpgaboot.c:376: error: for each
-function it appears in.)
+sec_pmic->regmap_rtc = devm_regmap_init_i2c(sec_pmic->rtc, regmap_rtc);
 
-> The obvious fix is to remove the printk output line.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-> diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
-> index 89bc84d..7506900 100644
-> --- a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
-> +++ b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
-> @@ -373,7 +373,6 @@ static int __init gs_fpgaboot_init(void)
->         r = -1;
->
->         pr_info("FPGA DOWNLOAD --->\n");
-> -       pr_info("built at %s UTC\n", __TIMESTAMP__);
->
->         pr_info("FPGA image file name: %s\n", file);
->
+and if regmap_rtc happens to be NULL, devm_regmap_init_i2c() will
+return -EINVAL.
 
 Gr{oetje,eeting}s,
 
