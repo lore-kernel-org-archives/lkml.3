@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994AbaDFXlG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:41:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59426 "EHLO
+	id S1754957AbaDFXk4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:40:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59444 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753726AbaDFXjG (ORCPT
+	by vger.kernel.org with ESMTP id S1754675AbaDFXjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Apr 2014 19:39:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "Benjamin Tissoires" <benjamin.tissoires@redhat.com>
+CC: akpm@linux-foundation.org, "Daniel Borkmann" <dborkman@redhat.com>,
+        "Pablo Neira Ayuso" <pablo@netfilter.org>
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.523409670@decadent.org.uk>
+Message-ID: <lsq.1396827348.697627961@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 01/18] Input: synaptics - add manual min/max quirk
+Subject: [PATCH 3.2 05/18] netfilter: nf_conntrack_dccp: fix
+ skb_header_pointer API usages
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,103 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 421e08c41fda1f0c2ff6af81a67b491389b653a5 upstream.
+commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
 
-The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
-However, these new Synaptics devices report bad axis ranges.
-Under Windows, it is not a problem because the Windows driver uses RMI4
-over SMBus to talk to the device. Under Linux, we are using the PS/2
-fallback interface and it occurs the reported ranges are wrong.
+Some occurences in the netfilter tree use skb_header_pointer() in
+the following way ...
 
-Of course, it would be too easy to have only one range for the whole
-series, each touchpad seems to be calibrated in a different way.
+  struct dccp_hdr _dh, *dh;
+  ...
+  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
 
-We can not use SMBus to get the actual range because I suspect the firmware
-will switch into the SMBus mode and stop talking through PS/2 (this is the
-case for hybrid HID over I2C / PS/2 Synaptics touchpads).
+... where dh itself is a pointer that is being passed as the copy
+buffer. Instead, we need to use &_dh as the forth argument so that
+we're copying the data into an actual buffer that sits on the stack.
 
-So as a temporary solution (until RMI4 land into upstream), start a new
-list of quirks with the min/max manually set.
+Currently, we probably could overwrite memory on the stack (e.g.
+with a possibly mal-formed DCCP packet), but unintentionally, as
+we only want the buffer to be placed into _dh variable.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/input/mouse/synaptics.c | 47 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+ net/netfilter/nf_conntrack_proto_dccp.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -237,11 +237,22 @@ static int synaptics_identify(struct psm
-  * Read touchpad resolution and maximum reported coordinates
-  * Resolution is left zero if touchpad does not support the query
-  */
-+
-+static const int *quirk_min_max;
-+
- static int synaptics_resolution(struct psmouse *psmouse)
- {
- 	struct synaptics_data *priv = psmouse->private;
- 	unsigned char resp[3];
+--- a/net/netfilter/nf_conntrack_proto_dccp.c
++++ b/net/netfilter/nf_conntrack_proto_dccp.c
+@@ -431,7 +431,7 @@ static bool dccp_new(struct nf_conn *ct,
+ 	const char *msg;
+ 	u_int8_t state;
  
-+	if (quirk_min_max) {
-+		priv->x_min = quirk_min_max[0];
-+		priv->x_max = quirk_min_max[1];
-+		priv->y_min = quirk_min_max[2];
-+		priv->y_max = quirk_min_max[3];
-+		return 0;
-+	}
-+
- 	if (SYN_ID_MAJOR(priv->identity) < 4)
- 		return 0;
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
  
-@@ -1364,10 +1375,46 @@ static const struct dmi_system_id __init
- 	{ }
- };
+ 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
+@@ -483,7 +483,7 @@ static int dccp_packet(struct nf_conn *c
+ 	u_int8_t type, old_state, new_state;
+ 	enum ct_dccp_roles role;
  
-+static const struct dmi_system_id min_max_dmi_table[] __initconst = {
-+#if defined(CONFIG_DMI)
-+	{
-+		/* Lenovo ThinkPad Helix */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
-+		},
-+		.driver_data = (int []){1024, 5052, 2258, 4832},
-+	},
-+	{
-+		/* Lenovo ThinkPad T440s */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
-+		},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
-+	},
-+	{
-+		/* Lenovo ThinkPad T540p */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
-+		},
-+		.driver_data = (int []){1024, 5056, 2058, 4832},
-+	},
-+#endif
-+	{ }
-+};
-+
- void __init synaptics_module_init(void)
- {
-+	const struct dmi_system_id *min_max_dmi;
-+
- 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
- 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
-+
-+	min_max_dmi = dmi_first_match(min_max_dmi_table);
-+	if (min_max_dmi)
-+		quirk_min_max = min_max_dmi->driver_data;
- }
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
+ 	type = dh->dccph_type;
  
- int synaptics_init(struct psmouse *psmouse)
+@@ -575,7 +575,7 @@ static int dccp_error(struct net *net, s
+ 	unsigned int cscov;
+ 	const char *msg;
+ 
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	if (dh == NULL) {
+ 		msg = "nf_ct_dccp: short packet ";
+ 		goto out_invalid;
 
