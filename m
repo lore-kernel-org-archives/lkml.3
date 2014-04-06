@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbaDFN4V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 09:56:21 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:45813 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaDFN4Q (ORCPT
+	id S1754049AbaDFOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 10:02:16 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49356 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352AbaDFOCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 09:56:16 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, tipc-discussion@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] tipc: Let tipc_release() return 0
-Date: Sun,  6 Apr 2014 15:56:14 +0200
-Message-Id: <1396792574-32169-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 6 Apr 2014 10:02:13 -0400
+Message-ID: <53415E55.4080307@oracle.com>
+Date: Sun, 06 Apr 2014 10:01:57 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: "Oleg A. Arkhangelsky" <sysoleg@yandex.ru>, "xeb@mail.ru" <xeb@mail.ru>
+CC: "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: net: pptp: bad RCU usage and use after free
+References: <534026C9.5010201@oracle.com> <1868621396767667@web26m.yandex.ru>
+In-Reply-To: <1868621396767667@web26m.yandex.ru>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-net/tipc/socket.c: In function ‘tipc_release’:
-net/tipc/socket.c:352: warning: ‘res’ is used uninitialized in this function
+On 04/06/2014 03:01 AM, Oleg A. Arkhangelsky wrote:
+> 
+> 
+> 05.04.2014, 19:53, "Sasha Levin" <sasha.levin@oracle.com>:
+> 
+>> My guess is that we're racing the synchronize_rcu() in del_chan() with
+>> the RCU protected read in lookup_chan_dst():
+>>
+>> pptp_release()
+>>         del_chan() lookup_chan_dst()
+>>                 enter synchronize_rcu()
+>>                                                         sock = rcu_dereference(...)
+>>                 exit synchronize_rcu()
+>>         release_sock()
+>>         sock_put()
+>>                                                         opt = &sock->proto.pptp;
+>>                                                         [ boom ]
+> 
+> Hmm...
+> 
+> IMHO, sock from callid_sock array must be NULL (not uninitialized) at
+> that point, because del_chan() do:
+> 
+> RCU_INIT_POINTER(callid_sock[sock->proto.pptp.src_addr.call_id], NULL);
+> 
+> before rcu_synchronize(). I think that prevents access to freeing item
+> in subsequent readers that go inside critical section when
+> rcu_synchronize() is active.
 
-Introduced by commit 24be34b5a0c9114541891d29dff1152bb1a8df34 ("tipc:
-eliminate upcall function pointers between port and socket"), which
-removed the sole initializer of "res".
+Right, make sense. I'm completely lost then.
 
-Just return 0 to fix it.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- net/tipc/socket.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/net/tipc/socket.c b/net/tipc/socket.c
-index 29b7f26a12cf..adc12e227303 100644
---- a/net/tipc/socket.c
-+++ b/net/tipc/socket.c
-@@ -301,7 +301,6 @@ static int tipc_release(struct socket *sock)
- 	struct tipc_sock *tsk;
- 	struct tipc_port *port;
- 	struct sk_buff *buf;
--	int res;
- 
- 	/*
- 	 * Exit if socket isn't fully initialized (occurs when a failed accept()
-@@ -349,7 +348,7 @@ static int tipc_release(struct socket *sock)
- 	sock_put(sk);
- 	sock->sk = NULL;
- 
--	return res;
-+	return 0;
- }
- 
- /**
--- 
-1.7.9.5
+Thanks,
+Sasha
 
