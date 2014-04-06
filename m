@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149AbaDFNuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 09:50:09 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:36837 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856AbaDFNuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 09:50:06 -0400
+	id S1754223AbaDFNyn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 09:54:43 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:37947 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753312AbaDFNyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 09:54:40 -0400
+Date: Sun, 6 Apr 2014 16:54:24 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Benson Leung <bleung@chromium.org>, wsa@the-dreams.de, khali@linux-fr.org,
+        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dlaurie@chromium.org
+Subject: Re: [PATCH v2 0/2] i2c-designware-pci: Add Haswell ULT device support
+Message-ID: <20140406135424.GA1840@node.dhcp.inet.fi>
+References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
+ <1382367944-3005-1-git-send-email-bleung@chromium.org>
+ <20131021161428.GI3521@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140401.152203.847120817141929645.davem@davemloft.net>
-References: <20140401183907.a5127cadbe7116261096beaa@canb.auug.org.au>
-	<533B06A7.5010900@infradead.org>
-	<20140401.152203.847120817141929645.davem@davemloft.net>
-Date: Sun, 6 Apr 2014 15:50:04 +0200
-X-Google-Sender-Auth: 8rf3adY5rBSB5Kc_Xr_sumRMp2k
-Message-ID: <CAMuHMdXaoUvUButpaDYQh6aj=Zm9GCS7MKFA_-h8GOo1RkOObw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 1 (netfilter)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Miller <davem@davemloft.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131021161428.GI3521@intel.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 9:22 PM, David Miller <davem@davemloft.net> wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> Date: Tue, 01 Apr 2014 11:34:15 -0700
->
->> on x86_64:
->>
->> net/netfilter/xt_connlimit.c: In function 'connlimit_mt_check':
->> net/netfilter/xt_connlimit.c:380:18: warning: division by zero [-Wdiv-by-zero]
->>
->> Maybe just use CONNLIMIT_LOCK_SLOTS instead of ARRAY_SIZE(...).
->
-> I'd rather see that ARRAY_SIZE() be adjusted to work cleanly for zero
-> sized array elements.
+On Mon, Oct 21, 2013 at 07:14:28PM +0300, Mika Westerberg wrote:
+> On Mon, Oct 21, 2013 at 08:05:42AM -0700, Benson Leung wrote:
+> > Fixed 25Mhz clock instead of 100Mhz clock in 1/2 and a warning in 2/2.
+> > 
+> > [PATCH v2 1/2] i2c-designware-pci: Add Haswell ULT device IDs
+> > [PATCH v2 2/2] i2c-designware-pci: Index Haswell ULT bus names from 0
+> 
+> Both patches,
+> 
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Anyone with a suggestion?
+Guys, any idea why these patches have not upstreamed yet?
 
-Please note this is now in Linus' tree, possibly crashing people's boxes...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+ Kirill A. Shutemov
