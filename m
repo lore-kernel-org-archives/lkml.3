@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaDFOnz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 10:43:55 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:32779 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaDFOnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 10:43:52 -0400
-X-AuditID: cbfec373-b7f4a6d000005e0a-37-53416826c7f2
-Date: Sun, 06 Apr 2014 11:43:44 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for v3.15-rc1] media updates
-Message-id: <20140406114344.295b22da@samsung.com>
-In-reply-to: <CA+55aFz8+kgRAm9Oozkcaa+diL_6OEP=M4wr7j5z-HTOg-2O=g@mail.gmail.com>
-References: <20140403131143.69f324c7@samsung.com>
- <CA+55aFz8+kgRAm9Oozkcaa+diL_6OEP=M4wr7j5z-HTOg-2O=g@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/hIF21DMdgg8kLTCzmrF/DZrHk5y4m
-	i8u75rBZ9GzYymrxqO8tuwOrx5TfG1k9Tsz4zeLxeZNcAHMUl01Kak5mWWqRvl0CV8a+ZzPZ
-	Ci5zVCy5PImxgfEZWxcjB4eEgIlExyHpLkZOIFNM4sK99UBhLg4hgSWMEosv3oVy+pgkVrc8
-	ZAGpYhFQlWi4e5UVxGYTMJJ41dgCZosA2Z9fXGEFaWAWOMMocfrfXzaQhLCAscTnV33sIDav
-	gKHEgcUnmEBsToFgif41zxhBbCGBComNM96xQJzhJPHq9WQmiHpBiR+T74HFmQW0JDZva2KF
-	sOUlNq95yzyBUWAWkrJZSMpmISlbwMi8ilG0tDi5oDgpPddIrzgxt7g0L10vOT93EyMkfIt3
-	ML7YYHWIUYCDUYmHtyLHIViINbGsuDL3EKMEB7OSCK+miWOwEG9KYmVValF+fFFpTmrxIUYm
-	Dk6pBkZ90+PLYn5Xl5VP+VOYpLP74KFDa3SPm/hOsLKwEPy/4ciPKpX797bG75y58pNw7nqW
-	G3Zp79kb4k0dcj5Vxj8oeOQ9o9jaun0S66xQG7vU8iPrKm9N81Sd0SO0x4xdwuSRR8nV7Pvt
-	naF3NOf/WnleqGx99UKuHS1Oa0wsFzs3VFfqq+btX6bEUpyRaKjFXFScCACYUH5dPQIAAA==
+	id S1754219AbaDFP3d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 11:29:33 -0400
+Received: from smtp2.ngi.it ([88.149.128.113]:41845 "EHLO smtp2.ngi.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753352AbaDFP33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 11:29:29 -0400
+X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Apr 2014 11:29:29 EDT
+Message-ID: <5341707F.5000406@katamail.com>
+Date: Sun, 06 Apr 2014 17:19:27 +0200
+From: Michele Ballabio <barra_cuda@katamail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: toralf.foerster@gmx.de, fweisbec@gmail.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Bisected KVM hang on x86-32 between v3.12 and v3.13
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 04 Apr 2014 15:04:16 -0700
-Linus Torvalds <torvalds@linux-foundation.org> escreveu:
+Toralf Förster reported this in
+  http://article.gmane.org/gmane.linux.kernel/1662567
+  http://article.gmane.org/gmane.linux.kernel/1658422
+  http://article.gmane.org/gmane.linux.kernel/1657962
 
-> On Thu, Apr 3, 2014 at 9:11 AM, Mauro Carvalho Chehab
-> <m.chehab@samsung.com> wrote:
-> >
-> > Please pull from:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-> 
-> Oh, just noticed that this seems to be the cause of a new annoying warning:
-> 
->    usr/include/linux/v4l2-common.h:72: found __[us]{8,16,32,64} type
-> without #include <linux/types.h>
-> 
-> which seems to have come in through commits 777f4f85b75f1 and 254a47770163f.
-> 
-> I think the proper fix is to just add that
-> 
->   #include <linux/types.h>
+  "The issue happens here at a 32 bit stable Gentoo Linux if
+   I try to start a KVM image. Kernels 3.12.X works fine,
+   kernel >= v3.13 will hang shortly after I started the image
+   with the virtual-manager. The last syslog messages are
+   something like:
+   Feb 28 16:22:00 n22 kernel: INFO: rcu_sched detected stalls
+       on CPUs/tasks: {} (detected by 2, t=60002 jiffies,
+       g=14689, c=14688, q=21051)
+   Feb 28 16:22:00 n22 kernel: INFO: Stall ended before state
+       dump start"
 
-Yes, this is the proper fix. Thanks for noticing. I added a make
-headers_check on my test scripts, to allow me to notice things like
-that next time.
+He correctly pointed out that the bisection blamed the merge
+commit 37bf06375c90a42fe07b9bebdb07bc316ae5a0ce
+"Merge tag 'v3.12-rc4' into sched/core".
 
-I just committed a patch for it on my tree. I'll send you together
-with a few other fixes at the beginning of the next week.
+This bug is obviously caused by at least two patches, one
+on each side of the merge, that only when combined together
+(at that merge point) cause the bug in kvm. By rebasing
+the "sched/core" branch on "master" before the merge and
+going on with the bisection, I found commit
+3e8e42c69bb7d9fc12ebc23ff308e8523a2a59a0
+"sched: Revert need_resched() to look at TIF_NEED_RESCHED"
+as one of the causes. The other patch that contributes to the
+bug is commit ded797547548a5b8e7b92383a41e4c0e6b0ecb7f
+"irq: Force hardirq exit's softirq processing on its own stack".
 
-> 
-> to include/uapi/linux/v4l2-common.h. Assuming that really is supposed
-> to be a user-visible API at all?
-> 
->               Linus
+Reverting either one of them solves the problem reported with kvm,
+but revert is probably not the correct answer.
 
-Thanks!
-Mauro
+I wonder if the solution is as simple as this:
+
+--->8---
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..f3b985d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -126,6 +126,7 @@ config X86
+ 	select RTC_LIB
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
++	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_32
+ 	select HAVE_CC_STACKPROTECTOR
+
+ config INSTRUCTION_DECODER
+---8<---
