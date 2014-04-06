@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaDFVH6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 17:07:58 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:35235 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbaDFVHz (ORCPT
+	id S1754539AbaDFVOU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 17:14:20 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:56711 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750797AbaDFVOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 17:07:55 -0400
-Message-ID: <5341C22A.1050907@lwfinger.net>
-Date: Sun, 06 Apr 2014 16:07:54 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Randy Dunlap <rdunlap@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>
+	Sun, 6 Apr 2014 17:14:16 -0400
+Message-ID: <1396818854.7118.3.camel@x220>
 Subject: Re: Kconfig circular dependency question
-References: <5341AFC7.1070001@lwfinger.net> <5341B999.3050206@infradead.org> <1396817575.4886.23.camel@x220>
-In-Reply-To: <1396817575.4886.23.camel@x220>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 06 Apr 2014 23:14:14 +0200
+In-Reply-To: <5341C22A.1050907@lwfinger.net>
+References: <5341AFC7.1070001@lwfinger.net> <5341B999.3050206@infradead.org>
+	 <1396817575.4886.23.camel@x220> <5341C22A.1050907@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Apr 2014 21:14:14.0852 (UTC) FILETIME=[29D59840:01CF51DD]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2014 03:52 PM, Paul Bolle wrote:
-> On Sun, 2014-04-06 at 13:31 -0700, Randy Dunlap wrote:
->> and/or changing MOUSE_APPLETOUCH to depend on USB instead of select it?
->
-> MOUSE_APPLETOUCH selects USB and depends on USB_ARCH_HAS_HCD. That's
-> actually quite a common pattern.
->
-> But what is the purpose of USB_ARCH_HAS_HCD? It is set by default if
-> USB_SUPPORT is set. And USB depends on it, but since USB also depends on
-> USB_SUPPORT that seems superfluous.
->
-> My slow day continues, because I find this hard to grok.
+On Sun, 2014-04-06 at 16:07 -0500, Larry Finger wrote:
+> As you have seen in my reply to Randy, this appears to arise from violating one 
+> of the edicts of Linus that says that no configuration variable should select a 
+> subsystem. Of course, one could argue that RFKILL is also a subsystem, and that 
+> R8723AU should depend on it rather that selecting it.
+> 
+> My day also seems to be slowing. :)
 
-As you have seen in my reply to Randy, this appears to arise from violating one 
-of the edicts of Linus that says that no configuration variable should select a 
-subsystem. Of course, one could argue that RFKILL is also a subsystem, and that 
-R8723AU should depend on it rather that selecting it.
+Would you mind sharing the .config that triggered this? (I guess I also
+need to know the make command you ran.) Than I could play with this, on
+a not so slow day, and maybe, just maybe, understand what's going on.
 
-My day also seems to be slowing. :)
 
-Larry
-
+Paul Bolle
 
