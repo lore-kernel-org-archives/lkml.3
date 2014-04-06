@@ -1,131 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616AbaDFWdy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 18:33:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36220 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753191AbaDFWdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 18:33:52 -0400
-Date: Mon, 7 Apr 2014 08:33:38 +1000
-From: NeilBrown <neilb@suse.de>
-To: Toralf =?UTF-8?B?RsO2cnN0ZXI=?= <toralf.foerster@gmx.de>
-Cc: Roger Heflin <rogerheflin@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NFS V4 calls for a NFS v3 mount
-Message-ID: <20140407083338.351db1c7@notabene.brown>
-In-Reply-To: <53419674.7010509@gmx.de>
-References: <53418E98.8030505@gmx.de>
-	<CAAMCDec1OJFPKWPz-qnFedYiHXpag3=2qRYPwNHdQCC4tqaQ_Q@mail.gmail.com>
-	<53419674.7010509@gmx.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1754628AbaDFWp3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 18:45:29 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:51365 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754389AbaDFWp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 18:45:27 -0400
+From: Fabio Falzoi <fabio.falzoi84@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Fabio Falzoi <fabio.falzoi84@gmail.com>
+Subject: [PATCH] Staging: rts5139: fix coding style
+Date: Mon,  7 Apr 2014 00:45:05 +0200
+Message-Id: <1396824306-20343-1-git-send-email-fabio.falzoi84@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s36MXwPd001163
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+fix some coding style issues in rts51x.c (from rts5139 module)
+This is for task 10 of the Eudyptula challenge
 
-On Sun, 06 Apr 2014 20:01:24 +0200 Toralf F√∂rster <toralf.foerster@gmx.de>
-wrote:
+Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
+---
+ drivers/staging/rts5139/rts51x.c | 62 ++++++++++++++++++++--------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA256
-> 
-> On 04/06/2014 07:57 PM, Roger Heflin wrote:
-> > No where in the mount command did you tell it that this was a 
-> > nfsversion 3 only mount, the mount name itself means nothing to
-> > mount, so it tired nfs version 4 first then nfs version 3.
-> > 
-> > Note this in the man page for nfs: nfsvers=n      The NFS protocol
-> > version number used to contact the server's NFS service.  If the
-> > server does  not  support the  requested  version, the mount
-> > request fails.  If this option is not specified, the client
-> > negotiates a suitable version with the server, trying version 4
-> > first, version 3 second, and version 2 last.
-> > 
-> 
-> ick, I misunderstand the key word "nfs4" in /etc/fstab - I thought
-> that (and only that) would activate any NFS v4 Calls :
-> 
-> Hre all of my setting
-> $ grep nfs /etc/fstab
-> n22:/mnt/ramdisk    /mnt/nfsv2      nfs     auto,bg,intr,soft,nfsvers=2
-> n22:/mnt/ramdisk    /mnt/nfsv3      nfs     auto,bg,intr,soft
-> n22:                /mnt/nfsv4      nfs4    auto,bg,intr,soft
+diff --git a/drivers/staging/rts5139/rts51x.c b/drivers/staging/rts5139/rts51x.c
+index c8d06d4..b732d2a 100644
+--- a/drivers/staging/rts5139/rts51x.c
++++ b/drivers/staging/rts5139/rts51x.c
+@@ -273,7 +273,7 @@ static int rts51x_control_thread(void *__chip)
+ 		/* has the command timed out *already* ? */
+ 		if (test_bit(FLIDX_TIMED_OUT, &chip->usb->dflags)) {
+ 			chip->srb->result = DID_ABORT << 16;
+-			goto SkipForAbort;
++			goto abort;
+ 		}
+ 
+ 		scsi_unlock(host);
+@@ -291,15 +291,15 @@ static int rts51x_control_thread(void *__chip)
+ 		 */
+ 		else if (chip->srb->device->id) {
+ 			RTS51X_DEBUGP("Bad target number (%d:%d)\n",
+-				       chip->srb->device->id,
+-				       chip->srb->device->lun);
++				      chip->srb->device->id,
++				      chip->srb->device->lun);
+ 			chip->srb->result = DID_BAD_TARGET << 16;
+ 		}
+ 
+ 		else if (chip->srb->device->lun > chip->max_lun) {
+ 			RTS51X_DEBUGP("Bad LUN (%d:%d)\n",
+-				       chip->srb->device->id,
+-				       chip->srb->device->lun);
++				      chip->srb->device->id,
++				      chip->srb->device->lun);
+ 			chip->srb->result = DID_BAD_TARGET << 16;
+ 		}
+ 
+@@ -316,7 +316,7 @@ static int rts51x_control_thread(void *__chip)
+ 		if (chip->srb->result != DID_ABORT << 16)
+ 			chip->srb->scsi_done(chip->srb);
+ 		else
+-SkipForAbort :
++abort :
+ 			RTS51X_DEBUGP("scsi command aborted\n");
+ 
+ 		/* If an abort request was received we need to signal that
+@@ -433,12 +433,12 @@ static int associate_dev(struct rts51x_chip *chip, struct usb_interface *intf)
+ 	rts51x->pusb_intf = intf;
+ 	rts51x->ifnum = intf->cur_altsetting->desc.bInterfaceNumber;
+ 	RTS51X_DEBUGP("Vendor: 0x%04x, Product: 0x%04x, Revision: 0x%04x\n",
+-		       le16_to_cpu(rts51x->pusb_dev->descriptor.idVendor),
+-		       le16_to_cpu(rts51x->pusb_dev->descriptor.idProduct),
+-		       le16_to_cpu(rts51x->pusb_dev->descriptor.bcdDevice));
++		      le16_to_cpu(rts51x->pusb_dev->descriptor.idVendor),
++		      le16_to_cpu(rts51x->pusb_dev->descriptor.idProduct),
++		      le16_to_cpu(rts51x->pusb_dev->descriptor.bcdDevice));
+ 	RTS51X_DEBUGP("Interface Subclass: 0x%02x, Protocol: 0x%02x\n",
+-		       intf->cur_altsetting->desc.bInterfaceSubClass,
+-		       intf->cur_altsetting->desc.bInterfaceProtocol);
++		      intf->cur_altsetting->desc.bInterfaceSubClass,
++		      intf->cur_altsetting->desc.bInterfaceProtocol);
+ 
+ 	/* Store our private data in the interface */
+ 	usb_set_intfdata(intf, chip);
+@@ -569,8 +569,7 @@ static int get_pipes(struct rts51x_chip *chip)
+ 	}
+ 
+ 	if (!ep_in || !ep_out) {
+-		RTS51X_DEBUGP("Endpoint sanity check failed!"
+-					"Rejecting dev.\n");
++		RTS51X_DEBUGP("Endpoint sanity check failed! Rejecting dev.\n");
+ 		return -EIO;
+ 	}
+ 
+@@ -608,7 +607,8 @@ static int rts51x_acquire_resources(struct rts51x_chip *chip)
+ 		return -ENOMEM;
+ 	}
+ 
+-	chip->cmd_buf = chip->rsp_buf = rts51x->iobuf;
++	chip->cmd_buf = rts51x->iobuf;
++	chip->rsp_buf = rts51x->iobuf;
+ 
+ 	rts51x_init_options(chip);
+ 
+@@ -723,10 +723,10 @@ static int rts51x_probe(struct usb_interface *intf,
+ 
+ 	RTS51X_DEBUGP("%s detected\n", RTS51X_NAME);
+ 
+-	rts51x = kzalloc(sizeof(struct rts51x_usb), GFP_KERNEL);
++	rts51x = kzalloc(sizeof(*rts51x), GFP_KERNEL);
+ 	if (!rts51x) {
+-		printk(KERN_WARNING RTS51X_TIP
+-		       "Unable to allocate rts51x_usb\n");
++		pr_warn(RTS51X_TIP
++			"Unable to allocate rts51x_usb\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -736,8 +736,8 @@ static int rts51x_probe(struct usb_interface *intf,
+ 	 */
+ 	host = scsi_host_alloc(&rts51x_host_template, sizeof(*chip));
+ 	if (!host) {
+-		printk(KERN_WARNING RTS51X_TIP
+-		       "Unable to allocate the scsi host\n");
++		pr_warn(RTS51X_TIP
++			"Unable to allocate the scsi host\n");
+ 		kfree(rts51x);
+ 		return -ENOMEM;
+ 	}
+@@ -763,42 +763,42 @@ static int rts51x_probe(struct usb_interface *intf,
+ 	/* Associate the us_data structure with the USB device */
+ 	result = associate_dev(chip, intf);
+ 	if (result)
+-		goto BadDevice;
++		goto bad_device;
+ 
+ 	/* Find the endpoints and calculate pipe values */
+ 	result = get_pipes(chip);
+ 	if (result)
+-		goto BadDevice;
++		goto bad_device;
+ 
+ 	/* Acquire all the other resources and add the host */
+ 	result = rts51x_acquire_resources(chip);
+ 	if (result)
+-		goto BadDevice;
++		goto bad_device;
+ 
+ 	/* Start up our control thread */
+ 	th = kthread_run(rts51x_control_thread, chip, RTS51X_CTL_THREAD);
+ 	if (IS_ERR(th)) {
+-		printk(KERN_WARNING RTS51X_TIP
+-		       "Unable to start control thread\n");
++		pr_warn(RTS51X_TIP
++			"Unable to start control thread\n");
+ 		result = PTR_ERR(th);
+-		goto BadDevice;
++		goto bad_device;
+ 	}
+ 	rts51x->ctl_thread = th;
+ 
+ 	result = scsi_add_host(rts51x_to_host(chip), &rts51x->pusb_intf->dev);
+ 	if (result) {
+-		printk(KERN_WARNING RTS51X_TIP "Unable to add the scsi host\n");
+-		goto BadDevice;
++		pr_warn(RTS51X_TIP "Unable to add the scsi host\n");
++		goto bad_device;
+ 	}
+ 	scsi_scan_host(rts51x_to_host(chip));
+ 
+ 	/* Start up our polling thread */
+ 	th = kthread_run(rts51x_polling_thread, chip, RTS51X_POLLING_THREAD);
+ 	if (IS_ERR(th)) {
+-		printk(KERN_WARNING RTS51X_TIP
+-		       "Unable to start polling thread\n");
++		pr_warn(RTS51X_TIP
++			"Unable to start polling thread\n");
+ 		result = PTR_ERR(th);
+-		goto BadDevice;
++		goto bad_device;
+ 	}
+ 	rts51x->polling_thread = th;
+ 
+@@ -813,7 +813,7 @@ static int rts51x_probe(struct usb_interface *intf,
+ 	return 0;
+ 
+ 	/* We come here if there are any problems */
+-BadDevice:
++bad_device:
+ 	RTS51X_DEBUGP("rts51x_probe() failed\n");
+ 	release_everything(chip);
+ 	return result;
+-- 
+1.9.1
 
-That was used to indicate nfsv4 early in development, possibly to make sure
-it didn't get used by default, but it was quickly realised that having a
-separate filesystem type was confusing.
-
-So while "nfs4" does still work an selected vers=4, it is deprecated.  You
-should  always use "nfs" if possible.
-
-BTW the nfs list is "linux-nfs@vger.kernel.org" - suitable for "noobs",
-developers, and everyone in between.
-
-NeilBrown
-
-
-> 
-> 
-> Thx for explanation.
-> 
-> 
-> > On Sun, Apr 6, 2014 at 12:27 PM, Toralf F√∂rster
-> > <toralf.foerster@gmx.de> wrote: Probably a question better suited
-> > for a NFS noobs mailing list (is there any around ?) ...
-> > 
-> > While playing with kernel 3.13.x, wireshark and NFS I realized,
-> > that mounting a NFS v3 share results in NFS V4 Calls - is this
-> > indented or a wireshark dissector issue ?
-> > 
-> > 
-> > $ cat /etc/exports # /etc/exports: NFS file systems being exported.
-> > See exports(5). /mnt/ramdisk
-> > 192.168.0.0/16(rw,fsid=0,insecure,no_subtree_check,async,no_root_squash)
-> >
-> > 
-> > 
-> > $ grep nfsv3 /etc/fstab n22:/mnt/ramdisk    /mnt/nfsv3      nfs
-> > auto,bg,intr,soft
-> > 
-> - -- 
-> MfG/Sincerely
-> Toralf F√∂rster
-> pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v2.0.22 (GNU/Linux)
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-> 
-> iF4EAREIAAYFAlNBlnQACgkQxOrN3gB26U41HQD8D/KROgItC324iDevD33vJ6QS
-> PcSWPcBTzimC0cMOfzkA/04ejAWOGGqyqNedV5Ps235rxqbxDWoiUS7M7iQtu/Wz
-> =jJAD
-> -----END PGP SIGNATURE-----
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU0HWQjnsnt1WYoG5AQLr+Q//az/LlGyQRBKGCcrNAEUxeI7msLur6aAR
-6j/ecJkjNtI+D4o3WuUZQlkxnvjZ7uA9RacRbLc7UHDh7kWpJjsoCl/s6SkS1RY2
-y3KHOY/vm6+jwBXRknbGPMjPDNDA34s0cok2/so6ELyL82Uxd/Zsrhua6/yxoj8D
-6J2p2KLY6DqgmJnicTAmZf5F2gVCnL0cwuv16wKCsCrf24O0d9eXqjStYUV62jLX
-m3JrzB8JxovT7LmU9jsH1ChE7PW6sAd92R1lzrgQM7XNLoy4Q3bggWBNcLOATRNp
-V5uGXCOXW+mnnPCdwhQkK7hoJf4dpkodU+BDydZO/oet2kE84eQYM0oyl5Ebz+mR
-nOKQwp7Y2Zitj4ZzAfa9KrxteZ6Pa5ISv0Olbjw/3W0aL148Y3UmEo9cT4kUzhAm
-hiNzN7K2835vOVZvtCW3Woq+sN66v7Jp9Ig/6ZNAsAizH2oMl9F9k/fH6u8P9bV4
-4Lc9nc9yo6IzFVlJYbM3wPMod70gQz9QNCNXvRH9m6ospV+wY/TFfvqYNCAE9msk
-tjbKnfYCNoAdGgPSW2tHbpqM42ZwYpy6wu7gG3Io98CtsoUiJbG7meMj6FkkWOno
-6dW8CVovxdGrdQP1cLQbyVUKX4XYDRzI2eCJI7sUH11Sn8o+Ft0rRtxzeLpE4s4t
-3vGS4lERy+U=
-=EiAW
------END PGP SIGNATURE-----
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
