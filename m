@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbaDFPbY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 11:31:24 -0400
-Received: from sauhun.de ([89.238.76.85]:57567 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441AbaDFPbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 11:31:22 -0400
-Date: Sun, 6 Apr 2014 17:31:04 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Benson Leung <bleung@chromium.org>, khali@linux-fr.org,
-        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dlaurie@chromium.org
-Subject: Re: [PATCH v2 0/2] i2c-designware-pci: Add Haswell ULT device support
-Message-ID: <20140406153104.GA2609@katana>
-References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
- <1382367944-3005-1-git-send-email-bleung@chromium.org>
- <20131021161428.GI3521@intel.com>
- <20140406135424.GA1840@node.dhcp.inet.fi>
+	id S1754488AbaDFPeC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 11:34:02 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33500 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603AbaDFPd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 11:33:57 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>
+Subject: [PATCH -mm 0/3] slab: cleanup mem hotplug synchronization
+Date: Sun, 6 Apr 2014 19:33:49 +0400
+Message-ID: <cover.1396779337.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
-Content-Disposition: inline
-In-Reply-To: <20140406135424.GA1840@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.24.24.157]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---C7zPtVaVf+AK4Oqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+kmem_cache_{create,destroy,shrink} need to get a stable value of
+cpu/node online mask, because they init/destroy/access per-cpu/node
+kmem_cache parts, which can be allocated or destroyed on cpu/mem
+hotplug. To protect against cpu hotplug, these functions use
+{get,put}_online_cpus. However, they do nothing to synchronize with
+memory hotplug - taking the slab_mutex does not eliminate the
+possibility of race as described in patch 3.
 
-On Sun, Apr 06, 2014 at 04:54:24PM +0300, Kirill A. Shutemov wrote:
-> On Mon, Oct 21, 2013 at 07:14:28PM +0300, Mika Westerberg wrote:
-> > On Mon, Oct 21, 2013 at 08:05:42AM -0700, Benson Leung wrote:
-> > > Fixed 25Mhz clock instead of 100Mhz clock in 1/2 and a warning in 2/2.
-> > >=20
-> > > [PATCH v2 1/2] i2c-designware-pci: Add Haswell ULT device IDs
-> > > [PATCH v2 2/2] i2c-designware-pci: Index Haswell ULT bus names from 0
-> >=20
-> > Both patches,
-> >=20
-> > Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->=20
-> Guys, any idea why these patches have not upstreamed yet?
+What we need there is something like get_online_cpus, but for memory. We
+already have lock_memory_hotplug, which serves for the purpose, but it's
+a bit of a hammer right now, because it's backed by a mutex. As a
+result, it imposes some limitations to locking order, which are not
+desirable, and can't be used just like get_online_cpus. I propose to
+turn this mutex into an rw semaphore, which will be taken for reading in
+lock_memory_hotplug and for writing in memory hotplug code (that's what
+patch 1 does).
 
-Yes, read the discussion of V1 of these patches. AFAIU the patches are
-obsolete.
+When I tried to use this rw semaphore in the slab implementation, I came
+across a problem with lockdep: rw_semaphore is not marked as read
+recursive although it is (at least, it looks so to me), so lockdep
+complains about wrong ordering with a sysfs internal mutex in case of
+slub, because in contrast to recursive read lock, non-recursive one
+should always be taken in the same order with a mutex. That's why in
+patch 2 I mark rw semaphore as read-recursive, just like rw spin lock.
 
+Thanks,
 
---C7zPtVaVf+AK4Oqc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Vladimir Davydov (3):
+  mem-hotplug: turn mem_hotplug_mutex to rwsem
+  lockdep: mark rwsem_acquire_read as recursive
+  slab: lock_memory_hotplug for kmem_cache_{create,destroy,shrink}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+ include/linux/lockdep.h |    2 +-
+ include/linux/mmzone.h  |    7 ++---
+ mm/memory_hotplug.c     |   70 +++++++++++++++++++++--------------------------
+ mm/slab.c               |   26 ++----------------
+ mm/slab.h               |    1 +
+ mm/slab_common.c        |   35 ++++++++++++++++++++++--
+ mm/slob.c               |    3 +-
+ mm/slub.c               |    5 ++--
+ mm/vmscan.c             |    2 +-
+ 9 files changed, 75 insertions(+), 76 deletions(-)
 
-iQIcBAEBAgAGBQJTQXM4AAoJEBQN5MwUoCm2C/UP/2iUbrDnvEVg+swGX2/GgkQX
-wc4u5HYBBWIA8MZXHg2DVM7NGWEMHDLEg/0A9MCKgqcW3VFApdLSjIWELLxhbGoU
-ZzuGFGhAapcARsSc0AK/B2tf9q7FdB0EHFE0Z0B+hxMkGcnqYJKNCc1RY7FY9f7X
-n8SoUhwe29hpZKLMx0bZsiy0SgHBSTcC0IpB3TJHyjXZVpKtPFHdhyWV6WqbVK7q
-WBQ5R7oHgqYL3+P+1kJyN2OaxkVe4mLx95tw6ZlI6TSBZht9KdPH/UFTzzLAVX9p
-FE/OfP/bLH4rdVGEWewpNnEiZNw71XdxZha8jz0YARrXrpAtufYnKlWKerXBODco
-EwMphx+05ZSA0ScewXn1eC5spEHho4Uqn/0n+3rkFEzC//+zJsWa+R4v9uD5DWh3
-+yqbYj9w5pHcSUluRrqdZAppOpYo4yUs3zuIOMyh2Wp0KE9NSpgK+tlkKN0YHl54
-roE15eIA3XcmksjI5feag/p7UTezx6Enr3aQ69haDaSIKgkpvK4DcWpZPjHrCmLF
-G/QFgFmKbheXIqdBih1G33+1/jsDz7Dgr16sIMbvMuQfm5Lu+jbTmnV6ZHI+wQqU
-izEN4DL943cAzY8jFqdaOcX5x9TXr0BngEFIb968rjq5aTP2Ui70MIxVgrFtxgTM
-uobABx6KqGKQTh03PODs
-=JLen
------END PGP SIGNATURE-----
+-- 
+1.7.10.4
 
---C7zPtVaVf+AK4Oqc--
