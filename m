@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663AbaDFXtD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:49:03 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59790 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754266AbaDFXtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 19:49:01 -0400
-Message-ID: <1396828110.3671.21.camel@pasglop>
-Subject: Re: [PATCH 1/2] fixup: "powerpc/perf: Add support for the hv 24x7
- interface"
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        cody+local@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>,
-        David.Laight@aculab.com, Anton Blanchard <anton@samba.org>
-Date: Mon, 07 Apr 2014 09:48:30 +1000
-In-Reply-To: <1396476654-20623-2-git-send-email-cody@linux.vnet.ibm.com>
-References: <1396476654-20623-1-git-send-email-cody@linux.vnet.ibm.com>
-	 <1396476654-20623-2-git-send-email-cody@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754666AbaDFX61 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:58:27 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:47248 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608AbaDFX6X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 19:58:23 -0400
+Message-ID: <5341EA16.6030705@gmail.com>
+Date: Mon, 07 Apr 2014 07:58:14 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH] fs/ext4/extents_status.c: fix 64-bit number truncation
+ bug
+References: <53396AC1.10108@gmail.com> <CAMuHMdVT9O8C0fhMbaqS2nB1jfLAZtanp6YGPU6Q-T5b7=n20Q@mail.gmail.com>
+In-Reply-To: <CAMuHMdVT9O8C0fhMbaqS2nB1jfLAZtanp6YGPU6Q-T5b7=n20Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 15:10 -0700, Cody P Schafer wrote:
-> Make the "not enabled" message less awful.
+
+On 04/06/2014 09:39 PM, Geert Uytterhoeven wrote:
+> On Mon, Mar 31, 2014 at 3:16 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>> '0x7FDEADBEEF' will be truncated to 32-bit number under unicore32. Need
+>> append 'ULL' for it.
+>>
+>> The related warning (with allmodconfig under unicore32):
+>>
+>>     CC [M]  fs/ext4/extents_status.o
+>>   fs/ext4/extents_status.c: In function ‘__es_remove_extent’:
+>>   fs/ext4/extents_status.c:813: warning: integer constant is too large for ‘long’ type
 > 
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/perf/hv-24x7.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Thanks! This is failing on all 32-bit architectures.
 > 
-> diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-> index 297c9105..3246ea2 100644
-> --- a/arch/powerpc/perf/hv-24x7.c
-> +++ b/arch/powerpc/perf/hv-24x7.c
-> @@ -491,7 +491,7 @@ static int hv_24x7_init(void)
->  
->  	hret = hv_perf_caps_get(&caps);
->  	if (hret) {
-> -		pr_info("could not obtain capabilities, error 0x%80lx, not enabling\n",
-> +		pr_info("could not obtain capabilities, not enabling (%ld)\n",
->  				hret);
 
-That's not much less awful... The message gives 0 informations about
-where it comes from .. what is it that couldn't obtain capabilities ?
+Yeah.
 
-Also, sentences start with a Capital.
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> 
+> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>
+[...]
 
-Cheers,
-Ben.
- 
+Thank you very much!
 
+I will/should continue, and try to finish unicore32 within this month
+(although, excuse me, in this week and next week, I will have no much
+free time on open source).
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
