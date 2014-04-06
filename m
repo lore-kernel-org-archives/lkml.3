@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaDFXkx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:40:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59455 "EHLO
+	id S1754918AbaDFXkv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:40:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59461 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754745AbaDFXjG (ORCPT
+	by vger.kernel.org with ESMTP id S1754746AbaDFXjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Apr 2014 19:39:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Anisse Astier" <anisse@astier.eu>,
-        "Michal Marek" <mmarek@suse.cz>
+CC: akpm@linux-foundation.org, "Marcelo Tosatti" <mtosatti@redhat.com>,
+        "Jan Kiszka" <jan.kiszka@siemens.com>
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.733211636@decadent.org.uk>
+Message-ID: <lsq.1396827348.253620624@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 09/18] deb-pkg: use KCONFIG_CONFIG instead of .config
- file directly
+Subject: [PATCH 3.2 16/18] KVM: VMX: fix use after free of vmx->loaded_vmcs
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,69 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anisse Astier <anisse@astier.eu>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit d20917670ee1fd4b090555e551faea04b014ca97 upstream.
+commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56 upstream.
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-[bwh: Backported to 3.2: adjust context]
+After free_loaded_vmcs executes, the "loaded_vmcs" structure
+is kfreed, and now vmx->loaded_vmcs points to a kfreed area.
+Subsequent free_loaded_vmcs then attempts to manipulate
+vmx->loaded_vmcs.
+
+Switch the order to avoid the problem.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1047892
+
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- scripts/package/builddeb | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kvm/vmx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -41,9 +41,9 @@ create_package() {
- 	parisc*)
- 		debarch=hppa ;;
- 	mips*)
--		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y .config && echo el) ;;
-+		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo el) ;;
- 	arm*)
--		debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el) ;;
-+		debarch=arm$(grep -q CONFIG_AEABI=y $KCONFIG_CONFIG && echo el) ;;
- 	*)
- 		echo "" >&2
- 		echo "** ** **  WARNING  ** ** **" >&2
-@@ -105,12 +105,12 @@ fi
- if [ "$ARCH" = "um" ] ; then
- 	$MAKE linux
- 	cp System.map "$tmpdir/usr/lib/uml/modules/$version/System.map"
--	cp .config "$tmpdir/usr/share/doc/$packagename/config"
-+	cp $KCONFIG_CONFIG "$tmpdir/usr/share/doc/$packagename/config"
- 	gzip "$tmpdir/usr/share/doc/$packagename/config"
- 	cp $KBUILD_IMAGE "$tmpdir/usr/bin/linux-$version"
- else 
- 	cp System.map "$tmpdir/boot/System.map-$version"
--	cp .config "$tmpdir/boot/config-$version"
-+	cp $KCONFIG_CONFIG "$tmpdir/boot/config-$version"
- 	# Not all arches include the boot path in KBUILD_IMAGE
- 	if [ -e $KBUILD_IMAGE ]; then
- 		cp $KBUILD_IMAGE "$tmpdir/boot/vmlinuz-$version"
-@@ -119,7 +119,7 @@ else
- 	fi
- fi
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6273,8 +6273,8 @@ static void vmx_free_vcpu(struct kvm_vcp
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
  
--if grep -q '^CONFIG_MODULES=y' .config ; then
-+if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
- 	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
- 	if [ "$ARCH" = "um" ] ; then
- 		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
-@@ -240,11 +240,12 @@ fi
- # Build header package
- (cd $srctree; find . -name Makefile -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
- (cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
--(cd $objtree; find .config Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
-+(cd $objtree; find Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
- destdir=$kernel_headers_dir/usr/src/linux-headers-$version
- mkdir -p "$destdir"
- (cd $srctree; tar -c -f - -T "$objtree/debian/hdrsrcfiles") | (cd $destdir; tar -xf -)
- (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
-+(cd $objtree; cp $KCONFIG_CONFIG $destdir/.config) # copy .config manually to be where it's expected to be
- rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
- arch=$(dpkg --print-architecture)
- 
+ 	free_vpid(vmx);
+-	free_nested(vmx);
+ 	free_loaded_vmcs(vmx->loaded_vmcs);
++	free_nested(vmx);
+ 	kfree(vmx->guest_msrs);
+ 	kvm_vcpu_uninit(vcpu);
+ 	kmem_cache_free(kvm_vcpu_cache, vmx);
 
