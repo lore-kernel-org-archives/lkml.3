@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaDFUYb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 16:24:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57147 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaDFUY2 (ORCPT
+	id S1754605AbaDFUYn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 16:24:43 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:65496 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543AbaDFUYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 16:24:28 -0400
-Date: Sun, 6 Apr 2014 13:26:57 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joel Pelaez Jorge <joelpelaez@gmail.com>
-Cc: devel@driverdev.osuosl.org, Silvan Jegen <s.jegen@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Staging: rtl8192e: Fix sparse warning
-Message-ID: <20140406202657.GA13178@kroah.com>
-References: <5341A05A.5080403@gmail.com>
- <20140406190145.GB30469@kroah.com>
- <5341A72C.6050408@gmail.com>
+	Sun, 6 Apr 2014 16:24:39 -0400
+Date: Sun, 6 Apr 2014 13:24:36 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org, Daniel Ribeiro <drwyrm@gmail.com>,
+        Ilya Petrov <ilya.muromec@gmail.com>,
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: [PATCH] input: pcap2: avoid calling mutex_lock() in irq handler
+Message-ID: <20140406202436.GA16739@core.coreip.homeip.net>
+References: <1396731290-7062-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5341A72C.6050408@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1396731290-7062-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 06, 2014 at 02:12:44PM -0500, Joel Pelaez Jorge wrote:
-> El 06/04/14 14:01, Greg Kroah-Hartman escribió:
-> > On Sun, Apr 06, 2014 at 01:43:38PM -0500, Joel Pelaez Jorge wrote:
-> >> Fix a sparse warning, non static symbol is no declared as such.
-> >> And fix a conflict with static function declared extern to include
-> >> rtl_wx.h header.
-> >>
-> >> drivers/staging/rtl8192e/rtl8192e/rtl_wx.c:1323:24: warning:
-> >> symbol 'r8192_wx_handlers_def' was not declared. Should it be static?
-> >>
-> >> Signed-off-by: Joel Pelaez Jorge <joelpelaez@gmail.com>
-> >> ---
-> >>    drivers/staging/rtl8192e/rtl8192e/rtl_wx.c |    3 ++-
-> >>    1 file changed, 2 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-> >> b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-> >> index 498995d..f17584d 100644
-> >> --- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-> >> +++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-> >> @@ -19,6 +19,7 @@
-> >>
-> >>    #include <linux/string.h>
-> >>    #include "rtl_core.h"
-> >> +#include "rtl_wx.h"
-> >
-> > Why is this needed?
-> >
-> >>
-> >>    #define RATE_COUNT 12
-> >>    static u32 rtl8192_rates[] = {
-> >> @@ -1293,7 +1294,7 @@ static iw_handler r8192_private_handler[] = {
-> >>    	(iw_handler)r8192_wx_get_PromiscuousMode,
-> >>    };
-> >>
-> >> -static struct iw_statistics *r8192_get_wireless_stats(struct net_device
-> >> *dev)
-> >> +struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
-> >
-> > Why make this global?  This doesn't have anything to do with the warning
-> > you are working on as described above.
-> >
-> > totally confused,
-> >
-> > greg k-h
-> >
->  >
-> In the "rtl_wx.h" header declare extern 'r8192_wx_handlers_def'
-> but r8192_get_wireless_stats too.
+On Sun, Apr 06, 2014 at 12:54:50AM +0400, Alexey Khoroshilov wrote:
+> pcap_keys_handler() calls ezx_pcap_read() that calls mutex_lock().
+> pcap_keys_handler() is registered as nonthreaded irq handler,
+> that means sleeping function is called in irq handler.
+> 
+> The patch makes a switch to threaded irq handling.
+> Compile tested only.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/input/misc/pcap_keys.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/input/misc/pcap_keys.c b/drivers/input/misc/pcap_keys.c
+> index cd230365166e..2a10f3a30969 100644
+> --- a/drivers/input/misc/pcap_keys.c
+> +++ b/drivers/input/misc/pcap_keys.c
+> @@ -79,13 +79,15 @@ static int pcap_keys_probe(struct platform_device *pdev)
+>  	if (err)
+>  		goto fail_allocate;
+>  
+> -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
+> -			pcap_keys_handler, 0, "Power key", pcap_keys);
+> +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
+> +				   NULL, pcap_keys_handler, 0,
+> +				   "Power key", pcap_keys);
+>  	if (err)
+>  		goto fail_register;
+>  
+> -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
+> -			pcap_keys_handler, 0, "Headphone button", pcap_keys);
+> +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
+> +				   NULL, pcap_keys_handler, 0,
+> +				   "Headphone button", pcap_keys);
 
-I don't understand what this sentance means :(
+So I guess we do need threaded IRQ here, but I do not see the pcap's
+irqchip specifying IRQCHIP_ONESHOT_SAFE so I do not think
+request_threaded_irq() without IRQF_ONESHOT would succeed.
 
-> Because r8192_get_wireless_stats is used by rtl_core.h if WIRELESS_EXT
-> is more that 12 but less that 17.
+Can someone test the change to be sure?
 
-Will that value ever change?
+Thanks!
 
-thanks,
-
-greg k-h
+-- 
+Dmitry
