@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043AbaDFXlO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:41:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59446 "EHLO
+	id S1755025AbaDFXlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:41:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59450 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754689AbaDFXjG (ORCPT
+	by vger.kernel.org with ESMTP id S1754741AbaDFXjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Apr 2014 19:39:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Martin Schwidefsky" <schwidefsky@de.ibm.com>
+CC: akpm@linux-foundation.org, "Michal Marek" <mmarek@suse.cz>
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.584142523@decadent.org.uk>
+Message-ID: <lsq.1396827348.281958628@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 18/18] s390: fix kernel crash due to linkage stack
- instructions
+Subject: [PATCH 3.2 11/18] deb-pkg: Fix cross-building linux-headers package
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,53 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 8d7f6690cedb83456edd41c9bd583783f0703bf0 upstream.
+commit f8ce239dfc7ba9add41d9ecdc5e7810738f839fa upstream.
 
-The kernel currently crashes with a low-address-protection exception
-if a user space process executes an instruction that tries to use the
-linkage stack. Set the base-ASTE origin and the subspace-ASTE origin
-of the dispatchable-unit-control-table to point to a dummy ASTE.
-Set up control register 15 to point to an empty linkage stack with no
-room left.
+builddeb generates a control file that says the linux-headers package
+can only be built for the build system primary architecture.  This
+breaks cross-building configurations.  We should use $debarch for this
+instead.
 
-A user space process with a linkage stack instruction will still crash
-but with a different exception which is correctly translated to a
-segmentation fault instead of a kernel oops.
+Since $debarch is not yet set when generating the control file, set
+Architecture: any and use control file variables to fill in the
+description.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Fixes: cd8d60a20a45 ('kbuild: create linux-headers package in deb-pkg')
+Reported-and-tested-by: "Niew, Sh." <shniew@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- arch/s390/kernel/head64.S | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ scripts/package/builddeb | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/arch/s390/kernel/head64.S
-+++ b/arch/s390/kernel/head64.S
-@@ -61,7 +61,7 @@ ENTRY(startup_continue)
- 	.quad	0			# cr12: tracing off
- 	.quad	0			# cr13: home space segment table
- 	.quad	0xc0000000		# cr14: machine check handling off
--	.quad	0			# cr15: linkage stack operations
-+	.quad	.Llinkage_stack		# cr15: linkage stack operations
- .Lpcmsk:.quad	0x0000000180000000
- .L4malign:.quad 0xffffffffffc00000
- .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
-@@ -69,12 +69,15 @@ ENTRY(startup_continue)
- .Lparmaddr:
- 	.quad	PARMAREA
- 	.align	64
--.Lduct: .long	0,0,0,0,.Lduald,0,0,0
-+.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
- 	.long	0,0,0,0,0,0,0,0
-+.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
- 	.align	128
- .Lduald:.rept	8
- 	.long	0x80000000,0,0,0	# invalid access-list entries
- 	.endr
-+.Llinkage_stack:
-+	.long	0,0,0x89000000,0,0,0,0x8a000000,0
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 65014e1..5fcfc33 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -62,7 +62,7 @@ create_package() {
+ 	fi
  
- ENTRY(_ehead)
+ 	# Create the package
+-	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
++	dpkg-gencontrol -isp $forcearch -Vkernel:debarch="${debarch:-$(dpkg --print-architecture)}" -p$pname -P"$pdir"
+ 	dpkg --build "$pdir" ..
+ }
  
+@@ -298,15 +298,14 @@ mkdir -p "$destdir"
+ (cd $objtree; cp $KCONFIG_CONFIG $destdir/.config) # copy .config manually to be where it's expected to be
+ ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
+ rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+-arch=$(dpkg --print-architecture)
+ 
+ cat <<EOF >> debian/control
+ 
+ Package: $kernel_headers_packagename
+ Provides: linux-headers, linux-headers-2.6
+-Architecture: $arch
+-Description: Linux kernel headers for $KERNELRELEASE on $arch
+- This package provides kernel header files for $KERNELRELEASE on $arch
++Architecture: any
++Description: Linux kernel headers for $KERNELRELEASE on \${kernel:debarch}
++ This package provides kernel header files for $KERNELRELEASE on \${kernel:debarch}
+  .
+  This is useful for people who need to build external modules
+ EOF
 
