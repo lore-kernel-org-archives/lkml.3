@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaDFV7U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 17:59:20 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:48459 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaDFV7Q (ORCPT
+	id S1754614AbaDFWTl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 18:19:41 -0400
+Received: from 200.180.216.87.static.jazztel.es ([87.216.180.200]:43554 "HELO
+	mail.sysvalve.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753191AbaDFWTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 17:59:16 -0400
-Message-ID: <1396821554.12330.51.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: [PATCH] decnet: fix possible NULL deref in dnet_select_source()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-decnet-user@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Date: Sun, 06 Apr 2014 14:59:14 -0700
-In-Reply-To: <5341A3C1.9060101@oracle.com>
-References: <5341A3C1.9060101@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 6 Apr 2014 18:19:16 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Apr 2014 18:19:16 EDT
+From: =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
+To: devel@driverdev.osuosl.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>, Chris Bajumpaa <cbajumpa@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] staging/line6: Fix kzalloc coding style issue
+Date: Mon,  7 Apr 2014 00:12:30 +0200
+Message-Id: <1396822352-14555-1-git-send-email-agimenez@sysvalve.es>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+Pass the actual variable to sizeof instead of a type definition.
 
-dnet_select_source() should make sure dn_ptr is not NULL.
-
-While looking at this decnet code, I believe I found a device
-reference leak, lets fix it as well.
- 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
 ---
-It seems this bug is very old, no recent change is involved.
+ drivers/staging/line6/pcm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- net/decnet/dn_route.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/net/decnet/dn_route.c b/net/decnet/dn_route.c
-index ce0cbbfe0f43..4d1608dfb0bd 100644
---- a/net/decnet/dn_route.c
-+++ b/net/decnet/dn_route.c
-@@ -923,6 +923,8 @@ static __le16 dnet_select_source(const struct net_device *dev, __le16 daddr, int
- 
- 	rcu_read_lock();
- 	dn_db = rcu_dereference(dev->dn_ptr);
-+	if (!dn_db)
-+		goto out;
- 	for (ifa = rcu_dereference(dn_db->ifa_list);
- 	     ifa != NULL;
- 	     ifa = rcu_dereference(ifa->ifa_next)) {
-@@ -938,6 +940,7 @@ static __le16 dnet_select_source(const struct net_device *dev, __le16 daddr, int
- 		if (best_match == 0)
- 			saddr = ifa->ifa_local;
+diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
+index 661080b..a3136b1 100644
+--- a/drivers/staging/line6/pcm.c
++++ b/drivers/staging/line6/pcm.c
+@@ -475,7 +475,7 @@ int line6_init_pcm(struct usb_line6 *line6,
+ 		MISSING_CASE;
  	}
-+out:
- 	rcu_read_unlock();
  
- 	return saddr;
-@@ -1034,7 +1037,6 @@ source_ok:
- 		if (dev_out)
- 			dev_put(dev_out);
- 		dev_out = init_net.loopback_dev;
--		dev_hold(dev_out);
- 		if (!fld.daddr) {
- 			fld.daddr =
- 			fld.saddr = dnet_select_source(dev_out, 0,
-@@ -1042,6 +1044,7 @@ source_ok:
- 			if (!fld.daddr)
- 				goto out;
- 		}
-+		dev_hold(dev_out);
- 		fld.flowidn_oif = LOOPBACK_IFINDEX;
- 		res.type = RTN_LOCAL;
- 		goto make_route;
-
+-	line6pcm = kzalloc(sizeof(struct snd_line6_pcm), GFP_KERNEL);
++	line6pcm = kzalloc(sizeof(*line6pcm), GFP_KERNEL);
+ 
+ 	if (line6pcm == NULL)
+ 		return -ENOMEM;
+-- 
+1.9.1
 
