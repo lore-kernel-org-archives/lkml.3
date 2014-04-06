@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaDFXlA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:41:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59451 "EHLO
+	id S1755066AbaDFXlR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:41:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59437 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754742AbaDFXjG (ORCPT
+	by vger.kernel.org with ESMTP id S1754668AbaDFXjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Apr 2014 19:39:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michal Marek" <mmarek@suse.cz>
+CC: akpm@linux-foundation.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Hans de Goede" <hdegoede@redhat.com>
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.749878244@decadent.org.uk>
+Message-ID: <lsq.1396827348.948238718@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 10/18] deb-pkg: Fix building for MIPS big-endian or
- ARM OABI
+Subject: [PATCH 3.2 02/18] Input: synaptics - add manual min/max quirk for
+ ThinkPad X240
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit c5e318f67eebbad491615a752c51dbfde7dc3d78 upstream.
+commit 8a0435d958fb36d93b8df610124a0e91e5675c82 upstream.
 
-These commands will mysteriously fail:
+This extends Benjamin Tissoires manual min/max quirk table with support for
+the ThinkPad X240.
 
-$ make ARCH=arm versatile_defconfig
-[...]
-$ make ARCH=arm deb-pkg
-[...]
-make[1]: *** [deb-pkg] Error 1
-make: *** [deb-pkg] Error 2
-
-The Debian architecture selection for these kernel architectures does
-'grep FOO=y $KCONFIG_CONFIG && echo bar', and after 'set -e' this
-aborts the script if grep does not find the given config symbol.
-
-Fixes: 10f26fa64200 ('build, deb-pkg: select userland architecture based on UTS_MACHINE')
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- scripts/package/builddeb | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/mouse/synaptics.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 5fcfc33..f46e4dd 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -41,9 +41,9 @@ create_package() {
- 	parisc*)
- 		debarch=hppa ;;
- 	mips*)
--		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo el) ;;
-+		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo el || true) ;;
- 	arm*)
--		debarch=arm$(grep -q CONFIG_AEABI=y $KCONFIG_CONFIG && echo el) ;;
-+		debarch=arm$(grep -q CONFIG_AEABI=y $KCONFIG_CONFIG && echo el || true) ;;
- 	*)
- 		echo "" >&2
- 		echo "** ** **  WARNING  ** ** **" >&2
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1386,6 +1386,14 @@ static const struct dmi_system_id min_ma
+ 		.driver_data = (int []){1024, 5052, 2258, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad X240 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X240"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
 
