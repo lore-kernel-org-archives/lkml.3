@@ -1,163 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418AbaDFQ0Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 12:26:24 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:41246 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002AbaDFQ0W (ORCPT
+	id S1754451AbaDFQc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 12:32:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59018 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002AbaDFQc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 12:26:22 -0400
-Message-ID: <1396801576.5625.3.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client changes for 3.15
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Torvalds Linus <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Sun, 06 Apr 2014 12:26:16 -0400
-Organization: PrimaryData Inc
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-XM5AY5wIrOZrXhWCmBBs"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+	Sun, 6 Apr 2014 12:32:26 -0400
+Message-ID: <1396801287.1468.18.camel@vash.home>
+Subject: [PATCHv3 1/1] staging: sep: Fix coding style
+From: Camille Bordignon <camille.bordignon@gmail.com>
+To: "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "rashika.kheria@gmail.com" <rashika.kheria@gmail.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 06 Apr 2014 18:21:27 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Camille Bordignon <camille.bordignon@gmail.com>
+---
+Fix coding style warning "Missing a blank line after declarations"
+---
+diff --git a/drivers/staging/sep/sep_crypto.c
+b/drivers/staging/sep/sep_crypto.c
+index 965485f..415f8ec 100644
+--- a/drivers/staging/sep/sep_crypto.c
++++ b/drivers/staging/sep/sep_crypto.c
+@@ -93,6 +93,7 @@ static void sep_do_callback(struct work_struct *work)
+ {
+ 	struct sep_work_struct *sep_work = container_of(work,
+ 		struct sep_work_struct, work);
++
+ 	if (sep_work != NULL) {
+ 		(sep_work->callback)(sep_work->data);
+ 		kfree(sep_work);
+@@ -649,6 +650,7 @@ weak:
+ static u32 sep_sg_nents(struct scatterlist *sg)
+ {
+ 	u32 ct1 = 0;
++
+ 	while (sg) {
+ 		ct1 += 1;
+ 		sg = sg_next(sg);
+@@ -666,6 +668,7 @@ static u32 sep_sg_nents(struct scatterlist *sg)
+ static u32 sep_start_msg(struct this_task_ctx *ta_ctx)
+ {
+ 	u32 *word_ptr;
++
+ 	ta_ctx->msg_len_words = 2;
+ 	ta_ctx->msgptr = ta_ctx->msg;
+ 	memset(ta_ctx->msg, 0, SEP_DRIVER_MESSAGE_SHARED_AREA_SIZE_IN_BYTES);
+@@ -740,6 +743,7 @@ static void sep_write_msg(struct this_task_ctx
+*ta_ctx, void *in_addr,
+ {
+ 	u32 *word_ptr;
+ 	void *void_ptr;
++
+ 	void_ptr = ta_ctx->msgptr + *msg_offset;
+ 	word_ptr = (u32 *)void_ptr;
+ 	memcpy(void_ptr, in_addr, size);
+@@ -748,6 +752,7 @@ static void sep_write_msg(struct this_task_ctx
+*ta_ctx, void *in_addr,
+ 	/* Do we need to manipulate endian? */
+ 	if (byte_array) {
+ 		u32 i;
++
+ 		for (i = 0; i < ((size + 3) / 4); i += 1)
+ 			*(word_ptr + i) = CHG_ENDIAN(*(word_ptr + i));
+ 	}
+@@ -788,12 +793,14 @@ static void sep_read_msg(struct this_task_ctx
+*ta_ctx, void *in_addr,
+ {
+ 	u32 *word_ptr;
+ 	void *void_ptr;
++
+ 	void_ptr = ta_ctx->msgptr + *msg_offset;
+ 	word_ptr = (u32 *)void_ptr;
+ 
+ 	/* Do we need to manipulate endian? */
+ 	if (byte_array) {
+ 		u32 i;
++
+ 		for (i = 0; i < ((size + 3) / 4); i += 1)
+ 			*(word_ptr + i) = CHG_ENDIAN(*(word_ptr + i));
+ 	}
+@@ -865,6 +872,7 @@ static void sep_read_context(struct this_task_ctx
+*ta_ctx, u32 *msg_offset,
+ 	void *dst, u32 len)
+ {
+ 	u32 max_length = ((len + 3) / sizeof(u32)) * sizeof(u32);
++
+ 	sep_read_msg(ta_ctx, dst, len, max_length, msg_offset, 0);
+ }
+ 
+@@ -884,6 +892,7 @@ static void sep_write_context(struct this_task_ctx
+*ta_ctx, u32 *msg_offset,
+ 	void *src, u32 len)
+ {
+ 	u32 max_length = ((len + 3) / sizeof(u32)) * sizeof(u32);
++
+ 	sep_write_msg(ta_ctx, src, len, max_length, msg_offset, 0);
+ }
+ 
+@@ -3893,6 +3902,7 @@ static struct crypto_alg crypto_algs[] = {
+ int sep_crypto_setup(void)
+ {
+ 	int err, i, j, k;
++
+ 	tasklet_init(&sep_dev->finish_tasklet, sep_finish,
+ 		(unsigned long)sep_dev);
+ 
+diff --git a/drivers/staging/sep/sep_dev.h
+b/drivers/staging/sep/sep_dev.h
+index 5f6a07f..bf56c06 100644
+--- a/drivers/staging/sep/sep_dev.h
++++ b/drivers/staging/sep/sep_dev.h
+@@ -152,6 +152,7 @@ static inline u32 sep_read_reg(struct sep_device
+*dev, int reg)
+ static inline void sep_wait_sram_write(struct sep_device *dev)
+ {
+ 	u32 reg_val;
++
+ 	do {
+ 		reg_val = sep_read_reg(dev, HW_SRAM_DATA_READY_REG_ADDR);
+ 	} while (!(reg_val & 1));
 
---=-XM5AY5wIrOZrXhWCmBBs
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-Hi Linus,
-
-The following changes since commit 2ca310fc4160ed0420da65534a21ae77b24326a8=
-:
-
-  SUNRPC: Fix oops when trace sunrpc_task events in nfs client (2014-03-07 =
-19:10:08 -0500)
-
-are available in the git repository at:
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.15-=
-1
-
-for you to fetch changes up to 9581a4ae75517099bc87e1c43d1a8f35b55741b9:
-
-  nfs: pass string length to pr_notice message about readdir loops (2014-04=
--05 09:25:42 -0400)
-
-----------------------------------------------------------------
-NFS client updates for Linux 3.15
-
-Highlights include:
-
-- Stable fix for a use after free issue in the NFSv4.1 open code
-- Fix the SUNRPC bi-directional RPC code to account for TCP segmentation
-- Optimise usage of readdirplus when confronted with 'ls -l' situations
-- Soft mount bugfixes
-- NFS over RDMA bugfixes
-- NFSv4 close locking fixes
-- Various NFSv4.x client state management optimisations
-- Rename/unlink code cleanups
-
-----------------------------------------------------------------
-Chuck Lever (4):
-      NFS: Clean up: revert increase in READDIR RPC buffer max size
-      SUNRPC: Fix large reads on NFS/RDMA
-      SUNRPC: remove KERN_INFO from dprintk() call sites
-      NFS: advertise only supported callback netids
-
-Jeff Layton (6):
-      nfs: abstract out code needed to complete a sillyrename
-      nfs: make nfs_async_rename non-static
-      nfs: convert nfs_rename to use async_rename infrastructure
-      nfs: remove synchronous rename code
-      nfs: emit a fsnotify_nameremove call in sillyrename codepath
-      nfs: pass string length to pr_notice message about readdir loops
-
-Steve Dickson (1):
-      SUNRPC: Ensure call_connect_status() deals correctly with SOFTCONN ta=
-sks
-
-Trond Myklebust (18):
-      SUNRPC: RPC callbacks may be split across several TCP segments
-      NFS: Be more aggressive in using readdirplus for 'ls -l' situations
-      NFSv4.1: Fix wraparound issues in pnfs_seqid_is_newer()
-      NFSv4: Don't update the open stateid unless it is newer than the old =
-one
-      NFSv4.1: Ensure that the layout recall callback matches layout statei=
-ds
-      NFSv4.1: Minor optimisation in get_layout_by_fh_locked()
-      NFSv4.1: Ensure that we free existing layout segments if we get a new=
- layout
-      NFSv4: Use correct locking when updating nfs4_state in nfs4_close_don=
-e
-      NFSv4: Clear the open state flags if the new stateid does not match
-      SUNRPC: Ensure that call_connect times out correctly
-      SUNRPC: Ensure that call_bind times out correctly
-      Merge branch 'devel' into linux-next
-      NFSv4: Schedule recovery if nfs40_walk_client_list() is interrupted
-      NFSv4: Ensure we respect soft mount timeouts during trunking discover=
-y
-      SUNRPC: Ensure call_status() deals correctly with SOFTCONN tasks
-      SUNRPC: Don't let rpc_delay() clobber non-timeout errors
-      SUNRPC: rpc_restart_call/rpc_restart_call_prepare should clear task->=
-tk_status
-      NFSv4: Fix a use-after-free problem in open()
-
- fs/nfs/callback_proc.c          |  19 ++--
- fs/nfs/dir.c                    |  62 +++++++++++--
- fs/nfs/inode.c                  |  34 +++++--
- fs/nfs/internal.h               |   8 ++
- fs/nfs/nfs3proc.c               |  36 --------
- fs/nfs/nfs4_fs.h                |  11 +++
- fs/nfs/nfs4client.c             |   7 ++
- fs/nfs/nfs4proc.c               | 197 +++++++++++++++++++++---------------=
-----
- fs/nfs/nfs4state.c              |   6 +-
- fs/nfs/nfs4xdr.c                |   3 +-
- fs/nfs/pnfs.c                   |  17 +++-
- fs/nfs/proc.c                   |  25 -----
- fs/nfs/unlink.c                 |  35 ++++++-
- include/linux/nfs_fs.h          |   2 +-
- include/linux/nfs_xdr.h         |   3 +-
- include/linux/sunrpc/bc_xprt.h  |   3 +-
- net/sunrpc/backchannel_rqst.c   |  93 +++++++++++++------
- net/sunrpc/clnt.c               |  23 +++--
- net/sunrpc/sched.c              |   3 +-
- net/sunrpc/xprtrdma/rpc_rdma.c  |   4 +-
- net/sunrpc/xprtrdma/transport.c |  10 +-
- net/sunrpc/xprtsock.c           |  28 ++----
- 22 files changed, 368 insertions(+), 261 deletions(-)
-
---=20
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
-
-
---=-XM5AY5wIrOZrXhWCmBBs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABAgAGBQJTQYAuAAoJEGcL54qWCgDyorEQAKMURkuxM09OXoBORJCiIG7Q
-QAQAaKn6qpUhVXfwYHKB8MqEUcyBYtpEHSdAL5F4XIYFB9kdO5YQGDxD+QhdcRve
-7extJNdkefpKWM9tMwNwOBOQNXzr4yJvgzo6i05zPTP7PQxWkM+4Vb7JiXWcSbMC
-Fj3mWhsu+4EGVNWsrdJOmpr7uHRiOafVAoYiq7BfAPg+5iDmd2enC6UThsewc4De
-g62zTrcQqVLdwWjH28NJoFHiT5+q6JlYrO9iz2wRi3mW9paMtKA2VWmtJU+sH95u
-UHaig1rlZMQlWiIw2IcpvN2OoBYxLrNxQp+18T/Jg9Kaa86YGJ0TXaVDarY3Kh+7
-+mczHr0uke1xxr22rQ0qe5RbffqXGMKZeIC9J9AkvZDP0Whxg/k465bfi1DH/G/3
-JHgBSLYZ4outkzLQi2NbFOjKWOO16a8lKNI0HPK07Mn2XHUGzPSx428bFl9qeMIq
-YjuRdIbo3q+FeU6wK6K2zAAruSMLCGRkKNw/TwDOq76JPXEncuoNLOVJxVfVaP7P
-PUNXybMfMudOwFOt1cFH5dxqwKWy7k6/ZyjxyHfZnC4Eiv2f3CCL8Chlu2Ro3gM3
-+Pmvw+qyXUeH5WORdg1CjLJcdvIsHI6xiPs3iNUeCS5hQuTlZill7B5edUvQ+s3c
-PtqjJNQ20EtGC1vckXky
-=iI2a
------END PGP SIGNATURE-----
-
---=-XM5AY5wIrOZrXhWCmBBs--
 
