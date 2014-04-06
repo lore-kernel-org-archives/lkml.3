@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaDFFjW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 01:39:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19199 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaDFFiq (ORCPT
+	id S1754170AbaDFFjS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 01:39:18 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19781 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbaDFFi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 01:38:46 -0400
+	Sun, 6 Apr 2014 01:38:29 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [RFC PATCH 3/5] irq: Use irq_alloc_desc_at instead of irq_reserve_irq
-Date: Sat,  5 Apr 2014 22:39:24 -0700
-Message-Id: <1396762766-4942-4-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org
+Subject: [RFC PATCH 2/5] sh: Remove irq_reserve_irq calling
+Date: Sat,  5 Apr 2014 22:39:23 -0700
+Message-Id: <1396762766-4942-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1396762766-4942-1-git-send-email-yinghai@kernel.org>
 References: <1396762766-4942-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_reserve_irq actually only set bit allocated_irq, and it is not really
-"reserve" and cause confusion.
+in sh calling path:
+	register_intc_controller
+		==> irq_create_identity_mapping/irq_create_strict_mappins
+			==>irq_alloc_desc: it will set bits on allocate_irq
+		==> intc_register_irq
+			==> irq_reserve_irq: set bits again
 
-For !CONFIG_SPARSE_IRQ path, irq_alloc_desc_at() will only set bit
-in allocated_irq.
-
-We can use that instead, kill one irq_reserve_irq() calling.
+so we can kill this irq_reserve_irq calling.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-sh@vger.kernel.org
 ---
- kernel/irq/chip.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/sh/intc/core.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 6397df2..aff7481 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -28,8 +28,13 @@
- int irq_set_chip(unsigned int irq, struct irq_chip *chip)
- {
+diff --git a/drivers/sh/intc/core.c b/drivers/sh/intc/core.c
+index 8f32a13..05118f92 100644
+--- a/drivers/sh/intc/core.c
++++ b/drivers/sh/intc/core.c
+@@ -81,11 +81,8 @@ static void __init intc_register_irq(struct intc_desc *desc,
  	unsigned long flags;
--	struct irq_desc *desc = irq_get_desc_lock(irq, &flags, 0);
-+	struct irq_desc *desc;
-+
-+#ifndef CONFIG_SPARSE_IRQ
-+	irq_alloc_desc_at(irq, 0);
-+#endif
  
-+	desc = irq_get_desc_lock(irq, &flags, 0);
- 	if (!desc)
- 		return -EINVAL;
- 
-@@ -38,12 +43,7 @@ int irq_set_chip(unsigned int irq, struct irq_chip *chip)
- 
- 	desc->irq_data.chip = chip;
- 	irq_put_desc_unlock(desc, flags);
--	/*
--	 * For !CONFIG_SPARSE_IRQ make the irq show up in
--	 * allocated_irqs. For the CONFIG_SPARSE_IRQ case, it is
--	 * already marked, and this call is harmless.
--	 */
+ 	/*
+-	 * Register the IRQ position with the global IRQ map, then insert
+-	 * it in to the radix tree.
++	 * insert it in to the radix tree.
+ 	 */
 -	irq_reserve_irq(irq);
-+
- 	return 0;
- }
- EXPORT_SYMBOL(irq_set_chip);
+-
+ 	raw_spin_lock_irqsave(&intc_big_lock, flags);
+ 	radix_tree_insert(&d->tree, enum_id, intc_irq_xlate_get(irq));
+ 	raw_spin_unlock_irqrestore(&intc_big_lock, flags);
 -- 
 1.8.4.5
 
