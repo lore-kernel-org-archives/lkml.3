@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaDFS0a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 14:26:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56732 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273AbaDFS02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 14:26:28 -0400
-Date: Sun, 6 Apr 2014 11:28:56 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joel Pelaez Jorge <joelpelaez@gmail.com>
-Cc: Silvan Jegen <s.jegen@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8192e: Fix sparse warning
-Message-ID: <20140406182856.GA24982@kroah.com>
-References: <53419B93.8060806@gmail.com>
+	id S1754454AbaDFSlB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 14:41:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45901 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754207AbaDFSk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 14:40:59 -0400
+Message-ID: <53419F84.2090204@zytor.com>
+Date: Sun, 06 Apr 2014 11:40:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53419B93.8060806@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+CC: "Li, Aubrey" <aubrey.li@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Adam Williamson <awilliam@redhat.com>
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+References: <20140404064120.GB11877@gmail.com>	<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>	<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>	<20140404151359.GB12370@srcf.ucam.org> <20140406184023.1e31412d@alan.etchedpixels.co.uk>
+In-Reply-To: <20140406184023.1e31412d@alan.etchedpixels.co.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 06, 2014 at 01:23:15PM -0500, Joel Pelaez Jorge wrote:
-> drivers/staging/rtl8192e/rtl8192e/rtl_wx.c:1323:24: warning:
-> symbol 'r8192_wx_handlers_def' was not declared. Should it be static
+On 04/06/2014 10:40 AM, One Thousand Gnomes wrote:
+> On Fri, 4 Apr 2014 16:13:59 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 > 
-> Signed-off-by: Joel Pelaez Jorge <joelpelaez@gmail.com>
-> ---
->   drivers/staging/rtl8192e/rtl8192e/rtl_wx.c |    2 ++
->   1 file changed, 2 insertions(+)
+>> On Fri, Apr 04, 2014 at 09:38:57PM +0800, Li, Aubrey wrote:
+>>
+>>> I don't think there is enough justification to revert the patch. We
+>>> introduce EFI into the default list, we didn't see any reason to remove
+>>> it out so far.
+>>
+>> We should be using the EFI method, yes. But it seems that CF9 isn't 
+>> safe, so we should drop that.
+>>
 > 
-> diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c 
-> b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-> index 498995d..5baa699 100644
-> --- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-> +++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-> @@ -20,6 +20,8 @@
->   #include <linux/string.h>
->   #include "rtl_core.h"
+> Windows does not use CF9 and there are known, documented cases where CF9
+> will not work reliably. That includes reliable reboot on some Baytrail
+> systems. (Erratum VLT60 and VLT62).
 > 
-> +extern struct iw_handler_def r8192_wx_handlers_def;
+> So we really shouldn't be doing 0xCF9 except as a last resort if we are
+> still alive and have been through the official reboot methods.
+> 
 
-Don't put "extern" in a .c file, that's never the correct solution.
+No question. The question at hand is if we should do it after all other
+non-terminal (BIOS, triple) methods have been tried.
 
-thanks,
+	-hpa
 
-greg k-h
+
