@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957AbaDFXk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 19:40:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59444 "EHLO
+	id S1754939AbaDFXkx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 19:40:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59455 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754675AbaDFXjG (ORCPT
+	by vger.kernel.org with ESMTP id S1754745AbaDFXjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Apr 2014 19:39:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Borkmann" <dborkman@redhat.com>,
-        "Pablo Neira Ayuso" <pablo@netfilter.org>
+CC: akpm@linux-foundation.org, "Anisse Astier" <anisse@astier.eu>,
+        "Michal Marek" <mmarek@suse.cz>
 Date: Mon, 07 Apr 2014 00:35:48 +0100
-Message-ID: <lsq.1396827348.697627961@decadent.org.uk>
+Message-ID: <lsq.1396827348.733211636@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 05/18] netfilter: nf_conntrack_dccp: fix
- skb_header_pointer API usages
+Subject: [PATCH 3.2 09/18] deb-pkg: use KCONFIG_CONFIG instead of .config
+ file directly
 In-Reply-To: <lsq.1396827347.462803115@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.2.102
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,60 +32,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Anisse Astier <anisse@astier.eu>
 
-commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
+commit d20917670ee1fd4b090555e551faea04b014ca97 upstream.
 
-Some occurences in the netfilter tree use skb_header_pointer() in
-the following way ...
-
-  struct dccp_hdr _dh, *dh;
-  ...
-  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-
-... where dh itself is a pointer that is being passed as the copy
-buffer. Instead, we need to use &_dh as the forth argument so that
-we're copying the data into an actual buffer that sits on the stack.
-
-Currently, we probably could overwrite memory on the stack (e.g.
-with a possibly mal-formed DCCP packet), but unintentionally, as
-we only want the buffer to be placed into _dh variable.
-
-Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Anisse Astier <anisse@astier.eu>
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/netfilter/nf_conntrack_proto_dccp.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ scripts/package/builddeb | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/net/netfilter/nf_conntrack_proto_dccp.c
-+++ b/net/netfilter/nf_conntrack_proto_dccp.c
-@@ -431,7 +431,7 @@ static bool dccp_new(struct nf_conn *ct,
- 	const char *msg;
- 	u_int8_t state;
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -41,9 +41,9 @@ create_package() {
+ 	parisc*)
+ 		debarch=hppa ;;
+ 	mips*)
+-		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y .config && echo el) ;;
++		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo el) ;;
+ 	arm*)
+-		debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el) ;;
++		debarch=arm$(grep -q CONFIG_AEABI=y $KCONFIG_CONFIG && echo el) ;;
+ 	*)
+ 		echo "" >&2
+ 		echo "** ** **  WARNING  ** ** **" >&2
+@@ -105,12 +105,12 @@ fi
+ if [ "$ARCH" = "um" ] ; then
+ 	$MAKE linux
+ 	cp System.map "$tmpdir/usr/lib/uml/modules/$version/System.map"
+-	cp .config "$tmpdir/usr/share/doc/$packagename/config"
++	cp $KCONFIG_CONFIG "$tmpdir/usr/share/doc/$packagename/config"
+ 	gzip "$tmpdir/usr/share/doc/$packagename/config"
+ 	cp $KBUILD_IMAGE "$tmpdir/usr/bin/linux-$version"
+ else 
+ 	cp System.map "$tmpdir/boot/System.map-$version"
+-	cp .config "$tmpdir/boot/config-$version"
++	cp $KCONFIG_CONFIG "$tmpdir/boot/config-$version"
+ 	# Not all arches include the boot path in KBUILD_IMAGE
+ 	if [ -e $KBUILD_IMAGE ]; then
+ 		cp $KBUILD_IMAGE "$tmpdir/boot/vmlinuz-$version"
+@@ -119,7 +119,7 @@ else
+ 	fi
+ fi
  
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
+-if grep -q '^CONFIG_MODULES=y' .config ; then
++if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
+ 	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
+ 	if [ "$ARCH" = "um" ] ; then
+ 		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
+@@ -240,11 +240,12 @@ fi
+ # Build header package
+ (cd $srctree; find . -name Makefile -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
+ (cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
+-(cd $objtree; find .config Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
++(cd $objtree; find Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
+ destdir=$kernel_headers_dir/usr/src/linux-headers-$version
+ mkdir -p "$destdir"
+ (cd $srctree; tar -c -f - -T "$objtree/debian/hdrsrcfiles") | (cd $destdir; tar -xf -)
+ (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
++(cd $objtree; cp $KCONFIG_CONFIG $destdir/.config) # copy .config manually to be where it's expected to be
+ rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+ arch=$(dpkg --print-architecture)
  
- 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
-@@ -483,7 +483,7 @@ static int dccp_packet(struct nf_conn *c
- 	u_int8_t type, old_state, new_state;
- 	enum ct_dccp_roles role;
- 
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	BUG_ON(dh == NULL);
- 	type = dh->dccph_type;
- 
-@@ -575,7 +575,7 @@ static int dccp_error(struct net *net, s
- 	unsigned int cscov;
- 	const char *msg;
- 
--	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
-+	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
- 	if (dh == NULL) {
- 		msg = "nf_ct_dccp: short packet ";
- 		goto out_invalid;
 
