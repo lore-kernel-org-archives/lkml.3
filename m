@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223AbaDFNyn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 09:54:43 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:37947 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312AbaDFNyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 09:54:40 -0400
-Date: Sun, 6 Apr 2014 16:54:24 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Benson Leung <bleung@chromium.org>, wsa@the-dreams.de, khali@linux-fr.org,
-        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dlaurie@chromium.org
-Subject: Re: [PATCH v2 0/2] i2c-designware-pci: Add Haswell ULT device support
-Message-ID: <20140406135424.GA1840@node.dhcp.inet.fi>
-References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
- <1382367944-3005-1-git-send-email-bleung@chromium.org>
- <20131021161428.GI3521@intel.com>
+	id S1753693AbaDFN4V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 09:56:21 -0400
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:45813 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbaDFN4Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 09:56:16 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jon Maloy <jon.maloy@ericsson.com>,
+        Allan Stephens <allan.stephens@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, tipc-discussion@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] tipc: Let tipc_release() return 0
+Date: Sun,  6 Apr 2014 15:56:14 +0200
+Message-Id: <1396792574-32169-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131021161428.GI3521@intel.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 07:14:28PM +0300, Mika Westerberg wrote:
-> On Mon, Oct 21, 2013 at 08:05:42AM -0700, Benson Leung wrote:
-> > Fixed 25Mhz clock instead of 100Mhz clock in 1/2 and a warning in 2/2.
-> > 
-> > [PATCH v2 1/2] i2c-designware-pci: Add Haswell ULT device IDs
-> > [PATCH v2 2/2] i2c-designware-pci: Index Haswell ULT bus names from 0
-> 
-> Both patches,
-> 
-> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+net/tipc/socket.c: In function ‘tipc_release’:
+net/tipc/socket.c:352: warning: ‘res’ is used uninitialized in this function
 
-Guys, any idea why these patches have not upstreamed yet?
+Introduced by commit 24be34b5a0c9114541891d29dff1152bb1a8df34 ("tipc:
+eliminate upcall function pointers between port and socket"), which
+removed the sole initializer of "res".
 
+Just return 0 to fix it.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ net/tipc/socket.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/net/tipc/socket.c b/net/tipc/socket.c
+index 29b7f26a12cf..adc12e227303 100644
+--- a/net/tipc/socket.c
++++ b/net/tipc/socket.c
+@@ -301,7 +301,6 @@ static int tipc_release(struct socket *sock)
+ 	struct tipc_sock *tsk;
+ 	struct tipc_port *port;
+ 	struct sk_buff *buf;
+-	int res;
+ 
+ 	/*
+ 	 * Exit if socket isn't fully initialized (occurs when a failed accept()
+@@ -349,7 +348,7 @@ static int tipc_release(struct socket *sock)
+ 	sock_put(sk);
+ 	sock->sk = NULL;
+ 
+-	return res;
++	return 0;
+ }
+ 
+ /**
 -- 
- Kirill A. Shutemov
+1.7.9.5
+
