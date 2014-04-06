@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaDFOmh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 10:42:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17739 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352AbaDFOmf (ORCPT
+	id S1754381AbaDFOnz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 10:43:55 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:32779 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaDFOnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 10:42:35 -0400
-Message-ID: <534167CF.4060400@oracle.com>
-Date: Sun, 06 Apr 2014 10:42:23 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Subject: mm,x86: page table corruption after adding reserve_memtype
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Sun, 6 Apr 2014 10:43:52 -0400
+X-AuditID: cbfec373-b7f4a6d000005e0a-37-53416826c7f2
+Date: Sun, 06 Apr 2014 11:43:44 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for v3.15-rc1] media updates
+Message-id: <20140406114344.295b22da@samsung.com>
+In-reply-to: <CA+55aFz8+kgRAm9Oozkcaa+diL_6OEP=M4wr7j5z-HTOg-2O=g@mail.gmail.com>
+References: <20140403131143.69f324c7@samsung.com>
+ <CA+55aFz8+kgRAm9Oozkcaa+diL_6OEP=M4wr7j5z-HTOg-2O=g@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/hIF21DMdgg8kLTCzmrF/DZrHk5y4m
+	i8u75rBZ9GzYymrxqO8tuwOrx5TfG1k9Tsz4zeLxeZNcAHMUl01Kak5mWWqRvl0CV8a+ZzPZ
+	Ci5zVCy5PImxgfEZWxcjB4eEgIlExyHpLkZOIFNM4sK99UBhLg4hgSWMEosv3oVy+pgkVrc8
+	ZAGpYhFQlWi4e5UVxGYTMJJ41dgCZosA2Z9fXGEFaWAWOMMocfrfXzaQhLCAscTnV33sIDav
+	gKHEgcUnmEBsToFgif41zxhBbCGBComNM96xQJzhJPHq9WQmiHpBiR+T74HFmQW0JDZva2KF
+	sOUlNq95yzyBUWAWkrJZSMpmISlbwMi8ilG0tDi5oDgpPddIrzgxt7g0L10vOT93EyMkfIt3
+	ML7YYHWIUYCDUYmHtyLHIViINbGsuDL3EKMEB7OSCK+miWOwEG9KYmVValF+fFFpTmrxIUYm
+	Dk6pBkZ90+PLYn5Xl5VP+VOYpLP74KFDa3SPm/hOsLKwEPy/4ciPKpX797bG75y58pNw7nqW
+	G3Zp79kb4k0dcj5Vxj8oeOQ9o9jaun0S66xQG7vU8iPrKm9N81Sd0SO0x4xdwuSRR8nV7Pvt
+	naF3NOf/WnleqGx99UKuHS1Oa0wsFzs3VFfqq+btX6bEUpyRaKjFXFScCACYUH5dPQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Em Fri, 04 Apr 2014 15:04:16 -0700
+Linus Torvalds <torvalds@linux-foundation.org> escreveu:
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel, I've stumbled on the following spew:
+> On Thu, Apr 3, 2014 at 9:11 AM, Mauro Carvalho Chehab
+> <m.chehab@samsung.com> wrote:
+> >
+> > Please pull from:
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+> 
+> Oh, just noticed that this seems to be the cause of a new annoying warning:
+> 
+>    usr/include/linux/v4l2-common.h:72: found __[us]{8,16,32,64} type
+> without #include <linux/types.h>
+> 
+> which seems to have come in through commits 777f4f85b75f1 and 254a47770163f.
+> 
+> I think the proper fix is to just add that
+> 
+>   #include <linux/types.h>
 
-[ 1590.944125] reserve_memtype added [mem 0xffff8800000b0000-0xffff8800000b0fff], track uncached-minus, req uncached-minus, ret uncached-minus
-[ 1593.391567] trinity-c184: Corrupted page table at address 7f16a347d000
-[ 1593.391567] PGD 120e67067 PUD 104d2c067 PMD 9b71b067 PTE ffff8800000b0235
-[ 1593.391567] Bad pagetable: 0009 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1593.391567] Dumping ftrace buffer:
-[ 1593.391567]    (ftrace buffer empty)
-[ 1593.391567] Modules linked in:
-[ 1593.391567] CPU: 8 PID: 8739 Comm: trinity-c184 Not tainted 3.14.0-next-20140403-sasha-00022-g10224c0 #377
-[ 1593.391567] task: ffff8800cb8f3000 ti: ffff880113d90000 task.ti: ffff880113d90000
-[ 1593.391567] RIP: copy_user_generic_unrolled (arch/x86/lib/copy_user_64.S:142)
-[ 1593.391567] RSP: 0018:ffff880113d91e80  EFLAGS: 00010206
-[ 1593.391567] RAX: ffff880113d90000 RBX: 00007f16a347d000 RCX: 0000000000000003
-[ 1593.391567] RDX: 0000000000000010 RSI: 00007f16a347d000 RDI: ffff880113d91e88
-[ 1593.391567] RBP: ffff880113d91f68 R08: 00000000000f5a5a R09: 0000000000000000
-[ 1593.391567] R10: 0000000000000000 R11: 0000000000000001 R12: 000000000000009f
-[ 1593.391567] R13: 000000000000009f R14: 00007f16a3444ae8 R15: 000000000000009f
-[ 1593.391567] FS:  00007f16a346e700(0000) GS:ffff8801ef000000(0000) knlGS:0000000000000000
-[ 1593.391567] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1593.391567] CR2: 00007f16a347d000 CR3: 0000000102ed6000 CR4: 00000000000006a0
-[ 1593.391567] DR0: 0000000000696000 DR1: 0000000000696000 DR2: 0000000000000000
-[ 1593.391567] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 1593.391567] Stack:
-[ 1593.391567]  ffffffff8c15f5fa 00007f16a3444ae8 0000000000000082 ffffffff8c27a9c5
-[ 1593.391567]  ffff8800cb8f3000 000000000000009f 00007f16a3444ae8 ffff880113d91ec8
-[ 1593.391567]  ffffffff8cb2e853 ffff880113d91ee8 ffffffff8c1c16e4 0000000000000282
-[ 1593.391567] Call Trace:
-[ 1593.391567] ? SYSC_adjtimex (kernel/time.c:218)
-[ 1593.391567] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
-[ 1593.391567] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[ 1593.391567] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
-[ 1593.391567] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-[ 1593.391567] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
-[ 1593.391567] ? tracesys (arch/x86/kernel/entry_64.S:738)
-[ 1593.391567] SyS_adjtimex (kernel/time.c:209)
-[ 1593.391567] tracesys (arch/x86/kernel/entry_64.S:749)
-[ 1593.391567] Code: 82 8c 00 00 00 89 f9 83 e1 07 74 15 83 e9 08 f7 d9 29 ca 8a 06 88 07 48 ff c6 48 ff c7 ff c9 75 f2 89 d1 83 e2 3f c1 e9 06 74 4a <4c> 8b 06 4c 8b 4e 08 4c 8b 56 10 4c 8b 5e 18 4c 89 07 4c 89 4f
-[ 1593.391567] RIP copy_user_generic_unrolled (arch/x86/lib/copy_user_64.S:142)
-[ 1593.391567]  RSP <ffff880113d91e80>
+Yes, this is the proper fix. Thanks for noticing. I added a make
+headers_check on my test scripts, to allow me to notice things like
+that next time.
 
+I just committed a patch for it on my tree. I'll send you together
+with a few other fixes at the beginning of the next week.
 
-Thanks,
-Sasha
+> 
+> to include/uapi/linux/v4l2-common.h. Assuming that really is supposed
+> to be a user-visible API at all?
+> 
+>               Linus
+
+Thanks!
+Mauro
