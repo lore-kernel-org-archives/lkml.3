@@ -1,85 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaDGMaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:30:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32904 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753510AbaDGMau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:30:50 -0400
-Message-ID: <1396873835.8206.27.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.2 00/18] 3.2.57-rc1 review
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>, akpm@linux-foundation.org
-Date: Mon, 07 Apr 2014 13:30:35 +0100
-In-Reply-To: <53422195.9060108@roeck-us.net>
-References: <lsq.1396827347.462803115@decadent.org.uk>
-	 <53422195.9060108@roeck-us.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Lgxb4n4mc8f2xMMMP8rA"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755259AbaDGMc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 08:32:28 -0400
+Received: from smtp103.mer-nm.internl.net ([217.149.192.139]:58162 "EHLO
+	smtp103.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755161AbaDGMcZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 08:32:25 -0400
+X-Spam-scanned: scanned by InterNLnet Mail Scan System
+X-Spam-Flag: NO
+X-Spam-Score: -2.9
+X-Spam-Languages: en
+Message-ID: <53429AD4.7030508@topic.nl>
+Date: Mon, 7 Apr 2014 14:32:20 +0200
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben.dooks@codethink.co.uk>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <cjb@laptop.org>, <gdjakov@mm-sol.com>
+Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
+References: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl> <5342971F.3010705@codethink.co.uk> <534297AE.1020907@codethink.co.uk> <10471336.Pb8zVvW3Hp@wuerfel>
+In-Reply-To: <10471336.Pb8zVvW3Hp@wuerfel>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+﻿On 04/07/2014 02:25 PM, Arnd Bergmann wrote:
+> On Monday 07 April 2014 13:18:54 Ben Dooks wrote:
+>> On 07/04/14 13:16, Ben Dooks wrote:
+>>> On 07/04/14 13:09, Mike Looijmans wrote:
+>>>> On 04/07/2014 10:11 AM, Arnd Bergmann wrote:
+>>>>> On Monday 07 April 2014 08:38:28 Mike Looijmans wrote:
+>>>>>> index 34aef81..43b90c1 100644
+>>>>>> --- a/drivers/mmc/host/sdhci.c
+>>>>>> +++ b/drivers/mmc/host/sdhci.c
+>>>>>> @@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
+>>>>>>           host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
+>>>>>>           if (IS_ERR_OR_NULL(host->vqmmc)) {
+>>>>>>                   if (PTR_ERR(host->vqmmc) < 0) {
+>>>>>> +                       if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
+>>>>>> +                               return -EPROBE_DEFER;
+>>>>>>                           pr_info("%s: no vqmmc regulator found\n",
+>>>>>>                                   mmc_hostname(mmc));
+>>>>>>                           host->vqmmc = NULL;
+>>>>>> @@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
+>>>>>>           host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
+>>>>>>           if (IS_ERR_OR_NULL(host->vmmc)) {
+>>>>>>                   if (PTR_ERR(host->vmmc) < 0) {
+>>>>>> -                       pr_info("%s: no vmmc regulator found\n",
+>>>>>> -                               mmc_hostname(mmc));
+>>>>>> +                       if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
+>>>>>> +                               return -EPROBE_DEFER;
+>>>>>> +                       pr_info("%s: no vmmc regulator found (%d)\n",
+>>>>>> +                               mmc_hostname(mmc),
+>>>>>> PTR_ERR(host->vmmc));
+>>>>>>                           host->vmmc = NULL;
+>>>>>>                   }
+>>>>>
+>>>>> Please change the code to not use IS_ERR_OR_NULL() instead, getting
+>>>>> a NULL return value from regulator_get_optional() should not be
+>>>>> considered a bug, while getting an error return should always
+>>>>> cause the probe function to fail.
+>>>
+>>> Surely it needs to be changed to IS_ERR(), nor IS_ERR_OR_NULL()?
+>>
+>>
+>> And by that, I mean the use of "PTR_ERR(host->vmmc) < 0" to be
+>> changed to IS_ERR(), which I think Arnd was originally complaining
+>> about.
+>
+> I mean something like
+>
+> 	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
+>
+> 	if (IS_ERR(host->vqmmc)) {
+> 		if (PTR_ERR(host->vqmmc) != -EPROBE_DEFER)
+> 			complain(); /* only print a message if we won't retry */
+> 		return ERR_PTR(host->vqmmc); /* never ignore an error */
+> 	}
+> 	/* silently continue if no regulator is defined */
+>
+> regulator_get_optional() means we can continue if it's not there, but
+> we should not continue if there is a regulator that we fail to use
+> for some reason.
+>
+> As has been found a number of times, any use of IS_ERR_OR_NULL()
+> means that the person responsible for the code is confused about
+> what the API is supposed to be.
 
---=-Lgxb4n4mc8f2xMMMP8rA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Judging from the kernel output, regulator_get_optional returns -ENODEV if the 
+supply wasn't found.
 
-On Sun, 2014-04-06 at 20:55 -0700, Guenter Roeck wrote:
-> On 04/06/2014 04:35 PM, Ben Hutchings wrote:
-> > This is the start of the stable review cycle for the 3.2.57 release.
-> > There are 18 patches in this series, which will be posted as responses
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Wed Apr 09 00:00:00 UTC 2014.
-> > Anything received after that time might be too late.
-> >
->=20
-> Build results:
-> 	total: 116 pass: 87 skipped: 22 fail: 7
->=20
-> qemu tests all passed. Results are as expected.
->=20
-> Details are available at http://server.roeck-us.net:8010/builders.
+Maybe the API is confusing (or wrong?) here.
 
-Thanks for checking, Guenter.
+If you change the code as per your suggestion, the SD will not work unless you 
+explicitly assign supplies. And judging from what I've seen so far, I am the 
+first to have ever attached a power supply to this controller...
 
-Ben.
+Mike.
 
---=20
-Ben Hutchings
-Sturgeon's Law: Ninety percent of everything is crap.
 
---=-Lgxb4n4mc8f2xMMMP8rA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Met vriendelijke groet / kind regards,
 
-iQIVAwUAU0Kaa+e/yOyVhhEJAQoZ3hAAt9nTWC5HCkFopBf8FWUHJpiu3H0TcyYo
-VHxOUwG9KRVe2irzDLqjyOEx2tGcSMPzn17hM17+Ttev6aLV53PF9/Ek2YDNoa8S
-wdc10sGemozNVK+oh3oHIFolBXTFgORYh94BPC2POVJRG0XrJlDZfBkySCoAKR4g
-5i/qGqsghQuwTA6SvBlfBNDvdSLqSFIR9iKTVDynF7t4I7/GG/ZT58ynWGXAwwEd
-p/0+j293zniV0rG/PupmipuWtCsSD87rK6cZQ5hM2/leAw5booPD3p0KI44MC1LM
-TuKKFdY3t8klx++MrdeU9fJ/EKllu1DQaJsZQSQXzM5X265C46ciENT4XyvBN+lc
-0OVXh973fBzepn8IPUiOgNNeoyiM1uQei/E786wrpvuE1GVx6JjUaa1Y+4n4wT0e
-9MCwNFWbS6NH/Whaxo/FYHIqcjUNS6cz/MFNv+QXNCU1QAaDLho+YHlND8X9GRt4
-UQkLKN0PWMq/N/Hn4ZjXo0wRgK5lBDYQaXZAfLBdKhygCeH2mffr+Su72c6BU6RP
-fsa+pVd9QTjQ8Cfko59xo+ACsyqLiio/bdGwccZ/Ay/YEVmK+0DHQNi3tB+ycJLU
-9/YXsmgGINky++K+m0BCNGYaDFFwx2rIocEk81/7t3f1NKYOT0tWF+5j4K4OzlW0
-6r8K3VWntZg=
-=00jU
------END PGP SIGNATURE-----
+Mike Looijmans
 
---=-Lgxb4n4mc8f2xMMMP8rA--
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
+
+Visit us at the Hannover Messe 7 - 11 April 2014 - Hall 002/D10 (Dutch Pavillion)
+http://www.hannovermesse.de/exhibitor/topic-embedded-products/V229623
+
