@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956AbaDGWk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:40:57 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:1192 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755034AbaDGWky (ORCPT
+	id S1756003AbaDGWnP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:43:15 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43561 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194AbaDGWnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:40:54 -0400
-Date: Mon, 7 Apr 2014 15:42:56 -0700
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 3/9] crypto: qce: Add dma and sg helpers
-Message-ID: <20140407224256.GG17066@sonymobile.com>
-References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com>
- <1396541886-10966-4-git-send-email-svarbanov@mm-sol.com>
- <20140403231525.GE17066@sonymobile.com>
- <533EAE81.6060109@mm-sol.com>
+	Mon, 7 Apr 2014 18:43:13 -0400
+Date: Tue, 8 Apr 2014 00:43:10 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Michele Ballabio <barra_cuda@katamail.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
+Message-ID: <20140407224308.GD4106@localhost.localdomain>
+References: <5341707F.5000406@katamail.com>
+ <20140407150337.GO10526@twins.programming.kicks-ass.net>
+ <20140407150705.GB13658@twins.programming.kicks-ass.net>
+ <5342EB78.3060002@gmx.de>
+ <20140407185949.GC4106@localhost.localdomain>
+ <5343030C.3040004@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <533EAE81.6060109@mm-sol.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5343030C.3040004@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 03:07:13PM +0200, Stanimir Varbanov wrote:
-> >> diff --git a/drivers/crypto/qce/dma.h b/drivers/crypto/qce/dma.h
-> >> new file mode 100644
-> >> index 000000000000..932b02fd8f25
-> >> --- /dev/null
-> >> +++ b/drivers/crypto/qce/dma.h
-> >> @@ -0,0 +1,57 @@
-> >> +/*
-> >> + * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or modify
-> >> + * it under the terms of the GNU General Public License version 2 and
-> >> + * only version 2 as published by the Free Software Foundation.
-> >> + *
-> >> + * This program is distributed in the hope that it will be useful,
-> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >> + * GNU General Public License for more details.
-> >> + */
-> >> +
-> >> +#ifndef _DMA_H_
-> >> +#define _DMA_H_
-> >> +
-> >> +#define QCE_AUTHIV_REGS_CNT		16
-> >> +#define QCE_AUTH_BYTECOUNT_REGS_CNT	4
-> >> +#define QCE_CNTRIV_REGS_CNT		4
-> >> +
-> >> +/* result dump format */
-> >> +struct qce_result_dump {
-> >> +	u32 auth_iv[QCE_AUTHIV_REGS_CNT];
-> >> +	u32 auth_byte_count[QCE_AUTH_BYTECOUNT_REGS_CNT];
-> >> +	u32 encr_cntr_iv[QCE_CNTRIV_REGS_CNT];
-> >> +	u32 status;
-> >> +	u32 status2;
-> >> +};
-> >> +
-> >> +#define QCE_IGNORE_BUF_SZ	(2 * QCE_BAM_BURST_SIZE)
-> > 
-> > QCE_BAM_BURST_SIZE is defined in common.h in 6/9.  Either that file
-> > needs to be included from this one, or the definition needs to be moved.
+On Mon, Apr 07, 2014 at 09:57:00PM +0200, Toralf Förster wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA256
 > 
-> I decided to not include any files in driver private headers. Thus I
-> include the private header files in relevant c files in order.
+> On 04/07/2014 08:59 PM, Frederic Weisbecker wrote:
+> > On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
+> >> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA256
+> >> 
+> >> On 04/07/2014 05:07 PM, Peter Zijlstra wrote:
+> >>> On Mon, Apr 07, 2014 at 05:03:37PM +0200, Peter Zijlstra
+> >>> wrote:
+> >>>> So what I suspect at this point is that because i386 and
+> >>>> x86_64 have a difference in current_thread_info() (i386 is
+> >>>> stack based), we end up setting the TIF_NEED_RESCHED bit on
+> >>>> the wrong stack.
+> >>>> 
+> >>>> Now I have some vague memories of propagating the TIF flags
+> >>>> on stack switch, but I cannot remember what arch we did that
+> >>>> for. Let me stare at this a little more.
+> >>>> 
+> >>>> Also, IFF this is the case, then the fingered patch above
+> >>>> (and your suggested 'fix') aren't the real curlpit/cure but
+> >>>> simply make it more/less likely to happen.
+> >>>> 
+> >>>> Now, Steve had a patch somewhere that would make i386 use 
+> >>>> per-cpu variables for current_thread_info() just like x86_64 
+> >>>> already does I think. Let me go find them too.
+> >>> 
+> >>> Ohh, goodie, they're already in Linus' tree. Could you see if 
+> >>> current git still suffers this problem?
+> >>> 
+> >> v3.14-10353-g2b3a8fd works fine AFAICS (BTW the fix is stable
+> >> material, right ?)
+> > 
+> > If we are reffering to 198d208df4371734ac4728f69cb585c284d20a15 
+> > (x86: Keep thread_info on thread stack in x86_32) it doesn't carry
+> > a stable tag.
+> > 
+> > So to be clear, you are saying that v3.14 is fine but other
+> > release are buggy? Which ones are these?
+> > 
+> No, 3.13.x and 3.14 have the issue, latest git is fine and 3.12.x
+> 
 
-Actually, that is exactly what I was trying to indicate as undesirable.
-Please modify this so that each individual header file doesn't require
-you to include another file for usage.
+Ah ok. Hmm, Peter seemed to have an idea on a fix to backport so I'll let
+him handle that :)
 
--Courtney
+Thanks.
