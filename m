@@ -1,34 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaDGRTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:19:52 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:48202 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547AbaDGRTh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:19:37 -0400
+	id S1755247AbaDGR0N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:26:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754025AbaDGRZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 13:25:51 -0400
+Message-ID: <5342DF98.6070000@redhat.com>
+Date: Mon, 07 Apr 2014 19:25:44 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1396890659.3063.4.camel@mjolnir.site>
-References: <1396867174.6220.4.camel@laptop.site>
-	<CAHA+R7NdyXY4RpqLcrNrUtmWPXNOQmW=ho+QgsGV7DptPOewFg@mail.gmail.com>
-	<1396890659.3063.4.camel@mjolnir.site>
-Date: Mon, 7 Apr 2014 10:19:35 -0700
-Message-ID: <CAHA+R7O+1gP4U-YiBHdJeEO1hvH41NcGoRZ5iW_W25CBaXWbnA@mail.gmail.com>
-Subject: Re: proc net statistics
-From: Cong Wang <cwang@twopensource.com>
-To: "Ken O'Brien" <ken@kenobrien.org>
-Cc: Network Development <netdev@vger.kernel.org>,
+To: Cong Wang <cwang@twopensource.com>
+CC: "Ken O'Brien" <ken@kenobrien.org>,
+        Network Development <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: proc net statistics
+References: <1396867174.6220.4.camel@laptop.site> <CAHA+R7NdyXY4RpqLcrNrUtmWPXNOQmW=ho+QgsGV7DptPOewFg@mail.gmail.com> <1396890659.3063.4.camel@mjolnir.site> <CAHA+R7O+1gP4U-YiBHdJeEO1hvH41NcGoRZ5iW_W25CBaXWbnA@mail.gmail.com>
+In-Reply-To: <CAHA+R7O+1gP4U-YiBHdJeEO1hvH41NcGoRZ5iW_W25CBaXWbnA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 10:10 AM, Ken O'Brien <ken@kenobrien.org> wrote:
+On 04/07/2014 07:19 PM, Cong Wang wrote:
+> On Mon, Apr 7, 2014 at 10:10 AM, Ken O'Brien <ken@kenobrien.org> wrote:
+>>
+>> Ok, so then, is there a way to read per process network statistics in the proc filesystem?
 >
-> Ok, so then, is there a way to read per process network statistics in the proc filesystem?
->
+> AFAIK, we only have per-socket and per-netdev statistics, there is no
+> per-process one, you probably want to try cgroup, or put these processes
+> into a namespace.
 
-AFAIK, we only have per-socket and per-netdev statistics, there is no
-per-process one, you probably want to try cgroup, or put these processes
-into a namespace.
+You can do that with cgroups, e.g. xt_cgroup. Samsung/Tizen OS seems to make
+use of this ...
+
+https://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=a00e76349f3564bb8129fc0510dfd93248c3084d
