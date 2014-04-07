@@ -1,46 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575AbaDGPHT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:07:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48167 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560AbaDGPHN (ORCPT
+	id S1755593AbaDGPHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:07:46 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:33194 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335AbaDGPFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:07:13 -0400
-Date: Mon, 7 Apr 2014 17:07:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michele Ballabio <barra_cuda@katamail.com>
-Cc: linux-kernel@vger.kernel.org, toralf.foerster@gmx.de, fweisbec@gmail.com,
-        mingo@kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-Message-ID: <20140407150705.GB13658@twins.programming.kicks-ass.net>
-References: <5341707F.5000406@katamail.com>
- <20140407150337.GO10526@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140407150337.GO10526@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 7 Apr 2014 11:05:24 -0400
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>
+Cc: Robert Richter <robert.richter@linaro.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH 12/16] perf, persistent: ioctl functions to control persistency
+Date: Mon,  7 Apr 2014 17:04:34 +0200
+Message-Id: <1396883078-25320-13-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 05:03:37PM +0200, Peter Zijlstra wrote:
-> So what I suspect at this point is that because i386 and x86_64 have a
-> difference in current_thread_info() (i386 is stack based), we end up
-> setting the TIF_NEED_RESCHED bit on the wrong stack.
-> 
-> Now I have some vague memories of propagating the TIF flags on stack
-> switch, but I cannot remember what arch we did that for. Let me stare at
-> this a little more.
-> 
-> Also, IFF this is the case, then the fingered patch above (and your
-> suggested 'fix') aren't the real curlpit/cure but simply make it
-> more/less likely to happen.
-> 
-> Now, Steve had a patch somewhere that would make i386 use per-cpu
-> variables for current_thread_info() just like x86_64 already does I
-> think. Let me go find them too.
+From: Robert Richter <robert.richter@linaro.org>
 
-Ohh, goodie, they're already in Linus' tree. Could you see if current
-git still suffers this problem?
+Implementing ioctl functions to control persistent events. There are
+functions to unclaim or claim an event to or from a process. The
+PERF_EVENT_IOC_UNCLAIM ioctl call makes an event persistent. After
+closing the event's fd it runs then in the background of the system
+without the need of a controlling process. The perf_event_open()
+syscall can be used to reopen the event by any process. The
+PERF_EVENT_IOC_CLAIM ioctl attaches the event again so that it is
+removed after closing the event's fd.
+
+This is for Linux man-pages:
+
+    type ...
+
+        PERF_TYPE_PERSISTENT (Since Linux 3.xx)
+
+            This indicates a persistent event. There is a unique
+            identifier for each persistent event that needs to be
+            specified in the event's attribute config field.
+            Persistent events are listed under:
+
+              /sys/bus/event_source/devices/persistent/
+
+    ...
+    persistent : 41, /* always-on event */
+    ...
+
+    persistent: (Since Linux 3.xx)
+
+        Put event into persistent state after opening. After closing
+        the event's fd the event is persistent in the system and
+        continues to run.
+
+    perf_event ioctl calls
+
+        PERF_EVENT_IOC_UNCLAIM (Since Linux 3.xx)
+
+            Unclaim the event specified by the file descriptor from the
+            process and make it persistent in the system. After
+            closing the fd the event will continue to run. An unique
+            identifier for the persistent event is returned or an
+            error otherwise. The following allows to connect to the
+            event again:
+
+                pe.type = PERF_TYPE_PERSISTENT;
+                pe.config = <pevent_id>;
+                ...
+                fd = perf_event_open(...);
+
+            The event must be reopened on the same cpu.
+
+        PERF_EVENT_IOC_CLAIM (Since Linux 3.xx)
+
+            Claim the event specified by the file descriptor to the
+            current process. The event is no longer persistent in the
+            system and will be removed after all users disconnected
+            from the event. Thus, if there are no other users the
+            event will be closed too after closing its file
+            descriptor, the event then no longer exists.
+
+[ Jean Pihet: renamed PERF_EVENT_IOC_ATTACH/DETACH to PERF_EVENT_IOC_CLAIM/UNCLAIM ]
+Cc: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Robert Richter <robert.richter@linaro.org>
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+---
+ include/uapi/linux/perf_event.h |   2 +
+ kernel/events/core.c            |   6 ++
+ kernel/events/internal.h        |   2 +
+ kernel/events/persistent.c      | 178 +++++++++++++++++++++++++++++++++-------
+ 4 files changed, 160 insertions(+), 28 deletions(-)
+
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index a3f2761..b2f1943 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -350,6 +350,8 @@ struct perf_event_attr {
+ #define PERF_EVENT_IOC_SET_OUTPUT	_IO ('$', 5)
+ #define PERF_EVENT_IOC_SET_FILTER	_IOW('$', 6, char *)
+ #define PERF_EVENT_IOC_ID		_IOR('$', 7, __u64 *)
++#define PERF_EVENT_IOC_UNCLAIM		_IO ('$', 8)
++#define PERF_EVENT_IOC_CLAIM		_IO ('$', 9)
+ 
+ enum perf_event_ioc_flags {
+ 	PERF_IOC_FLAG_GROUP		= 1U << 0,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 80ada8e..bdf3895 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3707,6 +3707,12 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case PERF_EVENT_IOC_SET_FILTER:
+ 		return perf_event_set_filter(event, (void __user *)arg);
+ 
++	case PERF_EVENT_IOC_UNCLAIM:
++		return perf_event_unclaim(event);
++
++	case PERF_EVENT_IOC_CLAIM:
++		return perf_event_claim(event);
++
+ 	default:
+ 		return -ENOTTY;
+ 	}
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 6b9a11d..9a871b5 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -212,5 +212,7 @@ extern void perf_free_rb(struct perf_event *event);
+ extern int perf_get_fd(struct perf_event *event, int f_flags);
+ extern int perf_get_persistent_event_fd(int cpu, int id);
+ extern void __init perf_register_persistent(void);
++extern int perf_event_unclaim(struct perf_event *event);
++extern int perf_event_claim(struct perf_event *event);
+ 
+ #endif /* _KERNEL_EVENTS_INTERNAL_H */
+diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
+index 49bf889..0d796c6 100644
+--- a/kernel/events/persistent.c
++++ b/kernel/events/persistent.c
+@@ -59,6 +59,49 @@ static struct perf_event *__pevent_find(int cpu, int id)
+ 	return NULL;
+ }
+ 
++static void pevent_free(struct pevent *pevent)
++{
++	if (pevent->id)
++		put_event_id(pevent->id);
++
++	kfree(pevent->name);
++	kfree(pevent);
++}
++
++static struct pevent *pevent_alloc(char *name)
++{
++	struct pevent *pevent;
++	char id_buf[32];
++	int ret;
++
++	pevent = kzalloc(sizeof(*pevent), GFP_KERNEL);
++	if (!pevent)
++		return ERR_PTR(-ENOMEM);
++
++	atomic_set(&pevent->refcount, 1);
++
++	ret = get_event_id(pevent);
++	if (ret < 0)
++		goto fail;
++	pevent->id = ret;
++
++	if (!name) {
++		snprintf(id_buf, sizeof(id_buf), "%d", pevent->id);
++		name = id_buf;
++	}
++
++	pevent->name = kstrdup(name, GFP_KERNEL);
++	if (!pevent->name) {
++		ret = -ENOMEM;
++		goto fail;
++	}
++
++	return pevent;
++fail:
++	pevent_free(pevent);
++	return ERR_PTR(ret);
++}
++
+ static int pevent_add(struct pevent *pevent, struct perf_event *event)
+ {
+ 	int ret = -EEXIST;
+@@ -74,6 +117,7 @@ static int pevent_add(struct pevent *pevent, struct perf_event *event)
+ 
+ 	ret = 0;
+ 	event->pevent_id = pevent->id;
++	event->attr.persistent = 1;
+ 	list_add_tail(&event->pevent_entry, &per_cpu(pevents, cpu));
+ unlock:
+ 	mutex_unlock(&per_cpu(pevents_lock, cpu));
+@@ -91,6 +135,7 @@ static struct perf_event *pevent_del(struct pevent *pevent, int cpu)
+ 	if (event) {
+ 		list_del(&event->pevent_entry);
+ 		event->pevent_id = 0;
++		event->attr.persistent = 0;
+ 	}
+ 
+ 	mutex_unlock(&per_cpu(pevents_lock, cpu));
+@@ -160,33 +205,12 @@ static int __maybe_unused
+ persistent_open(char *name, struct perf_event_attr *attr, int nr_pages)
+ {
+ 	struct pevent *pevent;
+-	char id_buf[32];
+ 	int cpu;
+ 	int ret;
+ 
+-	pevent = kzalloc(sizeof(*pevent), GFP_KERNEL);
+-	if (!pevent)
+-		return -ENOMEM;
+-
+-	atomic_set(&pevent->refcount, 1);
+-
+-	ret = get_event_id(pevent);
+-	if (ret < 0)
+-		goto fail;
+-	pevent->id = ret;
+-
+-	if (!name) {
+-		snprintf(id_buf, sizeof(id_buf), "%d", pevent->id);
+-		name = id_buf;
+-	}
+-
+-	pevent->name = kstrdup(name, GFP_KERNEL);
+-	if (!pevent->name) {
+-		ret = -ENOMEM;
+-		goto fail;
+-	}
+-
+-	pevent->sysfs.id = pevent->id;
++	pevent = pevent_alloc(name);
++	if (IS_ERR(pevent))
++		return PTR_ERR(pevent);
+ 
+ 	for_each_possible_cpu(cpu) {
+ 		ret = persistent_event_open(cpu, pevent, attr, nr_pages);
+@@ -206,10 +230,7 @@ fail:
+ out:
+ 	if (atomic_dec_and_test(&pevent->refcount)) {
+ 		pevent_sysfs_unregister(pevent);
+-		if (pevent->id)
+-			put_event_id(pevent->id);
+-		kfree(pevent->name);
+-		kfree(pevent);
++		pevent_free(pevent);
+ 	}
+ 
+ 	return ret;
+@@ -439,3 +460,104 @@ void __init perf_register_persistent(void)
+ 		mutex_init(&per_cpu(pevents_lock, cpu));
+ 	}
+ }
++
++/*
++ * Unclaim an event from a process. The event will remain in the system
++ * after closing the event's fd, it becomes persistent.
++ */
++int perf_event_unclaim(struct perf_event *event)
++{
++	struct pevent *pevent;
++	int cpu;
++	int ret;
++
++	if (!try_get_event(event))
++		return -ENOENT;
++
++	/* task events not yet supported: */
++	cpu = event->cpu;
++	if ((unsigned)cpu >= nr_cpu_ids) {
++		ret = -EINVAL;
++		goto fail_rb;
++	}
++
++	/*
++	 * Avoid grabbing an id, later checked again in pevent_add()
++	 * with mmap_mutex held.
++	 */
++	if (event->pevent_id) {
++		ret = -EEXIST;
++		goto fail_rb;
++	}
++
++	mutex_lock(&event->mmap_mutex);
++	if (event->rb)
++		ret = -EBUSY;
++	else
++		ret = perf_alloc_rb(event, CPU_BUFFER_NR_PAGES, 0);
++	mutex_unlock(&event->mmap_mutex);
++
++	if (ret)
++		goto fail_rb;
++
++	pevent = pevent_alloc(NULL);
++	if (IS_ERR(pevent)) {
++		ret = PTR_ERR(pevent);
++		goto fail_pevent;
++	}
++
++	ret = pevent_add(pevent, event);
++	if (ret)
++		goto fail_add;
++
++	ret = pevent_sysfs_register(pevent);
++	if (ret)
++		goto fail_sysfs;
++
++	atomic_inc(&event->mmap_count);
++
++	return pevent->id;
++fail_sysfs:
++	pevent_del(pevent, cpu);
++fail_add:
++	pevent_free(pevent);
++fail_pevent:
++	mutex_lock(&event->mmap_mutex);
++	if (event->rb)
++		perf_free_rb(event);
++	mutex_unlock(&event->mmap_mutex);
++fail_rb:
++	put_event(event);
++	return ret;
++}
++
++/*
++ * Claim an event from a process. The event will be removed after all
++ * users disconnected from it, it's no longer persistent in the
++ * system.
++ */
++int perf_event_claim(struct perf_event *event)
++{
++	int cpu = event->cpu;
++	struct pevent *pevent;
++
++	if ((unsigned)cpu >= nr_cpu_ids)
++		return -EINVAL;
++
++	pevent = find_event(event->pevent_id);
++	if (!pevent)
++		return -EINVAL;
++
++	event = pevent_del(pevent, cpu);
++	if (!event)
++		return -EINVAL;
++
++	if (atomic_dec_and_test(&pevent->refcount)) {
++		pevent_sysfs_unregister(pevent);
++		pevent_free(pevent);
++	}
++
++	persistent_event_release(event);
++
++	return 0;
++}
+-- 
+1.7.11.7
+
