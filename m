@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369AbaDGRGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:06:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44988 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161AbaDGRG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:06:28 -0400
+	id S1755545AbaDGRKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:10:40 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:36623 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755217AbaDGRKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 13:10:38 -0400
+Date: Mon, 7 Apr 2014 11:10:12 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Mike Looijmans <mike.looijmans@topic.nl>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
+Message-ID: <20140407171012.GC9952@obsidianresearch.com>
+References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
+ <53423E75.3020008@monstr.eu>
+ <53429754.8080105@topic.nl>
+ <534298E7.2020409@monstr.eu>
 MIME-Version: 1.0
-In-Reply-To: <1396867174.6220.4.camel@laptop.site>
-References: <1396867174.6220.4.camel@laptop.site>
-Date: Mon, 7 Apr 2014 10:06:26 -0700
-Message-ID: <CAHA+R7NdyXY4RpqLcrNrUtmWPXNOQmW=ho+QgsGV7DptPOewFg@mail.gmail.com>
-Subject: Re: proc net statistics
-From: Cong Wang <cwang@twopensource.com>
-To: "Ken O'Brien" <ken@kenobrien.org>
-Cc: Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534298E7.2020409@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 3:39 AM, Ken O'Brien <ken@kenobrien.org> wrote:
-> Hi,
->
-> I was under the impression that statistics reported
-> in /proc/{$pid}/net/dev were specific to that process, but the values
-> appear to be globals, i.e., identical for all processes.
->
-> Is this a bug?
+On Mon, Apr 07, 2014 at 02:24:07PM +0200, Michal Simek wrote:
 
-That is per network-namespace statistics, so it is
-not a bug.
+> Device-tree BSP and in 2014.01 there will be new BSP which just
+> generate them directly from the Vivado tools which just target your
+> reference design.  You can connect your custom IP (or Xilinx or 3rd
+> party) directly to the GIC which using different IRQ sensitivity
+> with whatever register addresses and make no sense to write it by
+> hand.
+
+On our Zynq design here we ended up being unwilling to use platform
+generation from Vivado. Basically all our IP was custom, so there was
+no win at all to invoking the complexity of the automatic tools.
+
+Thus we write the DT by hand, and our DT is complex, integrating
+peripherals that span two FPGAs.
+
+I think the in-kernel DT should use the kernel conventions, which
+means using #include and the binding constants over magic values.
+
+Jason
