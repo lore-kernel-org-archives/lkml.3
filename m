@@ -1,355 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551AbaDGSME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:12:04 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:43599 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125AbaDGSMB (ORCPT
+	id S1755640AbaDGSNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:13:34 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:57263
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755051AbaDGSNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:12:01 -0400
-Date: Mon, 7 Apr 2014 11:11:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mathieu.desnoyers@efficios.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-Message-ID: <20140407181154.GE5272@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140330230856.GA21498@linux.vnet.ibm.com>
- <20140403234312.GA2812@localhost.localdomain>
+	Mon, 7 Apr 2014 14:13:32 -0400
+Date: Mon, 7 Apr 2014 20:13:31 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sean Pajot <sean.pajot@execulink.com>,
+        lxc-devel@lists.linuxcontainers.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
+Message-ID: <20140407181331.GA15012@mail.hallyn.com>
+References: <5266BEA3.6020008@execulink.com>
+ <20131022193718.GA18463@ac100>
+ <874n89rsoc.fsf@xmission.com>
+ <20140402172049.GA13240@sergelap>
+ <20140402173248.GA22804@mail.hallyn.com>
+ <533EF65E.6050508@mit.edu>
+ <20140404183022.GA6728@sergelap>
+ <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
+ <20140404191000.GA13496@sergelap>
+ <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140403234312.GA2812@localhost.localdomain>
+In-Reply-To: <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040718-1344-0000-0000-000000C4D7B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 01:43:16AM +0200, Frederic Weisbecker wrote:
-> On Sun, Mar 30, 2014 at 04:08:56PM -0700, Paul E. McKenney wrote:
-> > For whatever it is worth, the following model claims safety and progress
-> > for the sysidle state machine.
-> > 
-> > Thoughts?
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On Fri, Apr 4, 2014 at 12:10 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> On Fri, Apr 4, 2014 at 11:30 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> >> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> >> On 04/02/2014 10:32 AM, Serge E. Hallyn wrote:
+> >> >> > (Sorry - the lxc-devel list has moved, so replying to all with the
+> >> >> > correct list address;   please reply to this rather than my previous
+> >> >> > email)
+> >> >> >
+> >> >> > Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
+> >> >> >> Hi Eric,
+> >> >> >>
+> >> >> >> (sorry, I don't seem to have the email I actually wanted to reply
+> >> >> >> to in my mbox, but it is
+> >> >> >> https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-October/005857.html)
+> >> >> >>
+> >> >> >> You'd said,
+> >> >> >>> Someone needs to read and think through all of the corner cases and see
+> >> >> >>> if we can ever have a time when task_dumpable is false but root in the
+> >> >> >>> container would not or should not be able to see everything.
+> >> >> >>>
+> >> >> >>> In particular I am worried about the case of a setuid app calling setns,
+> >> >> >>> and entering a lesser privileged user namespace.  In my foggy mind that
+> >> >> >>> might be a security problem.  And there might be other similar crazy
+> >> >> >>> cases.
+> >> >> >>
+> >> >> >> Can we make use of current->mm->exe_file->f_cred->user_ns?
+> >> >> >>
+> >> >> >> So either always use
+> >> >> >> make_kgid(current->mm->exe_file->f_cred->user_ns, 0)
+> >> >> >> instead of make_kuid(cred->user_ns, 0), or check that
+> >> >> >> (current->mm->exe_file->f_cred->user_ns == cred->user_ns)
+> >> >> >> and, if not, assume that the caller has done a setns?
+> >> >>
+> >> >> Do you have a summary of the issue?  I'm a little lost here.
+> >> >
+> >> > Sure - when running an unprivileged container, tasks which become
+> >> > !dumpable end up with /proc/$pid/fd/ being owned by the global
+> >> > root user, which inside the container is nobody:nogroup.  Examples
+> >> > are the user's sshd threads and apache, and in the past I think I've
+> >> > seen it with logind or getty too.
+> >>
+> >> Other than the aesthetics, why does this matter?  Things in the
+> >> container who are actually mapped to nobody still can't access those
+> >> files?
+> >
+> > Bc root cannot look at the fds.
 > 
-> I'm going to get fun of myself by risking a review of this. Warning,
-> I don't speak promelian, so I may well write non-sense :)
-
-Actually, you did find one real mismatch and one arguable one.  ;-)
-
-> > 							Thanx, Paul
-> > 
-> > ------------------------------------------------------------------------
-> > sysidle.sh
-> > ------------------------------------------------------------------------
-> > spin -a sysidle.spin
-> > cc -DNP -o pan pan.c
-> > # Fair scheduling to focus progress checks in timekeeper.
-> > ./pan -f -l -m1280000 -w22
-> > 
-> > ------------------------------------------------------------------------
-> > sysidle.spin
-> > ------------------------------------------------------------------------
-> > /*
-> >  * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
-> >  * This model assumes that the dyntick-idle bit manipulation works based
-> >  * on long usage, and substitutes a per-thread boolean "am_busy[]" array
-> >  * for the Linux kernel's dyntick-idle masks.  The focus of this model
-> >  * is therefore on the state machine itself.  Checks for both safety and
-> >  * forward progress.
-> >  *
-> >  * This program is free software; you can redistribute it and/or modify
-> >  * it under the terms of the GNU General Public License as published by
-> >  * the Free Software Foundation; either version 2 of the License, or
-> >  * (at your option) any later version.
-> >  *
-> >  * This program is distributed in the hope that it will be useful,
-> >  * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >  * GNU General Public License for more details.
-> >  *
-> >  * You should have received a copy of the GNU General Public License
-> >  * along with this program; if not, you can access it online at
-> >  * http://www.gnu.org/licenses/gpl-2.0.html.
-> >  *
-> >  * Copyright IBM Corporation, 2014
-> >  *
-> >  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >  */
-> > 
-> > #define NUM_WORKERS 3
-> > 
-> > byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
-> > 
-> > #define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-> > #define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-> > #define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-> > #define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-> > #define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
-> > 
-> > byte full_sysidle_state = RCU_SYSIDLE_NOT;
-> > 
-> > byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
-> > byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not idle. */
-> > 
-> > /*
-> >  * Non-timekeeping CPU going into and out of dyntick-idle state.
-> >  */
-> > proctype worker(byte me)
-> > {
-> > 	byte oldstate;
-> > 
-> > 	do
-> > 	:: 1 ->
-> > 		/* Go idle. */
-> > 		am_setup[me] = 0;
-> > 		am_busy[me] = 0;
-> > 
-> > 		/* Dyntick-idle in the following loop. */
-> > 		do
-> > 		:: 1 -> skip;
-> > 		:: 1 -> break;
-> > 		od;
-> > 
-> > 		/* Exit idle loop, model getting out of dyntick idle state. */
-> > 		am_busy[me] = 1;
-> > 
-> > 		/* Get state out of full-system idle states. */
-> > 		atomic {
-> > 			oldstate = full_sysidle_state;
+> Right.  I guess this is a problem.
 > 
-> On the upstream code, the first read of full_sysidle_state after exiting idle is not
-> performed by an atomic operation. So I wonder if this is right to put this
-> in the atomic section.
+> >
+> >> The alternative (using the container's owner) sounds a bit scary.
+> >
+> > If the file being run belongs to the container, why would it be scary?
+> > Bc some fds may have been not closed when the task did execve, where
+> > the previous bprm file may have been on the host?
 > 
-> I don't know the language enough to tell if it has no effect but I'm just
-> worried that it gets badly intepreted. Like the above read plus the below
-> conditional write in the same atomic section gets packed in a kind of cmpxchg_if_above() ?
+> Meh.  I'm not worried about that case, and that one probably doesn't
+> cause !dumpable anyway.  The nasty cases are unshare and setns.
 > 
-> Which is what we want to avoid if the value is not above RCU_SYSIDLE_SHORT after
-> a non atomic read.
+> I'm starting to think that we need to extend dumpable to something
+> much more general like a list of struct creds that someone needs to be
+> able to ptrace, *in addition to current creds* in order to access
+> sensitive /proc files, coredumps, etc.  If you get started as setuid,
 
-Given that cmpxchg() is being used to emulate exactly that atomic
-operation, I feel good about this Promela translation.  If the value is
-different at the time of the cmpxchg(), the cmpxchg() fails.  I suppose
-I could write it as follows instead:
+Hm, yeah, this sort of makes sense.
 
-		/* Get state out of full-system idle states. */
-		oldstate = full_sysidle_state;
-		do
-		:: 1 ->
-			atomic {
-				if
-				:: oldstate > RCU_SYSIDLE_SHORT &&
-				   oldstate == full_sysidle_state ->
-					full_sysidle_state = RCU_SYSIDLE_NOT;
-					break;
-				:: else ->
-					oldstate = full_sysidle_state;
-				fi;
-			}
-		od;
-
-Here the "if" emulates the cmpxchg() instruction and the rest emulates
-the loop.  Both representations get the same result when
-
-> > 			if
-> > 			:: oldstate > RCU_SYSIDLE_SHORT ->
-> > 				full_sysidle_state = RCU_SYSIDLE_NOT;
-> > 			:: else -> skip;
-> > 			fi;
-> > 		}
-> > 
-> > 		/* If needed, wake up the timekeeper. */
-> > 		if
-> > 		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-> > 			wakeup_timekeeper = 1;
-> > 		:: else -> skip;
-> > 		fi;
-> > 
-> > 		/* Mark ourselves fully awake and operational. */
-> > 		am_setup[me] = 1;
-> > 
-> > 		/* We are fully awake, so timekeeper must not be asleep. */
-> > 		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
-> > 
-> > 		/* Running in kernel in the following loop. */
-> > 		do
-> > 		:: 1 -> skip;
-> > 		:: 1 -> break;
-> > 		od;
-> > 	od
-> > }
-> > 
-> > /*
-> >  * Are all the workers in dyntick-idle state?
-> >  */
-> > #define check_idle() \
-> > 	i = 0; \
-> > 	idle = 1; \
-> > 	do \
-> > 	:: i < NUM_WORKERS -> \
-> > 		if \
-> > 		:: am_busy[i] == 1 -> idle = 0; \
-> > 		:: else -> skip; \
-> > 		fi; \
-> > 		i++; \
-> > 	:: i >= NUM_WORKERS -> break; \
-> > 	od
-> > 
-> > /*
-> >  * Timekeeping CPU.
-> >  */
-> > proctype timekeeper()
-> > {
-> > 	byte i;
-> > 	byte idle;
-> > 	byte curstate;
-> > 	byte newstate;
-> > 
-> > 	do
-> > 	:: 1 ->
-> > 		/* Capture current state. */
-> > 		check_idle();
-> > 		curstate = full_sysidle_state;
-> > 		newstate = curstate;
-> > 
-> > 		/* Check for acceptance state. */
-> > 		if
-> > 		:: idle == 0 ->
-> > progress_idle:
+> then you start with two struct creds in the list (or maybe just your
+> euid and uid).  If you get started !setuid, then your initial creds
+> are in the list.  It's possible that few or no things will need to
+> change that list after execve.
 > 
-> Is this some kind of label? I can't find the target anywhere.
+> If all of the entries and current->cred are in the same user_ns, then
+> we can dump as userns root.  If they're in different usernses, then we
+> dump as global root or maybe the common ancestor root.
+> setuid(getuid()) and other such nastiness may have to empty the list,
+> or maybe we can just use a prctl for that.
 
-It is a marker.  If you specify -DNP and if there is any cycle of
-states that does not pass through a label beginning with "progress",
-the verification will fail.  So it is useful for finding livelocks.
+A few questions,
 
-Mathieu posted another way of getting this same effect.
+1. is there any other action which would trigger adding a new cred to
+the ist?
 
-> > 			skip;
-> > 		:: curstate == RCU_SYSIDLE_NOT ->
-> > progress_idle_reset:
-> > 			skip;
-> > 		:: else -> skip;
-> > 		fi;
-> > 
-> > 		/* Manage state... */
-> > 		if
-> > 		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
-> > 			/* Idle, advance to next state. */
-> > 			atomic {
-> > 				if
-> > 				:: full_sysidle_state == curstate ->
-> > 					newstate = curstate + 1;
-> > 					full_sysidle_state = newstate;
-> > 				:: else -> skip;
-> > 				fi;
-> > 			}
+2. would execve clear (and re-init) the list of creds?
+
+> If this idea works, it would be straightforward to implement, it might
+> solve a number of problems.
 > 
-> It looks good but just one thing about the transition from FULL -> FULL_NOTED.
-> At least in the case of CONFIG_NO_HZ_FULL_SYSIDLE_SMALL (which is usually the
-> scenario I refer to, but I'll check further the grace-period driven way as well),
-> we switch from FULL to FULL_NOTED without checking a new round of the dynticks counters.
-> 
-> But this timekeeper() proc doesn't seem to care and does a check_idle() no matter
-> the current state.
-> 
-> There should probably be a special case to handle that otherwise we add a new
-> round of dynticks counters read between FULL and FULL_NOTED transition and this is an
-> entirely different scenario than what we run.
-
-Good catch!  I changed the above RCU_SYSIDLE_FULL_NOTED to RCU_SYSIDLE_FULL
-and added an atomic block to move to RCU_SYSIDLE_FULL_NOTED.  Still verifies
-(whew!).
-
-> > 		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
-> > 			/* Non-idle and state advanced, revert to base state. */
-> > 			full_sysidle_state = RCU_SYSIDLE_NOT;
-> 
-> Looking at the upstream code, I think we reset also when state == RCU_SYSIDLE_SHORT
-> once we detect a non-idle state. If it's not a mistyping, I'm probably missing something.
-
-I don't see this.  The resetting happens in rcu_sysidle_force_exit(),
-which contains the following:
-
-	while (oldstate > RCU_SYSIDLE_SHORT) {
-		newoldstate = cmpxchg(&full_sysidle_state,
-				      oldstate, RCU_SYSIDLE_NOT);
-		if (oldstate == newoldstate &&
-		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
-			rcu_kick_nohz_cpu(tick_do_timer_cpu);
-			return; /* We cleared it, done! */
-		}
-		oldstate = newoldstate;
-	}
-
-If the state is RCU_SYSIDLE_SHORT, we skip the body of the "if" thus
-declining to reset back to RCU_SYSIDLE_NOT.  Or am I confused?
-
-							Thanx, Paul
-
-> Thanks.
-> 
-> > 		:: else -> skip;
-> > 		fi;
-> > 
-> > 		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
-> > 		do
-> > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 1 ->
-> > 			assert(0); /* Should never get here. */
-> > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 0 ->
-> > 			break;
-> > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 1 ->
-> > progress_full_system_idle_1:
-> > 			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
-> > 		   	wakeup_timekeeper = 0;
-> > 			break;
-> > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-> > 		   wakeup_timekeeper == 0 ->
-> > progress_full_system_idle_2:
-> > 
-> > 			/* We are asleep, so all workers better be idle. */
-> > 			atomic {
-> > 				i = 0;
-> > 				idle = 1;
-> > 				do
-> > 				:: i < NUM_WORKERS ->
-> > 					if
-> > 					:: am_setup[i] -> idle = 0;
-> > 					:: else -> skip;
-> > 					fi;
-> > 					i++;
-> > 				:: i >= NUM_WORKERS -> break;
-> > 				od;
-> > 				assert(idle == 1 ||
-> > 				       full_sysidle_state < RCU_SYSIDLE_FULL);
-> > 			}
-> > 		od;
-> > 		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
-> > 	od;
-> > }
-> > 
-> > init {
-> > 	byte i = 0;
-> > 
-> > 	do
-> > 	:: i < NUM_WORKERS ->
-> > 		am_busy[i] = 1;
-> > 		am_setup[i] = 1;
-> > 		run worker(i);
-> > 		i++;
-> > 	:: i >= NUM_WORKERS -> break;
-> > 	od;
-> > 	run timekeeper();
-> > }
-> > 
-> 
-
+> --Andy
