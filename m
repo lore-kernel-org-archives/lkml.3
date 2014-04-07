@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562AbaDGRK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:10:59 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:64654 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753778AbaDGRKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:10:54 -0400
-Message-ID: <1396890652.12738.21.camel@x220>
-Subject: Re: Kconfig circular dependency question
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 07 Apr 2014 19:10:52 +0200
-In-Reply-To: <5341DA66.5070907@lwfinger.net>
-References: <5341AFC7.1070001@lwfinger.net> <5341B999.3050206@infradead.org>
-		 <1396817575.4886.23.camel@x220> <5341C22A.1050907@lwfinger.net>
-	 <1396818854.7118.3.camel@x220> <5341DA66.5070907@lwfinger.net>
+	id S1755395AbaDGRLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:11:53 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:34785 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190AbaDGRLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 13:11:50 -0400
+X-IronPort-AV: E=Sophos;i="4.97,811,1389744000"; 
+   d="scan'208";a="118761079"
+Message-ID: <5342DC54.2070608@citrix.com>
+Date: Mon, 7 Apr 2014 18:11:48 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH] xen-blkback: only attach blkback if the required features
+ are met
+References: <1396622471-13114-1-git-send-email-roger.pau@citrix.com> <533EC966.7030101@citrix.com> <533ECC32.5070302@citrix.com>
+In-Reply-To: <533ECC32.5070302@citrix.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Apr 2014 17:10:52.0585 (UTC) FILETIME=[549E3990:01CF5284]
-X-RcptDomain: vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-04-06 at 17:51 -0500, Larry Finger wrote:
-> No problem - it is attached. The problem I was trying to solve was reported by 
-> the kbuild test robot. To get the driver r8723au, you will need the staging-next 
-> tree.
+On 04/04/14 16:13, Roger Pau Monné wrote:
+> On 04/04/14 17:01, David Vrabel wrote:
+>> On 04/04/14 15:41, Roger Pau Monne wrote:
+>>> Blkback cannot work properly on auto-translated guests if Xen doesn't
+>>> update the IOMMU when performing grant maps/unmaps, so only attach if
+>>> the newly introduced XENFEAT_hvm_gntmap_supports_iommu is found.
+>>
+>> Can you explain the problem in more detail and which guest
+>> configurations are affected?
+>>
+>> This isn't a problem that is specific to blkback, but any backend that
+>> grant maps and passes the foreign pages to a device so there needs to be
+>> a generic solution.
+>>
+>> Why can't this be fixed by having the swiotlb bounce foreign pages?
+> 
+> Yes, it could be fixed with that, FreeBSD has been doing it for a long time.
+> 
+> But since nobody has complained about this, and the issue has been there
+> for a long time, I'm not sure it's worth adding all the bounce buffer
+> code for what seems to be an unused configuration.
 
-0) I couldn't reproduce your error with this config file (and the
-next-20140407 tree). But I could reproduce by cbobbling together a
-single rudimentary Kconfig file with the six symbols mentioned in the
-error you had copied. And then I could cut things down to this minimal
-test case:
-    $ cat Kconfig.recursive 
-    # test with 'yes "" | make KBUILD_KCONFIG=Kconfig.recursive oldconfig'
-    mainmenu "Recursive dependency test case"
+Ok.  Now that netback also grant maps.  Can you make this a generic
+function and call from netback and blkback?
 
-    config DRIVER1
-	bool "Driver 1"
-	select SUBSYSTEM2
-	depends on SUBSYSTEM1
-
-    config DRIVER2
-	bool "Driver 2"
-	select SUBSYSTEM1
-	depends on SUBSYSTEM2
-
-    config SUBSYSTEM1
-	bool "Subsystem 1"
-
-    config SUBSYSTEM2
-	bool "Subsystem 2"
-
-1) This made zero sense, until I realized that "select" statements are
-treated as reverse dependencies in the kconfig code. And if you look at
-these two select statements as reverse dependencies than, yes, this is a
-Kconfig with a recursive dependency.
-
-2) But the fact is that I actually don't think of "select" statements as
-reverse dependencies. And in the Kconfig files they are not used as
-reverse dependencies. See, for example, all the
-    select USB
-
-statements in the tree. I think there are many similar uses of "select".
-
-3) So I think it makes no sense to treat "select" relations as reverse
-dependencies. But perhaps I am missing something here.
-
-
-Paul Bolle
-
+David
