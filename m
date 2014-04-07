@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545AbaDGRKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:10:40 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:36623 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755217AbaDGRKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:10:38 -0400
-Date: Mon, 7 Apr 2014 11:10:12 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Mike Looijmans <mike.looijmans@topic.nl>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
-Message-ID: <20140407171012.GC9952@obsidianresearch.com>
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
- <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
- <53423E75.3020008@monstr.eu>
- <53429754.8080105@topic.nl>
- <534298E7.2020409@monstr.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534298E7.2020409@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1755562AbaDGRK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:10:59 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:64654 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753778AbaDGRKy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 13:10:54 -0400
+Message-ID: <1396890652.12738.21.camel@x220>
+Subject: Re: Kconfig circular dependency question
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 07 Apr 2014 19:10:52 +0200
+In-Reply-To: <5341DA66.5070907@lwfinger.net>
+References: <5341AFC7.1070001@lwfinger.net> <5341B999.3050206@infradead.org>
+		 <1396817575.4886.23.camel@x220> <5341C22A.1050907@lwfinger.net>
+	 <1396818854.7118.3.camel@x220> <5341DA66.5070907@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Apr 2014 17:10:52.0585 (UTC) FILETIME=[549E3990:01CF5284]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 02:24:07PM +0200, Michal Simek wrote:
+On Sun, 2014-04-06 at 17:51 -0500, Larry Finger wrote:
+> No problem - it is attached. The problem I was trying to solve was reported by 
+> the kbuild test robot. To get the driver r8723au, you will need the staging-next 
+> tree.
 
-> Device-tree BSP and in 2014.01 there will be new BSP which just
-> generate them directly from the Vivado tools which just target your
-> reference design.  You can connect your custom IP (or Xilinx or 3rd
-> party) directly to the GIC which using different IRQ sensitivity
-> with whatever register addresses and make no sense to write it by
-> hand.
+0) I couldn't reproduce your error with this config file (and the
+next-20140407 tree). But I could reproduce by cbobbling together a
+single rudimentary Kconfig file with the six symbols mentioned in the
+error you had copied. And then I could cut things down to this minimal
+test case:
+    $ cat Kconfig.recursive 
+    # test with 'yes "" | make KBUILD_KCONFIG=Kconfig.recursive oldconfig'
+    mainmenu "Recursive dependency test case"
 
-On our Zynq design here we ended up being unwilling to use platform
-generation from Vivado. Basically all our IP was custom, so there was
-no win at all to invoking the complexity of the automatic tools.
+    config DRIVER1
+	bool "Driver 1"
+	select SUBSYSTEM2
+	depends on SUBSYSTEM1
 
-Thus we write the DT by hand, and our DT is complex, integrating
-peripherals that span two FPGAs.
+    config DRIVER2
+	bool "Driver 2"
+	select SUBSYSTEM1
+	depends on SUBSYSTEM2
 
-I think the in-kernel DT should use the kernel conventions, which
-means using #include and the binding constants over magic values.
+    config SUBSYSTEM1
+	bool "Subsystem 1"
 
-Jason
+    config SUBSYSTEM2
+	bool "Subsystem 2"
+
+1) This made zero sense, until I realized that "select" statements are
+treated as reverse dependencies in the kconfig code. And if you look at
+these two select statements as reverse dependencies than, yes, this is a
+Kconfig with a recursive dependency.
+
+2) But the fact is that I actually don't think of "select" statements as
+reverse dependencies. And in the Kconfig files they are not used as
+reverse dependencies. See, for example, all the
+    select USB
+
+statements in the tree. I think there are many similar uses of "select".
+
+3) So I think it makes no sense to treat "select" relations as reverse
+dependencies. But perhaps I am missing something here.
+
+
+Paul Bolle
+
