@@ -1,67 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933AbaDGSSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:18:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755566AbaDGSSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:18:45 -0400
-Date: Mon, 7 Apr 2014 14:18:22 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, fowles@inreach.com, Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH 2/4] perf, kmem: Utilize the new generic cpunode_map
-Message-ID: <20140407181822.GE5328@redhat.com>
-References: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
- <1395689577-214654-3-git-send-email-dzickus@redhat.com>
- <20140329171047.GC2022@krava.redhat.com>
- <20140401024230.GR25953@redhat.com>
- <20140406122126.GE1164@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140406122126.GE1164@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755961AbaDGSTD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:19:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56385 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777AbaDGSS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 14:18:59 -0400
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Joe Perches <joe@perches.com>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Mitchel Humpherys <mitchelh@codeaurora.org>
+Subject: [PATCH v3] mm: convert some level-less printks to pr_*
+Date: Mon,  7 Apr 2014 11:18:52 -0700
+Message-Id: <1396894732-17963-2-git-send-email-mitchelh@codeaurora.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1396894732-17963-1-git-send-email-mitchelh@codeaurora.org>
+References: <1396894732-17963-1-git-send-email-mitchelh@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 06, 2014 at 02:21:26PM +0200, Jiri Olsa wrote:
-> On Mon, Mar 31, 2014 at 10:42:30PM -0400, Don Zickus wrote:
-> 
-> SNIP
-> 
-> > > > -#define PATH_SYS_NODE	"/sys/devices/system/node"
-> > > > -
-> > > > -static int init_cpunode_map(void)
-> > > > -{
-> > > > -	FILE *fp;
-> > > > -	int i, err = -1;
-> > > > -
-> > > > -	fp = fopen("/sys/devices/system/cpu/kernel_max", "r");
-> > > 
-> > > so the factored code from previous patches now reads
-> > > the max_cpu_num value from:
-> > >   /sys/devices/system/cpu/possible
-> > > 
-> > > is this intentional?
-> > 
-> > Yeah, I was trying to save bits.  No need to allocate for 5100 cpus when
-> > only 128 are used.
-> > 
-> > > 
-> > > I think we want to have separate patches for code changes
-> > > and for changing the file with some comment.
-> > 
-> > So you want me to split the previous patch into two.  One for code
-> > movement, the other for the path change?
-> 
-> I think thats the proper way.. single logic change for patch
+printk is meant to be used with an associated log level. There are some
+instances of printk scattered around the mm code where the log level is
+missing. Add a log level and adhere to suggestions by
+scripts/checkpatch.pl by moving to the pr_* macros.
 
-Hmm, the whole change is getting completely messy with the breakdown of
-common functions, renames, use of internal functions, etc...  I'll just
-break out the small change (kernel_max -> possible) from that mess.
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+---
+ mm/bounce.c    |  7 +++++--
+ mm/mempolicy.c |  5 ++++-
+ mm/mmap.c      | 21 ++++++++++++---------
+ mm/nommu.c     |  5 ++++-
+ mm/vmscan.c    |  5 ++++-
+ 5 files changed, 29 insertions(+), 14 deletions(-)
 
-Cheers,
-Don
+diff --git a/mm/bounce.c b/mm/bounce.c
+index 523918b8c6..d35850895b 100644
+--- a/mm/bounce.c
++++ b/mm/bounce.c
+@@ -3,6 +3,8 @@
+  * - Split from highmem.c
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/mm.h>
+ #include <linux/export.h>
+ #include <linux/swap.h>
+@@ -15,6 +17,7 @@
+ #include <linux/hash.h>
+ #include <linux/highmem.h>
+ #include <linux/bootmem.h>
++#include <linux/printk.h>
+ #include <asm/tlbflush.h>
+ 
+ #include <trace/events/block.h>
+@@ -34,7 +37,7 @@ static __init int init_emergency_pool(void)
+ 
+ 	page_pool = mempool_create_page_pool(POOL_SIZE, 0);
+ 	BUG_ON(!page_pool);
+-	printk("bounce pool size: %d pages\n", POOL_SIZE);
++	pr_info("bounce pool size: %d pages\n", POOL_SIZE);
+ 
+ 	return 0;
+ }
+@@ -86,7 +89,7 @@ int init_emergency_isa_pool(void)
+ 				       mempool_free_pages, (void *) 0);
+ 	BUG_ON(!isa_page_pool);
+ 
+-	printk("isa bounce pool size: %d pages\n", ISA_POOL_SIZE);
++	pr_info("isa bounce pool size: %d pages\n", ISA_POOL_SIZE);
+ 	return 0;
+ }
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index e3ab028227..ec6c90fc51 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -65,6 +65,8 @@
+    kernel is not always grateful with that.
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/mempolicy.h>
+ #include <linux/mm.h>
+ #include <linux/highmem.h>
+@@ -91,6 +93,7 @@
+ #include <linux/ctype.h>
+ #include <linux/mm_inline.h>
+ #include <linux/mmu_notifier.h>
++#include <linux/printk.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/uaccess.h>
+@@ -2679,7 +2682,7 @@ void __init numa_policy_init(void)
+ 		node_set(prefer, interleave_nodes);
+ 
+ 	if (do_set_mempolicy(MPOL_INTERLEAVE, 0, &interleave_nodes))
+-		printk("numa_policy_init: interleaving failed\n");
++		pr_err("%s: interleaving failed\n", __func__);
+ 
+ 	check_numabalancing_enable();
+ }
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 46433e137a..7cb79eb2fc 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -6,6 +6,8 @@
+  * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/backing-dev.h>
+@@ -36,6 +38,7 @@
+ #include <linux/sched/sysctl.h>
+ #include <linux/notifier.h>
+ #include <linux/memory.h>
++#include <linux/printk.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+@@ -360,20 +363,20 @@ static int browse_rb(struct rb_root *root)
+ 		struct vm_area_struct *vma;
+ 		vma = rb_entry(nd, struct vm_area_struct, vm_rb);
+ 		if (vma->vm_start < prev) {
+-			printk("vm_start %lx prev %lx\n", vma->vm_start, prev);
++			pr_info("vm_start %lx prev %lx\n", vma->vm_start, prev);
+ 			bug = 1;
+ 		}
+ 		if (vma->vm_start < pend) {
+-			printk("vm_start %lx pend %lx\n", vma->vm_start, pend);
++			pr_info("vm_start %lx pend %lx\n", vma->vm_start, pend);
+ 			bug = 1;
+ 		}
+ 		if (vma->vm_start > vma->vm_end) {
+-			printk("vm_end %lx < vm_start %lx\n",
++			pr_info("vm_end %lx < vm_start %lx\n",
+ 				vma->vm_end, vma->vm_start);
+ 			bug = 1;
+ 		}
+ 		if (vma->rb_subtree_gap != vma_compute_subtree_gap(vma)) {
+-			printk("free gap %lx, correct %lx\n",
++			pr_info("free gap %lx, correct %lx\n",
+ 			       vma->rb_subtree_gap,
+ 			       vma_compute_subtree_gap(vma));
+ 			bug = 1;
+@@ -387,7 +390,7 @@ static int browse_rb(struct rb_root *root)
+ 	for (nd = pn; nd; nd = rb_prev(nd))
+ 		j++;
+ 	if (i != j) {
+-		printk("backwards %d, forwards %d\n", j, i);
++		pr_info("backwards %d, forwards %d\n", j, i);
+ 		bug = 1;
+ 	}
+ 	return bug ? -1 : i;
+@@ -422,17 +425,17 @@ static void validate_mm(struct mm_struct *mm)
+ 		i++;
+ 	}
+ 	if (i != mm->map_count) {
+-		printk("map_count %d vm_next %d\n", mm->map_count, i);
++		pr_info("map_count %d vm_next %d\n", mm->map_count, i);
+ 		bug = 1;
+ 	}
+ 	if (highest_address != mm->highest_vm_end) {
+-		printk("mm->highest_vm_end %lx, found %lx\n",
++		pr_info("mm->highest_vm_end %lx, found %lx\n",
+ 		       mm->highest_vm_end, highest_address);
+ 		bug = 1;
+ 	}
+ 	i = browse_rb(&mm->mm_rb);
+ 	if (i != mm->map_count) {
+-		printk("map_count %d rb %d\n", mm->map_count, i);
++		pr_info("map_count %d rb %d\n", mm->map_count, i);
+ 		bug = 1;
+ 	}
+ 	BUG_ON(bug);
+@@ -3249,7 +3252,7 @@ static struct notifier_block reserve_mem_nb = {
+ static int __meminit init_reserve_notifier(void)
+ {
+ 	if (register_hotmemory_notifier(&reserve_mem_nb))
+-		printk("Failed registering memory add/remove notifier for admin reserve");
++		pr_err("Failed registering memory add/remove notifier for admin reserve\n");
+ 
+ 	return 0;
+ }
+diff --git a/mm/nommu.c b/mm/nommu.c
+index a554e5a451..4f6dc43dd4 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -13,6 +13,8 @@
+  *  Copyright (c) 2007-2010 Paul Mundt <lethal@linux-sh.org>
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/export.h>
+ #include <linux/mm.h>
+ #include <linux/mman.h>
+@@ -30,6 +32,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/audit.h>
+ #include <linux/sched/sysctl.h>
++#include <linux/printk.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/tlb.h>
+@@ -1241,7 +1244,7 @@ error_free:
+ 	return ret;
+ 
+ enomem:
+-	printk("Allocation of length %lu from process %d (%s) failed\n",
++	pr_err("Allocation of length %lu from process %d (%s) failed\n",
+ 	       len, current->pid, current->comm);
+ 	show_free_areas(0);
+ 	return -ENOMEM;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 1f56a80a7c..02e45967eb 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -11,6 +11,8 @@
+  *  Multiqueue VM started 5.8.00, Rik van Riel.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/gfp.h>
+@@ -43,6 +45,7 @@
+ #include <linux/sysctl.h>
+ #include <linux/oom.h>
+ #include <linux/prefetch.h>
++#include <linux/printk.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+@@ -477,7 +480,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+ 		if (page_has_private(page)) {
+ 			if (try_to_free_buffers(page)) {
+ 				ClearPageDirty(page);
+-				printk("%s: orphaned page\n", __func__);
++				pr_info("%s: orphaned page\n", __func__);
+ 				return PAGE_CLEAN;
+ 			}
+ 		}
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
