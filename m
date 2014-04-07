@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806AbaDGUZd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 16:25:33 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42005 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754335AbaDGUZb (ORCPT
+	id S1755870AbaDGU2C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 16:28:02 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:62644 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187AbaDGU2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 16:25:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140407140745.GA8855@thunk.org>
-References: <20140403191558.GA8745@thunk.org>
-	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
-	<20140404035308.GC2525@thunk.org>
-	<20140404134429.GB26806@quack.suse.cz>
-	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
-	<20140404234358.GE10275@thunk.org>
-	<CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
-	<20140407140745.GA8855@thunk.org>
-Date: Mon, 7 Apr 2014 22:25:30 +0200
-X-Google-Sender-Auth: f-YCTsZOxVaEfC94_eTLxN-FdU4
-Message-ID: <CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Miklos Szeredi <miklos@szeredi.hu>,
-        Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 Apr 2014 16:28:00 -0400
+From: Fabio Falzoi <fabio.falzoi84@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Fabio Falzoi <fabio.falzoi84@gmail.com>
+Subject: [PATCH v2 0/5] Staging: rts5139: Fix coding style
+Date: Mon,  7 Apr 2014 22:27:43 +0200
+Message-Id: <1396902468-27906-1-git-send-email-fabio.falzoi84@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20140407003341.GA13365@kroah.com>
+References: <20140407003341.GA13365@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 4:07 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Mon, Apr 07, 2014 at 03:15:36PM +0200, Miklos Szeredi wrote:
->> >
->> > Is there anything obvious that I might be doing wrong?
->>
->> I only wired up the syscall for x86_64.   Who's responsible for adding
->> all the syscall tables for the various architectures?
->
-> Ah, and I was testing with i386, not x86_64, so that it explains that.
->
-> It's been quite a while since I've worked to add a new system call,
-> but my impressure is that in general the person who creates the new
-> system call needs to reach out to the architecture maintainers
-> (preferably with a patch :-), since otherwise the architecture
+Fix some coding style issues in rts51x.c (from rts5139 module).
+This is for task 10 of the Eudyptula challenge.
 
-Preferably the creator of the new system call emails linux-arch.
-Patches are always nice to have, but they may cause conflicts w.r.t.
-syscall numbering.
+Fabio Falzoi (5):
+  Camel case labels replaced
+  Fixed multi-line code alignment
+  Splitted one-line multiple assignment
+  pr_warn(...) in place of printk(KERN_WARNING ...)
+  More appropriate sizeof operand
 
-> maintainers would have no idea that a new syscall has been added.
+ drivers/staging/rts5139/rts51x.c | 62 ++++++++++++++++++++--------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
-If i386 has the new syscall, scripts/checksyscalls.sh will catch it and
-inform us about it during our next kernel build.
+-- 
+1.9.1
 
-If you add it to x86_64 only, bad luck for anyone else ;-)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
