@@ -1,163 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbaDGGKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 02:10:55 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47999 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaDGGKw (ORCPT
+	id S1754869AbaDGGOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 02:14:16 -0400
+Received: from smtprelay.synopsys.com ([198.182.60.111]:44601 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaDGGOL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 02:10:52 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 7 Apr 2014 15:11:01 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Message-ID: <20140407061101.GE12144@bbox>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
- <20140401212102.GM4407@cmpxchg.org>
- <533B8C2D.9010108@linaro.org>
- <20140402183113.GL1500@redhat.com>
+	Mon, 7 Apr 2014 02:14:11 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Vineet.Gupta1@synopsys.com" <Vineet.Gupta1@synopsys.com>,
+        "Francois.Bedard@synopsys.com" <Francois.Bedard@synopsys.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
+Subject: Re: [PATCH v2] axs_nand - add driver for NAND controller used on
+ Synopsys AXS dev boards
+Thread-Topic: [PATCH v2] axs_nand - add driver for NAND controller used on
+ Synopsys AXS dev boards
+Thread-Index: AQHPT9jeNnkMkCwR+kyAUJXIQJtz9psBXckAgAQyHoA=
+Date: Mon, 7 Apr 2014 06:14:00 +0000
+Message-ID: <1396851239.4081.10.camel@abrodkin-8560l.internal.synopsys.com>
+References: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
+	 <20140404140933.GA25772@arch.cereza>
+In-Reply-To: <20140404140933.GA25772@arch.cereza>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.121.8.24]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <BD837C3053AFA04AA1669049D3ECDBB9@internal.synopsys.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402183113.GL1500@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrea,
+Hi Ezequiel,
 
-On Wed, Apr 02, 2014 at 08:31:13PM +0200, Andrea Arcangeli wrote:
-> Hi everyone,
+On Fri, 2014-04-04 at 11:09 -0300, Ezequiel Garcia wrote:
+> On Apr 04, Alexey Brodkin wrote:
+> > Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+> > 
 > 
-> On Tue, Apr 01, 2014 at 09:03:57PM -0700, John Stultz wrote:
-> > So between zero-fill and SIGBUS, I think SIGBUS makes the most sense. If
-> > you have a third option you're thinking of, I'd of course be interested
-> > in hearing it.
-> 
-> I actually thought the way of being notified with a page fault (sigbus
-> or whatever) was the most efficient way of using volatile ranges.
-> 
-> Why having to call a syscall to know if you can still access the
-> volatile range, if there was no VM pressure before the access?
-> syscalls are expensive, accessing the memory direct is not. Only if it
-> page was actually missing and a page fault would fire, you'd take the
-> slowpath.
+> Maybe it would be nice adding some driver description here, so the commit
+> log actually says something useful about the commit.
 
-True.
+Well, I thought about it but frankly I'm not sure if there's anything
+else to add to commit title "driver for NAND controller used on Synopsys
+AXS dev boards".
 
-> 
-> The usages I see for this are plenty, like for maintaining caches in
-> memory that may be big and would be nice to discard if there's VM
-> pressure, jpeg uncompressed images sounds like a candidate too. So the
-> browser size would shrink if there's VM pressure, instead of ending up
-> swapping out uncompressed image data that can be regenerated more
-> quickly with the CPU than with swapins.
+Do you think more info may make sense?
 
-That's really typical case vrange is targetting.
+> > +/**
+> > + * axs_flag_wait_and_reset - Waits until requested flag in INT_STATUS register
+> > + *              is set by HW and resets it by writing "1" in INT_CLR_STATUS.
+> > + * @host:	Pointer to private data structure.
+> > + * @flag:	Bit/flag offset in INT_STATUS register
+> > + */
+> > +static void axs_flag_wait_and_reset(struct axs_nand_host *host, int flag)
+> > +{
+> > +	unsigned int i;
+> > +
+> > +	for (i = 0; i < AXS_FLAG_WAIT_DELAY * 100; i++) {
+> > +		unsigned int status = reg_get(host, INT_STATUS);
+> > +
+> > +		if (status & (1 << flag)) {
+> > +			reg_set(host, INT_CLR_STATUS, 1 << flag);
+> > +			return;
+> > +		}
+> > +
+> > +		udelay(10);
+> > +	}
+> > +
+> > +	/*
+> > +	 * Since we cannot report this problem any further than
+> > +	 * axs_nand_{write|read}_buf() letting user know there's a problem.
+> > +	 */
+> > +	dev_err(host->dev, "Waited too long (%d s.) for flag/bit %d\n",
+> > +		AXS_FLAG_WAIT_DELAY, flag);
+> > +}
+> 
+> Hm... I'm not sure the above is really true.
+> 
+> The NAND core uses the replaceable chip->waitfunc callback to check the
+> status of issued commands. See for instance:
+> 
+> static int nand_write_oob_std(struct mtd_info *mtd, struct nand_chip *chip,
+>                               int page)
+> {
+>         int status = 0;
+>         const uint8_t *buf = chip->oob_poi;
+>         int length = mtd->oobsize;
+> 
+>         chip->cmdfunc(mtd, NAND_CMD_SEQIN, mtd->writesize, page);
+>         chip->write_buf(mtd, buf, length);
+>         /* Send command to program the OOB data */
+>         chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
+> 
+>         status = chip->waitfunc(mtd, chip);
+> 
+>         return status & NAND_STATUS_FAIL ? -EIO : 0;
+> }
+> 
+> On the other side, if you are clearing the flags in axs_flag_wait_and_reset()
+> it might be a bit hard for you to get this right.
+> 
+> IOW, I'm not saying you *must* do this, but instead suggesting that you take
+> a look at waitfunc() and see if it helps report a proper error in the
+> read/write path.
 
-> 
-> > Now... once you've chosen SIGBUS semantics, there will be folks who will
-> > try to exploit the fact that we get SIGBUS on purged page access (at
-> > least on the user-space side) and will try to access pages that are
-> > volatile until they are purged and try to then handle the SIGBUS to fix
-> > things up. Those folks exploiting that will have to be particularly
-> > careful not to pass volatile data to the kernel, and if they do they'll
-> > have to be smart enough to handle the EFAULT, etc. That's really all
-> > their problem, because they're being clever. :)
-> 
-> I'm actually working on feature that would solve the problem for the
-> syscalls accessing missing volatile pages. So you'd never see a
-> -EFAULT because all syscalls won't return even if they encounters a
-> missing page in the volatile range dropped by the VM pressure.
-> 
-> It's called userfaultfd. You call sys_userfaultfd(flags) and it
-> connects the current mm to a pseudo filedescriptor. The filedescriptor
-> works similarly to eventfd but with a different protocol.
-> 
-> You need a thread that will never access the userfault area with the
-> CPU, that is responsible to poll on the userfaultfd and talk the
-> userfaultfd protocol to fill-in missing pages. The userfault thread
-> after a POLLIN event reads the virtual addresses of the fault that
-> must have happened on some other thread of the same mm, and then
-> writes back an "handled" virtual range into the fd, after the page (or
-> pages if multiple) have been regenerated and mapped in with
-> sys_remap_anon_pages(), mremap or equivalent atomic pagetable page
-> swapping. Then depending on the "solved" range written back into the
-> fd, the kernel will wakeup the thread or threads that were waiting in
-> kernel mode on the "handled" virtual range, and retry the fault
-> without ever exiting kernel mode.
+As I may understand from generic implementation of "waitfunc" in
+"nand_base.c" it checks status of NAND chip itself - which IMHO makes
+sense. And this is done via NAND_CMD_STATUS command sent to chip through
+NAND controller.
 
-Sounds flexible.
+In AXS NAND driver you may see 2 types of wait checks:
+1. NAND_ISR_CMDDONE - this flag means that NAND controller has just
+executed provided command (i.e. set proper signal on control lines of
+NAND chip etc), but it doesn't mean NAND chip itself has completed
+command execution. That's why "waitfunc" is not direct replacement here.
 
-> 
-> We need this in KVM for running the guest on memory that is on other
-> nodes or other processes (postcopy live migration is the most common
-> use case but there are others like memory externalization and
-> cross-node KSM in the cloud, to keep a single copy of memory across
-> multiple nodes and externalized to the VM and to the host node).
-> 
-> This thread made me wonder if we could mix the two features and you
-> would then depend on MADV_USERFAULT and userfaultfd to deliver to
-> userland the "faults" happening on the volatile pages that have been
-> purged as result of VM pressure.
-> 
-> I'm just saying this after Johannes mentioned the issue with syscalls
-> returning -EFAULT. Because that is the very issue that the userfaultfd
-> is going to solve for the KVM migration thread.
-> 
-> What I'm thinking now would be to mark the volatile range also
-> MADV_USERFAULT and then calling userfaultfd and instead of having the
-> cache regeneration "slow path" inside the SIGBUS handler, to run it in
-> the userfault thread that polls the userfaultfd. Then you could write
-> the volatile ranges to disk with a write() syscall (or use any other
-> syscall on the volatile ranges), without having to worry about -EFAULT
-> being returned because one page was discarded. And if MADV_USERFAULT
-> is not called in combination with vrange syscalls, then it'd still
-> work without the userfault, but with the vrange syscalls only.
-> 
-> In short the idea would be to let the userfault code solve the fault
-> delivery to userland for you, and make the vrange syscalls only focus
-> on the page purging problem, without having to worry about what
-> happens when something access a missing page.
-> 
-> But if you don't intend to solve the syscall -EFAULT problem, well
-> then probably the overlap is still as thin as I thought it was before
-> (like also mentioned in the below link).
+2. NAND_ISR_{RX|TX}DMACOMPLETE - this flag indicates completion of DMA
+transfer to/from NAND chip to RAM. "waitfunc" won't work here as well.
 
-Sounds doable. I will look into your patch.
-Thanks for reminding!
+I hope this explanation makes sense.
 
-> 
-> Thanks,
-> Andrea
-> 
-> PS. my last email about this from a more KVM centric point of view:
-> 
-> http://www.spinics.net/lists/kvm/msg101449.html
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+Regards,
+Alexey
