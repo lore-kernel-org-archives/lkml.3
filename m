@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbaDGIQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 04:16:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39486 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519AbaDGIQy (ORCPT
+	id S1754924AbaDGIWJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 04:22:09 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:59076 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774AbaDGIWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 04:16:54 -0400
-Date: Mon, 7 Apr 2014 10:16:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mgorman@suse.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, Dave Jones <davej@redhat.com>
-Subject: Re: [tip:sched/core] sched/numa: Move task_numa_free() to
- __put_task_struct()
-Message-ID: <20140407081644.GD11096@twins.programming.kicks-ass.net>
-References: <1393568591.6018.27.camel@marge.simpson.net>
- <tip-156654f491dd8d52687a5fbe1637f472a52ce75b@git.kernel.org>
- <5341A84C.4050902@oracle.com>
- <1396848585.5218.27.camel@marge.simpson.net>
- <1396855830.28539.10.camel@marge.simpson.net>
+	Mon, 7 Apr 2014 04:22:06 -0400
+Message-ID: <53425FCA.40108@linux.vnet.ibm.com>
+Date: Mon, 07 Apr 2014 13:50:26 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396855830.28539.10.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Andi Kleen <ak@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [V5 0/4] perf: New conditional branch filter
+References: <1394183185-6219-1-git-send-email-khandual@linux.vnet.ibm.com> <53319829.9040403@linux.vnet.ibm.com> <20140325161644.GC15074@tassilo.jf.intel.com>
+In-Reply-To: <20140325161644.GC15074@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040708-4790-0000-0000-00000095AD62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 09:30:30AM +0200, Mike Galbraith wrote:
-> -	double_lock(&my_grp->lock, &grp->lock);
-> +	BUG_ON(irqs_disabled());
-> +	double_lock_irq(&my_grp->lock, &grp->lock);
+On 03/25/2014 09:46 PM, Andi Kleen wrote:
+>> Hey Arnaldo,
+>>
+>> Do you have any comments or suggestions on this ? Have not received any
+>> response on these proposed patch series yet. Thank you.
+> 
+> I read it earlier and it looks good to me.
 
-So either make this:
+Hey Andi,
 
-	local_irq_disable();
-	double_lock();
+Can I add your "Reviewed-by" or "Acked-by" to all these four patches ?
 
-or
-
->  
->  	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
->  		my_grp->faults[i] -= p->numa_faults_memory[i];
-> @@ -1692,6 +1693,7 @@ static void task_numa_group(struct task_
->  
->  	spin_unlock(&my_grp->lock);
->  	spin_unlock(&grp->lock);
-> +	local_irq_enable();
-
-use:
-	spin_unlock()
-	spin_unlock_irq()
-
-or so, but this imbalance is making my itch :-)
-
-
->  
->  	rcu_assign_pointer(p->numa_group, grp);
->  
