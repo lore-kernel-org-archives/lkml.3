@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118AbaDGJyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 05:54:23 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47167 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182AbaDGJyQ (ORCPT
+	id S1754946AbaDGJ76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 05:59:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49963 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510AbaDGJ7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 05:54:16 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH TRIVIAL] memcg: un-export __memcg_kmem_get_cache
-Date: Mon, 7 Apr 2014 13:54:14 +0400
-Message-ID: <1396864454-22116-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 7 Apr 2014 05:59:55 -0400
+Message-ID: <53427718.30406@linutronix.de>
+Date: Mon, 07 Apr 2014 11:59:52 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>, atull@altera.com
+CC: linus.walleij@linaro.org, gnurou@gmail.com, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dinguyen@altera.com,
+        delicious.quinoa@gmail.com
+Subject: Re: [PATCH 6/7] gpio: dwapb: use a second irq chip
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de> <1395505004-22650-7-git-send-email-bigeasy@linutronix.de> <5331F6D5.7070809@gmail.com>
+In-Reply-To: <5331F6D5.7070809@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is only used in slab and should not be used anywhere else so there is
-no need in exporting it.
+On 03/25/2014 10:36 PM, Sebastian Hesselbarth wrote:
+>> @@ -242,17 +244,28 @@ static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
+>>  	irq_gc->reg_base = gpio->regs;
+>>  	irq_gc->private = gpio;
+>>  
+>> -	ct = irq_gc->chip_types;
+>> -	ct->chip.irq_ack = irq_gc_ack_set_bit;
+>> -	ct->chip.irq_mask = irq_gc_mask_set_bit;
+>> -	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
+>> -	ct->chip.irq_set_type = dwapb_irq_set_type;
+>> -	ct->chip.irq_enable = dwapb_irq_enable;
+>> -	ct->chip.irq_disable = dwapb_irq_disable;
+>> -	ct->chip.irq_request_resources = dwapb_irq_reqres;
+>> -	ct->chip.irq_release_resources = dwapb_irq_relres;
+>> -	ct->regs.ack = GPIO_PORTA_EOI;
+>> -	ct->regs.mask = GPIO_INTMASK;
+>> +	for (i = 0; i < 2; i++) {
+>> +
+>> +		ct = &irq_gc->chip_types[i];
+>> +		ct->chip.irq_ack = irq_gc_ack_set_bit;
+>> +		ct->chip.irq_mask = irq_gc_mask_set_bit;
+>> +		ct->chip.irq_unmask = irq_gc_mask_clr_bit;
+>> +		ct->chip.irq_set_type = dwapb_irq_set_type;
+>> +		ct->chip.irq_enable = dwapb_irq_enable;
+>> +		ct->chip.irq_disable = dwapb_irq_disable;
+>> +		ct->chip.irq_request_resources = dwapb_irq_reqres;
+>> +		ct->chip.irq_release_resources = dwapb_irq_relres;
+>> +		ct->regs.ack = GPIO_PORTA_EOI;
+>> +		ct->regs.mask = GPIO_INTMASK;
+>> +
+>> +		if (i == 0) {
+>> +			ct->type = IRQ_TYPE_LEVEL_MASK;
+>> +			ct->handler = handle_level_irq;
+>> +		} else {
+>> +			ct->type = IRQ_TYPE_EDGE_BOTH;
+>> +			ct->handler = handle_edge_irq;
+>> +		}
+> 
+> Sebastian,
+> 
+> IMHO the loop looks strange, especially with the (i == 0) check.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/memcontrol.c |    1 -
- 1 file changed, 1 deletion(-)
+how so?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b4b6aef562fa..874594f57c90 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3504,7 +3504,6 @@ out:
- 	rcu_read_unlock();
- 	return cachep;
- }
--EXPORT_SYMBOL(__memcg_kmem_get_cache);
- 
- /*
-  * We need to verify if the allocation against current->mm->owner's memcg is
--- 
-1.7.10.4
+> How about unrolling it again and assign both chip_types independently?
 
+If more code makes you happy so be it. I will post the series soon with
+the loop unrolled.
+
+> Sebastian
+
+Sebastian
