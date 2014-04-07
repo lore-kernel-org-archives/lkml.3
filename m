@@ -1,26 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaDGRuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:50:04 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:33669 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693AbaDGRtj (ORCPT
+	id S1755846AbaDGRut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:50:49 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:48491 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988AbaDGRth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:49:39 -0400
-Message-Id: <20140407174933.753755321@openvz.org>
+	Mon, 7 Apr 2014 13:49:37 -0400
+Message-Id: <20140407174933.641611536@openvz.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 07 Apr 2014 21:47:03 +0400
+Date: Mon, 07 Apr 2014 21:47:02 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: shawn@churchofgit.com, tglx@linutronix.de, akpm@linux-foundation.org,
         avagin@openvz.org, xemul@parallels.com, gorcunov@openvz.org,
         vdavydov@parallels.com
-Subject: [patch 2/3] docs: procfs -- Document timerfd output
+Subject: [patch 1/3] timerfd: Implement show_fdinfo method
 References: <20140407174701.734703531@openvz.org>
-Content-Disposition: inline; filename=timerfd-doc-fdinfo
+Content-Disposition: inline; filename=timerfd-show-fdinfo-3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+For checkpoint/restore of timerfd files we need to know how exactly
+the timer were armed to be able to handle it. Thus implement show_fdinfo
+method which provides enough information for timer re-creation.
+
+One of significant changes I think is addition of
+timerfd_ctx::settime_flags member. Currently there are
+two flags TFD_TIMER_ABSTIME and TFD_TIMER_CANCEL_ON_SET,
+and the second can be found from @might_cancel variable
+but in case if the flags will be extended in future we
+most probably will have to somehow remember them explicitly
+anyway so I guss doing that right now won't hurt.
+
+To not bloat the timerfd_ctx structure I've converted
+@expired to short integer and defined @settime_flags
+as short as well.
+
+v2 (by avagin@, vdavydov@ and tglx@):
+
+ - Add it_value/it_interval fields
+ - Save flags being used in timerfd_setup in context
 
 CC: Shawn Landden <shawn@churchofgit.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
@@ -30,35 +51,68 @@ CC: Pavel Emelyanov <xemul@parallels.com>
 CC: Vladimir Davydov <vdavydov@parallels.com>
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 ---
- Documentation/filesystems/proc.txt |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ fs/timerfd.c |   30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
+Index: linux-2.6.git/fs/timerfd.c
 ===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -1741,6 +1741,23 @@ pair provide additional information part
- 	While the first three lines are mandatory and always printed, the rest is
- 	optional and may be omitted if no marks created yet.
- 
-+	Timerfd files
-+	~~~~~~~~~~~~~
+--- linux-2.6.git.orig/fs/timerfd.c
++++ linux-2.6.git/fs/timerfd.c
+@@ -35,8 +35,9 @@ struct timerfd_ctx {
+ 	ktime_t moffs;
+ 	wait_queue_head_t wqh;
+ 	u64 ticks;
+-	int expired;
+ 	int clockid;
++	short unsigned expired;
++	short unsigned settime_flags;	/* to show in fdinfo */
+ 	struct rcu_head rcu;
+ 	struct list_head clist;
+ 	bool might_cancel;
+@@ -196,6 +197,8 @@ static int timerfd_setup(struct timerfd_
+ 		if (timerfd_canceled(ctx))
+ 			return -ECANCELED;
+ 	}
 +
-+	pos:	0
-+	flags:	02
-+	mnt_id:	9
-+	clockid: 0
-+	ticks: 0
-+	settime flags: 01
-+	it_value: (0, 49406829)
-+	it_interval: (1, 0)
-+
-+	where 'clockid' is the clock type and 'ticks' is the number of the timer expirations
-+	that have occurred [see timerfd_create(2) for details]. 'settime flags' are
-+	flags in octal form used to setup the timer [see timerfd_settime(2) for
-+	details]. 'it_value' and 'it_interval' are the expiration time and interval
-+	for the timer.
++	ctx->settime_flags = flags & TFD_SETTIME_FLAGS;
+ 	return 0;
+ }
  
- ------------------------------------------------------------------------------
- Configuring procfs
+@@ -284,11 +287,36 @@ static ssize_t timerfd_read(struct file
+ 	return res;
+ }
+ 
++static int timerfd_show(struct seq_file *m, struct file *file)
++{
++	struct timerfd_ctx *ctx = file->private_data;
++	struct itimerspec t;
++
++	spin_lock_irq(&ctx->wqh.lock);
++	t.it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
++	t.it_interval = ktime_to_timespec(ctx->tintv);
++	spin_unlock_irq(&ctx->wqh.lock);
++
++	return seq_printf(m,
++			  "clockid: %d\n"
++			  "ticks: %llu\n"
++			  "settime flags: 0%o\n"
++			  "it_value: (%llu, %llu)\n"
++			  "it_interval: (%llu, %llu)\n",
++			  ctx->clockid, (unsigned long long)ctx->ticks,
++			  ctx->settime_flags,
++			  (unsigned long long)t.it_value.tv_sec,
++			  (unsigned long long)t.it_value.tv_nsec,
++			  (unsigned long long)t.it_interval.tv_sec,
++			  (unsigned long long)t.it_interval.tv_nsec);
++}
++
+ static const struct file_operations timerfd_fops = {
+ 	.release	= timerfd_release,
+ 	.poll		= timerfd_poll,
+ 	.read		= timerfd_read,
+ 	.llseek		= noop_llseek,
++	.show_fdinfo	= timerfd_show,
+ };
+ 
+ static int timerfd_fget(int fd, struct fd *p)
 
