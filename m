@@ -1,159 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaDGDXj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 23:23:39 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:49730 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754636AbaDGDXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 23:23:37 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org, Masahiro Yamada <yamada.m@jp.panasonic.com>
-Subject: [PATCH] Kbuild: move extra gcc check flags to the top Makefile
-Date: Mon,  7 Apr 2014 12:22:19 +0900
-Message-Id: <1396840939-24512-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754743AbaDGDm2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 23:42:28 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:21388 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636AbaDGDmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 23:42:25 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68f-b7f156d00000276c-4e-53421ea0ca7e
+Content-transfer-encoding: 8BIT
+Message-id: <1396842028.24638.4.camel@kjgkr>
+Subject: Re: f2fs: kernel BUG at fs/f2fs/segment.h:543
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Date: Mon, 07 Apr 2014 12:40:28 +0900
+In-reply-to: <5342058E.4090500@oracle.com>
+References: <53401D4A.1020203@oracle.com> <1396833642.12401.12.camel@kjgkr>
+ <5342058E.4090500@oracle.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zQ90Fck7BBm1t0hZbrjcxWVxa5G5x
+	edccNovFR24zO7B47F7wmcnj49NbLB7v911l8/i8SS6AJYrLJiU1J7MstUjfLoErY/27+UwF
+	a3kqTqx/xtzA+Imzi5GTQ0LAROLaou+sELaYxIV769m6GLk4hASWMUpsb/vJCFN04+o2RojE
+	IkaJjS/eMYMkeAUEJX5MvsfSxcjBwSwgL3HkUjZImFlAXWLSvEXMEPWvGCUaj8xlh6jXkbg0
+	/QhYvbCAmcSqOewgJpuAtsTm/QYgFUICihJv998Fu0dEQEPi1KyDbBAjCyQOtt9hArFZBFQl
+	Jm+9wAJicwpoSczf85sZojdb4uGD92A1/AKiEocXbmeGOF9JYnd7JzvIORICp9glmtbcZ4MY
+	JCDxbfIhsHMkBGQlNh2AqpeUOLjiBssERolZSJ6chfDkLCRPLmBkXsUomlqQXFCclF5krFec
+	mFtcmpeul5yfu4kREnf9OxjvHrA+xJgMtHEis5Rocj4wbvNK4g2NzYwsTE1MjY3MLc1IE1YS
+	573/MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+OcsBd9MxrWvg3IEF2wdsnHByYfnJ6l
+	P2ebKOgbE3dqAcOCCT+Wv/3Ovkx/VcjlcuOPL85uF3KcoS+Y2aOeH1Qyj0XvhynrHRaXk2Yq
+	GUvEX/WHexscu/n3zxa5Rz0XX89K+73ZfZm5hWZb+INyrTXx8dwvNm/ZrrUh82FUG0Naov03
+	WV8OtgolluKMREMt5qLiRACGbbkn0QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd0Fck7BBvd7xS22XG9isri0yN3i
+	8q45bBaLj9xmdmDx2L3gM5PHx6e3WDze77vK5vF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8b6d/OZCtbyVJxY/4y5gfETZxcjJ4eEgInEjavbGCFsMYkL99az
+	dTFycQgJLGKU2PjiHTNIgldAUOLH5HssXYwcHMwC8hJHLmWDhJkF1CUmzVvEDFH/ilGi8chc
+	doh6HYlL04+A1QsLmEmsmsMOYrIJaEts3m8AUiEkoCjxdv9dVhBbREBD4tSsg2wQIwskDrbf
+	YQKxWQRUJSZvvcACYnMKaEnM3/ObGaI3W+Lhg/dgNfwCohKHF25nhjhfSWJ3eyf7BEahWUiO
+	noVw9CwkRy9gZF7FKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzVz6R3MK5qsDjEKMDBqMTD
+	G3jAMViINbGsuDL3EKMEB7OSCO9udqdgId6UxMqq1KL8+KLSnNTiQ4zJQIdPZJYSTc4HJpy8
+	knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBUtNzCdss/6A8X
+	r3PD7AU7uG24TMNVIp4c5DpybZ2a2HvGg+UXZnNHRyvu/bbor+guhZIPtS48zP6COUo/pjU7
+	ySfKflI1d+Z9e/U//wPB7cyZwoL/7a20TwU+6zyrleeQ9rD+rOPUXG7GGzvD60w38hcLyx1Y
+	HDBFN/ldOWN+lO8U3ceBx5RYijMSDbWYi4oTATkasfAuAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If W=... given to the command line, extra gcc check flags are added
-to KBUILD_CFLAGS.
+2014-04-06 (일), 21:55 -0400, Sasha Levin:
+> On 04/06/2014 09:20 PM, Jaegeuk Kim wrote:
+> > Hi,
+> > 
+> > Thank you for the report.
+> > 
+> > If possible, could you share fsck.f2fs or dump.f2fs on the corrupted
+> > partition?
+> > 
+> > Otherwise, how about this?
+> > # fdisk /dev/sdx
+> >> > p
+> 
+> Hey Jaegeuk,
+> 
+> Unfortunately it was a temporary filesystem inside the fuzzer that has
+> gone away as soon as the kernel died, so I don't have access to it.
 
-If we have such code in scripts/Makefile.build, the same flags are
-added to KBUILD_CFLAGS multiple times becuase scripts/Makefile.build
-is invoked every time Kbuild descends into the subdirectories.
+Got it.
+Then, just for sure, if it is reproducible, could you test f2fs with the
+following patch?
+Thanks,
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+>From 84f80a126458eeeaa3c4ebcecfb6908f7d22b214 Mon Sep 17 00:00:00 2001
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Date: Mon, 7 Apr 2014 12:37:39 +0900
+Subject: [PATCH] test
+
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- Makefile               | 51 ++++++++++++++++++++++++++++++++++++++++++++++++++
- scripts/Makefile.build | 51 --------------------------------------------------
- 2 files changed, 51 insertions(+), 51 deletions(-)
+ fs/f2fs/segment.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/Makefile b/Makefile
-index 00a933b..6588a03 100644
---- a/Makefile
-+++ b/Makefile
-@@ -579,6 +579,57 @@ endif # $(dot-config)
- # Defaults to vmlinux, but the arch makefile usually adds further targets
- all: vmlinux
- 
-+#
-+# make W=... settings
-+#
-+# W=1 - warnings that may be relevant and does not occur too often
-+# W=2 - warnings that occur quite often but may still be relevant
-+# W=3 - the more obscure warnings, can most likely be ignored
-+#
-+# $(call cc-option, -W...) handles gcc -W.. options which
-+# are not supported by all versions of the compiler
-+ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
-+warning-  := $(empty)
-+
-+warning-1 := -Wextra -Wunused -Wno-unused-parameter
-+warning-1 += -Wmissing-declarations
-+warning-1 += -Wmissing-format-attribute
-+warning-1 += -Wmissing-prototypes
-+warning-1 += -Wold-style-definition
-+warning-1 += $(call cc-option, -Wmissing-include-dirs)
-+warning-1 += $(call cc-option, -Wunused-but-set-variable)
-+warning-1 += $(call cc-disable-warning, missing-field-initializers)
-+
-+warning-2 := -Waggregate-return
-+warning-2 += -Wcast-align
-+warning-2 += -Wdisabled-optimization
-+warning-2 += -Wnested-externs
-+warning-2 += -Wshadow
-+warning-2 += $(call cc-option, -Wlogical-op)
-+warning-2 += $(call cc-option, -Wmissing-field-initializers)
-+
-+warning-3 := -Wbad-function-cast
-+warning-3 += -Wcast-qual
-+warning-3 += -Wconversion
-+warning-3 += -Wpacked
-+warning-3 += -Wpadded
-+warning-3 += -Wpointer-arith
-+warning-3 += -Wredundant-decls
-+warning-3 += -Wswitch-default
-+warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
-+warning-3 += $(call cc-option, -Wvla)
-+
-+warning := $(warning-$(findstring 1, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
-+warning += $(warning-$(findstring 2, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
-+warning += $(warning-$(findstring 3, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
-+
-+ifeq ("$(strip $(warning))","")
-+        $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
-+endif
-+
-+KBUILD_CFLAGS += $(warning)
-+endif
-+
- ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
- KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
- else
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index 9f0ee22..b5e02b6 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -50,57 +50,6 @@ ifeq ($(KBUILD_NOPEDANTIC),)
-         endif
- endif
- 
--#
--# make W=... settings
--#
--# W=1 - warnings that may be relevant and does not occur too often
--# W=2 - warnings that occur quite often but may still be relevant
--# W=3 - the more obscure warnings, can most likely be ignored
--#
--# $(call cc-option, -W...) handles gcc -W.. options which
--# are not supported by all versions of the compiler
--ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
--warning-  := $(empty)
--
--warning-1 := -Wextra -Wunused -Wno-unused-parameter
--warning-1 += -Wmissing-declarations
--warning-1 += -Wmissing-format-attribute
--warning-1 += -Wmissing-prototypes
--warning-1 += -Wold-style-definition
--warning-1 += $(call cc-option, -Wmissing-include-dirs)
--warning-1 += $(call cc-option, -Wunused-but-set-variable)
--warning-1 += $(call cc-disable-warning, missing-field-initializers)
--
--warning-2 := -Waggregate-return
--warning-2 += -Wcast-align
--warning-2 += -Wdisabled-optimization
--warning-2 += -Wnested-externs
--warning-2 += -Wshadow
--warning-2 += $(call cc-option, -Wlogical-op)
--warning-2 += $(call cc-option, -Wmissing-field-initializers)
--
--warning-3 := -Wbad-function-cast
--warning-3 += -Wcast-qual
--warning-3 += -Wconversion
--warning-3 += -Wpacked
--warning-3 += -Wpadded
--warning-3 += -Wpointer-arith
--warning-3 += -Wredundant-decls
--warning-3 += -Wswitch-default
--warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
--warning-3 += $(call cc-option, -Wvla)
--
--warning := $(warning-$(findstring 1, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
--warning += $(warning-$(findstring 2, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
--warning += $(warning-$(findstring 3, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
--
--ifeq ("$(strip $(warning))","")
--        $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
--endif
--
--KBUILD_CFLAGS += $(warning)
--endif
--
- include scripts/Makefile.lib
- 
- ifdef host-progs
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 7091204..d9cf06e 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -540,6 +540,11 @@ static inline void verify_block_addr(struct
+f2fs_sb_info *sbi, block_t blk_addr)
+ 	block_t total_blks = sm_info->segment_count <<
+sbi->log_blocks_per_seg;
+ 	block_t start_addr = sm_info->seg0_blkaddr;
+ 	block_t end_addr = start_addr + total_blks - 1;
++	if (blk_addr < start_addr) {
++		f2fs_msg(sbi->sb, KERN_ERR,
++			"blk_addr: %ld, start: %ld, end: %ld",
++			blk_addr, start_addr, end_addr);
++	}
+ 	BUG_ON(blk_addr < start_addr);
+ 	BUG_ON(blk_addr > end_addr);
+ }
 -- 
-1.8.3.2
+1.8.4.474.g128a96c
+
+
+-- 
+Jaegeuk Kim
+Samsung
 
