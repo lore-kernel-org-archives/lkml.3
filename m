@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086AbaDGWfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:35:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49496 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755855AbaDGWec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:34:32 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
-        Andres Freund <andres@2ndquadrant.com>,
-        Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/2] mm: Disable zone_reclaim_mode by default
-Date: Mon,  7 Apr 2014 23:34:27 +0100
-Message-Id: <1396910068-11637-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1396910068-11637-1-git-send-email-mgorman@suse.de>
-References: <1396910068-11637-1-git-send-email-mgorman@suse.de>
+	id S1755956AbaDGWk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:40:57 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:1192 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755034AbaDGWky (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 18:40:54 -0400
+Date: Mon, 7 Apr 2014 15:42:56 -0700
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 3/9] crypto: qce: Add dma and sg helpers
+Message-ID: <20140407224256.GG17066@sonymobile.com>
+References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com>
+ <1396541886-10966-4-git-send-email-svarbanov@mm-sol.com>
+ <20140403231525.GE17066@sonymobile.com>
+ <533EAE81.6060109@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <533EAE81.6060109@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zone_reclaim_mode causes processes to prefer reclaiming memory from local
-node instead of spilling over to other nodes. This made sense initially when
-NUMA machines were almost exclusively HPC and the workload was partitioned
-into nodes. The NUMA penalties were sufficiently high to justify reclaiming
-the memory. On current machines and workloads it is often the case that
-zone_reclaim_mode destroys performance but not all users know how to detect
-this. Favour the common case and disable it by default. Users that are
-sophisticated enough to know they need zone_reclaim_mode will detect it.
+On Fri, Apr 04, 2014 at 03:07:13PM +0200, Stanimir Varbanov wrote:
+> >> diff --git a/drivers/crypto/qce/dma.h b/drivers/crypto/qce/dma.h
+> >> new file mode 100644
+> >> index 000000000000..932b02fd8f25
+> >> --- /dev/null
+> >> +++ b/drivers/crypto/qce/dma.h
+> >> @@ -0,0 +1,57 @@
+> >> +/*
+> >> + * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
+> >> + *
+> >> + * This program is free software; you can redistribute it and/or modify
+> >> + * it under the terms of the GNU General Public License version 2 and
+> >> + * only version 2 as published by the Free Software Foundation.
+> >> + *
+> >> + * This program is distributed in the hope that it will be useful,
+> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> >> + * GNU General Public License for more details.
+> >> + */
+> >> +
+> >> +#ifndef _DMA_H_
+> >> +#define _DMA_H_
+> >> +
+> >> +#define QCE_AUTHIV_REGS_CNT		16
+> >> +#define QCE_AUTH_BYTECOUNT_REGS_CNT	4
+> >> +#define QCE_CNTRIV_REGS_CNT		4
+> >> +
+> >> +/* result dump format */
+> >> +struct qce_result_dump {
+> >> +	u32 auth_iv[QCE_AUTHIV_REGS_CNT];
+> >> +	u32 auth_byte_count[QCE_AUTH_BYTECOUNT_REGS_CNT];
+> >> +	u32 encr_cntr_iv[QCE_CNTRIV_REGS_CNT];
+> >> +	u32 status;
+> >> +	u32 status2;
+> >> +};
+> >> +
+> >> +#define QCE_IGNORE_BUF_SZ	(2 * QCE_BAM_BURST_SIZE)
+> > 
+> > QCE_BAM_BURST_SIZE is defined in common.h in 6/9.  Either that file
+> > needs to be included from this one, or the definition needs to be moved.
+> 
+> I decided to not include any files in driver private headers. Thus I
+> include the private header files in relevant c files in order.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- Documentation/sysctl/vm.txt | 17 +++++++++--------
- mm/page_alloc.c             |  2 --
- 2 files changed, 9 insertions(+), 10 deletions(-)
+Actually, that is exactly what I was trying to indicate as undesirable.
+Please modify this so that each individual header file doesn't require
+you to include another file for usage.
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index d614a9b..ff5da70 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -751,16 +751,17 @@ This is value ORed together of
- 2	= Zone reclaim writes dirty pages out
- 4	= Zone reclaim swaps pages
- 
--zone_reclaim_mode is set during bootup to 1 if it is determined that pages
--from remote zones will cause a measurable performance reduction. The
--page allocator will then reclaim easily reusable pages (those page
--cache pages that are currently not used) before allocating off node pages.
--
--It may be beneficial to switch off zone reclaim if the system is
--used for a file server and all of memory should be used for caching files
--from disk. In that case the caching effect is more important than
-+zone_reclaim_mode is disabled by default.  For file servers or workloads
-+that benefit from having their data cached, zone_reclaim_mode should be
-+left disabled as the caching effect is likely to be more important than
- data locality.
- 
-+zone_reclaim may be enabled if it's known that the workload is partitioned
-+such that each partition fits within a NUMA node and that accessing remote
-+memory would cause a measurable performance reduction.  The page allocator
-+will then reclaim easily reusable pages (those page cache pages that are
-+currently not used) before allocating off node pages.
-+
- Allowing zone reclaim to write out pages stops processes that are
- writing large amounts of data from dirtying pages on other nodes. Zone
- reclaim will write out dirty pages if a zone fills up and so effectively
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 3bac76a..a256f85 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1873,8 +1873,6 @@ static void __paginginit init_zone_allows_reclaim(int nid)
- 	for_each_online_node(i)
- 		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
- 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
--		else
--			zone_reclaim_mode = 1;
- }
- 
- #else	/* CONFIG_NUMA */
--- 
-1.8.4.5
-
+-Courtney
