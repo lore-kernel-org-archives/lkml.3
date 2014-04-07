@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509AbaDGR0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:26:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43368 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044AbaDGRZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:25:59 -0400
-Date: Mon, 7 Apr 2014 13:25:52 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xen/manage: Poweroff forcefully if user-space is not
- yet up.
-Message-ID: <20140407172552.GA3718@phenom.dumpdata.com>
-References: <1396637621-30113-1-git-send-email-konrad.wilk@oracle.com>
- <1396637621-30113-3-git-send-email-konrad.wilk@oracle.com>
- <5342DE24.8080804@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5342DE24.8080804@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1755554AbaDGRbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:31:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32853 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754711AbaDGRbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 13:31:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,810,1389772800"; 
+   d="scan'208";a="516253267"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH V5 01/12] ACPI: introduce .match() callback for ACPI scan handler
+Date: Tue,  8 Apr 2014 00:06:48 +0800
+Message-Id: <1396886819-2637-2-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1396886819-2637-1-git-send-email-rui.zhang@intel.com>
+References: <1396886819-2637-1-git-send-email-rui.zhang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 06:19:32PM +0100, David Vrabel wrote:
-> On 04/04/14 19:53, Konrad Rzeszutek Wilk wrote:
-> > The user can launch the guest in this sequence:
-> > 
-> > xl create -p /vm.cfg	[launch, but pause it]
-> > xl shutdown latest	[sets control/shutdown=poweroff]
-> > xl unpause latest
-> > xl console latest	[and see that the guest has completely
-> > ignored the shutdown request]
-> > 
-> > In reality the guest hasn't ignored it. It registers a watch
-> > and gets a notification that there is value. It then calls
-> > the shutdown_handler which ends up calling orderly_shutdown.
-> > 
-> > Unfortunately that is so early in the bootup that there
-> > are no user-space. Which means that the orderly_shutdown fails.
-> > But since the force flag was set to false it continues on without
-> > reporting.
-> > 
-> > What we really want to is to use the force when we are in the
-> > SYSTEM_BOOTING state and not use the 'force' when SYSTEM_RUNNING.
-> > 
-> > However, if we are in the running state - and the shutdown command
-> > has been given before the user-space has been setup, there is nothing
-> > we can do. Worst yet, we stop ignoring the 'xl shutdown' requests!
-> > 
-> > As such, the other part of this patch is to only stop ignoring
-> > the 'xl shutdown' when we are truly in the power off sequence.
-> > 
-> > That means the user can do multiple 'xl shutdown' and we will try
-> > to act on them instead of ignoring them.
-> 
-> Applied to devel/for-linus-3.15
-> 
-> > Fixes-Bug: http://bugs.xenproject.org/xen/bug/6
-> > Reported-by:  Alex Bligh <alex@alex.org.uk>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > [v2: Add switch statement]
-> > [v3: Add a reboot notifier]
-> 
-> Can you put this version information after the --- in future?
+Currently, ACPI scan handler uses strcmp() to match device ids
+and scan handler ids.
 
-Aye.
-> 
-> Thanks.
-> 
-> David
+When converting PNPACPI enumeration into a scan handler, which I will do
+later in this patch set, the current code becomes not flexible enough
+because ACPI pnp scan handler requires wildcase and case insensitive support.
+
+Thus a per scan handler .match() callback is introduced in this patch,
+so that specified scan handler can have more flexible matching mechanism
+by introduce its own .match() callback.
+
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/acpi/scan.c     |   17 +++++++++++------
+ include/acpi/acpi_bus.h |    1 +
+ 2 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 7efe546..e46e51c 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1974,14 +1974,19 @@ static bool acpi_scan_handler_matching(struct acpi_scan_handler *handler,
+ 	const struct acpi_device_id *devid;
+ 
+ 	for (devid = handler->ids; devid->id[0]; devid++)
+-		if (!strcmp((char *)devid->id, idstr)) {
+-			if (matchid)
+-				*matchid = devid;
+-
+-			return true;
+-		}
++		if (handler->match) {
++			if (handler->match(idstr, (char *)devid->id))
++				goto success;
++		} else
++			if (!strcmp((char *)devid->id, idstr))
++				goto success;
+ 
+ 	return false;
++
++success:
++	if (matchid)
++		*matchid = devid;
++	return true;
+ }
+ 
+ static struct acpi_scan_handler *acpi_scan_match_handler(char *idstr,
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 84a2e29..ba679af 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -131,6 +131,7 @@ static inline struct acpi_hotplug_profile *to_acpi_hotplug_profile(
+ struct acpi_scan_handler {
+ 	const struct acpi_device_id *ids;
+ 	struct list_head list_node;
++	int (*match)(char *devid, char *handler_id);
+ 	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
+ 	void (*detach)(struct acpi_device *dev);
+ 	void (*bind)(struct device *phys_dev);
+-- 
+1.7.9.5
+
