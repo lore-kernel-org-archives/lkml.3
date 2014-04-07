@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaDGQF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 12:05:57 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47329 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771AbaDGQFw (ORCPT
+	id S1754760AbaDGQTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 12:19:17 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:61986 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057AbaDGQTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 12:05:52 -0400
-Message-ID: <5342CCDB.3080402@codeaurora.org>
-Date: Mon, 07 Apr 2014 19:05:47 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Apr 2014 12:19:12 -0400
+Date: Mon, 7 Apr 2014 20:19:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
+ bits PMD and PTE levels
+Message-ID: <20140407161910.GJ1444@moon>
+References: <1396883443-11696-1-git-send-email-mgorman@suse.de>
+ <1396883443-11696-3-git-send-email-mgorman@suse.de>
+ <5342C517.2020305@citrix.com>
+ <20140407154935.GD7292@suse.de>
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH] mtd: ubi: Free peb's synchronously for fastmap
-References: <1396339305-16005-1-git-send-email-tlinder@codeaurora.org> <CAFLxGvyUsLZsi3iiape6BivaduvfqZh8kXXwYOFuExUJho09kg@mail.gmail.com>
-In-Reply-To: <CAFLxGvyUsLZsi3iiape6BivaduvfqZh8kXXwYOFuExUJho09kg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140407154935.GD7292@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/7/2014 4:02 PM, Richard Weinberger wrote:
-> On Tue, Apr 1, 2014 at 10:01 AM, Tanya Brokhman <tlinder@codeaurora.org> wrote:
->> At first mount it's possible that there are not enough free PEBs since
->> there are PEB's pending to be erased. In such scenario, fm_pool (which is
->> the pool from which user required PEBs are allocated) will be empty.
->> Try fixing the above described situation by synchronously performing
->> pending erase work, thus produce another free PEB.
->>
->> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
->>
->> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->> index 457ead3..9a36f78 100644
->> --- a/drivers/mtd/ubi/wl.c
->> +++ b/drivers/mtd/ubi/wl.c
->> @@ -595,10 +595,29 @@ static void refill_wl_pool(struct ubi_device *ubi)
->>   static void refill_wl_user_pool(struct ubi_device *ubi)
->>   {
->>          struct ubi_fm_pool *pool = &ubi->fm_pool;
->> +       int err;
->>
->>          return_unused_pool_pebs(ubi, pool);
->>
->>          for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
->> +retry:
->> +               if (!ubi->free.rb_node ||
->> +                  (ubi->free_count - ubi->beb_rsvd_pebs < 1)) {
->> +                       /*
->> +                        * There are no available PEBs. Try to free
->> +                        * PEB by means of synchronous execution of
->> +                        * pending works.
->> +                        */
->> +                       if (ubi->works_count == 0)
->> +                               break;
->> +                       spin_unlock(&ubi->wl_lock);
->> +                       err = do_work(ubi);
->> +                       spin_lock(&ubi->wl_lock);
->
-> This is basically what produce_free_peb() does.
+On Mon, Apr 07, 2014 at 04:49:35PM +0100, Mel Gorman wrote:
+> On Mon, Apr 07, 2014 at 04:32:39PM +0100, David Vrabel wrote:
+> > On 07/04/14 16:10, Mel Gorman wrote:
+> > > _PAGE_NUMA is currently an alias of _PROT_PROTNONE to trap NUMA hinting
+> > > faults. As the bit is shared care is taken that _PAGE_NUMA is only used in
+> > > places where _PAGE_PROTNONE could not reach but this still causes problems
+> > > on Xen and conceptually difficult.
+> > 
+> > The problem with Xen guests occurred because mprotect() /was/ confusing
+> > PROTNONE mappings with _PAGE_NUMA and clearing the non-existant NUMA hints.
+> 
+> I didn't bother spelling it out in case I gave the impression that I was
+> blaming Xen for the problem.  As the bit is now changes, does it help
+> the Xen problem or cause another collision of some sort? There is no
+> guarantee _PAGE_NUMA will remain as bit 62 but at worst it'll use bit 11
+> and NUMA_BALANCING will depend in !KMEMCHECK.
 
-Right. I didn't use t just because of the termination condition. 
-produce_free_peb stops if there is 1 free peb. I need more then 1
-
->
->> +                       if (err < 0)
->> +                               break;
->> +                       goto retry;
->> +               }
->> +
->>                  pool->pebs[pool->size] = __wl_get_peb(ubi);
->
-> __wl_get_peb() already calls produce_free_peb() when we run out of free PEBs.
->
-> Does your patch really fix a problem you encounter or did you find the
-> issue by reviewing
-> the code?
->
-
-Yes. We encountered this issue, as described in the commit message. This 
-is the fix. Verified and working for us.
-
--- 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
+Fwiw, we're using bit 11 for soft-dirty tracking, so i really hope worst case
+never happen. (At the moment I'm trying to figure out if with this set
+it would be possible to clean up ugly macros in pgoff_to_pte for 2 level pages).
