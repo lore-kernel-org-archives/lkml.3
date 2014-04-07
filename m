@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaDGMlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:41:24 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44359 "EHLO
+	id S1755284AbaDGMnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 08:43:07 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44364 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510AbaDGMlV (ORCPT
+	with ESMTP id S1754650AbaDGMnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:41:21 -0400
-Date: Mon, 7 Apr 2014 13:41:07 +0100
+	Mon, 7 Apr 2014 08:43:02 -0400
+Date: Mon, 7 Apr 2014 13:42:51 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
@@ -16,19 +16,20 @@ Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>
-Message-ID: <20140407124107.GE14763@sirena.org.uk>
+Message-ID: <20140407124251.GF14763@sirena.org.uk>
 References: <1396872924-14675-1-git-send-email-k.kozlowski@samsung.com>
+ <1396872924-14675-2-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1n5KrmHTzI9lYhsK"
+	protocol="application/pgp-signature"; boundary="JCYGd/UpHK4EX+A4"
 Content-Disposition: inline
-In-Reply-To: <1396872924-14675-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1396872924-14675-2-git-send-email-k.kozlowski@samsung.com>
 X-Cookie: To make an enemy, do someone a favor.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: s5m8767: Fix carried over ena_gpio
- assignment
+Subject: Re: [PATCH 2/2] regulator: s5m8767: Remove regulator_dev pointer
+ from state container
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,37 +37,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1n5KrmHTzI9lYhsK
+--JCYGd/UpHK4EX+A4
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, Apr 07, 2014 at 02:15:23PM +0200, Krzysztof Kozlowski wrote:
-> During registration of regulators if external control for regulator was
-> set in DTS the ena_gpio and ena_gpio_flags fields of regulator_config
-> were set to proper values.
+On Mon, Apr 07, 2014 at 02:15:24PM +0200, Krzysztof Kozlowski wrote:
+> Don't store pointer to regulator_dev returned by
+> devm_regulator_register() in state container. It isn't used anywhere
+> outside of probe.
 
 Applied, thanks.
 
---1n5KrmHTzI9lYhsK
+--JCYGd/UpHK4EX+A4
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTQpzgAAoJELSic+t+oim9vzoQAIZLDNvJ216ZG6gtqA+UC9es
-YAD32N7Y0KRRci4DaJbcxDk2GtOXnJnzg+jEtFV4jnzwQfLjMMDx/AD7w/09aiTY
-KSJKqn1E146lW/3DZb7JoH5fgOsoG2jmImDCPg45Ml9Z4AHSj5USWxp3QRFRd0Xb
-UGC800GbhYCS8iBKXJFK5j+8WIV442lswg0zKQGvgTS3L0NJ4LyxGQsR73Y6Net2
-aF3/joN3qgBpPKPpMnanO7kkUSx/4NPk6GyJIVvsFJkxGFuD7lNi8BzBFJ6VDgjz
-PltHcMOx/Rqmh7QcsM75e8LSsC6xgCrGuiuWaPa4T5Rcgn9JZJpziPWKe/o6quCx
-x2weFGjM79nW/rNiyKVg108uy79gFkaHDR4GCQO0xgEfmMA9FsB7ZObZJG50i7R5
-Xu5ITFkQDmB/KyQPSk2OBu/lg/eoty5p28h2Y4Dh1z0o6toEkdKSiZZOTksryx/A
-fY914twyqO+IbdCMNkM9ONqGlW/TAe6GXwRuN0dtMfkN/qc5tWN13JinmnrFo/Zo
-o6RpRKwewJ336CvuwmTHGiw9b/vcinvRtcgDh0uBT5aP1LDdDZdqhuTrDE6GbK1g
-2Eb3DkIXXUUrm4AesaqFxiN7GmEA7TdVMZuMQVJT9YS3dHjFy6XIVSDLaOvy1FEx
-3LpObKy2BMgu6qzTnrtJ
-=de17
+iQIcBAEBAgAGBQJTQp1IAAoJELSic+t+oim97m0P/RgrqfR8lOZIlGgzg9spvf7r
+y2ZmW4KmQT2gqbQOIj7R0S/cb95nf+ABx6VId1YQL0O6bMYxnPFYvHINIIrspm10
+Kg4q9GhSMW9gQzV9UTDqaHykhs7crDBdr0NQHpnFYZSAtUPd1N0FfThGaEHOHbiI
+VoNQ1gkGTgSQd4b2jyKBCfsxH+/BLKV4dbSe3QRER3qC6Vxhui/UsKaZQrSbi8Jn
+nZOVvmuqIb0uc/shfG/uxKPbyNxxlt58+eAvmQSsyEOFF89pN67bL3mCh7/p5BbS
+PhyfuJK7JR+WU4yDnoWVsGSc/Blut9bxHbBUtsITRw9YiDf7LS+mBzaXC3GVEU8u
+7xJCdY2JPHXnKLbsITWLiDjKAUDxMLBVCFjNewLFhdfcQD+bvERrGJZ4Vvql0wzf
+D1YZuYv4z7t/cW5qFZjnxALjpoQoqCHkhBjDWPuhpYfdDSmOytad5ZwYqvgaSrqj
+ORd6PT14nbG5l/zHHYErFqbCINktDp1CByhH+A8d4yMwXW6VPZIjoX5Bu6vpi0J6
+9XaxhT686NGhvwUkhHP6DxANnkEFn2QYG3N9XSBrPsX8Blq20WMYWQABnEFOzAsn
+YSKPHlA4gK/nqsSa/kvMNGzTX0muolNG84YnLG1dOtuETIglbKt27dkJG4Q2rnZm
+G16dMuP62MoR0FDLDAYO
+=OxiB
 -----END PGP SIGNATURE-----
 
---1n5KrmHTzI9lYhsK--
+--JCYGd/UpHK4EX+A4--
