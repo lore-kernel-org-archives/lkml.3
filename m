@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310AbaDGMUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:20:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41506 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408AbaDGMU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:20:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,809,1389772800"; 
-   d="scan'208";a="508381878"
-Date: Mon, 7 Apr 2014 05:18:36 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [V5 0/4] perf: New conditional branch filter
-Message-ID: <20140407121836.GT32556@tassilo.jf.intel.com>
-References: <1394183185-6219-1-git-send-email-khandual@linux.vnet.ibm.com>
- <53319829.9040403@linux.vnet.ibm.com>
- <20140325161644.GC15074@tassilo.jf.intel.com>
- <53425FCA.40108@linux.vnet.ibm.com>
+	id S1755252AbaDGMYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 08:24:22 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51984 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141AbaDGMYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 08:24:18 -0400
+Message-ID: <534298E7.2020409@monstr.eu>
+Date: Mon, 07 Apr 2014 14:24:07 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53425FCA.40108@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Looijmans <mike.looijmans@topic.nl>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
+References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com> <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com> <53423E75.3020008@monstr.eu> <53429754.8080105@topic.nl>
+In-Reply-To: <53429754.8080105@topic.nl>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 01:50:26PM +0530, Anshuman Khandual wrote:
-> On 03/25/2014 09:46 PM, Andi Kleen wrote:
-> >> Hey Arnaldo,
-> >>
-> >> Do you have any comments or suggestions on this ? Have not received any
-> >> response on these proposed patch series yet. Thank you.
-> > 
-> > I read it earlier and it looks good to me.
-> 
-> Hey Andi,
-> 
-> Can I add your "Reviewed-by" or "Acked-by" to all these four patches ?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Ok for me.
+Hi Mike,
 
--Andi
+On 04/07/2014 02:17 PM, Mike Looijmans wrote:
+> On 04/07/2014 07:58 AM, Michal Simek wrote:
+>> Hi Soren,
+>>
+>> On 04/05/2014 01:14 AM, Soren Brinkmann wrote:
+>>> Convert all Zynq DT files to the dtc preprocessor include syntax.
+>>> This allows to include header files in the devicetrees like other
+>>> SoC-types already do.
+>>>
+>>> Inspired-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+>>> (http://www.spinics.net/lists/arm-kernel/msg319832.html)
+>>>
+>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>
+>> These 4 patches needs more wider discussion if this is helpful or
+>> not. Currently I can't see any value in it because everything
+>> is just generated and fixed. I think I had the same discussion
+>> with Laurent some weeks ago regarding this.
+>=20
+> I would be kinda neutral here. I'd consider it helpful, it improves rea=
+dability (regardless of whether they=20
+are generated or hand crafted). That's convenient for things like interru=
+pt sensitivity,
+I can't remember whether 4 is level or edge type. On the other hand, the =
+clock indices are just
+ as much magic numbers as the memory addresses. If I suspect an error in =
+that area, I'd start by lokking
+in /sys/kernel/debug/clk but wouldn't start in the DT.
+>=20
+>> IRC the origin idea to use this was especially for people who
+>> writing these DTS by hand which is not our case - at least
+>> for majority of our customers.
+>=20
+> I write them by hand. Is there any other way?
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+Device-tree BSP and in 2014.01 there will be new BSP which just generate
+them directly from the Vivado tools which just target your reference desi=
+gn.
+You can connect your custom IP (or Xilinx or 3rd party) directly to the G=
+IC
+which using different IRQ sensitivity with whatever register addresses
+and make no sense to write it by hand.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNCmOcACgkQykllyylKDCFmFQCaApJaw6/8TZPhAwpZ8Pw0aI5j
+7QEAn0KeJu/1axANFxaBbBwAr0kNahND
+=svZR
+-----END PGP SIGNATURE-----
+
+--FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7--
