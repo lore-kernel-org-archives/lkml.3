@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033AbaDGU3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 16:29:35 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60260 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876AbaDGU2L (ORCPT
+	id S1755857AbaDGUec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 16:34:32 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47831 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201AbaDGUeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 16:28:11 -0400
-From: Fabio Falzoi <fabio.falzoi84@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>
-Subject: [PATCH v2 2/5] Staging: rts5139: Fixed multi-line code alignment
-Date: Mon,  7 Apr 2014 22:27:45 +0200
-Message-Id: <1396902468-27906-3-git-send-email-fabio.falzoi84@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396902468-27906-1-git-send-email-fabio.falzoi84@gmail.com>
-References: <20140407003341.GA13365@kroah.com>
- <1396902468-27906-1-git-send-email-fabio.falzoi84@gmail.com>
+	Mon, 7 Apr 2014 16:34:31 -0400
+Subject: Re: [RFC PATCH 3/6] uprobes/x86: Introduce sizeof_long(), cleanup
+ adjust_ret_addr() and arch_uretprobe_hijack_return_addr()
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140406201625.GA504@redhat.com>
+References: <20140406201625.GA504@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Apr 2014 13:34:25 -0700
+Message-ID: <1396902865.9333.29.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040720-9332-0000-0000-0000006E80E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Multi-line code aligned with open parenthesis.
+On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
+> 1. Add the trivial sizeof_long() helper and change other callers of
+>    is_ia32_task() to use it.
+> 
+...
 
-Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
----
- drivers/staging/rts5139/rts51x.c | 21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+This hunk #3 doesn't apply for me.  I can't find in your patch sets
+where you added the lines being replaced (and they weren't there
+originally).
 
-diff --git a/drivers/staging/rts5139/rts51x.c b/drivers/staging/rts5139/rts51x.c
-index 9d9c706..28f4631 100644
---- a/drivers/staging/rts5139/rts51x.c
-+++ b/drivers/staging/rts5139/rts51x.c
-@@ -291,15 +291,15 @@ static int rts51x_control_thread(void *__chip)
- 		 */
- 		else if (chip->srb->device->id) {
- 			RTS51X_DEBUGP("Bad target number (%d:%d)\n",
--				       chip->srb->device->id,
--				       chip->srb->device->lun);
-+				      chip->srb->device->id,
-+				      chip->srb->device->lun);
- 			chip->srb->result = DID_BAD_TARGET << 16;
- 		}
- 
- 		else if (chip->srb->device->lun > chip->max_lun) {
- 			RTS51X_DEBUGP("Bad LUN (%d:%d)\n",
--				       chip->srb->device->id,
--				       chip->srb->device->lun);
-+				      chip->srb->device->id,
-+				      chip->srb->device->lun);
- 			chip->srb->result = DID_BAD_TARGET << 16;
- 		}
- 
-@@ -433,12 +433,12 @@ static int associate_dev(struct rts51x_chip *chip, struct usb_interface *intf)
- 	rts51x->pusb_intf = intf;
- 	rts51x->ifnum = intf->cur_altsetting->desc.bInterfaceNumber;
- 	RTS51X_DEBUGP("Vendor: 0x%04x, Product: 0x%04x, Revision: 0x%04x\n",
--		       le16_to_cpu(rts51x->pusb_dev->descriptor.idVendor),
--		       le16_to_cpu(rts51x->pusb_dev->descriptor.idProduct),
--		       le16_to_cpu(rts51x->pusb_dev->descriptor.bcdDevice));
-+		      le16_to_cpu(rts51x->pusb_dev->descriptor.idVendor),
-+		      le16_to_cpu(rts51x->pusb_dev->descriptor.idProduct),
-+		      le16_to_cpu(rts51x->pusb_dev->descriptor.bcdDevice));
- 	RTS51X_DEBUGP("Interface Subclass: 0x%02x, Protocol: 0x%02x\n",
--		       intf->cur_altsetting->desc.bInterfaceSubClass,
--		       intf->cur_altsetting->desc.bInterfaceProtocol);
-+		      intf->cur_altsetting->desc.bInterfaceSubClass,
-+		      intf->cur_altsetting->desc.bInterfaceProtocol);
- 
- 	/* Store our private data in the interface */
- 	usb_set_intfdata(intf, chip);
-@@ -569,8 +569,7 @@ static int get_pipes(struct rts51x_chip *chip)
+After I fixed up this hunk, this patch and the rest applied OK.
+
+> @@ -450,10 +448,7 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+> 
+>  	if (auprobe->fixups & UPROBE_FIX_CALL) {
+>  		if (adjust_ret_addr(regs->sp, correction)) {
+> -			if (is_ia32_task())
+> -				regs->sp += 4;
+> -			else
+> -				regs->sp += 8;
+> +			regs->sp += sizeof_long();
+>  			return -ERESTART;
+>  		}
+>  	}
+> @@ -738,23 +733,21 @@ if (ret) pr_crit("EMULATE: %lx -> %lx\n", ip, regs->ip);
+...
+
+This modified hunk worked for me.
+@@ -450,7 +448,9 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+
+ 	if (auprobe->fixups & UPROBE_FIX_CALL) {
+-		if (adjust_ret_addr(regs->sp, correction))
++		if (adjust_ret_addr(regs->sp, correction)) {
++			regs->sp += sizeof_long();
+ 			return -ERESTART;
++		}
  	}
  
- 	if (!ep_in || !ep_out) {
--		RTS51X_DEBUGP("Endpoint sanity check failed!"
--					"Rejecting dev.\n");
-+		RTS51X_DEBUGP("Endpoint sanity check failed! Rejecting dev.\n");
- 		return -EIO;
- 	}
- 
--- 
-1.9.1
+ 	return 0;
+
+Jim
 
