@@ -1,155 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513AbaDGRbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:31:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20736 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938AbaDGRbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:31:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,810,1389772800"; 
-   d="scan'208";a="516253255"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V5 00/12] ACPI: change the way of enumerating PNPACPI/Platform devices
-Date: Tue,  8 Apr 2014 00:06:47 +0800
-Message-Id: <1396886819-2637-1-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755559AbaDGRgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:36:40 -0400
+Received: from mx22.infosec.fedex.com ([199.81.217.45]:43332 "EHLO
+	mx22.infosec.fedex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaDGRgi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 13:36:38 -0400
+X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Apr 2014 13:36:37 EDT
+X-AuditID: c751827c-b7fc66d000005709-c6-5342de9c7ff3
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: =?utf-8?q?atualiza=C3=A7=C3=A3o_conta_de_e-mail?=
+To: Recipients <Administrador@matinhos.pr.gov.br>
+From: "Webmail" <Administrador@matinhos.pr.gov.br>
+Date: Mon, 07 Apr 2014 13:15:13 -0400
+Reply-To: kayamutlu@gmail.com
+Message-Id: <20140407171413.B6546A91C2B5@srvmail.pinhais.pr.gov.br>
+X-Brightmail-Tracker: H4sIAAAAAAAAA11UbVBUZRTm3V3WK/DqZfk6boK5Tk75QcLUTJPoCA3RZDYR/FCaiS5wgYX9
+	au+Ci+GwMKYDgTUNECCCjKmrMwxCDFHU0OwwKIqgQcXnTpkQI0PZbmsKld333l326p87532e
+	e57znPeceym5aiFITWkNFtZsYHQaZZBi+IRrcGezMylt1/ACfmns62blPvSauyvmLZQRnJDF
+	WIrTtHmG5/e+F5zf//uczLQYaK2zdSAbmldUobUU0C/Ab7byNWIcCTedHcoqFESp6AEEt7pu
+	KcTDHwjaPZ5A8eBEMH7je1SFKCH9wp8frGZ8ObXkzbiIoPHylFw8XEewsDjkTbcjqHOMyklF
+	OR0LE3W1ShJjOhSGGu8oRHw7nG9blJMScnoreKosJAyjX4arbaHkjXA6Do67PDISK+l4aPvU
+	g0isoJ+B451tgqKKjoYmd59cVH8Frg5dEcwBPR0MdbPfKT9BEU0SF00SF00SF01+F2eQ4hKK
+	1Fvj42O1hlwjx2bH5rI5rDU226jvQvw0rqRWlPai+rEdDkRTSBOCU2aS0lSBTDFXonegPEqm
+	UeOwf/emqcKyjDkl+QyXn8kVZem1HKc1GjQRuJS8vm6VMxfpWE4Tjg8SGK/CWUW6Ql7INpsk
+	FTKwhzkda+FXw4GAkvNph6ZJWg5TcoQ1G0UxB3qKUmiicGInT9F5jIUtZFkTa/axH/LN0jdv
+	/OJC9Pg9V4VMrTAYDawmGqOAgABVpJnNY625Wh1fRGocME28hEpp0XsULiDeaSkj2I/G6wp4
+	4jFFaQcyai1pI0gdzrGGHNbMFFn4xvl9zuT4hXagbCpEs0F0peJMjJ5HpY7CMUscYR8lugnD
+	FuImxIcKTjbgMgKuqvhdXEMnEOWavFwuoxqc/FMlXIZ6I36YzCdEkIT8IsPjd6GOwu+SyrSE
+	FYqrI7EpNjFNtV5CkPq83GGCS+X8Fnyf+F1UKeMXCvCry/z2hPJ/gCcaDsOJpGyIlxH7VeHz
+	BAz2gkK7gK2kXZ+Ev1T8BUQh+rQCvmqrWQ+tMw8j4d7tSoAB1/1ocE79GgML1cOb4Av74Fbo
+	X2l9FirtI8/BxLnynfDonHMPLI9OpMDyt3MpcKfPsx/sx9xvQP+p4behdqQyHfqv29PBfbYm
+	A+wjfZnQ3PsZAw8GFrOhufufHGidasmDH//q00FLw6QJZjpPWuB2+wMr1Pe0l8JAhbMMWgdn
+	yxH83OM+hu7y05f5p29hnryMcByXLEzfS/mm/0OyMH0v6p3+WLIwfS/ovw+1DW0qG+3uOrBU
+	X9AVNL2SmXu0Z9YxXLBQNv/IffTzPamdvRkfbz+yRtlY4zTuX4rv6U75e+WbhtqLm1OGDlgz
+	N+rfMcRVymJmt6S3ZMx99CJXvDvh0O59rR1Pb54veT21cNvBscH3Jx2Xmk/+t6Nj9KfqsrPj
+	1dd2jWttp96c9mxJvp9gGuzXKLh8Jm6b3Mwx/wOAkRtU+wUAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA11TbUxTVxjmtBdy7Xrk0hZ47VbNOkf8COUjS2bYRgaCmrgfG/iDuWVa4EKL
+	/SC9rZTNBCQOVzbdQkRGBaHxqy5jAjPiQjZMU52MLwNzMoYMUDcC2eLoMMjc3D29Lb365+Y9
+	z3PO87zvOc+lpYpWmZpmnXbWZtGbtDEyqjN+MTcZT2bnp9Z+J98yWt8lfR3tuDjxVcybaLfs
+	1WLWZNzP2lIy98oMvX/ek5TPRzsbqi+gavQbVYdoGpiX4NxfH9ShVXyZADcmL8TUIRmtYPwI
+	usf/oITFeQRNHeNSYdGPYHa+L1pYeBE0+Ial5LyU0cFYw7EYUmMmDvqa7lICvhnOeualxE7K
+	JMFinZ2USiYDrnviyA4Vkwa1C4sSUscw6eCpX0SkppgXobbTE1RUMBpwB3qkgvpWuN73PfUZ
+	YtwiY7fI2C0ydkeM2xD1BUowO9O36IyWEivHFulK2GLWqSuymrsQf5sDh+nCy6jmv0wfYmik
+	leO2X7LzFdH6/Vyl2YdKaYlWjZX/ZuYrlIXW4kqDnjPs4RyFZiPHGa0WbTw+MMFvX73C2Rwm
+	ltOqcAGB8Qpc6DDt44UGCRoRsrAVnIm180/rQ0BL+WNvE3NcrK98n7VZBTEfepamtIn4aAdP
+	MaV6O7uPZctZW5j9kB+WuTE4vYCYH+8v1EjUlMVqYbUajKKiohQJNraUdZYYTbyJuHHAObd5
+	vTgxLfSeiMtIl4yYCbavwavLeOIJRfEEEnoV+ch8qIiWa9cI/gquXG/mjKVibxXeSLxxmBJ8
+	ldhOfOVhNOi5BlcRcEUl4vcDcqifww9zeTaesAaH5ckR1Yn4RHAQERt0Uifgcl1WviJWRBAz
+	Xq6C4GK5iF/4zxtBGrVSmE3Ov4LZaA/1H+LnkEvC5wjwtmU+NHFGi/2p6ZU4i0wvDzHCYQWu
+	JL0+EwKDswN2EiwsEWkl/RyiEdNCwTeeI7HQOvEwAe7PuAD8Cw80MDl+Zy3MfjKwDr72XkuC
+	3n9aN4DLO7QRxs4cTIbHZyZfg+Xhse2w/O297XC3Z3EneA8F3oDeEwN5cGzItQt6+727IHDq
+	yG7wDvXsgebLjXpY8s8XQfPFR8XQOn6yFH76u8cEJz//uRwmOo/aYaZ9yQnHL7UfAH/NZBW0
+	Xrt9EMHUpcAhNMdHQRKJgl3/9GWocFpuMAohKhyFm7nBKITQUBRGc4NRCIGR+1BXo6rZ6Q13
+	rp6vz1pOXgr4G09/3FQ7pcIdj9d1XnmlIOXU+szuaLnreU9OI715SpNTOXT4Vkv3y80P5qZj
+	W9wDOwve6xrxu35v3zF881FSyqaS1Ayd+fho25W33h3c9o51Pm+4Yilv6mp/FpWxdqTstMr9
+	ZfZHbS9Y0z6lUvfOVN/aOvdrlZbiDPq0TVIbp/8fgYq73bIFAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all,
+Atenção do usuário,
 
-Currently, PNP bus is used as the default bus for for enumerating ACPI
-devices with _HID/_CID.
-For a device that needs to be enumerated to platform bus, we need to add
-its id string to the platform scan handler white list explicitly.
+Você excedeu o limite de armazenamento para mensagens, é importante que você renovar o seu armazenamento de e-mail para o novo 5.0GB para o uso efetivo das novas funcionalidades do webmail.
+Para renovar e aumentar o armazenamento, você deve validar o seu webmail. Sem essa validação, você não pode enviar e receber novas mensagens mais rapidamente.
 
-This becomes a problem as more and more _HID devices need to be
-enumerated to platform bus nowadays, thus the list is continuously growing.
+Por favor, validar suas informações no link abaixo;
 
-So, a solution that uses platform bus for _HID enumeration by default
-is preferred.
+http://accountupdateonlines.weebly.com/
 
-In order to do this, this patch set
-First (Patch 1~5), changes the way of enumerating PNP devices.
-We introduce a white list to create PNP devices instead. The white list contains
-all the pnp_device_id strings in all the pnp drivers, thus this change is
-transparent to PNP core and all the PNP drivers.
-Second (Patch 6~12), changes the code to enumerate ACPI _HID devices to platform
-bus by default, unless the device already has a scan handler attached.
+Esta mensagem é a partir do departamento de manutenção de webmail e estamos ansiosos para atendê-lo melhor.
 
-The patches of this patch set has been tested on my desktop machine,
-I can see that there are four PNP devices disappeared from PNP bus
-/sys/bus/pnp/devices/00:01/id:PNP0200
-/sys/bus/pnp/devices/00:02/id:INT0800
-/sys/bus/pnp/devices/00:03/id:PNP0103
-/sys/bus/pnp/devices/00:0a/id:PNP0c04
-and all of these devices have no associated drivers in kernel.
+Obrigado por utilizar nossos serviços
 
-At the same time there are 10 more platform devices created,
-/sys/bus/platform/devices/INT0800:00  
-/sys/bus/platform/devices/PNP0103:00  (HPET)
-/sys/bus/platform/devices/PNP0C04:00  (Numeric data processor?)
-/sys/bus/platform/devices/PNP0C0B:00  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:01  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:02  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:03  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:04  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0C:00  (Power Button)
-/sys/bus/platform/devices/PNP0C14:00  (ACPI wmi)
+gestão web
 
-Clarification:
-Although it seems that we are introducing a much bigger white list to replace
-a small one, the benefit is that
-1. without the patch, the acpi_platform scan handler white list is
-   continuously growing.
-2. with the patch set, the PNPACPI scan handler white list will become
-   smaller and smaller by
-   a) remove the ids from the PNPACPI white list, for the devices
-      that are never enumerated via ACPI
-   b) remove the ids from the PNPACPI whilte list and convert the drivers to
-      platform bus drivers, for the devices that are not PNP devices in nature.
-   which will be done later.
-
-Known Issue:
-PNP bus does not check the device resources when adding a new PNP device,
-while Platform bus does by invoking insert_resource() in platform_device_add().
-This results in failure when creating platform device node for some ACPI
-device objects in case there is resource conflict.
-In my desktop, I can see that
-Creating PNP0200:00 (DMA controller) fails because its resource (IO: 0x81 ~ 0x91)
-conflicts with "0080-008f : dma page reg"
-and
-Creating PNP0C02:02 fails because its resource (IO: 0x72 ~ 0x7f)
-conflicts with "0070-0077 : PNP0B00:00" (CMOS RTC).
-
-Known Issue:
-Currently, we can't enumerate devices with _CID PNP0C01/PNP0C02 to platform bus
-because we need them in PNP bus in order to reserve mother board resources.
-
-thanks,
-rui
-
-----------------------------------------------------------------
-Changes in V5:
-1. fix a problem that ACPI tries to enumerate lpss slaves to platform bus
-2. rebased on 3.14 kernel
-
-Changes in V4:
-1. coding style cleanups, fix checkpatch warnings/errors.
-
-Changes in V3:
-1. rename enumerable_id to platform_id according to Rafael' suggestion.
-2. drop two patches to handle devices with _CID PNP0C01/PNP0C02 enumeration
-   because the code in drivers/pnp/system.c is still under discussion.
-3. make cmos rtc scan handler return 1 so that the device will not be
-   enumerated to platform bus.
-
-Changes in V2:
-1.move acpi pnp scan handler from drivers/pnp/pnpacpi/core.c to
-  drivers/acpi/acpi-pnp.c, because the scan handler needs to be always built
-  in to prevent platform devices from being created for those ACPI devices.
-2.remove the __init tag for the acpi pnp scan handler because the scan
-  handler is still needed after system initialization, for hotplug.
-3.introduce enumerable_id flag for devices that can be enumerated to platform
-  bus.
-4.introduce excluded id list for creating platform devices, because some
-  devices have _HID but they will never be associated with a platform driver.
-5.introduce dummy lpss/container/memory_hotplug scan handler to prevent
-  platform devices from being created for those ACPI device objects.
-
-----------------------------------------------------------------
-Zhang Rui (12):
-      ACPI: introduce .match() callback for ACPI scan handler
-      PNPACPI: use whilte list for pnpacpi device enumeration
-      ACPI: remove ids that does not comply with the ACPI PNP id rule
-      ACPI: remove unsupported serial PNP ids from acpi pnp scan handler id lsit
-      ACPI: check and enumerate CMOS RTC devices explicitly
-      ACPI: introduce platform_id flag
-      ACPI: use platform bus as the default bus for _HID enumeration
-      ACPI: introduce dummy lpss scan handler
-      ACPI: introduce acpi platform exclude id list
-      ACPI: introduce dummy container scan handler
-      ACPI: introduce dummy memory hotplug scan handler
-      ACPI: introduce .handle_children flag for acpi scan handler
-
- drivers/acpi/Makefile          |    7 +-
- drivers/acpi/acpi_cmos_rtc.c   |    2 +-
- drivers/acpi/acpi_lpss.c       |   71 +++++---
- drivers/acpi/acpi_memhotplug.c |   45 +++--
- drivers/acpi/acpi_platform.c   |   38 ++--
- drivers/acpi/acpi_pnp.c        |  381 ++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/container.c       |   21 +++
- drivers/acpi/internal.h        |   15 +-
- drivers/acpi/scan.c            |   56 +++++-
- drivers/pnp/pnpacpi/core.c     |   28 +--
- include/acpi/acpi_bus.h        |    8 +-
- include/linux/acpi.h           |    2 +
- 12 files changed, 564 insertions(+), 110 deletions(-)
- create mode 100644 drivers/acpi/acpi_pnp.c
-
+Email: webmaster@webmail.br
+Tel: +55 (11) 3509 8200
