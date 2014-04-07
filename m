@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaDGWDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:03:31 -0400
-Received: from smtprelay0109.hostedemail.com ([216.40.44.109]:55787 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755051AbaDGWDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:03:30 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:966:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3873:3874:4250:4321:4385:5007:6119:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: hour01_1e46a79329227
-X-Filterd-Recvd-Size: 1808
-Message-ID: <1396908206.2874.66.camel@joe-AO722>
-Subject: Re: [PATCH v2 4/5] Staging: rts5139: pr_warn(...) in place of
- printk(KERN_WARNING ...)
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Fabio Falzoi <fabio.falzoi84@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 07 Apr 2014 15:03:26 -0700
-In-Reply-To: <20140407205659.GA7966@kroah.com>
-References: <20140407003341.GA13365@kroah.com>
-	 <1396902468-27906-1-git-send-email-fabio.falzoi84@gmail.com>
-	 <1396902468-27906-5-git-send-email-fabio.falzoi84@gmail.com>
-	 <1396902887.2874.62.camel@joe-AO722> <20140407205659.GA7966@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755995AbaDGWDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:03:44 -0400
+Received: from mail-bl2on0141.outbound.protection.outlook.com ([65.55.169.141]:63679
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755316AbaDGWDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 18:03:42 -0400
+From: <tthayer@altera.com>
+To: <robherring2@gmail.com>, <dougthompson@xmission.com>,
+        <grant.likely@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <dinguyen@altera.com>
+CC: Thor Thayer <tthayer@altera.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
+Date: Mon, 7 Apr 2014 16:54:07 -0500
+Message-ID: <1396907649-20212-2-git-send-email-tthayer@altera.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: =?us-ascii?Q?CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(1001?=
+ =?us-ascii?Q?9001)(6009001)(458001)(199002)(189002)(47776003)(2009001)(47?=
+ =?us-ascii?Q?446002)(46102001)(99396002)(97336001)(85306002)(33646001)(83?=
+ =?us-ascii?Q?322001)(56776001)(87936001)(81342001)(81542001)(74876001)(48?=
+ =?us-ascii?Q?376002)(20776003)(93916002)(44976005)(93136001)(87286001)(74?=
+ =?us-ascii?Q?366001)(6806004)(93516002)(59766001)(65816001)(98676001)(195?=
+ =?us-ascii?Q?80405001)(76482001)(88136002)(19580395003)(83072002)(7709600?=
+ =?us-ascii?Q?1)(50986001)(90146001)(97736001)(97186001)(89996001)(7466200?=
+ =?us-ascii?Q?1)(92726001)(84676001)(87266001)(2201001)(80022001)(50226001?=
+ =?us-ascii?Q?)(31966008)(47736001)(95416001)(4396001)(94316002)(16796002)?=
+ =?us-ascii?Q?(92566001)(54316002)(49866001)(69226001)(62966002)(63696002)?=
+ =?us-ascii?Q?(76786001)(86152002)(94946001)(81686001)(47976001)(42186004)?=
+ =?us-ascii?Q?(85852003)(74706001)(80976001)(50466002)(77982001)(53806001)?=
+ =?us-ascii?Q?(77156001)(56816005)(95666003)(81816001)(86362001)(79102001)?=
+ =?us-ascii?Q?(36756003)(76796001)(74502001)(921003)(1121002);DIR:OUT;SFP:?=
+ =?us-ascii?Q?1102;SCL:1;SRVR:BN1BFFO11HUB005;H:SJ-ITEXEDGE02.altera.priv.?=
+ =?us-ascii?Q?altera.com;FPR:E271C42E.A8D8A429.CED1BF37.48D2EA38.20252;MLV?=
+ =?us-ascii?Q?:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;?=
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0174BD4BDA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-07 at 13:56 -0700, Greg KH wrote:
-> On Mon, Apr 07, 2014 at 01:34:47PM -0700, Joe Perches wrote:
-> > On Mon, 2014-04-07 at 22:27 +0200, Fabio Falzoi wrote:
-> > > All printk(KERN_WARNING ...) replaced with pr_warn(...).
-> > 
-> > Please remove the RTS51X_TIP prefix and and and use
-> > 
-> > #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > 
-> > before any #include so that pr_<level> uses
-> > are prefixed in a standard way.
-> 
-> 
-> Feel free to do this as a follow-on patch, I'll take this one as-is, as
-> it is better than what we have currently...
+From: Thor Thayer <tthayer@altera.com>
 
-<shrug>
+Addition of the Altera SDRAM controller bindings and device
+tree changes to the Altera SoC project.
 
-Seeing as how you're not applying staging patches until
-after -rc1 is out, I don't see the harm in asking the
-submitter to fix whatever issues exist in a patch set
-before that.
+Signed-off-by: Thor Thayer <tthayer@altera.com>
+To: Rob Herring <robherring2@gmail.com>
+To: Pawel Moll <pawel.moll@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+To: Ian Campbell <ijc+devicetree@hellion.org.uk>
+To: Kumar Gala <galak@codeaurora.org>
+To: Rob Landley <rob@landley.net>
+To: Russell King <linux@arm.linux.org.uk>
+To: Dinh Nguyen <dinguyen@altera.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ .../bindings/arm/altera/socfpga-sdram.txt          |   14 ++++++++++++++
+ arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
+ 2 files changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+new file mode 100644
+index 0000000..525cb76
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+@@ -0,0 +1,14 @@
++Altera SOCFPGA SDRAM Controller
++
++Required properties:
++- compatible : "altr,sdr-ctl", "syscon";
++                Note that syscon is invoked for this device to support the FPGA
++		bridge driver, EDAC driver and other devices that share the
++		registers.
++- reg : Should contain 1 register ranges(address and length)
++
++Example:
++	sdrctl@ffc25000 {
++		compatible = "altr,sdr-ctl", "syscon";
++		reg = <0xffc25000 0x1000>;
++	};
+diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+index df43702..6ce912e 100644
+--- a/arch/arm/boot/dts/socfpga.dtsi
++++ b/arch/arm/boot/dts/socfpga.dtsi
+@@ -676,6 +676,11 @@
+ 			clocks = <&l4_sp_clk>;
+ 		};
+ 
++		sdrctl@ffc25000 {
++			compatible = "altr,sdr-ctl", "syscon";
++			reg = <0xffc25000 0x1000>;
++		};
++
+ 		rstmgr@ffd05000 {
+ 			compatible = "altr,rst-mgr";
+ 			reg = <0xffd05000 0x1000>;
+-- 
+1.7.9.5
 
