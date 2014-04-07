@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981AbaDGSc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:32:26 -0400
-Received: from 200.180.216.87.static.jazztel.es ([87.216.180.200]:44168 "HELO
-	mail.sysvalve.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754025AbaDGScX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:32:23 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Apr 2014 14:32:22 EDT
-Date: Mon, 7 Apr 2014 20:25:40 +0200
-From: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chris Bajumpaa <cbajumpa@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging/line6: Fix kzalloc coding style issue
-Message-ID: <20140407182540.GB5182@sysvalve.es>
-References: <1396822352-14555-1-git-send-email-agimenez@sysvalve.es>
- <s5hmwfxd69b.wl%tiwai@suse.de>
+	id S1755991AbaDGScl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:32:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26218 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754025AbaDGScj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 14:32:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,811,1389772800"; 
+   d="scan'208";a="488703384"
+From: Andi Kleen <andi@firstfloor.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Daniel J Blueman <daniel@numascale.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Steffen Persvold <sp@numascale.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: Re: ext4 performance falloff
+References: <533EE547.3030504@numascale.com>
+	<20140404205604.GC10275@thunk.org> <533F7851.30803@numascale.com>
+	<20140407141935.GA22171@quack.suse.cz>
+Date: Mon, 07 Apr 2014 09:40:28 -0700
+In-Reply-To: <20140407141935.GA22171@quack.suse.cz> (Jan Kara's message of
+	"Mon, 7 Apr 2014 16:19:35 +0200")
+Message-ID: <87bnwdjdoj.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <s5hmwfxd69b.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr Apr 2014 at 08:05:04AM +0200, Takashi Iwai said:
-> At Mon,  7 Apr 2014 00:12:30 +0200,
-> L. Alberto Giménez wrote:
-> > 
-> > Pass the actual variable to sizeof instead of a type definition.
-> > 
-> > Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
-> 
-> Acked-by: Takashi Iwai <tiwai@suse.de>
-> 
-> BTW, does anyone work on line6 stuff actively?
-> It's been in staging forever, and it's difficult to promote to the
-> standard ALSA driver unless testing with the real hardware by some
-> motivated person...
+Jan Kara <jack@suse.cz> writes:
+>
+> What we really need is a counter where we can better estimate counts
+> accumulated in the percpu part of it. As the counter approaches zero, it's
+> CPU overhead will have to become that of a single locked variable but when
+> the value of counter is relatively high, we want it to be fast as the
+> percpu one. Possibly, each CPU could "reserve" part of the value in the
+> counter (by just decrementing the total value; how large that part should
+> be really needs to depend to the total value of the counter and number of
+> CPUs - in this regard we really differ from classical percpu couters) and
+> allocate/free using that part. If CPU cannot reserve what it is asked for
+> anymore, it would go and steal from parts other CPUs have accumulated,
+> returning them to global pool until it can satisfy the allocation.
 
-I'm Not sure of that. I think that development has somewhat stalled. I
-have line6 hardware that at the moment is not supported (HD500), and I
-would like to take the shot. But the problem is that there are no specs,
-and Line6 won't release any (I asked, several times, even offering to
-accept some kind of stupid NDA). So I would need to reverse engineer
-Windows drivers, and I don't have the knowledge to interpret captured
-USB traffic, so I'm stuck as well.
+That's a percpu_counter() isn't it? (or cookie jar)
 
-I'll try to revive the line6-devel mailing list sending some traffic
-captures and see if anyone can help or point me in the right direction.
-I would like to see my HD500 running natively on Linux, and it's a nice
-challenge to actually do some useful work for the kernel :)
+The MM uses similar techniques.
 
+-Andi
 
-Regards,
-L. Alberto Giménez
-
-P.S.: I sent this mail this morning from an alternative machine, and it
-seems that the mail configuration was broken. Resending, sorry if you
-received this message twice.
+-- 
+ak@linux.intel.com -- Speaking for myself only
