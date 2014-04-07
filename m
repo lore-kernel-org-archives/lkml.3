@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaDGVkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 17:40:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:23986 "EHLO mga09.intel.com"
+	id S1755405AbaDGVrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 17:47:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:57829 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771AbaDGVkj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 17:40:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,812,1389772800"; 
-   d="scan'208";a="488773771"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Thread-Topic: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Thread-Index: AQHPS0iuvgiDnehMNEeghRTCX5Z79Jr4hhDwgAJi2QCAADLdEIADEokAgAA5rQD//9ENgIAH8M5Q///W/gCAAI6bcA==
-Date: Mon, 7 Apr 2014 19:01:25 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AFB7512@HASMSX106.ger.corp.intel.com>
-References: <20140310145530.GA27230@pcnci.linuxbox.cz>
- <20140329121550.GA5878@nik-comp.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
- <20140331120102.GY3339@pcnci.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
- <20140402135812.GI3339@pcnci.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFB112D@HASMSX106.ger.corp.intel.com>
- <20140402143635.GA4410@nik-comp.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFB7151@HASMSX106.ger.corp.intel.com>
- <20140407132530.GF3339@pcnci.linuxbox.cz>
-In-Reply-To: <20140407132530.GF3339@pcnci.linuxbox.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755169AbaDGVrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 17:47:42 -0400
+Date: Tue, 8 Apr 2014 07:47:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: strange state of the kbuild tree
+Message-Id: <20140408074734.34deb43270183941b5118c7f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__8_Apr_2014_07_47_34_+1000_JUp86DQBCiwuoT7C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__8_Apr_2014_07_47_34_+1000_JUp86DQBCiwuoT7C
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Michal,
 
-> -----Original Message-----
-> From: Nikola Ciprich [mailto:nikola.ciprich@linuxbox.cz]
-> Sent: Monday, April 07, 2014 16:26
-> To: Winkler, Tomas
-> Cc: Greg KH (gregkh@linuxfoundation.org); linux-kernel@vger.kernel.org; Nikola
-> Ciprich
-> Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
-> 
-> Hi Tomas,
-> 
-> yes, I just checked source rpm and it's applied..
-> 
-> here are the dumps:
-> 
-> [root@k310test ~]# hexdump -s 0x48 -n 4 /proc/bus/pci/00/16.0
-> 0000048 a301 3900
-> 000004c
-> [root@k310test ~]# hexdump -s 0x40 -n 4 /proc/bus/pci/00/16.0
-> 0000040 0345 000f
-> 0000044
+I noticed that you have two copies of two commits in your tree ("Kbuild,
+lto: Set TMPDIR for LTO v4" and "Kbuild, lto: Add Link Time Optimization
+support v3").  I understan why you recommitted them (to add your
+Signed-off-by), but to leave the unsigned commits in there sort of
+defeats the purpose.  This is probably a case where you should have
+removed the original merge (or just these two commits) and then merged
+the new version.
 
-I'm not sure how this is possible that this is failing for you
+I am not sure what you intend to send to Linus, but this whole tree (in
+one piece) should not be it.  From the state of the tree, it looks like
+you send your separate topic branches (or a new merge of them) which
+should be ok, but please after doing that, clean up your for-next branch
+(it current has merge commits dating back to May, 2103 in it).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-if ((0xa301 & 0x600) == 0x200)
-	goto no_mei; 
-so this is okay, the driver should not bind
+--Signature=_Tue__8_Apr_2014_07_47_34_+1000_JUp86DQBCiwuoT7C
+Content-Type: application/pgp-signature
 
-How the patch worked for you before this test?  
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Sorry for asking but can you please double check your compilation setup. 
- 
-Thanks
-Tomas
+iQIcBAEBCAAGBQJTQxz6AAoJEMDTa8Ir7ZwVNMIP/38ZvUkBlhNotAfhqt1DtWOP
+o4dBI15g1wnse69phAcuqY4PZir3DFfWCkeFifsxxWHsEj/oEeZYbk3cDAKo0DAs
+RSwcrdaOZHy6sJh8g7Fye5FU3qK1yxBZBqIWwcEUu/jkzoNcWx0c/OdWWgj1pGSJ
+gPvAOJAka5EbkDPxP7I0cjLJBM8Fegp/1z/aBTuBcxY02vXM11w7SA1bh8OmGz0q
+JBjWcyPZzzc4kHi2nxHG8ZW7Cse2HhCjs1uTcZMFVVdnK+6BKK3OmutoKzAfgym0
+WEtVpXQE4JF/SP4f1ITnoFEGqu0qAdpiWKd8LhZdW9yBgP0KhByouKz3AOf7CoB/
+XFlAUvnunJI4arOGOCFFvWVZmvW6l6dV44Q3Wdha41sFOS0w+/sB4BKtUeCLza3V
+Q9PnXYyVb782rIUqsCIvE1bgh7SJkDLU09TXD3xR1+nMNqeCVlwiCJCKEauM1vjs
+CZbpQQqZI71i6bSOrinONCxz3g073Q9azVoFbVl+Ockx7EthGTF27FWDiv1yoAgv
+F3ksilTGyHDDfUvDkbc6iT7jyvz5h3AKUzOnP/KwoKdYnV1SA2gYmRNKRa44OvR5
+iztvUH54gn1jO6OpnFbLXiKsUSqn003vhC/NP8pDR53AiKwnwZwX1cm1SKTfOm+J
+ZIxO7nRrTpz+bqvBdVIN
+=nCkT
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_Apr_2014_07_47_34_+1000_JUp86DQBCiwuoT7C--
