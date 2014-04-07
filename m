@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985AbaDGJls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 05:41:48 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:52699 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750957AbaDGJlr (ORCPT
+	id S1754967AbaDGJpo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 05:45:44 -0400
+Received: from relay.parallels.com ([195.214.232.42]:45857 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaDGJpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 05:41:47 -0400
-Message-ID: <1396863705.8506.39.camel@x220>
-Subject: Re: [PATCH v6 01/36] mtd: st_spi_fsm: Allocate resources and
- register with MTD framework
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
-        dwmw2@infradead.org, Angus.Clark@st.com
-Date: Mon, 07 Apr 2014 11:41:45 +0200
-In-Reply-To: <20140407091110.GB8888@lee--X1>
-References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
-	 <1395307268-12721-2-git-send-email-lee.jones@linaro.org>
-	 <1396858351.8506.8.camel@x220> <20140407091110.GB8888@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Apr 2014 09:41:45.0660 (UTC) FILETIME=[96FFC7C0:01CF5245]
-X-RcptDomain: vger.kernel.org
+	Mon, 7 Apr 2014 05:45:38 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <cl@linux-foundation.org>, <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: [PATCH -mm v2 0/2] slab: cleanup mem hotplug synchronization
+Date: Mon, 7 Apr 2014 13:45:33 +0400
+Message-ID: <cover.1396857765.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-07 at 10:11 +0100, Lee Jones wrote:
-> > > diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-> > > index 0128138..1210bc2 100644
-> > > --- a/drivers/mtd/devices/Kconfig
-> > > +++ b/drivers/mtd/devices/Kconfig
-> > > @@ -210,6 +210,14 @@ config MTD_DOCG3
-> > >  	  M-Systems and now Sandisk. The support is very experimental,
-> > >  	  and doesn't give access to any write operations.
-> > >  
-> > > +config MTD_ST_SPI_FSM
-> > > +	tristate "ST Microelectronics SPI FSM Serial Flash Controller"
-> > > +	depends on ARM || SH
-> > 
-> > That should probably be
-> >           depends on ARM || SUPERH
-> 
-> Actually it should be ARCH_STI, but thanks for the prompt.
+Hi,
 
-I wouldn't have guessed that!
+kmem_cache_{create,destroy,shrink} need to get a stable value of
+cpu/node online mask, because they init/destroy/access per-cpu/node
+kmem_cache parts, which can be allocated or destroyed on cpu/mem
+hotplug. To protect against cpu hotplug, these functions use
+{get,put}_online_cpus. However, they do nothing to synchronize with
+memory hotplug - taking the slab_mutex does not eliminate the
+possibility of race as described in patch 2.
 
-(Is ARCH_STI actually needed? ARCH_STI doesn't formally depend on ARM
-but I don't think one can end up with a .config with ARCH_STI set
-without ARM also set. Or am I mistaken?)
+What we need there is something like get_online_cpus, but for memory. We
+already have lock_memory_hotplug, which serves for the purpose, but it's
+a bit of a hammer right now, because it's backed by a mutex. As a
+result, it imposes some limitations to locking order, which are not
+desirable, and can't be used just like get_online_cpus. That's why in
+patch 1 I substitute it with get/put_online_mems, which work exactly
+like get/put_online_cpus except they block not cpu, but memory hotplug.
 
-> > > +	help
-> > > +	  This provides an MTD device driver for the ST Microelectronics
-> > > +	  SPI Fast Sequence Mode (FSM) Serial Flash Controller and support
-> > > +	  for a subset of connected Serial Flash devices.
-> > > +
-> > >  if MTD_DOCG3
-> > >  config BCH_CONST_M
-> > >  	default 14
-> > 
-> > Can this still be fixed in a future version of this series or should I
-> > send a trivial patch?
-> 
-> Do you mean the SH thing, or are you now referencing something else?
-> 
-> If the former then I'm happy to send a fixup patch.
+[ v1 can be found at https://lkml.org/lkml/2014/4/6/68. I NAK'ed it by
+myself, because it used an rw semaphore for get/put_online_mems, making
+them dead lock prune. ]
 
-No, I was talking about the SH symbol. I'll gladly leave it up to you to
-fix this.
+Thanks,
 
+Vladimir Davydov (2):
+  mem-hotplug: implement get/put_online_mems
+  slab: lock_memory_hotplug for kmem_cache_{create,destroy,shrink}
 
-Paul Bolle
+ include/linux/memory_hotplug.h |   14 ++--
+ include/linux/mmzone.h         |    8 +--
+ mm/kmemleak.c                  |    4 +-
+ mm/memory-failure.c            |    8 +--
+ mm/memory_hotplug.c            |  142 ++++++++++++++++++++++++++++------------
+ mm/slab.c                      |   26 +-------
+ mm/slab.h                      |    1 +
+ mm/slab_common.c               |   35 +++++++++-
+ mm/slob.c                      |    3 +-
+ mm/slub.c                      |    9 ++-
+ mm/vmscan.c                    |    2 +-
+ 11 files changed, 155 insertions(+), 97 deletions(-)
+
+-- 
+1.7.10.4
 
