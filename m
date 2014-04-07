@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044AbaDGWGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:06:16 -0400
-Received: from [113.64.156.63] ([113.64.156.63]:63967 "EHLO junhuoku.net"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754665AbaDGWGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:06:15 -0400
-X-Greylist: delayed 4899 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Apr 2014 18:06:14 EDT
-Reply-To: <liujian@junhuoku.net>
-Date: Tue, 8 Apr 2014 06:05:57 +0800
-From: =?utf-8?B?6YKu5Lu25Luj5Y+R?= <liujian@junhuoku.net>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?utf-8?B?IOWmguS9leaJk+mAoOiHquW3seeahOiHquWKqOi1mumSseacuuWZqO+8jOWunueOsOedoeiniei1mg==?=
-	=?utf-8?B?6ZKxICAgICAgICAgICAgICAgICAgIA==?=
-	=?utf-8?B?ICAgICAgICAgICAgICAgICAgICA=?=
-	=?utf-8?B?ICAgICAgICAgICAgMjAxNC80Lzg=?=
-	=?utf-8?B?ICA2OjA2OjAy?=
-Message-ID: <20140408060603386857@junhuoku.net>
-X-mailer: Foxmail 6, 13, 102, 15 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
+	id S1755970AbaDGWIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:08:40 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:42841 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919AbaDGWIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 18:08:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396630873-17372-1-git-send-email-sasha.levin@oracle.com>
+References: <1396630873-17372-1-git-send-email-sasha.levin@oracle.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 7 Apr 2014 15:08:15 -0700
+Message-ID: <CAK5ve-KGQJbWPO0N6rWJG4Z+aoEtr4+Whv5UkVCVyk8PzjNyvw@mail.gmail.com>
+Subject: Re: [PATCH] leds: make sure we unregister a trigger only once
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s37M6K9U006874
 
+On Fri, Apr 4, 2014 at 10:01 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> Currently, we may attempt to unregister a trigger more than once, for
+> example when we receive two consecutive reboot notifications, or when
+> we do a regular unregistration plus reboot notification.
+>
+> This leads to the following error since we try to delete the list node
+> twice:
+>
+> [ 2780.254922] WARNING: CPU: 0 PID: 13764 at lib/list_debug.c:53 __list_del_entry+0x3e/0xe0()
+> [ 2780.265559] list_del corruption, ffffffffa5eb6470->next is LIST_POISON1 (dead000000100100)
+> [ 2780.271710] Modules linked in:
+> [ 2780.274156] CPU: 0 PID: 13764 Comm: kworker/0:2 Tainted: G        W     3.14.0-next-20140403-sasha-00012-gef5fa7d-dirty #373
+> [ 2780.283063] Workqueue: events do_poweroff
+> [ 2780.285644]  0000000000000009 ffff8800330dbb38 ffffffffa34bfa33 0000000000002fe0
+> [ 2780.291571]  ffff8800330dbb88 ffff8800330dbb78 ffffffffa015a37c ffff8800330dbb68
+> [ 2780.296670]  ffffffffa5eb6470 0000000000000000 ffffffffa5eb6400 ffffffffa5ad7430
+> [ 2780.299756] Call Trace:
+> [ 2780.301530] dump_stack (lib/dump_stack.c:52)
+> [ 2780.303802] warn_slowpath_common (kernel/panic.c:418)
+> [ 2780.306151] warn_slowpath_fmt (kernel/panic.c:433)
+> [ 2780.308156] __list_del_entry (lib/list_debug.c:51 (discriminator 1))
+> [ 2780.310800] list_del (lib/list_debug.c:78)
+> [ 2780.313175] led_trigger_unregister (drivers/leds/led-triggers.c:225)
+> [ 2780.315599] heartbeat_reboot_notifier (drivers/leds/trigger/ledtrig-heartbeat.c:119)
+> [ 2780.317247] notifier_call_chain (kernel/notifier.c:95)
+> [ 2780.320014] __blocking_notifier_call_chain (kernel/notifier.c:316)
+> [ 2780.323263] blocking_notifier_call_chain (kernel/notifier.c:326)
+> [ 2780.326096] kernel_power_off (include/linux/kmod.h:95 kernel/reboot.c:153 kernel/reboot.c:179)
+> [ 2780.327883] do_poweroff (kernel/power/poweroff.c:23)
+> [ 2780.330748] process_one_work (kernel/workqueue.c:2221 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2226)
+> [ 2780.333027] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
+> [ 2780.335487] process_scheduled_works (include/linux/list.h:188 kernel/workqueue.c:2277)
+> [ 2780.337101] worker_thread (kernel/workqueue.c:2352)
+> [ 2780.338712] ? rescuer_thread (kernel/workqueue.c:2297)
+> [ 2780.341326] kthread (kernel/kthread.c:219)
+> [ 2780.343446] ? kthread_create_on_node (kernel/kthread.c:185)
+> [ 2780.345733] ret_from_fork (arch/x86/kernel/entry_64.S:555)
+> [ 2780.347168] ? kthread_create_on_node (kernel/kthread.c:185)
+>
+> Prevent it by making sure we don't attempt to unregister a trigger that
+> is not in the triggers list.
+>
 
+Looks good to me literally, could you please provide some simple test
+case for me? I need verify it on my side.
 
-æŽ¨èï¼šå¤šå¹´çš„ç½‘ç»œè¥é”€ç»éªŒ å¸®æ‚¨åšå‡ºæœ€å‡†ç¡®çš„è¥é”€å†³ç­– 
+Thanks,
+-Bryan
 
-
-å¦‚ä½•æ‰“é€ è‡ªå·±çš„è‡ªåŠ¨èµšé’±æœºå™¨ï¼Œå®žçŽ°ç¡è§‰èµšé’±ï¼Ÿ
-
-éƒ½åœ¨ä½¿ç”¨ï¼šhttp://www.cloudedm.net/
-
-è”ç³»ç”µè¯ï¼š153 6363 4438
-è¥é”€å†›ç«åº“|ç»¿è‰²é€šé“|äº‘ç«¯é‚®ä»¶ç¾¤å‘
-åˆ›å§‹äººï¼šåˆ˜å»º
-
-
-é¡¹ç›®æŽ¨èï¼šè®©7.3äº¿QQçŸ¥é“ä½  2014æœ€ç‰›QQè¥é”€è½¯ä»¶ç³»ç»Ÿ
-
-http://user.qzone.qq.com/506951936/blog/1393424220
-
-
-è‡³æ­¤~
-
-
-
-
-
-lny13igdsz1ljpneb8gky1bc8jblilwppu9mq2olb60xbja1yp30pmvqbp633ps1ucplac7n4dmembcqlc2v5wzqpn6juvsxwat
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  drivers/leds/led-triggers.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+> index df1a7c1..c3734f1 100644
+> --- a/drivers/leds/led-triggers.c
+> +++ b/drivers/leds/led-triggers.c
+> @@ -219,9 +219,12 @@ void led_trigger_unregister(struct led_trigger *trig)
+>  {
+>         struct led_classdev *led_cdev;
+>
+> +       if (list_empty_careful(&trig->next_trig))
+> +               return;
+> +
+>         /* Remove from the list of led triggers */
+>         down_write(&triggers_list_lock);
+> -       list_del(&trig->next_trig);
+> +       list_del_init(&trig->next_trig);
+>         up_write(&triggers_list_lock);
+>
+>         /* Remove anyone actively using this trigger */
+> --
+> 1.7.10.4
+>
