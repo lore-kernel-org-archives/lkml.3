@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaDGFWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 01:22:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44111 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaDGFWJ (ORCPT
+	id S1754861AbaDGFYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 01:24:24 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:37040 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653AbaDGFYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 01:22:09 -0400
-From: "Dolev Raviv" <draviv@codeaurora.org>
-To: "'Tanya Brokhman'" <tlinder@codeaurora.org>, <dedekind1@gmail.com>
-Cc: <linux-mtd@lists.infradead.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1396339273-15904-1-git-send-email-tlinder@codeaurora.org>
-In-Reply-To: <1396339273-15904-1-git-send-email-tlinder@codeaurora.org>
-Subject: RE: [RFC/PATCH] mtd: ubi: Test return value of __wl_get_peb
-Date: Mon, 7 Apr 2014 08:22:05 +0300
-Message-ID: <001901cf5221$52161110$f6423330$@codeaurora.org>
+	Mon, 7 Apr 2014 01:24:19 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 7 Apr 2014 14:24:29 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: John Stultz <john.stultz@linaro.org>, Dave Hansen <dave@sr71.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+Message-ID: <20140407052429.GB12144@bbox>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+ <20140401212102.GM4407@cmpxchg.org>
+ <533B313E.5000403@zytor.com>
+ <533B4555.3000608@sr71.net>
+ <533B8E3C.3090606@linaro.org>
+ <20140402163638.GQ14688@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIvHMrUK5vo1vjs3gwR8pOPAffflZpGCQdw
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140402163638.GQ14688@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Dolev Raviv <draviv@codeaurora.org>
+On Wed, Apr 02, 2014 at 12:36:38PM -0400, Johannes Weiner wrote:
+> On Tue, Apr 01, 2014 at 09:12:44PM -0700, John Stultz wrote:
+> > On 04/01/2014 04:01 PM, Dave Hansen wrote:
+> > > On 04/01/2014 02:35 PM, H. Peter Anvin wrote:
+> > >> On 04/01/2014 02:21 PM, Johannes Weiner wrote:
+> > >>> Either way, optimistic volatile pointers are nowhere near as
+> > >>> transparent to the application as the above description suggests,
+> > >>> which makes this usecase not very interesting, IMO.
+> > >> ... however, I think you're still derating the value way too much.  The
+> > >> case of user space doing elastic memory management is more and more
+> > >> common, and for a lot of those applications it is perfectly reasonable
+> > >> to either not do system calls or to have to devolatilize first.
+> > > The SIGBUS is only in cases where the memory is set as volatile and
+> > > _then_ accessed, right?
+> > Not just set volatile and then accessed, but when a volatile page has
+> > been purged and then accessed without being made non-volatile.
+> > 
+> > 
+> > > John, this was something that the Mozilla guys asked for, right?  Any
+> > > idea why this isn't ever a problem for them?
+> > So one of their use cases for it is for library text. Basically they
+> > want to decompress a compressed library file into memory. Then they plan
+> > to mark the uncompressed pages volatile, and then be able to call into
+> > it. Ideally for them, the kernel would only purge cold pages, leaving
+> > the hot pages in memory. When they traverse a purged page, they handle
+> > the SIGBUS and patch the page up.
+> 
+> How big are these libraries compared to overall system size?
 
-Thanks,
-Dolev
+One of the example about jit I had is 5M bytes for just simple node.js
+service. Acutally I'm not sure it was JIT or something. Just what I saw
+was it was rwxp vmas so I guess they are JIT.
+Anyway, it's really simple script but consumed 5M bytes. It's really
+big for Embedded WebOS because other more complicated service could be
+executed in parallel on the system.
+
+> 
+> > Now.. this is not what I'd consider a normal use case, but was hoping to
+> > illustrate some of the more interesting uses and demonstrate the
+> > interfaces flexibility.
+> 
+> I'm just dying to hear a "normal" use case then. :)
+> 
+> > Also it provided a clear example of benefits to doing LRU based
+> > cold-page purging rather then full object purging. Though I think the
+> > same could be demonstrated in a simpler case of a large cache of objects
+> > that the applications wants to mark volatile in one pass, unmarking
+> > sub-objects as it needs.
+> 
+> Agreed.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
-
-
------Original Message-----
-From: linux-mtd [mailto:linux-mtd-bounces@lists.infradead.org] On Behalf Of
-Tanya Brokhman
-Sent: Tuesday, April 01, 2014 11:01 AM
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org; open list; Tanya Brokhman
-Subject: [RFC/PATCH] mtd: ubi: Test return value of __wl_get_peb
-
-In case of an error (if there are not free PEB's for example), __wl_get_peb
-will return a negative value. In order to prevent access violation we need
-to test the returned value prior to using it later on.
-
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c index
-02317c1..457ead3 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -684,6 +684,9 @@ int ubi_wl_get_peb(struct ubi_device *ubi)
- 	peb = __wl_get_peb(ubi);
- 	spin_unlock(&ubi->wl_lock);
- 
-+	if (peb < 0)
-+		return peb;
-+
- 	err = ubi_self_check_all_ff(ubi, peb, ubi->vid_hdr_aloffset,
- 				    ubi->peb_size - ubi->vid_hdr_aloffset);
- 	if (err) {
---
-1.7.6
---
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
-
-
-
-______________________________________________________
-Linux MTD discussion mailing list
-http://lists.infradead.org/mailman/listinfo/linux-mtd/
-
+Kind regards,
+Minchan Kim
