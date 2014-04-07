@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264AbaDGMyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:54:09 -0400
-Received: from smtp-out-159.synserver.de ([212.40.185.159]:1035 "EHLO
-	smtp-out-115.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754992AbaDGMyH (ORCPT
+	id S1755263AbaDGNCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:02:07 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:47835 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174AbaDGNCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:54:07 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7340
-Message-ID: <53429FF3.9060106@metafoo.de>
-Date: Mon, 07 Apr 2014 14:54:11 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Mon, 7 Apr 2014 09:02:05 -0400
 MIME-Version: 1.0
-To: Arun Shamanna Lakshmi <aruns@nvidia.com>
-CC: lgirdwood@gmail.com, broonie@kernel.org, swarren@wwwdotorg.org,
-        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Songhee Baek <sbaek@nvidia.com>
-Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
-References: <1396656730-30145-1-git-send-email-aruns@nvidia.com>
-In-Reply-To: <1396656730-30145-1-git-send-email-aruns@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1396339305-16005-1-git-send-email-tlinder@codeaurora.org>
+References: <1396339305-16005-1-git-send-email-tlinder@codeaurora.org>
+Date: Mon, 7 Apr 2014 15:02:04 +0200
+Message-ID: <CAFLxGvyUsLZsi3iiape6BivaduvfqZh8kXXwYOFuExUJho09kg@mail.gmail.com>
+Subject: Re: [RFC/PATCH] mtd: ubi: Free peb's synchronously for fastmap
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2014 02:12 AM, Arun Shamanna Lakshmi wrote:
-> 1. Modify soc_enum struct to handle pointers for reg and mask
-> 2. Add dapm get and put APIs for multi register one hot encoded mux
-> 3. Update snd_soc_dapm_update struct to support multiple reg update
+On Tue, Apr 1, 2014 at 10:01 AM, Tanya Brokhman <tlinder@codeaurora.org> wrote:
+> At first mount it's possible that there are not enough free PEBs since
+> there are PEB's pending to be erased. In such scenario, fm_pool (which is
+> the pool from which user required PEBs are allocated) will be empty.
+> Try fixing the above described situation by synchronously performing
+> pending erase work, thus produce another free PEB.
 >
-> Signed-off-by: Arun S L <aruns@nvidia.com>
-> Signed-off-by: Songhee Baek <sbaek@nvidia.com>
+> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+>
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index 457ead3..9a36f78 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -595,10 +595,29 @@ static void refill_wl_pool(struct ubi_device *ubi)
+>  static void refill_wl_user_pool(struct ubi_device *ubi)
+>  {
+>         struct ubi_fm_pool *pool = &ubi->fm_pool;
+> +       int err;
+>
+>         return_unused_pool_pebs(ubi, pool);
+>
+>         for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
+> +retry:
+> +               if (!ubi->free.rb_node ||
+> +                  (ubi->free_count - ubi->beb_rsvd_pebs < 1)) {
+> +                       /*
+> +                        * There are no available PEBs. Try to free
+> +                        * PEB by means of synchronous execution of
+> +                        * pending works.
+> +                        */
+> +                       if (ubi->works_count == 0)
+> +                               break;
+> +                       spin_unlock(&ubi->wl_lock);
+> +                       err = do_work(ubi);
+> +                       spin_lock(&ubi->wl_lock);
 
-Looks good to me, so:
+This is basically what produce_free_peb() does.
 
-Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+> +                       if (err < 0)
+> +                               break;
+> +                       goto retry;
+> +               }
+> +
+>                 pool->pebs[pool->size] = __wl_get_peb(ubi);
 
+__wl_get_peb() already calls produce_free_peb() when we run out of free PEBs.
 
-As Takashi said it is not that nice that there is a bit of code churn by 
-having to update all the existing users of e->reg and e->mask. But 
-implementing this properly seems to cause even more code churn. And I think 
-it will be done best in an effort to consolidate the kcontrol helpers and 
-the DAPM kcontrol helpers by adding an additional layer of abstraction 
-between the kcontrols and the hardware access that translates between the 
-logical value and the physical value(s).
+Does your patch really fix a problem you encounter or did you find the
+issue by reviewing
+the code?
 
-E.g. something like
-
-struct kcontrol_ops {
-	int (*read)(...);
-	int (*write)(...);
-};
-
-And then have one kind of ops for each kind of control type and at the high 
-level only have put and get handlers for enums and for switches/volumes.
-
-- Lars
+-- 
+Thanks,
+//richard
