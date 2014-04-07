@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637AbaDGTtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:49:33 -0400
-Received: from smtp1.ngi.it ([88.149.128.112]:37266 "EHLO smtp1.ngi.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755384AbaDGTt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755414AbaDGTt2 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Apr 2014 15:49:28 -0400
-Message-ID: <5343015C.5090309@katamail.com>
-Date: Mon, 07 Apr 2014 21:49:48 +0200
-From: Michele Ballabio <barra_cuda@katamail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+Received: from cantor2.suse.de ([195.135.220.15]:60351 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754044AbaDGTt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 15:49:26 -0400
+Date: Mon, 7 Apr 2014 21:49:22 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: haokexin@gmail.com, paul.gortmaker@windriver.com,
+        yamada.m@jp.panasonic.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild changes for v3.15-rc1
+Message-ID: <20140407194922.GA13995@sepie.suse.cz>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, toralf.foerster@gmx.de, fweisbec@gmail.com,
-        mingo@kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-References: <5341707F.5000406@katamail.com> <20140407150337.GO10526@twins.programming.kicks-ass.net> <20140407150705.GB13658@twins.programming.kicks-ass.net>
-In-Reply-To: <20140407150705.GB13658@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2014 17:07, Peter Zijlstra wrote:
-> On Mon, Apr 07, 2014 at 05:03:37PM +0200, Peter Zijlstra wrote:
->> So what I suspect at this point is that because i386 and x86_64 have a
->> difference in current_thread_info() (i386 is stack based), we end up
->> setting the TIF_NEED_RESCHED bit on the wrong stack.
->>
->> Now I have some vague memories of propagating the TIF flags on stack
->> switch, but I cannot remember what arch we did that for. Let me stare at
->> this a little more.
->>
->> Also, IFF this is the case, then the fingered patch above (and your
->> suggested 'fix') aren't the real curlpit/cure but simply make it
->> more/less likely to happen.
+Hi Linus,
 
-Understood.
+please pull these kbuild bits for v3.15-rc1:
+- Cleanups in the main Makefiles and Documentation/DocBook/Makefile
+- make O=... directory is automatically created if needed
+- mrproper/distclean removes the old include/linux/version.h to make
+  life easier when bisecting across the commit that moved the version.h
+  file
 
->> Now, Steve had a patch somewhere that would make i386 use per-cpu
->> variables for current_thread_info() just like x86_64 already does I
->> think. Let me go find them too.
-> 
-> Ohh, goodie, they're already in Linus' tree. Could you see if current
-> git still suffers this problem?
+Thanks,
+Michal
 
-It is fixed on current -master (3.14.0-10773-gb8780c3).
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
 
-Thanks.
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+
+for you to fetch changes up to b12f73740b8764952a112a677991300545e98c06:
+
+  kbuild: docbook: fix the include error when executing "make help" (2014-04-01 10:49:21 +0200)
+
+----------------------------------------------------------------
+Kevin Hao (1):
+      kbuild: docbook: fix the include error when executing "make help"
+
+Masahiro Yamada (7):
+      kbuild: specify build_docproc as a phony target
+      kbuild: docbook: include cmd files more simply
+      kbuild: docbook: specify KERNELDOC dependency correctly
+      kbuild: docbook: use $(obj) and $(src) rather than specific path
+      kbuild: move "quote" to Kbuild.include to be consistent
+      kbuild: remove redundant '.*.cmd' pattern from make distclean
+      kbuild: create a build directory automatically for out-of-tree build
+
+Paul Gortmaker (1):
+      kbuild: unconditionally clobber include/linux/version.h on distclean
+
+ Documentation/DocBook/Makefile | 25 +++++++------------------
+ Makefile                       | 10 +++++-----
+ scripts/Kbuild.include         |  1 +
+ scripts/Makefile               |  6 +++---
+ scripts/Makefile.lib           |  4 ----
+ 5 files changed, 16 insertions(+), 30 deletions(-)
