@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219AbaDGNG3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:06:29 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:58018 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754274AbaDGNGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:06:25 -0400
-Message-ID: <5342A2BC.2020907@st.com>
-Date: Mon, 7 Apr 2014 15:06:04 +0200
-From: Gabriel Fernandez <gabriel.fernandez@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755299AbaDGNH0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:07:26 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:60711 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755242AbaDGNHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 09:07:23 -0400
+Date: Mon, 7 Apr 2014 16:07:01 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [rfc 0/3] Cleaning up soft-dirty bit usage
+Message-ID: <20140407130701.GA16677@node.dhcp.inet.fi>
+References: <20140403184844.260532690@openvz.org>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Pankaj Dev <pankaj.dev@st.com>, <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch] clk: st: NULL dereference on error in st_of_clkgen_vcc_setup()
-References: <20140407063036.GA11581@mwanda>
-In-Reply-To: <20140407063036.GA11581@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.19.41]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-07_02:2014-04-07,2014-04-06,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403184844.260532690@openvz.org>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Dan,
-i m agree with patch.
+On Thu, Apr 03, 2014 at 10:48:44PM +0400, Cyrill Gorcunov wrote:
+> Hi! I've been trying to clean up soft-dirty bit usage. I can't cleanup
+> "ridiculous macros in pgtable-2level.h" completely because I need to
+> define _PAGE_FILE,_PAGE_PROTNONE,_PAGE_NUMA bits in sequence manner
+> like
+> 
+> #define _PAGE_BIT_FILE		(_PAGE_BIT_PRESENT + 1)	/* _PAGE_BIT_RW */
+> #define _PAGE_BIT_NUMA		(_PAGE_BIT_PRESENT + 2)	/* _PAGE_BIT_USER */
+> #define _PAGE_BIT_PROTNONE	(_PAGE_BIT_PRESENT + 3)	/* _PAGE_BIT_PWT */
+> 
+> which can't be done right now because numa code needs to save original
+> pte bits for example in __split_huge_page_map, if I'm not missing something
+> obvious.
 
-Best Regards.
+Sorry, I didn't get this. How __split_huge_page_map() does depend on pte
+bits order?
 
-Gabriel
+> 
+> Also if we ever redefine the bits above we will need to update PAT code
+> which uses _PAGE_GLOBAL + _PAGE_PRESENT to make pte_present return true
+> or false.
+> 
+> Another weird thing I found is the following sequence:
+> 
+>    mprotect_fixup
+>     change_protection (passes @prot_numa = 0 which finally ends up in)
+>       ...
+>       change_pte_range(..., prot_numa)
+> 
+> 			if (!prot_numa) {
+> 				...
+> 			} else {
+> 				... this seems to be dead code branch ...
+> 			}
+> 
+>     is it intentional, and @prot_numa argument is supposed to be passed
+>     with prot_numa = 1 one day, or it's leftover from old times?
 
-On 04/07/2014 08:30 AM, Dan Carpenter wrote:
-> There are two allocations where, if they fail, then we end up
-> dereferencing the NULL pointer in the error handling code.
->
-> Fixes: 94885faf9dbc ('clk: st: Support for DIVMUX and PreDiv Clocks')
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->
-> diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
-> index a329906..10899bc 100644
-> --- a/drivers/clk/st/clkgen-mux.c
-> +++ b/drivers/clk/st/clkgen-mux.c
-> @@ -714,14 +714,14 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
->   
->   	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
->   	if (!clk_data)
-> -		goto err;
-> +		goto err_free_parents;
->   
->   	clk_data->clk_num = VCC_MAX_CHANNELS;
->   	clk_data->clks = kzalloc(clk_data->clk_num * sizeof(struct clk *),
->   				 GFP_KERNEL);
->   
->   	if (!clk_data->clks)
-> -		goto err;
-> +		goto err_free_data;
->   
->   	for (i = 0; i < clk_data->clk_num; i++) {
->   		struct clk *clk;
-> @@ -811,10 +811,11 @@ err:
->   		kfree(container_of(composite->mux_hw, struct clk_mux, hw));
->   	}
->   
-> -	if (clk_data)
-> -		kfree(clk_data->clks);
-> +	kfree(clk_data->clks);
->   
-> +err_free_data:
->   	kfree(clk_data);
-> +err_free_parents:
->   	kfree(parents);
->   }
->   CLK_OF_DECLARE(clkgen_vcc, "st,clkgen-vcc", st_of_clkgen_vcc_setup);
+I see one more user of change_protection() -- change_prot_numa(), which
+has .prot_numa == 1.
 
+-- 
+ Kirill A. Shutemov
