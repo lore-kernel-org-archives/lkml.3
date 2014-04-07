@@ -1,253 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaDGIqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 04:46:32 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37228 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510AbaDGIq1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 04:46:27 -0400
-Date: Mon, 7 Apr 2014 09:46:23 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140407084623.GG17163@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Bjorn Helgaas <bhelgaas@google.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
- <20140405000007.GD15806@google.com>
+	id S1754972AbaDGIx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 04:53:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42318 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750740AbaDGIxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 04:53:25 -0400
+Date: Mon, 7 Apr 2014 10:53:22 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] driver core: Move driver_data back to struct device
+Message-ID: <20140407105322.2eae6b97@endymion.delvare>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140405000007.GD15806@google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 07 Apr 2014 08:46:39.0763 (UTC) FILETIME=[E487EE30:01CF523D]
-X-MC-Unique: 114040709462504001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 05, 2014 at 01:00:07AM +0100, Bjorn Helgaas wrote:
-> On Fri, Mar 14, 2014 at 03:34:30PM +0000, Liviu Dudau wrote:
-> > Make it easier to discover the domain number of a bus by storing
-> > the number in pci_host_bridge for the root bus. Several architectures
-> > have their own way of storing this information, so it makes sense
-> > to try to unify the code. 
-> 
-> I like the idea of unifying the way we handle the domain number.  But 
-> I'd like to see more of the strategy before committing to this approach.
+Having to allocate memory as part of dev_set_drvdata() is a problem
+because that memory may never get freed if the device itself is not
+created. So move driver_data back to struct device.
 
-*My* strategy is to get rid of pci_domain_nr(). I don't see why we need
-to have arch specific way of providing the number, specially after looking
-at the existing implementations that return a value from a variable that
-is never touched or incremented. My guess is that pci_domain_nr() was
-created to work around the fact that there was no domain_nr maintainance in
-the generic code.
+This is a partial revert of commit b4028437.
 
-> 
-> This patch adds struct pci_host_bridge.domain_nr, but of course
-> pci_domain_nr() doesn't use it.  It can't today, because
-> pci_create_root_bus() relies on pci_domain_nr() to fill in
-> pci_host_bridge.domain_nr.
-> 
-> But I suppose the intent is that someday we can make pci_domain_nr()
-> arch-independent somehow.  I'd just like to see more of the path to
-> that happening.
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+Greg, we discussed that back in January (in a thread named "Freeing of
+dev->p") but I did not hear back from you and I can't see this fix in
+your driver-core tree.
 
-The path would be to send a patch that removes all existing pci_domain_nr()
-macros/inline functions and rely on the generic function.
+As discussed in that thread, really reverting b4028437 might be an even
+better option, performance-wise. If we do that, we'll first have to
+update drivers/iommu/exynos-iommu.c and drivers/vfio/vfio.c to no
+longer check for the return value of dev_set_drvdata(). I can provide
+the patches, if you're fine with that.
 
-> 
-> > While at this, add a new function that
-> > creates a root bus in a given domain and make pci_create_root_bus()
-> > a wrapper around this function.
-> 
-> I'm a little concerned about adding a new "create root bus" interface,
-> partly because we have quite a few already, and I'd like to reduce the
-> number of them instead of adding more.  And I think there might be other
-> similar opportunities for unification, so I could easily see us adding new
-> functions in the future to unify NUMA node info, ECAM info, etc.
+ drivers/base/base.h    |    3 ---
+ drivers/base/dd.c      |   13 +++----------
+ include/linux/device.h |    4 ++++
+ 3 files changed, 7 insertions(+), 13 deletions(-)
 
-The reason for creating the wrapper function was to allow for explicit passing
-of domain_nr. If we find architectures where generic allocation of domain_nr
-doesn't work for them, we can make them use this wrapper to pass the domain_nr
-into the host bridge when creating the root bus.
+--- linux-3.15-rc0.orig/drivers/base/base.h	2014-04-07 10:32:56.429667887 +0200
++++ linux-3.15-rc0/drivers/base/base.h	2014-04-07 10:32:59.598734941 +0200
+@@ -63,8 +63,6 @@ struct driver_private {
+  *	binding of drivers which were unable to get all the resources needed by
+  *	the device; typically because it depends on another driver getting
+  *	probed first.
+- * @driver_data - private pointer for driver specific info.  Will turn into a
+- * list soon.
+  * @device - pointer back to the struct class that this structure is
+  * associated with.
+  *
+@@ -76,7 +74,6 @@ struct device_private {
+ 	struct klist_node knode_driver;
+ 	struct klist_node knode_bus;
+ 	struct list_head deferred_probe;
+-	void *driver_data;
+ 	struct device *device;
+ };
+ #define to_device_private_parent(obj)	\
+--- linux-3.15-rc0.orig/drivers/base/dd.c	2014-04-07 10:32:56.429667887 +0200
++++ linux-3.15-rc0/drivers/base/dd.c	2014-04-07 10:32:59.599734962 +0200
+@@ -577,22 +577,15 @@ void driver_detach(struct device_driver
+  */
+ void *dev_get_drvdata(const struct device *dev)
+ {
+-	if (dev && dev->p)
+-		return dev->p->driver_data;
++	if (dev)
++		return dev->driver_data;
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(dev_get_drvdata);
+ 
+ int dev_set_drvdata(struct device *dev, void *data)
+ {
+-	int error;
+-
+-	if (!dev->p) {
+-		error = device_private_init(dev);
+-		if (error)
+-			return error;
+-	}
+-	dev->p->driver_data = data;
++	dev->driver_data = data;
+ 	return 0;
+ }
+ EXPORT_SYMBOL(dev_set_drvdata);
+--- linux-3.15-rc0.orig/include/linux/device.h	2014-04-07 10:32:56.429667887 +0200
++++ linux-3.15-rc0/include/linux/device.h	2014-04-07 10:32:59.599734962 +0200
+@@ -679,6 +679,8 @@ struct acpi_dev_node {
+  * 		variants, which GPIO pins act in what additional roles, and so
+  * 		on.  This shrinks the "Board Support Packages" (BSPs) and
+  * 		minimizes board-specific #ifdefs in drivers.
++ * @driver_data: Private pointer for driver specific info.  Will turn into a
++ *		list soon.
+  * @power:	For device power management.
+  * 		See Documentation/power/devices.txt for details.
+  * @pm_domain:	Provide callbacks that are executed during system suspend,
+@@ -740,6 +742,8 @@ struct device {
+ 					   device */
+ 	void		*platform_data;	/* Platform specific data, device
+ 					   core doesn't touch it */
++	void		*driver_data;	/* Driver data, set and get with
++					   dev_set/get_drvdata */
+ 	struct dev_pm_info	power;
+ 	struct dev_pm_domain	*pm_domain;
+ 
 
-> 
-> I wonder if we need some sort of descriptor structure that the arch could
-> fill in and pass to the PCI core.  Then we could add new members without
-> having to create new interfaces each time.
-
-I'm trying to reduce the number of variables being passed between architectures
-and generic code. host_bridge (with the associated root bus), domain_nr those
-are needed. Is there anything else that you have in your mind that needs to
-be shared?
-
-My approach would be in sharing of the data: PCI is a standard, and the core
-framework implements it. What is so broken in your architecture that you need
-to work around the core code? And I'm not talking about drivers and quirks,
-but architectural level support.
-
-Best regards,
-Liviu
-
-> 
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> > ---
-> >  drivers/pci/probe.c | 41 +++++++++++++++++++++++++++++++++--------
-> >  include/linux/pci.h |  4 ++++
-> >  2 files changed, 37 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> > index fd11c12..172c615 100644
-> > --- a/drivers/pci/probe.c
-> > +++ b/drivers/pci/probe.c
-> > @@ -1714,8 +1714,9 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
-> >  {
-> >  }
-> >  
-> > -struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> > -		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-> > +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-> > +		int domain, int bus, struct pci_ops *ops, void *sysdata,
-> > +		struct list_head *resources)
-> >  {
-> >  	int error;
-> >  	struct pci_host_bridge *bridge;
-> > @@ -1728,30 +1729,34 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> >  
-> >  	bridge = pci_alloc_host_bridge();
-> >  	if (!bridge)
-> > -		return NULL;
-> > +		return ERR_PTR(-ENOMEM);
-> >  
-> >  	bridge->dev.parent = parent;
-> >  	bridge->dev.release = pci_release_host_bridge_dev;
-> > +	bridge->domain_nr = domain;
-> >  	error = pcibios_root_bridge_prepare(bridge);
-> >  	if (error)
-> >  		goto err_out;
-> >  
-> >  	b = pci_alloc_bus();
-> > -	if (!b)
-> > +	if (!b) {
-> > +		error = -ENOMEM;
-> >  		goto err_out;
-> > +	}
-> >  
-> >  	b->sysdata = sysdata;
-> >  	b->ops = ops;
-> >  	b->number = b->busn_res.start = bus;
-> > -	b2 = pci_find_bus(pci_domain_nr(b), bus);
-> > +	b2 = pci_find_bus(bridge->domain_nr, bus);
-> >  	if (b2) {
-> >  		/* If we already got to this bus through a different bridge, ignore it */
-> >  		dev_dbg(&b2->dev, "bus already known\n");
-> > +		error = -EEXIST;
-> >  		goto err_bus_out;
-> >  	}
-> >  
-> >  	bridge->bus = b;
-> > -	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-> > +	dev_set_name(&bridge->dev, "pci%04x:%02x", bridge->domain_nr, bus);
-> >  	error = device_register(&bridge->dev);
-> >  	if (error) {
-> >  		put_device(&bridge->dev);
-> > @@ -1766,7 +1771,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> >  
-> >  	b->dev.class = &pcibus_class;
-> >  	b->dev.parent = b->bridge;
-> > -	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-> > +	dev_set_name(&b->dev, "%04x:%02x", bridge->domain_nr, bus);
-> >  	error = device_register(&b->dev);
-> >  	if (error)
-> >  		goto class_dev_reg_err;
-> > @@ -1816,7 +1821,27 @@ err_bus_out:
-> >  	kfree(b);
-> >  err_out:
-> >  	kfree(bridge);
-> > -	return NULL;
-> > +	return ERR_PTR(error);
-> > +}
-> > +
-> > +struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> > +		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-> > +{
-> > +	int domain_nr;
-> > +	struct pci_bus *b = pci_alloc_bus();
-> > +	if (!b)
-> > +		return NULL;
-> > +
-> > +	b->sysdata = sysdata;
-> > +	domain_nr = pci_domain_nr(b);
-> > +	kfree(b);
-> > +
-> > +	b = pci_create_root_bus_in_domain(parent, domain_nr, bus,
-> > +				ops, sysdata, resources);
-> > +	if (IS_ERR(b))
-> > +		return NULL;
-> > +
-> > +	return b;
-> >  }
-> >  
-> >  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index 33aa2ca..1eed009 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -394,6 +394,7 @@ struct pci_host_bridge_window {
-> >  struct pci_host_bridge {
-> >  	struct device dev;
-> >  	struct pci_bus *bus;		/* root bus */
-> > +	int domain_nr;
-> >  	struct list_head windows;	/* pci_host_bridge_windows */
-> >  	void (*release_fn)(struct pci_host_bridge *);
-> >  	void *release_data;
-> > @@ -747,6 +748,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
-> >  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> >  				    struct pci_ops *ops, void *sysdata,
-> >  				    struct list_head *resources);
-> > +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-> > +			int domain, int bus, struct pci_ops *ops,
-> > +			void *sysdata, struct list_head *resources);
-> >  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
-> >  int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
-> >  void pci_bus_release_busn_res(struct pci_bus *b);
-> > -- 
-> > 1.9.0
-> > 
-> 
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Jean Delvare
+SUSE L3 Support
