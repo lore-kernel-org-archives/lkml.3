@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374AbaDGNwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:52:43 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:49898 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988AbaDGNwk (ORCPT
+	id S1755341AbaDGNzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:55:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46190 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaDGNzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:52:40 -0400
-Subject: Re: [PATCH] GenWQE: Fix email address and update copyright notice
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, jsvogt@de.ibm.com,
-        mijung@gmx.net, michael@ibmra.de, esa@de.ibm.com
-In-Reply-To: <20140403180511.GC21565@kroah.com>
-References: <1396506327-15015-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <20140403180511.GC21565@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Mon, 07 Apr 2014 15:52:29 +0200
-Message-ID: <1396878749.6721.5.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040713-5024-0000-0000-00000967CCCC
+	Mon, 7 Apr 2014 09:55:46 -0400
+Date: Mon, 7 Apr 2014 15:55:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>,
+        Geoff.Levand@huawei.com
+Subject: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool for
+ Linux
+Message-ID: <20140407135519.GJ10526@twins.programming.kicks-ass.net>
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+ <20140331071749.GA1252@gmail.com>
+ <CAGdX0WEV5OEfk4vfMKYeEpHP_7XqpUKk2-iwTVoTup1ObYu3eg@mail.gmail.com>
+ <CAMEtUuw24=+CkcdwDnJ4AbSCjGBBFx+8pTFzn5gXbQAy=KYWng@mail.gmail.com>
+ <CAGdX0WEvsPqWjE8Uade5_i58AepKxGndM0eSg=viB+UYGOSkJw@mail.gmail.com>
+ <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com>
+ <20140402074202.GB22680@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140402074202.GB22680@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-Am Donnerstag, den 03.04.2014, 11:05 -0700 schrieb Greg KH:
-> On Thu, Apr 03, 2014 at 08:25:27AM +0200, Frank Haverkamp wrote:
-> > Updated email address of co-author and updated the copyright notice
-> > with the current year.
+On Wed, Apr 02, 2014 at 09:42:03AM +0200, Ingo Molnar wrote:
+> I'd suggest using C syntax instead initially, because that's what the 
+> kernel is using.
 > 
-> Why update the copyright notice, it doesn't mean anything, as IBM
-> lawyers know well, so who is asking for this change?
-> 
+> The overwhelming majority of people probing the kernel are 
+> programmers, so there's no point in inventing new syntax, we should 
+> reuse existing syntax!
 
-I thought it would be a good idea to update it, to keep it up to date.
-If you don't like my addition of the year in the copyright notice, I can
-remove it. Just let me know. I think it is not such important.
-
-The other content of this patch is, as you have seen, a spelling error
-in the name of my team member and that he wanted to have a different
-email address in the code.
-
-
-> thanks,
-> 
-> greg k-h
-> 
-
-Regards
-
-Frank
-
-
+Yes please, keep it C, I forever forget all other syntaxes. While I have
+in the past known other languages, I never use them frequently enough to
+remember them. And there's nothing more frustrating than having to fight
+a tool/language when you just want to get work done.
