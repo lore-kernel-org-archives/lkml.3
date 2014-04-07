@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317AbaDGPzl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:55:41 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:43588 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993AbaDGPyp (ORCPT
+	id S1755391AbaDGPzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:55:48 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:47461 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaDGPyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:54:45 -0400
+	Mon, 7 Apr 2014 11:54:47 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
@@ -14,9 +14,9 @@ Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
         Paul Bolle <pebolle@tiscali.nl>
-Subject: [PATCH v4 2/5] ARM: ep93xx: Enable DEBUG_LL_UART_PL01X
-Date: Mon,  7 Apr 2014 16:54:13 +0100
-Message-Id: <1396886056-18132-3-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v4 3/5] ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
+Date: Mon,  7 Apr 2014 16:54:14 +0100
+Message-Id: <1396886056-18132-4-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1396886056-18132-1-git-send-email-daniel.thompson@linaro.org>
 References: <1396626102-13991-1-git-send-email-daniel.thompson@linaro.org>
@@ -25,27 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defconfig already enables DEBUG_LL and by default DEBUG_LL_UART_NONE
-will be selected (but due to some back compability magic I'd like to
-remove is not actually honoured). DEBUG_LL_UART_PL01X is a much saner
-default.
+Only a small handful of platforms support DEBUG_LL_UART_NONE but it
+lurks in the menus of every single platform config ready to break the
+build. This is an especial problem for defconfigs since it is often
+selected by default.
+
+This patch limit this choice only to platforms capable of supporting it.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- arch/arm/configs/ep93xx_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/Kconfig.debug | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/configs/ep93xx_defconfig b/arch/arm/configs/ep93xx_defconfig
-index 6ac5ea7..ff70784 100644
---- a/arch/arm/configs/ep93xx_defconfig
-+++ b/arch/arm/configs/ep93xx_defconfig
-@@ -108,5 +108,6 @@ CONFIG_DEBUG_SPINLOCK=y
- CONFIG_DEBUG_MUTEXES=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_PL01X=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
- CONFIG_LIBCRC32C=y
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 0531da8..0702d6d 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -846,7 +846,18 @@ choice
+ 
+ 	config DEBUG_LL_UART_NONE
+ 		bool "No low-level debugging UART"
+-		depends on !ARCH_MULTIPLATFORM
++		depends on ARCH_AT91 || \
++			ARCH_CLPS711X || \
++			ARCH_FOOTBRIDGE || \
++			ARCH_KS8695 || \
++			ARCH_NETX || \
++			ARCH_OMAP1 || \
++			ARCH_SA1100 || \
++			ARCH_S3C24XX || \
++			ARCH_S3C64XX || \
++			ARCH_S5P64X0 || \
++			ARCH_S5PC100 || \
++			ARCH_S5PV210
+ 		help
+ 		  Say Y here if your platform doesn't provide a UART option
+ 		  above. This relies on your platform choosing the right UART
 -- 
 1.9.0
 
