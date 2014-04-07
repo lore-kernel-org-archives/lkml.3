@@ -1,142 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572AbaDGPMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:12:50 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:41387 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713AbaDGPE5 (ORCPT
+	id S1754677AbaDGPUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:20:20 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51362 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753143AbaDGPUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:04:57 -0400
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>
-Cc: Robert Richter <robert.richter@linaro.org>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 01/16] perf, mmap: Factor out ring_buffer_detach_all()
-Date: Mon,  7 Apr 2014 17:04:23 +0200
-Message-Id: <1396883078-25320-2-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+	Mon, 7 Apr 2014 11:20:13 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+SmkanntzyaNY+KJRNqFOg2LupDuu93UM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 286FD553BD0
+Date: Mon, 7 Apr 2014 11:20:04 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Levente Kurusa <levex@linux.com>
+Cc: Teodora =?utf-8?B?QsSDbHXFo8SD?= <teobaluta@gmail.com>,
+        David Lang <david@lang.hm>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [RFC] QR encoding for Oops messages
+Message-ID: <20140407152003.GF28334@titan.lakedaemon.net>
+References: <532DC3D3.9060008@linux.com>
+ <CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
+ <20140323193839.GY15608@titan.lakedaemon.net>
+ <CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
+ <20140401142051.GO28304@titan.lakedaemon.net>
+ <alpine.DEB.2.02.1404031353280.14073@nftneq.ynat.uz>
+ <20140404151542.GB28334@titan.lakedaemon.net>
+ <533EDB15.40305@linux.com>
+ <CACV2jQCxfQzRydFD6KizFnquasqtqaz1O_yNnVDBetFA5UryrA@mail.gmail.com>
+ <533FC8A6.6050905@linux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533FC8A6.6050905@linux.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@linaro.org>
+On Sat, Apr 05, 2014 at 11:11:02AM +0200, Levente Kurusa wrote:
+> Or, we could use core_param and simply have 'oops_qr' or
+> 'qr_oops'. In my humble opinion the latter sounds better.
 
-Factor out a function to detach all events from a ringbuffer. No
-functional changes.
+Ack.  My original suggestion was focused on 0=disable, >0 is scale.  I
+literally pulled the name from my nether-regions.  :-)
 
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Signed-off-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
----
- kernel/events/core.c | 82 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 44 insertions(+), 38 deletions(-)
+> Oh and another suggestion, I think placing it in the bottom-right
+> corner would be better since then we wouldn't overwrite some of
+> the timestamps and messages.
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 661951a..8867236 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3878,6 +3878,49 @@ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
- 	spin_unlock_irqrestore(&rb->event_lock, flags);
- }
- 
-+static void ring_buffer_detach_all(struct ring_buffer *rb)
-+{
-+	struct perf_event *event;
-+again:
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &rb->event_list, rb_entry) {
-+		if (!atomic_long_inc_not_zero(&event->refcount)) {
-+			/*
-+			 * This event is en-route to free_event() which will
-+			 * detach it and remove it from the list.
-+			 */
-+			continue;
-+		}
-+		rcu_read_unlock();
-+
-+		mutex_lock(&event->mmap_mutex);
-+		/*
-+		 * Check we didn't race with perf_event_set_output() which can
-+		 * swizzle the rb from under us while we were waiting to
-+		 * acquire mmap_mutex.
-+		 *
-+		 * If we find a different rb; ignore this event, a next
-+		 * iteration will no longer find it on the list. We have to
-+		 * still restart the iteration to make sure we're not now
-+		 * iterating the wrong list.
-+		 */
-+		if (event->rb == rb) {
-+			rcu_assign_pointer(event->rb, NULL);
-+			ring_buffer_detach(event, rb);
-+			ring_buffer_put(rb); /* can't be last, we still have one */
-+		}
-+		mutex_unlock(&event->mmap_mutex);
-+		put_event(event);
-+
-+		/*
-+		 * Restart the iteration; either we're on the wrong list or
-+		 * destroyed its integrity by doing a deletion.
-+		 */
-+		goto again;
-+	}
-+	rcu_read_unlock();
-+}
-+
- static void ring_buffer_wakeup(struct perf_event *event)
- {
- 	struct ring_buffer *rb;
-@@ -3970,44 +4013,7 @@ static void perf_mmap_close(struct vm_area_struct *vma)
- 	 * into the now unreachable buffer. Somewhat complicated by the
- 	 * fact that rb::event_lock otherwise nests inside mmap_mutex.
- 	 */
--again:
--	rcu_read_lock();
--	list_for_each_entry_rcu(event, &rb->event_list, rb_entry) {
--		if (!atomic_long_inc_not_zero(&event->refcount)) {
--			/*
--			 * This event is en-route to free_event() which will
--			 * detach it and remove it from the list.
--			 */
--			continue;
--		}
--		rcu_read_unlock();
--
--		mutex_lock(&event->mmap_mutex);
--		/*
--		 * Check we didn't race with perf_event_set_output() which can
--		 * swizzle the rb from under us while we were waiting to
--		 * acquire mmap_mutex.
--		 *
--		 * If we find a different rb; ignore this event, a next
--		 * iteration will no longer find it on the list. We have to
--		 * still restart the iteration to make sure we're not now
--		 * iterating the wrong list.
--		 */
--		if (event->rb == rb) {
--			rcu_assign_pointer(event->rb, NULL);
--			ring_buffer_detach(event, rb);
--			ring_buffer_put(rb); /* can't be last, we still have one */
--		}
--		mutex_unlock(&event->mmap_mutex);
--		put_event(event);
--
--		/*
--		 * Restart the iteration; either we're on the wrong list or
--		 * destroyed its integrity by doing a deletion.
--		 */
--		goto again;
--	}
--	rcu_read_unlock();
-+	ring_buffer_detach_all(rb);
- 
- 	/*
- 	 * It could be there's still a few 0-ref events on the list; they'll
--- 
-1.7.11.7
+The real text is still sent to the (hopefully written to disk) logs.  If
+a user (or distro) builds with this feature, I would think centered and
+scaled for ease of scanning would be highest priority.
 
+I don't think there is a 'safe' part of the framebuffer real estate
+where the QR could be written for all scenarios.  Best to make it easy
+to scan.
+
+thx,
+
+Jason.
