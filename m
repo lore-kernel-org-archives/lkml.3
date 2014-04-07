@@ -1,78 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaDGInD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 04:43:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:65128 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636AbaDGIm7 (ORCPT
+	id S1755007AbaDGIqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 04:46:32 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37228 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510AbaDGIq1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 04:42:59 -0400
-Message-ID: <1396860030.5170.4.camel@marge.simpson.net>
-Subject: Re: [tip:sched/core] sched/numa: Move task_numa_free() to
- __put_task_struct()
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mgorman@suse.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, Dave Jones <davej@redhat.com>
-Date: Mon, 07 Apr 2014 10:40:30 +0200
-In-Reply-To: <20140407081644.GD11096@twins.programming.kicks-ass.net>
-References: <1393568591.6018.27.camel@marge.simpson.net>
-	 <tip-156654f491dd8d52687a5fbe1637f472a52ce75b@git.kernel.org>
-	 <5341A84C.4050902@oracle.com> <1396848585.5218.27.camel@marge.simpson.net>
-	 <1396855830.28539.10.camel@marge.simpson.net>
-	 <20140407081644.GD11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:NLV/1UGEknInxzTQy0t3z3rtya3P1aA91tsUHhgRLvk
- 7tBU06FO9ZS4wdPlLvUp0olAT9HAMXE1gJHAHTddkU1zcgPBeh
- PgA/mWSVnqflKE3AZ9FlgAwXCuk6tiGcSPIjsP6ESC38PcB1uO
- 5GoW3FtGdtyokohb0BQlMV3TX83VYoy11wRd+cdudTBy6PM6/1
- IOBJDtkq6SBMUnLeamX6mb+6ldVmqZJUTGGAaIMT8tCW+9FJZF
- fVGARnGhytbBzTBpKBlx7tfkHibcpvkFGBytZ8TXkqezOaq9HJ
- bXHTGZrOzxbOO++wmXVvpPWav+nVh9sK0gAka8jJ+r5s5XBcbc
- 9OX+3xMg7rH33uCg/oaGryi1Y/qApJO6lJJI7jxhc
+	Mon, 7 Apr 2014 04:46:27 -0400
+Date: Mon, 7 Apr 2014 09:46:23 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
+ pci_host_bridge.
+Message-ID: <20140407084623.GG17163@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Bjorn Helgaas <bhelgaas@google.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
+ <20140405000007.GD15806@google.com>
+MIME-Version: 1.0
+In-Reply-To: <20140405000007.GD15806@google.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 07 Apr 2014 08:46:39.0763 (UTC) FILETIME=[E487EE30:01CF523D]
+X-MC-Unique: 114040709462504001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-07 at 10:16 +0200, Peter Zijlstra wrote: 
-> On Mon, Apr 07, 2014 at 09:30:30AM +0200, Mike Galbraith wrote:
-> > -	double_lock(&my_grp->lock, &grp->lock);
-> > +	BUG_ON(irqs_disabled());
-> > +	double_lock_irq(&my_grp->lock, &grp->lock);
+On Sat, Apr 05, 2014 at 01:00:07AM +0100, Bjorn Helgaas wrote:
+> On Fri, Mar 14, 2014 at 03:34:30PM +0000, Liviu Dudau wrote:
+> > Make it easier to discover the domain number of a bus by storing
+> > the number in pci_host_bridge for the root bus. Several architectures
+> > have their own way of storing this information, so it makes sense
+> > to try to unify the code. 
 > 
-> So either make this:
+> I like the idea of unifying the way we handle the domain number.  But 
+> I'd like to see more of the strategy before committing to this approach.
+
+*My* strategy is to get rid of pci_domain_nr(). I don't see why we need
+to have arch specific way of providing the number, specially after looking
+at the existing implementations that return a value from a variable that
+is never touched or incremented. My guess is that pci_domain_nr() was
+created to work around the fact that there was no domain_nr maintainance in
+the generic code.
+
 > 
-> 	local_irq_disable();
-> 	double_lock();
+> This patch adds struct pci_host_bridge.domain_nr, but of course
+> pci_domain_nr() doesn't use it.  It can't today, because
+> pci_create_root_bus() relies on pci_domain_nr() to fill in
+> pci_host_bridge.domain_nr.
 > 
-> or
+> But I suppose the intent is that someday we can make pci_domain_nr()
+> arch-independent somehow.  I'd just like to see more of the path to
+> that happening.
+
+The path would be to send a patch that removes all existing pci_domain_nr()
+macros/inline functions and rely on the generic function.
+
 > 
+> > While at this, add a new function that
+> > creates a root bus in a given domain and make pci_create_root_bus()
+> > a wrapper around this function.
+> 
+> I'm a little concerned about adding a new "create root bus" interface,
+> partly because we have quite a few already, and I'd like to reduce the
+> number of them instead of adding more.  And I think there might be other
+> similar opportunities for unification, so I could easily see us adding new
+> functions in the future to unify NUMA node info, ECAM info, etc.
+
+The reason for creating the wrapper function was to allow for explicit passing
+of domain_nr. If we find architectures where generic allocation of domain_nr
+doesn't work for them, we can make them use this wrapper to pass the domain_nr
+into the host bridge when creating the root bus.
+
+> 
+> I wonder if we need some sort of descriptor structure that the arch could
+> fill in and pass to the PCI core.  Then we could add new members without
+> having to create new interfaces each time.
+
+I'm trying to reduce the number of variables being passed between architectures
+and generic code. host_bridge (with the associated root bus), domain_nr those
+are needed. Is there anything else that you have in your mind that needs to
+be shared?
+
+My approach would be in sharing of the data: PCI is a standard, and the core
+framework implements it. What is so broken in your architecture that you need
+to work around the core code? And I'm not talking about drivers and quirks,
+but architectural level support.
+
+Best regards,
+Liviu
+
+> 
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> > ---
+> >  drivers/pci/probe.c | 41 +++++++++++++++++++++++++++++++++--------
+> >  include/linux/pci.h |  4 ++++
+> >  2 files changed, 37 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> > index fd11c12..172c615 100644
+> > --- a/drivers/pci/probe.c
+> > +++ b/drivers/pci/probe.c
+> > @@ -1714,8 +1714,9 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
+> >  {
+> >  }
 > >  
-> >  	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
-> >  		my_grp->faults[i] -= p->numa_faults_memory[i];
-> > @@ -1692,6 +1693,7 @@ static void task_numa_group(struct task_
+> > -struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> > -		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+> > +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
+> > +		int domain, int bus, struct pci_ops *ops, void *sysdata,
+> > +		struct list_head *resources)
+> >  {
+> >  	int error;
+> >  	struct pci_host_bridge *bridge;
+> > @@ -1728,30 +1729,34 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
 > >  
-> >  	spin_unlock(&my_grp->lock);
-> >  	spin_unlock(&grp->lock);
-> > +	local_irq_enable();
+> >  	bridge = pci_alloc_host_bridge();
+> >  	if (!bridge)
+> > -		return NULL;
+> > +		return ERR_PTR(-ENOMEM);
+> >  
+> >  	bridge->dev.parent = parent;
+> >  	bridge->dev.release = pci_release_host_bridge_dev;
+> > +	bridge->domain_nr = domain;
+> >  	error = pcibios_root_bridge_prepare(bridge);
+> >  	if (error)
+> >  		goto err_out;
+> >  
+> >  	b = pci_alloc_bus();
+> > -	if (!b)
+> > +	if (!b) {
+> > +		error = -ENOMEM;
+> >  		goto err_out;
+> > +	}
+> >  
+> >  	b->sysdata = sysdata;
+> >  	b->ops = ops;
+> >  	b->number = b->busn_res.start = bus;
+> > -	b2 = pci_find_bus(pci_domain_nr(b), bus);
+> > +	b2 = pci_find_bus(bridge->domain_nr, bus);
+> >  	if (b2) {
+> >  		/* If we already got to this bus through a different bridge, ignore it */
+> >  		dev_dbg(&b2->dev, "bus already known\n");
+> > +		error = -EEXIST;
+> >  		goto err_bus_out;
+> >  	}
+> >  
+> >  	bridge->bus = b;
+> > -	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+> > +	dev_set_name(&bridge->dev, "pci%04x:%02x", bridge->domain_nr, bus);
+> >  	error = device_register(&bridge->dev);
+> >  	if (error) {
+> >  		put_device(&bridge->dev);
+> > @@ -1766,7 +1771,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> >  
+> >  	b->dev.class = &pcibus_class;
+> >  	b->dev.parent = b->bridge;
+> > -	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+> > +	dev_set_name(&b->dev, "%04x:%02x", bridge->domain_nr, bus);
+> >  	error = device_register(&b->dev);
+> >  	if (error)
+> >  		goto class_dev_reg_err;
+> > @@ -1816,7 +1821,27 @@ err_bus_out:
+> >  	kfree(b);
+> >  err_out:
+> >  	kfree(bridge);
+> > -	return NULL;
+> > +	return ERR_PTR(error);
+> > +}
+> > +
+> > +struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> > +		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+> > +{
+> > +	int domain_nr;
+> > +	struct pci_bus *b = pci_alloc_bus();
+> > +	if (!b)
+> > +		return NULL;
+> > +
+> > +	b->sysdata = sysdata;
+> > +	domain_nr = pci_domain_nr(b);
+> > +	kfree(b);
+> > +
+> > +	b = pci_create_root_bus_in_domain(parent, domain_nr, bus,
+> > +				ops, sysdata, resources);
+> > +	if (IS_ERR(b))
+> > +		return NULL;
+> > +
+> > +	return b;
+> >  }
+> >  
+> >  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+> > index 33aa2ca..1eed009 100644
+> > --- a/include/linux/pci.h
+> > +++ b/include/linux/pci.h
+> > @@ -394,6 +394,7 @@ struct pci_host_bridge_window {
+> >  struct pci_host_bridge {
+> >  	struct device dev;
+> >  	struct pci_bus *bus;		/* root bus */
+> > +	int domain_nr;
+> >  	struct list_head windows;	/* pci_host_bridge_windows */
+> >  	void (*release_fn)(struct pci_host_bridge *);
+> >  	void *release_data;
+> > @@ -747,6 +748,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+> >  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> >  				    struct pci_ops *ops, void *sysdata,
+> >  				    struct list_head *resources);
+> > +struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
+> > +			int domain, int bus, struct pci_ops *ops,
+> > +			void *sysdata, struct list_head *resources);
+> >  int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
+> >  int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+> >  void pci_bus_release_busn_res(struct pci_bus *b);
+> > -- 
+> > 1.9.0
+> > 
 > 
-> use:
-> 	spin_unlock()
-> 	spin_unlock_irq()
 
-*thwap*  Well duh.
-
-> or so, but this imbalance is making my itch :-)
-
-Yeah, much better.
-
-Before I actually sign that off, mind cluing me in as to why I should
-not be sitting here thinking lockdep smoked its breakfast?
-
--Mike
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
