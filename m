@@ -1,146 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671AbaDGSEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:04:10 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:39686 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187AbaDGSEH (ORCPT
+	id S1755551AbaDGSME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:12:04 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:43599 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755125AbaDGSMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:04:07 -0400
+	Mon, 7 Apr 2014 14:12:01 -0400
+Date: Mon, 7 Apr 2014 11:11:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: mathieu.desnoyers@efficios.com, peterz@infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
+Message-ID: <20140407181154.GE5272@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140330230856.GA21498@linux.vnet.ibm.com>
+ <20140403234312.GA2812@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <1396879071.3654.43.camel@linaro1.home>
-References: <1396646870-29695-1-git-send-email-rabin@rab.in>
-	<1396646870-29695-2-git-send-email-rabin@rab.in>
-	<1396879071.3654.43.camel@linaro1.home>
-Date: Mon, 7 Apr 2014 11:04:06 -0700
-X-Google-Sender-Auth: hKBMtUZXZsGYuyTtBljI2Nftb2k
-Message-ID: <CAGXu5j+pWbLW6xkgqzh0ittvaqsbxbW6UuXa7ciqi+XAN0d6NQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] arm: use fixmap for text patching when text is RO
-From: Kees Cook <keescook@chromium.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Rabin Vincent <rabin@rab.in>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403234312.GA2812@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040718-1344-0000-0000-000000C4D7B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 6:57 AM, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> On Fri, 2014-04-04 at 23:27 +0200, Rabin Vincent wrote:
->> Use fixmaps for text patching when the kernel text is read-only,
->> inspired by x86.  This makes jump labels and kprobes work with the
->> currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
->> CONFIG_DEBUG_RODATA options.
->>
->> Signed-off-by: Rabin Vincent <rabin@rab.in>
->> ---
->>  arch/arm/include/asm/fixmap.h |  3 ++
->>  arch/arm/kernel/jump_label.c  |  2 +-
->>  arch/arm/kernel/patch.c       | 66 ++++++++++++++++++++++++++++++++++++++-----
->>  arch/arm/kernel/patch.h       | 12 +++++++-
->>  4 files changed, 74 insertions(+), 9 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
->> index 55ed076..79c1719 100644
->> --- a/arch/arm/include/asm/fixmap.h
->> +++ b/arch/arm/include/asm/fixmap.h
->> @@ -18,6 +18,9 @@
->>  #define FIXADDR_TOP          (FIXADDR_END - PAGE_SIZE)
->>
->>  enum fixed_addresses {
->> +     FIX_TEXT_POKE0,
->> +     FIX_TEXT_POKE1,
->> +
->>       FIX_KMAP_BEGIN,
->>       FIX_KMAP_END = (FIXADDR_TOP - FIXADDR_START) >> PAGE_SHIFT,
->>       __end_of_fixed_addresses
->> diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
->> index 4ce4f78..afeeb9e 100644
->> --- a/arch/arm/kernel/jump_label.c
->> +++ b/arch/arm/kernel/jump_label.c
->> @@ -19,7 +19,7 @@ static void __arch_jump_label_transform(struct jump_entry *entry,
->>               insn = arm_gen_nop();
->>
->>       if (is_static)
->> -             __patch_text(addr, insn);
->> +             __patch_text_early(addr, insn);
->>       else
->>               patch_text(addr, insn);
->>  }
->> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
->> index 07314af..761c5b6 100644
->> --- a/arch/arm/kernel/patch.c
->> +++ b/arch/arm/kernel/patch.c
->> @@ -1,8 +1,11 @@
->>  #include <linux/kernel.h>
->> +#include <linux/spinlock.h>
->>  #include <linux/kprobes.h>
->> +#include <linux/mm.h>
->>  #include <linux/stop_machine.h>
->>
->>  #include <asm/cacheflush.h>
->> +#include <asm/fixmap.h>
->>  #include <asm/smp_plat.h>
->>  #include <asm/opcodes.h>
->>
->> @@ -13,21 +16,67 @@ struct patch {
->>       unsigned int insn;
->>  };
->>
->> -void __kprobes __patch_text(void *addr, unsigned int insn)
->> +static DEFINE_SPINLOCK(patch_lock);
->> +
->> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
->> +{
->> +     unsigned int uintaddr = (uintptr_t) addr;
->> +     bool module = !core_kernel_text(uintaddr);
->> +     struct page *page;
->> +
->> +     if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX)) {
->> +             page = vmalloc_to_page(addr);
->> +     } else if (!module && IS_ENABLED(CONFIG_ARM_KERNMEM_PERMS)) {
+On Fri, Apr 04, 2014 at 01:43:16AM +0200, Frederic Weisbecker wrote:
+> On Sun, Mar 30, 2014 at 04:08:56PM -0700, Paul E. McKenney wrote:
+> > For whatever it is worth, the following model claims safety and progress
+> > for the sysidle state machine.
+> > 
+> > Thoughts?
+> 
+> I'm going to get fun of myself by risking a review of this. Warning,
+> I don't speak promelian, so I may well write non-sense :)
 
-I think this should probably be CONFIG_DEBUG_RODATA now that I've
-moved RO exclusively into that config.
+Actually, you did find one real mismatch and one arguable one.  ;-)
 
->> +             page = virt_to_page(addr);
->> +     } else {
->> +             return addr;
->> +     }
->
-> I can't help but think that it'd be more maintainable to just always use
-> fixmap, though that would obviously have some performance impact (not
-> sure that particularly matters for text patching) and it would expose
-> possible fixmap bugginess to more kernels (see my next comment...)
->
->> +
->> +     if (flags)
->> +             spin_lock_irqsave(&patch_lock, *flags);
->> +
->> +     set_fixmap(fixmap, page_to_phys(page));
->> +
->> +     return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
->
-> How does fixmap cope with cache colouring? Looking at the implementation
-> it looks like it doesn't and so fixmap use on ARM is possibly buggy.
->
-> For the text patching case where we know there are no writeable mappings
-> [1] this should be OK if we used set_fixmap_nocache here, so long as we
-> also invalidated the dcache later for the proper virtual address.
->
-> [1] Can we know there are no writeable mappings though, the ftrace code
-> modifying patches from Kees Cook have there own way of modifying text
-> code permissions.
+> > 							Thanx, Paul
+> > 
+> > ------------------------------------------------------------------------
+> > sysidle.sh
+> > ------------------------------------------------------------------------
+> > spin -a sysidle.spin
+> > cc -DNP -o pan pan.c
+> > # Fair scheduling to focus progress checks in timekeeper.
+> > ./pan -f -l -m1280000 -w22
+> > 
+> > ------------------------------------------------------------------------
+> > sysidle.spin
+> > ------------------------------------------------------------------------
+> > /*
+> >  * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
+> >  * This model assumes that the dyntick-idle bit manipulation works based
+> >  * on long usage, and substitutes a per-thread boolean "am_busy[]" array
+> >  * for the Linux kernel's dyntick-idle masks.  The focus of this model
+> >  * is therefore on the state machine itself.  Checks for both safety and
+> >  * forward progress.
+> >  *
+> >  * This program is free software; you can redistribute it and/or modify
+> >  * it under the terms of the GNU General Public License as published by
+> >  * the Free Software Foundation; either version 2 of the License, or
+> >  * (at your option) any later version.
+> >  *
+> >  * This program is distributed in the hope that it will be useful,
+> >  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> >  * GNU General Public License for more details.
+> >  *
+> >  * You should have received a copy of the GNU General Public License
+> >  * along with this program; if not, you can access it online at
+> >  * http://www.gnu.org/licenses/gpl-2.0.html.
+> >  *
+> >  * Copyright IBM Corporation, 2014
+> >  *
+> >  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >  */
+> > 
+> > #define NUM_WORKERS 3
+> > 
+> > byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
+> > 
+> > #define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
+> > #define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
+> > #define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
+> > #define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
+> > #define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
+> > 
+> > byte full_sysidle_state = RCU_SYSIDLE_NOT;
+> > 
+> > byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
+> > byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not idle. */
+> > 
+> > /*
+> >  * Non-timekeeping CPU going into and out of dyntick-idle state.
+> >  */
+> > proctype worker(byte me)
+> > {
+> > 	byte oldstate;
+> > 
+> > 	do
+> > 	:: 1 ->
+> > 		/* Go idle. */
+> > 		am_setup[me] = 0;
+> > 		am_busy[me] = 0;
+> > 
+> > 		/* Dyntick-idle in the following loop. */
+> > 		do
+> > 		:: 1 -> skip;
+> > 		:: 1 -> break;
+> > 		od;
+> > 
+> > 		/* Exit idle loop, model getting out of dyntick idle state. */
+> > 		am_busy[me] = 1;
+> > 
+> > 		/* Get state out of full-system idle states. */
+> > 		atomic {
+> > 			oldstate = full_sysidle_state;
+> 
+> On the upstream code, the first read of full_sysidle_state after exiting idle is not
+> performed by an atomic operation. So I wonder if this is right to put this
+> in the atomic section.
+> 
+> I don't know the language enough to tell if it has no effect but I'm just
+> worried that it gets badly intepreted. Like the above read plus the below
+> conditional write in the same atomic section gets packed in a kind of cmpxchg_if_above() ?
+> 
+> Which is what we want to avoid if the value is not above RCU_SYSIDLE_SHORT after
+> a non atomic read.
 
-I think performance becomes an issue for massive updates like ftrace
-seems to do, so I got the sense it was good to have the "bulk" way to
-do it, and then this tiny poking way to do it.
+Given that cmpxchg() is being used to emulate exactly that atomic
+operation, I feel good about this Promela translation.  If the value is
+different at the time of the cmpxchg(), the cmpxchg() fails.  I suppose
+I could write it as follows instead:
 
--Kees
+		/* Get state out of full-system idle states. */
+		oldstate = full_sysidle_state;
+		do
+		:: 1 ->
+			atomic {
+				if
+				:: oldstate > RCU_SYSIDLE_SHORT &&
+				   oldstate == full_sysidle_state ->
+					full_sysidle_state = RCU_SYSIDLE_NOT;
+					break;
+				:: else ->
+					oldstate = full_sysidle_state;
+				fi;
+			}
+		od;
 
--- 
-Kees Cook
-Chrome OS Security
+Here the "if" emulates the cmpxchg() instruction and the rest emulates
+the loop.  Both representations get the same result when
+
+> > 			if
+> > 			:: oldstate > RCU_SYSIDLE_SHORT ->
+> > 				full_sysidle_state = RCU_SYSIDLE_NOT;
+> > 			:: else -> skip;
+> > 			fi;
+> > 		}
+> > 
+> > 		/* If needed, wake up the timekeeper. */
+> > 		if
+> > 		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
+> > 			wakeup_timekeeper = 1;
+> > 		:: else -> skip;
+> > 		fi;
+> > 
+> > 		/* Mark ourselves fully awake and operational. */
+> > 		am_setup[me] = 1;
+> > 
+> > 		/* We are fully awake, so timekeeper must not be asleep. */
+> > 		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
+> > 
+> > 		/* Running in kernel in the following loop. */
+> > 		do
+> > 		:: 1 -> skip;
+> > 		:: 1 -> break;
+> > 		od;
+> > 	od
+> > }
+> > 
+> > /*
+> >  * Are all the workers in dyntick-idle state?
+> >  */
+> > #define check_idle() \
+> > 	i = 0; \
+> > 	idle = 1; \
+> > 	do \
+> > 	:: i < NUM_WORKERS -> \
+> > 		if \
+> > 		:: am_busy[i] == 1 -> idle = 0; \
+> > 		:: else -> skip; \
+> > 		fi; \
+> > 		i++; \
+> > 	:: i >= NUM_WORKERS -> break; \
+> > 	od
+> > 
+> > /*
+> >  * Timekeeping CPU.
+> >  */
+> > proctype timekeeper()
+> > {
+> > 	byte i;
+> > 	byte idle;
+> > 	byte curstate;
+> > 	byte newstate;
+> > 
+> > 	do
+> > 	:: 1 ->
+> > 		/* Capture current state. */
+> > 		check_idle();
+> > 		curstate = full_sysidle_state;
+> > 		newstate = curstate;
+> > 
+> > 		/* Check for acceptance state. */
+> > 		if
+> > 		:: idle == 0 ->
+> > progress_idle:
+> 
+> Is this some kind of label? I can't find the target anywhere.
+
+It is a marker.  If you specify -DNP and if there is any cycle of
+states that does not pass through a label beginning with "progress",
+the verification will fail.  So it is useful for finding livelocks.
+
+Mathieu posted another way of getting this same effect.
+
+> > 			skip;
+> > 		:: curstate == RCU_SYSIDLE_NOT ->
+> > progress_idle_reset:
+> > 			skip;
+> > 		:: else -> skip;
+> > 		fi;
+> > 
+> > 		/* Manage state... */
+> > 		if
+> > 		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
+> > 			/* Idle, advance to next state. */
+> > 			atomic {
+> > 				if
+> > 				:: full_sysidle_state == curstate ->
+> > 					newstate = curstate + 1;
+> > 					full_sysidle_state = newstate;
+> > 				:: else -> skip;
+> > 				fi;
+> > 			}
+> 
+> It looks good but just one thing about the transition from FULL -> FULL_NOTED.
+> At least in the case of CONFIG_NO_HZ_FULL_SYSIDLE_SMALL (which is usually the
+> scenario I refer to, but I'll check further the grace-period driven way as well),
+> we switch from FULL to FULL_NOTED without checking a new round of the dynticks counters.
+> 
+> But this timekeeper() proc doesn't seem to care and does a check_idle() no matter
+> the current state.
+> 
+> There should probably be a special case to handle that otherwise we add a new
+> round of dynticks counters read between FULL and FULL_NOTED transition and this is an
+> entirely different scenario than what we run.
+
+Good catch!  I changed the above RCU_SYSIDLE_FULL_NOTED to RCU_SYSIDLE_FULL
+and added an atomic block to move to RCU_SYSIDLE_FULL_NOTED.  Still verifies
+(whew!).
+
+> > 		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
+> > 			/* Non-idle and state advanced, revert to base state. */
+> > 			full_sysidle_state = RCU_SYSIDLE_NOT;
+> 
+> Looking at the upstream code, I think we reset also when state == RCU_SYSIDLE_SHORT
+> once we detect a non-idle state. If it's not a mistyping, I'm probably missing something.
+
+I don't see this.  The resetting happens in rcu_sysidle_force_exit(),
+which contains the following:
+
+	while (oldstate > RCU_SYSIDLE_SHORT) {
+		newoldstate = cmpxchg(&full_sysidle_state,
+				      oldstate, RCU_SYSIDLE_NOT);
+		if (oldstate == newoldstate &&
+		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+			rcu_kick_nohz_cpu(tick_do_timer_cpu);
+			return; /* We cleared it, done! */
+		}
+		oldstate = newoldstate;
+	}
+
+If the state is RCU_SYSIDLE_SHORT, we skip the body of the "if" thus
+declining to reset back to RCU_SYSIDLE_NOT.  Or am I confused?
+
+							Thanx, Paul
+
+> Thanks.
+> 
+> > 		:: else -> skip;
+> > 		fi;
+> > 
+> > 		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
+> > 		do
+> > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
+> > 		   wakeup_timekeeper == 1 ->
+> > 			assert(0); /* Should never get here. */
+> > 		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
+> > 		   wakeup_timekeeper == 0 ->
+> > 			break;
+> > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
+> > 		   wakeup_timekeeper == 1 ->
+> > progress_full_system_idle_1:
+> > 			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
+> > 		   	wakeup_timekeeper = 0;
+> > 			break;
+> > 		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
+> > 		   wakeup_timekeeper == 0 ->
+> > progress_full_system_idle_2:
+> > 
+> > 			/* We are asleep, so all workers better be idle. */
+> > 			atomic {
+> > 				i = 0;
+> > 				idle = 1;
+> > 				do
+> > 				:: i < NUM_WORKERS ->
+> > 					if
+> > 					:: am_setup[i] -> idle = 0;
+> > 					:: else -> skip;
+> > 					fi;
+> > 					i++;
+> > 				:: i >= NUM_WORKERS -> break;
+> > 				od;
+> > 				assert(idle == 1 ||
+> > 				       full_sysidle_state < RCU_SYSIDLE_FULL);
+> > 			}
+> > 		od;
+> > 		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
+> > 	od;
+> > }
+> > 
+> > init {
+> > 	byte i = 0;
+> > 
+> > 	do
+> > 	:: i < NUM_WORKERS ->
+> > 		am_busy[i] = 1;
+> > 		am_setup[i] = 1;
+> > 		run worker(i);
+> > 		i++;
+> > 	:: i >= NUM_WORKERS -> break;
+> > 	od;
+> > 	run timekeeper();
+> > }
+> > 
+> 
+
