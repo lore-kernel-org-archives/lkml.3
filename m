@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718AbaDGTQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:16:26 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:45544 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbaDGTQZ (ORCPT
+	id S1755663AbaDGTS6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 15:18:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57353 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310AbaDGTS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:16:25 -0400
-Date: Mon, 7 Apr 2014 23:16:22 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
- bits PMD and PTE levels
-Message-ID: <20140407191622.GA23983@moon>
-References: <1396883443-11696-1-git-send-email-mgorman@suse.de>
- <1396883443-11696-3-git-send-email-mgorman@suse.de>
- <5342C517.2020305@citrix.com>
- <20140407154935.GD7292@suse.de>
- <20140407161910.GJ1444@moon>
- <20140407182854.GH7292@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140407182854.GH7292@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 Apr 2014 15:18:57 -0400
+Date: Mon, 07 Apr 2014 15:18:54 -0400 (EDT)
+Message-Id: <20140407.151854.411047851818388937.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: sasha.levin@oracle.com, netdev@vger.kernel.org,
+        linux-decnet-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Subject: Re: [PATCH] decnet: fix possible NULL deref in dnet_select_source()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1396821554.12330.51.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <5341A3C1.9060101@oracle.com>
+	<1396821554.12330.51.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 07:28:54PM +0100, Mel Gorman wrote:
-> > > I didn't bother spelling it out in case I gave the impression that I was
-> > > blaming Xen for the problem.  As the bit is now changes, does it help
-> > > the Xen problem or cause another collision of some sort? There is no
-> > > guarantee _PAGE_NUMA will remain as bit 62 but at worst it'll use bit 11
-> > > and NUMA_BALANCING will depend in !KMEMCHECK.
-> > 
-> > Fwiw, we're using bit 11 for soft-dirty tracking, so i really hope worst case
-> > never happen. (At the moment I'm trying to figure out if with this set
-> > it would be possible to clean up ugly macros in pgoff_to_pte for 2 level pages).
-> 
-> I had considered the soft-dirty tracking usage of the same bit. I thought I'd
-> be able to swizzle around it or a further worst case of having soft-dirty and
-> automatic NUMA balancing mutually exclusive. Unfortunately upon examination
-> it's not obvious how to have both of them share a bit and I suspect any
-> attempt to will break CRIU.  In my current tree, NUMA_BALANCING cannot be
-> set if MEM_SOFT_DIRTY which is not particularly satisfactory. Next on the
-> list is examining if _PAGE_BIT_IOMAP can be used.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Sun, 06 Apr 2014 14:59:14 -0700
 
-Thanks for info, Mel! It seems indeed if no more space left on x86-64 (in
-the very worst case which I still think won't happen anytime soon) we'll
-have to make them mut. exclusive. But for now (with 62 bit used for numa)
-they can live together, right?
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> dnet_select_source() should make sure dn_ptr is not NULL.
+> 
+> While looking at this decnet code, I believe I found a device
+> reference leak, lets fix it as well.
+>  
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> ---
+> It seems this bug is very old, no recent change is involved.
+
+The callers work hard to ensure this.
+
+Analyzing all call sites:
+
+1) __dn_fib_res_prefsrc() uses the FIB entry device pointer, we should not
+   be adding FIB entries pointing to devices which do not have their
+   decnet private initialized yet.
+
+2) dn_route_output_slow()
+
+   The paths leading to the dnet_select_address() call(s) check if
+   dev_out->dn_ptr is not NULL, except when using loopback.
+
+In some other paths the device comes from neigh->dev, from which the
+'neigh' was looked up in dn_neigh_table.  There should not be neighbour
+entries in this table pointing to devices which do not have their
+decnet private setup yet.
+
+And in the loopback case, it is the decnet stack's responsibility to
+make sure ->dn_ptr is setup properly, else it should fail the module
+load and stack initialization.
+
+I think there is some core fundamental issue here, and just adding
+a NULL check to dnet_select_source() is just papering around the issue.
+
+Please look closer at the stack trace, this code, and my analysis
+above to figure out what's really going on so we can fix this properly.
+
+Thanks.
