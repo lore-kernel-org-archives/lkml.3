@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaDGR6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:58:49 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:43410 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988AbaDGR6q (ORCPT
+	id S1755543AbaDGSDC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:03:02 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39993 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaDGSDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:58:46 -0400
+	Mon, 7 Apr 2014 14:03:00 -0400
+Date: Mon, 7 Apr 2014 20:02:28 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Michal Simek <monstr@monstr.eu>, Mike Looijmans <mike.looijmans@topic.nl>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
+Message-ID: <20140407180228.GN12170@pengutronix.de>
+References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
+ <53423E75.3020008@monstr.eu>
+ <53429754.8080105@topic.nl>
+ <534298E7.2020409@monstr.eu>
+ <20140407171012.GC9952@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <5183143.FxBNM0xTAV@wuerfel>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <20140405001953.GE15806@google.com> <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
- <5183143.FxBNM0xTAV@wuerfel>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 7 Apr 2014 11:58:24 -0600
-Message-ID: <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140407171012.GC9952@obsidianresearch.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:58:11 up 226 days,  3:29, 43 users,  load average: 0,05, 0,07,
+ 0,12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 5:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+Hi!
 
-> I think migrating other architectures to use the same code should be
-> a separate effort from adding a generic implementation that can be
-> used by arm64. It's probably a good idea to have patches to convert
-> arm32 and/or microblaze.
+On Mon, Apr 07, 2014 at 11:10:12AM -0600, Jason Gunthorpe wrote:
+> On Mon, Apr 07, 2014 at 02:24:07PM +0200, Michal Simek wrote:
+> 
+> > Device-tree BSP and in 2014.01 there will be new BSP which just
+> > generate them directly from the Vivado tools which just target your
+> > reference design.  You can connect your custom IP (or Xilinx or 3rd
+> > party) directly to the GIC which using different IRQ sensitivity
+> > with whatever register addresses and make no sense to write it by
+> > hand.
+> 
+> On our Zynq design here we ended up being unwilling to use platform
+> generation from Vivado. Basically all our IP was custom, so there was
+> no win at all to invoking the complexity of the automatic tools.
+> 
+> Thus we write the DT by hand, and our DT is complex, integrating
+> peripherals that span two FPGAs.
+> 
+> I think the in-kernel DT should use the kernel conventions, which
+> means using #include and the binding constants over magic values.
+> 
 
-Let me reiterate that I am 100% in favor of replacing arch-specific
-code with more generic implementations.
+ACK.
 
-However, I am not 100% in favor of doing it as separate efforts
-(although maybe I could be convinced).  The reasons I hesitate are
-that (1) if only one architecture uses a new "generic" implementation,
-we really don't know whether it is generic enough, (2) until I see the
-patches to convert other architectures, I have to assume that I'm the
-one who will write them, and (3) as soon as we add the code to
-drivers/pci, it becomes partly my headache to maintain it, even if
-only one arch benefits from it.
+If in doubt follow common mainline practice. Although using includes
+for DT is not necessarily common practice, readability of DTs is
+really important IMHO.
 
-Please don't think I'm questioning anyone's intent or good will.  It's
-just that I understand the business pressures, and I know how hard it
-can be to justify this sort of work to one's management, especially
-after the immediate problem has been solved.
+Regards,
+Steffen
 
-Bjorn
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
