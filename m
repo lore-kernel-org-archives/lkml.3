@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694AbaDGTVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:21:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38837 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384AbaDGTVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:21:19 -0400
-Date: Mon, 7 Apr 2014 12:23:47 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ken Cox <jkc@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, devel@driverdev.osuosl.org,
-        sparmaintainer@unisys.com, linux-kernel@vger.kernel.org,
-        Jet Chen <jet.chen@intel.com>
-Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
-Message-ID: <20140407192347.GA8272@kroah.com>
-References: <20140407111725.GC25152@localhost>
- <20140407140958.GA7346@kroah.com>
- <5342B525.80407@redhat.com>
+	id S1755642AbaDGTYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 15:24:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5756 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754711AbaDGTYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 15:24:07 -0400
+Date: Mon, 7 Apr 2014 21:24:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matthew Dempsky <mdempsky@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ptrace: Fix fork event messages across pid
+	namespaces
+Message-ID: <20140407192419.GB24607@redhat.com>
+References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com> <1396391358-22367-1-git-send-email-mdempsky@chromium.org> <20140402145850.GB7332@redhat.com> <CAF52+S6vqK_D7bAz9o65ATSZsg4MfqJgo+Qji8+4=OQJDSEJ7A@mail.gmail.com> <CAF52+S4hs2oM_qw9Zo-6qiOp_-Cyt3ZpL+zU2_MUv=d7UKPqEA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5342B525.80407@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAF52+S4hs2oM_qw9Zo-6qiOp_-Cyt3ZpL+zU2_MUv=d7UKPqEA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 09:24:37AM -0500, Ken Cox wrote:
-> 
-> On 04/07/2014 09:09 AM, Greg Kroah-Hartman wrote:
-> >On Mon, Apr 07, 2014 at 07:17:25PM +0800, Fengguang Wu wrote:
-> >>Hi Ken,
-> >>
-> >>I got the below dmesg and the first bad commit is
-> >>
-> >>git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
-> >>
-> >>commit 12e364b9f08aa335dc7716ce74113e834c993765
-> >>Author:     Ken Cox <jkc@redhat.com>
-> >>AuthorDate: Tue Mar 4 07:58:07 2014 -0600
-> >>Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>CommitDate: Tue Mar 4 16:58:21 2014 -0800
-> >>
-> >>     staging: visorchipset driver to provide registration and other services
-> >I think Sasha has already sent a fix to resolve this issue that I'll be
-> >sending to Linus in a day or so.
-> >
-> >Ken, is Sasha's patch going to resolve this issue as well?  It looks
-> >like people haven't tested what happens when the module is loaded
-> >without the hardware present in the system :(
-> You are exactly right.  The driver needs to check for hardware early on
-> before trying to use it.  Unfortunately, Sasha's patch will not resolve this
-> one.  I'll work with Ben Romer to get a patch out ASAP.
+On 04/02, Matthew Dempsky wrote:
+>
+> On Wed, Apr 2, 2014 at 2:58 PM, Matthew Dempsky <mdempsky@google.com> wrote:
+> > Otherwise, it looks like (e.g.) the attempts to get the parent's pid
+> > in fill_prstatus() and tomoyo_sys_getppid() are also theoretical races
+> > of the same kind?
+>
+> Doh, nevermind, those functions would potentially be use null "struct
+> pid" pointers, not "struct pid_namespace" pointers; and pid_nr_ns()
+> guards against pid being null.
 
-Wait, in looking at this closer, I don't see any of the "normal"
-hardware checks to determine that this really is a valid piece of
-hardware present, before it starts to just go and initialize a whole
-bunch of things (sysfs busses, proc files and directories, and other
-things.)
+Yes, and they want the parent's pid, not ours pid in parent's namespace.
 
-That's not ok, and it's obvious it's starting to affect people's work
-systems.
+Hmm. In fact I am replying only because I am not sure fill_psinfo() is
+correct, perhaps it confuses tid with tgid. I dunno.
 
-How about I just mark the whole thing BROKEN for now, disabling the
-build, until "correct" hardware probing can be added to the driver, so
-no one else gets hurt by this?
+Oleg.
 
-thanks,
-
-greg k-h
