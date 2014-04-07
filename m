@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188AbaDGLrt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 07:47:49 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:48257 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408AbaDGLrq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 07:47:46 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: linus Torvalds <torvalds@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Noam Camus <noamc@ezchip.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-Subject: [GIT PULL] ARC updates for 3.15 rc1
-Thread-Topic: [GIT PULL] ARC updates for 3.15 rc1
-Thread-Index: Ac9SVxeSWZFXGu8mSmWolm9CYNrfpg==
-Date: Mon, 7 Apr 2014 11:47:03 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230751AB922@IN01WEMBXA.internal.synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.197.213]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755146AbaDGLyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 07:54:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45404 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754523AbaDGLyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 07:54:14 -0400
+From: Jan Moskyto Matejka <mq@suse.cz>
+To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jan Moskyto Matejka <mq@suse.cz>
+Subject: [PATCH] drivers: staging: removing never #def'd BP_PROC_SUPPORT
+Date: Mon,  7 Apr 2014 13:00:57 +0200
+Message-Id: <1396868457-7216-1-git-send-email-mq@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+BP_PROC_SUPPORT was never defined so removing all the #ifdef'd code
+including the bp_proc_create() function.
 
-Please pull ARC changes for 3.15 merge window.
+Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
+---
+ drivers/staging/silicom/bpctl_mod.c | 39 -------------------------------------
+ 1 file changed, 39 deletions(-)
 
-Thx,
--Vineet
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index 6b9365b..530d621 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -119,7 +119,6 @@ static void if_scan_init(void);
+ 
+ static int bypass_proc_create_dev_sd(struct bpctl_dev *pbp_device_block);
+ static int bypass_proc_remove_dev_sd(struct bpctl_dev *pbp_device_block);
+-static int bp_proc_create(void);
+ 
+ static int is_bypass_fn(struct bpctl_dev *pbpctl_dev);
+ static int get_dev_idx_bsf(int bus, int slot, int func);
+@@ -6399,25 +6398,6 @@ static int __init bypass_init_module(void)
+ 	}
+ 
+ 	register_netdevice_notifier(&bp_notifier_block);
+-#ifdef BP_PROC_SUPPORT
+-	{
+-		int i = 0;
+-		/* unsigned long flags; */
+-		/* rcu_read_lock(); */
+-		bp_proc_create();
+-		for (i = 0; i < device_num; i++) {
+-			if (bpctl_dev_arr[i].ifindex) {
+-				/* spin_lock_irqsave(&bpvm_lock, flags); */
+-				bypass_proc_remove_dev_sd(&bpctl_dev_arr[i]);
+-				bypass_proc_create_dev_sd(&bpctl_dev_arr[i]);
+-				/* spin_unlock_irqrestore(&bpvm_lock, flags); */
+-			}
+-
+-		}
+-		/* rcu_read_unlock(); */
+-	}
+-#endif
+-
+ 	return 0;
+ }
+ 
+@@ -6431,13 +6411,6 @@ static void __exit bypass_cleanup_module(void)
+ 
+ 	for (i = 0; i < device_num; i++) {
+ 		/* unsigned long flags; */
+-#ifdef BP_PROC_SUPPORT
+-/*	spin_lock_irqsave(&bpvm_lock, flags);
+-	rcu_read_lock(); */
+-		bypass_proc_remove_dev_sd(&bpctl_dev_arr[i]);
+-/*	spin_unlock_irqrestore(&bpvm_lock, flags);
+-	rcu_read_unlock(); */
+-#endif
+ 		remove_bypass_wd_auto(&bpctl_dev_arr[i]);
+ 		bpctl_dev_arr[i].reset_time = 0;
+ 
+@@ -6783,18 +6756,6 @@ EXPORT_SYMBOL(bp_if_scan_sd);
+ 
+ static struct proc_dir_entry *bp_procfs_dir;
+ 
+-static int bp_proc_create(void)
+-{
+-	bp_procfs_dir = proc_mkdir(BP_PROC_DIR, init_net.proc_net);
+-	if (bp_procfs_dir == (struct proc_dir_entry *)0) {
+-		printk(KERN_DEBUG
+-		       "Could not create procfs nicinfo directory %s\n",
+-		       BP_PROC_DIR);
+-		return -1;
+-	}
+-	return 0;
+-}
+-
+ static int procfs_add(char *proc_name, const struct file_operations *fops,
+ 		      struct bpctl_dev *dev)
+ {
+-- 
+1.8.4.5
 
-------------------->
-The following changes since commit b098d6726bbfb94c06d6e1097466187afddae61f:
-
-  Linux 3.14-rc8 (2014-03-24 19:31:17 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/ tags/arc-v3.15-rc1
-
-for you to fetch changes up to 61fb4bfc010b0d2940f7fd87acbce6a0f03217cb:
-
-  ARC: [nsimosci] Unbork console (2014-04-05 18:36:51 +0530)
-
-----------------------------------------------------------------
-ARC changes for 3.15
-
-* Support for external initrd from Noam
-* Fix broken serial console in nsimosci Virtual Platform
-* Reuse of ENTRY/END assembler macros across hand asm code
-* Other minor fixes here and there
-
-----------------------------------------------------------------
-Mischa Jonker (3):
-      ARC: [arcfpga] Fix __initconst data const-correctness
-      ARC: add uImage to .gitignore
-      ARC: [nsimosci] Change .dts to use generic 8250 UART
-
-Noam Camus (1):
-      ARC: support external initrd
-
-Richard Weinberger (1):
-      ARC: Remove ARC_HAS_COH_RTSC
-
-Vineet Gupta (6):
-      ARC: switch to generic ENTRY/END assembler annotations
-      ARC: [clockevent] can't be SoC specific
-      ARC: [clockevent] simplify timer ISR
-      ARC: Remove unused DT template file
-      ARC: [SMP] General Fixes
-      ARC: [nsimosci] Unbork console
-
- arch/arc/boot/.gitignore            |  1 +
- arch/arc/boot/dts/nsimosci.dts      | 12 +++++----
- arch/arc/boot/dts/skeleton.dts      | 10 -------
- arch/arc/configs/nsimosci_defconfig |  1 +
- arch/arc/include/asm/linkage.h      | 14 ----------
- arch/arc/kernel/ctx_sw_asm.S        |  2 +-
- arch/arc/kernel/entry.S             | 52 ++++++++++++++++++-------------------
- arch/arc/kernel/head.S              |  7 ++---
- arch/arc/kernel/time.c              | 37 ++++++++++++--------------
- arch/arc/lib/memcmp.S               |  6 ++---
- arch/arc/lib/memcpy-700.S           |  6 ++---
- arch/arc/lib/memset.S               | 10 +++----
- arch/arc/lib/strchr-700.S           |  6 ++---
- arch/arc/lib/strcmp.S               |  6 ++---
- arch/arc/lib/strcpy-700.S           |  6 ++---
- arch/arc/lib/strlen.S               |  6 ++---
- arch/arc/mm/cache_arc700.c          |  3 +--
- arch/arc/mm/init.c                  | 27 +++++++++++++++++++
- arch/arc/mm/tlbex.S                 | 10 +++----
- arch/arc/plat-arcfpga/Kconfig       |  1 -
- arch/arc/plat-arcfpga/platform.c    |  6 ++---
- 21 files changed, 114 insertions(+), 115 deletions(-)
- delete mode 100644 arch/arc/boot/dts/skeleton.dts
