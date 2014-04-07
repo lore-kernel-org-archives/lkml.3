@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaDGPDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:03:05 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:42789 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753143AbaDGPDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:03:02 -0400
-Message-ID: <1396882918.28420.37.camel@iivanov-dev>
-Subject: Re: [PATCH v2] clk: qcom: Add support for IPQ8064's global clock
- controller (GCC)
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
-        sboyd@codeaurora.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Date: Mon, 07 Apr 2014 18:01:58 +0300
-In-Reply-To: <1396642749-12979-1-git-send-email-galak@codeaurora.org>
-References: <1396642749-12979-1-git-send-email-galak@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754706AbaDGPD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:03:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48015 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665AbaDGPDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 11:03:53 -0400
+Date: Mon, 7 Apr 2014 17:03:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michele Ballabio <barra_cuda@katamail.com>
+Cc: linux-kernel@vger.kernel.org, toralf.foerster@gmx.de, fweisbec@gmail.com,
+        mingo@kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
+Message-ID: <20140407150337.GO10526@twins.programming.kicks-ass.net>
+References: <5341707F.5000406@katamail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5341707F.5000406@katamail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kumar,
-
-On Fri, 2014-04-04 at 15:19 -0500, Kumar Gala wrote:
-> Add a driver for the global clock controller found on IPQ8064 based
-> platforms. This should allow most non-multimedia device drivers to probe
-> and control their clocks.
+On Sun, Apr 06, 2014 at 05:19:27PM +0200, Michele Ballabio wrote:
+> Toralf Förster reported this in
+>   http://article.gmane.org/gmane.linux.kernel/1662567
+>   http://article.gmane.org/gmane.linux.kernel/1658422
+>   http://article.gmane.org/gmane.linux.kernel/1657962
 > 
-> This is currently missing clocks for SATA, USB, and networking devices.
+>   "The issue happens here at a 32 bit stable Gentoo Linux if
+>    I try to start a KVM image. Kernels 3.12.X works fine,
+>    kernel >= v3.13 will hang shortly after I started the image
+>    with the virtual-manager. The last syslog messages are
+>    something like:
+>    Feb 28 16:22:00 n22 kernel: INFO: rcu_sched detected stalls
+>        on CPUs/tasks: {} (detected by 2, t=60002 jiffies,
+>        g=14689, c=14688, q=21051)
+>    Feb 28 16:22:00 n22 kernel: INFO: Stall ended before state
+>        dump start"
 > 
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> ---
-> v2:
-> * dropped audio clock from commit message
-> * changed Kconfig symbol to IPQ_GCC_806X
-> * Fixed PXO/CXO clk freq to 25Mhz
+> He correctly pointed out that the bisection blamed the merge
+> commit 37bf06375c90a42fe07b9bebdb07bc316ae5a0ce
+> "Merge tag 'v3.12-rc4' into sched/core".
 > 
+> This bug is obviously caused by at least two patches, one
+> on each side of the merge, that only when combined together
+> (at that merge point) cause the bug in kvm. By rebasing
+> the "sched/core" branch on "master" before the merge and
+> going on with the bisection, I found commit
+> 3e8e42c69bb7d9fc12ebc23ff308e8523a2a59a0
+> "sched: Revert need_resched() to look at TIF_NEED_RESCHED"
+> as one of the causes. The other patch that contributes to the
+> bug is commit ded797547548a5b8e7b92383a41e4c0e6b0ecb7f
+> "irq: Force hardirq exit's softirq processing on its own stack".
+> 
+> Reverting either one of them solves the problem reported with kvm,
+> but revert is probably not the correct answer.
+> 
+> I wonder if the solution is as simple as this:
+> 
+> --->8---
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 0af5250..f3b985d 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -126,6 +126,7 @@ config X86
+>  	select RTC_LIB
+>  	select HAVE_DEBUG_STACKOVERFLOW
+>  	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+> +	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_32
+>  	select HAVE_CC_STACKPROTECTOR
 
-<snip>
+Ohh ahh.. shiney!
 
-> --- /dev/null
-> +++ b/drivers/clk/qcom/gcc-ipq806x.c
-> @@ -0,0 +1,1957 @@
-> +/*
-> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/bitops.h>
-> +#include <linux/err.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/regmap.h>
-> +#include <linux/reset-controller.h>
-> +
-> +#include <dt-bindings/clock/qcom,gcc-ipq806x.h>
-> +#include <dt-bindings/reset/qcom,gcc-ipq806x.h>
-> +
-> +#include "common.h"
+So what I suspect at this point is that because i386 and x86_64 have a
+difference in current_thread_info() (i386 is stack based), we end up
+setting the TIF_NEED_RESCHED bit on the wrong stack.
 
-Do I miss something or this file is not available?
+Now I have some vague memories of propagating the TIF flags on stack
+switch, but I cannot remember what arch we did that for. Let me stare at
+this a little more.
 
-Regards,
-Ivan
+Also, IFF this is the case, then the fingered patch above (and your
+suggested 'fix') aren't the real curlpit/cure but simply make it
+more/less likely to happen.
 
+Now, Steve had a patch somewhere that would make i386 use per-cpu
+variables for current_thread_info() just like x86_64 already does I
+think. Let me go find them too.
