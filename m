@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879AbaDGGqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 02:46:08 -0400
-Received: from atl4mhob10.myregisteredsite.com ([209.17.115.48]:59331 "EHLO
-	atl4mhob10.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751769AbaDGGpY (ORCPT
+	id S1751769AbaDGG5A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 02:57:00 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:55300 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922AbaDGG44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 02:45:24 -0400
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, gdjakov@mm-sol.com,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
-Date: Mon,  7 Apr 2014 08:45:19 +0200
-Message-Id: <1396853119-11181-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396852708-11058-1-git-send-email-mike.looijmans@topic.nl>
-References: <1396852708-11058-1-git-send-email-mike.looijmans@topic.nl>
+	Mon, 7 Apr 2014 02:56:56 -0400
+Message-ID: <53424C32.7090000@monstr.eu>
+Date: Mon, 07 Apr 2014 08:56:50 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+CC: wg@grandegger.com, mkl@pengutronix.de, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
+References: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local>
+In-Reply-To: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If vmmc or vqmmc regulators are controlled by an I2C device, the
-request for the regulator is likely to fail because the I2C bus has
-not been probed yet. The sdhci then incorrectly assumes that the user
-never wanted to use a regulator anyway and continues without ever
-enabling or configuring the required regulator.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-To solve this, when a required voltage regulator returns
-EPROBE_DEFER, signalling that the regulator exists but is not
-available yet, forward this error to the probe method instead
-of simply assuming that the user never wanted to use a regulator
-anyway.
+On 04/02/2014 03:13 PM, Kedareswara rao Appana wrote:
+> This patch adds xilinx CAN controller support.
+> This driver supports both ZYNQ CANPS and Soft IP
+> AXI CAN controller.
+>=20
+> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+> ---
+> Changes for v7:
+> - Updated the driver with review comments.
+> - Moved the driver bindings doc as a separte patch.
+> Changes for v6:
+> - Updated the driver with review comments.
+> - Used the clock names specified in the data sheet.
+> - Updated the devicetree bindings doc as per Rob suggestion.
+> Changes for v5:
+> - Updated the driver with the review comments.
+> - Remove the check for the tx fifo full interrupt condition
+>   form Tx interrupt routine as we are checking it in the _xmit
+>   routine.
+> - Clearing the txok interrupt in the tx interrupt routine for
+>   every Tx can frame.
+> Changes for v4:
+> - Added check for the tx fifo full interrupt condition in
+> Tx interrupt routine.
+> - Added be iohelper functions.
+> - Moved the clock enable/disable to probe/remove because of
+>   Added big endian support for AXI CAN controller case(reading
+>   a register during probe for that we need to enable clock).
+> Changes for v3:
+> - Updated the driver with the review comments.
+> - Modified the tranmit logic as per Marc suggestion.
+> - Enabling the clock when the interface is up to reduce the
+>   Power consumption.
+> Changes for v2:
+> - Updated with the review comments.
+> - Removed the unnecessary debug prints.
+> - include tx,rx fifo depths in ZYNQ CANPS case also
+> ---
+>  drivers/net/can/Kconfig      |    7 +
+>  drivers/net/can/Makefile     |    1 +
+>  drivers/net/can/xilinx_can.c | 1176 ++++++++++++++++++++++++++++++++++=
+++++++++
+>  3 files changed, 1184 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/net/can/xilinx_can.c
 
-Tested on a custom board that has an I2C regulator for one of the sdhcis
-and no regulators at all for the other. This patch enables such a system
-to work correctly.
+Mark: Any update on this one?
+BTW: When you apply these patches you should apply 2/2 before 1/2. There =
+is
+new checking for binding.
 
-v2: Do not change logging output
+Thanks,
+Michal
 
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
----
- drivers/mmc/host/sdhci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 34aef81..c92a5a1 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
- 	if (IS_ERR_OR_NULL(host->vqmmc)) {
- 		if (PTR_ERR(host->vqmmc) < 0) {
-+			if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
-+				return -EPROBE_DEFER;
- 			pr_info("%s: no vqmmc regulator found\n",
- 				mmc_hostname(mmc));
- 			host->vqmmc = NULL;
-@@ -3048,6 +3050,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
- 	if (IS_ERR_OR_NULL(host->vmmc)) {
- 		if (PTR_ERR(host->vmmc) < 0) {
-+			if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
-+				return -EPROBE_DEFER;
- 			pr_info("%s: no vmmc regulator found\n",
- 				mmc_hostname(mmc));
- 			host->vmmc = NULL;
--- 
-1.7.9.5
 
+
+--WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNCTDIACgkQykllyylKDCG1EgCeLE2XknDSTycp+m4/LnRJNFgf
+Ht0An3Z5dCr0Dd/TEcg1ZoPKU0OIAYo+
+=0rwI
+-----END PGP SIGNATURE-----
+
+--WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM--
