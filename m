@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952AbaDGSbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:31:07 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:65110 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755642AbaDGSbD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:31:03 -0400
-Message-ID: <5342eee3.a2ab440a.2baf.ffffbf7d@mx.google.com>
-From: afflict26094@gmail.com
-To: linux-kernel@vger.kernel.org
-Reply-To: appends31284@gmail.com
-Subject: Local Search engine rankings for (mail-archive.com)
-Date: Mon, 7 Apr 2014 11:30:57 -0700
+	id S1755972AbaDGSb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:31:28 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:36561 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755642AbaDGSbY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 14:31:24 -0400
+From: Josef Bacik <jbacik@fb.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: Chris Mason <clm@fb.com>, David Sterba <dsterba@suse.cz>,
+        Jeff Mahoney <jeffm@suse.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs: lock inversion between delayed_node->mutex and
+ found->groups_sem
+Thread-Topic: btrfs: lock inversion between delayed_node->mutex and
+ found->groups_sem
+Thread-Index: AQHPP+M+3IXI59FKkUuYu2lRKTj7bZrluMoAgA5m3ICADmvngIAEbjGAgAAGQoCAAAzngP//kfJ2
+Date: Mon, 7 Apr 2014 18:29:29 +0000
+Message-ID: <j7epmjmklw5vs88lxuqjqorq.1396895366402@email.android.com>
+References: <53239AE0.8030306@oracle.com>
+ <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com>
+ <533F20EB.2040500@oracle.com> <20140407165449.GA29256@twin.jikos.cz>
+ <5342DD99.3010502@fb.com>,<5342E86B.4000305@oracle.com>
+In-Reply-To: <5342E86B.4000305@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-07_02:2014-04-07,2014-04-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.24010135493791e-10 kscore.compositescore=0
+ circleOfTrustscore=9.18185114672389 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404070162
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Business Owner,
+I was on vacation last week, I'll update btrfs-next today once we are happy with integration.  Thanks,
 
-While searching the web we found that your website does not rank page 1 on google. 85% of users searching the web will never find your website unless you're ranked on first page of Google, MSN and other major search engines. On the top of this with all these google update animals around ( Penguin & Pandas ) Its not easy to get page 1 and stay there to keep getting business.
+Josef
 
-Our company is on the first page when you search on Google for our primary search term "Online SEO Company." We would like to do the same for your web site so you can come up for your main keywords as well. All of our processes use the most ethical "white hat" Search Engine Optimization techniques that will not get your website banned or penalized.
-
-This special SEO program includes:
-
-- 2 Weeks Of Free SEO
-- No upfront fees
-- No Long Term Contracts
-
-We guarantee you top 10 google listings in max 3 months of our program. If interested please email us back with the following information so we can help you rank page 1 on major search engines like google & bing.
-
-Email us back with your website & your phone number so we can design a custom proposal for you and discuss this further.
-
-Regards
-Lisa Breat
-SEO Manager : T.O.B
-7 B Green Avenue, Amritsar Punjab
-
-----------------------------------------------------------------------------------------------------------------
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
 
-Our email above is not intended to waste your time or fill your inbox with spam. If you would not like to hear from us, email us back with NOT INTERESTED. We will never email you again.
+On 04/07/2014 01:17 PM, Chris Mason wrote:
+>
+>
+> On 04/07/2014 12:54 PM, David Sterba wrote:
+>> On Fri, Apr 04, 2014 at 05:15:23PM -0400, Sasha Levin wrote:
+>>> On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
+>>>> On 3/17/14, 9:05 AM, David Sterba wrote:
+>>>>>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
+>>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
+>>>>>>>>
+>>>>>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
+>>>>>>
+>>>>>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
+>>>> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
+>>>
+>>> Is that fix available anywhere? I'm still seeing the issue in -next.
+>>
+>> It is: https://urldefense.proofpoint.com/v1/url?u=https://patchwork.kernel.org/patch/3894781/&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=HQJVSK4wPTft1zWwI1cGvwj5OfdmN5UItVlucU1K31o%3D%0A&s=5113699a2e7345a779333c87dd5b1d88b4410a7c7fcd5fa424baeb838ad7d31b , will probably hit -rc2
+>>
+>
+> Its in the integration branch now along with some other important fixes.  We'll get it out shortly
+
+Chris,
+
+Can I suggest adding the integration branch to linux-next as well? That way
+all the folks who report issues coming out of -next would be able to test
+the fixes as well.
+
+
+Thanks,
+Sasha
+
