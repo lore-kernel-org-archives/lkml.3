@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaDGT6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:58:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59861 "EHLO mga09.intel.com"
+	id S1755825AbaDGUAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 16:00:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38647 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753765AbaDGT6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:58:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,811,1389772800"; 
-   d="scan'208";a="516301608"
-Message-ID: <5342E273.4070308@intel.com>
-Date: Mon, 07 Apr 2014 10:37:55 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754333AbaDGUAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 16:00:32 -0400
+Date: Mon, 7 Apr 2014 22:00:28 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jason Baron <jbaron@akamai.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: tony.luck@intel.com, dougthompson@xmission.com, m.chehab@samsung.com,
+        mitake@dcl.info.waseda.ac.jp, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add new ie31200_edac driver
+Message-ID: <20140407200028.GB20822@pd.tnic>
+References: <cover.1396645124.git.jbaron@akamai.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Noonan <steven@uplinklabs.net>,
-        Rik van Riel <riel@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
- bits PMD and PTE levels
-References: <1396883443-11696-1-git-send-email-mgorman@suse.de> <1396883443-11696-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1396883443-11696-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <cover.1396645124.git.jbaron@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 08:10 AM, Mel Gorman wrote:
-> +/*
-> + * Software bits ignored by the page table walker
-> + * At the time of writing, different levels have bits that are ignored. Due
-> + * to physical address limitations, bits 52:62 should be ignored for the PMD
-> + * and PTE levels and are available for use by software. Be aware that this
-> + * may change if the physical address space expands.
-> + */
-> +#define _PAGE_BIT_NUMA		62
+On Fri, Apr 04, 2014 at 09:13:45PM +0000, Jason Baron wrote:
+> Hi,
+> 
+> Add support for memory errors for the Intel E3-1200 processors.
+> 
+> While testing the driver, I found that doing a readq() on the
+> memory mapped memory controller hub registers caused a hard lockup
+> on my x86_64 system. It turns out that a read across a DW boundary
+> is a no no here.
+> 
+> "
+> Software must not access B0/D0/F0 32-bit memory-mapped registers with
+> requests that cross a DW boundary.
+> "
+> 
+> (http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200-family-vol-2-datasheet.html p. 16)
+> 
+> Thus, I've added a generic lo_hi_[read|write]_q API, to deal with
+> this issue.
+> 
+> I think longer term the right thing is maybe to simply add these
+> definitions to include/asm-generic/io.h, as I didn't see any
+> in tree users of 'io-64-nonatomic-hi-lo.h', and simply remove
+> io-64-nonatomic-hi-lo.h and io-64-nonatomic-lo-hi.h. But I didn't want to
+> tie that cleanup to this edac driver submission.
 
-Doesn't moving it up to the high bits break pte_modify()'s assumptions?
- I was thinking of this nugget from change_pte_range():
+Makes sense to me. There are a couple of drivers which include
+io-64-nonatomic-lo-hi.h though.
 
-	ptent = ptep_modify_prot_start(mm, addr, pte);
-        if (pte_numa(ptent))
-        	ptent = pte_mknonnuma(ptent);
-	ptent = pte_modify(ptent, newprot);
+As part of the cleanup, it might be even clearer to do the lo_hi_* calls
+directly instead of the readq/writeq defines as a means of documenting
+that this particular code cannot stomach doubleword-crossing accesses.
 
-pte_modify() pulls off all the high bits out of 'ptent' and only adds
-them back if they're in newprot (which as far as I can tell comes from
-the VMA).  So I _think_ it'll axe the _PAGE_NUMA out of 'ptent'.
+x86 guys, opinions? Especially patch 1/3, should I pick it up or you
+want?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
