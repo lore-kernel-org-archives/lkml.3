@@ -1,111 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192AbaDGNfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:35:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274AbaDGNf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:35:29 -0400
-Date: Mon, 7 Apr 2014 09:35:18 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Bruce Fields <bfields@fieldses.org>, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [GIT PULL] please pull file locking changes for 3.15
-Message-ID: <20140407093518.301f9844@tlielax.poochiereds.net>
-In-Reply-To: <20140407222702.9773d7369c05918a6f16151f@canb.auug.org.au>
-References: <20140331093120.10aeaba6@tlielax.poochiereds.net>
-	<CA+55aFy_o-wDrbQSRnrThGqo8mcBS-pVXM6Kj0LqH8PzRr_0Kw@mail.gmail.com>
-	<20140404205624.521f67d5@ipyr.poochiereds.net>
-	<20140407113706.d213ca01fed70e3367611197@canb.auug.org.au>
-	<20140407071130.672d7e8e@tlielax.poochiereds.net>
-	<20140407222702.9773d7369c05918a6f16151f@canb.auug.org.au>
+	id S1755290AbaDGNiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:38:18 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39620 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaDGNiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 09:38:16 -0400
+Message-ID: <5342AA3E.50100@oracle.com>
+Date: Mon, 07 Apr 2014 09:38:06 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/7jF.D9=SYjaLt4A/dP/9qL."; protocol="application/pgp-signature"
+To: Jan Kara <jack@suse.cz>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: bdi: lockdep warning in bdi_queue_work
+References: <533F2CED.3070006@oracle.com> <20140407102107.GD14927@quack.suse.cz>
+In-Reply-To: <20140407102107.GD14927@quack.suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/7jF.D9=SYjaLt4A/dP/9qL.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 04/07/2014 06:21 AM, Jan Kara wrote:
+>   Hello,
+> 
+> On Fri 04-04-14 18:06:37, Sasha Levin wrote:
+>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>> kernel I've stumbled on the following:
+>>
+>> [  323.192041] INFO: trying to register non-static key.
+>> [  323.193083] the code is fine but needs lockdep annotation.
+>> [  323.193949] turning off the locking correctness validator.
+>> [  323.194687] CPU: 15 PID: 21793 Comm: trinity-c94 Not tainted 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376
+>> [  323.196300]  0000000000000000 ffff8804d9067cf8 ffffffff954bfb2f 0000000000000000
+>> [  323.197522]  ffffffff99378b10 ffff8804d9067df8 ffffffff921c3912 ffff88082bddaeb0
+>> [  323.198879]  ffff880800000000 ffff880400000001 ffffffff00000000 ffff8804d9067d48
+>> [  323.200063] Call Trace:
+>> [  323.200487] dump_stack (lib/dump_stack.c:52)
+>> [  323.200581] __lock_acquire (kernel/locking/lockdep.c:743 kernel/locking/lockdep.c:3078)
+>> [  323.200581] ? __slab_alloc (mm/slub.c:2385 (discriminator 2))
+>> [  323.200581] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+>> [  323.200581] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+>> [  323.200581] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+>> [  323.200581] ? bdi_queue_work (arch/x86/include/asm/bitops.h:313 fs/fs-writeback.c:108)
+>> [  323.200581] _raw_spin_lock_bh (include/linux/spinlock_api_smp.h:136 kernel/locking/spinlock.c:175)
+>> [  323.200581] ? bdi_queue_work (arch/x86/include/asm/bitops.h:313 fs/fs-writeback.c:108)
+>> [  323.200581] bdi_queue_work (arch/x86/include/asm/bitops.h:313 fs/fs-writeback.c:108)
+>> [  323.200581] __bdi_start_writeback (fs/fs-writeback.c:141)
+>> [  323.200581] wakeup_flusher_threads (fs/fs-writeback.c:1077)
+>> [  323.200581] ? wakeup_flusher_threads (include/linux/rcupdate.h:800 fs/fs-writeback.c:1076)
+>> [  323.200581] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
+>> [  323.200581] sys_sync (fs/sync.c:107)
+>> [  323.200581] tracesys (arch/x86/kernel/entry_64.S:749)
+>   Thanks for report. This is really strange. The complaint is apparently
+> about bdi->wb_lock. But that is properly initialized with spin_lock_init()
+> when bdi is created so I don't see how we could see a non-static key there.
+> Can you reproduce this? Can you tell what the non-static key was?
+> 
+> I presume something bad could happen if someone was freeing the bdi while
+> we are looking at it. And given bdi should be RCU freed, that could happen
+> if someone forgot to free the bdi structure using RCU. So to identify that
+> better, can you dump 'bdi->name' for the bdi which triggers this?
 
-On Mon, 7 Apr 2014 22:27:02 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+I've added some code to do that, but since I only saw that error once so far
+I suspect it'll be a while before I could come back with a result.
 
-> Hi Jeff,
->=20
-> On Mon, 7 Apr 2014 07:11:30 -0400 Jeff Layton <jlayton@redhat.com> wrote:
-> >
-> > On Mon, 7 Apr 2014 11:37:06 +1000
-> > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >=20
-> > > On Fri, 4 Apr 2014 20:56:24 -0400 Jeff Layton <jlayton@redhat.com> wr=
-ote:
-> > > >
-> > > > Thanks for the feedback and for pulling this in anyway. I'll make s=
-ure
-> > > > to do all of that on subsequent pull requests.
-> > >=20
-> > > Also, please don't rebase what you have in linux-next before sending =
-it to
-> > > Linus (without good reason).  Especially if you then leave the linux-=
-next
-> > > included branch as it was - since that may cause conflicts in my tree
-> > > (and so I notice the rebase).
-> >=20
-> > I don't think I did that though, did I? Both the branches I had in this
-> > case were based on 3.13-rc1.
->=20
-> OK, so the base stayed the same, but you recommitted all the same patches
-> (I didn't check to see if the commit messages changed) which due to some
-> other change caused conflicts in linux-next today :-( Not really a
-> biggie, but generally, you really shouldn't rewrite your commits just
-> before sending them to Linus.
->=20
-> > Now that Linus has pulled in the changes, am I OK to rebase the
-> > branches (or do a pull)?
->=20
-> At this point, you should just reset your next included branch to be in
-> Linus' tree beyond where Linus merged your tree, then it will be
-> effectively empty (unless you then add some more patches on top - but at
-> this point those should only be fixes).
->=20
 
-Ahh ok, I guess I *did* alter a commit message in my locks-3.15 branch
-and didn't propagate that to my linux-next branch. That probably threw
-off the commit IDs. The patches themselves should have been identical
-though. Sorry about that!
+Thanks,
+Sasha
 
-In any case, I've gone ahead and reset my branch as you recommend and
-linux-next branch and will be more careful about that in the future.
-
---=20
-Jeff Layton <jlayton@redhat.com>
-
---Sig_/7jF.D9=SYjaLt4A/dP/9qL.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTQqmXAAoJEAAOaEEZVoIV+cwP+gI4rb9FnjyWKoEx4JYX9hSa
-Ajo84fUDj+FCvxehWpx7E4UiAQgq0ZV/I64BfkvE0SgEZxayNMVBYxDwS/bExmBq
-I+d6xollHWzVdPRJvFWJRSse1ljGAB7AqruZmct4Bi7ovY3Y4xXEi9dW0XKjgJgr
-/ScrNIEtFAJBQ9mHZ1QepluLFgQU1f8oXgtlKswr8qus/Juy30VXdQ+5IcoUhjBN
-0rl7LB+6VcS/SNA8buV7nsHyExj0qLoEqTkZXzJinFoC38ypK3JSSZveRRKpVyWw
-9+aSGFBidY/ikSspyQJV5H6Z9QcGfZC0ukT6gXa1coBjGxTWyMzYBU6Q0eeHAhpi
-poc9OEnXLDRb7nmJq3kDQcdGkoLa5I1z3hxUSNzFEiUgS3gZz2pCFRe2mXm3JIfi
-BCJs055i7zfCNmliOO1ynLiNJO3R3HgPvTCrC2AkxJMj6ykqwkbc0sQYIqDEUwE5
-iN2oSTGDgubP5QBuBqNZrxmLPX8hRsGC9EE9buUN/6y5dS1IQMj9tXy0e8h9EzWe
-Pcnv+qxjaz6kLdEDaXIHfErEOW4retAKxf7IHLWvTIXzJtWhLCzu860GGn5JXx4F
-LZca5XIF0bmLhiy3dPyY7DRnSVRIGl4+fZtaH3zsUAe2+O3sA4q1ZptQypOeQS9e
-iu6bW4HfmFjTWjjz+YSj
-=Xxpg
------END PGP SIGNATURE-----
-
---Sig_/7jF.D9=SYjaLt4A/dP/9qL.--
