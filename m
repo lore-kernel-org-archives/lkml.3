@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbaDGMYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:24:22 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51984 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141AbaDGMYS (ORCPT
+	id S1755216AbaDGMZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 08:25:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:65492 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510AbaDGMZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:24:18 -0400
-Message-ID: <534298E7.2020409@monstr.eu>
-Date: Mon, 07 Apr 2014 14:24:07 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 7 Apr 2014 08:25:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Mike Looijmans <mike.looijmans@topic.nl>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cjb@laptop.org, gdjakov@mm-sol.com
+Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
+Date: Mon, 07 Apr 2014 14:25:23 +0200
+Message-ID: <10471336.Pb8zVvW3Hp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <534297AE.1020907@codethink.co.uk>
+References: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl> <5342971F.3010705@codethink.co.uk> <534297AE.1020907@codethink.co.uk>
 MIME-Version: 1.0
-To: Mike Looijmans <mike.looijmans@topic.nl>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com> <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com> <53423E75.3020008@monstr.eu> <53429754.8080105@topic.nl>
-In-Reply-To: <53429754.8080105@topic.nl>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QACehD1MvRluKQJ7CAgV0HXMUtVxaS51qMlUAoph8oo
+ I+7ga+zyZtRn88wCX9STXI1p9oDfflSryX0CvTt8010ZgriCYb
+ thAZEEWxqB7DvFtqCssklb6Bp5jQHVVSqHu0pg4OaoNF5BLZIC
+ Upmdgu64KJsaePNY1Xrswh8Rlcnw81dIzV3vg2JfOYDa6wwV5t
+ wRPavSLzaI9MhX51PwjaOgLyYzN/1ItxnMX+42+t0/8enwAYE1
+ UD/8o93+/XFMvN3gIEzpR8Nxv4rOwbmFjm1ouk7HWkxGUqWcLQ
+ 5A40Kk1dDgzMp8lKiAvZSWMwbAIV+sFMgDh2EwBWg6Kw0fZzRD
+ ZBXkBTtd0okNuXZyfZtE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Monday 07 April 2014 13:18:54 Ben Dooks wrote:
+> On 07/04/14 13:16, Ben Dooks wrote:
+> > On 07/04/14 13:09, Mike Looijmans wrote:
+> >> On 04/07/2014 10:11 AM, Arnd Bergmann wrote:
+> >>> On Monday 07 April 2014 08:38:28 Mike Looijmans wrote:
+> >>>> index 34aef81..43b90c1 100644
+> >>>> --- a/drivers/mmc/host/sdhci.c
+> >>>> +++ b/drivers/mmc/host/sdhci.c
+> >>>> @@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
+> >>>>          host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
+> >>>>          if (IS_ERR_OR_NULL(host->vqmmc)) {
+> >>>>                  if (PTR_ERR(host->vqmmc) < 0) {
+> >>>> +                       if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
+> >>>> +                               return -EPROBE_DEFER;
+> >>>>                          pr_info("%s: no vqmmc regulator found\n",
+> >>>>                                  mmc_hostname(mmc));
+> >>>>                          host->vqmmc = NULL;
+> >>>> @@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
+> >>>>          host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
+> >>>>          if (IS_ERR_OR_NULL(host->vmmc)) {
+> >>>>                  if (PTR_ERR(host->vmmc) < 0) {
+> >>>> -                       pr_info("%s: no vmmc regulator found\n",
+> >>>> -                               mmc_hostname(mmc));
+> >>>> +                       if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
+> >>>> +                               return -EPROBE_DEFER;
+> >>>> +                       pr_info("%s: no vmmc regulator found (%d)\n",
+> >>>> +                               mmc_hostname(mmc),
+> >>>> PTR_ERR(host->vmmc));
+> >>>>                          host->vmmc = NULL;
+> >>>>                  }
+> >>>
+> >>> Please change the code to not use IS_ERR_OR_NULL() instead, getting
+> >>> a NULL return value from regulator_get_optional() should not be
+> >>> considered a bug, while getting an error return should always
+> >>> cause the probe function to fail.
+> >
+> > Surely it needs to be changed to IS_ERR(), nor IS_ERR_OR_NULL()?
+> 
+> 
+> And by that, I mean the use of "PTR_ERR(host->vmmc) < 0" to be
+> changed to IS_ERR(), which I think Arnd was originally complaining
+> about.
 
-Hi Mike,
+I mean something like
 
-On 04/07/2014 02:17 PM, Mike Looijmans wrote:
-> On 04/07/2014 07:58 AM, Michal Simek wrote:
->> Hi Soren,
->>
->> On 04/05/2014 01:14 AM, Soren Brinkmann wrote:
->>> Convert all Zynq DT files to the dtc preprocessor include syntax.
->>> This allows to include header files in the devicetrees like other
->>> SoC-types already do.
->>>
->>> Inspired-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
->>> (http://www.spinics.net/lists/arm-kernel/msg319832.html)
->>>
->>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->>
->> These 4 patches needs more wider discussion if this is helpful or
->> not. Currently I can't see any value in it because everything
->> is just generated and fixed. I think I had the same discussion
->> with Laurent some weeks ago regarding this.
->=20
-> I would be kinda neutral here. I'd consider it helpful, it improves rea=
-dability (regardless of whether they=20
-are generated or hand crafted). That's convenient for things like interru=
-pt sensitivity,
-I can't remember whether 4 is level or edge type. On the other hand, the =
-clock indices are just
- as much magic numbers as the memory addresses. If I suspect an error in =
-that area, I'd start by lokking
-in /sys/kernel/debug/clk but wouldn't start in the DT.
->=20
->> IRC the origin idea to use this was especially for people who
->> writing these DTS by hand which is not our case - at least
->> for majority of our customers.
->=20
-> I write them by hand. Is there any other way?
+	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
 
-Device-tree BSP and in 2014.01 there will be new BSP which just generate
-them directly from the Vivado tools which just target your reference desi=
-gn.
-You can connect your custom IP (or Xilinx or 3rd party) directly to the G=
-IC
-which using different IRQ sensitivity with whatever register addresses
-and make no sense to write it by hand.
+	if (IS_ERR(host->vqmmc)) {
+		if (PTR_ERR(host->vqmmc) != -EPROBE_DEFER)
+			complain(); /* only print a message if we won't retry */
+		return ERR_PTR(host->vqmmc); /* never ignore an error */
+	}
+	/* silently continue if no regulator is defined */
 
-Thanks,
-Michal
+regulator_get_optional() means we can continue if it's not there, but
+we should not continue if there is a regulator that we fail to use
+for some reason.
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+As has been found a number of times, any use of IS_ERR_OR_NULL()
+means that the person responsible for the code is confused about
+what the API is supposed to be.
 
-
-
---FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNCmOcACgkQykllyylKDCFmFQCaApJaw6/8TZPhAwpZ8Pw0aI5j
-7QEAn0KeJu/1axANFxaBbBwAr0kNahND
-=svZR
------END PGP SIGNATURE-----
-
---FjHgvRCGHXXBk3uBA4is7JeNubgpQPmD7--
+	Arnd
