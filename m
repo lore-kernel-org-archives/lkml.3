@@ -1,124 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaDGNm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:42:59 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:38159 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaDGNm4 convert rfc822-to-8bit (ORCPT
+	id S1755282AbaDGNqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:46:16 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:51885 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274AbaDGNqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:42:56 -0400
-Date: Mon, 7 Apr 2014 14:42:50 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper
- function.
-Message-ID: <20140407134250.GL17163@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <20140405001953.GE15806@google.com>
- <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
- <5183143.FxBNM0xTAV@wuerfel>
+	Mon, 7 Apr 2014 09:46:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <5183143.FxBNM0xTAV@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 07 Apr 2014 13:43:07.0417 (UTC) FILETIME=[4ECC8890:01CF5267]
-X-MC-Unique: 114040714425400201
+In-Reply-To: <1396834881.11513.41.camel@deadeye.wl.decadent.org.uk>
+References: <lsq.1396827348.486893332@decadent.org.uk> <1396834881.11513.41.camel@deadeye.wl.decadent.org.uk>
+From: Raphael Geissert <geissert@debian.org>
+Date: Mon, 7 Apr 2014 15:45:51 +0200
+X-Google-Sender-Auth: Csz0SputLN0Pn7_1-e9a3vmC-JM
+Message-ID: <CAA7hUgEiAtb_R3_ODpXVgVSVoQvREChjPCL6GyyVTF8VXiYNyg@mail.gmail.com>
+Subject: Re: [PATCH 3.2 17/18] cifs: ensure that uncached writes handle
+ unmapped areas correctly
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, Jeff Layton <jlayton@redhat.com>,
+        Steve French <smfrench@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Pavel Shilovsky <piastry@etersoft.ru>, 741958@bugs.debian.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 12:36:15PM +0100, Arnd Bergmann wrote:
-> On Monday 07 April 2014 09:31:20 Liviu Dudau wrote:
-> > On Sat, Apr 05, 2014 at 01:19:53AM +0100, Bjorn Helgaas wrote:
-> >
-> > > Host bridges on x86 could have MMIO apertures that turn CPU memory accesses
-> > > into PCI port accesses.  We could implement any number of I/O port spaces
-> > > this way, by making the kernel inb()/outb()/etc. interfaces smart enough to
-> > > use the memory-mapped space instead of (or in addition to) the
-> > > INB/OUTB/etc. instructions.
-> 
-> PowerPC actually has this already, as CONFIG_PPC_INDIRECT_PIO meaning that
-> access to PIO registers is bus specific, and there is also CONFIG_PPC_INDIRECT_MMIO
-> for the case where MMIO access is not native.
->  
-> > Right, sorry for my ignorance then: how does *currently* the device driver do
-> > the I/O transfer transparent of the implementation mechanism? Or they have
-> > intimate knowledge of wether the device is behind a host bridge and can do MMIO
-> > or is on an ISA or CF bus and then it needs INB/OUTB ? And if we make inb/outb
-> > smarter, does that mean that we need to change the drivers?
-> 
-> The idea of that would be to not change drivers.
-> 
-> My preference here would be to only have a generic function for those
-> architectures that have the simple MMIO access all the time.
-> 
-> > > ia64 does this (see arch/ia64/include/asm/io.h for a little description)
-> > > and I think maybe one or two other arches have something similar.
-> > > 
-> > > > Introduce a pci_register_io_range() helper function that can be used
-> > > > by the architecture code to keep track of the I/O ranges described by the
-> > > > PCI bindings. If the PCI_IOBASE macro is not defined that signals
-> > > > lack of support for PCI and we return an error.
-> > > 
-> > > I don't quite see how you intend to use this, because this series doesn't
-> > > include any non-stub implementation of pci_register_io_range().
-> > > 
-> > > Is this anything like the ia64 strategy I mentioned above?  If so, it would
-> > > be really nice to unify some of this stuff.
-> > 
-> > After discussions with Arnd and Catalin I know have a new series that moves
-> > some of the code from arm64 series into this one. I am putting it through
-> > testing right know as I am going to have to depend on another series that
-> > makes PCI_IOBASE defined only for architectures that do MMIO in order to
-> > choose the correct default implementation for these functions. My hope is
-> > that I will be able to send the series this week.
-> 
-> I think migrating other architectures to use the same code should be
-> a separate effort from adding a generic implementation that can be
-> used by arm64. It's probably a good idea to have patches to convert
-> arm32 and/or microblaze.
+Hi,
 
-Agree. My updated series only moves the arm64 code into framework to make the
-arm64 part a noop.
+On 7 April 2014 03:41, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Mon, 2014-04-07 at 00:35 +0100, Ben Hutchings wrote:
+>> 3.2.57-rc1 review patch.  If anyone has any objections, please let me know.
+> [...]
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+[...]
+> +               /*
+> +                * i + 1 now represents the number of pages we actually used in
+> +                * the copy phase above.
+> +                */
+> +               npages = min(npages, i + 1);
 
-Liviu
+I'm having trouble understanding why min() is needed here. It
+shouldn't harm either, but I find it confusing.
 
-> 
-> 	Arnd
-> 
-> 
-
+Cheers,
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Raphael Geissert - Debian Developer
+www.debian.org - get.debian.net
