@@ -1,45 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaDGSkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:40:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53207 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523AbaDGSkx (ORCPT
+	id S1755811AbaDGSnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:43:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56459 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaDGSnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:40:53 -0400
-Date: Mon, 7 Apr 2014 20:41:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Austin Schuh <austin@peloton-tech.com>
-cc: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] genirq: Sanitize spurious interrupt detection of threaded
- irqs
-In-Reply-To: <CANGgnMZZu6tX0LyK4mQaYhixY9uhbQYee7XO5_HtNfT0REPghA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1404072040320.14882@ionos.tec.linutronix.de>
-References: <CANGgnMbszHzYe9pF2C6wag4MY_PfBG2qrMCC=rMmQnb-jyXXXw@mail.gmail.com> <52CAB05F.4010303@hartkopp.net> <CANGgnMZZu6tX0LyK4mQaYhixY9uhbQYee7XO5_HtNfT0REPghA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 7 Apr 2014 14:43:00 -0400
+Date: Mon, 07 Apr 2014 14:42:58 -0400 (EDT)
+Message-Id: <20140407.144258.2113005286706932770.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1396898623-31667-1-git-send-email-haiyangz@microsoft.com>
+References: <1396898623-31667-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Apr 2014, Austin Schuh wrote:
 
-> Hi Thomas,
-> 
-> Did anything come of this patch?  Both Oliver and I have found that it
-> fixes real problems.  I have multiple machines which have been running
-> with the patch since December with no ill effects.
-
-No, sorry. It fell through the cracks. Care to resend ?
-
-Thanks,
-
-	tglx
+The net-next tree is not open yet, I will announce when it is and you can submit
+net-next targetted patches.
