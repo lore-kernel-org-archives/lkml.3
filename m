@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946AbaDGJ76 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 05:59:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49963 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510AbaDGJ7z (ORCPT
+	id S1755077AbaDGKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 06:07:25 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36767 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaDGKHU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 05:59:55 -0400
-Message-ID: <53427718.30406@linutronix.de>
-Date: Mon, 07 Apr 2014 11:59:52 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	Mon, 7 Apr 2014 06:07:20 -0400
+Date: Mon, 7 Apr 2014 11:07:15 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
+ pci_host_bridge.
+Message-ID: <20140407100715.GI17163@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
+ <20140405000007.GD15806@google.com>
+ <20140407084623.GG17163@e106497-lin.cambridge.arm.com>
+ <1396862058.3671.40.camel@pasglop>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>, atull@altera.com
-CC: linus.walleij@linaro.org, gnurou@gmail.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dinguyen@altera.com,
-        delicious.quinoa@gmail.com
-Subject: Re: [PATCH 6/7] gpio: dwapb: use a second irq chip
-References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de> <1395505004-22650-7-git-send-email-bigeasy@linutronix.de> <5331F6D5.7070809@gmail.com>
-In-Reply-To: <5331F6D5.7070809@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1396862058.3671.40.camel@pasglop>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 07 Apr 2014 10:07:32.0325 (UTC) FILETIME=[30E22150:01CF5249]
+X-MC-Unique: 114040711071800101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 10:36 PM, Sebastian Hesselbarth wrote:
->> @@ -242,17 +244,28 @@ static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
->>  	irq_gc->reg_base = gpio->regs;
->>  	irq_gc->private = gpio;
->>  
->> -	ct = irq_gc->chip_types;
->> -	ct->chip.irq_ack = irq_gc_ack_set_bit;
->> -	ct->chip.irq_mask = irq_gc_mask_set_bit;
->> -	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
->> -	ct->chip.irq_set_type = dwapb_irq_set_type;
->> -	ct->chip.irq_enable = dwapb_irq_enable;
->> -	ct->chip.irq_disable = dwapb_irq_disable;
->> -	ct->chip.irq_request_resources = dwapb_irq_reqres;
->> -	ct->chip.irq_release_resources = dwapb_irq_relres;
->> -	ct->regs.ack = GPIO_PORTA_EOI;
->> -	ct->regs.mask = GPIO_INTMASK;
->> +	for (i = 0; i < 2; i++) {
->> +
->> +		ct = &irq_gc->chip_types[i];
->> +		ct->chip.irq_ack = irq_gc_ack_set_bit;
->> +		ct->chip.irq_mask = irq_gc_mask_set_bit;
->> +		ct->chip.irq_unmask = irq_gc_mask_clr_bit;
->> +		ct->chip.irq_set_type = dwapb_irq_set_type;
->> +		ct->chip.irq_enable = dwapb_irq_enable;
->> +		ct->chip.irq_disable = dwapb_irq_disable;
->> +		ct->chip.irq_request_resources = dwapb_irq_reqres;
->> +		ct->chip.irq_release_resources = dwapb_irq_relres;
->> +		ct->regs.ack = GPIO_PORTA_EOI;
->> +		ct->regs.mask = GPIO_INTMASK;
->> +
->> +		if (i == 0) {
->> +			ct->type = IRQ_TYPE_LEVEL_MASK;
->> +			ct->handler = handle_level_irq;
->> +		} else {
->> +			ct->type = IRQ_TYPE_EDGE_BOTH;
->> +			ct->handler = handle_edge_irq;
->> +		}
+On Mon, Apr 07, 2014 at 10:14:18AM +0100, Benjamin Herrenschmidt wrote:
+> On Mon, 2014-04-07 at 09:46 +0100, Liviu Dudau wrote:
+> > 
+> > *My* strategy is to get rid of pci_domain_nr(). I don't see why we need
+> > to have arch specific way of providing the number, specially after looking
+> > at the existing implementations that return a value from a variable that
+> > is never touched or incremented. My guess is that pci_domain_nr() was
+> > created to work around the fact that there was no domain_nr maintainance in
+> > the generic code.
 > 
-> Sebastian,
+> Well, there was no generic host bridge structure. There is one now, it should
+> go there.
+
+Exactly! Hence my patch. After it gets accepted I will go through architectures
+and remove their version of pci_domain_nr().
+
+Best regards,
+Liviu
+
 > 
-> IMHO the loop looks strange, especially with the (i == 0) check.
+> Cheers,
+> Ben.
+>  
+> 
+> 
 
-how so?
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-> How about unrolling it again and assign both chip_types independently?
-
-If more code makes you happy so be it. I will post the series soon with
-the loop unrolled.
-
-> Sebastian
-
-Sebastian
