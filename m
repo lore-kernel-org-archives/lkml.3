@@ -1,113 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408AbaDGRAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:00:14 -0400
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:7564 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197AbaDGRAM (ORCPT
+	id S1755440AbaDGRBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:01:06 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:37493 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaDGRBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:00:12 -0400
-Message-ID: <5342D987.5070305@hp.com>
-Date: Mon, 07 Apr 2014 12:59:51 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 7 Apr 2014 13:01:05 -0400
+Date: Mon, 7 Apr 2014 10:01:04 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: torvalds@linux-foundation.org
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Ceph updates
+Message-ID: <alpine.DEB.2.00.1404062303350.11637@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Marcos Matsunaga <Marcos.Matsunaga@oracle.com>
-Subject: Re: [PATCH v8 01/10] qspinlock: A generic 4-byte queue spinlock implementation
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <1396445259-27670-2-git-send-email-Waiman.Long@hp.com> <20140404130012.GE10526@twins.programming.kicks-ass.net> <20140404165727.GQ19478@phenom.dumpdata.com> <533EE700.4080408@hp.com> <20140407140953.GK10526@twins.programming.kicks-ass.net>
-In-Reply-To: <20140407140953.GK10526@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 10:09 AM, Peter Zijlstra wrote:
-> On Fri, Apr 04, 2014 at 01:08:16PM -0400, Waiman Long wrote:
->> Peter's patch is a rewrite of my patches 1-4, there is no PV or unfair lock
->> support in there.
-> Yes, because your patches were unreadable and entirely non obvious.
->
-> And while I appreciate that its not entirely your fault; the subject is
-> hard, you didn't even try to make it better and explain things in a
-> normal gradual fashion.
->
-> So what I did was start with a 'simple' correct implementation (although
-> I could have started simpler still I suppose and added 3-4 more patches)
-> and then added each optimization on top and explained the what and why
-> for them.
->
-> The result is similar code, but the path is ever so much easier to
-> understand and review.
+Hi Linus,
 
-I appreciate your time in rewriting the code to make it easier to 
-review. I will based my next patch on your rewrite. However, I am going 
-to make the following minor changes:
+Please pull the following Ceph updates from
 
-1. I would like to series to be compilable with tip/master and v3.15-rc. 
-Your patches seem to use some constants like __BYTE_ORDER__ that are not 
-defined there. I will make change that to make them compilable on top of 
-the latest upstream code.
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-2. Your patch uses atomic_test_and_set_bit to set the pending bit. I 
-would prefer to use atomic_cmpxchg() which will ensure that the pending 
-bit won't be set when some other tasks are already on the queue. This 
-will also enable me to allow the simple setting of the lock bit without 
-using atomic instruction. This change doesn't change performance that 
-much when I tested it on Westmere. But on IvyBridge, it had a pretty big 
-performance impact.
+The biggest chunk is a series of patches from Ilya that add support for 
+new Ceph osd and crush map features, including some new tunables, primary 
+affinity, and the new encoding that is needed for erasure coding support.  
+This brings things into parity with the server side and the looming 
+firefly release.  There is also support for allocation hints in RBD that 
+help limit fragmentation on the server side.
 
-3. I doubt it is a good idea for the queue head to use atomic_cmpxchg() 
-to pound on the lock cacheline repeatedly in the waiting loop. It will 
-make it much harder for the lock holder to access the lock cacheline. I 
-will use a simple atomic_read to query the status of the lock before 
-doing any write on it.
+There is also a series of patches from Zheng fixing NFS reexport, 
+directory fragmentation support, flock vs fnctl behavior, and some issues 
+with clustered MDS.
+
+Finally, there are some miscellaneous fixes from Yunchuan Wen for 
+fscache, Fabian Frederick for ACLs, and from me for fsync(dirfd) 
+behavior.
+
+Thanks-
+sage
 
 
->
-> And no, it doesn't have PV support; I spend the whole week trying to
-> reverse engineer your patch 1; whereas if you'd presented it in the form
-> I posted I might have agreed in a day or so.
->
-> I still have to look at the PV bits; but seeing how you have shown no
-> interest in writing coherent and understandable patch sets I'm less
-> inclined to go stare at them for another few weeks and rewrite that code
-> too.
->
-> Also; theres a few subtle but important differences between the patch
-> sets. Your series only makes x86_64 use the qspinlocks; the very last we
-> want is i386 and x86_64 to use different spinlock implementations; we
-> want less differences between them, not more.
+----------------------------------------------------------------
+Fabian Frederick (1):
+      ceph: Remove get/set acl on symlinks
 
-I have no problem of making qspinlock the default for all x86 code.
+Ilya Dryomov (48):
+      libceph: a per-osdc crush scratch buffer
+      rbd: remove out_partial label in rbd_img_request_fill()
+      rbd: fix error paths in rbd_img_request_fill()
+      libceph: encode CEPH_OSD_OP_FLAG_* op flags
+      libceph: add support for CEPH_OSD_OP_SETALLOCHINT osd op
+      libceph: bump CEPH_OSD_MAX_OP to 3
+      rbd: num_ops parameter for rbd_osd_req_create()
+      rbd: prefix rbd writes with CEPH_OSD_OP_SETALLOCHINT osd op
+      crush: fix off-by-one errors in total_tries refactor
+      crush: allow crush rules to set (re)tries counts to 0
+      crush: add chooseleaf_vary_r tunable
+      crush: add SET_CHOOSELEAF_VARY_R step
+      crush: support chooseleaf_vary_r tunable (tunables3) by default
+      libceph: refer to osdmap directly in osdmap_show()
+      libceph: do not prefix osd lines with \t in debugfs output
+      libceph: dump pg_temp mappings to debugfs
+      libceph: dump osdmap and enhance output on decode errors
+      libceph: split osdmap allocation and decode steps
+      libceph: fixup error handling in osdmap_decode()
+      libceph: safely decode max_osd value in osdmap_decode()
+      libceph: check length of osdmap osd arrays
+      libceph: fix crush_decode() call site in osdmap_decode()
+      libceph: fixup error handling in osdmap_apply_incremental()
+      libceph: nuke bogus encoding version check in osdmap_apply_incremental()
+      libceph: fix and clarify ceph_decode_need() sizes
+      libceph: rename __decode_pool{,_names}() to decode_pool{,_names}()
+      libceph: introduce decode{,_new}_pools() and switch to them
+      libceph: switch osdmap_set_max_osd() to krealloc()
+      libceph: introduce decode{,_new}_pg_temp() and switch to them
+      libceph: introduce get_osdmap_client_data_v()
+      libceph: generalize ceph_pg_mapping
+      libceph: primary_temp infrastructure
+      libceph: primary_temp decode bits
+      libceph: primary_affinity infrastructure
+      libceph: primary_affinity decode bits
+      libceph: enable OSDMAP_ENC feature bit
+      libceph: ceph_osd_{exists,is_up,is_down}(osd) definitions
+      libceph: ceph_can_shift_osds(pool) and pool type defines
+      libceph: introduce pg_to_raw_osds() and raw_to_up_osds() helpers
+      libceph: introduce apply_temps() helper
+      libceph: switch ceph_calc_pg_acting() to new helpers
+      libceph: return primary from ceph_calc_pg_acting()
+      libceph: add support for primary_temp mappings
+      libceph: add support for osd primary affinity
+      libceph: redo ceph_calc_pg_primary() in terms of ceph_calc_pg_acting()
+      libceph: enable PRIMARY_AFFINITY feature bit
+      libceph: output primary affinity values on osdmap updates
+      libceph: dump pool {read,write}_tier to debugfs
 
->
-> You stuff a whole lot of code into arch/x86 for no reason what so ever.
->
-> Prior to that; I also rewrote your benchmark thing; using jiffies for
-> timing is just vile. Not to mention you require a full kernel build and
-> reboot (which is just stupid slow on big machines) to test anything.
+Sage Weil (4):
+      ceph: avoid useless ceph_get_dentry_parent_inode() in ceph_rename()
+      ceph: do not chain inode updates to parent fsync
+      ceph: do not assume r_old_dentry[_dir] always set together
+      ceph: do not set r_old_dentry_dir on link()
 
-Yes, using jiffies isn't the best idea, it is just an easier way. BTW, I 
-don't need to reboot the machine to run my test, I only need to build 
-the .ko file and use insmod to insert into the running kernel. When it 
-is done, rmmod can be used to remove it. I do need to rebuild the kernel 
-when I make changes to the qspinlock patch.
+Yan, Zheng (23):
+      ceph: fix ceph_dir_llseek()
+      ceph: fix reset_readdir()
+      ceph: let MDS adjust readdir 'frag'
+      ceph: simplify ceph_fh_to_dentry()
+      ceph: add get_parent() NFS export callback
+      ceph: fix ceph_fh_to_parent()
+      ceph: add get_name() NFS export callback
+      ceph: print inode number for LOOKUPINO request
+      ceph: make sure write caps are registered with auth MDS
+      ceph: update i_max_size even if inode version does not change
+      ceph: use fl->fl_type to decide flock operation
+      ceph: forbid mandatory file lock
+      ceph: use fl->fl_file as owner identifier of flock and posix lock
+      ceph: set mds_wanted when MDS reply changes a cap to auth cap
+      libceph: fix oops in ceph_msg_data_{pages,pagelist}_advance()
+      ceph: fix null pointer dereference in discard_cap_releases()
+      ceph: check buffer size in ceph_vxattrcb_layout()
+      ceph: don't include ceph.{file,dir}.layout vxattr in listxattr()
+      ceph: preallocate buffer for readdir reply
+      ceph: drop extra open file reference in ceph_atomic_open()
+      ceph: don't grabs open file reference for aborted request
+      ceph: flush cap release queue when trimming session caps
+      ceph: skip invalid dentry during dcache readdir
 
--Longman
+Yunchuan Wen (3):
+      ceph: fscache: add an interface to synchronize object store limit
+      ceph: fscache: Update object store limit after file writing
+      ceph: fscache: Wait for completion of object initialization
+
+ drivers/block/rbd.c                |   87 +++-
+ fs/ceph/cache.c                    |    1 +
+ fs/ceph/cache.h                    |   10 +
+ fs/ceph/caps.c                     |    9 +-
+ fs/ceph/debugfs.c                  |    5 +-
+ fs/ceph/dir.c                      |   53 +-
+ fs/ceph/export.c                   |  267 +++++-----
+ fs/ceph/file.c                     |    8 +-
+ fs/ceph/inode.c                    |   76 ++-
+ fs/ceph/ioctl.c                    |    5 +-
+ fs/ceph/locks.c                    |   98 ++--
+ fs/ceph/mds_client.c               |   97 +++-
+ fs/ceph/mds_client.h               |    4 +-
+ fs/ceph/strings.c                  |    1 +
+ fs/ceph/super.c                    |    1 +
+ fs/ceph/super.h                    |    3 +-
+ fs/ceph/xattr.c                    |   48 +-
+ include/linux/ceph/ceph_features.h |   12 +-
+ include/linux/ceph/ceph_fs.h       |    5 +-
+ include/linux/ceph/osd_client.h    |   11 +-
+ include/linux/ceph/osdmap.h        |   50 +-
+ include/linux/ceph/rados.h         |   18 +-
+ include/linux/crush/crush.h        |    7 +
+ net/ceph/crush/mapper.c            |   85 ++-
+ net/ceph/debugfs.c                 |   55 +-
+ net/ceph/messenger.c               |    6 +
+ net/ceph/osd_client.c              |   41 +-
+ net/ceph/osdmap.c                  |  993 ++++++++++++++++++++++++++----------
+ 28 files changed, 1421 insertions(+), 635 deletions(-)
