@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaDGBe7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 21:34:59 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:14903 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaDGBey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 21:34:54 -0400
-X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTz+DSIfqHRQ==
-X-RZG-CLASS-ID: mo05
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH] staging: rtl8187se: Fix warning symbol should be static
-Date: Mon, 7 Apr 2014 01:34:42 +0000
-User-Agent: KMail/1.13.7 (Linux/3.14-0.slh.1-aptosid-686; KDE/4.8.4; i686; ; )
-Cc: Josh Triplett <josh@joshtriplett.org>, Jonas Hahnfeld <hahnjo@hahnjo.de>,
-        devel@driverdev.osuosl.org,
-        "Andreea-Cristina Bernat" <bernat.ada@gmail.com>,
-        Andrea Merello <andrea.merello@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Ana Rey <anarey@gmail.com>, linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Teodora Baluta <teobaluta@gmail.com>,
-        Dan LaManna <dan.lamanna@gmail.com>,
-        Pablo Neira Ayuso <pablo@gnumonks.org>
-References: <1396799183-7412-1-git-send-email-hahnjo@hahnjo.de> <20140406160903.GA8114@leaf>
-In-Reply-To: <20140406160903.GA8114@leaf>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404070134.46030.s.L-H@gmx.de>
+	id S1754732AbaDGBhR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 21:37:17 -0400
+Received: from ozlabs.org ([203.10.76.45]:47160 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753111AbaDGBhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 21:37:15 -0400
+Date: Mon, 7 Apr 2014 11:37:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Bruce Fields <bfields@fieldses.org>, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [GIT PULL] please pull file locking changes for 3.15
+Message-Id: <20140407113706.d213ca01fed70e3367611197@canb.auug.org.au>
+In-Reply-To: <20140404205624.521f67d5@ipyr.poochiereds.net>
+References: <20140331093120.10aeaba6@tlielax.poochiereds.net>
+	<CA+55aFy_o-wDrbQSRnrThGqo8mcBS-pVXM6Kj0LqH8PzRr_0Kw@mail.gmail.com>
+	<20140404205624.521f67d5@ipyr.poochiereds.net>
+X-Mailer: Sylpheed 3.4.0 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__7_Apr_2014_11_37_06_+1000_gJOEa_kywauN8iLA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+--Signature=_Mon__7_Apr_2014_11_37_06_+1000_gJOEa_kywauN8iLA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sunday 06 April 2014, Josh Triplett wrote:
-> On Sun, Apr 06, 2014 at 05:46:04PM +0200, Jonas Hahnfeld wrote:
-> > This patch solves some sparse warnings about "symbol [...] was not
-> > declared. Should it be static?" by including the correct header files.
-> > 
-> > Signed-off-by: Jonas Hahnfeld <hahnjo@hahnjo.de>
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-[...]
+Hi Jeff,
 
-Given that that rtl8187se support has already been merged mainline (for
-3.15-rc1) into the existing rtl8180 (soon to be renamed to rtl818x) 
-driver, wouldn't it make more sense to remove 
-drivers/staging/rtl8187se/ rather than trying to fixing it?
+On Fri, 4 Apr 2014 20:56:24 -0400 Jeff Layton <jlayton@redhat.com> wrote:
+>
+> Thanks for the feedback and for pulling this in anyway. I'll make sure
+> to do all of that on subsequent pull requests.
 
-commit 1eba648f998ef9c31b8cf062754a4a7b4ab9001f
-Author: Andrea Merello <andrea.merello@gmail.com>
-Date:   Wed Mar 26 21:04:23 2014 +0100
+Also, please don't rebase what you have in linux-next before sending it to
+Linus (without good reason).  Especially if you then leave the linux-next
+included branch as it was - since that may cause conflicts in my tree
+(and so I notice the rebase).
 
-    rtl8180: enable rtl8187se support
-    
-    Finally make rtl8187se works (hopefylly).
-    This patch adds PCI ID for rtl8187, updates copyright notes and
-    updates MODULE_DESCRIPTION.
-    
-    Signed-off-by: Andrea Merello <andrea.merello@gmail.com>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Regards
-	Stefan Lippers-Hollmann
+--Signature=_Mon__7_Apr_2014_11_37_06_+1000_gJOEa_kywauN8iLA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTQgFHAAoJEMDTa8Ir7ZwVia4P/j0c6tgxhw4uAk8RJYYRZ35g
+7zrmUS4X3Ijm2CTRob90omPqscjPAIyArOzWFBs2b22SR24pR86nhZkUya6kXCfK
+doJz6RoOEdUyuPV3izLeKL63SG1nFjOxk0vvPCBbzp7U3+M//KYz/dsGNGbhfDeq
+pIAbbCReQ3U/SUOALDVUE08XSpoYnbOD3xvAp+MWz/ct5nxKfLY2PVYEy2ExIWpI
+O3Lv5pJYKXgj/xafBKgnafcC8cYR50u793tbTyCBJocg5bOERHfAeNi3aERuQlxD
+P3vsPryIYvrzc7X4ObDNRQcE/jrbedsAhzaTQBOhwKPXAWxlisr7KdY2tiGBmPsb
+Zw9uxmFp/XeV/lxKgTShgxFnWwlAPoGMPNvJbeJOwpjE22hCuhJ3Ee2yRu2JVZ0Y
+3qgjvTQd4LBTacZj4dBwHZyz2xjuhsJqINYdH0yt8OoUJjQ50+AjZRXT3FqhKwGB
+x8CPv0CbwsQUmYUoUBk776KcFnSkoE1bD46IVUDtZNNpjPEN1KeUZoIeZdf2gveX
+svNuRfDv5gm7juhEk5vF+TrMdjyLsLFWxo36oA3/FpfxSEghK8Z+om0C89SR866D
+vHhVAHUPPcIXH8yd04NPMMLoSnJWNZoEbaB0MpIojptL3i6OTqEn+zvcZQ4QXrmH
+gKhpXzzcvbVvkivtg153
+=oz8F
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__7_Apr_2014_11_37_06_+1000_gJOEa_kywauN8iLA--
