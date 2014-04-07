@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295AbaDGPjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:39:49 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:4505
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751946AbaDGPjq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:39:46 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI9371Ic89bh936eI1432Izz1f42h2148h1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz8275ch1de098h17326ah8275bh1de097h186068hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
-Date: Mon, 7 Apr 2014 08:39:34 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-CC: <monstr@monstr.eu>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
- <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
- <53423E75.3020008@monstr.eu>
- <53429754.8080105@topic.nl>
-MIME-Version: 1.0
+	id S1755332AbaDGPk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:40:57 -0400
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:10356
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754142AbaDGPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 11:40:53 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH 1/1] x86/platform/hyperv: When on Hyper-v use NULL
+ legacy PIC
+Thread-Topic: [PATCH 1/1] x86/platform/hyperv: When on Hyper-v use NULL
+ legacy PIC
+Thread-Index: AQHPT5v0hZTrqe/+3EGIeADAdCnXXZsFwH8AgACPmpA=
+Date: Mon, 7 Apr 2014 15:40:49 +0000
+Message-ID: <a8ff34891ad5483ca21a649478db8d3a@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1396574193-12043-1-git-send-email-kys@microsoft.com>
+ <20140407070612.GA7168@aepfle.de>
+In-Reply-To: <20140407070612.GA7168@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.160.40]
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0174BD4BDA
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(24454002)(51704005)(13464003)(199002)(189002)(99396002)(74366001)(76796001)(19580405001)(81342001)(19580395003)(83322001)(74316001)(97336001)(83072002)(81542001)(74876001)(85852003)(74706001)(76576001)(76786001)(2656002)(59766001)(85306002)(77982001)(79102001)(94316002)(31966008)(74502001)(74662001)(47446002)(4396001)(87266001)(56816005)(86362001)(90146001)(94946001)(46102001)(81816001)(81686001)(47976001)(50986001)(95416001)(69226001)(20776003)(80976001)(33646001)(66066001)(63696002)(98676001)(87936001)(97186001)(95666003)(92566001)(93516002)(93136001)(53806001)(76482001)(47736001)(49866001)(80022001)(54356001)(56776001)(65816001)(54316002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:8CCCF502.1C9F4D12.36F0CB3C.5F61B978.2012C;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
 Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <53429754.8080105@topic.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <8db0b480-2c27-4f97-8712-e16fd39d4159@CH1EHSMHS038.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s37Ff5k9005039
 
-On Mon, 2014-04-07 at 02:17PM +0200, Mike Looijmans wrote:
-> On 04/07/2014 07:58 AM, Michal Simek wrote:
-> >Hi Soren,
-> >
-> >On 04/05/2014 01:14 AM, Soren Brinkmann wrote:
-> >>Convert all Zynq DT files to the dtc preprocessor include syntax.
-> >>This allows to include header files in the devicetrees like other
-> >>SoC-types already do.
-> >>
-> >>Inspired-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-> >>(http://www.spinics.net/lists/arm-kernel/msg319832.html)
-> >>
-> >>Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> >
-> >These 4 patches needs more wider discussion if this is helpful or
-> >not. Currently I can't see any value in it because everything
-> >is just generated and fixed. I think I had the same discussion
-> >with Laurent some weeks ago regarding this.
+
+
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Monday, April 7, 2014 12:06 AM
+> To: KY Srinivasan
+> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; apw@canonical.com;
+> jasowang@redhat.com; hpa@zytor.com; stable@vger.kernel.org
+> Subject: Re: [PATCH 1/1] x86/platform/hyperv: When on Hyper-v use NULL
+> legacy PIC
 > 
-> I would be kinda neutral here. I'd consider it helpful, it improves
-> readability (regardless of whether they are generated or hand
-> crafted). That's convenient for things like interrupt sensitivity, I
-> can't remember whether 4 is level or edge type. On the other hand,
-> the clock indices are just as much magic numbers as the memory
-> addresses. If I suspect an error in that area, I'd start by lokking
-> in /sys/kernel/debug/clk but wouldn't start in the DT.
+> On Thu, Apr 03, K. Y. Srinivasan wrote:
+> 
+> > +		printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
+> 
+> Maybe this printk can be removed as well, unless its valuable info.
 
-I agree. Readability is better this way. And whether our generator spits
-out magic numbers of these symbolic names should not be a big
-difference, is it?
+I will take a look at this.
 
-	S√∂ren
-
-
+K. Y
+> 
+> Olaf
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
