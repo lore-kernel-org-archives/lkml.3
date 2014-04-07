@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbaDGF6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 01:58:21 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:45433 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653AbaDGF6R (ORCPT
+	id S1754851AbaDGGCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 02:02:31 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:54857 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaDGGC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 01:58:17 -0400
-Message-ID: <53423E75.3020008@monstr.eu>
-Date: Mon, 07 Apr 2014 07:58:13 +0200
+	Mon, 7 Apr 2014 02:02:27 -0400
+Message-ID: <53423F6F.5010504@monstr.eu>
+Date: Mon, 07 Apr 2014 08:02:23 +0200
 From: Michal Simek <monstr@monstr.eu>
 Reply-To: monstr@monstr.eu
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, devicetree@vger.kernel.org,
-        Mike Looijmans <mike.looijmans@topic.nl>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com> <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+CC: Sylwester Nawrocki <s.nawrocki@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, chow.kim@samsung.com,
+        Young-Gun Jang <yg1004.jang@samsung.com>
+Subject: Re: [PATCH 06/10] ARM: EXYNOS: Add support for mapping PMU base address
+ via DT
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com> <533BF905.6070701@samsung.com> <533BFF69.1060701@monstr.eu> <533D24D6.2030103@samsung.com> <533FE1BC.7050300@samsung.com>
+In-Reply-To: <533FE1BC.7050300@samsung.com>
 X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
  protocol="application/pgp-signature";
- boundary="Em4kOlMHxFWq8CivwK7RXajGwODQUH4Qj"
+ boundary="gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Em4kOlMHxFWq8CivwK7RXajGwODQUH4Qj
+--gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-Hi Soren,
-
-On 04/05/2014 01:14 AM, Soren Brinkmann wrote:
-> Convert all Zynq DT files to the dtc preprocessor include syntax.
-> This allows to include header files in the devicetrees like other
-> SoC-types already do.
+On 04/05/2014 12:58 PM, Pankaj Dubey wrote:
+> On 04/03/2014 06:07 PM, Sylwester Nawrocki wrote:
+>> On 02/04/14 14:15, Michal Simek wrote:
+>>>> There were some patches posted for syscon to make it available in ea=
+rlier
+>>>> system initialization stage: https://lkml.org/lkml/2014/2/19/218
+>>> I haven't finished this yet. I have to look at it again.
+>> Thanks for the information, I assume this would be also useful
+>> on the Exynos SoC series, so I'd be happy to see continuation
+>> of those works.
 >=20
-> Inspired-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-> (http://www.spinics.net/lists/arm-kernel/msg319832.html)
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> It is useful for Exynos SoC series and I have modified this patch serie=
+s to use early syscon
+> initialization API and I can see it's working.
+> I have some observation for early initialization of syscon API which I =
+will
+> update in corresponding message thread.
 
-These 4 patches needs more wider discussion if this is helpful or
-not. Currently I can't see any value in it because everything
-is just generated and fixed. I think I had the same discussion
-with Laurent some weeks ago regarding this.
-IRC the origin idea to use this was especially for people who
-writing these DTS by hand which is not our case - at least
-for majority of our customers.
+Great. Please update that thread we should finish this implementation
+to be useful for everybody.
 
 Thanks,
 Michal
@@ -71,7 +69,7 @@ Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
---Em4kOlMHxFWq8CivwK7RXajGwODQUH4Qj
+--gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -80,9 +78,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.10 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iEYEARECAAYFAlNCPnUACgkQykllyylKDCGCSACeK3V3uvNpObjzC52MLzfNfvAd
-Gr4An213/PmlDoHPJpV1XkmQN5/R40wI
-=0uHS
+iEYEARECAAYFAlNCP28ACgkQykllyylKDCEAygCfQXdUMqZAYvviJyhWQsglE87a
+8xQAn0dkthqUz7uIx9Hm99SxWewBojNb
+=mtGD
 -----END PGP SIGNATURE-----
 
---Em4kOlMHxFWq8CivwK7RXajGwODQUH4Qj--
+--gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI--
