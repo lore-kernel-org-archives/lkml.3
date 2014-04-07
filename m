@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbaDGSQs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:16:48 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:47700 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755819AbaDGSQp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:16:45 -0400
-Message-ID: <5342EB8A.5060607@fb.com>
-Date: Mon, 7 Apr 2014 12:16:42 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755892AbaDGSRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:17:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57735 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755819AbaDGSQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 14:16:56 -0400
+Date: Mon, 7 Apr 2014 14:16:18 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com, peterz@infradead.org,
+        eranian@google.com, andi.kleen@intel.com
+Subject: Re: [PATCH 06/15 V3] perf, c2c: Add in new options to configure
+ latency and stores
+Message-ID: <20140407181618.GD5328@redhat.com>
+References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+ <1395689826-215033-7-git-send-email-dzickus@redhat.com>
+ <20140329171138.GF2022@krava.redhat.com>
+ <20140401025535.GT25953@redhat.com>
+ <20140406131422.GL1164@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: <dm-devel@redhat.com>, <mpatocka@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: block: use kmalloc alignment for bio slab
-References: <1396461856-27243-1-git-send-email-snitzer@redhat.com> <20140407181550.GA30132@redhat.com>
-In-Reply-To: <20140407181550.GA30132@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-07_02:2014-04-07,2014-04-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=0.000422209101481941 kscore.compositescore=0
- circleOfTrustscore=52.5391723400099 compositescore=0.998981209195878
- urlsuspect_oldscore=0.998981209195878 suspectscore=1
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998981209195878 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404070158
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140406131422.GL1164@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 12:15 PM, Mike Snitzer wrote:
-> On Wed, Apr 02 2014 at  2:04pm -0400,
-> Mike Snitzer <snitzer@redhat.com> wrote:
->
->> From: Mikulas Patocka <mpatocka@redhat.com>
->>
->> Various subsystems can ask the bio subsystem to create a bio slab cache
->> with some free space before the bio.  This free space can be used for any
->> purpose.  Device mapper uses this per-bio-data feature to place some
->> target-specific and device-mapper specific data before the bio, so that
->> the target-specific data doesn't have to be allocated separately.
->>
->> This per-bio-data mechanism is used in place of kmalloc, so we need the
->> allocated slab to have the same memory alignment as memory allocated
->> with kmalloc.
->>
->> Change bio_find_or_create_slab() so that it uses ARCH_KMALLOC_MINALIGN
->> alignment when creating the slab cache.  This is needed so that dm-crypt
->> can use per-bio-data for encryption - the crypto subsystem assumes this
->> data will have the same alignment as kmalloc'ed memory.
->>
->> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
->> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
->
-> Hey Jens,
->
-> Just wanted to give you a heads up that I staged this patch in
-> linux-dm.git's 'for-next', here:
-> https://urldefense.proofpoint.com/v1/url?u=https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h%3Dfor-next%26id%3Dcd433c25f43eb054f62b7b48f1d0349f65b1740c&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=3JMVyziIyZtZ5cv9eWNLwQ%3D%3D%0A&m=yu%2BvHiMLQp0QZVW7KCcxC6XDci1OzHP9ymRaDDIROdk%3D%0A&s=7ac8f47451490f80d8bacbef2487bfa43c0d7c9a1c968558010f06f92e20caca
->
-> I rebased it to add this yesterday:
-> Acked-by: Jens Axboe <axboe@fb.com> # via private exchange on facebook
->
-> I put this in place because there is a chance I'll still be sending the
-> improved dm-crypt parallelization patches to Linus for 3.15 this week.
-> So having this go through linux-dm.git saves the awkward coordination
-> where otherwise DM would be depending on the block tree.
->
-> You OK with this?
+On Sun, Apr 06, 2014 at 03:14:22PM +0200, Jiri Olsa wrote:
+> On Mon, Mar 31, 2014 at 10:55:35PM -0400, Don Zickus wrote:
+> > On Sat, Mar 29, 2014 at 06:11:38PM +0100, Jiri Olsa wrote:
+> > > On Mon, Mar 24, 2014 at 03:36:57PM -0400, Don Zickus wrote:
+> > > > Modified the code to allow latency settings to be tweaked on the command line
+> > > > and also the ability to dynamically profile stores (or disable using stores).
+> > > > 
+> > > > This allows the tool to be used on older Intel platforms like Westmere.
+> > > > 
+> > > > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > > > ---
+> > > 
+> > > SNIP
+> > > 
+> > > > @@ -316,6 +369,12 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+> > > >  	};
+> > > >  	const struct option c2c_options[] = {
+> > > >  	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
+> > > > +	OPT_INTEGER('l', "latency-level", &lat_level,
+> > > > +		 "specify the latency threshold for loads [default=30]"),
+> > > > +	OPT_INTEGER('p', "precision-level", &prec_level,
+> > > > +		 "specify the precision level of events (0,1,2,3) [default=1]"),
+> > > 
+> > > could we get also option for user space modifier?
+> > 
+> > You mean the 'u' modifier, ie cpu/mem-loads/u ?  If so, then I can do that
+> > but will that work with the -a option (which is hardcoded in the c2c
+> > tool [system-wide mode])?
+> 
+> right, forgot about that.. could the -a option be optional as well?
+> probably the same way as for record would be the best:
+> 
+>   perf c2c record ./foo       # workload specific
+>   perf c2c record -a sleep 3  # system wide
 
-Yeah, that's fine.
+I understand what you are saying, but our tool was written to find cache
+contention across the system, so -a is usually implied.  Most of our
+profiling is done system-wide.  I would rather implement the opposite
+option --no-system-wide, if that is ok.
 
--- 
-Jens Axboe
-
+Cheers,
+Don
