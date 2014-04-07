@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970AbaDGWIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:08:40 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:42841 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919AbaDGWIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:08:37 -0400
+	id S1756043AbaDGWJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:09:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59444 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755138AbaDGWJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 18:09:53 -0400
+Message-ID: <5343220A.3060007@zytor.com>
+Date: Mon, 07 Apr 2014 15:09:14 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1396630873-17372-1-git-send-email-sasha.levin@oracle.com>
-References: <1396630873-17372-1-git-send-email-sasha.levin@oracle.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 7 Apr 2014 15:08:15 -0700
-Message-ID: <CAK5ve-KGQJbWPO0N6rWJG4Z+aoEtr4+Whv5UkVCVyk8PzjNyvw@mail.gmail.com>
-Subject: Re: [PATCH] leds: make sure we unregister a trigger only once
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Adam Williamson <awilliam@redhat.com>
+CC: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+References: <20140404064120.GB11877@gmail.com>		<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>		<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>		<20140404151359.GB12370@srcf.ucam.org>	 <20140406184023.1e31412d@alan.etchedpixels.co.uk>	 <53419F84.2090204@zytor.com> <53425B2A.10001@linux.intel.com>	 <53431296.10502@zytor.com> <1396908292.4958.24.camel@adam.happyassassin.net>
+In-Reply-To: <1396908292.4958.24.camel@adam.happyassassin.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 10:01 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Currently, we may attempt to unregister a trigger more than once, for
-> example when we receive two consecutive reboot notifications, or when
-> we do a regular unregistration plus reboot notification.
->
-> This leads to the following error since we try to delete the list node
-> twice:
->
-> [ 2780.254922] WARNING: CPU: 0 PID: 13764 at lib/list_debug.c:53 __list_del_entry+0x3e/0xe0()
-> [ 2780.265559] list_del corruption, ffffffffa5eb6470->next is LIST_POISON1 (dead000000100100)
-> [ 2780.271710] Modules linked in:
-> [ 2780.274156] CPU: 0 PID: 13764 Comm: kworker/0:2 Tainted: G        W     3.14.0-next-20140403-sasha-00012-gef5fa7d-dirty #373
-> [ 2780.283063] Workqueue: events do_poweroff
-> [ 2780.285644]  0000000000000009 ffff8800330dbb38 ffffffffa34bfa33 0000000000002fe0
-> [ 2780.291571]  ffff8800330dbb88 ffff8800330dbb78 ffffffffa015a37c ffff8800330dbb68
-> [ 2780.296670]  ffffffffa5eb6470 0000000000000000 ffffffffa5eb6400 ffffffffa5ad7430
-> [ 2780.299756] Call Trace:
-> [ 2780.301530] dump_stack (lib/dump_stack.c:52)
-> [ 2780.303802] warn_slowpath_common (kernel/panic.c:418)
-> [ 2780.306151] warn_slowpath_fmt (kernel/panic.c:433)
-> [ 2780.308156] __list_del_entry (lib/list_debug.c:51 (discriminator 1))
-> [ 2780.310800] list_del (lib/list_debug.c:78)
-> [ 2780.313175] led_trigger_unregister (drivers/leds/led-triggers.c:225)
-> [ 2780.315599] heartbeat_reboot_notifier (drivers/leds/trigger/ledtrig-heartbeat.c:119)
-> [ 2780.317247] notifier_call_chain (kernel/notifier.c:95)
-> [ 2780.320014] __blocking_notifier_call_chain (kernel/notifier.c:316)
-> [ 2780.323263] blocking_notifier_call_chain (kernel/notifier.c:326)
-> [ 2780.326096] kernel_power_off (include/linux/kmod.h:95 kernel/reboot.c:153 kernel/reboot.c:179)
-> [ 2780.327883] do_poweroff (kernel/power/poweroff.c:23)
-> [ 2780.330748] process_one_work (kernel/workqueue.c:2221 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2226)
-> [ 2780.333027] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
-> [ 2780.335487] process_scheduled_works (include/linux/list.h:188 kernel/workqueue.c:2277)
-> [ 2780.337101] worker_thread (kernel/workqueue.c:2352)
-> [ 2780.338712] ? rescuer_thread (kernel/workqueue.c:2297)
-> [ 2780.341326] kthread (kernel/kthread.c:219)
-> [ 2780.343446] ? kthread_create_on_node (kernel/kthread.c:185)
-> [ 2780.345733] ret_from_fork (arch/x86/kernel/entry_64.S:555)
-> [ 2780.347168] ? kthread_create_on_node (kernel/kthread.c:185)
->
-> Prevent it by making sure we don't attempt to unregister a trigger that
-> is not in the triggers list.
->
+On 04/07/2014 03:04 PM, Adam Williamson wrote:
+> 
+> So if I'm following correctly, we should be able to sort the methods
+> into three buckets:
+> 
+> 1) known to (almost) always be 'safe'
+> 2) may cause system freeze if they fail
+> 3) definitely cause system freeze if they fail
+> 
+> We put the methods from bucket 1) first, in whichever order makes the
+> most sense. Then we put any methods from bucket 2), in an order derived
+> from some kind of likelihood of success / likelihood of hang on fail
+> calculation. And at the end we can put precisely *one* method from
+> bucket 3, which should obviously be the one most likely to succeed on
+> the most systems which haven't already worked with one of the other
+> methods. We can't have more than one bucket 3) method, it just doesn't
+> make sense.
+> 
 
-Looks good to me literally, could you please provide some simple test
-case for me? I need verify it on my side.
+Nice idea, but wrong.  The problem is that you have to consider the
+probability of success vs failure of the type 2 & 3 methods, and what is
+a regression or not.
 
-Thanks,
--Bryan
+> It sounds like at least TRIPLE and BIOS are 'bucket 3' methods, so it
+> seems like we have to pick which of the two we think is most useful, put
+> it last, and not have the other one. Of the new methods it sounds like
+> EFI is 'bucket 1', BIOS is 'bucket 3', and CF9 is 'bucket 2'.
+> 
+> so, it sounds like...
+> 
+> 1) ACPI
+> 2) KEYBOARD
+> 3) ACPI
+> 4) KEYBOARD
+> 5) EFI
+> possibly 6) CF9
+> 7) TRIPLE *or* BIOS
+> 
+> is what you would say makes sense, right? And really all there is to
+> decide is whether to include CF9, and whether to put TRIPLE or BIOS at
+> the end?
+> 
 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  drivers/leds/led-triggers.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
-> index df1a7c1..c3734f1 100644
-> --- a/drivers/leds/led-triggers.c
-> +++ b/drivers/leds/led-triggers.c
-> @@ -219,9 +219,12 @@ void led_trigger_unregister(struct led_trigger *trig)
->  {
->         struct led_classdev *led_cdev;
->
-> +       if (list_empty_careful(&trig->next_trig))
-> +               return;
-> +
->         /* Remove from the list of led triggers */
->         down_write(&triggers_list_lock);
-> -       list_del(&trig->next_trig);
-> +       list_del_init(&trig->next_trig);
->         up_write(&triggers_list_lock);
->
->         /* Remove anyone actively using this trigger */
-> --
-> 1.7.10.4
->
+Yep.  And it has now been shown again that CF9 just isn't safe.  We do
+TRIPLE as the ultimate fallback now.
+
+	-hpa
+
