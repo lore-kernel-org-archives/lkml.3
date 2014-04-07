@@ -1,60 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598AbaDGSDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:03:36 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29466 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753637AbaDGSDe (ORCPT
+	id S1755671AbaDGSEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:04:10 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:39686 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187AbaDGSEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:03:34 -0400
-Message-ID: <5342E86B.4000305@oracle.com>
-Date: Mon, 07 Apr 2014 14:03:23 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Apr 2014 14:04:07 -0400
 MIME-Version: 1.0
-To: Chris Mason <clm@fb.com>, dsterba@suse.cz, Jeff Mahoney <jeffm@suse.com>,
-        jbacik@fb.com, linux-btrfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs: lock inversion between delayed_node->mutex and found->groups_sem
-References: <53239AE0.8030306@oracle.com> <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com> <533F20EB.2040500@oracle.com> <20140407165449.GA29256@twin.jikos.cz> <5342DD99.3010502@fb.com>
-In-Reply-To: <5342DD99.3010502@fb.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1396879071.3654.43.camel@linaro1.home>
+References: <1396646870-29695-1-git-send-email-rabin@rab.in>
+	<1396646870-29695-2-git-send-email-rabin@rab.in>
+	<1396879071.3654.43.camel@linaro1.home>
+Date: Mon, 7 Apr 2014 11:04:06 -0700
+X-Google-Sender-Auth: hKBMtUZXZsGYuyTtBljI2Nftb2k
+Message-ID: <CAGXu5j+pWbLW6xkgqzh0ittvaqsbxbW6UuXa7ciqi+XAN0d6NQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] arm: use fixmap for text patching when text is RO
+From: Kees Cook <keescook@chromium.org>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: Rabin Vincent <rabin@rab.in>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 01:17 PM, Chris Mason wrote:
-> 
-> 
-> On 04/07/2014 12:54 PM, David Sterba wrote:
->> On Fri, Apr 04, 2014 at 05:15:23PM -0400, Sasha Levin wrote:
->>> On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
->>>> On 3/17/14, 9:05 AM, David Sterba wrote:
->>>>>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
->>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
->>>>>>>>
->>>>>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
->>>>>>
->>>>>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
->>>> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
->>>
->>> Is that fix available anywhere? I'm still seeing the issue in -next.
+On Mon, Apr 7, 2014 at 6:57 AM, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
+> On Fri, 2014-04-04 at 23:27 +0200, Rabin Vincent wrote:
+>> Use fixmaps for text patching when the kernel text is read-only,
+>> inspired by x86.  This makes jump labels and kprobes work with the
+>> currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
+>> CONFIG_DEBUG_RODATA options.
 >>
->> It is: https://urldefense.proofpoint.com/v1/url?u=https://patchwork.kernel.org/patch/3894781/&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=HQJVSK4wPTft1zWwI1cGvwj5OfdmN5UItVlucU1K31o%3D%0A&s=5113699a2e7345a779333c87dd5b1d88b4410a7c7fcd5fa424baeb838ad7d31b , will probably hit -rc2
+>> Signed-off-by: Rabin Vincent <rabin@rab.in>
+>> ---
+>>  arch/arm/include/asm/fixmap.h |  3 ++
+>>  arch/arm/kernel/jump_label.c  |  2 +-
+>>  arch/arm/kernel/patch.c       | 66 ++++++++++++++++++++++++++++++++++++++-----
+>>  arch/arm/kernel/patch.h       | 12 +++++++-
+>>  4 files changed, 74 insertions(+), 9 deletions(-)
 >>
-> 
-> Its in the integration branch now along with some other important fixes.  We'll get it out shortly
+>> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+>> index 55ed076..79c1719 100644
+>> --- a/arch/arm/include/asm/fixmap.h
+>> +++ b/arch/arm/include/asm/fixmap.h
+>> @@ -18,6 +18,9 @@
+>>  #define FIXADDR_TOP          (FIXADDR_END - PAGE_SIZE)
+>>
+>>  enum fixed_addresses {
+>> +     FIX_TEXT_POKE0,
+>> +     FIX_TEXT_POKE1,
+>> +
+>>       FIX_KMAP_BEGIN,
+>>       FIX_KMAP_END = (FIXADDR_TOP - FIXADDR_START) >> PAGE_SHIFT,
+>>       __end_of_fixed_addresses
+>> diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
+>> index 4ce4f78..afeeb9e 100644
+>> --- a/arch/arm/kernel/jump_label.c
+>> +++ b/arch/arm/kernel/jump_label.c
+>> @@ -19,7 +19,7 @@ static void __arch_jump_label_transform(struct jump_entry *entry,
+>>               insn = arm_gen_nop();
+>>
+>>       if (is_static)
+>> -             __patch_text(addr, insn);
+>> +             __patch_text_early(addr, insn);
+>>       else
+>>               patch_text(addr, insn);
+>>  }
+>> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+>> index 07314af..761c5b6 100644
+>> --- a/arch/arm/kernel/patch.c
+>> +++ b/arch/arm/kernel/patch.c
+>> @@ -1,8 +1,11 @@
+>>  #include <linux/kernel.h>
+>> +#include <linux/spinlock.h>
+>>  #include <linux/kprobes.h>
+>> +#include <linux/mm.h>
+>>  #include <linux/stop_machine.h>
+>>
+>>  #include <asm/cacheflush.h>
+>> +#include <asm/fixmap.h>
+>>  #include <asm/smp_plat.h>
+>>  #include <asm/opcodes.h>
+>>
+>> @@ -13,21 +16,67 @@ struct patch {
+>>       unsigned int insn;
+>>  };
+>>
+>> -void __kprobes __patch_text(void *addr, unsigned int insn)
+>> +static DEFINE_SPINLOCK(patch_lock);
+>> +
+>> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
+>> +{
+>> +     unsigned int uintaddr = (uintptr_t) addr;
+>> +     bool module = !core_kernel_text(uintaddr);
+>> +     struct page *page;
+>> +
+>> +     if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX)) {
+>> +             page = vmalloc_to_page(addr);
+>> +     } else if (!module && IS_ENABLED(CONFIG_ARM_KERNMEM_PERMS)) {
 
-Chris,
+I think this should probably be CONFIG_DEBUG_RODATA now that I've
+moved RO exclusively into that config.
 
-Can I suggest adding the integration branch to linux-next as well? That way
-all the folks who report issues coming out of -next would be able to test
-the fixes as well.
+>> +             page = virt_to_page(addr);
+>> +     } else {
+>> +             return addr;
+>> +     }
+>
+> I can't help but think that it'd be more maintainable to just always use
+> fixmap, though that would obviously have some performance impact (not
+> sure that particularly matters for text patching) and it would expose
+> possible fixmap bugginess to more kernels (see my next comment...)
+>
+>> +
+>> +     if (flags)
+>> +             spin_lock_irqsave(&patch_lock, *flags);
+>> +
+>> +     set_fixmap(fixmap, page_to_phys(page));
+>> +
+>> +     return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
+>
+> How does fixmap cope with cache colouring? Looking at the implementation
+> it looks like it doesn't and so fixmap use on ARM is possibly buggy.
+>
+> For the text patching case where we know there are no writeable mappings
+> [1] this should be OK if we used set_fixmap_nocache here, so long as we
+> also invalidated the dcache later for the proper virtual address.
+>
+> [1] Can we know there are no writeable mappings though, the ftrace code
+> modifying patches from Kees Cook have there own way of modifying text
+> code permissions.
 
+I think performance becomes an issue for massive updates like ftrace
+seems to do, so I got the sense it was good to have the "bulk" way to
+do it, and then this tiny poking way to do it.
 
-Thanks,
-Sasha
+-Kees
 
+-- 
+Kees Cook
+Chrome OS Security
