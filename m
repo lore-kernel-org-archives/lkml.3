@@ -1,175 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbaDGFsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 01:48:35 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:36798 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaDGFsa (ORCPT
+	id S1754767AbaDGF4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 01:56:31 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:43361 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaDGF42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 01:48:30 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 7 Apr 2014 14:48:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Message-ID: <20140407054840.GC12144@bbox>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
- <20140401212102.GM4407@cmpxchg.org>
- <533B313E.5000403@zytor.com>
- <533B4555.3000608@sr71.net>
- <533B8E3C.3090606@linaro.org>
- <20140402163638.GQ14688@cmpxchg.org>
- <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
+	Mon, 7 Apr 2014 01:56:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAM_iQpVgEtDqbK6-JoMn8-1D_cOsRTGPozvbmxbCBKi1+ss-rQ@mail.gmail.com>
+References: <1592838.91HrDxMk9i@comer>
+	<CAM_iQpVgEtDqbK6-JoMn8-1D_cOsRTGPozvbmxbCBKi1+ss-rQ@mail.gmail.com>
+Date: Sun, 6 Apr 2014 22:56:27 -0700
+Message-ID: <CAM_iQpU+A+1FxFNkibvbkM=vkWVw7QmHJzE_AODVTgzUEjdeDg@mail.gmail.com>
+Subject: Re: 3.14 tc oops
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Kelly Anderson <kelly@xilka.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
-> On Wed, Apr 2, 2014 at 9:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Tue, Apr 01, 2014 at 09:12:44PM -0700, John Stultz wrote:
-> >> On 04/01/2014 04:01 PM, Dave Hansen wrote:
-> >> > On 04/01/2014 02:35 PM, H. Peter Anvin wrote:
-> >> >> On 04/01/2014 02:21 PM, Johannes Weiner wrote:
-> >> > John, this was something that the Mozilla guys asked for, right?  Any
-> >> > idea why this isn't ever a problem for them?
-> >> So one of their use cases for it is for library text. Basically they
-> >> want to decompress a compressed library file into memory. Then they plan
-> >> to mark the uncompressed pages volatile, and then be able to call into
-> >> it. Ideally for them, the kernel would only purge cold pages, leaving
-> >> the hot pages in memory. When they traverse a purged page, they handle
-> >> the SIGBUS and patch the page up.
-> >
-> > How big are these libraries compared to overall system size?
-> 
-> Mike or Taras would have to refresh my memory on this detail. My
-> recollection is it mostly has to do with keeping the on-disk size of
-> the library small, so it can load off of slow media very quickly.
-> 
-> >> Now.. this is not what I'd consider a normal use case, but was hoping to
-> >> illustrate some of the more interesting uses and demonstrate the
-> >> interfaces flexibility.
-> >
-> > I'm just dying to hear a "normal" use case then. :)
-> 
-> So the more "normal" use cause would be marking objects volatile and
-> then non-volatile w/o accessing them in-between. In this case the
-> zero-fill vs SIGBUS semantics don't really matter, its really just a
-> trade off in how we handle applications deviating (intentionally or
-> not) from this use case.
-> 
-> So to maybe flesh out the context here for folks who are following
-> along (but weren't in the hallway at LSF :),  Johannes made a fairly
-> interesting proposal (Johannes: Please correct me here where I'm maybe
-> slightly off here) to use only the dirty bits of the ptes to mark a
-> page as volatile. Then the kernel could reclaim these clean pages as
-> it needed, and when we marked the range as non-volatile, the pages
-> would be re-dirtied and if any of the pages were missing, we could
+On Thu, Apr 3, 2014 at 9:24 AM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> On Wed, Apr 2, 2014 at 7:24 AM, Kelly Anderson <kelly@xilka.com> wrote:
+>> Hi,
+>>
+>> I hit a kernel oops when starting traffic control on my armv7 router, I don't
+>> think the architecture is related, the same tc code worked perfectly with
+>> earlier kernel versions, i.e. 3.13.x.
+>>
+>> I also attached an object dump with line numbers to make identifying the
+>> problem a bit easier.
+>>
+>> Please cc me to keep me in the loop, I can test patches.
+>
+>
+> Thanks for the report! Looks like it is caused by one of my patches,
+> I will look into this shortly.
+>
 
-I'd like to know more clearly as Hannes and you are thinking.
-You mean that when we unmark the range, we should redirty of all of
-pages's pte? or SetPageDirty?
-If we redirty pte, maybe softdirty people(ie, CRIU) might be angry
-because it could make lots of diff.
-If we just do SetPageDirty, it would invalidate writeout-avoid logic
-of swapped page which were already on the swap. Yeb, but it could
-be minor and SetPageDirty model would be proper for shared-vrange
-implmenetation. But how could we know any pages were missing
-when unmarking time? Where do we keep the information?
-It's no problem for vrange-anon because we can keep the information
-on pte but how about vrange-file(ie, vrange-shared)? Using a shadow
-entry of radix tree? What are you thinking about?
+Which tc filter are you using on that htb qdisc? (tc filter show dev ....)
 
-Another major concern is still syscall's overhead.
-Such page-based scheme has a trouble with syscall's speed so I'm
-afraid users might not use the syscall any more. :(
-Frankly speaking, we don't have concrete user so not sure how
-the overhead is severe but we could imagine easily that in future
-someuser might want to makr volatile huge GB memory.
+I suspect it's tcindex filter, if so please try the following patch:
 
-But I couldn't insist on range-based option because it has downside, too.
-If we don't work page-based model, reclaim path cleary have a big
-overhead to scan virtual memory to find a victim pages. As worst case,
-just a page in Huge GB vma. Even, a page might be other zone. :(
-If we could optimize that path to prevent CPU buring in future,
-it could make very complicated and not sure woking well.
-We already have similar issue with compaction. ;-)
+diff --git a/net/sched/cls_tcindex.c b/net/sched/cls_tcindex.c
+index eed8404..14618cc 100644
+--- a/net/sched/cls_tcindex.c
++++ b/net/sched/cls_tcindex.c
+@@ -298,8 +298,10 @@ tcindex_set_parms(struct net *net, struct
+tcf_proto *tp, unsigned long base,
+        tcf_exts_change(tp, &cr.exts, &e);
 
-So, it's really dilemma.
+        tcf_tree_lock(tp);
+-       if (old_r && old_r != r)
++       if (old_r && old_r != r) {
+                memset(old_r, 0, sizeof(*old_r));
++               tcf_exts_init(&old_r->exts, TCA_TCINDEX_ACT,
+TCA_TCINDEX_POLICE);
++       }
 
-> return a flag with the purged state.  This had some different
-> semantics then what I've been working with for awhile (for example,
-> any writes to pages would implicitly clear volatility), so I wasn't
-> completely comfortable with it, but figured I'd think about it to see
-> if it could be done. Particularly since it would in some ways simplify
-> tmpfs/shm shared volatility that I'd eventually like to do.
-> 
-> After thinking it over in the hallway, I talked some of the details w/
-> Johnnes and there was one issue that while w/ anonymous memory, we can
-> still add a VM_VOLATILE flag on the vma, so we can get SIGBUS
-> semantics, but since on shared volatile ranges, we don't have anything
-> to hang a volatile flag on w/o adding some new vma like structure to
-> the address_space structure (much as we did in the past w/ earlier
-> volatile range implementations). This would negate much of the point
-> of using the dirty bits to simplify the shared volatility
-> implementation.
-> 
-> Thus Johannes is reasonably questioning the need for SIGBUS semantics,
-> since if it wasn't needed, the simpler page-cleaning based volatility
-> could potentially be used.
-
-I think SIGBUS scenario isn't common but in case of JIT, it is necessary
-and the amount of ram consumed would be never small for embedded world.
-
-> 
-> 
-> Now, while for the case I'm personally most interested in (ashmem),
-> zero-fill would technically be ok, since that's what Android does.
-> Even so, I don't think its the best approach for the interface, since
-> applications may end up quite surprised by the results when they
-> accidentally don't follow the "don't touch volatile pages" rule.
-> 
-> That point beside, I think the other problem with the page-cleaning
-> volatility approach is that there are other awkward side effects. For
-> example: Say an application marks a range as volatile. One page in the
-> range is then purged. The application, due to a bug or otherwise,
-> reads the volatile range. This causes the page to be zero-filled in,
-> and the application silently uses the corrupted data (which isn't
-> great). More problematic though, is that by faulting the page in,
-> they've in effect lost the purge state for that page. When the
-> application then goes to mark the range as non-volatile, all pages are
-> present, so we'd return that no pages were purged.  From an
-> application perspective this is pretty ugly.
-> 
-> Johannes: Any thoughts on this potential issue with your proposal? Am
-> I missing something else?
-> 
-> thanks
-> -john
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+        memcpy(p, &cp, sizeof(cp));
+        memcpy(r, &cr, sizeof(cr));
