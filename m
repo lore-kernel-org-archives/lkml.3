@@ -1,68 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508AbaDGVTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 17:19:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60816 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755034AbaDGVTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 17:19:52 -0400
-Date: Mon, 7 Apr 2014 22:19:44 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Steven Noonan <steven@uplinklabs.net>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
- bits PMD and PTE levels
-Message-ID: <20140407211944.GI7292@suse.de>
-References: <1396883443-11696-1-git-send-email-mgorman@suse.de>
- <1396883443-11696-3-git-send-email-mgorman@suse.de>
- <5342C517.2020305@citrix.com>
- <20140407154935.GD7292@suse.de>
- <20140407161910.GJ1444@moon>
- <20140407182854.GH7292@suse.de>
- <5342FC0E.9080701@zytor.com>
+	id S1755360AbaDGVXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 17:23:11 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:41859 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119AbaDGVXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 17:23:09 -0400
+Date: Mon, 7 Apr 2014 17:23:05 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: [GIT PULL] cgroup fixes for v3.15-rc1
+Message-ID: <20140407212305.GE27461@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5342FC0E.9080701@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 12:27:10PM -0700, H. Peter Anvin wrote:
-> On 04/07/2014 11:28 AM, Mel Gorman wrote:
-> > 
-> > I had considered the soft-dirty tracking usage of the same bit. I thought I'd
-> > be able to swizzle around it or a further worst case of having soft-dirty and
-> > automatic NUMA balancing mutually exclusive. Unfortunately upon examination
-> > it's not obvious how to have both of them share a bit and I suspect any
-> > attempt to will break CRIU.  In my current tree, NUMA_BALANCING cannot be
-> > set if MEM_SOFT_DIRTY which is not particularly satisfactory. Next on the
-> > list is examining if _PAGE_BIT_IOMAP can be used.
-> > 
-> 
-> Didn't we smoke the last user of _PAGE_BIT_IOMAP?
-> 
+Hello, Linus.
 
-There are still some users of _PAGE_IOMAP with Xen being the main user.
-For x86 on bare metal it looks like userspace should never have a PTE with
-_PAGE_IO set so it should be usable as _PAGE_NUMA. Patches that do that
-are currently being tested but a side-effect was that I had to disable
-support on Xen as Xen appears to use it to distinguish between Xen PTEs
-and MFNs. It's unclear what automatic NUMA balancing on Xen even means --
-are NUMA nodes always mapped to the physical topology? What is sensible
-behaviour if guest and host both run it? etc. If they need it, we can then
-examine what the proper way to support _PAGE_NUMA on Xen is.
+Two patches to fix fallouts from the kernfs conversion.  Li's patch to
+stop leaking cgroup_root refs across multiple mounts and the other
+fixes the 90s hang during shutdown caused by always using root's
+uid/gid for new cgroup dirs and files.
 
--- 
-Mel Gorman
-SUSE Labs
+The following changes since commit 4a4389abdd9822fdf3cc2ac6ed87eb811fd43acc:
+
+  Merge branch 'linux_next' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac (2014-04-03 17:07:17 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.15-fixes
+
+for you to fetch changes up to 49957f8e2a43035a97d05bddefa394492a969c0d:
+
+  cgroup: newly created dirs and files should be owned by the creator (2014-04-07 16:44:47 -0400)
+
+Thanks.
+
+----------------------------------------------------------------
+Li Zefan (1):
+      cgroup: fix top cgroup refcnt leak
+
+Tejun Heo (1):
+      cgroup: newly created dirs and files should be owned by the creator
+
+ kernel/cgroup.c | 32 +++++++++++++++++++++++++++++---
+ 1 file changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index fede3d3..9fcdaa7 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1487,6 +1487,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 	struct cgroup_sb_opts opts;
+ 	struct dentry *dentry;
+ 	int ret;
++	bool new_sb;
+ 
+ 	/*
+ 	 * The first time anyone tries to mount a cgroup, enable the list
+@@ -1603,8 +1604,8 @@ out_unlock:
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 
+-	dentry = kernfs_mount(fs_type, flags, root->kf_root, NULL);
+-	if (IS_ERR(dentry))
++	dentry = kernfs_mount(fs_type, flags, root->kf_root, &new_sb);
++	if (IS_ERR(dentry) || !new_sb)
+ 		cgroup_put(&root->cgrp);
+ 	return dentry;
+ }
+@@ -2345,11 +2346,26 @@ static int cgroup_rename(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 	return ret;
+ }
+ 
++/* set uid and gid of cgroup dirs and files to that of the creator */
++static int cgroup_kn_set_ugid(struct kernfs_node *kn)
++{
++	struct iattr iattr = { .ia_valid = ATTR_UID | ATTR_GID,
++			       .ia_uid = current_fsuid(),
++			       .ia_gid = current_fsgid(), };
++
++	if (uid_eq(iattr.ia_uid, GLOBAL_ROOT_UID) &&
++	    gid_eq(iattr.ia_gid, GLOBAL_ROOT_GID))
++		return 0;
++
++	return kernfs_setattr(kn, &iattr);
++}
++
+ static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
+ {
+ 	char name[CGROUP_FILE_NAME_MAX];
+ 	struct kernfs_node *kn;
+ 	struct lock_class_key *key = NULL;
++	int ret;
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	key = &cft->lockdep_key;
+@@ -2357,7 +2373,13 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
+ 	kn = __kernfs_create_file(cgrp->kn, cgroup_file_name(cgrp, cft, name),
+ 				  cgroup_file_mode(cft), 0, cft->kf_ops, cft,
+ 				  NULL, false, key);
+-	return PTR_ERR_OR_ZERO(kn);
++	if (IS_ERR(kn))
++		return PTR_ERR(kn);
++
++	ret = cgroup_kn_set_ugid(kn);
++	if (ret)
++		kernfs_remove(kn);
++	return ret;
+ }
+ 
+ /**
+@@ -3752,6 +3774,10 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	 */
+ 	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
+ 
++	err = cgroup_kn_set_ugid(kn);
++	if (err)
++		goto err_destroy;
++
+ 	err = cgroup_addrm_files(cgrp, cgroup_base_files, true);
+ 	if (err)
+ 		goto err_destroy;
