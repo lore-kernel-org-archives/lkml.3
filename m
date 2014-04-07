@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764AbaDGUTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 16:19:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39513 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753162AbaDGUTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 16:19:21 -0400
-Date: Mon, 7 Apr 2014 22:19:19 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ak@linux.intel.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild/lto changes for 3.15-rc1
-Message-ID: <20140407201919.GA15838@sepie.suse.cz>
+	id S1755806AbaDGUZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 16:25:33 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:42005 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaDGUZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 16:25:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140407140745.GA8855@thunk.org>
+References: <20140403191558.GA8745@thunk.org>
+	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
+	<20140404035308.GC2525@thunk.org>
+	<20140404134429.GB26806@quack.suse.cz>
+	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
+	<20140404234358.GE10275@thunk.org>
+	<CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
+	<20140407140745.GA8855@thunk.org>
+Date: Mon, 7 Apr 2014 22:25:30 +0200
+X-Google-Sender-Auth: f-YCTsZOxVaEfC94_eTLxN-FdU4
+Message-ID: <CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Miklos Szeredi <miklos@szeredi.hu>,
+        Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Apr 7, 2014 at 4:07 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Mon, Apr 07, 2014 at 03:15:36PM +0200, Miklos Szeredi wrote:
+>> >
+>> > Is there anything obvious that I might be doing wrong?
+>>
+>> I only wired up the syscall for x86_64.   Who's responsible for adding
+>> all the syscall tables for the various architectures?
+>
+> Ah, and I was testing with i386, not x86_64, so that it explains that.
+>
+> It's been quite a while since I've worked to add a new system call,
+> but my impressure is that in general the person who creates the new
+> system call needs to reach out to the architecture maintainers
+> (preferably with a patch :-), since otherwise the architecture
 
-besides the kbuild branch, here is the LTO build support by Andi. It is
-a separate branch, because it depends on other patches by Andi which
-were merged through other trees. The link-time-optimization build is an
-experimental feature, so there one kconfig option to enable it and
-another kconfig option to disable it (behind a door with a sign "Beware
-of the Leopard"...), so that it is not enabled by
-allmodconfig/allyesconfig.
+Preferably the creator of the new system call emails linux-arch.
+Patches are always nice to have, but they may cause conflicts w.r.t.
+syscall numbering.
 
-Thanks,
-Michal
+> maintainers would have no idea that a new syscall has been added.
 
-The following changes since commit 176ab02d4916f09d5d8cb63372d142df4378cdea:
+If i386 has the new syscall, scripts/checksyscalls.sh will catch it and
+inform us about it during our next kernel build.
 
-  Merge branch 'x86-asmlinkage-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2014-03-31 14:13:25 -0700)
+If you add it to x86_64 only, bad luck for anyone else ;-)
 
-are available in the git repository at:
+Gr{oetje,eeting}s,
 
+                        Geert
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git lto
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-for you to fetch changes up to 19a3cc83353e3bb4bc28769f8606139a3d350d2d:
-
-  Kbuild, lto: Add Link Time Optimization support v3 (2014-04-07 21:51:13 +0200)
-
-----------------------------------------------------------------
-Andi Kleen (2):
-      Kbuild, lto: Set TMPDIR for LTO v4
-      Kbuild, lto: Add Link Time Optimization support v3
-
- Documentation/lto-build  | 173 +++++++++++++++++++++++++++++++++++++++++++++++
- Makefile                 |  20 +++++-
- arch/x86/Kconfig         |   2 +-
- init/Kconfig             |  73 ++++++++++++++++++++
- kernel/gcov/Kconfig      |   2 +-
- lib/Kconfig.debug        |   2 +-
- scripts/Makefile.lto     |  84 +++++++++++++++++++++++
- scripts/Makefile.modpost |   7 +-
- scripts/link-vmlinux.sh  |   2 +-
- 9 files changed, 357 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/lto-build
- create mode 100644 scripts/Makefile.lto
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
