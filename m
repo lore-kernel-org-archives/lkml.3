@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081AbaDGKsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 06:48:33 -0400
-Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:56068 "EHLO
-	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754621AbaDGKsa (ORCPT
+	id S1755165AbaDGKuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 06:50:15 -0400
+Received: from relay.parallels.com ([195.214.232.42]:57333 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642AbaDGKuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 06:48:30 -0400
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Apr 2014 06:48:30 EDT
-Message-ID: <1396867174.6220.4.camel@laptop.site>
-Subject: proc net statistics
-From: "Ken O'Brien" <ken@kenobrien.org>
-To: Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 07 Apr 2014 11:39:34 +0100
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-5BwiKeJBY1tFq03/K3y2"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
+	Mon, 7 Apr 2014 06:50:10 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <cl@linux-foundation.org>, <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: [PATCH] slub: fix memcg_propagate_slab_attrs
+Date: Mon, 7 Apr 2014 14:50:07 +0400
+Message-ID: <1396867807-22824-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+After creating a cache for a memcg we should initialize its sysfs attrs
+with the values from its parent. That's what memcg_propagate_slab_attrs
+is for. Currently it's broken - we clearly muddled root-vs-memcg caches
+there. Let's fix it up.
 
---=-5BwiKeJBY1tFq03/K3y2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/slub.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-Hi,
-
-I was under the impression that statistics reported
-in /proc/{$pid}/net/dev were specific to that process, but the values
-appear to be globals, i.e., identical for all processes.
-
-Is this a bug?
-
-Regards,
-
-Ken
-
---=-5BwiKeJBY1tFq03/K3y2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABAgAGBQJTQoBmAAoJEH6r6VcNuxY8JKUQAIEH4g9ZpS1tYjvhRrZvr3hP
-kjmZU2wqR9WQOYnIhRKqGq2ROV8128VJ3eN3NQCYY9dG0uMzrtrWBAMNYXQX0e9L
-aO1rvsQoZqa/a3VKn+sZjqEUFlRwmUuKggvH7HPycoQ3n1wyFlk5FsnOOLwWSWAC
-BJoey+ys8A9Xh+locADuxK2FaPN+XcjcwlZjNX1k+asEAgbX/yGXf207JEYS/+G3
-4Mrt+r9STP/X+efdqe6kyXWDcsKrW8YqWKKMjVN1SSKkHb/vKPKCmjEN2LuY99cD
-gnwjrs2dtj3wbwQdU4KAwzoVTGp5Cy1MyKwrOPRbkndJVKdBr5b8nSmu9WdXcE5c
-cXNCIRRpTb/cj5tTMrnEwNMDqL3/ppViDcbN5h3zXh4LHLq1MPhLaxZh7WbbTb4q
-KIcaqt5zW6A9yxo7CMEj0ABwT3mhKQt86aiv/rkUU5gXPkTlhCfUSQK0GOpDBam/
-RlGTUfF4aAqt9YMkdUwJJSye/8HiRiZhy0lWCgY5Gofmfpc2/2NEaU/BIcLFWs5O
-1ncpNVvAl0zwZxgO749S8rlaFCxGtbeUq6Y8CDDNPYDACK3TMaPKGz7BD4OpZhLh
-OEQw/PlXqyzjzfjOjGsYSvRDsP5VbZlGtHqnlhzbQjcYEyBQWDtwscxcWCCNV/im
-gF70GRlCnvo+yjgA6r9m
-=Ey+0
------END PGP SIGNATURE-----
-
---=-5BwiKeJBY1tFq03/K3y2--
+diff --git a/mm/slub.c b/mm/slub.c
+index 09660b9ff5bd..9fc144f9a542 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5070,15 +5070,18 @@ static void memcg_propagate_slab_attrs(struct kmem_cache *s)
+ #ifdef CONFIG_MEMCG_KMEM
+ 	int i;
+ 	char *buffer = NULL;
++	struct kmem_cache *root_cache;
+ 
+-	if (!is_root_cache(s))
++	if (is_root_cache(s))
+ 		return;
+ 
++	root_cache = s->memcg_params->root_cache;
++
+ 	/*
+ 	 * This mean this cache had no attribute written. Therefore, no point
+ 	 * in copying default values around
+ 	 */
+-	if (!s->max_attr_size)
++	if (!root_cache->max_attr_size)
+ 		return;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(slab_attrs); i++) {
+@@ -5100,7 +5103,7 @@ static void memcg_propagate_slab_attrs(struct kmem_cache *s)
+ 		 */
+ 		if (buffer)
+ 			buf = buffer;
+-		else if (s->max_attr_size < ARRAY_SIZE(mbuf))
++		else if (root_cache->max_attr_size < ARRAY_SIZE(mbuf))
+ 			buf = mbuf;
+ 		else {
+ 			buffer = (char *) get_zeroed_page(GFP_KERNEL);
+@@ -5109,7 +5112,7 @@ static void memcg_propagate_slab_attrs(struct kmem_cache *s)
+ 			buf = buffer;
+ 		}
+ 
+-		attr->show(s->memcg_params->root_cache, buf);
++		attr->show(root_cache, buf);
+ 		attr->store(s, buf, strlen(buf));
+ 	}
+ 
+-- 
+1.7.10.4
 
