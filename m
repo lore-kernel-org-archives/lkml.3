@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846AbaDGRut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:50:49 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:48491 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988AbaDGRth (ORCPT
+	id S1755417AbaDGR6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:58:49 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:43410 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988AbaDGR6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:49:37 -0400
-Message-Id: <20140407174933.641611536@openvz.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 07 Apr 2014 21:47:02 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: shawn@churchofgit.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        avagin@openvz.org, xemul@parallels.com, gorcunov@openvz.org,
-        vdavydov@parallels.com
-Subject: [patch 1/3] timerfd: Implement show_fdinfo method
-References: <20140407174701.734703531@openvz.org>
-Content-Disposition: inline; filename=timerfd-show-fdinfo-3
+	Mon, 7 Apr 2014 13:58:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <5183143.FxBNM0xTAV@wuerfel>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140405001953.GE15806@google.com> <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
+ <5183143.FxBNM0xTAV@wuerfel>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 7 Apr 2014 11:58:24 -0600
+Message-ID: <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For checkpoint/restore of timerfd files we need to know how exactly
-the timer were armed to be able to handle it. Thus implement show_fdinfo
-method which provides enough information for timer re-creation.
+On Mon, Apr 7, 2014 at 5:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-One of significant changes I think is addition of
-timerfd_ctx::settime_flags member. Currently there are
-two flags TFD_TIMER_ABSTIME and TFD_TIMER_CANCEL_ON_SET,
-and the second can be found from @might_cancel variable
-but in case if the flags will be extended in future we
-most probably will have to somehow remember them explicitly
-anyway so I guss doing that right now won't hurt.
+> I think migrating other architectures to use the same code should be
+> a separate effort from adding a generic implementation that can be
+> used by arm64. It's probably a good idea to have patches to convert
+> arm32 and/or microblaze.
 
-To not bloat the timerfd_ctx structure I've converted
-@expired to short integer and defined @settime_flags
-as short as well.
+Let me reiterate that I am 100% in favor of replacing arch-specific
+code with more generic implementations.
 
-v2 (by avagin@, vdavydov@ and tglx@):
+However, I am not 100% in favor of doing it as separate efforts
+(although maybe I could be convinced).  The reasons I hesitate are
+that (1) if only one architecture uses a new "generic" implementation,
+we really don't know whether it is generic enough, (2) until I see the
+patches to convert other architectures, I have to assume that I'm the
+one who will write them, and (3) as soon as we add the code to
+drivers/pci, it becomes partly my headache to maintain it, even if
+only one arch benefits from it.
 
- - Add it_value/it_interval fields
- - Save flags being used in timerfd_setup in context
+Please don't think I'm questioning anyone's intent or good will.  It's
+just that I understand the business pressures, and I know how hard it
+can be to justify this sort of work to one's management, especially
+after the immediate problem has been solved.
 
-CC: Shawn Landden <shawn@churchofgit.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Andrey Vagin <avagin@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- fs/timerfd.c |   30 +++++++++++++++++++++++++++++-
- 1 file changed, 29 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.git/fs/timerfd.c
-===================================================================
---- linux-2.6.git.orig/fs/timerfd.c
-+++ linux-2.6.git/fs/timerfd.c
-@@ -35,8 +35,9 @@ struct timerfd_ctx {
- 	ktime_t moffs;
- 	wait_queue_head_t wqh;
- 	u64 ticks;
--	int expired;
- 	int clockid;
-+	short unsigned expired;
-+	short unsigned settime_flags;	/* to show in fdinfo */
- 	struct rcu_head rcu;
- 	struct list_head clist;
- 	bool might_cancel;
-@@ -196,6 +197,8 @@ static int timerfd_setup(struct timerfd_
- 		if (timerfd_canceled(ctx))
- 			return -ECANCELED;
- 	}
-+
-+	ctx->settime_flags = flags & TFD_SETTIME_FLAGS;
- 	return 0;
- }
- 
-@@ -284,11 +287,36 @@ static ssize_t timerfd_read(struct file
- 	return res;
- }
- 
-+static int timerfd_show(struct seq_file *m, struct file *file)
-+{
-+	struct timerfd_ctx *ctx = file->private_data;
-+	struct itimerspec t;
-+
-+	spin_lock_irq(&ctx->wqh.lock);
-+	t.it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
-+	t.it_interval = ktime_to_timespec(ctx->tintv);
-+	spin_unlock_irq(&ctx->wqh.lock);
-+
-+	return seq_printf(m,
-+			  "clockid: %d\n"
-+			  "ticks: %llu\n"
-+			  "settime flags: 0%o\n"
-+			  "it_value: (%llu, %llu)\n"
-+			  "it_interval: (%llu, %llu)\n",
-+			  ctx->clockid, (unsigned long long)ctx->ticks,
-+			  ctx->settime_flags,
-+			  (unsigned long long)t.it_value.tv_sec,
-+			  (unsigned long long)t.it_value.tv_nsec,
-+			  (unsigned long long)t.it_interval.tv_sec,
-+			  (unsigned long long)t.it_interval.tv_nsec);
-+}
-+
- static const struct file_operations timerfd_fops = {
- 	.release	= timerfd_release,
- 	.poll		= timerfd_poll,
- 	.read		= timerfd_read,
- 	.llseek		= noop_llseek,
-+	.show_fdinfo	= timerfd_show,
- };
- 
- static int timerfd_fget(int fd, struct fd *p)
-
+Bjorn
