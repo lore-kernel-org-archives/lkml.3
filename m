@@ -1,154 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864AbaDGHaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 03:30:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58925 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519AbaDGHam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 03:30:42 -0400
-Message-ID: <1396855830.28539.10.camel@marge.simpson.net>
-Subject: Re: [tip:sched/core] sched/numa: Move task_numa_free() to
- __put_task_struct()
-From: Mike Galbraith <bitbucket@online.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, mgorman@suse.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, Dave Jones <davej@redhat.com>
-Date: Mon, 07 Apr 2014 09:30:30 +0200
-In-Reply-To: <1396848585.5218.27.camel@marge.simpson.net>
-References: <1393568591.6018.27.camel@marge.simpson.net>
-	 <tip-156654f491dd8d52687a5fbe1637f472a52ce75b@git.kernel.org>
-	 <5341A84C.4050902@oracle.com> <1396848585.5218.27.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:yCH1TRwTkb9Sr3KpuaAewe1CW3d1qw807O0o6bv36bn
- kIxoVx4pyPBdzF3JzSfabX86rdVsyno8euW1b6fRGv0ADXEQwq
- ZXPne96VBtLqngEmbEEP75zy4P6EH2ZUWafnsNbQK0FfCT2hF6
- +VcEQLcrE/p/efO21LVuL/i69O/cI/BiL3GEludSpt1EdaWRZp
- 17Ql9Q93KYXHlW2IYiqOMDrn/Dqxqqs48RrF06HkglrMfWSJ1a
- 8jd7smK/oH1P1IzCU/LYSAAN0UCZmd0qm1yPWCaAXblg4+/EVW
- V2pXUAYpuzCJRiG6KO+nN4BFN4kAR1JWIxT6VoooW2KJZxTZQV
- bdzmtaUPt5dVdfO0BylWcbzl9VNIzWwAP9QtRoW6Q
+	id S1754909AbaDGHbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 03:31:53 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:17190 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753937AbaDGHbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 03:31:50 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v2] powerpc 32: Provides VIRT_CPU_ACCOUNTING
+Message-Id: <20140407073147.6F87E1A4BDE@localhost.localdomain>
+Date: Mon,  7 Apr 2014 09:31:47 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-07 at 07:29 +0200, Mike Galbraith wrote:
+This patch provides VIRT_CPU_ACCOUTING to PPC32 architecture.
+Unlike PPC64, PPC32 doesn't use the PACA convention. Therefore the
+implementation is taken from the IA64 architecture.
+It is based on additional information added to the Task Info structure.
 
-> I'm not getting it.
-> 
-> I moved task_numa_free() from one interrupts enabled spot to another.
-> But, with numa=fake=4 and lockdep enabled, not only does lockdep gripe,
-> my little box locks up on splat.  Saying spin_lock/unlock_irq() did the
-> expected, just moved lockdep gripe to task_numa_fault().
-> 
-> 
-> > [ 2590.270067]  Possible interrupt unsafe locking scenario:
-> > [ 2590.270067]
-> > [ 2590.270067]        CPU0                    CPU1
-> > [ 2590.270067]        ----                    ----
-> > [ 2590.270067]   lock(&(&grp->lock)->rlock);
-> > [ 2590.270067]                                local_irq_disable();
-> > [ 2590.270067]                                lock(&(&new_timer->it_lock)->rlock);
-> > [ 2590.270067]                                lock(&(&grp->lock)->rlock);
-> > [ 2590.270067]   <Interrupt>
-> > [ 2590.270067]     lock(&(&new_timer->it_lock)->rlock);
-> > [ 2590.270067]
-> > [ 2590.270067]  *** DEADLOCK ***
-> 
-> Ok, so how did I manage that HARDIRQ-safe -> HARDIRQ-unsafe?
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-Think I'll turn lockdep off, and make context switches take a good long
-while after finish_lock_switch(), but meanwhile, this made it happy.
-
-Sasha reports that lockdep claims 156654f491dd8d52687a5fbe1637f472a52ce75b made
-numa_group.lock interrupt unsafe.  While I don't see how that could be given the
-commit in question moved task_numa_free() from one irq enabled region to another,
-the below does make both gripes and lockup upon gripe with numa=fake=4 go away.
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Not-signed-off-by: Mike Galbraith <bitbucket@online.de>
----
- kernel/sched/fair.c  |   12 +++++++-----
- kernel/sched/sched.h |    9 +++++++++
- 2 files changed, 16 insertions(+), 5 deletions(-)
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1497,7 +1497,7 @@ static void task_numa_placement(struct t
- 	/* If the task is part of a group prevent parallel updates to group stats */
- 	if (p->numa_group) {
- 		group_lock = &p->numa_group->lock;
--		spin_lock(group_lock);
-+		spin_lock_irq(group_lock);
- 	}
+Index: b/arch/powerpc/Kconfig
+===================================================================
+--- a/arch/powerpc/Kconfig	(revision 5607)
++++ b/arch/powerpc/Kconfig	(revision 5611)
+@@ -138,6 +138,7 @@
+ 	select OLD_SIGSUSPEND
+ 	select OLD_SIGACTION if PPC32
+ 	select HAVE_DEBUG_STACKOVERFLOW
++	select HAVE_VIRT_CPU_ACCOUNTING
  
- 	/* Find the node with the highest number of faults */
-@@ -1572,7 +1572,7 @@ static void task_numa_placement(struct t
- 			}
- 		}
+ config EARLY_PRINTK
+ 	bool
+Index: a/arch/powerpc/kernel/time.c
+===================================================================
+--- a/arch/powerpc/kernel/time.c	(revision 5607)
++++ b/arch/powerpc/kernel/time.c	(revision 5611)
+@@ -162,7 +162,9 @@
  
--		spin_unlock(group_lock);
-+		spin_unlock_irq(group_lock);
- 	}
+ cputime_t cputime_one_jiffy;
  
- 	/* Preferred node as the node with the most faults */
-@@ -1677,7 +1677,8 @@ static void task_numa_group(struct task_
- 	if (!join)
- 		return;
++#ifdef CONFIG_PPC_SPLPAR
+ void (*dtl_consumer)(struct dtl_entry *, u64);
++#endif
  
--	double_lock(&my_grp->lock, &grp->lock);
-+	BUG_ON(irqs_disabled());
-+	double_lock_irq(&my_grp->lock, &grp->lock);
- 
- 	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
- 		my_grp->faults[i] -= p->numa_faults_memory[i];
-@@ -1692,6 +1693,7 @@ static void task_numa_group(struct task_
- 
- 	spin_unlock(&my_grp->lock);
- 	spin_unlock(&grp->lock);
-+	local_irq_enable();
- 
- 	rcu_assign_pointer(p->numa_group, grp);
- 
-@@ -1710,14 +1712,14 @@ void task_numa_free(struct task_struct *
- 	void *numa_faults = p->numa_faults_memory;
- 
- 	if (grp) {
--		spin_lock(&grp->lock);
-+		spin_lock_irq(&grp->lock);
- 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
- 			grp->faults[i] -= p->numa_faults_memory[i];
- 		grp->total_faults -= p->total_numa_faults;
- 
- 		list_del(&p->numa_entry);
- 		grp->nr_tasks--;
--		spin_unlock(&grp->lock);
-+		spin_unlock_irq(&grp->lock);
- 		rcu_assign_pointer(p->numa_group, NULL);
- 		put_numa_group(grp);
- 	}
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1388,6 +1388,15 @@ static inline void double_lock(spinlock_
- 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
+ static void calc_cputime_factors(void)
+ {
+@@ -178,6 +180,7 @@
+ 	__cputime_clockt_factor = res.result_low;
  }
  
-+static inline void double_lock_irq(spinlock_t *l1, spinlock_t *l2)
++#ifdef CONFIG_PPC64
+ /*
+  * Read the SPURR on systems that have it, otherwise the PURR,
+  * or if that doesn't exist return the timebase value passed in.
+@@ -190,6 +193,7 @@
+ 		return mfspr(SPRN_PURR);
+ 	return tb;
+ }
++#endif
+ 
+ #ifdef CONFIG_PPC_SPLPAR
+ 
+@@ -291,6 +295,7 @@
+  * Account time for a transition between system, hard irq
+  * or soft irq state.
+  */
++#ifdef CONFIG_PPC64
+ static u64 vtime_delta(struct task_struct *tsk,
+ 			u64 *sys_scaled, u64 *stolen)
+ {
+@@ -377,7 +382,70 @@
+ 	get_paca()->utime_sspurr = 0;
+ 	account_user_time(tsk, utime, utimescaled);
+ }
++#else
+ 
++void vtime_account_user(struct task_struct *tsk)
 +{
-+	if (l1 > l2)
-+		swap(l1, l2);
++	cputime_t delta_utime;
++	struct thread_info *ti = task_thread_info(tsk);
 +
-+	spin_lock_irq(l1);
-+	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
++	if (ti->ac_utime) {
++		delta_utime = ti->ac_utime;
++		account_user_time(tsk, delta_utime, delta_utime);
++		ti->ac_utime = 0;
++	}
 +}
 +
- static inline void double_raw_lock(raw_spinlock_t *l1, raw_spinlock_t *l2)
- {
- 	if (l1 > l2)
-
-
++/*
++ * Called from the context switch with interrupts disabled, to charge all
++ * accumulated times to the current process, and to prepare accounting on
++ * the next process.
++ */
++void arch_vtime_task_switch(struct task_struct *prev)
++{
++	struct thread_info *pi = task_thread_info(prev);
++	struct thread_info *ni = task_thread_info(current);
++
++	ni->ac_stamp = pi->ac_stamp;
++	ni->ac_stime = ni->ac_utime = 0;
++}
++
++/*
++ * Account time for a transition between system, hard irq or soft irq state.
++ * Note that this function is called with interrupts enabled.
++ */
++static cputime_t vtime_delta(struct task_struct *tsk)
++{
++	struct thread_info *ti = task_thread_info(tsk);
++	__u32 delta_stime;
++	__u32 now;
++
++	WARN_ON_ONCE(!irqs_disabled());
++
++	now = mftbl();
++
++	delta_stime = ti->ac_stime + (now - ti->ac_stamp);
++	ti->ac_stime = 0;
++	ti->ac_stamp = now;
++
++	return (cputime_t)delta_stime;
++}
++
++void vtime_account_system(struct task_struct *tsk)
++{
++	cputime_t delta = vtime_delta(tsk);
++
++	account_system_time(tsk, 0, delta, delta);
++}
++EXPORT_SYMBOL_GPL(vtime_account_system);
++
++void vtime_account_idle(struct task_struct *tsk)
++{
++	account_idle_time(vtime_delta(tsk));
++}
++
++#endif
++
+ #else /* ! CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ #define calc_cputime_factors()
+ #endif
+@@ -871,6 +939,8 @@
+ 		       ppc_proc_freq / 1000000, ppc_proc_freq % 1000000);
+ 	}
+ 
++	mttbl(0);
++	mttbu(0);
+ 	tb_ticks_per_jiffy = ppc_tb_freq / HZ;
+ 	tb_ticks_per_sec = ppc_tb_freq;
+ 	tb_ticks_per_usec = ppc_tb_freq / 1000000;
+Index: b/arch/powerpc/kernel/entry_32.S
+===================================================================
+--- a/arch/powerpc/kernel/entry_32.S	(revision 5607)
++++ b/arch/powerpc/kernel/entry_32.S	(revision 5611)
+@@ -177,6 +177,12 @@
+ 	addi	r12,r12,-1
+ 	stw	r12,4(r11)
+ #endif
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
++	CURRENT_THREAD_INFO(r9, r1)
++	tophys(r9, r9)
++	ACCOUNT_CPU_USER_ENTRY(r9, r11, r12)
++#endif
++
+ 	b	3f
+ 
+ 2:	/* if from kernel, check interrupted DOZE/NAP mode and
+@@ -406,6 +412,13 @@
+ 	lwarx	r7,0,r1
+ END_FTR_SECTION_IFSET(CPU_FTR_NEED_PAIRED_STWCX)
+ 	stwcx.	r0,0,r1			/* to clear the reservation */
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
++	andi.	r4,r8,MSR_PR
++	beq	3f
++	CURRENT_THREAD_INFO(r4, r1)
++	ACCOUNT_CPU_USER_EXIT(r4, r5, r7)
++3:
++#endif
+ 	lwz	r4,_LINK(r1)
+ 	lwz	r5,_CCR(r1)
+ 	mtlr	r4
+@@ -841,6 +854,10 @@
+ 	andis.	r10,r0,DBCR0_IDM@h
+ 	bnel-	load_dbcr0
+ #endif
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
++	CURRENT_THREAD_INFO(r9, r1)
++	ACCOUNT_CPU_USER_EXIT(r9, r10, r11)
++#endif
+ 
+ 	b	restore
+ 
+Index: b/arch/powerpc/kernel/asm-offsets.c
+===================================================================
+--- a/arch/powerpc/kernel/asm-offsets.c	(revision 5607)
++++ b/arch/powerpc/kernel/asm-offsets.c	(revision 5611)
+@@ -167,6 +167,12 @@
+ 	DEFINE(TI_PREEMPT, offsetof(struct thread_info, preempt_count));
+ 	DEFINE(TI_TASK, offsetof(struct thread_info, task));
+ 	DEFINE(TI_CPU, offsetof(struct thread_info, cpu));
++#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(CONFIG_PPC32)
++	DEFINE(TI_AC_STAMP, offsetof(struct thread_info, ac_stamp));
++	DEFINE(TI_AC_LEAVE, offsetof(struct thread_info, ac_leave));
++	DEFINE(TI_AC_STIME, offsetof(struct thread_info, ac_stime));
++	DEFINE(TI_AC_UTIME, offsetof(struct thread_info, ac_utime));
++#endif
+ 
+ #ifdef CONFIG_PPC64
+ 	DEFINE(DCACHEL1LINESIZE, offsetof(struct ppc64_caches, dline_size));
+Index: b/arch/powerpc/include/asm/thread_info.h
+===================================================================
+--- a/arch/powerpc/include/asm/thread_info.h	(revision 5607)
++++ b/arch/powerpc/include/asm/thread_info.h	(revision 5611)
+@@ -43,6 +43,12 @@
+ 	int		cpu;			/* cpu we're on */
+ 	int		preempt_count;		/* 0 => preemptable,
+ 						   <0 => BUG */
++#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(CONFIG_PPC32)
++	u32 ac_stamp;
++	u32 ac_leave;
++	u32 ac_stime;
++	u32 ac_utime;
++#endif
+ 	struct restart_block restart_block;
+ 	unsigned long	local_flags;		/* private flags for thread */
+ 
+Index: b/arch/powerpc/include/asm/cputime.h
+===================================================================
+--- a/arch/powerpc/include/asm/cputime.h	(revision 5607)
++++ b/arch/powerpc/include/asm/cputime.h	(revision 5611)
+@@ -228,7 +228,11 @@
+ 
+ #define cputime64_to_clock_t(ct)	cputime_to_clock_t((cputime_t)(ct))
+ 
++#ifdef CONFIG_PPC64
+ static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
++#else
++extern void arch_vtime_task_switch(struct task_struct *tsk);
++#endif
+ 
+ #endif /* __KERNEL__ */
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+Index: b/arch/powerpc/include/asm/ppc_asm.h
+===================================================================
+--- a/arch/powerpc/include/asm/ppc_asm.h	(revision 5607)
++++ b/arch/powerpc/include/asm/ppc_asm.h	(revision 5611)
+@@ -25,10 +25,16 @@
+  */
+ 
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
++#ifdef CONFIG_PPC64
+ #define ACCOUNT_CPU_USER_ENTRY(ra, rb)
+ #define ACCOUNT_CPU_USER_EXIT(ra, rb)
++#else /* CONFIG_PPC64 */
++#define ACCOUNT_CPU_USER_ENTRY(ti, ra, rb)
++#define ACCOUNT_CPU_USER_EXIT(ti, ra, rb)
++#endif /* CONFIG_PPC64 */
+ #define ACCOUNT_STOLEN_TIME
+-#else
++#else /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
++#ifdef CONFIG_PPC64
+ #define ACCOUNT_CPU_USER_ENTRY(ra, rb)					\
+ 	MFTB(ra);			/* get timebase */		\
+ 	ld	rb,PACA_STARTTIME_USER(r13);				\
+@@ -68,7 +74,27 @@
+ #define ACCOUNT_STOLEN_TIME
+ 
+ #endif /* CONFIG_PPC_SPLPAR */
++#else /* CONFIG_PPC64 */
++#define ACCOUNT_CPU_USER_ENTRY(ti, ra, rb)				\
++	MFTB(ra);							\
++	lwz rb, TI_AC_LEAVE(ti);					\
++	stw ra, TI_AC_STAMP(ti);	/* AC_STAMP = NOW */		\
++	subf rb, rb, ra;		/* R = NOW - AC_LEAVE */	\
++	lwz ra, TI_AC_UTIME(ti);					\
++	add ra, rb, ra;			/* AC_UTIME += R */		\
++	stw ra, TI_AC_UTIME(ti);					\
+ 
++#define ACCOUNT_CPU_USER_EXIT(ti, ra, rb)				\
++	MFTB(ra);							\
++	lwz rb, TI_AC_STAMP(ti);					\
++	stw ra, TI_AC_LEAVE(ti);					\
++	subf rb, rb, ra;		/* R = NOW - AC_STAMP */	\
++	lwz ra, TI_AC_STIME(ti);					\
++	add ra, rb, ra;			/* AC_STIME += R */		\
++	stw ra, TI_AC_STIME(ti);					\
++
++#endif /* CONFIG_PPC64 */
++
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ /*
+Index: b/arch/powerpc/platforms/Kconfig.cputype
+===================================================================
+--- a/arch/powerpc/platforms/Kconfig.cputype	(revision 5607)
++++ b/arch/powerpc/platforms/Kconfig.cputype	(revision 5611)
+@@ -1,7 +1,6 @@
+ config PPC64
+ 	bool "64-bit kernel"
+ 	default n
+-	select HAVE_VIRT_CPU_ACCOUNTING
+ 	help
+ 	  This option selects whether a 32-bit or a 64-bit kernel
+ 	  will be built.
