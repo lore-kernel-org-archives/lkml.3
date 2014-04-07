@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532AbaDGQmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 12:42:12 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755167AbaDGQmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 12:42:07 -0400
-Message-ID: <5342D55A.7000904@nod.at>
-Date: Mon, 07 Apr 2014 18:42:02 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755208AbaDGQrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 12:47:03 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:56645 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753197AbaDGQqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 12:46:55 -0400
+Date: Mon, 7 Apr 2014 10:46:44 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Richard Zhu <r65037@freescale.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based on
+ designware core driver
+Message-ID: <20140407164644.GB9952@obsidianresearch.com>
+References: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
+ <1395707726-20437-4-git-send-email-m-karicheri2@ti.com>
+ <235376049.yyfljDtinu@wuerfel>
+ <20140325165421.GB30641@obsidianresearch.com>
+ <5342D47F.4010506@ti.com>
 MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>
-CC: Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH] mtd: ubi: Free peb's synchronously for fastmap
-References: <1396339305-16005-1-git-send-email-tlinder@codeaurora.org> <CAFLxGvyUsLZsi3iiape6BivaduvfqZh8kXXwYOFuExUJho09kg@mail.gmail.com> <5342CCDB.3080402@codeaurora.org>
-In-Reply-To: <5342CCDB.3080402@codeaurora.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5342D47F.4010506@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.04.2014 18:05, schrieb Tanya Brokhman:
-> On 4/7/2014 4:02 PM, Richard Weinberger wrote:
->> On Tue, Apr 1, 2014 at 10:01 AM, Tanya Brokhman <tlinder@codeaurora.org> wrote:
->>> At first mount it's possible that there are not enough free PEBs since
->>> there are PEB's pending to be erased. In such scenario, fm_pool (which is
->>> the pool from which user required PEBs are allocated) will be empty.
->>> Try fixing the above described situation by synchronously performing
->>> pending erase work, thus produce another free PEB.
->>>
->>> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
->>>
->>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->>> index 457ead3..9a36f78 100644
->>> --- a/drivers/mtd/ubi/wl.c
->>> +++ b/drivers/mtd/ubi/wl.c
->>> @@ -595,10 +595,29 @@ static void refill_wl_pool(struct ubi_device *ubi)
->>>   static void refill_wl_user_pool(struct ubi_device *ubi)
->>>   {
->>>          struct ubi_fm_pool *pool = &ubi->fm_pool;
->>> +       int err;
->>>
->>>          return_unused_pool_pebs(ubi, pool);
->>>
->>>          for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
->>> +retry:
->>> +               if (!ubi->free.rb_node ||
->>> +                  (ubi->free_count - ubi->beb_rsvd_pebs < 1)) {
->>> +                       /*
->>> +                        * There are no available PEBs. Try to free
->>> +                        * PEB by means of synchronous execution of
->>> +                        * pending works.
->>> +                        */
->>> +                       if (ubi->works_count == 0)
->>> +                               break;
->>> +                       spin_unlock(&ubi->wl_lock);
->>> +                       err = do_work(ubi);
->>> +                       spin_lock(&ubi->wl_lock);
->>
->> This is basically what produce_free_peb() does.
+On Mon, Apr 07, 2014 at 12:38:23PM -0400, Murali Karicheri wrote:
+> On 3/25/2014 12:54 PM, Jason Gunthorpe wrote:
+> >On Tue, Mar 25, 2014 at 08:44:36AM +0100, Arnd Bergmann wrote:
+> >
+> >>I have no idea how this would work with the standard interrupt-map property,
+> >>since the legacy interrupt host is now the same device as the pci host.
+> >>
+> >>Maybe it's better to move the legacy irqchip handling entirely out of
+> >>the driver and use a separate device node for the registers so it can
+> >>come with its own #interrupt-cells, and then refer to this irqchip from
+> >>the interrupt-map.
+> >The other DW PCI-E drivers are being fixed to use interrupt-map, so I
+> >think this driver should be fixed before it goes in as well.
 > 
-> Right. I didn't use t just because of the termination condition. produce_free_peb stops if there is 1 free peb. I need more then 1
-> 
->>
->>> +                       if (err < 0)
->>> +                               break;
->>> +                       goto retry;
->>> +               }
->>> +
->>>                  pool->pebs[pool->size] = __wl_get_peb(ubi);
->>
->> __wl_get_peb() already calls produce_free_peb() when we run out of free PEBs.
->>
->> Does your patch really fix a problem you encounter or did you find the
->> issue by reviewing
->> the code?
->>
-> 
-> Yes. We encountered this issue, as described in the commit message. This is the fix. Verified and working for us.
+> Could you send me a patch reference or branch that I can review to
+> better understand changes required in my driver to use the bindings
+> you have described below?
 
-Wouldn't it be better to fix produce_free_pep() instead of duplicating it?
-I.e. Such that you can tell it how many PEBs you need.
+Bjorn is now merging it:
 
-Thanks,
-//richard
+[PATCH v2 0/6] PCI irq mapping fixes and cleanups
+http://www.spinics.net/lists/linux-pci/msg29589.html
+
+Jason
