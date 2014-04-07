@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaDGO22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 10:28:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754760AbaDGO20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 10:28:26 -0400
-Date: Mon, 7 Apr 2014 16:28:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 6/6] uprobes/x86: Emulate rip-relative conditional
-	"near" jmp's
-Message-ID: <20140407142823.GB8881@redhat.com>
-References: <20140406201524.GA32694@redhat.com> <20140406201636.GA521@redhat.com>
+	id S1755467AbaDGO2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 10:28:47 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:35956 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaDGO2q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 10:28:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140406201636.GA521@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140407141417.GA8096@kroah.com>
+References: <1395576796-17896-1-git-send-email-eu@opreamatei.ro>
+	<CABeAxaf=xC3sTJg88BsC_msm=fbNd6LkxZKySRwugA6S8zcSbA@mail.gmail.com>
+	<20140407141417.GA8096@kroah.com>
+Date: Mon, 7 Apr 2014 17:28:45 +0300
+Message-ID: <CABeAxae9L5598uo4sr3r_L9mOaM87rTFDPmzsFT2tdXajvcmFw@mail.gmail.com>
+Subject: Re: [PATCH] staging: cxt1e1: hwprobe: fix incorrect type in assignment
+From: Matei Oprea <eu@opreamatei.ro>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: driverdev <devel@driverdev.osuosl.org>, linux-kernel@vger.kernel.org,
+        ROSEdu Kernel Community <firefly@lists.rosedu.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06, Oleg Nesterov wrote:
+Sorry,
+
+I thought that it's out.
+ᐧ
+
+On Mon, Apr 7, 2014 at 5:14 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Apr 07, 2014 at 03:38:27PM +0300, Matei Oprea wrote:
+>> Any comments on this ?
 >
-> But I'll try to cleanup this patch...
+> You got an email from me about this, on the 23rd, saying that I can't do
+> anything with it until 3.15-rc1 is out.
+>
+> thanks,
+>
+> greg k-h
 
-See v2 below.
 
--------------------------------------------------------------------------------
-Subject: [RFC PATCH v2 6/6] uprobes/x86: Emulate rip-relative conditional "near" jmp's
 
-It seems that 16bit condi jmp is just 0x0f + short_jump_opc_plus_0x10.
-
-Reported-by: Jonathan Lebon <jlebon@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 3865d8b..dae02f9 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -591,6 +591,10 @@ static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 		auprobe->ttt.opc1 = opc1;
- 		break;
- 
-+	case 0x0f:
-+		if (insn->opcode.nbytes != 2)
-+			return -ENOSYS;
-+		opc1 = OPCODE2(insn) - 0x10;
- 	default:
- 		if (!is_cond_jmp_opcode(opc1))
- 			return -ENOSYS;
 -- 
-1.5.5.1
-
-
+Oprea Matei
