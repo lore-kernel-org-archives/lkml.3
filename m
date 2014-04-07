@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaDGACV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 20:02:21 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:44261 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754497AbaDGACS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 20:02:18 -0400
-From: Gene Heskett <gheskett@wdtv.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kconfig circular dependency question
-Date: Sun, 6 Apr 2014 20:02:12 -0400
-References: <5341AFC7.1070001@lwfinger.net> <5341B999.3050206@infradead.org> <1396817575.4886.23.camel@x220>
-In-Reply-To: <1396817575.4886.23.camel@x220>
+	id S1754717AbaDGADl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 20:03:41 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38521 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754654AbaDGADk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 20:03:40 -0400
+Message-ID: <5341EB52.1090704@oracle.com>
+Date: Sun, 06 Apr 2014 20:03:30 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
+To: Ian Kent <raven@themaw.net>
+CC: autofs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] autofs4: check dev ioctl size before allocating
+References: <1394934021-16965-1-git-send-email-sasha.levin@oracle.com>		 <53401C11.7010601@oracle.com> <1396753403.24991.3.camel@perseus.fritz.box>	 <5340C5C7.9010203@oracle.com> <1396756437.24991.6.camel@perseus.fritz.box>
+In-Reply-To: <1396756437.24991.6.camel@perseus.fritz.box>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201404062002.12286.gheskett@wdtv.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 06 April 2014, Paul Bolle wrote:
->On Sun, 2014-04-06 at 13:31 -0700, Randy Dunlap wrote:
->> and/or changing MOUSE_APPLETOUCH to depend on USB instead of select it?
->
->MOUSE_APPLETOUCH selects USB and depends on USB_ARCH_HAS_HCD. That's
->actually quite a common pattern.
->
->But what is the purpose of USB_ARCH_HAS_HCD? It is set by default if
->USB_SUPPORT is set. And USB depends on it, but since USB also depends on
->USB_SUPPORT that seems superfluous.
->
->My slow day continues, because I find this hard to grok.
->
->
->Paul Bolle
+On 04/05/2014 11:53 PM, Ian Kent wrote:
+> On Sat, 2014-04-05 at 23:11 -0400, Sasha Levin wrote:
+>> On 04/05/2014 11:03 PM, Ian Kent wrote:
+>>> On Sat, 2014-04-05 at 11:06 -0400, Sasha Levin wrote:
+>>>> Ping? Anyone wants to take this?
+>>>
+>>> Is this causing a problem for users?
+>>> If it is I'll send it to Andrew straight away.
+>>>
+>>> I do have this on my queue but don't have any other patches to send so
+>>> it's just sitting there.
+>>>
+>>> If it worries you I'll send it to Andrew now.
+>>
+>> It's not really a pressing issue since /dev/autofs is accessible only to
+>> root. I also doubt that it causes problems for actual users.
+>>
+>> If there are no issues with the patch, I think it's best if you could
+>> ack/sign off on it and if Andrew wants to take it now, he could. If he
+>> doesn't, it could wait for whenever.
+>>
+>> I just don't want it getting lost somewhere and never making it upstream.
+> 
+> OK, but since I'm going to send it I looked at it a bit closer.
+> Shouldn't the E2BIG be ENAMETOOLONG since it's a file path that's being
+> passed?
+> 
+> I can change that and send it if you agree with the change.
 
-Rant mode on.
+Looks good to me, thanks!
 
-I don't find it at all hard to use my toothpick sized oar here to bitch 
-about de-selected subsystems that are buried so far in dependencies that 
-you simply cannot find the options you need in a make xconfig or make 
-menuconfig.
 
-To have a whole genre of drivers simply disappear, never to be seen again 
-by someone trying to configure a working kernel, just because some 
-upstream, totally unrelated upstream dependency isn't checked, is nothing 
-short of asinine.
-
-I just spent a month building a new kernel here, and finally had to resort 
-to editing the individual trees kconfig files to get a 3.13.6 PAE kernel to 
-build, and it STILL won't play videos without extremely distracting audio  
-stutters and many second long video freezes, followed by 300 frames a 
-second catchups.
-
-Reboot to Ubu1204.3 LTS, works perfectly, except kmail crashes even before 
-opening its screen, with an error no one on the kubuntu lists has ever 
-seen.  I can't work without a working email agent.
-
-I had to search thru the far ends of the driver trees, looking at kconfig 
-files to see what parent dependencies they might contain, cd back up the 
-tree one level and make sure that kconfig had its dependencies met, clear 
-back up to the root kconfig.  This went on, building and rebooting to at 
-least 3 kernels an evening for damned near a month to even get where I am 
-ATM.  Thats not excusable.  Do not ever hide shit, make it ALL visible, and 
-if I check a driver my hardware needs, it should cascade back up thru the 
-tree calling in every other thing that driver needs, whether its selected 
-in the parent kconfigs or not.  If that attitude steps on somebodies toes, 
-I don't have a quarter to call anybody who cares.
-
-This from someone who has been a linux only house since RH5.0, in what, 
-1997 or 1998?
-
-You have, in the last few years, been painting yourself into a corner with 
-the *config's.  FIX IT.
-
-/Rant mode off.
-
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
+Thanks,
+Sasha
 
