@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200AbaDGMIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:08:54 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:49540 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988AbaDGMIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:08:51 -0400
+	id S1755255AbaDGMJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 08:09:47 -0400
+Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:45991 "EHLO
+	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754792AbaDGMJo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 08:09:44 -0400
+X-Spam-scanned: scanned by InterNLnet Mail Scan System
+X-Spam-Flag: NO
+X-Spam-Score: -2.9
+X-Spam-Languages: en
+Message-ID: <53429582.9010007@topic.nl>
+Date: Mon, 7 Apr 2014 14:09:38 +0200
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <53429445.5000005@gmail.com>
-References: <53429445.5000005@gmail.com>
-Date: Mon, 7 Apr 2014 17:38:50 +0530
-Message-ID: <CAKohpok189SxuJoGNvgshwEaUozMDM9mzA8wse5COkN8MBUaPg@mail.gmail.com>
-Subject: Re: [PATCH] drivers:cpufreq:unicore32: fix typo issue for 'clk'
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <cjb@laptop.org>, <gdjakov@mm-sol.com>
+Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
+References: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl> <1396852708-11058-1-git-send-email-mike.looijmans@topic.nl> <4366803.P4zmzQMZfl@wuerfel>
+In-Reply-To: <4366803.P4zmzQMZfl@wuerfel>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 April 2014 17:34, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
-> Need use 'clk' instead of 'mclk', which is the original removed local
-> variable.
+﻿On 04/07/2014 10:11 AM, Arnd Bergmann wrote:
+> On Monday 07 April 2014 08:38:28 Mike Looijmans wrote:
+>> index 34aef81..43b90c1 100644
+>> --- a/drivers/mmc/host/sdhci.c
+>> +++ b/drivers/mmc/host/sdhci.c
+>> @@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
+>>          host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
+>>          if (IS_ERR_OR_NULL(host->vqmmc)) {
+>>                  if (PTR_ERR(host->vqmmc) < 0) {
+>> +                       if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
+>> +                               return -EPROBE_DEFER;
+>>                          pr_info("%s: no vqmmc regulator found\n",
+>>                                  mmc_hostname(mmc));
+>>                          host->vqmmc = NULL;
+>> @@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
+>>          host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
+>>          if (IS_ERR_OR_NULL(host->vmmc)) {
+>>                  if (PTR_ERR(host->vmmc) < 0) {
+>> -                       pr_info("%s: no vmmc regulator found\n",
+>> -                               mmc_hostname(mmc));
+>> +                       if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
+>> +                               return -EPROBE_DEFER;
+>> +                       pr_info("%s: no vmmc regulator found (%d)\n",
+>> +                               mmc_hostname(mmc), PTR_ERR(host->vmmc));
+>>                          host->vmmc = NULL;
+>>                  }
 >
-> The related original commit:
->
->   "652ed95 cpufreq: introduce cpufreq_generic_get() routine"
->
-> The related error with allmodconfig for unicore32:
->
->     CC      drivers/cpufreq/unicore2-cpufreq.o
->   drivers/cpufreq/unicore2-cpufreq.c: In function 'ucv2_target':
->   drivers/cpufreq/unicore2-cpufreq.c:48: error: 'struct cpufreq_policy' has no member named 'mclk'
->   make[2]: *** [drivers/cpufreq/unicore2-cpufreq.o] Error 1
->   make[1]: *** [drivers/cpufreq] Error 2
->   make: *** [drivers] Error 2
->
->
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  drivers/cpufreq/unicore2-cpufreq.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Please change the code to not use IS_ERR_OR_NULL() instead, getting
+> a NULL return value from regulator_get_optional() should not be
+> considered a bug, while getting an error return should always
+> cause the probe function to fail.
 
-Stupid mistake.
+Please make that a separate patch, because doing so will break most (if not 
+all) boards using this controller.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Mike.
 
-@stable: please apply this for v3.14, as it broke in that cycle..
+
+Met vriendelijke groet / kind regards,
+
+Mike Looijmans
+
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
+
+Visit us at the Hannover Messe 7 - 11 April 2014 - Hall 002/D10 (Dutch Pavillion)
+http://www.hannovermesse.de/exhibitor/topic-embedded-products/V229623
+
