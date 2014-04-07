@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaDGTYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:24:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754711AbaDGTYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:24:07 -0400
-Date: Mon, 7 Apr 2014 21:24:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matthew Dempsky <mdempsky@chromium.org>
-Cc: Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ptrace: Fix fork event messages across pid
-	namespaces
-Message-ID: <20140407192419.GB24607@redhat.com>
-References: <CAF52+S6Y40K-sRPf4YAb8ceAmtgBzZ9OUbyhPTOc_AcOWuQ=Ng@mail.gmail.com> <1396391358-22367-1-git-send-email-mdempsky@chromium.org> <20140402145850.GB7332@redhat.com> <CAF52+S6vqK_D7bAz9o65ATSZsg4MfqJgo+Qji8+4=OQJDSEJ7A@mail.gmail.com> <CAF52+S4hs2oM_qw9Zo-6qiOp_-Cyt3ZpL+zU2_MUv=d7UKPqEA@mail.gmail.com>
+	id S1755105AbaDGT1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 15:27:22 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:40482 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753771AbaDGT1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 15:27:20 -0400
+Message-ID: <5342FC08.5070106@fb.com>
+Date: Mon, 7 Apr 2014 15:27:04 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF52+S4hs2oM_qw9Zo-6qiOp_-Cyt3ZpL+zU2_MUv=d7UKPqEA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sasha Levin <sasha.levin@oracle.com>, <dsterba@suse.cz>,
+        Jeff Mahoney <jeffm@suse.com>, <jbacik@fb.com>,
+        <linux-btrfs@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs: lock inversion between delayed_node->mutex and found->groups_sem
+References: <53239AE0.8030306@oracle.com> <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com> <533F20EB.2040500@oracle.com> <20140407165449.GA29256@twin.jikos.cz> <5342DD99.3010502@fb.com> <5342E86B.4000305@oracle.com>
+In-Reply-To: <5342E86B.4000305@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-07_03:2014-04-07,2014-04-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404070176
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02, Matthew Dempsky wrote:
+On 04/07/2014 02:03 PM, Sasha Levin wrote:
+> On 04/07/2014 01:17 PM, Chris Mason wrote:
+>>
+>>
+>> On 04/07/2014 12:54 PM, David Sterba wrote:
+>>> On Fri, Apr 04, 2014 at 05:15:23PM -0400, Sasha Levin wrote:
+>>>> On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
+>>>>> On 3/17/14, 9:05 AM, David Sterba wrote:
+>>>>>>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
+>>>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
+>>>>>>>>>
+>>>>>>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
+>>>>>>>
+>>>>>>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
+>>>>> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
+>>>>
+>>>> Is that fix available anywhere? I'm still seeing the issue in -next.
+>>>
+>>> It is: https://urldefense.proofpoint.com/v1/url?u=https://patchwork.kernel.org/patch/3894781/&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=HQJVSK4wPTft1zWwI1cGvwj5OfdmN5UItVlucU1K31o%3D%0A&s=5113699a2e7345a779333c87dd5b1d88b4410a7c7fcd5fa424baeb838ad7d31b , will probably hit -rc2
+>>>
+>>
+>> Its in the integration branch now along with some other important fixes.  We'll get it out shortly
 >
-> On Wed, Apr 2, 2014 at 2:58 PM, Matthew Dempsky <mdempsky@google.com> wrote:
-> > Otherwise, it looks like (e.g.) the attempts to get the parent's pid
-> > in fill_prstatus() and tomoyo_sys_getppid() are also theoretical races
-> > of the same kind?
+> Chris,
 >
-> Doh, nevermind, those functions would potentially be use null "struct
-> pid" pointers, not "struct pid_namespace" pointers; and pid_nr_ns()
-> guards against pid being null.
+> Can I suggest adding the integration branch to linux-next as well? That way
+> all the folks who report issues coming out of -next would be able to test
+> the fixes as well.
+>
 
-Yes, and they want the parent's pid, not ours pid in parent's namespace.
+Hi Sasha,
 
-Hmm. In fact I am replying only because I am not sure fill_psinfo() is
-correct, perhaps it confuses tid with tgid. I dunno.
+The ink is still a little wet on the integration branch. It'll 
+definitely go to linux-next and to Linus.
 
-Oleg.
+-chris
 
