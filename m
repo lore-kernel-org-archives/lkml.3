@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaDGNrU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:47:20 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:59495 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754760AbaDGNrR (ORCPT
+	id S1755374AbaDGNwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:52:43 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:49898 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988AbaDGNwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:47:17 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 7 Apr 2014 21:46:54 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        <devel@driverdev.osuosl.org>, <kernel@pengutronix.de>
-Subject: Re: [PATCH] imx-drm: imx-drm-core: Fix imx_drm_encoder_get_mux_id
-Message-ID: <20140407134649.GA3860@dragon>
-References: <1396858956-7096-1-git-send-email-p.zabel@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1396858956-7096-1-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Mon, 7 Apr 2014 09:52:40 -0400
+Subject: Re: [PATCH] GenWQE: Fix email address and update copyright notice
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, jsvogt@de.ibm.com,
+        mijung@gmx.net, michael@ibmra.de, esa@de.ibm.com
+In-Reply-To: <20140403180511.GC21565@kroah.com>
+References: <1396506327-15015-1-git-send-email-haver@linux.vnet.ibm.com>
+	 <20140403180511.GC21565@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 07 Apr 2014 15:52:29 +0200
+Message-ID: <1396878749.6721.5.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040713-5024-0000-0000-00000967CCCC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 10:22:36AM +0200, Philipp Zabel wrote:
-> The decoder mux id is equal to the port id of the encoder's input port
-> that is connected to the given crtc, not to the endpoint id (which is
-> arbitrary and usually zero).
+Hi Greg,
+
+Am Donnerstag, den 03.04.2014, 11:05 -0700 schrieb Greg KH:
+> On Thu, Apr 03, 2014 at 08:25:27AM +0200, Frank Haverkamp wrote:
+> > Updated email address of co-author and updated the copyright notice
+> > with the current year.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-
-It fixes a color corruption issue on my dual display case (LVDS + HDMI).
-
-Tested-by: Shawn Guo <shawn.guo@freescale.com>
-
-Shawn
-
-> ---
->  drivers/staging/imx-drm/imx-drm-core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Why update the copyright notice, it doesn't mean anything, as IBM
+> lawyers know well, so who is asking for this change?
 > 
-> diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-> index 4144a75..bc7f8bd 100644
-> --- a/drivers/staging/imx-drm/imx-drm-core.c
-> +++ b/drivers/staging/imx-drm/imx-drm-core.c
-> @@ -517,7 +517,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
->  		of_node_put(port);
->  		if (port == imx_crtc->port) {
->  			ret = of_graph_parse_endpoint(ep, &endpoint);
-> -			return ret ? ret : endpoint.id;
-> +			return ret ? ret : endpoint.port;
->  		}
->  	} while (ep);
->  
-> -- 
-> 1.9.1
+
+I thought it would be a good idea to update it, to keep it up to date.
+If you don't like my addition of the year in the copyright notice, I can
+remove it. Just let me know. I think it is not such important.
+
+The other content of this patch is, as you have seen, a spelling error
+in the name of my team member and that he wanted to have a different
+email address in the code.
+
+
+> thanks,
 > 
+> greg k-h
+> 
+
+Regards
+
+Frank
+
 
