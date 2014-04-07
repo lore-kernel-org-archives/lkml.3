@@ -1,91 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaDGWef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:34:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49503 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771AbaDGWed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755960AbaDGWed (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Apr 2014 18:34:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49485 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753771AbaDGWeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 18:34:31 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
         Andres Freund <andres@2ndquadrant.com>,
         Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/2] mm: page_alloc: Do not cache reclaim distances
-Date: Mon,  7 Apr 2014 23:34:28 +0100
-Message-Id: <1396910068-11637-3-git-send-email-mgorman@suse.de>
+Subject: [PATCH 0/2] Disable zone_reclaim_mode by default
+Date: Mon,  7 Apr 2014 23:34:26 +0100
+Message-Id: <1396910068-11637-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1396910068-11637-1-git-send-email-mgorman@suse.de>
-References: <1396910068-11637-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pgdat->reclaim_nodes tracks if a remote node is allowed to be reclaimed by
-zone_reclaim due to its distance. As it is expected that zone_reclaim_mode
-will be rarely enabled it is unreasonable for all machines to take a penalty.
-Fortunately, the zone_reclaim_mode() path is already slow and it is the path
-that takes the hit.
+When it was introduced, zone_reclaim_mode made sense as NUMA distances
+punished and workloads were generally partitioned to fit into a NUMA
+node. NUMA machines are now common but few of the workloads are NUMA-aware
+and it's routine to see major performance due to zone_reclaim_mode being
+disabled but relatively few can identify the problem.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mmzone.h |  1 -
- mm/page_alloc.c        | 15 +--------------
- 2 files changed, 1 insertion(+), 15 deletions(-)
+Those that require zone_reclaim_mode are likely to be able to detect when
+it needs to be enabled and tune appropriately so lets have a sensible
+default for the bulk of users.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 9b61b9b..564b169 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -757,7 +757,6 @@ typedef struct pglist_data {
- 	unsigned long node_spanned_pages; /* total size of physical page
- 					     range, including holes */
- 	int node_id;
--	nodemask_t reclaim_nodes;	/* Nodes allowed to reclaim from */
- 	wait_queue_head_t kswapd_wait;
- 	wait_queue_head_t pfmemalloc_wait;
- 	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a256f85..574928e 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1863,16 +1863,7 @@ static bool zone_local(struct zone *local_zone, struct zone *zone)
- 
- static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
- {
--	return node_isset(local_zone->node, zone->zone_pgdat->reclaim_nodes);
--}
--
--static void __paginginit init_zone_allows_reclaim(int nid)
--{
--	int i;
--
--	for_each_online_node(i)
--		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
--			node_set(i, NODE_DATA(nid)->reclaim_nodes);
-+	return node_distance(zone_to_nid(local_zone), zone_to_nid(zone)) < RECLAIM_DISTANCE;
- }
- 
- #else	/* CONFIG_NUMA */
-@@ -1906,9 +1897,6 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
- 	return true;
- }
- 
--static inline void init_zone_allows_reclaim(int nid)
--{
--}
- #endif	/* CONFIG_NUMA */
- 
- /*
-@@ -4917,7 +4905,6 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
- 
- 	pgdat->node_id = nid;
- 	pgdat->node_start_pfn = node_start_pfn;
--	init_zone_allows_reclaim(nid);
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
- #endif
+ Documentation/sysctl/vm.txt | 17 +++++++++--------
+ include/linux/mmzone.h      |  1 -
+ mm/page_alloc.c             | 17 +----------------
+ 3 files changed, 10 insertions(+), 25 deletions(-)
+
 -- 
 1.8.4.5
 
