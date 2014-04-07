@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543AbaDGSDC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:03:02 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39993 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaDGSDA (ORCPT
+	id S1755598AbaDGSDg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:03:36 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29466 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637AbaDGSDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:03:00 -0400
-Date: Mon, 7 Apr 2014 20:02:28 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Michal Simek <monstr@monstr.eu>, Mike Looijmans <mike.looijmans@topic.nl>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
-Message-ID: <20140407180228.GN12170@pengutronix.de>
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
- <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
- <53423E75.3020008@monstr.eu>
- <53429754.8080105@topic.nl>
- <534298E7.2020409@monstr.eu>
- <20140407171012.GC9952@obsidianresearch.com>
+	Mon, 7 Apr 2014 14:03:34 -0400
+Message-ID: <5342E86B.4000305@oracle.com>
+Date: Mon, 07 Apr 2014 14:03:23 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140407171012.GC9952@obsidianresearch.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 19:58:11 up 226 days,  3:29, 43 users,  load average: 0,05, 0,07,
- 0,12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Chris Mason <clm@fb.com>, dsterba@suse.cz, Jeff Mahoney <jeffm@suse.com>,
+        jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs: lock inversion between delayed_node->mutex and found->groups_sem
+References: <53239AE0.8030306@oracle.com> <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com> <533F20EB.2040500@oracle.com> <20140407165449.GA29256@twin.jikos.cz> <5342DD99.3010502@fb.com>
+In-Reply-To: <5342DD99.3010502@fb.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-On Mon, Apr 07, 2014 at 11:10:12AM -0600, Jason Gunthorpe wrote:
-> On Mon, Apr 07, 2014 at 02:24:07PM +0200, Michal Simek wrote:
+On 04/07/2014 01:17 PM, Chris Mason wrote:
 > 
-> > Device-tree BSP and in 2014.01 there will be new BSP which just
-> > generate them directly from the Vivado tools which just target your
-> > reference design.  You can connect your custom IP (or Xilinx or 3rd
-> > party) directly to the GIC which using different IRQ sensitivity
-> > with whatever register addresses and make no sense to write it by
-> > hand.
 > 
-> On our Zynq design here we ended up being unwilling to use platform
-> generation from Vivado. Basically all our IP was custom, so there was
-> no win at all to invoking the complexity of the automatic tools.
+> On 04/07/2014 12:54 PM, David Sterba wrote:
+>> On Fri, Apr 04, 2014 at 05:15:23PM -0400, Sasha Levin wrote:
+>>> On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
+>>>> On 3/17/14, 9:05 AM, David Sterba wrote:
+>>>>>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
+>>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
+>>>>>>>>
+>>>>>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
+>>>>>>
+>>>>>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
+>>>> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
+>>>
+>>> Is that fix available anywhere? I'm still seeing the issue in -next.
+>>
+>> It is: https://urldefense.proofpoint.com/v1/url?u=https://patchwork.kernel.org/patch/3894781/&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=HQJVSK4wPTft1zWwI1cGvwj5OfdmN5UItVlucU1K31o%3D%0A&s=5113699a2e7345a779333c87dd5b1d88b4410a7c7fcd5fa424baeb838ad7d31b , will probably hit -rc2
+>>
 > 
-> Thus we write the DT by hand, and our DT is complex, integrating
-> peripherals that span two FPGAs.
-> 
-> I think the in-kernel DT should use the kernel conventions, which
-> means using #include and the binding constants over magic values.
-> 
+> Its in the integration branch now along with some other important fixes.  We'll get it out shortly
 
-ACK.
+Chris,
 
-If in doubt follow common mainline practice. Although using includes
-for DT is not necessarily common practice, readability of DTs is
-really important IMHO.
+Can I suggest adding the integration branch to linux-next as well? That way
+all the folks who report issues coming out of -next would be able to test
+the fixes as well.
 
-Regards,
-Steffen
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Thanks,
+Sasha
+
