@@ -1,86 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaDGGCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 02:02:31 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:54857 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaDGGC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 02:02:27 -0400
-Message-ID: <53423F6F.5010504@monstr.eu>
-Date: Mon, 07 Apr 2014 08:02:23 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754825AbaDGGGz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 02:06:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24378 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916AbaDGGGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 02:06:52 -0400
+Date: Mon, 7 Apr 2014 08:06:20 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: gaowanlong@cn.fujitsu.com
+Cc: Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
+ hotplug
+Message-ID: <20140407080620.38f8bcf2@nial.usersys.redhat.com>
+In-Reply-To: <50DBC3E2.4090804@cn.fujitsu.com>
+References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	<50DACC26.7050409@redhat.com>
+	<50DACF22.5090707@cn.fujitsu.com>
+	<50DBC07B.7060303@redhat.com>
+	<50DBC3E2.4090804@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-CC: Sylwester Nawrocki <s.nawrocki@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, chow.kim@samsung.com,
-        Young-Gun Jang <yg1004.jang@samsung.com>
-Subject: Re: [PATCH 06/10] ARM: EXYNOS: Add support for mapping PMU base address
- via DT
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1396425058-4012-7-git-send-email-pankaj.dubey@samsung.com> <533BF905.6070701@samsung.com> <533BFF69.1060701@monstr.eu> <533D24D6.2030103@samsung.com> <533FE1BC.7050300@samsung.com>
-In-Reply-To: <533FE1BC.7050300@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 27 Dec 2012 11:43:30 +0800
+Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
 
-On 04/05/2014 12:58 PM, Pankaj Dubey wrote:
-> On 04/03/2014 06:07 PM, Sylwester Nawrocki wrote:
->> On 02/04/14 14:15, Michal Simek wrote:
->>>> There were some patches posted for syscon to make it available in ea=
-rlier
->>>> system initialization stage: https://lkml.org/lkml/2014/2/19/218
->>> I haven't finished this yet. I have to look at it again.
->> Thanks for the information, I assume this would be also useful
->> on the Exynos SoC series, so I'd be happy to see continuation
->> of those works.
->=20
-> It is useful for Exynos SoC series and I have modified this patch serie=
-s to use early syscon
-> initialization API and I can see it's working.
-> I have some observation for early initialization of syscon API which I =
-will
-> update in corresponding message thread.
+> On 12/27/2012 11:28 AM, Jason Wang wrote:
+> > On 12/26/2012 06:19 PM, Wanlong Gao wrote:
+> >> On 12/26/2012 06:06 PM, Jason Wang wrote:
+> >>> On 12/26/2012 03:06 PM, Wanlong Gao wrote:
+> >>>> Add a cpu notifier to virtio-net, so that we can reset the
+> >>>> virtqueue affinity if the cpu hotplug happens. It improve
+> >>>> the performance through enabling or disabling the virtqueue
+> >>>> affinity after doing cpu hotplug.
+> >>> Hi Wanlong:
+> >>>
+> >>> Thanks for looking at this.
+> >>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> >>>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> >>>> Cc: Jason Wang <jasowang@redhat.com>
+> >>>> Cc: virtualization@lists.linux-foundation.org
+> >>>> Cc: netdev@vger.kernel.org
+> >>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> >>>> ---
+> >>>>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
+> >>>>  1 file changed, 38 insertions(+), 1 deletion(-)
+> >>>>
+> >>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> >>>> index a6fcf15..9710cf4 100644
+> >>>> --- a/drivers/net/virtio_net.c
+> >>>> +++ b/drivers/net/virtio_net.c
+> >>>> @@ -26,6 +26,7 @@
+> >>>>  #include <linux/scatterlist.h>
+> >>>>  #include <linux/if_vlan.h>
+> >>>>  #include <linux/slab.h>
+> >>>> +#include <linux/cpu.h>
+> >>>>  
+> >>>>  static int napi_weight = 128;
+> >>>>  module_param(napi_weight, int, 0444);
+> >>>> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
+> >>>>  module_param(csum, bool, 0444);
+> >>>>  module_param(gso, bool, 0444);
+> >>>>  
+> >>>> +static bool cpu_hotplug = false;
+> >>>> +
+> >>>>  /* FIXME: MTU in config. */
+> >>>>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+> >>>>  #define GOOD_COPY_LEN	128
+> >>>> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+> >>>>  		vi->affinity_hint_set = false;
+> >>>>  }
+> >>>>  
+> >>>> +static int virtnet_cpu_callback(struct notifier_block *nfb,
+> >>>> +			       unsigned long action, void *hcpu)
+> >>>> +{
+> >>>> +	switch(action) {
+> >>>> +	case CPU_ONLINE:
+> >>>> +	case CPU_ONLINE_FROZEN:
+> >>>> +	case CPU_DEAD:
+> >>>> +	case CPU_DEAD_FROZEN:
+> >>>> +		cpu_hotplug = true;
+> >>>> +		break;
+> >>>> +	default:
+> >>>> +		break;
+> >>>> +	}
+> >>>> +	return NOTIFY_OK;
+> >>>> +}
+> >>>> +
+> >>>> +static struct notifier_block virtnet_cpu_notifier = {
+> >>>> +	.notifier_call = virtnet_cpu_callback,
+> >>>> +};
+> >>>> +
+> >>>>  static void virtnet_get_ringparam(struct net_device *dev,
+> >>>>  				struct ethtool_ringparam *ring)
+> >>>>  {
+> >>>> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+> >>>>   */
+> >>>>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+> >>>>  {
+> >>>> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+> >>>> +	int txq;
+> >>>> +
+> >>>> +	if (unlikely(cpu_hotplug == true)) {
+> >>>> +		virtnet_set_affinity(netdev_priv(dev), true);
+> >>>> +		cpu_hotplug = false;
+> >>>> +	}
+> >>>> +
+> >>> Why don't you just do this in callback?
+> >> Callback can just give us a "hcpu", can't get the virtnet_info from callback. Am I missing something?
+> > 
+> > Well, I think you can just embed the notifier block into virtnet_info,
+> > then use something like container_of in the callback to make the
+> > notifier per device. This also solve the concern of Eric.
+> 
+> Yeah, thank you very much for your suggestion. I'll try it.
+> 
+> >>> btw. Does qemu/kvm support cpu-hotplug now?
+> >> From http://www.linux-kvm.org/page/CPUHotPlug, I saw that qemu-kvm can support hotplug
+> >> but failed to merge to qemu.git, right?
+> > 
+> > Not sure, I just try latest qemu, it even does not have a cpu_set command.
+> 
+> Adding Igor to CC,
+> 
+> As I know, hotplug support is cleaned from qemu, and Igor want to rework it but not been completed?
+> I'm not sure about that, Igor, could you send out your tech-preview-patches?
+CPU hot-add is supported by upstream now, hot-remove is not supported yet,
+besides of qemu work it would require quite a work on kvm side as well.
 
-Great. Please update that thread we should finish this implementation
-to be useful for everybody.
+> 
+> Thanks,
+> Wanlong Gao
+> 
+> > 
+> > Thanks
+> >>
+> >> Thanks,
+> >> Wanlong Gao
+> >>
+> > 
+> > 
+> 
 
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNCP28ACgkQykllyylKDCEAygCfQXdUMqZAYvviJyhWQsglE87a
-8xQAn0dkthqUz7uIx9Hm99SxWewBojNb
-=mtGD
------END PGP SIGNATURE-----
-
---gSAAimj8V1TXmNtGpKOHiBX1WX7LpFTmI--
