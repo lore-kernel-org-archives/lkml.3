@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429AbaDGOYo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 10:24:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754650AbaDGOYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 10:24:42 -0400
-Message-ID: <5342B525.80407@redhat.com>
-Date: Mon, 07 Apr 2014 09:24:37 -0500
-From: Ken Cox <jkc@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755404AbaDGO0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 10:26:44 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16286 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755125AbaDGO0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 10:26:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 07 Apr 2014 07:19:39 -0700
+Date: Mon, 7 Apr 2014 17:26:20 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Thierry Reding <treding@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] clk: tegra: Fix PLLE programming
+Message-ID: <20140407142620.GA30476@tbergstrom-lnx.Nvidia.com>
+References: <1396619715-15524-1-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-CC: linux-kernel@vger.kernel.org, sparmaintainer@unisys.com,
-        devel@driverdev.osuosl.org, Jet Chen <jet.chen@intel.com>
-Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
-References: <20140407111725.GC25152@localhost> <20140407140958.GA7346@kroah.com>
-In-Reply-To: <20140407140958.GA7346@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1396619715-15524-1-git-send-email-treding@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 04, 2014 at 03:55:13PM +0200, Thierry Reding wrote:
+> PLLE has M, N and P divider shift and width parameters that differ from
+> the defaults. Furthermore, when clearing the M, N and P divider fields
+> the corresponding masks were never shifted, thereby clearing only the
+> lowest bits of the register. This lead to a situation where the PLLE
+> programming would only work if the register hadn't been touched before.
+> 
 
-On 04/07/2014 09:09 AM, Greg Kroah-Hartman wrote:
-> On Mon, Apr 07, 2014 at 07:17:25PM +0800, Fengguang Wu wrote:
->> Hi Ken,
->>
->> I got the below dmesg and the first bad commit is
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
->>
->> commit 12e364b9f08aa335dc7716ce74113e834c993765
->> Author:     Ken Cox <jkc@redhat.com>
->> AuthorDate: Tue Mar 4 07:58:07 2014 -0600
->> Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> CommitDate: Tue Mar 4 16:58:21 2014 -0800
->>
->>      staging: visorchipset driver to provide registration and other services
-> I think Sasha has already sent a fix to resolve this issue that I'll be
-> sending to Linus in a day or so.
->
-> Ken, is Sasha's patch going to resolve this issue as well?  It looks
-> like people haven't tested what happens when the module is loaded
-> without the hardware present in the system :(
-You are exactly right.  The driver needs to check for hardware early on 
-before trying to use it.  Unfortunately, Sasha's patch will not resolve 
-this one.  I'll work with Ben Romer to get a patch out ASAP.
+Will take this into tegra-clk-next. Mike, given that this is bug fix for
+a feature which is supposed to work, I think it's appropriate to try to get
+this into 3.15 still. I will make a pull-request on 3.15-rc1 as soon as it
+appears.
 
-Thanks,
-Ken Cox
+Cheers,
+
+Peter.
