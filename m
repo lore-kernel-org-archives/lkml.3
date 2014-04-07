@@ -1,81 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101AbaDGS5i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:57:38 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46736 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378AbaDGS5d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:57:33 -0400
-Date: Mon, 7 Apr 2014 11:57:32 -0700
-From: Olof Johansson <olof@lixom.net>
-To: arm-summit-discuss@lists.infradead.org
-Cc: olof@lixom.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <b.brezillon.dev@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Alex Elder <elder@ieee.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Frank Rowand <frowand.list@gmail.com>,
-        Rob Herring <robherring2@gmail.com>, arnd@arndb.de,
-        grant.likely@secretlab.ca, magnus.damm@gmail.com, horms@verge.net.au,
-        khilman@linaro.org
-Subject: [ANNOUNCE / UPDATE]: ARM mini-summit at ELC changed to BoFs (+ hack
- day)
-Message-ID: <20140407185732.GA18857@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755975AbaDGSzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:55:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755926AbaDGSzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 14:55:36 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: acme@ghostprotocols.net
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, namhyung@gmail.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 1/4 v2] perf: Allow ability to map cpus to nodes easily
+Date: Mon,  7 Apr 2014 14:55:21 -0400
+Message-Id: <1396896924-129847-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1396896924-129847-1-git-send-email-dzickus@redhat.com>
+References: <1396896924-129847-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch figures out the max number of cpus and nodes that are on the
+system and creates a map of cpu to node.  This allows us to provide a cpu
+and quickly get the node associated with it.
 
-Based on the results of the call-for-invites, we've decided that there
-aren't enough topics (and absence of several crucial participants)
-to warrant a whole day of mini-summit at this time.
+It was mostly copied from builtin-kmem.c and tweaked slightly to use less memory
+(use possible cpus instead of max).  It also calculates the max number of nodes.
 
-We'll work with the ELC organizers to schedule two BoFs: 
-* DT (best practices, reviews, etc)
-* ARM/ARM64 (sharing, consolidation, upstreaming)
+V6: use original kernel_max reference
+V5: use sysfs_mountpoint and filename__read_str
+V4: fix typos, rename get_max_num
+V3: simplify function names
 
-Those were the major meaty topics from the proposals that we can have
-meaningful discussions about, and we'll find time on the ELC schedule
-and a room for those discussions for interested parties.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/util/cpumap.c | 149 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h |  35 +++++++++++
+ 2 files changed, 184 insertions(+)
 
-However, we still have the room we've reserved. We'll cancel meal service,
-which means that there will be no cost involved for participants (and
-no registration), and we'll keep the room available for a generic hack
-day. If you've got something you want to work on together with someone
-else from the community, this is a great opportunity to do so. Want to
-come by and show off a cute embedded hack? Swing by!
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 7fe4994..1b75434 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -317,3 +317,152 @@ int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep)
+ {
+ 	return cpu_map__build_map(cpus, corep, cpu_map__get_core);
+ }
++
++/* setup simple routines to easily access node numbers given a cpu number */
++static int get_max_num(char *path, int *max)
++{
++	size_t num;
++	char *buf;
++	int err = 0;
++
++	if (filename__read_str(path, &buf, &num))
++		return -1;
++
++	buf[num] = '\0';
++
++	/* start on the right, to find highest node num */
++	while (--num) {
++		if ((buf[num] == ',') || (buf[num] == '-')) {
++			num++;
++			break;
++		}
++	}
++	if (sscanf(&buf[num], "%d", max) < 1) {
++		err = -1;
++		goto out;
++	}
++
++	/* convert from 0-based to 1-based */
++	(*max)++;
++
++out:
++	free(buf);
++	return err;
++}
++
++/* Determine highest possible cpu in the system for sparse allocation */
++static void set_max_cpu_num(void)
++{
++	const char *mnt;
++	char path[PATH_MAX];
++	int ret = -1;
++
++	/* set up default */
++	max_cpu_num = 4096;
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		goto out;
++
++	/* get the highest possible cpu number for a sparse allocation */
++	snprintf(path, PATH_MAX, "%s/devices/system/cpu/kernel_max", mnt);
++
++	ret = get_max_num(path, &max_cpu_num);
++
++out:
++	if (ret)
++		pr_err("Failed to read max cpus, using default of %d\n",
++			max_cpu_num);
++	return;
++}
++
++/* Determine highest possible node in the system for sparse allocation */
++static void set_max_node_num(void)
++{
++	const char *mnt;
++	char path[PATH_MAX];
++	int ret = -1;
++
++	/* set up default */
++	max_node_num = 8;
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		goto out;
++
++	/* get the highest possible cpu number for a sparse allocation */
++	snprintf(path, PATH_MAX, "%s/devices/system/node/possible", mnt);
++
++	ret = get_max_num(path, &max_node_num);
++
++out:
++	if (ret)
++		pr_err("Failed to read max nodes, using default of %d\n",
++			max_node_num);
++	return;
++}
++
++static int init_cpunode_map(void)
++{
++	int i;
++
++	set_max_cpu_num();
++	set_max_node_num();
++
++	cpunode_map = calloc(max_cpu_num, sizeof(int));
++	if (!cpunode_map) {
++		pr_err("%s: calloc failed\n", __func__);
++		goto out;
++	}
++
++	for (i = 0; i < max_cpu_num; i++)
++		cpunode_map[i] = -1;
++
++	return 0;
++out:
++	return -1;
++}
++
++int cpu__setup_cpunode_map(void)
++{
++	struct dirent *dent1, *dent2;
++	DIR *dir1, *dir2;
++	unsigned int cpu, mem;
++	char buf[PATH_MAX];
++	char path[PATH_MAX];
++	const char *mnt;
++
++	/* initialize globals */
++	if (init_cpunode_map())
++		return -1;
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		return 0;
++
++	snprintf(path, PATH_MAX, "%s/devices/system/node", mnt);
++	dir1 = opendir(path);
++	if (!dir1)
++		return 0;
++
++	/* walk tree and setup map */
++	while ((dent1 = readdir(dir1)) != NULL) {
++		if (dent1->d_type != DT_DIR ||
++		    sscanf(dent1->d_name, "node%u", &mem) < 1)
++			continue;
++
++		snprintf(buf, PATH_MAX, "%s/%s", path, dent1->d_name);
++		dir2 = opendir(buf);
++		if (!dir2)
++			continue;
++		while ((dent2 = readdir(dir2)) != NULL) {
++			if (dent2->d_type != DT_LNK ||
++			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
++				continue;
++			cpunode_map[cpu] = mem;
++		}
++		closedir(dir2);
++	}
++	closedir(dir1);
++	return 0;
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index b123bb9..61a6548 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -4,6 +4,9 @@
+ #include <stdio.h>
+ #include <stdbool.h>
+ 
++#include "perf.h"
++#include "util/debug.h"
++
+ struct cpu_map {
+ 	int nr;
+ 	int map[];
+@@ -46,4 +49,36 @@ static inline bool cpu_map__empty(const struct cpu_map *map)
+ 	return map ? map->map[0] == -1 : true;
+ }
+ 
++int max_cpu_num;
++int max_node_num;
++int *cpunode_map;
++
++int cpu__setup_cpunode_map(void);
++
++static inline int cpu__max_node(void)
++{
++	if (unlikely(!max_node_num))
++		pr_debug("cpu_map not initialized\n");
++
++	return max_node_num;
++}
++
++static inline int cpu__max_cpu(void)
++{
++	if (unlikely(!max_cpu_num))
++		pr_debug("cpu_map not initialized\n");
++
++	return max_cpu_num;
++}
++
++static inline int cpu__get_node(int cpu)
++{
++	if (unlikely(cpunode_map == NULL)) {
++		pr_debug("cpu_map not initialized\n");
++		return -1;
++	}
++
++	return cpunode_map[cpu];
++}
++
+ #endif /* __PERF_CPUMAP_H */
+-- 
+1.7.11.7
 
-We want to keep the room productive even if we're not doing anything
-formal, so if you're just there to shoot the breeze and hang out, then
-we recommend a nearby coffee shop or lounge area instead.
-
-We'll work with LF to secure some power strips. You might want to bring
-one for yourself if you need several outlets for your systems.  I'm not
-so sure we'll be able to do wired ethernet, so if you rely on that,
-expect to tether to a laptop for your work, etc.
-
-
-ARM mini-summit Program Committee,
-
-Arnd Bergmann
-Magnus Damm
-Kevin Hilman
-Simon Horman
-Olof Johansson
-Grant Likely
