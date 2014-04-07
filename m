@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaDGU2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 16:28:13 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:57343 "EHLO
+	id S1756033AbaDGU3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 16:29:35 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60260 "EHLO
 	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187AbaDGU2I (ORCPT
+	with ESMTP id S1755876AbaDGU2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 16:28:08 -0400
+	Mon, 7 Apr 2014 16:28:11 -0400
 From: Fabio Falzoi <fabio.falzoi84@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Fabio Falzoi <fabio.falzoi84@gmail.com>
-Subject: [PATCH v2 1/5] Staging: rts5139: Camel case labels replaced
-Date: Mon,  7 Apr 2014 22:27:44 +0200
-Message-Id: <1396902468-27906-2-git-send-email-fabio.falzoi84@gmail.com>
+Subject: [PATCH v2 2/5] Staging: rts5139: Fixed multi-line code alignment
+Date: Mon,  7 Apr 2014 22:27:45 +0200
+Message-Id: <1396902468-27906-3-git-send-email-fabio.falzoi84@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1396902468-27906-1-git-send-email-fabio.falzoi84@gmail.com>
 References: <20140407003341.GA13365@kroah.com>
@@ -22,91 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace camel case labels with linux coding style compliant names.
+Multi-line code aligned with open parenthesis.
 
 Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
 ---
- drivers/staging/rts5139/rts51x.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/staging/rts5139/rts51x.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/rts5139/rts51x.c b/drivers/staging/rts5139/rts51x.c
-index c8d06d4..9d9c706 100644
+index 9d9c706..28f4631 100644
 --- a/drivers/staging/rts5139/rts51x.c
 +++ b/drivers/staging/rts5139/rts51x.c
-@@ -273,7 +273,7 @@ static int rts51x_control_thread(void *__chip)
- 		/* has the command timed out *already* ? */
- 		if (test_bit(FLIDX_TIMED_OUT, &chip->usb->dflags)) {
- 			chip->srb->result = DID_ABORT << 16;
--			goto SkipForAbort;
-+			goto abort;
+@@ -291,15 +291,15 @@ static int rts51x_control_thread(void *__chip)
+ 		 */
+ 		else if (chip->srb->device->id) {
+ 			RTS51X_DEBUGP("Bad target number (%d:%d)\n",
+-				       chip->srb->device->id,
+-				       chip->srb->device->lun);
++				      chip->srb->device->id,
++				      chip->srb->device->lun);
+ 			chip->srb->result = DID_BAD_TARGET << 16;
  		}
  
- 		scsi_unlock(host);
-@@ -316,7 +316,7 @@ static int rts51x_control_thread(void *__chip)
- 		if (chip->srb->result != DID_ABORT << 16)
- 			chip->srb->scsi_done(chip->srb);
- 		else
--SkipForAbort :
-+abort :
- 			RTS51X_DEBUGP("scsi command aborted\n");
+ 		else if (chip->srb->device->lun > chip->max_lun) {
+ 			RTS51X_DEBUGP("Bad LUN (%d:%d)\n",
+-				       chip->srb->device->id,
+-				       chip->srb->device->lun);
++				      chip->srb->device->id,
++				      chip->srb->device->lun);
+ 			chip->srb->result = DID_BAD_TARGET << 16;
+ 		}
  
- 		/* If an abort request was received we need to signal that
-@@ -763,17 +763,17 @@ static int rts51x_probe(struct usb_interface *intf,
- 	/* Associate the us_data structure with the USB device */
- 	result = associate_dev(chip, intf);
- 	if (result)
--		goto BadDevice;
-+		goto bad_device;
+@@ -433,12 +433,12 @@ static int associate_dev(struct rts51x_chip *chip, struct usb_interface *intf)
+ 	rts51x->pusb_intf = intf;
+ 	rts51x->ifnum = intf->cur_altsetting->desc.bInterfaceNumber;
+ 	RTS51X_DEBUGP("Vendor: 0x%04x, Product: 0x%04x, Revision: 0x%04x\n",
+-		       le16_to_cpu(rts51x->pusb_dev->descriptor.idVendor),
+-		       le16_to_cpu(rts51x->pusb_dev->descriptor.idProduct),
+-		       le16_to_cpu(rts51x->pusb_dev->descriptor.bcdDevice));
++		      le16_to_cpu(rts51x->pusb_dev->descriptor.idVendor),
++		      le16_to_cpu(rts51x->pusb_dev->descriptor.idProduct),
++		      le16_to_cpu(rts51x->pusb_dev->descriptor.bcdDevice));
+ 	RTS51X_DEBUGP("Interface Subclass: 0x%02x, Protocol: 0x%02x\n",
+-		       intf->cur_altsetting->desc.bInterfaceSubClass,
+-		       intf->cur_altsetting->desc.bInterfaceProtocol);
++		      intf->cur_altsetting->desc.bInterfaceSubClass,
++		      intf->cur_altsetting->desc.bInterfaceProtocol);
  
- 	/* Find the endpoints and calculate pipe values */
- 	result = get_pipes(chip);
- 	if (result)
--		goto BadDevice;
-+		goto bad_device;
- 
- 	/* Acquire all the other resources and add the host */
- 	result = rts51x_acquire_resources(chip);
- 	if (result)
--		goto BadDevice;
-+		goto bad_device;
- 
- 	/* Start up our control thread */
- 	th = kthread_run(rts51x_control_thread, chip, RTS51X_CTL_THREAD);
-@@ -781,14 +781,14 @@ static int rts51x_probe(struct usb_interface *intf,
- 		printk(KERN_WARNING RTS51X_TIP
- 		       "Unable to start control thread\n");
- 		result = PTR_ERR(th);
--		goto BadDevice;
-+		goto bad_device;
+ 	/* Store our private data in the interface */
+ 	usb_set_intfdata(intf, chip);
+@@ -569,8 +569,7 @@ static int get_pipes(struct rts51x_chip *chip)
  	}
- 	rts51x->ctl_thread = th;
  
- 	result = scsi_add_host(rts51x_to_host(chip), &rts51x->pusb_intf->dev);
- 	if (result) {
- 		printk(KERN_WARNING RTS51X_TIP "Unable to add the scsi host\n");
--		goto BadDevice;
-+		goto bad_device;
+ 	if (!ep_in || !ep_out) {
+-		RTS51X_DEBUGP("Endpoint sanity check failed!"
+-					"Rejecting dev.\n");
++		RTS51X_DEBUGP("Endpoint sanity check failed! Rejecting dev.\n");
+ 		return -EIO;
  	}
- 	scsi_scan_host(rts51x_to_host(chip));
  
-@@ -798,7 +798,7 @@ static int rts51x_probe(struct usb_interface *intf,
- 		printk(KERN_WARNING RTS51X_TIP
- 		       "Unable to start polling thread\n");
- 		result = PTR_ERR(th);
--		goto BadDevice;
-+		goto bad_device;
- 	}
- 	rts51x->polling_thread = th;
- 
-@@ -813,7 +813,7 @@ static int rts51x_probe(struct usb_interface *intf,
- 	return 0;
- 
- 	/* We come here if there are any problems */
--BadDevice:
-+bad_device:
- 	RTS51X_DEBUGP("rts51x_probe() failed\n");
- 	release_everything(chip);
- 	return result;
 -- 
 1.9.1
 
