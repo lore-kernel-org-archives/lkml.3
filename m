@@ -1,94 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856AbaDGXHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 19:07:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21382 "EHLO mga09.intel.com"
+	id S1755623AbaDGXNR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 19:13:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37364 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044AbaDGXHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 19:07:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,813,1389772800"; 
-   d="scan'208";a="488819210"
-Date: Mon, 7 Apr 2014 13:42:21 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, tpowa@archlinux.org,
-        matt.fleming@intel.com, hpa@zytor.com
-Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
-Message-ID: <20140407204221.GW32556@tassilo.jf.intel.com>
-References: <52E4CF03.8030208@archlinux.org>
- <5339F739.2060207@archlinux.org>
- <20140331233450.GI32556@tassilo.jf.intel.com>
- <5339FC62.8060207@archlinux.org>
- <20140405011332.GR32556@tassilo.jf.intel.com>
- <5340134B.4010705@archlinux.org>
- <20140407173016.GU32556@tassilo.jf.intel.com>
- <5342E46B.4080603@archlinux.org>
- <53430646.40507@archlinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53430646.40507@archlinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754044AbaDGXNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 19:13:15 -0400
+Message-ID: <1396912372.4958.41.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+From: Adam Williamson <awilliam@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Date: Mon, 07 Apr 2014 16:12:52 -0700
+In-Reply-To: <5343220A.3060007@zytor.com>
+References: <20140404064120.GB11877@gmail.com>
+			<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>
+			<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>
+			<20140404151359.GB12370@srcf.ucam.org>
+		 <20140406184023.1e31412d@alan.etchedpixels.co.uk>
+		 <53419F84.2090204@zytor.com> <53425B2A.10001@linux.intel.com>
+		 <53431296.10502@zytor.com>
+	 <1396908292.4958.24.camel@adam.happyassassin.net>
+	 <5343220A.3060007@zytor.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 10:10:46PM +0200, Thomas Bächler wrote:
-> Am 07.04.2014 19:46, schrieb Thomas Bächler:
-> > Am 07.04.2014 19:30, schrieb Andi Kleen:
-> >>>> Do you have a specific config?
-> >>>> Specific compiler version?
-> >>>
-> >>> Using gcc 4.8 from Arch Linux with the configuration at [1] and Linux 3.14.
-> >>
-> >> I tested this configuration (with gcc 4.8 on FC20/19) and it loads
-> >> ext4 and all the other modules without any problems.
-> >>
-> >> Base tree: 
-> >>
-> >> commit e06df6a7eae1ab1ef4deb076aeeaed90e948e5c0
-> >> Merge: c0fc3cb 9dd721c
-> >> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> >> Date:   Mon Mar 31 12:34:49 2014 -0700
-> >>
-> >> Must be something really archlinux specific. Please do some debugging.
-> >> Also please double check that all your test procedures are correct.
+On Mon, 2014-04-07 at 15:09 -0700, H. Peter Anvin wrote:
+
+> > so, it sounds like...
 > > 
-> > Tetsuo was so kind to install Arch Linux and reproduce the exact
-> > procedure I use to create the kernel (which includes the automated
-> > creation of a pristine build environment) - his kernel booted just fine.
-> > I will do more tests today on two of my own computers to narrow this down.
+> > 1) ACPI
+> > 2) KEYBOARD
+> > 3) ACPI
+> > 4) KEYBOARD
+> > 5) EFI
+> > possibly 6) CF9
+> > 7) TRIPLE *or* BIOS
+> > 
+> > is what you would say makes sense, right? And really all there is to
+> > decide is whether to include CF9, and whether to put TRIPLE or BIOS at
+> > the end?
+> > 
 > 
-> I think I found out why nobody could reproduce the problem.
-> 
-> I did a few more tests and it turns out that the problem only occurs
-> when I boot the kernel with UEFI (using Gummiboot+EFISTUB). Now, except
-> for OVMF virtual machines, there are barely any 32 Bit UEFI machines
-> around, so nobody noticed. When I boot the kernel with 32 Bit BIOS, it
-> boots fine.
-> 
-> Just to clarify: As mentioned in my first mail, some symbols still get a
-> 0x0 CRC (which I still think is wrong), but the mismatch does not occur
-> in BIOS mode.
-> 
-> On x86_64, the problem does not occur at all.
+> Yep.  And it has now been shown again that CF9 just isn't safe.  We do
+> TRIPLE as the ultimate fallback now.
 
-Thanks.
+OK. So the conservative option here - compared to the state before
+Aubrey's patch, not the current state - is to simply add 5) EFI, go back
+to TRIPLE instead of BIOS at the end of the list, and leave it at that.
+We expect that would fix Baytrails.
 
-This sounds like the UEFI boot corrupts some memory? 
+But if we look at the message on Aubrey's commit:
 
-Copying some UEFI experts.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/arch/x86/kernel/reboot.c?id=a4f1987e4c5489a3877eaa7451a68d28c5a3f664
 
-Maybe we need some CRC checksum checking in the kernel?
+it mentions:
 
--Andi
+"If one method required is in the default list in this patch but the
+machine reboot still hangs, that means some methods ahead of the
+required method cause the system hangs, then reboot the machine by
+passing reboot= arguments and submit the reboot dmidecode table quirk."
 
+basically, we know that we probably can't come up with a standard
+fallback chain that will work for *every* system, and the goal instead
+is to come up with the approach that requires the *fewest* quirks.
+
+Again just the monkey here, but I think this is right:
+
+'CF9' = 'reboot=p' = 'set_pci_reboot'
+'BIOS' = 'reboot=bios' = 'set_bios_reboot'
+
+if so, according to the existing quirk table, we know of 17 cases which
+need CF9 and 11 which need BIOS, and are therefore not served by the
+previous fallback chain. So far after making the change, AFAIK, we've
+heard of one case which does not work with ACPI or KBD, hangs with CF9,
+but works with TRIPLE. It would need a quirk for any order which
+includes CF9, but that's still 16 quirks fewer than we're currently
+carrying for systems which need CF9.
+
+Peter suggested going back and looking at the previous attempt to add
+CF9 to the fallback chain. I just did that. Here's the relevant commits:
+
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/arch/x86/kernel/reboot.c?id=b47b92884212008b4bd044ba6b48b93c00b10ec6
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/arch/x86/kernel/reboot.c?id=3889d0cea2b73049bdca062d9ff1e5d33468289c
+
+the relevant text:
+
+"Unfortunately this has been shown to cause lockups on at least two
+systems for which REBOOT_KBD worked, both Thinkpads with Intel
+chipsets."
+
+those systems would, it seems, be OK with the proposed order:
+
+ACPI
+KBD
+ACPI
+KBD
+EFI
+CF9
+TRIPLE
+(rinse and repeat)
+
+because KBD gets hit before CF9. So we at least don't have any prior
+evidence that adding CF9 *after* KBD will break systems other than the
+one found so far, AFAICS.
+
+The question of whether the 'last resort' should be TRIPLE or BIOS is
+presumably similarly data driven - would we wind up with more quirks to
+use TRIPLE than we currently have to use BIOS? Always hard to answer
+those questions, though.
+
+Do we assume that finding a single system which would need a quirk to
+avoid CF9 under the new chain means we'd quickly find another 16 and
+hence be in a worse position than we are by leaving CF9 out? Or do we
+give it a bit longer to see if more really do show up?
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
+
