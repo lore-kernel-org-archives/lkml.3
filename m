@@ -1,160 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844AbaDGGT1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 02:19:27 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60692 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbaDGGTX (ORCPT
+	id S1754808AbaDGGa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 02:30:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17112 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaDGGax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 02:19:23 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 7 Apr 2014 15:19:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Message-ID: <20140407061932.GF12144@bbox>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
- <20140401212102.GM4407@cmpxchg.org>
- <533B8C2D.9010108@linaro.org>
- <20140402183113.GL1500@redhat.com>
- <20140402192744.GU14688@cmpxchg.org>
+	Mon, 7 Apr 2014 02:30:53 -0400
+Date: Mon, 7 Apr 2014 09:30:36 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: Pankaj Dev <pankaj.dev@st.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] clk: st: NULL dereference on error in
+ st_of_clkgen_vcc_setup()
+Message-ID: <20140407063036.GA11581@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140402192744.GU14688@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 03:27:44PM -0400, Johannes Weiner wrote:
-> On Wed, Apr 02, 2014 at 08:31:13PM +0200, Andrea Arcangeli wrote:
-> > Hi everyone,
-> > 
-> > On Tue, Apr 01, 2014 at 09:03:57PM -0700, John Stultz wrote:
-> > > So between zero-fill and SIGBUS, I think SIGBUS makes the most sense. If
-> > > you have a third option you're thinking of, I'd of course be interested
-> > > in hearing it.
-> > 
-> > I actually thought the way of being notified with a page fault (sigbus
-> > or whatever) was the most efficient way of using volatile ranges.
-> > 
-> > Why having to call a syscall to know if you can still access the
-> > volatile range, if there was no VM pressure before the access?
-> > syscalls are expensive, accessing the memory direct is not. Only if it
-> > page was actually missing and a page fault would fire, you'd take the
-> > slowpath.
-> 
-> Not everybody wants to actually come back for the data in the range,
-> allocators and message passing applications just want to be able to
-> reuse the memory mapping.
-> 
-> By tying the volatility to the dirty bit in the page tables, an
-> allocator could simply clear those bits once on free().  When malloc()
-> hands out this region again, the user is expected to write, which will
-> either overwrite the old page, or, if it was purged, fault in a fresh
-> zero page.  But there is no second syscall needed to clear volatility.
-> 
-> > > Now... once you've chosen SIGBUS semantics, there will be folks who will
-> > > try to exploit the fact that we get SIGBUS on purged page access (at
-> > > least on the user-space side) and will try to access pages that are
-> > > volatile until they are purged and try to then handle the SIGBUS to fix
-> > > things up. Those folks exploiting that will have to be particularly
-> > > careful not to pass volatile data to the kernel, and if they do they'll
-> > > have to be smart enough to handle the EFAULT, etc. That's really all
-> > > their problem, because they're being clever. :)
-> > 
-> > I'm actually working on feature that would solve the problem for the
-> > syscalls accessing missing volatile pages. So you'd never see a
-> > -EFAULT because all syscalls won't return even if they encounters a
-> > missing page in the volatile range dropped by the VM pressure.
-> > 
-> > It's called userfaultfd. You call sys_userfaultfd(flags) and it
-> > connects the current mm to a pseudo filedescriptor. The filedescriptor
-> > works similarly to eventfd but with a different protocol.
-> > 
-> > You need a thread that will never access the userfault area with the
-> > CPU, that is responsible to poll on the userfaultfd and talk the
-> > userfaultfd protocol to fill-in missing pages. The userfault thread
-> > after a POLLIN event reads the virtual addresses of the fault that
-> > must have happened on some other thread of the same mm, and then
-> > writes back an "handled" virtual range into the fd, after the page (or
-> > pages if multiple) have been regenerated and mapped in with
-> > sys_remap_anon_pages(), mremap or equivalent atomic pagetable page
-> > swapping. Then depending on the "solved" range written back into the
-> > fd, the kernel will wakeup the thread or threads that were waiting in
-> > kernel mode on the "handled" virtual range, and retry the fault
-> > without ever exiting kernel mode.
-> > 
-> > We need this in KVM for running the guest on memory that is on other
-> > nodes or other processes (postcopy live migration is the most common
-> > use case but there are others like memory externalization and
-> > cross-node KSM in the cloud, to keep a single copy of memory across
-> > multiple nodes and externalized to the VM and to the host node).
-> > 
-> > This thread made me wonder if we could mix the two features and you
-> > would then depend on MADV_USERFAULT and userfaultfd to deliver to
-> > userland the "faults" happening on the volatile pages that have been
-> > purged as result of VM pressure.
-> > 
-> > I'm just saying this after Johannes mentioned the issue with syscalls
-> > returning -EFAULT. Because that is the very issue that the userfaultfd
-> > is going to solve for the KVM migration thread.
-> > 
-> > What I'm thinking now would be to mark the volatile range also
-> > MADV_USERFAULT and then calling userfaultfd and instead of having the
-> > cache regeneration "slow path" inside the SIGBUS handler, to run it in
-> > the userfault thread that polls the userfaultfd. Then you could write
-> > the volatile ranges to disk with a write() syscall (or use any other
-> > syscall on the volatile ranges), without having to worry about -EFAULT
-> > being returned because one page was discarded. And if MADV_USERFAULT
-> > is not called in combination with vrange syscalls, then it'd still
-> > work without the userfault, but with the vrange syscalls only.
-> > 
-> > In short the idea would be to let the userfault code solve the fault
-> > delivery to userland for you, and make the vrange syscalls only focus
-> > on the page purging problem, without having to worry about what
-> > happens when something access a missing page.
-> 
-> Yes, the two seem certainly combinable to me.
-> 
-> madvise(MADV_FREE | MADV_USERFAULT) to allow purging and userspace
-> fault handling.  In the fault slowpath, you can then regenerate any
-> missing data and do MADV_FREE again if it should remain volatile.  And
-> again, any actual writes to the region would clear volatility because
-> now the cache copy changed and discarding it would mean losing state.
+There are two allocations where, if they fail, then we end up
+dereferencing the NULL pointer in the error handling code.
 
-Another scenario that above can't cover.
-Someone might put volatility permanently until unmarking so they can
-generate cache pages on that range freely without further syscall.
+Fixes: 94885faf9dbc ('clk: st: Support for DIVMUX and PreDiv Clocks')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-I mean above sugguestion can cover those pages were already mapped
-when syscall was called but couldn't cover upcoming fault-in pages
-so I think vrange syscall is still needed.
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
+index a329906..10899bc 100644
+--- a/drivers/clk/st/clkgen-mux.c
++++ b/drivers/clk/st/clkgen-mux.c
+@@ -714,14 +714,14 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
+ 
+ 	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
+ 	if (!clk_data)
+-		goto err;
++		goto err_free_parents;
+ 
+ 	clk_data->clk_num = VCC_MAX_CHANNELS;
+ 	clk_data->clks = kzalloc(clk_data->clk_num * sizeof(struct clk *),
+ 				 GFP_KERNEL);
+ 
+ 	if (!clk_data->clks)
+-		goto err;
++		goto err_free_data;
+ 
+ 	for (i = 0; i < clk_data->clk_num; i++) {
+ 		struct clk *clk;
+@@ -811,10 +811,11 @@ err:
+ 		kfree(container_of(composite->mux_hw, struct clk_mux, hw));
+ 	}
+ 
+-	if (clk_data)
+-		kfree(clk_data->clks);
++	kfree(clk_data->clks);
+ 
++err_free_data:
+ 	kfree(clk_data);
++err_free_parents:
+ 	kfree(parents);
+ }
+ CLK_OF_DECLARE(clkgen_vcc, "st,clkgen-vcc", st_of_clkgen_vcc_setup);
