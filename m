@@ -1,70 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaDGTt2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:49:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60351 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044AbaDGTt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:49:26 -0400
-Date: Mon, 7 Apr 2014 21:49:22 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: haokexin@gmail.com, paul.gortmaker@windriver.com,
-        yamada.m@jp.panasonic.com, linux-kbuild@vger.kernel.org,
+	id S1755754AbaDGTyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 15:54:14 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:36999 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaDGTyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 15:54:12 -0400
+Date: Mon, 7 Apr 2014 12:54:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: mathieu.desnoyers@efficios.com, peterz@infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild changes for v3.15-rc1
-Message-ID: <20140407194922.GA13995@sepie.suse.cz>
+Subject: Re: Promela/spin model for NO_HZ_FULL_SYSIDLE code
+Message-ID: <20140407195406.GF5272@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140330230856.GA21498@linux.vnet.ibm.com>
+ <20140403234312.GA2812@localhost.localdomain>
+ <20140407181154.GE5272@linux.vnet.ibm.com>
+ <20140407185450.GB4106@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140407185450.GB4106@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040719-0928-0000-0000-000000FADCBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Apr 07, 2014 at 08:54:52PM +0200, Frederic Weisbecker wrote:
+> On Mon, Apr 07, 2014 at 11:11:55AM -0700, Paul E. McKenney wrote:
+> > > On the upstream code, the first read of full_sysidle_state after exiting idle is not
+> > > performed by an atomic operation. So I wonder if this is right to put this
+> > > in the atomic section.
+> > > 
+> > > I don't know the language enough to tell if it has no effect but I'm just
+> > > worried that it gets badly intepreted. Like the above read plus the below
+> > > conditional write in the same atomic section gets packed in a kind of cmpxchg_if_above() ?
+> > > 
+> > > Which is what we want to avoid if the value is not above RCU_SYSIDLE_SHORT after
+> > > a non atomic read.
+> > 
+> > Given that cmpxchg() is being used to emulate exactly that atomic
+> > operation, I feel good about this Promela translation.
+> 
+> Right but the very first read that checks if full_sysidle_state is > RCU_SYSIDLE_SHORT
+> is done in a non-atomic way. Only when it verifies the condition do we use cmpxchg()
+> 
+>        while (oldstate > RCU_SYSIDLE_SHORT) {
+>            newoldstate = cmpxchg(&full_sysidle_state,
+>                                   oldstate, RCU_SYSIDLE_NOT);
+>            if (oldstate == newoldstate && oldstate == RCU_SYSIDLE_FULL_NOTED) {
+>                 rcu_kick_nohz_cpu(tick_do_timer_cpu);
+>                 return; /* We cleared it, done! */
+>            }
+>            oldstate = newoldstate;
+>        }
+> 
+> Now the way you wrote it PROMELA looked like we use cmpxchg() (or some close relative)
+> right away from the first read. It's hard to translate with real world operations so I'm
+> inventing cmpxchg_if_above() which has the same atomic and full barrier properties
+> than cmpxchg() expect that it only exchanges old value with new value if old is
+> above the last parameter:
+> 
+>         oldstate = cmpxchg_if_above(oldstate, RCU_SYSIDLE_NOT, RCU_SYSIDLE_SHORT);
+>         if (oldstate == RCU_SYSIDLE_FULL_NOTED)
+>                 rcu_kick_nohz_cpu(tick_do_timer_cpu);
+>                 return; /* We cleared it, done! */
+> 
+> 
+> > If the value is different at the time of the cmpxchg(), the cmpxchg() fails.
+> 
+> Right but it might not do a cmpxchg() if oldval is <= SHORT.
+> 
+> > I suppose I could write it as follows instead:
+> > 
+> > 		/* Get state out of full-system idle states. */
+> > 		oldstate = full_sysidle_state;
+> > 		do
+> > 		:: 1 ->
+> > 			atomic {
+> > 				if
+> > 				:: oldstate > RCU_SYSIDLE_SHORT &&
+> > 				   oldstate == full_sysidle_state ->
+> > 					full_sysidle_state = RCU_SYSIDLE_NOT;
+> > 					break;
+> > 				:: else ->
+> > 					oldstate = full_sysidle_state;
+> > 				fi;
+> > 			}
+> > 		od;
+> > 
+> > Here the "if" emulates the cmpxchg() instruction and the rest emulates
+> > the loop.  Both representations get the same result when
+> 
+> Ok if they have the same result and implement the first read in a non atomic
+> way then it's all good. The PROMELA syntax has just been confusing to me in
+> this regard.
 
-please pull these kbuild bits for v3.15-rc1:
-- Cleanups in the main Makefiles and Documentation/DocBook/Makefile
-- make O=... directory is automatically created if needed
-- mrproper/distclean removes the old include/linux/version.h to make
-  life easier when bisecting across the commit that moved the version.h
-  file
+Actually, my first attempt above wasn't quite right.  This one is better.
+So, yes, Promela can be confusing.  ;-)
 
-Thanks,
-Michal
+		/* Get state out of full-system idle states. */
+		oldstate = full_sysidle_state;
+		do
+		:: 1 ->
+			atomic {
+				if
+				:: oldstate > RCU_SYSIDLE_SHORT &&
+				   oldstate == full_sysidle_state ->
+					full_sysidle_state = RCU_SYSIDLE_NOT;
+					break;
+				:: oldstate > RCU_SYSIDLE_SHORT &&
+				   oldstate != full_sysidle_state ->
+					oldstate = full_sysidle_state;
+				:: oldstate <= RCU_SYSIDLE_SHORT -> break;
+				fi;
+			}
+		od;
 
-The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+And this passes as well.
 
-  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+> > > > 			if
+> > > > 			:: oldstate > RCU_SYSIDLE_SHORT ->
+> > > > 				full_sysidle_state = RCU_SYSIDLE_NOT;
+> > > > 			:: else -> skip;
+> > > > 			fi;
+> > > > 		}
+> > > > 
+> > > > 		/* If needed, wake up the timekeeper. */
+> > > > 		if
+> > > > 		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
+> > > > 			wakeup_timekeeper = 1;
+> > > > 		:: else -> skip;
+> > > > 		fi;
+> > > > 
+> > > > 		/* Mark ourselves fully awake and operational. */
+> > > > 		am_setup[me] = 1;
+> > > > 
+> > > > 		/* We are fully awake, so timekeeper must not be asleep. */
+> > > > 		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
+> > > > 
+> > > > 		/* Running in kernel in the following loop. */
+> > > > 		do
+> > > > 		:: 1 -> skip;
+> > > > 		:: 1 -> break;
+> > > > 		od;
+> > > > 	od
+> > > > }
+> > > > 
+> > > > /*
+> > > >  * Are all the workers in dyntick-idle state?
+> > > >  */
+> > > > #define check_idle() \
+> > > > 	i = 0; \
+> > > > 	idle = 1; \
+> > > > 	do \
+> > > > 	:: i < NUM_WORKERS -> \
+> > > > 		if \
+> > > > 		:: am_busy[i] == 1 -> idle = 0; \
+> > > > 		:: else -> skip; \
+> > > > 		fi; \
+> > > > 		i++; \
+> > > > 	:: i >= NUM_WORKERS -> break; \
+> > > > 	od
+> > > > 
+> > > > /*
+> > > >  * Timekeeping CPU.
+> > > >  */
+> > > > proctype timekeeper()
+> > > > {
+> > > > 	byte i;
+> > > > 	byte idle;
+> > > > 	byte curstate;
+> > > > 	byte newstate;
+> > > > 
+> > > > 	do
+> > > > 	:: 1 ->
+> > > > 		/* Capture current state. */
+> > > > 		check_idle();
+> > > > 		curstate = full_sysidle_state;
+> > > > 		newstate = curstate;
+> > > > 
+> > > > 		/* Check for acceptance state. */
+> > > > 		if
+> > > > 		:: idle == 0 ->
+> > > > progress_idle:
+> > > 
+> > > Is this some kind of label? I can't find the target anywhere.
+> > 
+> > It is a marker.  If you specify -DNP and if there is any cycle of
+> > states that does not pass through a label beginning with "progress",
+> > the verification will fail.  So it is useful for finding livelocks.
+> > 
+> > Mathieu posted another way of getting this same effect.
+> 
+> Ah ok.
+> 
+> > 
+> > > > 		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
+> > > > 			/* Non-idle and state advanced, revert to base state. */
+> > > > 			full_sysidle_state = RCU_SYSIDLE_NOT;
+> > > 
+> > > Looking at the upstream code, I think we reset also when state == RCU_SYSIDLE_SHORT
+> > > once we detect a non-idle state. If it's not a mistyping, I'm probably missing something.
+> > 
+> > I don't see this.  The resetting happens in rcu_sysidle_force_exit(),
+> > which contains the following:
+> > 
+> > 	while (oldstate > RCU_SYSIDLE_SHORT) {
+> > 		newoldstate = cmpxchg(&full_sysidle_state,
+> > 				      oldstate, RCU_SYSIDLE_NOT);
+> > 		if (oldstate == newoldstate &&
+> > 		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+> > 			rcu_kick_nohz_cpu(tick_do_timer_cpu);
+> > 			return; /* We cleared it, done! */
+> > 		}
+> > 		oldstate = newoldstate;
+> > 	}
+> > 
+> > If the state is RCU_SYSIDLE_SHORT, we skip the body of the "if" thus
+> > declining to reset back to RCU_SYSIDLE_NOT.  Or am I confused?
+> 
+> Hmm, the loop above is the code of !timekeeper side. I'm referring to the timekeeper side (which
+> is what this PROMELA chunck represents, unless I'm utterly confused).
 
-are available in the git repository at:
+Yep, we are in the timekeeper part of the model.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+> And the timekeeper side resets full_sysidle_state when it detects a non-idle CPU:
+> 
+> rcu_sys_is_idle() -> rcu_sysidle_report -> rcu_sysidle_cancel()
+> 
+> So the PROMELA code suggests that when we find a non idle CPU, we only reset
+> full_sysidle_state when is it >= RCU_SYSIDLE_LONG:
+> 
+>                   :: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
+>                         /* Non-idle and state advanced, revert to base state. */
+>                         full_sysidle_state = RCU_SYSIDLE_NOT;
+> 
+> ...but actually the condition upstream seems to be full_sysidle_state >= RCU_SYSIDLE_SHORT.
+> 
+> For example we loop in rcu_sys_is_idle() (case of NR_CPUS < 8), and we detect a round of full-idle CPUs, so we
+> set full_sysidle_state to RCU_SYSIDLE_SHORT. Then we do another pass in the loop but this
+> time we detect a CPU is not idle, so we reset to RCU_SYSIDLE_NOT instead of advancing to RCU_SYSIDLE_LONG.
+> 
+> Right?
 
-for you to fetch changes up to b12f73740b8764952a112a677991300545e98c06:
+So rcu_sys_is_idle() invokes rcu_sysidle_report() after each scan.
+If rcu_sysidle_report() sees that there was a nonidle CPU, it invokes
+rcu_sysidle_cancel().  Which does indeed set the state back to
+RCU_SYSIDLE_NOT, as you say.  Who wrote this code, anyway?  ;-)
 
-  kbuild: docbook: fix the include error when executing "make help" (2014-04-01 10:49:21 +0200)
+IIRC, the rationale was that hitting the state hard and often on
+small systems should not be a problem.  But there will probably
+soon be some system out there that will not like this sort of
+treatment.
 
-----------------------------------------------------------------
-Kevin Hao (1):
-      kbuild: docbook: fix the include error when executing "make help"
+I am tempted to modify the kernel to make it easier to model by putting a
+check for full_sysidle_state >= RCU_SYSIDLE_LONG in rcu_sysidle_cancel(),
+and I might at some point do just that.  For the moment, I just made
+the model check both ways.  It does work either way.  (Whew!)
 
-Masahiro Yamada (7):
-      kbuild: specify build_docproc as a phony target
-      kbuild: docbook: include cmd files more simply
-      kbuild: docbook: specify KERNELDOC dependency correctly
-      kbuild: docbook: use $(obj) and $(src) rather than specific path
-      kbuild: move "quote" to Kbuild.include to be consistent
-      kbuild: remove redundant '.*.cmd' pattern from make distclean
-      kbuild: create a build directory automatically for out-of-tree build
+Seems like it would be simpler if the state machines for both large
+and small systems operated the same, though.  And the extra check
+certainly shouldn't hurt small systems.  So I will change the kernel!
 
-Paul Gortmaker (1):
-      kbuild: unconditionally clobber include/linux/version.h on distclean
+							Thanx, Paul
 
- Documentation/DocBook/Makefile | 25 +++++++------------------
- Makefile                       | 10 +++++-----
- scripts/Kbuild.include         |  1 +
- scripts/Makefile               |  6 +++---
- scripts/Makefile.lib           |  4 ----
- 5 files changed, 16 insertions(+), 30 deletions(-)
