@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaDGGiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 02:38:46 -0400
-Received: from atl4mhob15.myregisteredsite.com ([209.17.115.53]:49997 "EHLO
-	atl4mhob15.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750922AbaDGGip (ORCPT
+	id S1754815AbaDGGpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 02:45:08 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33738 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaDGGpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 02:38:45 -0400
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, gdjakov@mm-sol.com,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
-Date: Mon,  7 Apr 2014 08:38:28 +0200
-Message-Id: <1396852708-11058-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl>
-References: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl>
+	Mon, 7 Apr 2014 02:45:05 -0400
+Message-ID: <53424946.4000504@linux.vnet.ibm.com>
+Date: Mon, 07 Apr 2014 12:14:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Ming Lei <tom.leiming@gmail.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Subject: Re: [PATCH] arm, kvm: fix double lock on cpu_add_remove_lock
+References: <1396805768-18669-1-git-send-email-tom.leiming@gmail.com>
+In-Reply-To: <1396805768-18669-1-git-send-email-tom.leiming@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040706-5564-0000-0000-00000CEEB181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If vmmc or vqmmc regulators are controlled by an I2C device, the
-request for the regulator is likely to fail because the I2C bus has
-not been probed yet. The sdhci then incorrectly assumes that the user
-never wanted to use a regulator anyway and continues without ever
-enabling or configuring the required regulator.
+On 04/06/2014 11:06 PM, Ming Lei wrote:
+> The patch of "arm, kvm: Fix CPU hotplug callback registration"
+> in -next tree holds the lock before calling the two functions:
+> 
+> 	kvm_vgic_hyp_init()
+> 	kvm_timer_hyp_init()
+> 
+> and both the two functions are calling register_cpu_notifier()
+> to register cpu notifier, so cause double lock on cpu_add_remove_lock.
+> 
+> Considered that both two functions are only called inside
+> kvm_arch_init() with holding cpu_add_remove_lock, so simply use
+> __register_cpu_notifier() to fix the problem.
+> 
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: Christoffer Dall <christoffer.dall@linaro.org>
+> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 
-To solve this, when a required voltage regulator returns
-EPROBE_DEFER, signalling that the regulator exists but is not
-available yet, forward this error to the probe method instead
-of simply assuming that the user never wanted to use a regulator
-anyway.
+Sorry for missing that, and thank you for the fix!
 
-Tested on a custom board that has an I2C regulator for one of the sdhcis
-and no regulators at all for the other. This patch enables such a system
-to work correctly.
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
----
- drivers/mmc/host/sdhci.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Regards,
+Srivatsa S. Bhat
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 34aef81..43b90c1 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
- 	if (IS_ERR_OR_NULL(host->vqmmc)) {
- 		if (PTR_ERR(host->vqmmc) < 0) {
-+			if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
-+				return -EPROBE_DEFER;
- 			pr_info("%s: no vqmmc regulator found\n",
- 				mmc_hostname(mmc));
- 			host->vqmmc = NULL;
-@@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
- 	host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
- 	if (IS_ERR_OR_NULL(host->vmmc)) {
- 		if (PTR_ERR(host->vmmc) < 0) {
--			pr_info("%s: no vmmc regulator found\n",
--				mmc_hostname(mmc));
-+			if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
-+				return -EPROBE_DEFER;
-+			pr_info("%s: no vmmc regulator found (%d)\n",
-+				mmc_hostname(mmc), PTR_ERR(host->vmmc));
- 			host->vmmc = NULL;
- 		}
- 	}
--- 
-1.7.9.5
+> ---
+>  virt/kvm/arm/arch_timer.c |    2 +-
+>  virt/kvm/arm/vgic.c       |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/virt/kvm/arm/arch_timer.c b/virt/kvm/arm/arch_timer.c
+> index 5081e80..22fa819 100644
+> --- a/virt/kvm/arm/arch_timer.c
+> +++ b/virt/kvm/arm/arch_timer.c
+> @@ -277,7 +277,7 @@ int kvm_timer_hyp_init(void)
+> 
+>  	host_vtimer_irq = ppi;
+> 
+> -	err = register_cpu_notifier(&kvm_timer_cpu_nb);
+> +	err = __register_cpu_notifier(&kvm_timer_cpu_nb);
+>  	if (err) {
+>  		kvm_err("Cannot register timer CPU notifier\n");
+>  		goto out_free;
+> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+> index 8ca405c..47b2983 100644
+> --- a/virt/kvm/arm/vgic.c
+> +++ b/virt/kvm/arm/vgic.c
+> @@ -1496,7 +1496,7 @@ int kvm_vgic_hyp_init(void)
+>  		goto out;
+>  	}
+> 
+> -	ret = register_cpu_notifier(&vgic_cpu_nb);
+> +	ret = __register_cpu_notifier(&vgic_cpu_nb);
+>  	if (ret) {
+>  		kvm_err("Cannot register vgic CPU notifier\n");
+>  		goto out_free_irq;
+> 
 
