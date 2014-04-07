@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300AbaDGMvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:51:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64366 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274AbaDGMvt (ORCPT
+	id S1755264AbaDGMyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 08:54:09 -0400
+Received: from smtp-out-159.synserver.de ([212.40.185.159]:1035 "EHLO
+	smtp-out-115.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754992AbaDGMyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:51:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cjb@laptop.org, gdjakov@mm-sol.com
-Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
-Date: Mon, 07 Apr 2014 14:51:41 +0200
-Message-ID: <4902841.krZFXFDZqb@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53429AD4.7030508@topic.nl>
-References: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl> <10471336.Pb8zVvW3Hp@wuerfel> <53429AD4.7030508@topic.nl>
+	Mon, 7 Apr 2014 08:54:07 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7340
+Message-ID: <53429FF3.9060106@metafoo.de>
+Date: Mon, 07 Apr 2014 14:54:11 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:NFa7/BGqkBTdlH84JxxKZ0Y7EOxRUfWM/8kWrRjpK2j
- vOOTYYeOfeTzxS6TmZaF7lTMEPiBobYQPeNBbL1mCE6eHwEYCP
- 6t/b5yYZPrD1iYhUF2HYSInGtp3AaGmMsES9Y+7WOSOBoq7dnF
- kZFzNPLYtwEou3cch4jik2WzHmH+2V6PMeASawBiz3nbLDKqiO
- 5Txgx4sXrPQf6otB4gQ9qzv2n6T4PW7P9kPl3AjmifbMfUKGPW
- 62YQNo31/kkVaHSHeyXV4lYZOniLOpLJaoNWeZ8DAc+6lhQaeS
- kB6l/e+m7FB1dkLeuN6uiuMZMA1qmXu7mZv4uUJSmIXTAvHDtC
- AMwO/OI5BXe/gvlqeGIg=
+To: Arun Shamanna Lakshmi <aruns@nvidia.com>
+CC: lgirdwood@gmail.com, broonie@kernel.org, swarren@wwwdotorg.org,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Songhee Baek <sbaek@nvidia.com>
+Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
+References: <1396656730-30145-1-git-send-email-aruns@nvidia.com>
+In-Reply-To: <1396656730-30145-1-git-send-email-aruns@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 April 2014 14:32:20 Mike Looijmans wrote:
-> On 04/07/2014 02:25 PM, Arnd Bergmann wrote:
-> 
-> Judging from the kernel output, regulator_get_optional returns -ENODEV if the 
-> supply wasn't found.
-> 
-> Maybe the API is confusing (or wrong?) here.
-> 
-> If you change the code as per your suggestion, the SD will not work unless you 
-> explicitly assign supplies. And judging from what I've seen so far, I am the 
-> first to have ever attached a power supply to this controller...
+On 04/05/2014 02:12 AM, Arun Shamanna Lakshmi wrote:
+> 1. Modify soc_enum struct to handle pointers for reg and mask
+> 2. Add dapm get and put APIs for multi register one hot encoded mux
+> 3. Update snd_soc_dapm_update struct to support multiple reg update
+>
+> Signed-off-by: Arun S L <aruns@nvidia.com>
+> Signed-off-by: Songhee Baek <sbaek@nvidia.com>
 
-It's certainly not very "optional" if it returns an error here.
+Looks good to me, so:
 
-You could try to special-case the "-ENODEV" return here, but I think it
-would be better to change the regulator interface to be less confusing.
+Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
 
-	Arnd
+
+As Takashi said it is not that nice that there is a bit of code churn by 
+having to update all the existing users of e->reg and e->mask. But 
+implementing this properly seems to cause even more code churn. And I think 
+it will be done best in an effort to consolidate the kcontrol helpers and 
+the DAPM kcontrol helpers by adding an additional layer of abstraction 
+between the kcontrols and the hardware access that translates between the 
+logical value and the physical value(s).
+
+E.g. something like
+
+struct kcontrol_ops {
+	int (*read)(...);
+	int (*write)(...);
+};
+
+And then have one kind of ops for each kind of control type and at the high 
+level only have put and get handlers for enums and for switches/volumes.
+
+- Lars
