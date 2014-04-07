@@ -1,114 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaDGG5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 02:57:00 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:55300 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaDGG44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 02:56:56 -0400
-Message-ID: <53424C32.7090000@monstr.eu>
-Date: Mon, 07 Apr 2014 08:56:50 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754839AbaDGHBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 03:01:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863AbaDGHBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 03:01:15 -0400
+Date: Mon, 7 Apr 2014 09:01:04 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Don Zickus <dzickus@redhat.com>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>, jmario@redhat.com,
+        fowles@inreach.com
+Subject: Re: [PATCH 3/4] perf, callchain: Add generic report parse callchain
+ callback function
+Message-ID: <20140407070104.GB1132@krava.brq.redhat.com>
+References: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
+ <1395689577-214654-4-git-send-email-dzickus@redhat.com>
+ <87zjk3x8dv.fsf@sejong.aot.lge.com>
+ <20140404193119.GI8488@redhat.com>
+ <20140406121129.GB1164@krava.brq.redhat.com>
+ <87r459yb2u.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
-CC: wg@grandegger.com, mkl@pengutronix.de, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
-References: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local>
-In-Reply-To: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r459yb2u.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 07, 2014 at 02:15:21PM +0900, Namhyung Kim wrote:
+> Hi Jiri and Don,
+> 
+> On Sun, 6 Apr 2014 14:11:29 +0200, Jiri Olsa wrote:
+> > On Fri, Apr 04, 2014 at 03:31:19PM -0400, Don Zickus wrote:
+> >> On Thu, Apr 03, 2014 at 02:57:32PM +0900, Namhyung Kim wrote:
+> >> > On Mon, 24 Mar 2014 15:32:56 -0400, Don Zickus wrote:
+> >> > > This takes the parse_callchain_opt function and copies it into the
+> >> > > callchain.c file.  Now the c2c tool can use it too without duplicating.
+> >> > >
+> >> > > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> >> > > ---
+> >> > >  tools/perf/util/callchain.c | 83 +++++++++++++++++++++++++++++++++++++++++++++
+> >> > >  tools/perf/util/callchain.h |  1 +
+> >> > >  2 files changed, 84 insertions(+)
+> >> > >
+> >> > > diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+> >> > > index 8d9db45..2320678 100644
+> >> > > --- a/tools/perf/util/callchain.c
+> >> > > +++ b/tools/perf/util/callchain.c
+> >> > > @@ -25,6 +25,89 @@
+> >> > >  
+> >> > >  __thread struct callchain_cursor callchain_cursor;
+> >> > >  
+> >> > > +int
+> >> > > +report_parse_callchain_opt(const char *arg)
+> >> > 
+> >> > As it eliminated any dependency to the report code, the name can omit
+> >> > 'report' as well.
+> >> 
+> >> Hmm, shrinking this down to 'parse_callchain_opt' seems to conflict with
+> >> builtin-top.c's defintion which is a wrapper around
+> >> record_parse_callchain_opt.
+> >> 
+> >> I can modify builtin-top.c's defintion to top_parse_callchain_opt, but do
+> >> we want to make the function parse_callchain_opt name more obvious that it is
+> >> for 'report' style parsing (which means it looks for the embedded
+> >> callchain flag)?  Vs. the record_parse_callchain_opt function, which is for
+> >> setting up the callchain flag?
+> >
+> > that sounds good to me.. (record|report)_parse_callchain_opt
+> 
+> Agreed.  Maybe parse_callchain_(record|report)_opt?
 
-On 04/02/2014 03:13 PM, Kedareswara rao Appana wrote:
-> This patch adds xilinx CAN controller support.
-> This driver supports both ZYNQ CANPS and Soft IP
-> AXI CAN controller.
->=20
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> ---
-> Changes for v7:
-> - Updated the driver with review comments.
-> - Moved the driver bindings doc as a separte patch.
-> Changes for v6:
-> - Updated the driver with review comments.
-> - Used the clock names specified in the data sheet.
-> - Updated the devicetree bindings doc as per Rob suggestion.
-> Changes for v5:
-> - Updated the driver with the review comments.
-> - Remove the check for the tx fifo full interrupt condition
->   form Tx interrupt routine as we are checking it in the _xmit
->   routine.
-> - Clearing the txok interrupt in the tx interrupt routine for
->   every Tx can frame.
-> Changes for v4:
-> - Added check for the tx fifo full interrupt condition in
-> Tx interrupt routine.
-> - Added be iohelper functions.
-> - Moved the clock enable/disable to probe/remove because of
->   Added big endian support for AXI CAN controller case(reading
->   a register during probe for that we need to enable clock).
-> Changes for v3:
-> - Updated the driver with the review comments.
-> - Modified the tranmit logic as per Marc suggestion.
-> - Enabling the clock when the interface is up to reduce the
->   Power consumption.
-> Changes for v2:
-> - Updated with the review comments.
-> - Removed the unnecessary debug prints.
-> - include tx,rx fifo depths in ZYNQ CANPS case also
-> ---
->  drivers/net/can/Kconfig      |    7 +
->  drivers/net/can/Makefile     |    1 +
->  drivers/net/can/xilinx_can.c | 1176 ++++++++++++++++++++++++++++++++++=
-++++++++
->  3 files changed, 1184 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/net/can/xilinx_can.c
-
-Mark: Any update on this one?
-BTW: When you apply these patches you should apply 2/2 before 1/2. There =
-is
-new checking for binding.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNCTDIACgkQykllyylKDCG1EgCeLE2XknDSTycp+m4/LnRJNFgf
-Ht0An3Z5dCr0Dd/TEcg1ZoPKU0OIAYo+
-=0rwI
------END PGP SIGNATURE-----
-
---WtPjUIdcbAiEAWTVRw2qqJmVhPaiGXxNM--
+ook, jirka
