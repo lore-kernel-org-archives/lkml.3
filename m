@@ -1,123 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041AbaDGWFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:05:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755561AbaDGWFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:05:16 -0400
-Message-ID: <1396908292.4958.24.camel@adam.happyassassin.net>
-Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
-Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
- the PCI reboot method
-From: Adam Williamson <awilliam@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        rostedt@goodmis.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Date: Mon, 07 Apr 2014 15:04:52 -0700
-In-Reply-To: <53431296.10502@zytor.com>
-References: <20140404064120.GB11877@gmail.com>
-		<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>
-		<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>
-		<20140404151359.GB12370@srcf.ucam.org>
-	 <20140406184023.1e31412d@alan.etchedpixels.co.uk>
-	 <53419F84.2090204@zytor.com> <53425B2A.10001@linux.intel.com>
-	 <53431296.10502@zytor.com>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
+	id S1756044AbaDGWGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:06:16 -0400
+Received: from [113.64.156.63] ([113.64.156.63]:63967 "EHLO junhuoku.net"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754665AbaDGWGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 18:06:15 -0400
+X-Greylist: delayed 4899 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Apr 2014 18:06:14 EDT
+Reply-To: <liujian@junhuoku.net>
+Date: Tue, 8 Apr 2014 06:05:57 +0800
+From: =?utf-8?B?6YKu5Lu25Luj5Y+R?= <liujian@junhuoku.net>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?utf-8?B?IOWmguS9leaJk+mAoOiHquW3seeahOiHquWKqOi1mumSseacuuWZqO+8jOWunueOsOedoeiniei1mg==?=
+	=?utf-8?B?6ZKxICAgICAgICAgICAgICAgICAgIA==?=
+	=?utf-8?B?ICAgICAgICAgICAgICAgICAgICA=?=
+	=?utf-8?B?ICAgICAgICAgICAgMjAxNC80Lzg=?=
+	=?utf-8?B?ICA2OjA2OjAy?=
+Message-ID: <20140408060603386857@junhuoku.net>
+X-mailer: Foxmail 6, 13, 102, 15 [cn]
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s37M6K9U006874
 
-On Mon, 2014-04-07 at 14:03 -0700, H. Peter Anvin wrote:
-> On 04/07/2014 01:00 AM, Li, Aubrey wrote:
-> > 
-> > EFI is no question. So, Is everybody okay with the following sequence?
-> > (1) ACPI
-> > (2) KEYBOARD
-> > (3) ACPI
-> > (4) KEYBOARD
-> > (ADD_1) EFI
-> > (5) TRIPLE
-> > (ADD_2) CF9
-> > (ADD_3) BIOS
-> > 
-> 
-> No.  Because after "triple" there is NOTHING.  Putting anything after it
-> is a joke.
-> 
-> How many times do I have to explain this to how many people?  If
-> "triple" or "BIOS" doesn't work, there is no trying again... the machine
-> is dead.
 
-So if I'm following correctly, we should be able to sort the methods
-into three buckets:
 
-1) known to (almost) always be 'safe'
-2) may cause system freeze if they fail
-3) definitely cause system freeze if they fail
+æ¨èï¼šå¤šå¹´çš„ç½‘ç»œè¥é”€ç»éªŒ å¸®æ‚¨åšå‡ºæœ€å‡†ç¡®çš„è¥é”€å†³ç­– 
 
-We put the methods from bucket 1) first, in whichever order makes the
-most sense. Then we put any methods from bucket 2), in an order derived
-from some kind of likelihood of success / likelihood of hang on fail
-calculation. And at the end we can put precisely *one* method from
-bucket 3, which should obviously be the one most likely to succeed on
-the most systems which haven't already worked with one of the other
-methods. We can't have more than one bucket 3) method, it just doesn't
-make sense.
 
-It sounds like at least TRIPLE and BIOS are 'bucket 3' methods, so it
-seems like we have to pick which of the two we think is most useful, put
-it last, and not have the other one. Of the new methods it sounds like
-EFI is 'bucket 1', BIOS is 'bucket 3', and CF9 is 'bucket 2'.
+å¦‚ä½•æ‰“é€ è‡ªå·±çš„è‡ªåŠ¨èµšé’±æœºå™¨ï¼Œå®ç°ç¡è§‰èµšé’±ï¼Ÿ
 
-so, it sounds like...
+éƒ½åœ¨ä½¿ç”¨ï¼šhttp://www.cloudedm.net/
 
-1) ACPI
-2) KEYBOARD
-3) ACPI
-4) KEYBOARD
-5) EFI
-possibly 6) CF9
-7) TRIPLE *or* BIOS
+è”ç³»ç”µè¯ï¼š153 6363 4438
+è¥é”€å†›ç«åº“|ç»¿è‰²é€šé“|äº‘ç«¯é‚®ä»¶ç¾¤å‘
+åˆ›å§‹äººï¼šåˆ˜å»º
 
-is what you would say makes sense, right? And really all there is to
-decide is whether to include CF9, and whether to put TRIPLE or BIOS at
-the end?
 
-Again if I'm following correctly, this ought to be fine for Baytrail
-devices - the ones we were trying to fix in the first place - because
-they'll succeed with EFI. The justification for adding CF9 in the first
-place wasn't very strong - it was just thrown in as a 'bonus extra',
-more or less:
+é¡¹ç›®æ¨èï¼šè®©7.3äº¿QQçŸ¥é“ä½  2014æœ€ç‰›QQè¥é”€è½¯ä»¶ç³»ç»Ÿ
 
-"These platforms [Baytrail] don't support ACPI reboot, we expect to call
-EFI runtime service to handle this case, and CF9 is an alternate after
-EFI."
+http://user.qzone.qq.com/506951936/blog/1393424220
 
-so it doesn't seem unreasonable to remove it. The machine we're
-currently trying to 'fix' needed TRIPLE in order to reboot correctly, it
-seems. So again if I'm following correctly, that would suggest we should
-have:
 
-1) ACPI
-2) KEYBOARD
-3) ACPI
-4) KEYBOARD
-5) EFI
-6) TRIPLE
+è‡³æ­¤~
 
-I can patch that into reboot.c and confirm baytrails still work, if
-that's desired.
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
-http://www.happyassassin.net
 
+
+
+
+lny13igdsz1ljpneb8gky1bc8jblilwppu9mq2olb60xbja1yp30pmvqbp633ps1ucplac7n4dmembcqlc2v5wzqpn6juvsxwat
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
