@@ -1,38 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaDGFRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 01:17:10 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:34721 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaDGFRH (ORCPT
+	id S1754794AbaDGFVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 01:21:53 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44091 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaDGFVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 01:17:07 -0400
+	Mon, 7 Apr 2014 01:21:49 -0400
+From: "Dolev Raviv" <draviv@codeaurora.org>
+To: "'Tanya Brokhman'" <tlinder@codeaurora.org>, <dedekind1@gmail.com>
+Cc: <linux-mtd@lists.infradead.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1396339327-16090-1-git-send-email-tlinder@codeaurora.org>
+In-Reply-To: <1396339327-16090-1-git-send-email-tlinder@codeaurora.org>
+Subject: RE: [RFC/PATCH] mtd: ubi: Fix ubi free PEBs count calculation
+Date: Mon, 7 Apr 2014 08:21:44 +0300
+Message-ID: <001501cf5221$4651ad30$d2f50790$@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <1396847090.5218.9.camel@marge.simpson.net>
-References: <cover.1396599474.git.viresh.kumar@linaro.org>
-	<1396773020.11763.17.camel@marge.simpson.net>
-	<CAKohpomW3jpQEqFxD3m_br8GchJyq9-KSxW2x7JLCRqDgf4SAg@mail.gmail.com>
-	<1396847090.5218.9.camel@marge.simpson.net>
-Date: Mon, 7 Apr 2014 10:47:05 +0530
-Message-ID: <CAKohponiqqd_WZ=i3MS_Ls7=O=C+PnuNat77pME7M8z3nuJnAw@mail.gmail.com>
-Subject: Re: [PATCH V2 0/8] cpusets: Isolate CPUs via sysfs using cpusets
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIimkqaIluPt+G29fa203i8dwXPTZpfDPyg
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 April 2014 10:34, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
-> Yes, both on and off is kinda hard to do per cpu :)
+Reviewed-by: Dolev Raviv <draviv@codeaurora.org>
 
-Correct.. would get it fixed in V3..
+Thanks,
+Dolev
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
+
+-----Original Message-----
+From: linux-mtd [mailto:linux-mtd-bounces@lists.infradead.org] On Behalf Of
+Tanya Brokhman
+Sent: Tuesday, April 01, 2014 11:02 AM
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org; open list; Tanya Brokhman
+Subject: [RFC/PATCH] mtd: ubi: Fix ubi free PEBs count calculation
+
+The ubi->free_count should be updated with every insert/remove to/from the
+ubi->free list.
+
+Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
+
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c index
+9a36f78..ca74d19 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -690,6 +690,8 @@ static struct ubi_wl_entry *get_peb_for_wl(struct
+ubi_device *ubi)
+ 
+ 	e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
+ 	self_check_in_wl_tree(ubi, e, &ubi->free);
++	ubi->free_count--;
++	ubi_assert(ubi->free_count >= 0);
+ 	rb_erase(&e->u.rb, &ubi->free);
+ 
+ 	return e;
+@@ -1090,6 +1092,7 @@ static int wear_leveling_worker(struct ubi_device
+*ubi, struct ubi_work *wrk,
+ 
+ 			/* Give the unused PEB back */
+ 			wl_tree_add(e2, &ubi->free);
++			ubi->free_count++;
+ 			goto out_cancel;
+ 		}
+ 		self_check_in_wl_tree(ubi, e1, &ubi->used);
+--
+1.7.6
+--
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundat
+
+
+______________________________________________________
+Linux MTD discussion mailing list
+http://lists.infradead.org/mailman/listinfo/linux-mtd/
+
