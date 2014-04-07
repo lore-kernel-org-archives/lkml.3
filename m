@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105AbaDGT1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:27:22 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:40482 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753771AbaDGT1U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:27:20 -0400
-Message-ID: <5342FC08.5070106@fb.com>
-Date: Mon, 7 Apr 2014 15:27:04 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755831AbaDGT1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 15:27:45 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:60310 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755537AbaDGT1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 15:27:38 -0400
+Message-ID: <5342FC25.4090208@interlog.com>
+Date: Mon, 07 Apr 2014 15:27:33 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, <dsterba@suse.cz>,
-        Jeff Mahoney <jeffm@suse.com>, <jbacik@fb.com>,
-        <linux-btrfs@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs: lock inversion between delayed_node->mutex and found->groups_sem
-References: <53239AE0.8030306@oracle.com> <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com> <533F20EB.2040500@oracle.com> <20140407165449.GA29256@twin.jikos.cz> <5342DD99.3010502@fb.com> <5342E86B.4000305@oracle.com>
-In-Reply-To: <5342E86B.4000305@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: Tomas Fasth <tomfa@debian.org>,
+        =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Hannes Reinecke <hare@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Glanzmann <thomas@glanzmann.de>
+Subject: [ANNOUNCE] ddpt, version 0.94 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-07_03:2014-04-07,2014-04-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404070176
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 02:03 PM, Sasha Levin wrote:
-> On 04/07/2014 01:17 PM, Chris Mason wrote:
->>
->>
->> On 04/07/2014 12:54 PM, David Sterba wrote:
->>> On Fri, Apr 04, 2014 at 05:15:23PM -0400, Sasha Levin wrote:
->>>> On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
->>>>> On 3/17/14, 9:05 AM, David Sterba wrote:
->>>>>>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
->>>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
->>>>>>>>>
->>>>>>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
->>>>>>>
->>>>>>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
->>>>> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
->>>>
->>>> Is that fix available anywhere? I'm still seeing the issue in -next.
->>>
->>> It is: https://urldefense.proofpoint.com/v1/url?u=https://patchwork.kernel.org/patch/3894781/&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=HQJVSK4wPTft1zWwI1cGvwj5OfdmN5UItVlucU1K31o%3D%0A&s=5113699a2e7345a779333c87dd5b1d88b4410a7c7fcd5fa424baeb838ad7d31b , will probably hit -rc2
->>>
->>
->> Its in the integration branch now along with some other important fixes.  We'll get it out shortly
->
-> Chris,
->
-> Can I suggest adding the integration branch to linux-next as well? That way
-> all the folks who report issues coming out of -next would be able to test
-> the fixes as well.
->
+ddpt is yet another variant of the venerable Unix dd command
+line utility. This version adds application side support for
+a second offloaded copy mechanism defined by T10 around two
+years ago and already on the market under the name ODX.
 
-Hi Sasha,
+For more information and downloads see:
+     http://sg.danny.cz/sg/ddpt.html
+     http://sg.danny.cz/sg/ddpt_xcopy_odx.html
 
-The ink is still a little wet on the integration branch. It'll 
-definitely go to linux-next and to Linus.
+Changelog for ddpt-0.94 [20140407] [svn: r277]
+   - xcopy: change default to send xcopy command to dst
+     - add XCOPY_TO_SRC and XCOPY_TO_DST environment
+       variables to guide where to send xcopy command
+   - odx: add new offloaded copy technique, also known
+     as "xcopy v2, lite", that exposes ROD Tokens
+     - ddpt supports 4 odx variants: full copy, zero
+       output blocks, read to tokens and write from
+       tokens. Latter two facilitate network copies
+     - add scatter-gather list capability to seek=,
+       skip= to read from command line, file or stdin
+   - ddptctl: add odx helper utility
+     - can issue individual PT, WUT, RRTI, Report All
+       Rod Tokens, and Copy Operation Abort commands
+     - can decode T10 defined info in Rod Token
+   - improve CL handling of short options (e.g. '-vv')
+   - point svn:externals to rev 563 of sg3_utils
+   - configure: add --disable-libsgutils option so
+     build bypasses that library if present
 
--chris
+Changelog for ddpt-0.93 [20131113] [svn: r242]
+...
 
+Doug Gilbert
