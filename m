@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaDGIAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 04:00:51 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:64850 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaDGIAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 04:00:44 -0400
+	id S1754949AbaDGIBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 04:01:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15088 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754928AbaDGIBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 04:01:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,808,1389772800"; 
+   d="scan'208";a="516033418"
+Message-ID: <53425B2A.10001@linux.intel.com>
+Date: Mon, 07 Apr 2014 16:00:42 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAOLUe6aspffO1PUjKWW7ejpbxnYtb+RKRQrK=y30kuF7KXUUhA@mail.gmail.com>
-References: <1393842463-5206-1-git-send-email-thloh@altera.com>
-	<20140307151455.GI18529@joshc.qualcomm.com>
-	<CAOLUe6aspffO1PUjKWW7ejpbxnYtb+RKRQrK=y30kuF7KXUUhA@mail.gmail.com>
-Date: Mon, 7 Apr 2014 16:00:43 +0800
-X-Google-Sender-Auth: MyHAZmNDagHeN1_caQ1Jh5yRUnY
-Message-ID: <CAOLUe6aPWmkJJSiBLL8tmw2MNfpaeLpSp3CSwP1u7q+qXxCh9Q@mail.gmail.com>
-Subject: Re: [PATCH V7 1/1] drivers/gpio: Altera soft IP GPIO driver and
- devicetree binding
-From: Tien Hock Loh <thloh@altera.com>
-To: Tien Hock Loh <thloh@altera.com>
-Cc: Josh Cartwright <joshc@codeaurora.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        dinguyen@altera.com, "lftan@altera.com" <lftan@altera.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Adam Williamson <awilliam@redhat.com>
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+References: <20140404064120.GB11877@gmail.com>	<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>	<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>	<20140404151359.GB12370@srcf.ucam.org> <20140406184023.1e31412d@alan.etchedpixels.co.uk> <53419F84.2090204@zytor.com>
+In-Reply-To: <53419F84.2090204@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 6:09 PM, Tien Hock Loh <thloh@altera.com> wrote:
-> On Fri, Mar 7, 2014 at 11:14 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
->> On Mon, Mar 03, 2014 at 06:27:43PM +0800, thloh@altera.com wrote:
->>> From: Tien Hock Loh <thloh@altera.com>
->>>
->>> Add driver support for Altera GPIO soft IP, including interrupts and I/O.
->>> Tested on Altera CV SoC board using dipsw and LED using LED framework.
->>>
->>> Signed-off-by: Tien Hock Loh <thloh@altera.com>
->>> ---
->>
->>> +             return -ENOMEM;
->>> +     }
->>> +     altera_gc->domain = 0;
->>> +
->>> +     spin_lock_init(&altera_gc->gpio_lock);
->>> +
->>> +     id = pdev->id;
->>> +
->>> +     if (of_property_read_u32(node, "altr,gpio-bank-width", &reg))
->>> +             /*By default assume full GPIO controller*/
->>> +             altera_gc->mmchip.gc.ngpio = 32;
->>> +     else
->>> +             altera_gc->mmchip.gc.ngpio = reg;
->>> +
->>> +     if (altera_gc->mmchip.gc.ngpio > 32) {
->>> +             dev_warn(&pdev->dev,
->>> +                     "ngpio is greater than 32, defaulting to 32\n");
->>> +             altera_gc->mmchip.gc.ngpio = 32;
->>> +     }
->>> +
->>> +     altera_gc->mmchip.gc.direction_input    = altera_gpio_direction_input;
->>> +     altera_gc->mmchip.gc.direction_output   = altera_gpio_direction_output;
->>> +     altera_gc->mmchip.gc.get                = altera_gpio_get;
->>> +     altera_gc->mmchip.gc.set                = altera_gpio_set;
->>> +     altera_gc->mmchip.gc.to_irq             = altera_gpio_to_irq;
->>> +     altera_gc->mmchip.gc.owner              = THIS_MODULE;
->>> +
->>> +     ret = of_mm_gpiochip_add(node, &altera_gc->mmchip);
->>> +     if (ret) {
->>> +             dev_err(&pdev->dev, "Failed adding memory mapped gpiochip\n");
->>> +             return ret;
->>> +     }
->>> +
->>> +     platform_set_drvdata(pdev, altera_gc);
->>> +
->>> +     altera_gc->mapped_irq = irq_of_parse_and_map(node, 0);
->>>
->>
->> platform_get_irq(pdev, 0);
->>
-> OK.
->
+On 2014/4/7 2:40, H. Peter Anvin wrote:
+> 
+> No question. The question at hand is if we should do it after all other
+> non-terminal (BIOS, triple) methods have been tried.
+> 
 
-platform_get_irq doesn't create the irq mapping which is needed by the
-driver. Since this driver is targeted at using of, should I be using
-irq_of_parse_and_map or should I still redo the codes with
-platform_get_irq and irq_create_mapping? I think the latter would be
-introducing code redundancy. Please advice.
+The reboot sequence before the change is:
+(1) ACPI
+(2) KEYBOARD
+(3) ACPI
+(4) KEYBOARD
+(5) TRIPLE
 
-Thanks.
+The reboot sequence after the change is:
+(1) ACPI
+(2) KEYBOARD
+(3) ACPI
+(4) KEYBOARD
+(ADD_1) EFI
+(ADD_2) CF9
+(ADD_3) BIOS
+(5) TRIPLE
+
+Steven's machine exactly hit (5), while CF9 hangs, so we encountered
+this regression.
+
+EFI is no question. So, Is everybody okay with the following sequence?
+(1) ACPI
+(2) KEYBOARD
+(3) ACPI
+(4) KEYBOARD
+(ADD_1) EFI
+(5) TRIPLE
+(ADD_2) CF9
+(ADD_3) BIOS
+
+Thanks,
+-Aubrey
