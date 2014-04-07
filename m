@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968AbaDGSnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:43:20 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:37610 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849AbaDGSnR (ORCPT
+	id S1755651AbaDGSyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:54:21 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46785 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637AbaDGSyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:43:17 -0400
-Message-ID: <5342F1E8.10803@linaro.org>
-Date: Mon, 07 Apr 2014 13:43:52 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>
-Subject: [GIT PULL] clk: bcm281xx: urgent fix for older compilers
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Apr 2014 14:54:19 -0400
+Subject: Re: [RFC PATCH 0/6] uprobes/x86: fix the reprel jmp/call handling
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140406201524.GA32694@redhat.com>
+References: <20140404185038.GA14679@redhat.com>
+	 <20140404193226.GA23092@redhat.com>
+	 <1396655065.4769.8.camel@oc7886638347.ibm.com.usor.ibm.com>
+	 <20140406201524.GA32694@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Apr 2014 11:54:12 -0700
+Message-ID: <1396896852.9333.14.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040718-9332-0000-0000-0000006E3F1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike, I learned this morning that my clock code (now in
-Linus Torvald's master branch) uses a feature that is not
-supported in older versions of gcc.  Specifically, the
-code made use of unnamed struct and union fields, e.g.:
+On Sun, 2014-04-06 at 22:15 +0200, Oleg Nesterov wrote:
+> On 04/04, Jim Keniston wrote:
+> >
+> > On Fri, 2014-04-04 at 21:32 +0200, Oleg Nesterov wrote:
+> > >
+> > > 	1. Why insn_get_displacement() doesn't work? See "HELP!!!"
+> > > 	   below.
+> >
+> > insn->moffset1.value seems to be what you want.
+> 
+> Works! Thanks a lot.
+> 
+> Still I can't understand why displacement.nbytes == 0 in this case...
+> Nevermind.
 
-    struct foo {
-	u64	bar;
-	union {
-	    u32	    baz;
-	    bool    quux;
-	};
-    };
+Looking at Masami's arch/x86/lib/x86-opcode-map.txt and related code, I
+see that the operands to the Jcc and JMP instructions are treated as
+immediate values.  So insn->immediate.value (which is in the same union
+as insn->moffset1.value) is more appropriate, and insn->immediate.nbytes
+should get you the correct size.  Again, insn_get_length() finishes
+parsing the whole instruction as necessary, so insn_get_immediate() gets
+called as a side effect.
 
-I've prepared a patch that resolves this.  Would you please
-pull this critical fix for 3.15-rc1 and get it to Linus as
-soon as possible?  Thank you.
+> 
+> OK. Please see the RFC changes. Obviously not for inclusion yet. And
+> totally untested, except I verified that the test-case from 4/6 works.
+> 
+> Please comment.
 
-					-Alex
+I'll look at the new patches today.
 
-The following changes since commit 18a1a7a1d862ae0794a0179473d08a414dd49234:
+> 
+> Oleg.
 
-  Merge
-git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile
-(2014-04-06 08:11:57 -0700)
+Jim
 
-are available in the git repository at:
-
-
-  git://git.linaro.org/landing-teams/working/broadcom/kernel.git
-pull/urgent-for-mturquette
-
-for you to fetch changes up to a7a7eba0eeff8f839cde4b327b56dc057a1a48d7:
-
-  clk: bcm281xx: don't use unnamed structs or unions (2014-04-07
-13:29:34 -0500)
-
-----------------------------------------------------------------
-Alex Elder (1):
-      clk: bcm281xx: don't use unnamed structs or unions
-
- drivers/clk/bcm/clk-kona-setup.c |   33 ++++++++++----------
- drivers/clk/bcm/clk-kona.c       |   64
-++++++++++++++++++++------------------
- drivers/clk/bcm/clk-kona.h       |   28 ++++++++---------
- 3 files changed, 64 insertions(+), 61 deletions(-)
