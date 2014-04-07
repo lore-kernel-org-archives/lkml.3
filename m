@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaDGMnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 08:43:07 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44364 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaDGMnC (ORCPT
+	id S1755303AbaDGMnT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 08:43:19 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:51517 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755281AbaDGMnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 08:43:02 -0400
-Date: Mon, 7 Apr 2014 13:42:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Message-ID: <20140407124251.GF14763@sirena.org.uk>
-References: <1396872924-14675-1-git-send-email-k.kozlowski@samsung.com>
- <1396872924-14675-2-git-send-email-k.kozlowski@samsung.com>
+	Mon, 7 Apr 2014 08:43:07 -0400
+X-Auth-Info: qynNwqG2RV5XUqpSuHsp70DDYgWYxsdT5HcLMTnEqtw=
+Date: Mon, 7 Apr 2014 14:42:59 +0200
+From: Gerhard Sittig <gsi@denx.de>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        Hans-Bernhard =?iso-8859-1?Q?Br=F6ker?= 
+	<broeker@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@users.sourceforge.net>,
+        cscope-devel@lists.sourceforge.net, Anton Blanchard <anton@samba.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Hans-Bernhard Broeker <broeker@physik.rwth-aachen.de>
+Subject: Re: cscope: issue with symlinks in
+ tools/testing/selftests/powerpc/copyloops/
+Message-ID: <20140407124259.GZ11339@book.gsilab.sittig.org>
+References: <1396530975.4361.28.camel@localhost.localdomain>
+ <20140407104216.GB5287@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JCYGd/UpHK4EX+A4"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396872924-14675-2-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: s5m8767: Remove regulator_dev pointer
- from state container
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140407104216.GB5287@hmsreliant.think-freely.org>
+Organization: DENX Software Engineering GmbH
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-04-07 at 06:42 -0400, Neil Horman wrote:
+> 
+> On Thu, Apr 03, 2014 at 03:16:15PM +0200, Yann Droneaud wrote:
+> > 
+> > [ ... ]
+> > 
+> > cscope reports error when generating the cross-reference database:
+> > 
+> >     $ make ALLSOURCE_ARCHS=all O=./obj-cscope/ cscope
+> >       GEN     cscope
+> >     cscope: cannot find
+> > file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/copyuser_power7.S
+> >     cscope: cannot find
+> > file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/memcpy_64.S
+> >     cscope: cannot find
+> > file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/memcpy_power7.S
+> >     cscope: cannot find
+> > file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/copyuser_64.S
+> > 
+> > And when calling cscope from ./obj-cscope/ directory, it reports errors
+> > too.
+> > 
+> > Hopefully it doesn't stop it from working, so I'm still able to use
+> > cscope to browse kernel sources.
+> > 
+> No, it won't stop it from working, it just won't search those files.  I don't
+> recall exactly the reason, but IIRC there was a big discussion long ago about
+> symlinks and our ability to support them (around version 1.94 I think).  We
+> decided to not handle symlinks, as they would either point outside our search
+> tree, which we didn't want to include, or would point to another file in the
+> search tree, which made loading them pointless (as we would cover the search in
+> the pointed file).
 
---JCYGd/UpHK4EX+A4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So there are valid reasons to not process those filesystem
+entries.  Would it be useful to not emit the warnings then?  Or
+to silent those warnings when the user knows it's perfectly legal
+to skip those filesytem entries?  Like what you can do with the
+ctags(1) command and its --links option.
 
-On Mon, Apr 07, 2014 at 02:15:24PM +0200, Krzysztof Kozlowski wrote:
-> Don't store pointer to regulator_dev returned by
-> devm_regulator_register() in state container. It isn't used anywhere
-> outside of probe.
 
-Applied, thanks.
-
---JCYGd/UpHK4EX+A4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTQp1IAAoJELSic+t+oim97m0P/RgrqfR8lOZIlGgzg9spvf7r
-y2ZmW4KmQT2gqbQOIj7R0S/cb95nf+ABx6VId1YQL0O6bMYxnPFYvHINIIrspm10
-Kg4q9GhSMW9gQzV9UTDqaHykhs7crDBdr0NQHpnFYZSAtUPd1N0FfThGaEHOHbiI
-VoNQ1gkGTgSQd4b2jyKBCfsxH+/BLKV4dbSe3QRER3qC6Vxhui/UsKaZQrSbi8Jn
-nZOVvmuqIb0uc/shfG/uxKPbyNxxlt58+eAvmQSsyEOFF89pN67bL3mCh7/p5BbS
-PhyfuJK7JR+WU4yDnoWVsGSc/Blut9bxHbBUtsITRw9YiDf7LS+mBzaXC3GVEU8u
-7xJCdY2JPHXnKLbsITWLiDjKAUDxMLBVCFjNewLFhdfcQD+bvERrGJZ4Vvql0wzf
-D1YZuYv4z7t/cW5qFZjnxALjpoQoqCHkhBjDWPuhpYfdDSmOytad5ZwYqvgaSrqj
-ORd6PT14nbG5l/zHHYErFqbCINktDp1CByhH+A8d4yMwXW6VPZIjoX5Bu6vpi0J6
-9XaxhT686NGhvwUkhHP6DxANnkEFn2QYG3N9XSBrPsX8Blq20WMYWQABnEFOzAsn
-YSKPHlA4gK/nqsSa/kvMNGzTX0muolNG84YnLG1dOtuETIglbKt27dkJG4Q2rnZm
-G16dMuP62MoR0FDLDAYO
-=OxiB
------END PGP SIGNATURE-----
-
---JCYGd/UpHK4EX+A4--
+virtually yours
+Gerhard Sittig
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
