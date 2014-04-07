@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaDGVak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 17:30:40 -0400
-Received: from gerolde.archlinux.org ([66.211.214.132]:42301 "EHLO
-	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaDGVaj (ORCPT
+	id S1755248AbaDGVkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 17:40:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23986 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753771AbaDGVkj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 17:30:39 -0400
-Message-ID: <534318FA.7030209@archlinux.org>
-Date: Mon, 07 Apr 2014 23:30:34 +0200
-From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Apr 2014 17:40:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,812,1389772800"; 
+   d="scan'208";a="488773771"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Thread-Topic: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Thread-Index: AQHPS0iuvgiDnehMNEeghRTCX5Z79Jr4hhDwgAJi2QCAADLdEIADEokAgAA5rQD//9ENgIAH8M5Q///W/gCAAI6bcA==
+Date: Mon, 7 Apr 2014 19:01:25 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AFB7512@HASMSX106.ger.corp.intel.com>
+References: <20140310145530.GA27230@pcnci.linuxbox.cz>
+ <20140329121550.GA5878@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+ <20140331120102.GY3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
+ <20140402135812.GI3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB112D@HASMSX106.ger.corp.intel.com>
+ <20140402143635.GA4410@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB7151@HASMSX106.ger.corp.intel.com>
+ <20140407132530.GF3339@pcnci.linuxbox.cz>
+In-Reply-To: <20140407132530.GF3339@pcnci.linuxbox.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Fleming, Matt" <matt.fleming@intel.com>, Andi Kleen <ak@linux.intel.com>
-CC: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tpowa@archlinux.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
-References: <52E4CF03.8030208@archlinux.org>	<5339F739.2060207@archlinux.org>	<20140331233450.GI32556@tassilo.jf.intel.com>	<5339FC62.8060207@archlinux.org>	<20140405011332.GR32556@tassilo.jf.intel.com>	<5340134B.4010705@archlinux.org>	<20140407173016.GU32556@tassilo.jf.intel.com>	<5342E46B.4080603@archlinux.org>	<53430646.40507@archlinux.org>	<20140407204221.GW32556@tassilo.jf.intel.com> <CAL01qpvjZz-XnVT+S3E5E2XGcuFoetE5cwnArYfW-TwYZVKtKw@mail.gmail.com>
-In-Reply-To: <CAL01qpvjZz-XnVT+S3E5E2XGcuFoetE5cwnArYfW-TwYZVKtKw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="R125uWB9QMliu0DpjADW0CDVcg0H5O96A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---R125uWB9QMliu0DpjADW0CDVcg0H5O96A
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
-
-Am 07.04.2014 23:25, schrieb Fleming, Matt:
-> On 7 April 2014 21:42, Andi Kleen <ak@linux.intel.com> wrote:
->>
->> This sounds like the UEFI boot corrupts some memory?
->=20
-> Hmpf, yeah. I'll take a look in the morning.
->=20
-> Thomas, you mention you're running in a 32-bit vm earlier in this
-> thread. Any chance you're using ovmf because that would make it much
-> easier to track this down?
-
-Yes, the virtual machine is running OVMF svn 15280 (which is the last
-version I built).
-
-qemu-system-x86_64 -enable-kvm -watchdog i6300esb -device
-virtio-net-pci,netdev=3Dn1,mac=3D1a:2b:3c:4d:8e:2f -netdev
-vde,sock=3D/run/vde/qemu.ctl,id=3Dn1 -device virtio-scsi-pci,id=3Dscsi -d=
-rive
-file=3D./vm32-uefi.img,if=3Dnone,id=3Dhd -device scsi-hd,drive=3Dhd -enab=
-le-kvm
--m 2G -cpu kvm32 -smp 4,cores=3D4 -k de -balloon virtio -name vm32-uefi
--usb -nodefaults -vga cirrus -monitor vc -pflash ./vm32-uefi-ovmf.img
 
 
---R125uWB9QMliu0DpjADW0CDVcg0H5O96A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> -----Original Message-----
+> From: Nikola Ciprich [mailto:nikola.ciprich@linuxbox.cz]
+> Sent: Monday, April 07, 2014 16:26
+> To: Winkler, Tomas
+> Cc: Greg KH (gregkh@linuxfoundation.org); linux-kernel@vger.kernel.org; Nikola
+> Ciprich
+> Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
+> 
+> Hi Tomas,
+> 
+> yes, I just checked source rpm and it's applied..
+> 
+> here are the dumps:
+> 
+> [root@k310test ~]# hexdump -s 0x48 -n 4 /proc/bus/pci/00/16.0
+> 0000048 a301 3900
+> 000004c
+> [root@k310test ~]# hexdump -s 0x40 -n 4 /proc/bus/pci/00/16.0
+> 0000040 0345 000f
+> 0000044
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+I'm not sure how this is possible that this is failing for you
 
-iQIcBAEBCAAGBQJTQxj6AAoJEChPw0yOSxolElsP/1aFCOVnpH1J/7WMZ9t2h/vG
-R3qtyu9JZ6dM2NpmUMrXADVE8e4v7xG+l2xQWLtddQm4KZO8uZ2CJhYZOv0G1KUG
-1ZxBOMdnMh+HHa0hnVtEK5C+/huHCmsTjAdqAw6JBn+/COf04CN6MkoGrRhUNj9v
-I/R4/SgPh688psBi4wJZ36npDdSDh1MtyV1wC7aR2wQzgltVTfASac5eoy1qwxbR
-pklFq9Zap8zlnQ6NobEjDE1m9x3eOBxVW2lkUJgXhDBdL+o/BsHHbGj5mpIHNN7Q
-kheMn7Y+oAvFNRMZTf9BhNdPB+HRnuKhB1Uezg4k+SgesbjHYPChaPb+tQbMXnrp
-BtMp27mdea/Fd/9/WVnLSFqRvdUQDJDh2gPpYc6JRpCdOYcUkspYAKn83Jj3tsQx
-OSbIbBLGpqI1s49RH8cIH/yK4REkNfl8fQCgBsWSVZSi1S+pXr8E9yMdeVaHtFrn
-2bB8k6joinaoP457x8OT7sylm3p+E9EXQVsq/4q2jr5e0KJK0377ZAKAYAURWD7i
-ExeYsITNW85igAi+hpg+crtlR1mdkX+GWgxirXi9ie8C2D4rXrjmml0bXxUuKBL6
-H0moQbY1f62rrXGfEqZTqU4MLWxhkHgk7xEUma6onfIqIxmVWWJPGs12HCvGqSP6
-yqU6F/bPl4VCrjfaQG6+
-=n+Ae
------END PGP SIGNATURE-----
+if ((0xa301 & 0x600) == 0x200)
+	goto no_mei; 
+so this is okay, the driver should not bind
 
---R125uWB9QMliu0DpjADW0CDVcg0H5O96A--
+How the patch worked for you before this test?  
+
+Sorry for asking but can you please double check your compilation setup. 
+ 
+Thanks
+Tomas
