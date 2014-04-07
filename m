@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831AbaDGT1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:27:45 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:60310 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755537AbaDGT1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:27:38 -0400
-Message-ID: <5342FC25.4090208@interlog.com>
-Date: Mon, 07 Apr 2014 15:27:33 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>
-CC: Tomas Fasth <tomfa@debian.org>,
-        =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
-        Hannes Reinecke <hare@suse.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Glanzmann <thomas@glanzmann.de>
-Subject: [ANNOUNCE] ddpt, version 0.94 available
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755774AbaDGT1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 15:27:43 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:38147 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755540AbaDGT1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 15:27:39 -0400
+Date: Mon, 7 Apr 2014 14:27:36 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Mitchel Humpherys <mitchelh@codeaurora.org>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Joe Perches <joe@perches.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Some printk cleanup in mm
+In-Reply-To: <1396894732-17963-1-git-send-email-mitchelh@codeaurora.org>
+Message-ID: <alpine.DEB.2.10.1404071427120.4447@nuc>
+References: <1396894732-17963-1-git-send-email-mitchelh@codeaurora.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ddpt is yet another variant of the venerable Unix dd command
-line utility. This version adds application side support for
-a second offloaded copy mechanism defined by T10 around two
-years ago and already on the market under the name ODX.
+On Mon, 7 Apr 2014, Mitchel Humpherys wrote:
 
-For more information and downloads see:
-     http://sg.danny.cz/sg/ddpt.html
-     http://sg.danny.cz/sg/ddpt_xcopy_odx.html
+>   - v3: Leaving slub.c alone. It's using hand-tagged printk's
+>     correctly so it's probably just churn to convert everything to the
+>     pr_ macros.
 
-Changelog for ddpt-0.94 [20140407] [svn: r277]
-   - xcopy: change default to send xcopy command to dst
-     - add XCOPY_TO_SRC and XCOPY_TO_DST environment
-       variables to guide where to send xcopy command
-   - odx: add new offloaded copy technique, also known
-     as "xcopy v2, lite", that exposes ROD Tokens
-     - ddpt supports 4 odx variants: full copy, zero
-       output blocks, read to tokens and write from
-       tokens. Latter two facilitate network copies
-     - add scatter-gather list capability to seek=,
-       skip= to read from command line, file or stdin
-   - ddptctl: add odx helper utility
-     - can issue individual PT, WUT, RRTI, Report All
-       Rod Tokens, and Copy Operation Abort commands
-     - can decode T10 defined info in Rod Token
-   - improve CL handling of short options (e.g. '-vv')
-   - point svn:externals to rev 563 of sg3_utils
-   - configure: add --disable-libsgutils option so
-     build bypasses that library if present
+Ok.
 
-Changelog for ddpt-0.93 [20131113] [svn: r242]
-...
-
-Doug Gilbert
+Ignored-by: Christoph Lameter <cl@linux.com>
