@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717AbaDGADl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Apr 2014 20:03:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38521 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654AbaDGADk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Apr 2014 20:03:40 -0400
-Message-ID: <5341EB52.1090704@oracle.com>
-Date: Sun, 06 Apr 2014 20:03:30 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Ian Kent <raven@themaw.net>
-CC: autofs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] autofs4: check dev ioctl size before allocating
-References: <1394934021-16965-1-git-send-email-sasha.levin@oracle.com>		 <53401C11.7010601@oracle.com> <1396753403.24991.3.camel@perseus.fritz.box>	 <5340C5C7.9010203@oracle.com> <1396756437.24991.6.camel@perseus.fritz.box>
-In-Reply-To: <1396756437.24991.6.camel@perseus.fritz.box>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1754655AbaDGAVO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Apr 2014 20:21:14 -0400
+Received: from ozlabs.org ([203.10.76.45]:46242 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754135AbaDGAVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Apr 2014 20:21:12 -0400
+Date: Mon, 7 Apr 2014 10:21:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the arm-soc tree with the  tree
+Message-Id: <20140407102102.97ad7dcaab69324efa8d897a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__7_Apr_2014_10_21_02_+1000_aTLV=OV6ftiY/tqB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2014 11:53 PM, Ian Kent wrote:
-> On Sat, 2014-04-05 at 23:11 -0400, Sasha Levin wrote:
->> On 04/05/2014 11:03 PM, Ian Kent wrote:
->>> On Sat, 2014-04-05 at 11:06 -0400, Sasha Levin wrote:
->>>> Ping? Anyone wants to take this?
->>>
->>> Is this causing a problem for users?
->>> If it is I'll send it to Andrew straight away.
->>>
->>> I do have this on my queue but don't have any other patches to send so
->>> it's just sitting there.
->>>
->>> If it worries you I'll send it to Andrew now.
->>
->> It's not really a pressing issue since /dev/autofs is accessible only to
->> root. I also doubt that it causes problems for actual users.
->>
->> If there are no issues with the patch, I think it's best if you could
->> ack/sign off on it and if Andrew wants to take it now, he could. If he
->> doesn't, it could wait for whenever.
->>
->> I just don't want it getting lost somewhere and never making it upstream.
-> 
-> OK, but since I'm going to send it I looked at it a bit closer.
-> Shouldn't the E2BIG be ENAMETOOLONG since it's a file path that's being
-> passed?
-> 
-> I can change that and send it if you agree with the change.
+--Signature=_Mon__7_Apr_2014_10_21_02_+1000_aTLV=OV6ftiY/tqB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks good to me, thanks!
+Hi all,
 
+Today's linux-next merge of the arm-soc tree got conflicts in
+arch/arm/boot/dts/qcom-msm8960.dtsi, arch/arm/boot/dts/qcom-msm8974.dtsi,
+arch/arm/mach-omap2/pdata-quirks.c, arch/arm/mach-zynq/Kconfig,
+drivers/watchdog/Kconfig and sound/soc/kirkwood/Kconfig between various
+merge commits from Linus' tree and various merge commits from the arm-soc
+tree.
 
-Thanks,
-Sasha
+I used the versions from Linus' tree.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__7_Apr_2014_10_21_02_+1000_aTLV=OV6ftiY/tqB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTQe9yAAoJEMDTa8Ir7ZwVWjwP/0t01hBnQHcHgthyv4WNolRt
+SceHDG1ikfghygYjWGoRDF08LgEcp9i88GTIyHO7vDnoDx1/ai2UwUvzBytREW0G
+UpCMEDq30sTRUytwXcthFgZ5sTp26iK1BtZeiON8U8LJu0omFRQrvvHqbbyP+Kd9
+hbLNatffsu5bgIeGxOJNZDuoeYeLnQ+8Q7QEQ9GypWrVXbWfnvDaAHcw+dheZk09
+yzphhVk5FLPOIIqUhwtrkpB4c7vyzdWO6L6UPI6gZm8zhX9PsIESAts1M+L7tEQG
+6h/hX8JYouVxsdYl7JYdjCkmpQrLMEg2pzFiE6QroVsNSQCNts5L29bekBD7EJn8
+ZkUD6H/2GTvWL5CZZeksTBuDCaIsZ5niBoblsJbVhOk/Q26XwCySuYh2ACKVkGVJ
+s37FI+irWndTqKcG0Cz6FUg6jZd6RS+tJJtqGJHaRX5se+AB9XDbwzysAQrXzquT
+NJ5oStjisv0CD/khd8X92iwgEfh7zYBofm8mfpGLwRBNiRr7qLiEG+TajuiRzabs
+N3yGMZMBmk3IdgnZ9D08KFkKU7hvzFaDHhbfg6yZq2TtSi1pwgpXB/LslOcaCFQX
+eW2SUjnhIBPe9obE4knhKE6mbDO56erN3Nit1myDuvuRC7toZ6fPnhMKL1Ej4cBc
+upmAnR46JYkW1DalaT1U
+=R1U+
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__7_Apr_2014_10_21_02_+1000_aTLV=OV6ftiY/tqB--
