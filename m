@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003AbaDGWnP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:43:15 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43561 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194AbaDGWnN (ORCPT
+	id S1756053AbaDGWpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:45:16 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:52903 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819AbaDGWpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:43:13 -0400
-Date: Tue, 8 Apr 2014 00:43:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Michele Ballabio <barra_cuda@katamail.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-Message-ID: <20140407224308.GD4106@localhost.localdomain>
-References: <5341707F.5000406@katamail.com>
- <20140407150337.GO10526@twins.programming.kicks-ass.net>
- <20140407150705.GB13658@twins.programming.kicks-ass.net>
- <5342EB78.3060002@gmx.de>
- <20140407185949.GC4106@localhost.localdomain>
- <5343030C.3040004@gmx.de>
+	Mon, 7 Apr 2014 18:45:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5343030C.3040004@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140407100715.GI17163@e106497-lin.cambridge.arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com> <20140405000007.GD15806@google.com>
+ <20140407084623.GG17163@e106497-lin.cambridge.arm.com> <1396862058.3671.40.camel@pasglop>
+ <20140407100715.GI17163@e106497-lin.cambridge.arm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 7 Apr 2014 16:44:51 -0600
+Message-ID: <CAErSpo7h+Yew2hBztzkOzcHU5r4OQebxFbcZGkNUwJwfTFsbfg@mail.gmail.com>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for pci_host_bridge.
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 09:57:00PM +0200, Toralf Förster wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA256
-> 
-> On 04/07/2014 08:59 PM, Frederic Weisbecker wrote:
-> > On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
-> >> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA256
-> >> 
-> >> On 04/07/2014 05:07 PM, Peter Zijlstra wrote:
-> >>> On Mon, Apr 07, 2014 at 05:03:37PM +0200, Peter Zijlstra
-> >>> wrote:
-> >>>> So what I suspect at this point is that because i386 and
-> >>>> x86_64 have a difference in current_thread_info() (i386 is
-> >>>> stack based), we end up setting the TIF_NEED_RESCHED bit on
-> >>>> the wrong stack.
-> >>>> 
-> >>>> Now I have some vague memories of propagating the TIF flags
-> >>>> on stack switch, but I cannot remember what arch we did that
-> >>>> for. Let me stare at this a little more.
-> >>>> 
-> >>>> Also, IFF this is the case, then the fingered patch above
-> >>>> (and your suggested 'fix') aren't the real curlpit/cure but
-> >>>> simply make it more/less likely to happen.
-> >>>> 
-> >>>> Now, Steve had a patch somewhere that would make i386 use 
-> >>>> per-cpu variables for current_thread_info() just like x86_64 
-> >>>> already does I think. Let me go find them too.
-> >>> 
-> >>> Ohh, goodie, they're already in Linus' tree. Could you see if 
-> >>> current git still suffers this problem?
-> >>> 
-> >> v3.14-10353-g2b3a8fd works fine AFAICS (BTW the fix is stable
-> >> material, right ?)
-> > 
-> > If we are reffering to 198d208df4371734ac4728f69cb585c284d20a15 
-> > (x86: Keep thread_info on thread stack in x86_32) it doesn't carry
-> > a stable tag.
-> > 
-> > So to be clear, you are saying that v3.14 is fine but other
-> > release are buggy? Which ones are these?
-> > 
-> No, 3.13.x and 3.14 have the issue, latest git is fine and 3.12.x
-> 
+On Mon, Apr 7, 2014 at 4:07 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> On Mon, Apr 07, 2014 at 10:14:18AM +0100, Benjamin Herrenschmidt wrote:
+>> On Mon, 2014-04-07 at 09:46 +0100, Liviu Dudau wrote:
+>> >
+>> > *My* strategy is to get rid of pci_domain_nr(). I don't see why we need
+>> > to have arch specific way of providing the number, specially after looking
+>> > at the existing implementations that return a value from a variable that
+>> > is never touched or incremented. My guess is that pci_domain_nr() was
+>> > created to work around the fact that there was no domain_nr maintainance in
+>> > the generic code.
+>>
+>> Well, there was no generic host bridge structure. There is one now, it should
+>> go there.
+>
+> Exactly! Hence my patch. After it gets accepted I will go through architectures
+> and remove their version of pci_domain_nr().
 
-Ah ok. Hmm, Peter seemed to have an idea on a fix to backport so I'll let
-him handle that :)
+Currently the arch has to supply pci_domain_nr() because that's the
+only way for the generic code to learn the domain.  After you add
+pci_create_root_bus_in_domain(), the arch can supply the domain that
+way, and we won't need the arch-specific pci_domain_nr().  Right?
+That makes more sense to me; thanks for the explanation.
 
-Thanks.
+Let me try to explain my concern about the
+pci_create_root_bus_in_domain() interface.  We currently have these
+interfaces:
+
+  pci_scan_root_bus()
+  pci_scan_bus()
+  pci_scan_bus_parented()
+  pci_create_root_bus()
+
+pci_scan_root_bus() is a higher-level interface than
+pci_create_root_bus(), so I'm trying to migrate toward it because it
+lets us remove a little code from the arch, e.g., pci_scan_child_bus()
+and pci_bus_add_devices().
+
+I think we can only remove the arch-specific pci_domain_nr() if that
+arch uses pci_create_root_bus_in_domain().  When we convert an arch
+from using scan_bus interfaces to using
+pci_create_root_bus_in_domain(), we will have to move the rest of the
+scan_bus code (pci_scan_child_bus(), pci_bus_add_devices()) back into
+the arch code.
+
+One alternative is to add an _in_domain() variant of each of these
+interfaces, but that doesn't seem very convenient either.  My idea of
+passing in a structure would also require adding variants, so there's
+not really an advantage there, but I am thinking of the next
+unification effort, e.g., for NUMA node info.  I don't really want to
+have to change all the _in_domain() interfaces to also take yet
+another parameter for the node number.
+
+Bjorn
