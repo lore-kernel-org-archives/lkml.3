@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972AbaDGSb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 14:31:28 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:36561 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755642AbaDGSbY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 14:31:24 -0400
-From: Josef Bacik <jbacik@fb.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: Chris Mason <clm@fb.com>, David Sterba <dsterba@suse.cz>,
-        Jeff Mahoney <jeffm@suse.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs: lock inversion between delayed_node->mutex and
- found->groups_sem
-Thread-Topic: btrfs: lock inversion between delayed_node->mutex and
- found->groups_sem
-Thread-Index: AQHPP+M+3IXI59FKkUuYu2lRKTj7bZrluMoAgA5m3ICADmvngIAEbjGAgAAGQoCAAAzngP//kfJ2
-Date: Mon, 7 Apr 2014 18:29:29 +0000
-Message-ID: <j7epmjmklw5vs88lxuqjqorq.1396895366402@email.android.com>
-References: <53239AE0.8030306@oracle.com>
- <20140317130546.GE29256@twin.jikos.cz> <533307ED.8030700@suse.com>
- <533F20EB.2040500@oracle.com> <20140407165449.GA29256@twin.jikos.cz>
- <5342DD99.3010502@fb.com>,<5342E86B.4000305@oracle.com>
-In-Reply-To: <5342E86B.4000305@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1755981AbaDGSc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 14:32:26 -0400
+Received: from 200.180.216.87.static.jazztel.es ([87.216.180.200]:44168 "HELO
+	mail.sysvalve.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754025AbaDGScX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 14:32:23 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Apr 2014 14:32:22 EDT
+Date: Mon, 7 Apr 2014 20:25:40 +0200
+From: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chris Bajumpaa <cbajumpa@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging/line6: Fix kzalloc coding style issue
+Message-ID: <20140407182540.GB5182@sysvalve.es>
+References: <1396822352-14555-1-git-send-email-agimenez@sysvalve.es>
+ <s5hmwfxd69b.wl%tiwai@suse.de>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-07_02:2014-04-07,2014-04-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.24010135493791e-10 kscore.compositescore=0
- circleOfTrustscore=9.18185114672389 compositescore=0.998981209195878
- urlsuspect_oldscore=0.998981209195878 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998981209195878 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404070162
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <s5hmwfxd69b.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was on vacation last week, I'll update btrfs-next today once we are happy with integration.  Thanks,
+On Mon, Apr Apr 2014 at 08:05:04AM +0200, Takashi Iwai said:
+> At Mon,  7 Apr 2014 00:12:30 +0200,
+> L. Alberto Giménez wrote:
+> > 
+> > Pass the actual variable to sizeof instead of a type definition.
+> > 
+> > Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
+> 
+> Acked-by: Takashi Iwai <tiwai@suse.de>
+> 
+> BTW, does anyone work on line6 stuff actively?
+> It's been in staging forever, and it's difficult to promote to the
+> standard ALSA driver unless testing with the real hardware by some
+> motivated person...
 
-Josef
+I'm Not sure of that. I think that development has somewhat stalled. I
+have line6 hardware that at the moment is not supported (HD500), and I
+would like to take the shot. But the problem is that there are no specs,
+and Line6 won't release any (I asked, several times, even offering to
+accept some kind of stupid NDA). So I would need to reverse engineer
+Windows drivers, and I don't have the knowledge to interpret captured
+USB traffic, so I'm stuck as well.
 
-Sasha Levin <sasha.levin@oracle.com> wrote:
-
-
-On 04/07/2014 01:17 PM, Chris Mason wrote:
->
->
-> On 04/07/2014 12:54 PM, David Sterba wrote:
->> On Fri, Apr 04, 2014 at 05:15:23PM -0400, Sasha Levin wrote:
->>> On 03/26/2014 01:01 PM, Jeff Mahoney wrote:
->>>> On 3/17/14, 9:05 AM, David Sterba wrote:
->>>>>> On Fri, Mar 14, 2014 at 08:12:16PM -0400, Sasha Levin wrote:
->>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following:
->>>>>>>>
->>>>>>>> [  788.458756]        CPU0                    CPU1 [  788.459188] ----                    ---- [  788.459625] lock(&found->groups_sem); [  788.460041] local_irq_disable(); [  788.460041] lock(&delayed_node->mutex); [  788.460041] lock(&found->groups_sem); [  788.460041]   <Interrupt> [ 788.460041]     lock(&delayed_node->mutex); [  788.460041] [ 788.460041]  *** DEADLOCK *** [  788.460041] [  788.460041] 2 locks held by kswapd3/4199:
->>>>>>
->>>>>> I've once (3.14-rc5) seen the same warning also caused by xfstests/generic/224
->>>> I think this is from my sysfs patches. We call kobject_add while holding the group_sem. kobject_add ultimately allocates with GFP_KERNEL, so it can enter reclaim. This particular case isn't dangerous, but it could hit while hot-adding a device. The fix should be pretty simple.
->>>
->>> Is that fix available anywhere? I'm still seeing the issue in -next.
->>
->> It is: https://urldefense.proofpoint.com/v1/url?u=https://patchwork.kernel.org/patch/3894781/&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=HQJVSK4wPTft1zWwI1cGvwj5OfdmN5UItVlucU1K31o%3D%0A&s=5113699a2e7345a779333c87dd5b1d88b4410a7c7fcd5fa424baeb838ad7d31b , will probably hit -rc2
->>
->
-> Its in the integration branch now along with some other important fixes.  We'll get it out shortly
-
-Chris,
-
-Can I suggest adding the integration branch to linux-next as well? That way
-all the folks who report issues coming out of -next would be able to test
-the fixes as well.
+I'll try to revive the line6-devel mailing list sending some traffic
+captures and see if anyone can help or point me in the right direction.
+I would like to see my HD500 running natively on Linux, and it's a nice
+challenge to actually do some useful work for the kernel :)
 
 
-Thanks,
-Sasha
+Regards,
+L. Alberto Giménez
 
+P.S.: I sent this mail this morning from an alternative machine, and it
+seems that the mail configuration was broken. Resending, sorry if you
+received this message twice.
