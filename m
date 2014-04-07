@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaDGN6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:58:51 -0400
-Received: from mail.windriver.com ([147.11.1.11]:60182 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaDGN6u (ORCPT
+	id S1755350AbaDGOCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 10:02:19 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.151]:52106 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755208AbaDGOCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:58:50 -0400
-Message-ID: <5342AEEF.4080503@windriver.com>
-Date: Mon, 7 Apr 2014 09:58:07 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Apr 2014 10:02:16 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-8.tower-180.messagelabs.com!1396879332!24232028!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 07 Apr 2014 16:02:12 +0200
+Date: Mon, 7 Apr 2014 16:02:06 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Christoph Jaeger <christophjaeger@linux.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <johannes.thumshirn@men.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: mcb: fix memory leak in chameleon_parse_cells()
+ error path
+Message-ID: <20140407140206.GA23383@jtlinux>
+References: <1396638298-3173-1-git-send-email-christophjaeger@linux.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Ralf Baechle <ralf@linux-mips.org>, Sanjay Lal <sanjayl@kymasys.com>,
-        John Crispin <blogic@openwrt.org>, <linux-mips@linux-mips.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mips: export icache_flush_range
-References: <20140322154720.GA23863@www.outflux.net> <CAGXu5jL+o4dG+ruUDh-+5LY=iD0veWaimBUq3cJBtuCiNbYt1A@mail.gmail.com>
-In-Reply-To: <CAGXu5jL+o4dG+ruUDh-+5LY=iD0veWaimBUq3cJBtuCiNbYt1A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.56.57]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1396638298-3173-1-git-send-email-christophjaeger@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-03-22 03:05 PM, Kees Cook wrote:
-> On Sat, Mar 22, 2014 at 9:47 AM, Kees Cook <keescook@chromium.org> wrote:
->> The lkdtm module performs tests against executable memory ranges, so
->> it needs to flush the icache for proper behaviors. Other architectures
->> already export this, so do the same for MIPS.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->> This is currently untested! I'm building a MIPS cross-compiler now...
->> If someone can validate this fixes the build when lkdtm is a module,
->> that would be appreciated. :)
-> 
-> Okay, now tested. I reproduced the failure and this patch fixes it. :)
+On Fri, Apr 04, 2014 at 09:04:58PM +0200, Christoph Jaeger wrote:
+> chameleon_parse_cells() bails out if chameleon descriptor type is
+> invalid but does not free the storage 'header' points to.
+>
+> Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+> ---
+>  drivers/mcb/mcb-parse.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/mcb/mcb-parse.c b/drivers/mcb/mcb-parse.c
+> index d1278b5..0049269 100644
+> --- a/drivers/mcb/mcb-parse.c
+> +++ b/drivers/mcb/mcb-parse.c
+> @@ -141,6 +141,7 @@ int chameleon_parse_cells(struct mcb_bus *bus, phys_addr_t mapbase,
+>  		default:
+>  			pr_err("Invalid chameleon descriptor type 0x%x\n",
+>  				dtype);
+> +			kfree(header);
+>  			return -EINVAL;
+>  		}
+>  		num_cells++;
+> --
+> 1.9.0
+>
 
-Just checking if this happened to fall through the cracks.
-The most recent (Apr4) linux-next build for mips still fails
-with this error.
+*Doh*
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/10877159/
+Thanks for the patch.
 
-Paul.
---
+@Greg, how should be the process here? Should I collect MCB related patches
+somewhere and forward them to you, or do you pick them up yourself?
 
-> 
-> -Kees
-> 
->> ---
->>  arch/mips/mm/cache.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
->> index fde7e56d13fe..b3f1df13d9f6 100644
->> --- a/arch/mips/mm/cache.c
->> +++ b/arch/mips/mm/cache.c
->> @@ -38,6 +38,7 @@ void (*__flush_kernel_vmap_range)(unsigned long vaddr, int size);
->>  void (*__invalidate_kernel_vmap_range)(unsigned long vaddr, int size);
->>
->>  EXPORT_SYMBOL_GPL(__flush_kernel_vmap_range);
->> +EXPORT_SYMBOL_GPL(flush_icache_range);
->>
->>  /* MIPS specific cache operations */
->>  void (*flush_cache_sigtramp)(unsigned long addr);
->> --
->> 1.7.9.5
->>
->>
->> --
->> Kees Cook
->> Chrome OS Security
-> 
-> 
-> 
+Thanks,
+	Johannes
