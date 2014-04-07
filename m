@@ -1,274 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088AbaDGJqC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 05:46:02 -0400
-Received: from relay.parallels.com ([195.214.232.42]:45860 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510AbaDGJpi (ORCPT
+	id S1755021AbaDGJvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 05:51:47 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58990 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510AbaDGJvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 05:45:38 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <cl@linux-foundation.org>, <penberg@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH -mm v2 2/2] slab: get_online_mems for kmem_cache_{create,destroy,shrink}
-Date: Mon, 7 Apr 2014 13:45:35 +0400
-Message-ID: <d1b0a501b42052cdb9a510486a584e1a8e1dde76.1396857765.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1396857765.git.vdavydov@parallels.com>
-References: <cover.1396857765.git.vdavydov@parallels.com>
+	Mon, 7 Apr 2014 05:51:44 -0400
+Message-ID: <5342750A.3060307@linux.vnet.ibm.com>
+Date: Mon, 07 Apr 2014 15:21:06 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        benh@kernel.crashing.org, paulus@samba.org, nfont@linux.vnet.ibm.com,
+        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
+        rcj@linux.vnet.ibm.com, jlarrew@linux.vnet.ibm.com,
+        alistair@popple.id.au, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] power, sched: stop updating inside arch_update_cpu_topology()
+ when nothing to be update
+References: <533B8431.8090507@linux.vnet.ibm.com> <533D20E1.4000008@linux.vnet.ibm.com> <533E2BA2.6000107@linux.vnet.ibm.com>
+In-Reply-To: <533E2BA2.6000107@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040709-5816-0000-0000-00000D4D350F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we create a sl[au]b cache, we allocate kmem_cache_node structures
-for each online NUMA node. To handle nodes taken online/offline, we
-register memory hotplug notifier and allocate/free kmem_cache_node
-corresponding to the node that changes its state for each kmem cache.
+Hi Michael,
 
-To synchronize between the two paths we hold the slab_mutex during both
-the cache creationg/destruction path and while tuning per-node parts of
-kmem caches in memory hotplug handler, but that's not quite right,
-because it does not guarantee that a newly created cache will have all
-kmem_cache_nodes initialized in case it races with memory hotplug. For
-instance, in case of slub:
+On 04/04/2014 09:18 AM, Michael wang wrote:
+> Hi, Srivatsa
+> 
+> Thanks for your reply :)
+> 
+> On 04/03/2014 04:50 PM, Srivatsa S. Bhat wrote:
+> [snip]
+>>
+>> Now, the interesting thing to note here is that, if CPU0's node was already
+>> set as node0, *nothing* should go wrong, since its just a redundant update.
+>> However, if CPU0's original node mapping was something different, or if
+>> node0 doesn't even exist in the machine, then the system can crash.
+> 
+> By printk I confirmed all cpus was belong to node 1 at very beginning,
+> and things become magically after the wrong updating...
+>
 
-    CPU0                            CPU1
-    ----                            ----
-    kmem_cache_create:              online_pages:
-     __kmem_cache_create:            slab_memory_callback:
-                                      slab_mem_going_online_callback:
-                                       lock slab_mutex
-                                       for each slab_caches list entry
-                                           allocate kmem_cache node
-                                       unlock slab_mutex
-      lock slab_mutex
-      init_kmem_cache_nodes:
-       for_each_node_state(node, N_NORMAL_MEMORY)
-           allocate kmem_cache node
-      add kmem_cache to slab_caches list
-      unlock slab_mutex
-                                    online_pages (continued):
-                                     node_states_set_node
+Ok, thanks!
+ 
+>>
+>> Have you verified that CPU0's node mapping is different from node 0?
+>> That is, boot the kernel with "numa=debug" in the kernel command line and
+>> it will print out the cpu-to-node associativity during boot. That way you
+>> can figure out what was the original associativity that was set. This will
+>> confirm the theory that the hypervisor sent a redundant update, but because
+>> of the weird pre-allocation using kzalloc that we do inside
+>> arch_update_cpu_topology(), we wrongly updated CPU0's mapping as CPU0 <-> Node0.
+> 
+> Associativity should changes, otherwise we won't continue the updating,
+> and empty updates[] was confirmed to show up inside
+> arch_update_cpu_topology().
+> 
 
-As a result we'll get a kmem cache with not all kmem_cache_nodes
-allocated.
+Ah, ok, that makes it very clear. So, I agree that your patch is correct,
+but I think the comment in your patch can be enhanced a bit. I'll suggest
+something if I manage to come up with a better wording.
 
-To avoid issues like that we should hold get/put_online_mems() during
-the whole kmem cache creation/destruction/shrink paths, just like we
-deal with cpu hotplug. This patch does the trick.
+> What I can't make sure is whether this is legal, notify changes but no
+> changes happen sounds weird...however, even if it's legal, a check in
+> here still make sense IMHO.
+> 
 
-Note, that after it's applied, there is no need in taking the slab_mutex
-for kmem_cache_shrink any more, so it is removed from there.
+That looks like a bug in the hypervisor/firmware. But the Linux kernel should
+be able to handle such NULL updates without crashing. So yes, your patch makes
+sense to me.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slab.c        |   26 ++------------------------
- mm/slab.h        |    1 +
- mm/slab_common.c |   35 +++++++++++++++++++++++++++++++++--
- mm/slob.c        |    3 +--
- mm/slub.c        |    5 ++---
- 5 files changed, 39 insertions(+), 31 deletions(-)
+Thank you!
 
-diff --git a/mm/slab.c b/mm/slab.c
-index eebc619ae33c..b33aae64e5d7 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2442,8 +2442,7 @@ out:
- 	return nr_freed;
- }
- 
--/* Called with slab_mutex held to protect against cpu hotplug */
--static int __cache_shrink(struct kmem_cache *cachep)
-+int __kmem_cache_shrink(struct kmem_cache *cachep)
- {
- 	int ret = 0, i = 0;
- 	struct kmem_cache_node *n;
-@@ -2464,32 +2463,11 @@ static int __cache_shrink(struct kmem_cache *cachep)
- 	return (ret ? 1 : 0);
- }
- 
--/**
-- * kmem_cache_shrink - Shrink a cache.
-- * @cachep: The cache to shrink.
-- *
-- * Releases as many slabs as possible for a cache.
-- * To help debugging, a zero exit status indicates all slabs were released.
-- */
--int kmem_cache_shrink(struct kmem_cache *cachep)
--{
--	int ret;
--	BUG_ON(!cachep || in_interrupt());
--
--	get_online_cpus();
--	mutex_lock(&slab_mutex);
--	ret = __cache_shrink(cachep);
--	mutex_unlock(&slab_mutex);
--	put_online_cpus();
--	return ret;
--}
--EXPORT_SYMBOL(kmem_cache_shrink);
--
- int __kmem_cache_shutdown(struct kmem_cache *cachep)
- {
- 	int i;
- 	struct kmem_cache_node *n;
--	int rc = __cache_shrink(cachep);
-+	int rc = __kmem_cache_shrink(cachep);
- 
- 	if (rc)
- 		return rc;
-diff --git a/mm/slab.h b/mm/slab.h
-index 3045316b7c9d..00a47de7631f 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -91,6 +91,7 @@ __kmem_cache_alias(const char *name, size_t size, size_t align,
- #define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
- 
- int __kmem_cache_shutdown(struct kmem_cache *);
-+int __kmem_cache_shrink(struct kmem_cache *);
- 
- struct seq_file;
- struct file;
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index f3cfccf76dda..955e34bae7ae 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -205,6 +205,8 @@ kmem_cache_create(const char *name, size_t size, size_t align,
- 	int err;
- 
- 	get_online_cpus();
-+	get_online_mems();
-+
- 	mutex_lock(&slab_mutex);
- 
- 	err = kmem_cache_sanity_check(name, size);
-@@ -239,6 +241,8 @@ kmem_cache_create(const char *name, size_t size, size_t align,
- 
- out_unlock:
- 	mutex_unlock(&slab_mutex);
-+
-+	put_online_mems();
- 	put_online_cpus();
- 
- 	if (err) {
-@@ -272,6 +276,8 @@ void kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *root_c
- 	char *cache_name;
- 
- 	get_online_cpus();
-+	get_online_mems();
-+
- 	mutex_lock(&slab_mutex);
- 
- 	/*
-@@ -299,6 +305,8 @@ void kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *root_c
- 
- out_unlock:
- 	mutex_unlock(&slab_mutex);
-+
-+	put_online_mems();
- 	put_online_cpus();
- }
- 
-@@ -326,6 +334,8 @@ static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- void kmem_cache_destroy(struct kmem_cache *s)
- {
- 	get_online_cpus();
-+	get_online_mems();
-+
- 	mutex_lock(&slab_mutex);
- 
- 	s->refcount--;
-@@ -354,15 +364,36 @@ void kmem_cache_destroy(struct kmem_cache *s)
- 	memcg_free_cache_params(s);
- 	kfree(s->name);
- 	kmem_cache_free(kmem_cache, s);
--	goto out_put_cpus;
-+	goto out;
- 
- out_unlock:
- 	mutex_unlock(&slab_mutex);
--out_put_cpus:
-+out:
-+	put_online_mems();
- 	put_online_cpus();
- }
- EXPORT_SYMBOL(kmem_cache_destroy);
- 
-+/**
-+ * kmem_cache_shrink - Shrink a cache.
-+ * @cachep: The cache to shrink.
-+ *
-+ * Releases as many slabs as possible for a cache.
-+ * To help debugging, a zero exit status indicates all slabs were released.
-+ */
-+int kmem_cache_shrink(struct kmem_cache *cachep)
-+{
-+	int ret;
-+
-+	get_online_cpus();
-+	get_online_mems();
-+	ret = __kmem_cache_shrink(cachep);
-+	put_online_mems();
-+	put_online_cpus();
-+	return ret;
-+}
-+EXPORT_SYMBOL(kmem_cache_shrink);
-+
- int slab_is_available(void)
- {
- 	return slab_state >= UP;
-diff --git a/mm/slob.c b/mm/slob.c
-index 730cad45d4be..21980e0f39a8 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -620,11 +620,10 @@ int __kmem_cache_shutdown(struct kmem_cache *c)
- 	return 0;
- }
- 
--int kmem_cache_shrink(struct kmem_cache *d)
-+int __kmem_cache_shrink(struct kmem_cache *d)
- {
- 	return 0;
- }
--EXPORT_SYMBOL(kmem_cache_shrink);
- 
- struct kmem_cache kmem_cache_boot = {
- 	.name = "kmem_cache",
-diff --git a/mm/slub.c b/mm/slub.c
-index d72d69e25012..09660b9ff5bd 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3412,7 +3412,7 @@ EXPORT_SYMBOL(kfree);
-  * being allocated from last increasing the chance that the last objects
-  * are freed in them.
-  */
--int kmem_cache_shrink(struct kmem_cache *s)
-+int __kmem_cache_shrink(struct kmem_cache *s)
- {
- 	int node;
- 	int i;
-@@ -3468,7 +3468,6 @@ int kmem_cache_shrink(struct kmem_cache *s)
- 	kfree(slabs_by_inuse);
- 	return 0;
- }
--EXPORT_SYMBOL(kmem_cache_shrink);
- 
- static int slab_mem_going_offline_callback(void *arg)
- {
-@@ -3476,7 +3475,7 @@ static int slab_mem_going_offline_callback(void *arg)
- 
- 	mutex_lock(&slab_mutex);
- 	list_for_each_entry(s, &slab_caches, list)
--		kmem_cache_shrink(s);
-+		__kmem_cache_shrink(s);
- 	mutex_unlock(&slab_mutex);
- 
- 	return 0;
--- 
-1.7.10.4
+Regards,
+Srivatsa S. Bhat
+
+>>
+>>> Thus we should stop the updating in such cases, this patch will achieve
+>>> this and fix the issue.
+>>>
+>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>> CC: Paul Mackerras <paulus@samba.org>
+>>> CC: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+>>> CC: Stephen Rothwell <sfr@canb.auug.org.au>
+>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>> CC: Robert Jennings <rcj@linux.vnet.ibm.com>
+>>> CC: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+>>> CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+>>> CC: Alistair Popple <alistair@popple.id.au>
+>>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+>>> ---
+>>>  arch/powerpc/mm/numa.c |    9 +++++++++
+>>>  1 file changed, 9 insertions(+)
+>>>
+>>> diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+>>> index 30a42e2..6757690 100644
+>>> --- a/arch/powerpc/mm/numa.c
+>>> +++ b/arch/powerpc/mm/numa.c
+>>> @@ -1591,6 +1591,14 @@ int arch_update_cpu_topology(void)
+>>>  		cpu = cpu_last_thread_sibling(cpu);
+>>>  	}
+>>>
+>>> +	/*
+>>> +	 * The 'cpu_associativity_changes_mask' could be cleared if
+>>> +	 * all the cpus it indicates won't change their node, in
+>>> +	 * which case the 'updated_cpus' will be empty.
+>>> +	 */
+>>> +	if (!cpumask_weight(&updated_cpus))
+>>> +		goto out;
+>>> +
+>>>  	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
+>>>
+>>>  	/*
+>>> @@ -1612,6 +1620,7 @@ int arch_update_cpu_topology(void)
+>>>  		changed = 1;
+>>>  	}
+>>>
+>>> +out:
+>>>  	kfree(updates);
+>>>  	return changed;
+>>>  }
+>>>
+>>
 
