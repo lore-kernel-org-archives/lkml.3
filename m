@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987AbaDGUew (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 16:34:52 -0400
-Received: from smtprelay0014.hostedemail.com ([216.40.44.14]:44439 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755924AbaDGUev (ORCPT
+	id S1755660AbaDGUm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 16:42:56 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41845 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637AbaDGUmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 16:34:51 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3874:4250:4321:4605:5007:6119:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13095:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: curve26_81608e243ff55
-X-Filterd-Recvd-Size: 2621
-Message-ID: <1396902887.2874.62.camel@joe-AO722>
-Subject: Re: [PATCH v2 4/5] Staging: rts5139: pr_warn(...) in place of
- printk(KERN_WARNING ...)
-From: Joe Perches <joe@perches.com>
-To: Fabio Falzoi <fabio.falzoi84@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+	Mon, 7 Apr 2014 16:42:55 -0400
+Subject: Re: [RFC PATCH 3/6] uprobes/x86: Introduce sizeof_long(), cleanup
+ adjust_ret_addr() and arch_uretprobe_hijack_return_addr()
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Date: Mon, 07 Apr 2014 13:34:47 -0700
-In-Reply-To: <1396902468-27906-5-git-send-email-fabio.falzoi84@gmail.com>
-References: <20140407003341.GA13365@kroah.com>
-	 <1396902468-27906-1-git-send-email-fabio.falzoi84@gmail.com>
-	 <1396902468-27906-5-git-send-email-fabio.falzoi84@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+In-Reply-To: <1396902865.9333.29.camel@oc7886638347.ibm.com.usor.ibm.com>
+References: <20140406201625.GA504@redhat.com>
+	 <1396902865.9333.29.camel@oc7886638347.ibm.com.usor.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Apr 2014 13:42:47 -0700
+Message-ID: <1396903367.9333.33.camel@oc7886638347.ibm.com.usor.ibm.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040720-8236-0000-0000-0000015CB1BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-07 at 22:27 +0200, Fabio Falzoi wrote:
-> All printk(KERN_WARNING ...) replaced with pr_warn(...).
+On Mon, 2014-04-07 at 13:34 -0700, Jim Keniston wrote:
+> On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
+> > 1. Add the trivial sizeof_long() helper and change other callers of
+> >    is_ia32_task() to use it.
+> > 
+> ...
+> 
+> This hunk #3 doesn't apply for me.  I can't find in your patch sets
+> where you added the lines being replaced (and they weren't there
+> originally).
 
-Please remove the RTS51X_TIP prefix and and and use
+False alarm, I think.  I didn't have your patch #9 v3 from Saturday.
+Jim
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
-before any #include so that pr_<level> uses
-are prefixed in a standard way.
-
-> diff --git a/drivers/staging/rts5139/rts51x.c b/drivers/staging/rts5139/rts51x.c
-[]
-> @@ -725,8 +725,8 @@ static int rts51x_probe(struct usb_interface *intf,
+> 
+> After I fixed up this hunk, this patch and the rest applied OK.
+> 
+> > @@ -450,10 +448,7 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+> > 
+> >  	if (auprobe->fixups & UPROBE_FIX_CALL) {
+> >  		if (adjust_ret_addr(regs->sp, correction)) {
+> > -			if (is_ia32_task())
+> > -				regs->sp += 4;
+> > -			else
+> > -				regs->sp += 8;
+> > +			regs->sp += sizeof_long();
+> >  			return -ERESTART;
+> >  		}
+> >  	}
+> > @@ -738,23 +733,21 @@ if (ret) pr_crit("EMULATE: %lx -> %lx\n", ip, regs->ip);
+> ...
+> 
+> This modified hunk worked for me.
+> @@ -450,7 +448,9 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+> 
+>  	if (auprobe->fixups & UPROBE_FIX_CALL) {
+> -		if (adjust_ret_addr(regs->sp, correction))
+> +		if (adjust_ret_addr(regs->sp, correction)) {
+> +			regs->sp += sizeof_long();
+>  			return -ERESTART;
+> +		}
+>  	}
 >  
->  	rts51x = kzalloc(sizeof(struct rts51x_usb), GFP_KERNEL);
->  	if (!rts51x) {
-> -		printk(KERN_WARNING RTS51X_TIP
-> -		       "Unable to allocate rts51x_usb\n");
-> +		pr_warn(RTS51X_TIP
-> +			"Unable to allocate rts51x_usb\n");
-
-This could be deleted.
-
-alloc OOM messages aren't necessary as there's a generic
-OOM message with a dump_stack() already done.
-
-> @@ -736,8 +736,8 @@ static int rts51x_probe(struct usb_interface *intf,
->  	 */
->  	host = scsi_host_alloc(&rts51x_host_template, sizeof(*chip));
->  	if (!host) {
-> -		printk(KERN_WARNING RTS51X_TIP
-> -		       "Unable to allocate the scsi host\n");
-> +		pr_warn(RTS51X_TIP
-> +			"Unable to allocate the scsi host\n");
-
-This could be on a single line
-
-		pr_warn("Unable to allocate the scsi host\n");
-
-> @@ -778,8 +778,8 @@ static int rts51x_probe(struct usb_interface *intf,
->  	/* Start up our control thread */
->  	th = kthread_run(rts51x_control_thread, chip, RTS51X_CTL_THREAD);
->  	if (IS_ERR(th)) {
-> -		printk(KERN_WARNING RTS51X_TIP
-> -		       "Unable to start control thread\n");
-> +		pr_warn(RTS51X_TIP
-> +			"Unable to start control thread\n");
-
-single line, etc.
+>  	return 0;
+> 
+> Jim
 
 
