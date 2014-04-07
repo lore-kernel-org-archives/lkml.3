@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009AbaDGWW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 18:22:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42506 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433AbaDGWWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 18:22:24 -0400
-Date: Mon, 7 Apr 2014 15:22:22 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mark Brown <broonie@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>, linux-spi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RESEND] spi: qup: Depend on ARCH_QCOM
-Message-ID: <20140407222222.GJ9985@codeaurora.org>
-References: <1396784733.30640.25.camel@x220>
- <20140407130853.GG14763@sirena.org.uk>
- <1396880145.12738.6.camel@x220>
+	id S1756013AbaDGW2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 18:28:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755316AbaDGW2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 18:28:44 -0400
+Subject: [PATCH 0/3] vfio: Fix coverity found issues
+From: Alex Williamson <alex.williamson@redhat.com>
+To: alex.williamson@redhat.com
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Mon, 07 Apr 2014 16:28:43 -0600
+Message-ID: <20140407221857.12761.73684.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396880145.12738.6.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07, Paul Bolle wrote:
-> Commit 8fc1b0f87d9f ("ARM: qcom: Split Qualcomm support into legacy and
-> multiplatform") removed Kconfig symbol ARCH_MSM_DT. But that commit
-> left one (optional) dependency on ARCH_MSM_DT untouched.
-> 
-> Three Kconfig symbols used to depend on ARCH_MSM_DT: ARCH_MSM8X60,
-> ARCH_MSM8960, and ARCH_MSM8974. These three symbols now depend on
-> ARCH_QCOM. So it appears this driver needs to depend on ARCH_QCOM too.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Overall nothing very serious here.  We botch the size of a PCIe
+capability due to a cut-n-paste error, but nobody has noticed due to
+the rarity of the capability.  A 32bit host could possibly see some
+overflows attempting to do a DMA map, but all of the parameters are
+also validated elsewhere, so while this may cause unexepected behavior
+for the user, there doesn't appear to be any risk to the host.
+Thanks,
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Alex
 
-> Resending, because Mark suggested to include the Qualcomm people (who
-> know what's going on with these symbols).
-> 
-> Still untested!
-> 
-> Note that this is basically guesswork: looking at commit 8fc1b0f87d9f it
-> appears to make sense to pick ARCH_QCOM here.
+---
 
-That's correct.
+Alex Williamson (3):
+      vfio/pci: Fix sizing of DPA and THP express capabilities
+      vfio/pci: Fix unchecked return value
+      vfio/iommu_type1: Avoid overflow
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+
+ drivers/vfio/pci/vfio_pci.c        |    3 ++
+ drivers/vfio/pci/vfio_pci_config.c |    7 ++----
+ drivers/vfio/vfio_iommu_type1.c    |   45 ++++++++++++++----------------------
+ 3 files changed, 23 insertions(+), 32 deletions(-)
