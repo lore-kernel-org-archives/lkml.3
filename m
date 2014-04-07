@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973AbaDGIWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 04:22:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56250 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941AbaDGIWv (ORCPT
+	id S1754900AbaDGI0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 04:26:53 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34032 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaDGI0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 04:22:51 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] imx-drm: imx-drm-core: Fix imx_drm_encoder_get_mux_id
-Date: Mon,  7 Apr 2014 10:22:36 +0200
-Message-Id: <1396858956-7096-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.9.1
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 7 Apr 2014 04:26:49 -0400
+Message-ID: <5342613E.2090900@parallels.com>
+Date: Mon, 7 Apr 2014 12:26:38 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <devel@openvz.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH -mm 2/3] lockdep: mark rwsem_acquire_read as recursive
+References: <cover.1396779337.git.vdavydov@parallels.com> <8c6473e959a4557d8622a6d7ff24888cb3f7512d.1396779337.git.vdavydov@parallels.com> <20140407081336.GC11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140407081336.GC11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The decoder mux id is equal to the port id of the encoder's input port
-that is connected to the given crtc, not to the endpoint id (which is
-arbitrary and usually zero).
+On 04/07/2014 12:13 PM, Peter Zijlstra wrote:
+> On Sun, Apr 06, 2014 at 07:33:51PM +0400, Vladimir Davydov wrote:
+>> rw_semaphore implementation allows recursing calls to down_read, but
+>> lockdep thinks that it doesn't. As a result, it will complain
+>> false-positively, e.g. if we do not observe some predefined locking
+>> order when taking an rw semaphore for reading and a mutex.
+>>
+>> This patch makes lockdep think rw semaphore is read-recursive, just like
+>> rw spin lock.
+> Uhm no rwsem isn't read recursive.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/staging/imx-drm/imx-drm-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yeah, I was mistaken and is already reworking my set. Please sorry for
+the noise.
 
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 4144a75..bc7f8bd 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -517,7 +517,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
- 		of_node_put(port);
- 		if (port == imx_crtc->port) {
- 			ret = of_graph_parse_endpoint(ep, &endpoint);
--			return ret ? ret : endpoint.id;
-+			return ret ? ret : endpoint.port;
- 		}
- 	} while (ep);
- 
--- 
-1.9.1
-
+Thanks.
