@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325AbaDGNPk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:15:40 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:49790 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760AbaDGNPh (ORCPT
+	id S1755348AbaDGNSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:18:41 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:38803 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaDGNSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:15:37 -0400
+	Mon, 7 Apr 2014 09:18:38 -0400
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140404234358.GE10275@thunk.org>
-References: <20140403191558.GA8745@thunk.org>
-	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
-	<20140404035308.GC2525@thunk.org>
-	<20140404134429.GB26806@quack.suse.cz>
-	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
-	<20140404234358.GE10275@thunk.org>
-Date: Mon, 7 Apr 2014 15:15:36 +0200
-Message-ID: <CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Theodore Ts'o" <tytso@mit.edu>, Miklos Szeredi <miklos@szeredi.hu>,
-        Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1396339327-16090-1-git-send-email-tlinder@codeaurora.org>
+References: <1396339327-16090-1-git-send-email-tlinder@codeaurora.org>
+Date: Mon, 7 Apr 2014 15:18:37 +0200
+Message-ID: <CAFLxGvyHL2Fjk3Zvqr5Y89R7vC8wjWwUi98UESdX-Ue9h6y3pA@mail.gmail.com>
+Subject: Re: [RFC/PATCH] mtd: ubi: Fix ubi free PEBs count calculation
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 5, 2014 at 1:43 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Fri, Apr 04, 2014 at 07:16:25PM +0200, Miklos Szeredi wrote:
->>
->> http://marc.info/?l=linux-kernel&m=139523745403081&w=2
+On Tue, Apr 1, 2014 at 10:02 AM, Tanya Brokhman <tlinder@codeaurora.org> wrote:
+> The ubi->free_count should be updated with every insert/remove to/from
+> the ubi->free list.
 >
-> I tried applying this patch on top of xfstests commit 3948694eb1, but
-> running on ext4.git's test branch, which has the your cross-rename
-> patches applied:
+> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
 >
-> http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/commit/?h=test&id=b7bcc46d4f80139930c2e6bd04ff8ebbff121bc9
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index 9a36f78..ca74d19 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -690,6 +690,8 @@ static struct ubi_wl_entry *get_peb_for_wl(struct ubi_device *ubi)
 >
-> I see the following:
+>         e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
+>         self_check_in_wl_tree(ubi, e, &ubi->free);
+> +       ubi->free_count--;
+> +       ubi_assert(ubi->free_count >= 0);
+>         rb_erase(&e->u.rb, &ubi->free);
 >
-> BEGIN TEST: Ext4 4k block Fri Apr  4 23:21:50 UTC 2014
-> Device: /dev/vdb
-> mk2fs options: -q
-> mount options: -o block_validity
-> FSTYP         -- ext4
-> PLATFORM      -- Linux/i686 candygram 3.14.0-00061-gb7bcc46
-> MKFS_OPTIONS  -- -q /dev/vdc
-> MOUNT_OPTIONS -- -o acl,user_xattr -o block_validity /dev/vdc /vdc
+>         return e;
+> @@ -1090,6 +1092,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 >
-> generic/323             [23:22:03] [23:22:04] [not run]
->         generic/323 -- kernel doesn't support renameat2 syscall
-> generic/324             [23:22:04] [23:22:05] [not run]
->         generic/324 -- kernel doesn't support renameat2 syscall
-> generic/325             [23:22:05] [23:22:06] [not run]
->         generic/325 -- kernel doesn't support renameat2 syscall
-> Not run: generic/323 generic/324 generic/325
->
-> Is there anything obvious that I might be doing wrong?
+>                         /* Give the unused PEB back */
+>                         wl_tree_add(e2, &ubi->free);
+> +                       ubi->free_count++;
+>                         goto out_cancel;
+>                 }
+>                 self_check_in_wl_tree(ubi, e1, &ubi->used);
+> --
 
-I only wired up the syscall for x86_64.   Who's responsible for adding
-all the syscall tables for the various architectures?
+Acked-by: Richard Weinberger <richard@nod.at>
 
+-- 
 Thanks,
-Miklos
+//richard
