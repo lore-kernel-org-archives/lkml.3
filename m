@@ -1,57 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaDGRLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 13:11:53 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:34785 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753190AbaDGRLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 13:11:50 -0400
-X-IronPort-AV: E=Sophos;i="4.97,811,1389744000"; 
-   d="scan'208";a="118761079"
-Message-ID: <5342DC54.2070608@citrix.com>
-Date: Mon, 7 Apr 2014 18:11:48 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH] xen-blkback: only attach blkback if the required features
- are met
-References: <1396622471-13114-1-git-send-email-roger.pau@citrix.com> <533EC966.7030101@citrix.com> <533ECC32.5070302@citrix.com>
-In-Reply-To: <533ECC32.5070302@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+	id S1755477AbaDGRNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 13:13:09 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:40922 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755167AbaDGRNG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 13:13:06 -0400
+Date: Mon, 7 Apr 2014 12:13:03 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: slub: gpf in deactivate_slab
+In-Reply-To: <53401F56.5090507@oracle.com>
+Message-ID: <alpine.DEB.2.10.1404071212200.9896@nuc>
+References: <53208A87.2040907@oracle.com> <5331A6C3.2000303@oracle.com> <20140325165247.GA7519@dhcp22.suse.cz> <alpine.DEB.2.10.1403251205140.24534@nuc> <5331B9C8.7080106@oracle.com> <alpine.DEB.2.10.1403251308590.26471@nuc> <53321CB6.5050706@oracle.com>
+ <alpine.DEB.2.10.1403261042360.2057@nuc> <53401F56.5090507@oracle.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/14 16:13, Roger Pau Monné wrote:
-> On 04/04/14 17:01, David Vrabel wrote:
->> On 04/04/14 15:41, Roger Pau Monne wrote:
->>> Blkback cannot work properly on auto-translated guests if Xen doesn't
->>> update the IOMMU when performing grant maps/unmaps, so only attach if
->>> the newly introduced XENFEAT_hvm_gntmap_supports_iommu is found.
->>
->> Can you explain the problem in more detail and which guest
->> configurations are affected?
->>
->> This isn't a problem that is specific to blkback, but any backend that
->> grant maps and passes the foreign pages to a device so there needs to be
->> a generic solution.
->>
->> Why can't this be fixed by having the swiotlb bounce foreign pages?
-> 
-> Yes, it could be fixed with that, FreeBSD has been doing it for a long time.
-> 
-> But since nobody has complained about this, and the issue has been there
-> for a long time, I'm not sure it's worth adding all the bounce buffer
-> code for what seems to be an unused configuration.
+On Sat, 5 Apr 2014, Sasha Levin wrote:
 
-Ok.  Now that netback also grant maps.  Can you make this a generic
-function and call from netback and blkback?
+> Unfortunately I've been unable to reproduce the issue to get more debug info
+> out of it. However, I've hit something that seems to be somewhat similar
+> to that:
 
-David
+Could you jsut run with "slub_debug" on the kernel command line to get us
+more diagnostics? Could be memory corruption.
+
