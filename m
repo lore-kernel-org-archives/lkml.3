@@ -1,648 +1,1129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518AbaDGOwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 10:52:55 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:57262 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaDGOwv (ORCPT
+	id S1755533AbaDGOxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 10:53:04 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:56912 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaDGOw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 10:52:51 -0400
+	Mon, 7 Apr 2014 10:52:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <1396882237-27608-1-git-send-email-ling.ma@alipay.com>
-References: <1396882237-27608-1-git-send-email-ling.ma@alipay.com>
-Date: Mon, 7 Apr 2014 22:52:49 +0800
-Message-ID: <CAOGi=dNvDu4izK8G8R+3gW9FdMNFYREZ5dzP0hP=w0W=fo7yjQ@mail.gmail.com>
-Subject: Re: [PATCH RFC] x86:Improve memset with general 64bit instruction
-From: Ling Ma <ling.ma.program@gmail.com>
-To: mingo@redhat.com
-Cc: tglx@linutronix.de, hpa@zytor.com, neleai@seznam.cz,
-        linux-kernel@vger.kernel.org, Ling Ma <ling.ml@alibaba-inc.com>
-Content-Type: multipart/mixed; boundary=001a11c121e077283704f675054f
+In-Reply-To: <1396274044-6524-2-git-send-email-sthokal@xilinx.com>
+References: <1396274044-6524-1-git-send-email-sthokal@xilinx.com>
+	<1396274044-6524-2-git-send-email-sthokal@xilinx.com>
+Date: Mon, 7 Apr 2014 20:22:54 +0530
+X-Google-Sender-Auth: OabHh4TiszhTMjFiQiPkOUOleDU
+Message-ID: <CA+mB=1J3Mb4A_SVtxxH-cra5tBSctwr0O-Lnif7j=v_Ro9YgPQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dma: Add Xilinx AXI Central Direct Memory Access
+ Engine driver support
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        dmaengine@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c121e077283704f675054f
-Content-Type: text/plain; charset=ISO-8859-1
+Hi,
 
-Append test suit
-after tar, run ./test command please.
+Kindly review this driver and please let me know if you have any comments.
 
-thanks
+Thanks
+Srikanth
 
-2014-04-07 22:50 GMT+08:00, ling.ma.program@gmail.com
-<ling.ma.program@gmail.com>:
-> From: Ling Ma <ling.ml@alibaba-inc.com>
+On Mon, Mar 31, 2014 at 7:24 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+> This is the driver for the AXI Central Direct Memory Access (AXI
+> CDMA) core, which is a soft Xilinx IP core that provides high-bandwidth
+> Direct Memory Access (DMA) between a memory-mapped source address and a
+> memory-mapped destination address.
 >
-> In this patch we manage to reduce miss branch prediction by
-> avoiding using branch instructions and force destination to be aligned
-> with general 64bit instruction.
-> Below compared results shows we improve performance up to 1.8x
-> (We modified test suit from Ondra, send after this patch)
+> This module works on Zynq (ARM Based SoC) and Microblaze platforms.
 >
-> Bytes: ORG_TIME: NEW_TIME: ORG vs NEW:
-> 7       0.51    0.48    1.06
-> 16      0.55    0.38    1.44
-> 18      0.61    0.44    1.38
-> 21      0.62    0.47    1.31
-> 25      0.64    0.45    1.42
-> 30      0.65    0.45    1.44
-> 36      0.66    0.44    1.50
-> 38      0.67    0.46    1.45
-> 62      0.70    0.44    1.59
-> 75      0.71    0.44    1.61
-> 85      0.73    0.46    1.58
-> 120     0.78    0.44    1.77
-> 193     0.81    0.46    1.76
-> 245     0.84    0.52    1.61
-> 256     0.83    0.45    1.84
-> 356     0.86    0.55    1.56
-> 601     0.98    0.65    1.50
-> 958     1.14    0.81    1.40
-> 1024    1.19    0.86    1.38
-> 2048    1.69    1.34    1.26
-> Signed-off-by: Ling Ma <ling.ml@alibaba-inc.com>
+> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
 > ---
->  arch/x86/include/asm/alternative-asm.h |   4 +-
->  arch/x86/lib/memset_64.S               | 172
-> +++++++++++++++++++++------------
->  2 files changed, 110 insertions(+), 66 deletions(-)
+> NOTE:
+> - This driver patch is created on top of earlier series,
+>   1/2 - "dma: Add Xilinx Video DMA DT Binding Documentation"
+>   2/2 - "dma: Add Xilinx AXI Video Direct Memory Access Engine driver support"
+> - Rebased on v3.14.0-rc8
+> ---
+>  drivers/dma/Kconfig              |   12 +
+>  drivers/dma/xilinx/Makefile      |    1 +
+>  drivers/dma/xilinx/xilinx_cdma.c |  998 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/amba/xilinx_dma.h  |   15 +-
+>  4 files changed, 1025 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/dma/xilinx/xilinx_cdma.c
 >
-> diff --git a/arch/x86/include/asm/alternative-asm.h
-> b/arch/x86/include/asm/alternative-asm.h
-> index 372231c..aaac545 100644
-> --- a/arch/x86/include/asm/alternative-asm.h
-> +++ b/arch/x86/include/asm/alternative-asm.h
-> @@ -22,8 +22,8 @@
->  	.long \orig - .
->  	.long \alt - .
->  	.word \feature
-> -	.byte \orig_len
-> -	.byte \alt_len
-> +	.word \orig_len
-> +	.word \alt_len
->  .endm
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 44b312e..e2c5cf2 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -365,6 +365,18 @@ config XILINX_VDMA
+>           channels, Memory Mapped to Stream (MM2S) and Stream to
+>           Memory Mapped (S2MM) for the data transfers.
 >
->  #endif  /*  __ASSEMBLY__  */
-> diff --git a/arch/x86/lib/memset_64.S b/arch/x86/lib/memset_64.S
-> index 2dcb380..3eca27c 100644
-> --- a/arch/x86/lib/memset_64.S
-> +++ b/arch/x86/lib/memset_64.S
-> @@ -59,77 +59,121 @@
->  ENTRY(memset)
->  ENTRY(__memset)
->  	CFI_STARTPROC
-> -	movq %rdi,%r10
-> -
-> -	/* expand byte value  */
->  	movzbl %sil,%ecx
-> -	movabs $0x0101010101010101,%rax
-> -	imulq  %rcx,%rax
-> -
-> -	/* align dst */
-> -	movl  %edi,%r9d
-> -	andl  $7,%r9d
-> -	jnz  .Lbad_alignment
-> -	CFI_REMEMBER_STATE
-> -.Lafter_bad_alignment:
-> -
-> -	movq  %rdx,%rcx
-> -	shrq  $6,%rcx
-> -	jz	 .Lhandle_tail
-> -
-> +	mov $0x0101010101010101,%rsi
-> +	imulq  %rsi,%rcx
-> +	movq %rdi,%rax
-> +	lea	(%rdi, %rdx), %r8
-> +	cmp	$128, %rdx
-> +	ja	.Lmore128bytes
-> +	cmp	$64, %edx
-> +	jb	.Lless_64bytes
-> +	/*
-> +	 * Move data from 65 bytes to 128 bytes.
-> +	 */
-> +	mov %rcx, 0x00(%rdi)
-> +	mov %rcx, 0x08(%rdi)
-> +	mov %rcx, 0x10(%rdi)
-> +	mov %rcx, 0x18(%rdi)
-> +	mov %rcx, 0x20(%rdi)
-> +	mov %rcx, 0x28(%rdi)
-> +	mov %rcx, 0x30(%rdi)
-> +	mov %rcx, 0x38(%rdi)
-> +	mov %rcx, -0x40(%r8)
-> +	mov %rcx, -0x38(%r8)
-> +	mov %rcx, -0x30(%r8)
-> +	mov %rcx, -0x28(%r8)
-> +	mov %rcx, -0x20(%r8)
-> +	mov %rcx, -0x18(%r8)
-> +	mov %rcx, -0x10(%r8)
-> +	mov %rcx, -0x08(%r8)
-> +	ret
->  	.p2align 4
-> -.Lloop_64:
-> -	decq  %rcx
-> -	movq  %rax,(%rdi)
-> -	movq  %rax,8(%rdi)
-> -	movq  %rax,16(%rdi)
-> -	movq  %rax,24(%rdi)
-> -	movq  %rax,32(%rdi)
-> -	movq  %rax,40(%rdi)
-> -	movq  %rax,48(%rdi)
-> -	movq  %rax,56(%rdi)
-> -	leaq  64(%rdi),%rdi
-> -	jnz    .Lloop_64
-> -
-> -	/* Handle tail in loops. The loops should be faster than hard
-> -	   to predict jump tables. */
-> +.Lless_64bytes:
-> +	cmp	$32, %edx
-> +	jb	.Lless_32bytes
-> +	/*
-> +	 * Move data from 33 bytes to 64 bytes.
-> +	 */
-> +	mov %rcx, 0x00(%rdi)
-> +	mov %rcx, 0x08(%rdi)
-> +	mov %rcx, 0x10(%rdi)
-> +	mov %rcx, 0x18(%rdi)
-> +	mov %rcx, -0x20(%r8)
-> +	mov %rcx, -0x18(%r8)
-> +	mov %rcx, -0x10(%r8)
-> +	mov %rcx, -0x08(%r8)
-> +	ret
->  	.p2align 4
-> -.Lhandle_tail:
-> -	movl	%edx,%ecx
-> -	andl    $63&(~7),%ecx
-> -	jz 		.Lhandle_7
-> -	shrl	$3,%ecx
-> +.Lless_32bytes:
-> +	cmp	$16, %edx
-> +	jb	.Lless_16bytes
-> +	mov %rcx, 0x00(%rdi)
-> +	mov %rcx, 0x08(%rdi)
-> +	mov %rcx, -0x10(%r8)
-> +	mov %rcx, -0x08(%r8)
-> +	ret
->  	.p2align 4
-> -.Lloop_8:
-> -	decl   %ecx
-> -	movq  %rax,(%rdi)
-> -	leaq  8(%rdi),%rdi
-> -	jnz    .Lloop_8
-> -
-> -.Lhandle_7:
-> -	andl	$7,%edx
-> -	jz      .Lende
-> +.Lless_16bytes:
-> +	cmp	$8, %edx
-> +	jb	.Lless_8bytes
-> +	mov %rcx, (%rdi)
-> +	mov %rcx, -0x08(%r8)
-> +	ret
->  	.p2align 4
-> -.Lloop_1:
-> -	decl    %edx
-> -	movb 	%al,(%rdi)
-> -	leaq	1(%rdi),%rdi
-> -	jnz     .Lloop_1
-> -
-> -.Lende:
-> -	movq	%r10,%rax
-> +.Lless_8bytes:
-> +	cmp	$4, %edx
-> +	jb	.Lless_4bytes
-> +	mov %ecx, (%rdi)
-> +	mov %ecx, -0x04(%r8)
-> +	.p2align 4
-> +.Lless_4bytes:
-> +	cmp	$2, %edx
-> +	jb	.Lless_2bytes
-> +	mov	%cx, (%rdi)
-> +	mov	%cx, -0x02(%r8)
-> +	ret
-> +	.p2align 4
-> +.Lless_2bytes:
-> +	cmp	$1, %edx
-> +	jb	.Lless_1bytes
-> +	mov	%cl, (%rdi)
-> +.Lless_1bytes:
->  	ret
+> +config XILINX_CDMA
+> +       tristate "Xilinx AXI CDMA Engine"
+> +       depends on (ARCH_ZYNQ || MICROBLAZE)
+> +       select DMA_ENGINE
+> +       help
+> +         Enable support for Xilinx AXI CDMA Soft IP.
+> +
+> +         The AXI CDMA is a soft IP which provides high-bandwidth
+> +         Direct Memory Access (DMA) between a memory-mapped source
+> +         address and a memory-mapped destination address using the
+> +         AXI4 protocol.
+> +
+>  config DMA_ENGINE
+>         bool
 >
-> -	CFI_RESTORE_STATE
-> -.Lbad_alignment:
-> -	cmpq $7,%rdx
-> -	jbe	.Lhandle_7
-> -	movq %rax,(%rdi)	/* unaligned store */
-> -	movq $8,%r8
-> -	subq %r9,%r8
-> -	addq %r8,%rdi
-> -	subq %r8,%rdx
-> -	jmp .Lafter_bad_alignment
-> +	.p2align 4
-> +.Lmore128bytes:
-> +	mov	%rcx, (%rdi)
-> +	mov	%rdi, %r9
-> +	and	$-0x08, %rdi
-> +	add	$0x08, %rdi
-> +	sub	%rdi, %r9
-> +	add	%r9, %rdx
-> +	sub	$0x40, %rdx
-> +.Lgobble_64_loop:
-> +	mov		%rcx, 0x00(%rdi)
-> +	mov		%rcx, 0x08(%rdi)
-> +	mov		%rcx, 0x10(%rdi)
-> +	mov		%rcx, 0x18(%rdi)
-> +	mov		%rcx, 0x20(%rdi)
-> +	mov		%rcx, 0x28(%rdi)
-> +	mov		%rcx, 0x30(%rdi)
-> +	mov		%rcx, 0x38(%rdi)
-> +	lea	0x40(%rdi), %rdi
-> +	sub	$0x40, %rdx
-> +	jae	.Lgobble_64_loop
-> +	/*
-> +	 * Move data from 0 bytes to 63 bytes.
-> +	 */
-> +	mov		%rcx, -0x40(%r8)
-> +	mov		%rcx, -0x38(%r8)
-> +	mov		%rcx, -0x30(%r8)
-> +	mov		%rcx, -0x28(%r8)
-> +	mov		%rcx, -0x20(%r8)
-> +	mov		%rcx, -0x18(%r8)
-> +	mov		%rcx, -0x10(%r8)
-> +	mov		%rcx, -0x08(%r8)
-> +	ret
->  .Lfinal:
->  	CFI_ENDPROC
->  ENDPROC(memset)
+> diff --git a/drivers/dma/xilinx/Makefile b/drivers/dma/xilinx/Makefile
+> index 3c4e9f2..e1dee77 100644
+> --- a/drivers/dma/xilinx/Makefile
+> +++ b/drivers/dma/xilinx/Makefile
+> @@ -1 +1,2 @@
+>  obj-$(CONFIG_XILINX_VDMA) += xilinx_vdma.o
+> +obj-$(CONFIG_XILINX_CDMA) += xilinx_cdma.o
+> diff --git a/drivers/dma/xilinx/xilinx_cdma.c b/drivers/dma/xilinx/xilinx_cdma.c
+> new file mode 100644
+> index 0000000..2ae7c77
+> --- /dev/null
+> +++ b/drivers/dma/xilinx/xilinx_cdma.c
+> @@ -0,0 +1,998 @@
+> +/*
+> + * DMA driver for Xilinx Central DMA Engine
+> + *
+> + * Copyright (C) 2010 - 2014 Xilinx, Inc. All rights reserved.
+> + *
+> + * Based on the Freescale DMA driver.
+> + *
+> + * Description:
+> + *  The AXI CDMA, is a soft IP, which provides high-bandwidth Direct Memory
+> + *  Access (DMA) between a memory-mapped source address and a memory-mapped
+> + *  destination address.
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/amba/xilinx_dma.h>
+> +#include <linux/bitops.h>
+> +#include <linux/dmapool.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_dma.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/slab.h>
+> +
+> +#include "../dmaengine.h"
+> +
+> +/* Register Offsets */
+> +#define XILINX_CDMA_CONTROL_OFFSET     0x00
+> +#define XILINX_CDMA_STATUS_OFFSET      0x04
+> +#define XILINX_CDMA_CDESC_OFFSET       0x08
+> +#define XILINX_CDMA_TDESC_OFFSET       0x10
+> +#define XILINX_CDMA_SRCADDR_OFFSET     0x18
+> +#define XILINX_CDMA_DSTADDR_OFFSET     0x20
+> +#define XILINX_CDMA_BTT_OFFSET         0x28
+> +
+> +/* General register bits definitions */
+> +#define XILINX_CDMA_CR_RESET           BIT(2)
+> +#define XILINX_CDMA_CR_SGMODE          BIT(3)
+> +
+> +#define XILINX_CDMA_SR_IDLE            BIT(1)
+> +
+> +#define XILINX_CDMA_XR_IRQ_IOC_MASK    BIT(12)
+> +#define XILINX_CDMA_XR_IRQ_DELAY_MASK  BIT(13)
+> +#define XILINX_CDMA_XR_IRQ_ERROR_MASK  BIT(14)
+> +#define XILINX_CDMA_XR_IRQ_ALL_MASK    GENMASK(14, 12)
+> +
+> +#define XILINX_CDMA_XR_DELAY_MASK      GENMASK(31, 24)
+> +#define XILINX_CDMA_XR_COALESCE_MASK   GENMASK(23, 16)
+> +
+> +#define XILINX_CDMA_DELAY_MAX          GENMASK(7, 0)
+> +#define XILINX_CDMA_DELAY_SHIFT                24
+> +
+> +#define XILINX_CDMA_COALESCE_MAX       GENMASK(7, 0)
+> +#define XILINX_CDMA_COALESCE_SHIFT     16
+> +
+> +/* Delay loop counter to prevent hardware failure */
+> +#define XILINX_CDMA_RESET_LOOP         1000000
+> +
+> +/* Maximum transfer length */
+> +#define XILINX_CDMA_MAX_TRANS_LEN      GENMASK(22, 0)
+> +
+> +/**
+> + * struct xilinx_cdma_desc_hw - Hardware Descriptor
+> + * @next_desc: Next Descriptor Pointer @0x00
+> + * @pad1: Reserved @0x04
+> + * @src_addr: Source address @0x08
+> + * @pad2: Reserved @0x0C
+> + * @dest_addr: Destination address @0x10
+> + * @pad3: Reserved @0x14
+> + * @control: Control field @0x18
+> + * @status: Status field @0x1C
+> + */
+> +struct xilinx_cdma_desc_hw {
+> +       u32 next_desc;
+> +       u32 pad1;
+> +       u32 src_addr;
+> +       u32 pad2;
+> +       u32 dest_addr;
+> +       u32 pad3;
+> +       u32 control;
+> +       u32 status;
+> +} __aligned(64);
+> +
+> +/**
+> + * struct xilinx_cdma_tx_segment - Descriptor segment
+> + * @hw: Hardware descriptor
+> + * @node: Node in the descriptor segments list
+> + * @phys: Physical address of segment
+> + */
+> +struct xilinx_cdma_tx_segment {
+> +       struct xilinx_cdma_desc_hw hw;
+> +       struct list_head node;
+> +       dma_addr_t phys;
+> +} __aligned(64);
+> +
+> +/**
+> + * struct xilinx_cdma_tx_descriptor - Per Transaction structure
+> + * @async_tx: Async transaction descriptor
+> + * @segments: TX segments list
+> + * @node: Node in the channel descriptors list
+> + */
+> +struct xilinx_cdma_tx_descriptor {
+> +       struct dma_async_tx_descriptor async_tx;
+> +       struct list_head segments;
+> +       struct list_head node;
+> +};
+> +
+> +/**
+> + * struct xilinx_cdma_chan - Driver specific cdma channel structure
+> + * @xdev: Driver specific device structure
+> + * @lock: Descriptor operation lock
+> + * @done_list: Complete descriptors
+> + * @pending_list: Descriptors waiting
+> + * @active_desc: Active descriptor
+> + * @allocated_desc: Allocated descriptor
+> + * @common: DMA common channel
+> + * @desc_pool: Descriptors pool
+> + * @dev: The dma device
+> + * @irq: Channel IRQ
+> + * @has_sg: Support scatter transfers
+> + * @err: Channel has errors
+> + * @tasklet: Cleanup work after irq
+> + */
+> +struct xilinx_cdma_chan {
+> +       struct xilinx_cdma_device *xdev;
+> +       spinlock_t lock;
+> +       struct list_head done_list;
+> +       struct list_head pending_list;
+> +       struct xilinx_cdma_tx_descriptor *active_desc;
+> +       struct xilinx_cdma_tx_descriptor *allocated_desc;
+> +       struct dma_chan common;
+> +       struct dma_pool *desc_pool;
+> +       struct device *dev;
+> +       int irq;
+> +       bool has_sg;
+> +       int err;
+> +       struct tasklet_struct tasklet;
+> +};
+> +
+> +/**
+> + * struct xilinx_cdma_device - CDMA device structure
+> + * @regs: I/O mapped base address
+> + * @dev: Device Structure
+> + * @common: DMA device structure
+> + * @chan: Driver specific cdma channel
+> + * @has_sg: Specifies whether Scatter-Gather is present or not
+> + */
+> +struct xilinx_cdma_device {
+> +       void __iomem *regs;
+> +       struct device *dev;
+> +       struct dma_device common;
+> +       struct xilinx_cdma_chan *chan;
+> +       bool has_sg;
+> +};
+> +
+> +/* Macros */
+> +#define to_xilinx_chan(chan) \
+> +       container_of(chan, struct xilinx_cdma_chan, common)
+> +#define to_cdma_tx_descriptor(tx) \
+> +       container_of(tx, struct xilinx_cdma_tx_descriptor, async_tx)
+> +
+> +/* IO accessors */
+> +static inline void cdma_write(struct xilinx_cdma_chan *chan, u32 reg, u32 val)
+> +{
+> +       writel(val, chan->xdev->regs + reg);
+> +}
+> +
+> +static inline u32 cdma_read(struct xilinx_cdma_chan *chan, u32 reg)
+> +{
+> +       return readl(chan->xdev->regs + reg);
+> +}
+> +
+> +static inline void cdma_ctrl_clr(struct xilinx_cdma_chan *chan, u32 reg,
+> +                                u32 clr)
+> +{
+> +       cdma_write(chan, reg, cdma_read(chan, reg) & ~clr);
+> +}
+> +
+> +static inline void cdma_ctrl_set(struct xilinx_cdma_chan *chan, u32 reg,
+> +                                u32 set)
+> +{
+> +       cdma_write(chan, reg, cdma_read(chan, reg) | set);
+> +}
+> +
+> +/* -----------------------------------------------------------------------------
+> + * Descriptors and segments alloc and free
+> + */
+> +
+> +/**
+> + * xilinx_cdma_alloc_tx_segment - Allocate transaction segment
+> + * @chan: Driver specific cdma channel
+> + *
+> + * Return: The allocated segment on success and NULL on failure.
+> + */
+> +static struct xilinx_cdma_tx_segment *
+> +xilinx_cdma_alloc_tx_segment(struct xilinx_cdma_chan *chan)
+> +{
+> +       struct xilinx_cdma_tx_segment *segment;
+> +       dma_addr_t phys;
+> +
+> +       segment = dma_pool_alloc(chan->desc_pool, GFP_ATOMIC, &phys);
+> +       if (!segment)
+> +               return NULL;
+> +
+> +       memset(segment, 0, sizeof(*segment));
+> +       segment->phys = phys;
+> +
+> +       return segment;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_free_tx_segment - Free transaction segment
+> + * @chan: Driver specific cdma channel
+> + * @segment: cdma transaction segment
+> + */
+> +static void xilinx_cdma_free_tx_segment(struct xilinx_cdma_chan *chan,
+> +                                       struct xilinx_cdma_tx_segment *segment)
+> +{
+> +       dma_pool_free(chan->desc_pool, segment, segment->phys);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_tx_descriptor - Allocate transaction descriptor
+> + * @chan: Driver specific cdma channel
+> + *
+> + * Return: The allocated descriptor on success and NULL on failure.
+> + */
+> +static struct xilinx_cdma_tx_descriptor *
+> +xilinx_cdma_alloc_tx_descriptor(struct xilinx_cdma_chan *chan)
+> +{
+> +       struct xilinx_cdma_tx_descriptor *desc;
+> +       unsigned long flags;
+> +
+> +       if (chan->allocated_desc)
+> +               return chan->allocated_desc;
+> +
+> +       desc = kzalloc(sizeof(*desc), GFP_KERNEL);
+> +       if (!desc)
+> +               return NULL;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +       chan->allocated_desc = desc;
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +
+> +       INIT_LIST_HEAD(&desc->segments);
+> +
+> +       return desc;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_free_tx_descriptor - Free transaction descriptor
+> + * @chan: Driver specific cdma channel
+> + * @desc: cdma transaction descriptor
+> + */
+> +static void
+> +xilinx_cdma_free_tx_descriptor(struct xilinx_cdma_chan *chan,
+> +                              struct xilinx_cdma_tx_descriptor *desc)
+> +{
+> +       struct xilinx_cdma_tx_segment *segment, *next;
+> +
+> +       if (!desc)
+> +               return;
+> +
+> +       list_for_each_entry_safe(segment, next, &desc->segments, node) {
+> +               list_del(&segment->node);
+> +               xilinx_cdma_free_tx_segment(chan, segment);
+> +       }
+> +
+> +       kfree(desc);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_alloc_chan_resources - Allocate channel resources
+> + * @dchan: DMA channel
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +static int xilinx_cdma_alloc_chan_resources(struct dma_chan *dchan)
+> +{
+> +       struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
+> +
+> +       /* Has this channel already been allocated? */
+> +       if (chan->desc_pool)
+> +               return 0;
+> +
+> +       /*
+> +        * We need the descriptor to be aligned to 64bytes
+> +        * for meeting Xilinx DMA specification requirement.
+> +        */
+> +       chan->desc_pool = dma_pool_create("xilinx_cdma_desc_pool",
+> +                               chan->dev,
+> +                               sizeof(struct xilinx_cdma_tx_segment),
+> +                               __alignof__(struct xilinx_cdma_tx_segment), 0);
+> +       if (!chan->desc_pool) {
+> +               dev_err(chan->dev,
+> +                       "unable to allocate channel descriptor pool\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       dma_cookie_init(dchan);
+> +       return 0;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_free_desc_list - Free descriptors list
+> + * @chan: Driver specific cdma channel
+> + * @list: List to parse and delete the descriptor
+> + */
+> +static void xilinx_cdma_free_desc_list(struct xilinx_cdma_chan *chan,
+> +                                      struct list_head *list)
+> +{
+> +       struct xilinx_cdma_tx_descriptor *desc, *next;
+> +
+> +       list_for_each_entry_safe(desc, next, list, node) {
+> +               list_del(&desc->node);
+> +               xilinx_cdma_free_tx_descriptor(chan, desc);
+> +       }
+> +}
+> +
+> +/**
+> + * xilinx_cdma_free_chan_resources - Free channel resources
+> + * @dchan: DMA channel
+> + */
+> +static void xilinx_cdma_free_chan_resources(struct dma_chan *dchan)
+> +{
+> +       struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +       xilinx_cdma_free_desc_list(chan, &chan->done_list);
+> +       xilinx_cdma_free_desc_list(chan, &chan->pending_list);
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +
+> +       dma_pool_destroy(chan->desc_pool);
+> +       chan->desc_pool = NULL;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_chan_desc_cleanup - Clean channel descriptors
+> + * @chan: Driver specific cdma channel
+> + */
+> +static void xilinx_cdma_chan_desc_cleanup(struct xilinx_cdma_chan *chan)
+> +{
+> +       struct xilinx_cdma_tx_descriptor *desc, *next;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +
+> +       list_for_each_entry_safe(desc, next, &chan->done_list, node) {
+> +               dma_async_tx_callback callback;
+> +               void *callback_param;
+> +
+> +               /* Remove from the list of running transactions */
+> +               list_del(&desc->node);
+> +
+> +               /* Run the link descriptor callback function */
+> +               callback = desc->async_tx.callback;
+> +               callback_param = desc->async_tx.callback_param;
+> +               if (callback) {
+> +                       spin_unlock_irqrestore(&chan->lock, flags);
+> +                       callback(callback_param);
+> +                       spin_lock_irqsave(&chan->lock, flags);
+> +               }
+> +
+> +               /* Run any dependencies, then free the descriptor */
+> +               dma_run_dependencies(&desc->async_tx);
+> +               xilinx_cdma_free_tx_descriptor(chan, desc);
+> +       }
+> +
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_tx_status - Get CDMA transaction status
+> + * @dchan: DMA channel
+> + * @cookie: Transaction identifier
+> + * @txstate: Transaction state
+> + *
+> + * Return: DMA transaction status
+> + */
+> +static enum dma_status xilinx_tx_status(struct dma_chan *dchan,
+> +                                       dma_cookie_t cookie,
+> +                                       struct dma_tx_state *txstate)
+> +{
+> +       return dma_cookie_status(dchan, cookie, txstate);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_is_idle - Check if cdma channel is idle
+> + * @chan: Driver specific cdma channel
+> + *
+> + * Return: 'true' if idle, 'false' if not.
+> + */
+> +static bool cdma_is_idle(struct xilinx_cdma_chan *chan)
+> +{
+> +       return cdma_read(chan, XILINX_CDMA_STATUS_OFFSET) & XILINX_CDMA_SR_IDLE;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_start_transfer - Starts cdma transfer
+> + * @chan: Driver specific channel struct pointer
+> + */
+> +static void xilinx_cdma_start_transfer(struct xilinx_cdma_chan *chan)
+> +{
+> +       unsigned long flags;
+> +       struct xilinx_cdma_tx_descriptor *desc;
+> +       struct xilinx_cdma_tx_segment *head, *tail;
+> +
+> +       if (chan->err)
+> +               return;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +
+> +       if (list_empty(&chan->pending_list))
+> +               goto out_unlock;
+> +
+> +       /* If hardware is busy, cannot submit */
+> +       if (!cdma_is_idle(chan)) {
+> +               dev_dbg(chan->dev, "DMA controller still busy %x\n",
+> +                       cdma_read(chan, XILINX_CDMA_STATUS_OFFSET));
+> +               goto out_unlock;
+> +       }
+> +
+> +       desc = list_first_entry(&chan->pending_list,
+> +                               struct xilinx_cdma_tx_descriptor, node);
+> +
+> +       if (chan->has_sg) {
+> +               head = list_first_entry(&desc->segments,
+> +                                       struct xilinx_cdma_tx_segment, node);
+> +               tail = list_entry(desc->segments.prev,
+> +                                 struct xilinx_cdma_tx_segment, node);
+> +
+> +               cdma_write(chan, XILINX_CDMA_CDESC_OFFSET, head->phys);
+> +
+> +               /* Update tail ptr register which will start the transfer */
+> +               cdma_write(chan, XILINX_CDMA_TDESC_OFFSET, tail->phys);
+> +       } else {
+> +               /* In simple mode */
+> +               struct xilinx_cdma_tx_segment *segment;
+> +               struct xilinx_cdma_desc_hw *hw;
+> +
+> +               segment = list_first_entry(&desc->segments,
+> +                                          struct xilinx_cdma_tx_segment,
+> +                                          node);
+> +
+> +               hw = &segment->hw;
+> +
+> +               cdma_write(chan, XILINX_CDMA_SRCADDR_OFFSET, hw->src_addr);
+> +               cdma_write(chan, XILINX_CDMA_DSTADDR_OFFSET, hw->dest_addr);
+> +
+> +               /* Start the transfer */
+> +               cdma_write(chan, XILINX_CDMA_BTT_OFFSET,
+> +                          hw->control & XILINX_CDMA_MAX_TRANS_LEN);
+> +       }
+> +
+> +       list_del(&desc->node);
+> +       chan->active_desc = desc;
+> +
+> +out_unlock:
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_issue_pending - Issue pending transactions
+> + * @dchan: DMA channel
+> + */
+> +static void xilinx_cdma_issue_pending(struct dma_chan *dchan)
+> +{
+> +       struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
+> +
+> +       xilinx_cdma_start_transfer(chan);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_complete_descriptor - Mark the active descriptor as complete
+> + * @chan : xilinx DMA channel
+> + */
+> +static void xilinx_cdma_complete_descriptor(struct xilinx_cdma_chan *chan)
+> +{
+> +       struct xilinx_cdma_tx_descriptor *desc;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +
+> +       desc = chan->active_desc;
+> +       if (!desc) {
+> +               dev_dbg(chan->dev, "no running descriptors\n");
+> +               goto out_unlock;
+> +       }
+> +
+> +       dma_cookie_complete(&desc->async_tx);
+> +       list_add_tail(&desc->node, &chan->done_list);
+> +
+> +       chan->active_desc = NULL;
+> +
+> +out_unlock:
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_chan_reset - Reset CDMA channel
+> + * @chan: Driver specific CDMA channel
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +static int xilinx_cdma_chan_reset(struct xilinx_cdma_chan *chan)
+> +{
+> +       int loop = XILINX_CDMA_RESET_LOOP;
+> +       u32 tmp;
+> +
+> +       cdma_ctrl_set(chan, XILINX_CDMA_CONTROL_OFFSET,
+> +                     XILINX_CDMA_CR_RESET);
+> +
+> +       tmp = cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET) &
+> +             XILINX_CDMA_CR_RESET;
+> +
+> +       /* Wait for the hardware to finish reset */
+> +       do {
+> +               tmp = cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET) &
+> +                     XILINX_CDMA_CR_RESET;
+> +       } while (loop-- && tmp);
+> +
+> +       if (!loop) {
+> +               dev_err(chan->dev, "reset timeout, cr %x, sr %x\n",
+> +                       cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET),
+> +                       cdma_read(chan, XILINX_CDMA_STATUS_OFFSET));
+> +               return -EBUSY;
+> +       }
+> +
+> +       /* Enable interrupts */
+> +       cdma_ctrl_set(chan, XILINX_CDMA_CONTROL_OFFSET,
+> +                     XILINX_CDMA_XR_IRQ_ALL_MASK);
+> +
+> +       /* Enable SG Mode */
+> +       if (chan->has_sg)
+> +               cdma_ctrl_set(chan, XILINX_CDMA_CONTROL_OFFSET,
+> +                             XILINX_CDMA_CR_SGMODE);
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_irq_handler - CDMA Interrupt handler
+> + * @irq: IRQ number
+> + * @data: Pointer to the Xilinx CDMA channel structure
+> + *
+> + * Return: IRQ_HANDLED/IRQ_NONE
+> +*/
+> +static irqreturn_t xilinx_cdma_irq_handler(int irq, void *data)
+> +{
+> +       struct xilinx_cdma_chan *chan = data;
+> +       u32 status;
+> +
+> +       status = cdma_read(chan, XILINX_CDMA_STATUS_OFFSET);
+> +       if (!(status & XILINX_CDMA_XR_IRQ_ALL_MASK))
+> +               return IRQ_NONE;
+> +
+> +       /* Ack the interrupts */
+> +       cdma_write(chan, XILINX_CDMA_STATUS_OFFSET,
+> +                  XILINX_CDMA_XR_IRQ_ALL_MASK);
+> +
+> +       if (status & XILINX_CDMA_XR_IRQ_ERROR_MASK) {
+> +               dev_err(chan->dev,
+> +                       "Channel %x has errors %x, cdr %x tdr %x\n",
+> +                       (u32)chan,
+> +                       (u32)cdma_read(chan, XILINX_CDMA_STATUS_OFFSET),
+> +                       (u32)cdma_read(chan, XILINX_CDMA_CDESC_OFFSET),
+> +                       (u32)cdma_read(chan, XILINX_CDMA_TDESC_OFFSET));
+> +               chan->err = true;
+> +       }
+> +
+> +       /*
+> +        * Device takes too long to do the transfer when user requires
+> +        * responsiveness
+> +        */
+> +       if (status & XILINX_CDMA_XR_IRQ_DELAY_MASK)
+> +               dev_dbg(chan->dev, "Inter-packet latency too long\n");
+> +
+> +       if (status & XILINX_CDMA_XR_IRQ_IOC_MASK) {
+> +               xilinx_cdma_complete_descriptor(chan);
+> +               xilinx_cdma_start_transfer(chan);
+> +       }
+> +
+> +       tasklet_schedule(&chan->tasklet);
+> +       return IRQ_HANDLED;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_do_tasklet - Schedule completion tasklet
+> + * @data: Pointer to the Xilinx cdma channel structure
+> + */
+> +static void xilinx_cdma_do_tasklet(unsigned long data)
+> +{
+> +       struct xilinx_cdma_chan *chan = (struct xilinx_cdma_chan *)data;
+> +
+> +       xilinx_cdma_chan_desc_cleanup(chan);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_tx_submit - Submit DMA transaction
+> + * @tx: Async transaction descriptor
+> + *
+> + * Return: cookie value on success and failure value on error
+> + */
+> +static dma_cookie_t xilinx_cdma_tx_submit(struct dma_async_tx_descriptor *tx)
+> +{
+> +       struct xilinx_cdma_chan *chan = to_xilinx_chan(tx->chan);
+> +       struct xilinx_cdma_tx_descriptor *desc = to_cdma_tx_descriptor(tx);
+> +       dma_cookie_t cookie;
+> +       unsigned long flags;
+> +       int err;
+> +
+> +       if (chan->err) {
+> +               /*
+> +                * If reset fails, need to hard reset the system.
+> +                * Channel is no longer functional
+> +                */
+> +               err = xilinx_cdma_chan_reset(chan);
+> +               if (err < 0)
+> +                       return err;
+> +       }
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +
+> +       cookie = dma_cookie_assign(tx);
+> +
+> +       /* Append the transaction to the pending transactions queue. */
+> +       list_add_tail(&desc->node, &chan->pending_list);
+> +
+> +       /* Free the allocated desc */
+> +       chan->allocated_desc = NULL;
+> +
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +
+> +       return cookie;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_prep_memcpy - prepare descriptors for a memcpy transaction
+> + * @dchan: DMA channel
+> + * @dma_dst: destination address
+> + * @dma_src: source address
+> + * @len: transfer length
+> + * @flags: transfer ack flags
+> + *
+> + * Return: Async transaction descriptor on success and NULL on failure
+> + */
+> +static struct dma_async_tx_descriptor *
+> +xilinx_cdma_prep_memcpy(struct dma_chan *dchan, dma_addr_t dma_dst,
+> +                       dma_addr_t dma_src, size_t len, unsigned long flags)
+> +{
+> +       struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
+> +       struct xilinx_cdma_desc_hw *hw;
+> +       struct xilinx_cdma_tx_descriptor *desc;
+> +       struct xilinx_cdma_tx_segment *segment, *prev;
+> +
+> +       if (!len || len > XILINX_CDMA_MAX_TRANS_LEN)
+> +               return NULL;
+> +
+> +       desc = xilinx_cdma_alloc_tx_descriptor(chan);
+> +       if (!desc)
+> +               return NULL;
+> +
+> +       dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
+> +       desc->async_tx.tx_submit = xilinx_cdma_tx_submit;
+> +       async_tx_ack(&desc->async_tx);
+> +
+> +       /* Allocate the link descriptor from DMA pool */
+> +       segment = xilinx_cdma_alloc_tx_segment(chan);
+> +       if (!segment)
+> +               goto error;
+> +
+> +       hw = &segment->hw;
+> +       hw->control = len;
+> +       hw->src_addr = dma_src;
+> +       hw->dest_addr = dma_dst;
+> +
+> +       /* Fill the previous next descriptor with current */
+> +       prev = list_last_entry(&desc->segments,
+> +                              struct xilinx_cdma_tx_segment, node);
+> +       prev->hw.next_desc = segment->phys;
+> +
+> +       /* Insert the segment into the descriptor segments list. */
+> +       list_add_tail(&segment->node, &desc->segments);
+> +
+> +       prev = segment;
+> +
+> +       /* Link the last hardware descriptor with the first. */
+> +       segment = list_first_entry(&desc->segments,
+> +                                  struct xilinx_cdma_tx_segment, node);
+> +       prev->hw.next_desc = segment->phys;
+> +
+> +       return &desc->async_tx;
+> +
+> +error:
+> +       xilinx_cdma_free_tx_descriptor(chan, desc);
+> +       return NULL;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_device_control - Configure DMA channel of the device
+> + * @dchan: DMA Channel pointer
+> + * @cmd: DMA control command
+> + * @arg: Channel configuration
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +static int xilinx_cdma_device_control(struct dma_chan *dchan,
+> +                                     enum dma_ctrl_cmd cmd, unsigned long arg)
+> +{
+> +       struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
+> +       unsigned long flags;
+> +
+> +       if (cmd != DMA_TERMINATE_ALL)
+> +               return -ENXIO;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +
+> +       /* Remove and free all of the descriptors in the lists */
+> +       xilinx_cdma_free_desc_list(chan, &chan->pending_list);
+> +       xilinx_cdma_free_desc_list(chan, &chan->done_list);
+> +
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_channel_set_config - Configure cdma channel
+> + * @dchan: DMA channel
+> + * @cfg: cdma device configuration pointer
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +int xilinx_cdma_channel_set_config(struct dma_chan *dchan,
+> +                                       struct xilinx_cdma_config *cfg)
+> +{
+> +       struct xilinx_cdma_chan *chan = to_xilinx_chan(dchan);
+> +       u32 reg = cdma_read(chan, XILINX_CDMA_CONTROL_OFFSET);
+> +
+> +       if (cfg->reset)
+> +               return xilinx_cdma_chan_reset(chan);
+> +
+> +       if (cfg->coalesc <= XILINX_CDMA_COALESCE_MAX) {
+> +               reg &= ~XILINX_CDMA_XR_COALESCE_MASK;
+> +               reg |= cfg->coalesc << XILINX_CDMA_COALESCE_SHIFT;
+> +       }
+> +
+> +       if (cfg->delay <= XILINX_CDMA_DELAY_MAX) {
+> +               reg &= ~XILINX_CDMA_XR_DELAY_MASK;
+> +               reg |= cfg->delay << XILINX_CDMA_DELAY_SHIFT;
+> +       }
+> +
+> +       cdma_write(chan, XILINX_CDMA_CONTROL_OFFSET, reg);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL(xilinx_cdma_channel_set_config);
+> +
+> +/* -----------------------------------------------------------------------------
+> + * Probe and remove
+> + */
+> +
+> +/**
+> + * xilinx_cdma_free_channel - Channel remove function
+> + * @chan: Driver specific cdma channel
+> + */
+> +static void xilinx_cdma_free_channel(struct xilinx_cdma_chan *chan)
+> +{
+> +       /* Disable Interrupts */
+> +       cdma_ctrl_clr(chan, XILINX_CDMA_CONTROL_OFFSET,
+> +                     XILINX_CDMA_XR_IRQ_ALL_MASK);
+> +
+> +       if (chan->irq > 0)
+> +               free_irq(chan->irq, chan);
+> +
+> +       tasklet_kill(&chan->tasklet);
+> +
+> +       list_del(&chan->common.device_node);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_chan_probe - Per Channel Probing
+> + * It get channel features from the device tree entry and
+> + * initialize special channel handling routines
+> + *
+> + * @xdev: Driver specific device structure
+> + * @node: Device node
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +static int xilinx_cdma_chan_probe(struct xilinx_cdma_device *xdev,
+> +                                 struct device_node *node)
+> +{
+> +       struct xilinx_cdma_chan *chan;
+> +       bool has_dre;
+> +       u32 value, width;
+> +       int err;
+> +
+> +       /* Alloc channel */
+> +       chan = devm_kzalloc(xdev->dev, sizeof(*chan), GFP_KERNEL);
+> +       if (!chan)
+> +               return -ENOMEM;
+> +
+> +       chan->dev = xdev->dev;
+> +       chan->has_sg = xdev->has_sg;
+> +       chan->xdev = xdev;
+> +
+> +       spin_lock_init(&chan->lock);
+> +       INIT_LIST_HEAD(&chan->pending_list);
+> +       INIT_LIST_HEAD(&chan->done_list);
+> +
+> +       /* Retrieve the channel properties from the device tree */
+> +       has_dre = of_property_read_bool(node, "xlnx,include-dre");
+> +
+> +       err = of_property_read_u32(node, "xlnx,datawidth", &value);
+> +       if (err) {
+> +               dev_err(xdev->dev, "unable to read datawidth property");
+> +               return err;
+> +       }
+> +       width = value >> 3; /* convert bits to bytes */
+> +
+> +       /* If data width is greater than 8 bytes, DRE is not in hw */
+> +       if (width > 8)
+> +               has_dre = false;
+> +
+> +       if (!has_dre)
+> +               xdev->common.copy_align = fls(width - 1);
+> +
+> +       /* Request the interrupt */
+> +       chan->irq = irq_of_parse_and_map(node, 0);
+> +       err = request_irq(chan->irq, xilinx_cdma_irq_handler, IRQF_SHARED,
+> +                         "xilinx-cdma-controller", chan);
+> +       if (err) {
+> +               dev_err(xdev->dev, "unable to request IRQ %d\n", chan->irq);
+> +               return err;
+> +       }
+> +
+> +       /* Initialize the tasklet */
+> +       tasklet_init(&chan->tasklet, xilinx_cdma_do_tasklet,
+> +                    (unsigned long)chan);
+> +
+> +       /*
+> +        * Initialize the DMA channel and add it to the DMA engine channels
+> +        * list.
+> +        */
+> +       chan->common.device = &xdev->common;
+> +
+> +       list_add_tail(&chan->common.device_node, &xdev->common.channels);
+> +       xdev->chan = chan;
+> +
+> +       /* Initialize the channel */
+> +       err = xilinx_cdma_chan_reset(chan);
+> +       if (err) {
+> +               dev_err(xdev->dev, "Reset channel failed\n");
+> +               return err;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * of_dma_xilinx_xlate - Translation function
+> + * @dma_spec: Pointer to DMA specifier as found in the device tree
+> + * @ofdma: Pointer to DMA controller data
+> + *
+> + * Return: DMA channel pointer on success and NULL on error
+> + */
+> +static struct dma_chan *of_dma_xilinx_xlate(struct of_phandle_args *dma_spec,
+> +                                               struct of_dma *ofdma)
+> +{
+> +       struct xilinx_cdma_device *xdev = ofdma->of_dma_data;
+> +
+> +       return dma_get_slave_channel(&xdev->chan->common);
+> +}
+> +
+> +/**
+> + * xilinx_cdma_probe - Driver probe function
+> + * @pdev: Pointer to the platform_device structure
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +static int xilinx_cdma_probe(struct platform_device *pdev)
+> +{
+> +       struct xilinx_cdma_device *xdev;
+> +       struct device_node *child, *node;
+> +       struct resource *res;
+> +       int ret;
+> +
+> +       xdev = devm_kzalloc(&pdev->dev, sizeof(*xdev), GFP_KERNEL);
+> +       if (!xdev)
+> +               return -ENOMEM;
+> +
+> +       xdev->dev = &(pdev->dev);
+> +       INIT_LIST_HEAD(&xdev->common.channels);
+> +
+> +       node = pdev->dev.of_node;
+> +
+> +       /* Map the registers */
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       xdev->regs = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(xdev->regs))
+> +               return PTR_ERR(xdev->regs);
+> +
+> +       /* Check if SG is enabled */
+> +       xdev->has_sg = of_property_read_bool(node, "xlnx,include-sg");
+> +
+> +       dma_cap_set(DMA_MEMCPY, xdev->common.cap_mask);
+> +       xdev->common.device_prep_dma_memcpy = xilinx_cdma_prep_memcpy;
+> +
+> +       xdev->common.device_control = xilinx_cdma_device_control;
+> +       xdev->common.device_issue_pending = xilinx_cdma_issue_pending;
+> +       xdev->common.device_alloc_chan_resources =
+> +                       xilinx_cdma_alloc_chan_resources;
+> +       xdev->common.device_free_chan_resources =
+> +                       xilinx_cdma_free_chan_resources;
+> +       xdev->common.device_tx_status = xilinx_tx_status;
+> +       xdev->common.dev = &pdev->dev;
+> +
+> +       platform_set_drvdata(pdev, xdev);
+> +
+> +       child = of_get_next_child(node, NULL);
+> +       if (!child) {
+> +               dev_err(&pdev->dev, "No channel found\n");
+> +               return PTR_ERR(child);
+> +       }
+> +
+> +       ret = xilinx_cdma_chan_probe(xdev, child);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "Probing channel failed\n");
+> +               goto free_chan_resources;
+> +       }
+> +
+> +       dma_async_device_register(&xdev->common);
+> +
+> +       ret = of_dma_controller_register(node, of_dma_xilinx_xlate, xdev);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "Unable to register DMA to DT\n");
+> +               dma_async_device_unregister(&xdev->common);
+> +               goto free_chan_resources;
+> +       }
+> +
+> +       dev_info(&pdev->dev, "Xilinx AXI CDMA Engine driver Probed!!\n");
+> +
+> +       return 0;
+> +
+> +free_chan_resources:
+> +       xilinx_cdma_free_channel(xdev->chan);
+> +
+> +       return ret;
+> +}
+> +
+> +/**
+> + * xilinx_cdma_remove - Driver remove function
+> + * @pdev: Pointer to the platform_device structure
+> + *
+> + * Return: Always '0'
+> + */
+> +static int xilinx_cdma_remove(struct platform_device *pdev)
+> +{
+> +       struct xilinx_cdma_device *xdev = platform_get_drvdata(pdev);
+> +
+> +       of_dma_controller_free(pdev->dev.of_node);
+> +       dma_async_device_unregister(&xdev->common);
+> +
+> +       xilinx_cdma_free_channel(xdev->chan);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct of_device_id xilinx_cdma_of_match[] = {
+> +       { .compatible = "xlnx,axi-cdma-1.00.a", },
+> +       {}
+> +};
+> +MODULE_DEVICE_TABLE(of, xilinx_cdma_of_match);
+> +
+> +static struct platform_driver xilinx_cdma_driver = {
+> +       .driver = {
+> +               .name = "xilinx-cdma",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = xilinx_cdma_of_match,
+> +       },
+> +       .probe = xilinx_cdma_probe,
+> +       .remove = xilinx_cdma_remove,
+> +};
+> +
+> +module_platform_driver(xilinx_cdma_driver);
+> +
+> +MODULE_AUTHOR("Xilinx, Inc.");
+> +MODULE_DESCRIPTION("Xilinx CDMA driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/amba/xilinx_dma.h b/include/linux/amba/xilinx_dma.h
+> index 34b98f2..fb74ff7 100644
+> --- a/include/linux/amba/xilinx_dma.h
+> +++ b/include/linux/amba/xilinx_dma.h
+> @@ -41,7 +41,20 @@ struct xilinx_vdma_config {
+>         int ext_fsync;
+>  };
+>
+> +/**
+> + * struct xilinx_cdma_config - CDMA Configuration structure
+> + * @coalesc: Interrupt coalescing threshold
+> + * @delay: Delay counter
+> + * @reset: Reset Channel
+> + */
+> +struct xilinx_cdma_config {
+> +       int coalesc;
+> +       int delay;
+> +       int reset;
+> +};
+> +
+>  int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
+>                                         struct xilinx_vdma_config *cfg);
+> -
+> +int xilinx_cdma_channel_set_config(struct dma_chan *dchan,
+> +                                       struct xilinx_cdma_config *cfg);
+>  #endif
 > --
-> 1.8.1.4
+> 1.7.9.5
 >
->
-
---001a11c121e077283704f675054f
-Content-Type: application/x-tar; name="memset_kernel.tar"
-Content-Disposition: attachment; filename="memset_kernel.tar"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: file0
-
-bWVtc2V0X2tlcm5lbC8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAwMDA3NTAAMDAwMDAw
-MAAwMDAwMDAwADAwMDAwMDAwMDAwADEyMzIwNTM0MDcxADAxMjM3NgAgNQAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB1c3RhciAgAHJvb3QAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAcm9vdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABt
-ZW1zZXRfa2VybmVsL3Rlc3QuYwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDAwMDY0MAAwMDAwMDAw
-ADAwMDAwMDAAMDAwMDAwMDAzMTIAMTIzMjA1MzM0NTIAMDEzNTIwACAwAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHVzdGFyICAAcm9vdAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAByb290AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACNp
-bmNsdWRlIDxzdGRsaWIuaD4KY2hhciBfYXJ5W1NJWkUgKyA2NF07CmludCBtYWluKCl7CiAgaW50
-IHNlZWQ9MDsKICBpbnQgaTsKICBmb3IgKGk9MDtpPDI1MDAwMDAwO2krKyl7CiAgICBtZW1zZXQy
-KF9hcnkgKyAodW5zaWduZWQpcmFuZF9yKCZzZWVkKSU2NCwwLCh1bnNpZ25lZClyYW5kX3IoJnNl
-ZWQpJVNJWkUpOwogIH0KICByZXR1cm4gMDsKfQoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbWVt
-c2V0X2tlcm5lbC9yZXN1bHQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAwMDA2NDAAMDAwMDAwMAAw
-MDAwMDAwADAwMDAwMDAxMjUwADEyMzIwNTIxMzIwADAxMzYyNwAgMAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB1c3RhciAgAHJvb3QAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAcm9vdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABzaXpl
-OiAzMjAwMAowLjI5CTAuMjkKMC4yOQkwLjI5CjAuMjkJMC4yOQowLjI5CTAuMjkKMC4yOQkwLjI5
-CjAuMjkJMC4yOQowLjI5CTAuMjkKMC4yOQkwLjI5CjAuMjkJMC4yOQowLjI5CTAuMjkKc2l6ZTog
-MjU2MDAwCjAuMzMJMC4zMwowLjMzCTAuMzMKMC4zMwkwLjMzCjAuMzMJMC4zMwowLjMzCTAuMzMK
-MC4zMwkwLjMzCjAuMzMJMC4zMwowLjMzCTAuMzMKMC4zMwkwLjMzCjAuMzMJMC4zMwpzaXplOiAx
-MDI0MDAwCjAuMzUJMC4zNgowLjM1CTAuMzYKMC4zNQkwLjM2CjAuMzUJMC4zNgowLjM1CTAuMzYK
-MC4zNQkwLjM2CjAuMzUJMC4zNgowLjM1CTAuMzYKMC4zNQkwLjM2CjAuMzUJMC4zNgpzaXplOiAy
-MDQ4MDAKMC4zNAkwLjM1CjAuMzQJMC4zNQowLjM0CTAuMzUKMC4zNAkwLjM1CjAuMzUJMC4zNQow
-LjM0CTAuMzUKMC4zNAkwLjM1CjAuMzQJMC4zNQowLjM0CTAuMzUKMC4zNAkwLjM1CnNpemU6IDQw
-NDgwMDAKMC42NwkwLjgxCjAuNjcJMC43OQowLjY3CTAuODAKMC42NwkwLjc5CjAuNjcJMC44MAow
-LjY3CTAuODAKMC42NwkwLjgxCjAuNjcJMC44MQowLjY4CTAuODEKMC42OAkwLjgwCnNpemU6IDgw
-OTYwMDAKMS4wMAkxLjMzCjEuMDAJMS4zMwowLjk5CTEuMzMKMC45OQkxLjMzCjAuOTkJMS4zMwow
-Ljk5CTEuMzMKMS4wMAkxLjM0CjAuOTkJMS4zMwowLjk5CTEuMzMKMC45OQkxLjMzCgAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbWVtc2V0
-X2tlcm5lbC9tZW1zZXRfa2VybmVsX25ldy5zAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAwMDA2NDAAMDAwMDAwMAAwMDAw
-MDAwADAwMDAwMDA0MTYyADEyMzIwNTI3MjQ2ADAxNjI3NwAgMAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB1c3RhciAgAHJvb3QAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAcm9vdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjIDEgIm1l
-bXNldDIzLlMiCiMgMSAiPGJ1aWx0LWluPiIKIyAxICI8Y29tbWFuZC1saW5lPiIKIyAxICJtZW1z
-ZXQyMy5TIgojIDEgInN5c2RlcC5oIiAxCiMgMiAibWVtc2V0MjMuUyIgMgoudGV4dCA7Lmdsb2Js
-IG1lbXNldDI7IC50eXBlIG1lbXNldDIsIEBmdW5jdGlvbjttZW1zZXQyOjsgLmNmaV9zdGFydHBy
-b2MKCW1vdnpibCAlc2lsLCVlY3gKCW1vdiAkMHgwMTAxMDEwMTAxMDEwMTAxLCVyc2kKCWltdWxx
-ICAlcnNpLCVyY3gKCW1vdnEgJXJkaSwlcmF4CglsZWEJKCVyZGksICVyZHgpLCAlcjgKCWNtcAkk
-MTI4LCAlcmR4CglqYQkuTG1vcmUxMjhieXRlc29ybW9yZQoJY21wCSQ2NCwgJWVkeAoJamIJLkxs
-ZXNzXzY0Ynl0ZXMKCW1vdiAlcmN4LCAweDAwKCVyZGkpCgltb3YgJXJjeCwgMHgwOCglcmRpKQoJ
-bW92ICVyY3gsIDB4MTAoJXJkaSkKCW1vdiAlcmN4LCAweDE4KCVyZGkpCgltb3YgJXJjeCwgMHgy
-MCglcmRpKQoJbW92ICVyY3gsIDB4MjgoJXJkaSkKCW1vdiAlcmN4LCAweDMwKCVyZGkpCgltb3Yg
-JXJjeCwgMHgzOCglcmRpKQoJbW92ICVyY3gsIC0weDQwKCVyOCkKCW1vdiAlcmN4LCAtMHgzOCgl
-cjgpCgltb3YgJXJjeCwgLTB4MzAoJXI4KQoJbW92ICVyY3gsIC0weDI4KCVyOCkKCW1vdiAlcmN4
-LCAtMHgyMCglcjgpCgltb3YgJXJjeCwgLTB4MTgoJXI4KQoJbW92ICVyY3gsIC0weDEwKCVyOCkK
-CW1vdiAlcmN4LCAtMHgwOCglcjgpCglyZXQKCS5wMmFsaWduIDQKLkxsZXNzXzY0Ynl0ZXM6Cglj
-bXAJJDMyLCAlZWR4CglqYgkuTGxlc3NfMzJieXRlcwoJbW92ICVyY3gsIDB4MDAoJXJkaSkKCW1v
-diAlcmN4LCAweDA4KCVyZGkpCgltb3YgJXJjeCwgMHgxMCglcmRpKQoJbW92ICVyY3gsIDB4MTgo
-JXJkaSkKCW1vdiAlcmN4LCAtMHgyMCglcjgpCgltb3YgJXJjeCwgLTB4MTgoJXI4KQoJbW92ICVy
-Y3gsIC0weDEwKCVyOCkKCW1vdiAlcmN4LCAtMHgwOCglcjgpCglyZXQKCS5wMmFsaWduIDQKLkxs
-ZXNzXzMyYnl0ZXM6CgljbXAJJDE2LCAlZWR4CglqYgkuTGxlc3NfMTZieXRlcwoJbW92ICVyY3gs
-IDB4MDAoJXJkaSkKCW1vdiAlcmN4LCAweDA4KCVyZGkpCgltb3YgJXJjeCwgLTB4MTAoJXI4KQoJ
-bW92ICVyY3gsIC0weDA4KCVyOCkKCXJldAoJLnAyYWxpZ24gNAouTGxlc3NfMTZieXRlczoKCWNt
-cAkkOCwgJWVkeAoJamIJLkxsZXNzXzhieXRlcwoJbW92ICVyY3gsICglcmRpKQoJbW92ICVyY3gs
-IC0weDA4KCVyOCkKCXJldAoJLnAyYWxpZ24gNAouTGxlc3NfOGJ5dGVzOgoJY21wCSQ0LCAlZWR4
-CglqYgkuTGxlc3NfNGJ5dGVzCgltb3YgJWVjeCwgKCVyZGkpCgltb3YgJWVjeCwgLTB4MDQoJXI4
-KQoJLnAyYWxpZ24gNAouTGxlc3NfNGJ5dGVzOgoJY21wCSQyLCAlZWR4CglqYgkuTGxlc3NfMmJ5
-dGVzCgltb3YJJWN4LCAoJXJkaSkKCW1vdgklY3gsIC0weDAyKCVyOCkKCXJldAoJLnAyYWxpZ24g
-NAouTGxlc3NfMmJ5dGVzOgoJY21wCSQxLCAlZWR4CglqYgkuTGxlc3NfMWJ5dGVzCgltb3YJJWNs
-LCAoJXJkaSkKLkxsZXNzXzFieXRlczoKCXJldAoKCS5wMmFsaWduIDQKLkxtb3JlMTI4Ynl0ZXNv
-cm1vcmU6Cgltb3YJJXJjeCwgKCVyZGkpCgltb3YJJXJkaSwgJXI5CglhbmQJJC0weDA4LCAlcmRp
-CglhZGQJJDB4MDgsICVyZGkKCXN1YgklcmRpLCAlcjkKCWFkZAklcjksICVyZHgKCXN1YgkkMHg0
-MCwgJXJkeAouTGdvYmJsZV82NF9sb29wOgoJbW92CQklcmN4LCAweDAwKCVyZGkpCgltb3YJCSVy
-Y3gsIDB4MDgoJXJkaSkKCW1vdgkJJXJjeCwgMHgxMCglcmRpKQoJbW92CQklcmN4LCAweDE4KCVy
-ZGkpCgltb3YJCSVyY3gsIDB4MjAoJXJkaSkKCW1vdgkJJXJjeCwgMHgyOCglcmRpKQoJbW92CQkl
-cmN4LCAweDMwKCVyZGkpCgltb3YJCSVyY3gsIDB4MzgoJXJkaSkKCWxlYQkweDQwKCVyZGkpLCAl
-cmRpCglzdWIJJDB4NDAsICVyZHgKCWphZQkuTGdvYmJsZV82NF9sb29wCgltb3YJCSVyY3gsIC0w
-eDQwKCVyOCkKCW1vdgkJJXJjeCwgLTB4MzgoJXI4KQoJbW92CQklcmN4LCAtMHgzMCglcjgpCglt
-b3YJCSVyY3gsIC0weDI4KCVyOCkKCW1vdgkJJXJjeCwgLTB4MjAoJXI4KQoJbW92CQklcmN4LCAt
-MHgxOCglcjgpCgltb3YJCSVyY3gsIC0weDEwKCVyOCkKCW1vdgkJJXJjeCwgLTB4MDgoJXI4KQoJ
-cmV0CgoKLmNmaV9lbmRwcm9jIDsgLnNpemUgbWVtc2V0MiwgLi1tZW1zZXQyCgAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbWVtc2V0X2tlcm5l
-bC90ZXN0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAwMDA3NTAAMDAwMDAwMAAwMDAwMDAwADAw
-MDAwMDAxMjQ0ADEyMzIwNTMzMzAxADAxMzI3NwAgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAB1c3RhciAgAHJvb3QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-cm9vdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKZWNobyAtZSAiQnl0
-ZXM6IE9SR19USU1FOiBORVdfVElNRTogT1JHIHZzIE5FVzoiCmZvciBTSVpFIGluIDcgMTYgMTgg
-MjEgMjUgMzAgMzYgMzggNjIgNzUgODUgMTIwIDE5MyAyNDUgMjU2IDM1NiA2MDEgOTU4IDEwMjQg
-MjA0ODsgZG8KICBnY2MgLURTSVpFPSRTSVpFIC1jIC1PMiAgdGVzdC5jCiAgZ2NjIHRlc3QubyBt
-ZW1zZXRfa2VybmVsX29yZy5zIC1vIG1lbXNldF9rZXJuZWxfb3JnCiAgZ2NjIHRlc3QubyBtZW1z
-ZXRfa2VybmVsX25ldy5zIC1vIG1lbXNldF9rZXJuZWxfbmV3CiNkcnkgcnVuIAogICBORVdfVElN
-RT1gIC91c3IvYmluL3RpbWUgLWYgIiVVIiAuL21lbXNldF9rZXJuZWxfbmV3IDI+JjFgCiAgIE9S
-R19USU1FPWAgL3Vzci9iaW4vdGltZSAtZiAiJVUiIC4vbWVtc2V0X2tlcm5lbF9vcmcgMj4mMWAK
-ICBmb3IgSSBpbiBgc2VxIDEgMWA7IGRvCiAgICBPUkdfVElNRT1gIC91c3IvYmluL3RpbWUgLWYg
-IiVVIiAuL21lbXNldF9rZXJuZWxfb3JnIDI+JjFgCiAgICBORVdfVElNRT1gIC91c3IvYmluL3Rp
-bWUgLWYgIiVVIiAuL21lbXNldF9rZXJuZWxfbmV3IDI+JjFgCglQRVJDRU5UPWBlY2hvICJzY2Fs
-ZT0yOyRPUkdfVElNRS8kTkVXX1RJTUUifGJjYAogICAgZWNobyAtZSAiJFNJWkVcdCRPUkdfVElN
-RVx0JE5FV19USU1FXHQkUEVSQ0VOVCIKICBkb25lCmRvbmUKAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbWVtc2V0X2tlcm5lbC9t
-ZW1zZXRfa2VybmVsX29yZy5zAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAwMDA2NDAAMDAwMDAwMAAwMDAwMDAwADAwMDAw
-MDAyMjM1ADEyMzIwNTIxMzIwADAxNjI1NwAgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAB1c3RhciAgAHJvb3QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcm9v
-dAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjIDEgIm1lbXNldDIzLlMi
-CiMgMSAiPGJ1aWx0LWluPiIKIyAxICI8Y29tbWFuZC1saW5lPiIKIyAxICJtZW1zZXQyMy5TIgoj
-IDEgInN5c2RlcC5oIiAxCiMgMiAibWVtc2V0MjMuUyIgMgoudGV4dCA7Lmdsb2JsIG1lbXNldDI7
-IC50eXBlIG1lbXNldDIsIEBmdW5jdGlvbjttZW1zZXQyOjsgLmNmaV9zdGFydHByb2MKCW1vdnEg
-JXJkaSwlcjEwCgoJbW92emJsICVzaWwsJWVjeAoJbW92YWJzICQweDAxMDEwMTAxMDEwMTAxMDEs
-JXJheAoJaW11bHEgICVyY3gsJXJheAoKCW1vdmwgICVlZGksJXI5ZAoJYW5kbCAgJDcsJXI5ZAoJ
-am56ICAuTGJhZF9hbGlnbm1lbnQKLkxhZnRlcl9iYWRfYWxpZ25tZW50OgoKCW1vdnEgICVyZHgs
-JXJjeAoJc2hycSAgJDYsJXJjeAoJanoJIC5MaGFuZGxlX3RhaWwKCgkucDJhbGlnbiA0Ci5MbG9v
-cF82NDoKCWRlY3EgICVyY3gKCW1vdnEgICVyYXgsKCVyZGkpCgltb3ZxICAlcmF4LDgoJXJkaSkK
-CW1vdnEgICVyYXgsMTYoJXJkaSkKCW1vdnEgICVyYXgsMjQoJXJkaSkKCW1vdnEgICVyYXgsMzIo
-JXJkaSkKCW1vdnEgICVyYXgsNDAoJXJkaSkKCW1vdnEgICVyYXgsNDgoJXJkaSkKCW1vdnEgICVy
-YXgsNTYoJXJkaSkKCWxlYXEgIDY0KCVyZGkpLCVyZGkKCWpueiAgICAuTGxvb3BfNjQKCgkucDJh
-bGlnbiA0Ci5MaGFuZGxlX3RhaWw6Cgltb3ZsCSVlZHgsJWVjeAoJYW5kbCAgICAkNjMmKH43KSwl
-ZWN4CglqeiAJCS5MaGFuZGxlXzcKCXNocmwJJDMsJWVjeAoJLnAyYWxpZ24gNAouTGxvb3BfODoK
-CWRlY2wgICAlZWN4Cgltb3ZxICAlcmF4LCglcmRpKQoJbGVhcSAgOCglcmRpKSwlcmRpCglqbnog
-ICAgLkxsb29wXzgKCi5MaGFuZGxlXzc6CglhbmRsCSQ3LCVlZHgKCWp6ICAgICAgLkxlbmRlCgku
-cDJhbGlnbiA0Ci5MbG9vcF8xOgoJZGVjbCAgICAlZWR4Cgltb3ZiIAklYWwsKCVyZGkpCglsZWFx
-CTEoJXJkaSksJXJkaQoJam56ICAgICAuTGxvb3BfMQoKLkxlbmRlOgoJbW92cQklcjEwLCVyYXgK
-CXJldAoKLkxiYWRfYWxpZ25tZW50OgoJY21wcSAkNywlcmR4CglqYmUJLkxoYW5kbGVfNwoJbW92
-cSAlcmF4LCglcmRpKQoJbW92cSAkOCwlcjgKCXN1YnEgJXI5LCVyOAoJYWRkcSAlcjgsJXJkaQoJ
-c3VicSAlcjgsJXJkeAoJam1wIC5MYWZ0ZXJfYmFkX2FsaWdubWVudAoKLmNmaV9lbmRwcm9jIDsg
-LnNpemUgbWVtc2V0MiwgLi1tZW1zZXQyCgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAA=
---001a11c121e077283704f675054f--
