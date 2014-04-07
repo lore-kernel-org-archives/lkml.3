@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799AbaDGFAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 01:00:35 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:55013 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaDGFAd (ORCPT
+	id S1754728AbaDGFE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 01:04:58 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54855 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaDGFEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 01:00:33 -0400
-Message-ID: <534230E7.3040800@gmail.com>
-Date: Mon, 07 Apr 2014 13:00:23 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH] fs/ext4/extents_status.c: fix 64-bit number truncation
- bug
-References: <53396AC1.10108@gmail.com> <CAMuHMdVT9O8C0fhMbaqS2nB1jfLAZtanp6YGPU6Q-T5b7=n20Q@mail.gmail.com> <20140407041431.GA8468@thunk.org>
-In-Reply-To: <20140407041431.GA8468@thunk.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 7 Apr 2014 01:04:54 -0400
+Message-ID: <1396847090.5218.9.camel@marge.simpson.net>
+Subject: Re: [PATCH V2 0/8] cpusets: Isolate CPUs via sysfs using cpusets
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Date: Mon, 07 Apr 2014 07:04:50 +0200
+In-Reply-To: <CAKohpomW3jpQEqFxD3m_br8GchJyq9-KSxW2x7JLCRqDgf4SAg@mail.gmail.com>
+References: <cover.1396599474.git.viresh.kumar@linaro.org>
+	 <1396773020.11763.17.camel@marge.simpson.net>
+	 <CAKohpomW3jpQEqFxD3m_br8GchJyq9-KSxW2x7JLCRqDgf4SAg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 04/07/2014 12:14 PM, Theodore Ts'o wrote:
-> On Sun, Apr 06, 2014 at 03:39:09PM +0200, Geert Uytterhoeven wrote:
->> On Mon, Mar 31, 2014 at 3:16 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>> '0x7FDEADBEEF' will be truncated to 32-bit number under unicore32. Need
->>> append 'ULL' for it.
->>>
->>> The related warning (with allmodconfig under unicore32):
->>>
->>>     CC [M]  fs/ext4/extents_status.o
->>>   fs/ext4/extents_status.c: In function ‘__es_remove_extent’:
->>>   fs/ext4/extents_status.c:813: warning: integer constant is too large for ‘long’ type
->>
->> Thanks! This is failing on all 32-bit architectures.
+On Mon, 2014-04-07 at 09:41 +0530, Viresh Kumar wrote: 
+> Hi Mike,
 > 
-> Yes, it's harmless (since we don't actually check the value anywhere;
-> this is just so humans could easily spot bugs when debugging), but
-> I'll make sure this gets queued for 3.15 fixes in the ext4 tree.
+> On 6 April 2014 14:00, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> > I wonder if adding a quiesce switch is really necessary.
+> >
+> > Seems to me that if you don't have load balancing turned off, you can't
+> > be very concerned about perturbation, so this should be tied into the
+> > load balancing on/off switch as an extension to isolating cores from the
+> > #1 perturbation source, the scheduler.
 > 
-> Thanks!!
+> Its more about not doing any background activities on these CPU which can
+> be avoided. So, even if a add_timer() is issued from these isolated CPUs, it
+> should goto the set chosen for doing background activity, unless add_timer_on()
+> has been issued, in which case user wants that code to execute on the
+> isolated core.
 > 
+> Probably, yes, people would be disabling load_balancing between these
+> cpusets to avoid migration of tasks to isolated core as well.. Atleast we
+> are using it :)
 
-OK, thanks. Also thank for the related Application usage information.
+Yes, that's the whole point I'm trying to make.  If you do not have
+cores isolated, there's no point to quiesce, as timers and whatnot are
+the least of your worries.  Conversely, why would you bother isolating
+cores if you didn't want a nice quiet environment.  Seems to me full
+isolation ala killing sched domains implies that your goal is bare
+metal.. or as close as you can get to that anyway.
 
-Next, in open source, welcome to provide related Application usage
-information, when review my patches. It will be useful to evaluate my
-contributions (at least, it can let myself more clearer).
+> > I also didn't notice a check for is_cpu_exclusive() at a glance, which
+> > would be a bug, but one that would go away if this additional isolation
+> > were coupled to the existing isolation switch.
+> 
+> Yeah, there is no check for that. But I didn't got your point completely.
+> Why do I need to check for exclusivity on the isolated CPUs? So, that
+> same CPU isn't isolated as well as non-isolated on two separate sets?
 
-It will also be useful to me (in fact, for most of my patches, I am not
-familiar with the related Application's usage case).
+Yes, both on and off is kinda hard to do per cpu :)
 
+-Mike
 
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
