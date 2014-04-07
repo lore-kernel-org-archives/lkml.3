@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbaDGHF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 03:05:58 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:59355 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaDGHF4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 03:05:56 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH] perf probe: Use dwarf_getcfi_elf() instead of dwarf_getcfi()
-Date: Mon,  7 Apr 2014 16:05:48 +0900
-Message-Id: <1396854348-9296-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
+	id S1754886AbaDGHGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 03:06:08 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42534 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922AbaDGHGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 03:06:02 -0400
+Message-ID: <1396849534.3671.35.camel@pasglop>
+Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        paulus@samba.org, kirill.shutemov@linux.intel.com,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, riel@redhat.com,
+        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
+        mingo@kernel.org
+Date: Mon, 07 Apr 2014 15:45:34 +1000
+In-Reply-To: <533EDB63.8090909@intel.com>
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com>
+	 <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com>
+	 <533EDB63.8090909@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dwarf_getcfi() only checks .debug_frame section for CFI, but as
-most binaries only have .eh_frame it'd return NULL and it makes
-some variables inaccessible.
+On Fri, 2014-04-04 at 09:18 -0700, Dave Hansen wrote:
+> On 04/03/2014 11:27 PM, Madhavan Srinivasan wrote:
+> > This patch creates infrastructure to move the FAULT_AROUND_ORDER
+> > to arch/ using Kconfig. This will enable architecture maintainers
+> > to decide on suitable FAULT_AROUND_ORDER value based on
+> > performance data for that architecture. Patch also adds
+> > FAULT_AROUND_ORDER Kconfig element in arch/X86.
+> 
+> Please don't do it this way.
+> 
+> In mm/Kconfig, put
+> 
+> 	config FAULT_AROUND_ORDER
+> 		int
+> 		default 1234 if POWERPC
+> 		default 4
+> 
+> The way you have it now, every single architecture that needs to enable
+> this has to go put that in their Kconfig.  That's madness.  This way,
+> you only put it in one place, and folks only have to care if they want
+> to change the default to be something other than 4.
 
-Using dwarf_getcfi_elf (along with dwarf_getelf()) allows to show and
-add probe to more variables.
+Also does it have to be a constant ? Maddy here tested on our POWER
+servers. The "Sweet spot" value might be VERY different on an embedded
+chip or even on a future generation of server chip.
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/probe-finder.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Cheers,
+Ben.
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 3bf0c8cdccb7..d58da0672736 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -985,7 +985,7 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
- 
- #if _ELFUTILS_PREREQ(0, 142)
- 	/* Get the call frame information from this dwarf */
--	pf->cfi = dwarf_getcfi(dbg->dbg);
-+	pf->cfi = dwarf_getcfi_elf(dwarf_getelf(dbg->dbg));
- #endif
- 
- 	off = 0;
--- 
-1.7.11.7
 
