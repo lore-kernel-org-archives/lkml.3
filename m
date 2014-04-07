@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaDGPtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:49:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51914 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946AbaDGPtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:49:41 -0400
-Date: Mon, 7 Apr 2014 16:49:35 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Noonan <steven@uplinklabs.net>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
- bits PMD and PTE levels
-Message-ID: <20140407154935.GD7292@suse.de>
-References: <1396883443-11696-1-git-send-email-mgorman@suse.de>
- <1396883443-11696-3-git-send-email-mgorman@suse.de>
- <5342C517.2020305@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <5342C517.2020305@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754774AbaDGPyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:54:43 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:64799 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaDGPyl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 11:54:41 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [PATCH v4 0/5] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+Date: Mon,  7 Apr 2014 16:54:11 +0100
+Message-Id: <1396886056-18132-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1396626102-13991-1-git-send-email-daniel.thompson@linaro.org>
+References: <1396626102-13991-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 04:32:39PM +0100, David Vrabel wrote:
-> On 07/04/14 16:10, Mel Gorman wrote:
-> > _PAGE_NUMA is currently an alias of _PROT_PROTNONE to trap NUMA hinting
-> > faults. As the bit is shared care is taken that _PAGE_NUMA is only used in
-> > places where _PAGE_PROTNONE could not reach but this still causes problems
-> > on Xen and conceptually difficult.
-> 
-> The problem with Xen guests occurred because mprotect() /was/ confusing
-> PROTNONE mappings with _PAGE_NUMA and clearing the non-existant NUMA hints.
-> 
+This patchset removes some single-platform compatibility tricks related
+to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
+to enable DEBUG_LL without forcing the selection of the PL01X
+implementation.
 
-I didn't bother spelling it out in case I gave the impression that I was
-blaming Xen for the problem.  As the bit is now changes, does it help
-the Xen problem or cause another collision of some sort? There is no
-guarantee _PAGE_NUMA will remain as bit 62 but at worst it'll use bit 11
-and NUMA_BALANCING will depend in !KMEMCHECK.
+- Tidy a couple of existing defconfig's so they continue to issue
+  DEBUG_LL messages to PL01X when subsequent changes come along.
+- Limit DEBUG_LL_UART_NONE to platforms that support it
+- Fix a potential build problem on EP93XX
+- Get rid of the compatibility code that causes us to forcibly enable
+  DEBUG_UART_PL01X 
+
+Changes since v3:
+
+- Converted from a single patch to a series.
+- Tested defconfig builds of all impacted platforms.
+
+Changes since v2:
+
+- Switch from def_bool to bool (thanks Russell King)
+
+Changes since v1:
+
+- Remove pointless single platform support (thanks Arnd Bergmann)
+
+Daniel Thompson (5):
+  ARM: versatile: Enable DEBUG_LL_UART_PL01X
+  ARM: ep93xx: Enable DEBUG_LL_UART_PL01X
+  ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
+  arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+  arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+
+ arch/arm/Kconfig.debug               | 23 +++++++++++++++--------
+ arch/arm/configs/ep93xx_defconfig    |  1 +
+ arch/arm/configs/versatile_defconfig |  1 +
+ 3 files changed, 17 insertions(+), 8 deletions(-)
 
 -- 
-Mel Gorman
-SUSE Labs
+1.9.0
+
