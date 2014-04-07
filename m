@@ -1,140 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387AbaDGN57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:57:59 -0400
-Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:53456 "EHLO
-	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754274AbaDGN5y (ORCPT
+	id S1755396AbaDGN6v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:58:51 -0400
+Received: from mail.windriver.com ([147.11.1.11]:60182 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaDGN6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:57:54 -0400
-Message-ID: <1396879071.3654.43.camel@linaro1.home>
-Subject: Re: [PATCH 2/2] arm: use fixmap for text patching when text is RO
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Laura Abbott <lauraa@codeaurora.org>
-Date: Mon, 07 Apr 2014 14:57:51 +0100
-In-Reply-To: <1396646870-29695-2-git-send-email-rabin@rab.in>
-References: <1396646870-29695-1-git-send-email-rabin@rab.in>
-	 <1396646870-29695-2-git-send-email-rabin@rab.in>
+	Mon, 7 Apr 2014 09:58:50 -0400
+Message-ID: <5342AEEF.4080503@windriver.com>
+Date: Mon, 7 Apr 2014 09:58:07 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Ralf Baechle <ralf@linux-mips.org>, Sanjay Lal <sanjayl@kymasys.com>,
+        John Crispin <blogic@openwrt.org>, <linux-mips@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mips: export icache_flush_range
+References: <20140322154720.GA23863@www.outflux.net> <CAGXu5jL+o4dG+ruUDh-+5LY=iD0veWaimBUq3cJBtuCiNbYt1A@mail.gmail.com>
+In-Reply-To: <CAGXu5jL+o4dG+ruUDh-+5LY=iD0veWaimBUq3cJBtuCiNbYt1A@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01b-IP: [82.69.122.217]
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-04 at 23:27 +0200, Rabin Vincent wrote:
-> Use fixmaps for text patching when the kernel text is read-only,
-> inspired by x86.  This makes jump labels and kprobes work with the
-> currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
-> CONFIG_DEBUG_RODATA options.
+On 14-03-22 03:05 PM, Kees Cook wrote:
+> On Sat, Mar 22, 2014 at 9:47 AM, Kees Cook <keescook@chromium.org> wrote:
+>> The lkdtm module performs tests against executable memory ranges, so
+>> it needs to flush the icache for proper behaviors. Other architectures
+>> already export this, so do the same for MIPS.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>> This is currently untested! I'm building a MIPS cross-compiler now...
+>> If someone can validate this fixes the build when lkdtm is a module,
+>> that would be appreciated. :)
 > 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
->  arch/arm/include/asm/fixmap.h |  3 ++
->  arch/arm/kernel/jump_label.c  |  2 +-
->  arch/arm/kernel/patch.c       | 66 ++++++++++++++++++++++++++++++++++++++-----
->  arch/arm/kernel/patch.h       | 12 +++++++-
->  4 files changed, 74 insertions(+), 9 deletions(-)
+> Okay, now tested. I reproduced the failure and this patch fixes it. :)
+
+Just checking if this happened to fall through the cracks.
+The most recent (Apr4) linux-next build for mips still fails
+with this error.
+
+http://kisskb.ellerman.id.au/kisskb/buildresult/10877159/
+
+Paul.
+--
+
 > 
-> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-> index 55ed076..79c1719 100644
-> --- a/arch/arm/include/asm/fixmap.h
-> +++ b/arch/arm/include/asm/fixmap.h
-> @@ -18,6 +18,9 @@
->  #define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
->  
->  enum fixed_addresses {
-> +	FIX_TEXT_POKE0,
-> +	FIX_TEXT_POKE1,
-> +
->  	FIX_KMAP_BEGIN,
->  	FIX_KMAP_END = (FIXADDR_TOP - FIXADDR_START) >> PAGE_SHIFT,
->  	__end_of_fixed_addresses
-> diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-> index 4ce4f78..afeeb9e 100644
-> --- a/arch/arm/kernel/jump_label.c
-> +++ b/arch/arm/kernel/jump_label.c
-> @@ -19,7 +19,7 @@ static void __arch_jump_label_transform(struct jump_entry *entry,
->  		insn = arm_gen_nop();
->  
->  	if (is_static)
-> -		__patch_text(addr, insn);
-> +		__patch_text_early(addr, insn);
->  	else
->  		patch_text(addr, insn);
->  }
-> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-> index 07314af..761c5b6 100644
-> --- a/arch/arm/kernel/patch.c
-> +++ b/arch/arm/kernel/patch.c
-> @@ -1,8 +1,11 @@
->  #include <linux/kernel.h>
-> +#include <linux/spinlock.h>
->  #include <linux/kprobes.h>
-> +#include <linux/mm.h>
->  #include <linux/stop_machine.h>
->  
->  #include <asm/cacheflush.h>
-> +#include <asm/fixmap.h>
->  #include <asm/smp_plat.h>
->  #include <asm/opcodes.h>
->  
-> @@ -13,21 +16,67 @@ struct patch {
->  	unsigned int insn;
->  };
->  
-> -void __kprobes __patch_text(void *addr, unsigned int insn)
-> +static DEFINE_SPINLOCK(patch_lock);
-> +
-> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
-> +{
-> +	unsigned int uintaddr = (uintptr_t) addr;
-> +	bool module = !core_kernel_text(uintaddr);
-> +	struct page *page;
-> +
-> +	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX)) {
-> +		page = vmalloc_to_page(addr);
-> +	} else if (!module && IS_ENABLED(CONFIG_ARM_KERNMEM_PERMS)) {
-> +		page = virt_to_page(addr);
-> +	} else {
-> +		return addr;
-> +	}
-
-I can't help but think that it'd be more maintainable to just always use
-fixmap, though that would obviously have some performance impact (not
-sure that particularly matters for text patching) and it would expose
-possible fixmap bugginess to more kernels (see my next comment...)
-
-> +
-> +	if (flags)
-> +		spin_lock_irqsave(&patch_lock, *flags);
-> +
-> +	set_fixmap(fixmap, page_to_phys(page));
-> +
-> +	return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
-
-How does fixmap cope with cache colouring? Looking at the implementation
-it looks like it doesn't and so fixmap use on ARM is possibly buggy.
-
-For the text patching case where we know there are no writeable mappings
-[1] this should be OK if we used set_fixmap_nocache here, so long as we
-also invalidated the dcache later for the proper virtual address.
-
-[1] Can we know there are no writeable mappings though, the ftrace code
-modifying patches from Kees Cook have there own way of modifying text
-code permissions.
-
-[...]
-
-Rest of patch trimmed
-
--- 
-Tixy
-
-
-
+> -Kees
+> 
+>> ---
+>>  arch/mips/mm/cache.c |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+>> index fde7e56d13fe..b3f1df13d9f6 100644
+>> --- a/arch/mips/mm/cache.c
+>> +++ b/arch/mips/mm/cache.c
+>> @@ -38,6 +38,7 @@ void (*__flush_kernel_vmap_range)(unsigned long vaddr, int size);
+>>  void (*__invalidate_kernel_vmap_range)(unsigned long vaddr, int size);
+>>
+>>  EXPORT_SYMBOL_GPL(__flush_kernel_vmap_range);
+>> +EXPORT_SYMBOL_GPL(flush_icache_range);
+>>
+>>  /* MIPS specific cache operations */
+>>  void (*flush_cache_sigtramp)(unsigned long addr);
+>> --
+>> 1.7.9.5
+>>
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
+> 
+> 
+> 
