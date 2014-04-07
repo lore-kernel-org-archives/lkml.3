@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaDGNiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:38:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39620 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760AbaDGNiQ (ORCPT
+	id S1754919AbaDGNm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:42:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38159 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbaDGNm4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:38:16 -0400
-Message-ID: <5342AA3E.50100@oracle.com>
-Date: Mon, 07 Apr 2014 09:38:06 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Apr 2014 09:42:56 -0400
+Date: Mon, 7 Apr 2014 14:42:50 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper
+ function.
+Message-ID: <20140407134250.GL17163@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140405001953.GE15806@google.com>
+ <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
+ <5183143.FxBNM0xTAV@wuerfel>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: bdi: lockdep warning in bdi_queue_work
-References: <533F2CED.3070006@oracle.com> <20140407102107.GD14927@quack.suse.cz>
-In-Reply-To: <20140407102107.GD14927@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <5183143.FxBNM0xTAV@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 07 Apr 2014 13:43:07.0417 (UTC) FILETIME=[4ECC8890:01CF5267]
+X-MC-Unique: 114040714425400201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 06:21 AM, Jan Kara wrote:
->   Hello,
+On Mon, Apr 07, 2014 at 12:36:15PM +0100, Arnd Bergmann wrote:
+> On Monday 07 April 2014 09:31:20 Liviu Dudau wrote:
+> > On Sat, Apr 05, 2014 at 01:19:53AM +0100, Bjorn Helgaas wrote:
+> >
+> > > Host bridges on x86 could have MMIO apertures that turn CPU memory accesses
+> > > into PCI port accesses.  We could implement any number of I/O port spaces
+> > > this way, by making the kernel inb()/outb()/etc. interfaces smart enough to
+> > > use the memory-mapped space instead of (or in addition to) the
+> > > INB/OUTB/etc. instructions.
 > 
-> On Fri 04-04-14 18:06:37, Sasha Levin wrote:
->> While fuzzing with trinity inside a KVM tools guest running the latest -next
->> kernel I've stumbled on the following:
->>
->> [  323.192041] INFO: trying to register non-static key.
->> [  323.193083] the code is fine but needs lockdep annotation.
->> [  323.193949] turning off the locking correctness validator.
->> [  323.194687] CPU: 15 PID: 21793 Comm: trinity-c94 Not tainted 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376
->> [  323.196300]  0000000000000000 ffff8804d9067cf8 ffffffff954bfb2f 0000000000000000
->> [  323.197522]  ffffffff99378b10 ffff8804d9067df8 ffffffff921c3912 ffff88082bddaeb0
->> [  323.198879]  ffff880800000000 ffff880400000001 ffffffff00000000 ffff8804d9067d48
->> [  323.200063] Call Trace:
->> [  323.200487] dump_stack (lib/dump_stack.c:52)
->> [  323.200581] __lock_acquire (kernel/locking/lockdep.c:743 kernel/locking/lockdep.c:3078)
->> [  323.200581] ? __slab_alloc (mm/slub.c:2385 (discriminator 2))
->> [  323.200581] ? __lock_acquire (kernel/locking/lockdep.c:3189)
->> [  323.200581] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
->> [  323.200581] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
->> [  323.200581] ? bdi_queue_work (arch/x86/include/asm/bitops.h:313 fs/fs-writeback.c:108)
->> [  323.200581] _raw_spin_lock_bh (include/linux/spinlock_api_smp.h:136 kernel/locking/spinlock.c:175)
->> [  323.200581] ? bdi_queue_work (arch/x86/include/asm/bitops.h:313 fs/fs-writeback.c:108)
->> [  323.200581] bdi_queue_work (arch/x86/include/asm/bitops.h:313 fs/fs-writeback.c:108)
->> [  323.200581] __bdi_start_writeback (fs/fs-writeback.c:141)
->> [  323.200581] wakeup_flusher_threads (fs/fs-writeback.c:1077)
->> [  323.200581] ? wakeup_flusher_threads (include/linux/rcupdate.h:800 fs/fs-writeback.c:1076)
->> [  323.200581] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
->> [  323.200581] sys_sync (fs/sync.c:107)
->> [  323.200581] tracesys (arch/x86/kernel/entry_64.S:749)
->   Thanks for report. This is really strange. The complaint is apparently
-> about bdi->wb_lock. But that is properly initialized with spin_lock_init()
-> when bdi is created so I don't see how we could see a non-static key there.
-> Can you reproduce this? Can you tell what the non-static key was?
+> PowerPC actually has this already, as CONFIG_PPC_INDIRECT_PIO meaning that
+> access to PIO registers is bus specific, and there is also CONFIG_PPC_INDIRECT_MMIO
+> for the case where MMIO access is not native.
+>  
+> > Right, sorry for my ignorance then: how does *currently* the device driver do
+> > the I/O transfer transparent of the implementation mechanism? Or they have
+> > intimate knowledge of wether the device is behind a host bridge and can do MMIO
+> > or is on an ISA or CF bus and then it needs INB/OUTB ? And if we make inb/outb
+> > smarter, does that mean that we need to change the drivers?
 > 
-> I presume something bad could happen if someone was freeing the bdi while
-> we are looking at it. And given bdi should be RCU freed, that could happen
-> if someone forgot to free the bdi structure using RCU. So to identify that
-> better, can you dump 'bdi->name' for the bdi which triggers this?
+> The idea of that would be to not change drivers.
+> 
+> My preference here would be to only have a generic function for those
+> architectures that have the simple MMIO access all the time.
+> 
+> > > ia64 does this (see arch/ia64/include/asm/io.h for a little description)
+> > > and I think maybe one or two other arches have something similar.
+> > > 
+> > > > Introduce a pci_register_io_range() helper function that can be used
+> > > > by the architecture code to keep track of the I/O ranges described by the
+> > > > PCI bindings. If the PCI_IOBASE macro is not defined that signals
+> > > > lack of support for PCI and we return an error.
+> > > 
+> > > I don't quite see how you intend to use this, because this series doesn't
+> > > include any non-stub implementation of pci_register_io_range().
+> > > 
+> > > Is this anything like the ia64 strategy I mentioned above?  If so, it would
+> > > be really nice to unify some of this stuff.
+> > 
+> > After discussions with Arnd and Catalin I know have a new series that moves
+> > some of the code from arm64 series into this one. I am putting it through
+> > testing right know as I am going to have to depend on another series that
+> > makes PCI_IOBASE defined only for architectures that do MMIO in order to
+> > choose the correct default implementation for these functions. My hope is
+> > that I will be able to send the series this week.
+> 
+> I think migrating other architectures to use the same code should be
+> a separate effort from adding a generic implementation that can be
+> used by arm64. It's probably a good idea to have patches to convert
+> arm32 and/or microblaze.
 
-I've added some code to do that, but since I only saw that error once so far
-I suspect it'll be a while before I could come back with a result.
+Agree. My updated series only moves the arm64 code into framework to make the
+arm64 part a noop.
 
+Liviu
 
-Thanks,
-Sasha
+> 
+> 	Arnd
+> 
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
