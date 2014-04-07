@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949AbaDGIBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 04:01:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15088 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928AbaDGIBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 04:01:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,808,1389772800"; 
-   d="scan'208";a="516033418"
-Message-ID: <53425B2A.10001@linux.intel.com>
-Date: Mon, 07 Apr 2014 16:00:42 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754921AbaDGIEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 04:04:36 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:54650 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaDGIE3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 04:04:29 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
- the PCI reboot method
-References: <20140404064120.GB11877@gmail.com>	<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>	<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>	<20140404151359.GB12370@srcf.ucam.org> <20140406184023.1e31412d@alan.etchedpixels.co.uk> <53419F84.2090204@zytor.com>
-In-Reply-To: <53419F84.2090204@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140406222737.GA26274@arm.com>
+References: <1396707949-397-1-git-send-email-msalter@redhat.com>
+	<20140406222737.GA26274@arm.com>
+Date: Mon, 7 Apr 2014 10:04:28 +0200
+Message-ID: <CAFrcx1kn+dMwMVrU1avLqe+PzQ6FvLSdVb7cf_uZF5_Pqw1yug@mail.gmail.com>
+Subject: Re: [PATCH] arm64: fix !CONFIG_COMPAT build failures
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Salter <msalter@redhat.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/7 2:40, H. Peter Anvin wrote:
-> 
-> No question. The question at hand is if we should do it after all other
-> non-terminal (BIOS, triple) methods have been tried.
-> 
+On 7 April 2014 00:27, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Sat, Apr 05, 2014 at 03:25:49PM +0100, Mark Salter wrote:
+>> Recent arm64 builds using CONFIG_ARM64_64K_PAGES are failing with:
+>>
+>>   arch/arm64/kernel/perf_regs.c: In function 'perf_reg_abi':
+>>   arch/arm64/kernel/perf_regs.c:41:2: error: implicit declaration of function 'is_compat_thread'
+>>
+>>   arch/arm64/kernel/perf_event.c:1398:2: error: unknown type name 'compat_uptr_t'
+>>
+>> This is due to some recent arm64 perf commits with compat support:
+>>
+>>   commit 23c7d70d55c6d9:
+>>     ARM64: perf: add support for frame pointer unwinding in compat mode
+>>
+>>   commit 2ee0d7fd36a3f8:
+>>     ARM64: perf: add support for perf registers API
+>>
+>> Those patches make the arm64 kernel unbuildable if CONFIG_COMPAT is not
+>> defined and CONFIG_ARM64_64K_PAGES depends on !CONFIG_COMPAT. This patch
+>> allows the arm64 kernel to build with and without CONFIG_COMPAT.
+>>
+>> Signed-off-by: Mark Salter <msalter@redhat.com>
+>
+> Thanks. Applied.
+Thanks for tracking the problem!
 
-The reboot sequence before the change is:
-(1) ACPI
-(2) KEYBOARD
-(3) ACPI
-(4) KEYBOARD
-(5) TRIPLE
-
-The reboot sequence after the change is:
-(1) ACPI
-(2) KEYBOARD
-(3) ACPI
-(4) KEYBOARD
-(ADD_1) EFI
-(ADD_2) CF9
-(ADD_3) BIOS
-(5) TRIPLE
-
-Steven's machine exactly hit (5), while CF9 hangs, so we encountered
-this regression.
-
-EFI is no question. So, Is everybody okay with the following sequence?
-(1) ACPI
-(2) KEYBOARD
-(3) ACPI
-(4) KEYBOARD
-(ADD_1) EFI
-(5) TRIPLE
-(ADD_2) CF9
-(ADD_3) BIOS
-
-Thanks,
--Aubrey
+Jean
+>
+> --
+> Catalin
