@@ -1,213 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035AbaDGKh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 06:37:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51740 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaDGKhz (ORCPT
+	id S1754997AbaDGKnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 06:43:00 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47600 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642AbaDGKm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 06:37:55 -0400
-Date: Mon, 7 Apr 2014 11:37:50 +0100
-From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: stable@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: Boot crash fix for 68030
-Message-ID: <20140407103750.GB3796@hercules>
-References: <alpine.DEB.2.02.1404061132530.6867@ayla.of.borg>
+	Mon, 7 Apr 2014 06:42:57 -0400
+Date: Mon, 7 Apr 2014 06:42:16 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hans-Bernhard =?iso-8859-1?Q?Br=F6ker?= 
+	<broeker@users.sourceforge.net>,
+        Hans-Bernhard Broeker <broeker@physik.rwth-aachen.de>,
+        Neil Horman <nhorman@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        cscope-devel@lists.sourceforge.net
+Subject: Re: cscope: issue with symlinks in
+ tools/testing/selftests/powerpc/copyloops/
+Message-ID: <20140407104216.GB5287@hmsreliant.think-freely.org>
+References: <1396530975.4361.28.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1404061132530.6867@ayla.of.borg>
+In-Reply-To: <1396530975.4361.28.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 06, 2014 at 11:34:46AM +0200, Geert Uytterhoeven wrote:
-> Please queue the two commits below for stable:
->   - The second commit fixes a boot crash on 68030,
->   - The first commit is a prerequisite for the second.
+On Thu, Apr 03, 2014 at 03:16:15PM +0200, Yann Droneaud wrote:
+> Hi,
 > 
-> This fix is needed on all versions that contain commit
-> e4f2dfbb5e92be4e46c0625f4f8eb101110f756f ("m68k: implement futex.h to support
-> userspace robust futexes and PI mutexes"), i.e. v3.10 until v3.14.
+> I'm using cscope to browse kernel sources, but I'm facing warnings from
+> the tool since following commit:
 > 
-> The first commit only applies cleanly to v3.14.
-> I appended a backported version for v3.10..v3.13 at the bottom of this email.
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=22d651dcef536c75f75537290bf3da5038e68b6b
 > 
-> Thanks for applying!
+>     commit 22d651dcef536c75f75537290bf3da5038e68b6b
+>     Author: Michael Ellerman <mpe@ellerman.id.au>
+>     Date:   Tue Jan 21 15:22:17 2014 +1100
+> 
+>     selftests/powerpc: Import Anton's memcpy / copy_tofrom_user tests
+>     
+>     Turn Anton's memcpy / copy_tofrom_user test into something that can
+>     live in tools/testing/selftests.
+>     
+>     It requires one turd in arch/powerpc/lib/memcpy_64.S, but it's 
+>     pretty harmless IMHO.
+>     
+>     We are sailing very close to the wind with the feature macros. We 
+>     define them to nothing, which currently means we get a few extra 
+>     nops and include the unaligned calls.
+>     
+>     Signed-off-by: Anton Blanchard <anton@samba.org>
+>     Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+>     Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> 
+> cscope reports error when generating the cross-reference database:
+> 
+>     $ make ALLSOURCE_ARCHS=all O=./obj-cscope/ cscope
+>       GEN     cscope
+>     cscope: cannot find
+> file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/copyuser_power7.S
+>     cscope: cannot find
+> file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/memcpy_64.S
+>     cscope: cannot find
+> file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/memcpy_power7.S
+>     cscope: cannot find
+> file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/copyuser_64.S
+> 
+> And when calling cscope from ./obj-cscope/ directory, it reports errors
+> too.
+> 
+> Hopefully it doesn't stop it from working, so I'm still able to use
+> cscope to browse kernel sources.
+> 
+No, it won't stop it from working, it just won't search those files.  I don't
+recall exactly the reason, but IIRC there was a big discussion long ago about
+symlinks and our ability to support them (around version 1.94 I think).  We
+decided to not handle symlinks, as they would either point outside our search
+tree, which we didn't want to include, or would point to another file in the
+search tree, which made loading them pointless (as we would cover the search in
+the pointed file).
 
-Thank you Geert, I'll queue both patches for the 3.11 kernel.
+Neil
 
-Cheers,
---
-Luís
-
-> commit 03b8c7b623c80af264c4c8d6111e5c6289933666
-> Author: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Date:   Sun Mar 2 13:09:47 2014 +0100
+> It's a rather uncommon side effect of having (for the first time ?)
+> sources files as symlinks: looking for symlinks in the kernel sources
+> returns only:
 > 
->     futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
->    
->     If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
->     is no runtime check necessary, allow to skip the test within futex_init().
->    
->     This allows to get rid of some code which would always give the same result,
->     and also allows the compiler to optimize a couple of if statements away.
->    
->     Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
->     Cc: Finn Thain <fthain@telegraphics.com.au>
->     Cc: Geert Uytterhoeven <geert@linux-m68k.org>
->     Link: http://lkml.kernel.org/r/20140302120947.GA3641@osiris
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>     $ find . -type l
+>     ./arch/mips/boot/dts/include/dt-bindings
+>     ./arch/microblaze/boot/dts/system.dts
+>     ./arch/powerpc/boot/dts/include/dt-bindings
+>     ./arch/metag/boot/dts/include/dt-bindings
+>     ./arch/arm/boot/dts/include/dt-bindings
+>     ./tools/testing/selftests/powerpc/copyloops/copyuser_power7.S
+>     ./tools/testing/selftests/powerpc/copyloops/memcpy_64.S
+>     ./tools/testing/selftests/powerpc/copyloops/memcpy_power7.S
+>     ./tools/testing/selftests/powerpc/copyloops/copyuser_64.S
+>     ./obj-cscope/source
+>     ./Documentation/DocBook/vidioc-g-sliced-vbi-cap.xml
+>     ./Documentation/DocBook/vidioc-decoder-cmd.xml
+> ...
+>     ./Documentation/DocBook/media-func-ioctl.xml
+>     ./Documentation/DocBook/vidioc-enumoutput.xml
 > 
-> commit e571c58f313d35c56e0018470e3375ddd1fd320e
-> Author: Finn Thain <fthain@telegraphics.com.au>
-> Date:   Thu Mar 6 10:29:27 2014 +1100
 > 
->     m68k: Skip futex_atomic_cmpxchg_inatomic() test
->    
->     Skip the futex_atomic_cmpxchg_inatomic() test in futex_init(). It causes a
->     fatal exception on 68030 (and presumably 68020 also).
->    
->     Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
->     Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
->     Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1403061006440.5525@nippy.intranet
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> So one can wonder if having symlinked sources files is an expected
+> supported feature for kbuild and all the various kernel
+> tools/infrastructure ?
 > 
-> ---
-> From 4ff4cbd563da5ff27b61abb31cb6efaf9498cf07 Mon Sep 17 00:00:00 2001
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Date: Sun, 2 Mar 2014 13:09:47 +0100
-> Subject: [PATCH] futex: Allow architectures to skip
->  futex_atomic_cmpxchg_inatomic() test
+> Regarding cscope specifically, it does not support symlink, and it's the
+> expected behavior according to the bug reports I was able to find:
 > 
-> If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
-> is no runtime check necessary, allow to skip the test within futex_init().
+> #214 cscope ignores symlinks to files 
+> http://sourceforge.net/p/cscope/bugs/214/
 > 
-> This allows to get rid of some code which would always give the same result,
-> and also allows the compiler to optimize a couple of if statements away.
+> #229 -I options doesn't handle symbolic link
+> http://sourceforge.net/p/cscope/bugs/229/
 > 
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Finn Thain <fthain@telegraphics.com.au>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Link: http://lkml.kernel.org/r/20140302120947.GA3641@osiris
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> [geert: Backported to v3.10..v3.13]
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  arch/s390/Kconfig     |    1 +
->  include/linux/futex.h |    4 ++++
->  init/Kconfig          |    7 +++++++
->  kernel/futex.c        |   14 ++++++++++++--
->  4 files changed, 24 insertions(+), 2 deletions(-)
+> #247 cscope: cannot find file 
+> http://sourceforge.net/p/cscope/bugs/247/
 > 
-> diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-> index e9f312532526..c8d8283cb20e 100644
-> --- a/arch/s390/Kconfig
-> +++ b/arch/s390/Kconfig
-> @@ -117,6 +117,7 @@ config S390
->  	select HAVE_FUNCTION_GRAPH_TRACER
->  	select HAVE_FUNCTION_TRACER
->  	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
-> +	select HAVE_FUTEX_CMPXCHG if FUTEX
->  	select HAVE_KERNEL_BZIP2
->  	select HAVE_KERNEL_GZIP
->  	select HAVE_KERNEL_LZ4
-> diff --git a/include/linux/futex.h b/include/linux/futex.h
-> index b0d95cac826e..6435f46d6e13 100644
-> --- a/include/linux/futex.h
-> +++ b/include/linux/futex.h
-> @@ -55,7 +55,11 @@ union futex_key {
->  #ifdef CONFIG_FUTEX
->  extern void exit_robust_list(struct task_struct *curr);
->  extern void exit_pi_state_list(struct task_struct *curr);
-> +#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
-> +#define futex_cmpxchg_enabled 1
-> +#else
->  extern int futex_cmpxchg_enabled;
-> +#endif
->  #else
->  static inline void exit_robust_list(struct task_struct *curr)
->  {
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 4e5d96ab2034..66e6759e4436 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1399,6 +1399,13 @@ config FUTEX
->  	  support for "fast userspace mutexes".  The resulting kernel may not
->  	  run glibc-based applications correctly.
->  
-> +config HAVE_FUTEX_CMPXCHG
-> +	bool
-> +	help
-> +	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
-> +	  is implemented and always working. This removes a couple of runtime
-> +	  checks.
-> +
->  config EPOLL
->  	bool "Enable eventpoll support" if EXPERT
->  	default y
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index f6ff0191ecf7..0d74e3aecb0b 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -68,7 +68,9 @@
->  
->  #include "locking/rtmutex_common.h"
->  
-> +#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
->  int __read_mostly futex_cmpxchg_enabled;
-> +#endif
->  
->  #define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
->  
-> @@ -2731,10 +2733,10 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
->  	return do_futex(uaddr, op, val, tp, uaddr2, val2, val3);
->  }
->  
-> -static int __init futex_init(void)
-> +static void __init futex_detect_cmpxchg(void)
->  {
-> +#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
->  	u32 curval;
-> -	int i;
->  
->  	/*
->  	 * This will fail and we want it. Some arch implementations do
-> @@ -2748,6 +2750,14 @@ static int __init futex_init(void)
->  	 */
->  	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
->  		futex_cmpxchg_enabled = 1;
-> +#endif
-> +}
-> +
-> +static int __init futex_init(void)
-> +{
-> +	int i;
-> +
-> +	futex_detect_cmpxchg();
->  
->  	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
->  		plist_head_init(&futex_queues[i].chain);
+> #252 cscope: cannot find file *** 
+> http://sourceforge.net/p/cscope/bugs/252/
+> 
+> #261 Regression - version 15.7a does not follow symbolic links 
+> http://sourceforge.net/p/cscope/bugs/261/
+> 
+> 
+> Regards.
+> 
 > -- 
-> 1.7.9.5
+> Yann Droneaud
+> OPTEYA
 > 
-> Gr{oetje,eeting}s,
 > 
-> 						Geert
 > 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
-> 							    -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
