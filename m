@@ -1,310 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909AbaDGHbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 03:31:53 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:17190 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753937AbaDGHbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 03:31:50 -0400
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2] powerpc 32: Provides VIRT_CPU_ACCOUNTING
-Message-Id: <20140407073147.6F87E1A4BDE@localhost.localdomain>
-Date: Mon,  7 Apr 2014 09:31:47 +0200 (CEST)
+	id S1754877AbaDGHqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 03:46:50 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:40313 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408AbaDGHqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 03:46:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAEgOgz5XsOYXyPTpUzx_j=+Z19oksTT5TB8G3r9KbYakrQvgHw@mail.gmail.com>
+References: <1396523431-14519-1-git-send-email-harinik@xilinx.com>
+	<1396523431-14519-2-git-send-email-harinik@xilinx.com>
+	<20140403213446.GB14763@sirena.org.uk>
+	<CAFcVEC+mpHh_d2j6_sdhWS3d2KyXrDYUq6L6jO2Q=SS68Hda2g@mail.gmail.com>
+	<20140404100919.GO14763@sirena.org.uk>
+	<CAFcVECLDyfFSZFk9fzFKsr6pM=f1nwzGAhjX17z=NsbvWpiDew@mail.gmail.com>
+	<20140404124637.GT14763@sirena.org.uk>
+	<CAFcVEC+FAAxxxxA8PgcTzLU5UFu=pkDEM4Li06dRmEwA95sz_g@mail.gmail.com>
+	<CAFcVECJYdW0=r425tWs8y6DJDNh3c75TAzg7+UCNRgLP8WHf+A@mail.gmail.com>
+	<CAEgOgz56hhFCy6sjZmw+Wn6uT4rU8mXSpazscPG_uJ-==-uXLw@mail.gmail.com>
+	<CAFcVEC+vWwepHgsCAP63YG2F_0ZXKMck1YYwi7XU3JQdpC9ZQw@mail.gmail.com>
+	<CAEgOgz5XsOYXyPTpUzx_j=+Z19oksTT5TB8G3r9KbYakrQvgHw@mail.gmail.com>
+Date: Mon, 7 Apr 2014 13:16:47 +0530
+Message-ID: <CAFcVECJN0g5L2wiOJFvESqu9Zd3zpcckhh8wbvwsiwxVfc=+Wg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] devicetree: Add devicetree bindings documentation
+ for Cadence SPI
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides VIRT_CPU_ACCOUTING to PPC32 architecture.
-Unlike PPC64, PPC32 doesn't use the PACA convention. Therefore the
-implementation is taken from the IA64 architecture.
-It is based on additional information added to the Task Info structure.
+Hi Peter,
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+On Sun, Apr 6, 2014 at 5:13 AM, Peter Crosthwaite
+<peter.crosthwaite@xilinx.com> wrote:
+> On Sat, Apr 5, 2014 at 4:05 PM, Harini Katakam
+> <harinikatakamlinux@gmail.com> wrote:
+>> Hi Peter,
+>>
+>> On Sat, Apr 5, 2014 at 4:44 AM, Peter Crosthwaite
+>> <peter.crosthwaite@xilinx.com> wrote:
+>>> On Sat, Apr 5, 2014 at 12:30 AM, Harini Katakam
+>>> <harinikatakamlinux@gmail.com> wrote:
+>>>> Hi,
+>>>>
+>>>> On Fri, Apr 4, 2014 at 7:38 PM, Harini Katakam
+>>>> <harinikatakamlinux@gmail.com> wrote:
+>>>>> Hi Mark,
+>>>>>
+>>>>> On Fri, Apr 4, 2014 at 6:16 PM, Mark Brown <broonie@kernel.org> wrote:
+>>>>>> On Fri, Apr 04, 2014 at 05:44:23PM +0530, Harini Katakam wrote:
+>>>>>>> On Fri, Apr 4, 2014 at 3:39 PM, Mark Brown <broonie@kernel.org> wrote:
+>>>>>>> > On Fri, Apr 04, 2014 at 08:30:38AM +0530, Harini Katakam wrote:
+>>>>>>
+>>>>>>> >> This IP can drive 4 slaves.
+>>>>>>> >> The sCS line to be driven is selected in spi device structure and
+>>>>>>> >> that is driven by the software.
+>>>>>>
+>>>>>>> > So why specify this in the binding at all?  If the device always has the
+>>>>>>> > same number of chip selects it's redundant.
+>>>>>>
+>>>>>>> I'm sorry, I should have explained that better.
+>>>>>>> The IP can support upto 4 chip selects.
+>>>>>>> The num-cs value here is the number of chip selects actually used on the board.
+>>>
+>>> Shouldnt it be a property of the controller not the board? How for
+>>> example do we differentiate between different implementations of
+>>> cadence SPI controller that only supports up to two CS lines? My
+>>> thinking is that this property should always be present and = 4 in the
+>>> Zynq case as the controller always has 4 physical CS lines coming out
+>>> (before any decoders, pin muxes or slaves etc.).
+>>>
+>>>>>>
+>>>>>> Why does that need to be configured?  Surely the presence of slaves is
+>>>>>> enough information.
+>>>
+>>> And presence of slaves / board info is inferable from subnodes.
+>>>
+>>>>>
+>>>>> OK. I understand.
+>>>>> Can you comment on the case where a decoder is used?
+>>>>>
+>>>>> There is support for adding a decoder where extended slaves can be selected
+>>>>> through the IP's control register.
+>>>>> (This is not currently implemented in the driver but will be in the future.)
+>>>>>
+>>>
+>>> I think thats seperate information. is-decoded-cs property of something.
+>>>
+>>>>> How should the driver know whether it is 4 or 16 select lines for example?
+>>>>> This has to be written to master->num_chipselect.
+>>>>>
+>>>
+>>> If you only have one property (== 4) how do you tell the difference
+>>> between 4 un-decoded CS lines vs 2 decoded CS lines?
+>>>
+>>
+>> If an SoC implements 2 CS and sets "decoder" property,
+>> then we'd configure the register with "select decode" bit and write
+>> 0b0011 to the slave select field to select 4th slave.
+>>
+>> If decoder property is not set, then we'd write 0b1000 to select 4th slave.
+>>
+>
+> What are your proposed dt bindings for these differing options - what
+> is num-cs in each case?
 
-Index: b/arch/powerpc/Kconfig
-===================================================================
---- a/arch/powerpc/Kconfig	(revision 5607)
-+++ b/arch/powerpc/Kconfig	(revision 5611)
-@@ -138,6 +138,7 @@
- 	select OLD_SIGSUSPEND
- 	select OLD_SIGACTION if PPC32
- 	select HAVE_DEBUG_STACKOVERFLOW
-+	select HAVE_VIRT_CPU_ACCOUNTING
- 
- config EARLY_PRINTK
- 	bool
-Index: a/arch/powerpc/kernel/time.c
-===================================================================
---- a/arch/powerpc/kernel/time.c	(revision 5607)
-+++ b/arch/powerpc/kernel/time.c	(revision 5611)
-@@ -162,7 +162,9 @@
- 
- cputime_t cputime_one_jiffy;
- 
-+#ifdef CONFIG_PPC_SPLPAR
- void (*dtl_consumer)(struct dtl_entry *, u64);
-+#endif
- 
- static void calc_cputime_factors(void)
- {
-@@ -178,6 +180,7 @@
- 	__cputime_clockt_factor = res.result_low;
- }
- 
-+#ifdef CONFIG_PPC64
- /*
-  * Read the SPURR on systems that have it, otherwise the PURR,
-  * or if that doesn't exist return the timebase value passed in.
-@@ -190,6 +193,7 @@
- 		return mfspr(SPRN_PURR);
- 	return tb;
- }
-+#endif
- 
- #ifdef CONFIG_PPC_SPLPAR
- 
-@@ -291,6 +295,7 @@
-  * Account time for a transition between system, hard irq
-  * or soft irq state.
-  */
-+#ifdef CONFIG_PPC64
- static u64 vtime_delta(struct task_struct *tsk,
- 			u64 *sys_scaled, u64 *stolen)
- {
-@@ -377,7 +382,70 @@
- 	get_paca()->utime_sspurr = 0;
- 	account_user_time(tsk, utime, utimescaled);
- }
-+#else
- 
-+void vtime_account_user(struct task_struct *tsk)
-+{
-+	cputime_t delta_utime;
-+	struct thread_info *ti = task_thread_info(tsk);
-+
-+	if (ti->ac_utime) {
-+		delta_utime = ti->ac_utime;
-+		account_user_time(tsk, delta_utime, delta_utime);
-+		ti->ac_utime = 0;
-+	}
-+}
-+
-+/*
-+ * Called from the context switch with interrupts disabled, to charge all
-+ * accumulated times to the current process, and to prepare accounting on
-+ * the next process.
-+ */
-+void arch_vtime_task_switch(struct task_struct *prev)
-+{
-+	struct thread_info *pi = task_thread_info(prev);
-+	struct thread_info *ni = task_thread_info(current);
-+
-+	ni->ac_stamp = pi->ac_stamp;
-+	ni->ac_stime = ni->ac_utime = 0;
-+}
-+
-+/*
-+ * Account time for a transition between system, hard irq or soft irq state.
-+ * Note that this function is called with interrupts enabled.
-+ */
-+static cputime_t vtime_delta(struct task_struct *tsk)
-+{
-+	struct thread_info *ti = task_thread_info(tsk);
-+	__u32 delta_stime;
-+	__u32 now;
-+
-+	WARN_ON_ONCE(!irqs_disabled());
-+
-+	now = mftbl();
-+
-+	delta_stime = ti->ac_stime + (now - ti->ac_stamp);
-+	ti->ac_stime = 0;
-+	ti->ac_stamp = now;
-+
-+	return (cputime_t)delta_stime;
-+}
-+
-+void vtime_account_system(struct task_struct *tsk)
-+{
-+	cputime_t delta = vtime_delta(tsk);
-+
-+	account_system_time(tsk, 0, delta, delta);
-+}
-+EXPORT_SYMBOL_GPL(vtime_account_system);
-+
-+void vtime_account_idle(struct task_struct *tsk)
-+{
-+	account_idle_time(vtime_delta(tsk));
-+}
-+
-+#endif
-+
- #else /* ! CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- #define calc_cputime_factors()
- #endif
-@@ -871,6 +939,8 @@
- 		       ppc_proc_freq / 1000000, ppc_proc_freq % 1000000);
- 	}
- 
-+	mttbl(0);
-+	mttbu(0);
- 	tb_ticks_per_jiffy = ppc_tb_freq / HZ;
- 	tb_ticks_per_sec = ppc_tb_freq;
- 	tb_ticks_per_usec = ppc_tb_freq / 1000000;
-Index: b/arch/powerpc/kernel/entry_32.S
-===================================================================
---- a/arch/powerpc/kernel/entry_32.S	(revision 5607)
-+++ b/arch/powerpc/kernel/entry_32.S	(revision 5611)
-@@ -177,6 +177,12 @@
- 	addi	r12,r12,-1
- 	stw	r12,4(r11)
- #endif
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+	CURRENT_THREAD_INFO(r9, r1)
-+	tophys(r9, r9)
-+	ACCOUNT_CPU_USER_ENTRY(r9, r11, r12)
-+#endif
-+
- 	b	3f
- 
- 2:	/* if from kernel, check interrupted DOZE/NAP mode and
-@@ -406,6 +412,13 @@
- 	lwarx	r7,0,r1
- END_FTR_SECTION_IFSET(CPU_FTR_NEED_PAIRED_STWCX)
- 	stwcx.	r0,0,r1			/* to clear the reservation */
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+	andi.	r4,r8,MSR_PR
-+	beq	3f
-+	CURRENT_THREAD_INFO(r4, r1)
-+	ACCOUNT_CPU_USER_EXIT(r4, r5, r7)
-+3:
-+#endif
- 	lwz	r4,_LINK(r1)
- 	lwz	r5,_CCR(r1)
- 	mtlr	r4
-@@ -841,6 +854,10 @@
- 	andis.	r10,r0,DBCR0_IDM@h
- 	bnel-	load_dbcr0
- #endif
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+	CURRENT_THREAD_INFO(r9, r1)
-+	ACCOUNT_CPU_USER_EXIT(r9, r10, r11)
-+#endif
- 
- 	b	restore
- 
-Index: b/arch/powerpc/kernel/asm-offsets.c
-===================================================================
---- a/arch/powerpc/kernel/asm-offsets.c	(revision 5607)
-+++ b/arch/powerpc/kernel/asm-offsets.c	(revision 5611)
-@@ -167,6 +167,12 @@
- 	DEFINE(TI_PREEMPT, offsetof(struct thread_info, preempt_count));
- 	DEFINE(TI_TASK, offsetof(struct thread_info, task));
- 	DEFINE(TI_CPU, offsetof(struct thread_info, cpu));
-+#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(CONFIG_PPC32)
-+	DEFINE(TI_AC_STAMP, offsetof(struct thread_info, ac_stamp));
-+	DEFINE(TI_AC_LEAVE, offsetof(struct thread_info, ac_leave));
-+	DEFINE(TI_AC_STIME, offsetof(struct thread_info, ac_stime));
-+	DEFINE(TI_AC_UTIME, offsetof(struct thread_info, ac_utime));
-+#endif
- 
- #ifdef CONFIG_PPC64
- 	DEFINE(DCACHEL1LINESIZE, offsetof(struct ppc64_caches, dline_size));
-Index: b/arch/powerpc/include/asm/thread_info.h
-===================================================================
---- a/arch/powerpc/include/asm/thread_info.h	(revision 5607)
-+++ b/arch/powerpc/include/asm/thread_info.h	(revision 5611)
-@@ -43,6 +43,12 @@
- 	int		cpu;			/* cpu we're on */
- 	int		preempt_count;		/* 0 => preemptable,
- 						   <0 => BUG */
-+#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(CONFIG_PPC32)
-+	u32 ac_stamp;
-+	u32 ac_leave;
-+	u32 ac_stime;
-+	u32 ac_utime;
-+#endif
- 	struct restart_block restart_block;
- 	unsigned long	local_flags;		/* private flags for thread */
- 
-Index: b/arch/powerpc/include/asm/cputime.h
-===================================================================
---- a/arch/powerpc/include/asm/cputime.h	(revision 5607)
-+++ b/arch/powerpc/include/asm/cputime.h	(revision 5611)
-@@ -228,7 +228,11 @@
- 
- #define cputime64_to_clock_t(ct)	cputime_to_clock_t((cputime_t)(ct))
- 
-+#ifdef CONFIG_PPC64
- static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
-+#else
-+extern void arch_vtime_task_switch(struct task_struct *tsk);
-+#endif
- 
- #endif /* __KERNEL__ */
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
-Index: b/arch/powerpc/include/asm/ppc_asm.h
-===================================================================
---- a/arch/powerpc/include/asm/ppc_asm.h	(revision 5607)
-+++ b/arch/powerpc/include/asm/ppc_asm.h	(revision 5611)
-@@ -25,10 +25,16 @@
-  */
- 
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+#ifdef CONFIG_PPC64
- #define ACCOUNT_CPU_USER_ENTRY(ra, rb)
- #define ACCOUNT_CPU_USER_EXIT(ra, rb)
-+#else /* CONFIG_PPC64 */
-+#define ACCOUNT_CPU_USER_ENTRY(ti, ra, rb)
-+#define ACCOUNT_CPU_USER_EXIT(ti, ra, rb)
-+#endif /* CONFIG_PPC64 */
- #define ACCOUNT_STOLEN_TIME
--#else
-+#else /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
-+#ifdef CONFIG_PPC64
- #define ACCOUNT_CPU_USER_ENTRY(ra, rb)					\
- 	MFTB(ra);			/* get timebase */		\
- 	ld	rb,PACA_STARTTIME_USER(r13);				\
-@@ -68,7 +74,27 @@
- #define ACCOUNT_STOLEN_TIME
- 
- #endif /* CONFIG_PPC_SPLPAR */
-+#else /* CONFIG_PPC64 */
-+#define ACCOUNT_CPU_USER_ENTRY(ti, ra, rb)				\
-+	MFTB(ra);							\
-+	lwz rb, TI_AC_LEAVE(ti);					\
-+	stw ra, TI_AC_STAMP(ti);	/* AC_STAMP = NOW */		\
-+	subf rb, rb, ra;		/* R = NOW - AC_LEAVE */	\
-+	lwz ra, TI_AC_UTIME(ti);					\
-+	add ra, rb, ra;			/* AC_UTIME += R */		\
-+	stw ra, TI_AC_UTIME(ti);					\
- 
-+#define ACCOUNT_CPU_USER_EXIT(ti, ra, rb)				\
-+	MFTB(ra);							\
-+	lwz rb, TI_AC_STAMP(ti);					\
-+	stw ra, TI_AC_LEAVE(ti);					\
-+	subf rb, rb, ra;		/* R = NOW - AC_STAMP */	\
-+	lwz ra, TI_AC_STIME(ti);					\
-+	add ra, rb, ra;			/* AC_STIME += R */		\
-+	stw ra, TI_AC_STIME(ti);					\
-+
-+#endif /* CONFIG_PPC64 */
-+
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- /*
-Index: b/arch/powerpc/platforms/Kconfig.cputype
-===================================================================
---- a/arch/powerpc/platforms/Kconfig.cputype	(revision 5607)
-+++ b/arch/powerpc/platforms/Kconfig.cputype	(revision 5611)
-@@ -1,7 +1,6 @@
- config PPC64
- 	bool "64-bit kernel"
- 	default n
--	select HAVE_VIRT_CPU_ACCOUNTING
- 	help
- 	  This option selects whether a 32-bit or a 64-bit kernel
- 	  will be built.
+I think it will be better to have num-cs equal to the max slaves allowed and
+the property to indicate if decoder is present helps driver configure the
+register accordingly. (master->num_chipselect is written with "num-cs" value)
+
+For ex.,
+1. 4 slaves without decoder
+num-cs = <4>
+is-decoded-cs = <false>
+
+2. 4 slaves driven through 2 to 4 decoder:
+num-cs = <4>
+is-decoded-cs = <true>
+
+The other option is have num-cs reflect number of CS before decoder
+but the above option makes more sense as num-cs directly reflects
+the max valid slaves.
+
+>
+>> But yes, if the SoC only implements 2 CS, doesn't use decoder but
+>> if there is an erroneous input to set_cs for 4th slave, it would be a problem.
+>>
+>
+> Sure, that's an error condition though that should be caught by SPI
+> because master->num_chipselect would only be 2 right?
+>
+
+Yes.
+
+Regards,
+Harini
+
+> Regards,
+> Peter
+>
+>>>
+>>> I think num-cs has validity as the number of CS lines implemented in
+>>> the controller. For any given SoC, it's constant but could differ
+>>> between SoCs.
+>>>
+>>
+>> I dint consider that this property will be useful to SoC's implementing <4 CS;
+>> master->num_chipselect (when set to this property's value)
+>> will be used to check error conditions.
+>>
+>> Regards,
+>> Harini
