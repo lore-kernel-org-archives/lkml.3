@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaDGEL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 00:11:28 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:34250 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaDGELQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 00:11:16 -0400
+	id S1754787AbaDGEOr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 00:14:47 -0400
+Received: from imap.thunk.org ([74.207.234.97]:50932 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750711AbaDGEOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 00:14:41 -0400
+Date: Mon, 7 Apr 2014 00:14:31 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH] fs/ext4/extents_status.c: fix 64-bit number truncation
+ bug
+Message-ID: <20140407041431.GA8468@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Geert Uytterhoeven <geert@linux-m68k.org>,
+	Chen Gang <gang.chen.5i5j@gmail.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Guan Xuetao <gxt@mprc.pku.edu.cn>
+References: <53396AC1.10108@gmail.com>
+ <CAMuHMdVT9O8C0fhMbaqS2nB1jfLAZtanp6YGPU6Q-T5b7=n20Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1396773020.11763.17.camel@marge.simpson.net>
-References: <cover.1396599474.git.viresh.kumar@linaro.org>
-	<1396773020.11763.17.camel@marge.simpson.net>
-Date: Mon, 7 Apr 2014 09:41:14 +0530
-Message-ID: <CAKohpomW3jpQEqFxD3m_br8GchJyq9-KSxW2x7JLCRqDgf4SAg@mail.gmail.com>
-Subject: Re: [PATCH V2 0/8] cpusets: Isolate CPUs via sysfs using cpusets
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdVT9O8C0fhMbaqS2nB1jfLAZtanp6YGPU6Q-T5b7=n20Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+On Sun, Apr 06, 2014 at 03:39:09PM +0200, Geert Uytterhoeven wrote:
+> On Mon, Mar 31, 2014 at 3:16 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+> > '0x7FDEADBEEF' will be truncated to 32-bit number under unicore32. Need
+> > append 'ULL' for it.
+> >
+> > The related warning (with allmodconfig under unicore32):
+> >
+> >     CC [M]  fs/ext4/extents_status.o
+> >   fs/ext4/extents_status.c: In function ‘__es_remove_extent’:
+> >   fs/ext4/extents_status.c:813: warning: integer constant is too large for ‘long’ type
+> 
+> Thanks! This is failing on all 32-bit architectures.
 
-On 6 April 2014 14:00, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
-> I wonder if adding a quiesce switch is really necessary.
->
-> Seems to me that if you don't have load balancing turned off, you can't
-> be very concerned about perturbation, so this should be tied into the
-> load balancing on/off switch as an extension to isolating cores from the
-> #1 perturbation source, the scheduler.
+Yes, it's harmless (since we don't actually check the value anywhere;
+this is just so humans could easily spot bugs when debugging), but
+I'll make sure this gets queued for 3.15 fixes in the ext4 tree.
 
-Its more about not doing any background activities on these CPU which can
-be avoided. So, even if a add_timer() is issued from these isolated CPUs, it
-should goto the set chosen for doing background activity, unless add_timer_on()
-has been issued, in which case user wants that code to execute on the
-isolated core.
+Thanks!!
 
-Probably, yes, people would be disabling load_balancing between these
-cpusets to avoid migration of tasks to isolated core as well.. Atleast we
-are using it :)
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-> I also didn't notice a check for is_cpu_exclusive() at a glance, which
-> would be a bug, but one that would go away if this additional isolation
-> were coupled to the existing isolation switch.
-
-Yeah, there is no check for that. But I didn't got your point completely.
-Why do I need to check for exclusivity on the isolated CPUs? So, that
-same CPU isn't isolated as well as non-isolated on two separate sets?
-
-Thanks for your feedback.
-
---
-viresh
+						- Ted
