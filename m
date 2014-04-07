@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbaDGFqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 01:46:45 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:52787 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaDGFql (ORCPT
+	id S1754853AbaDGFsE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 01:48:04 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:33458 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754807AbaDGFsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 01:46:41 -0400
-Message-ID: <53423BB6.7010508@monstr.eu>
-Date: Mon, 07 Apr 2014 07:46:30 +0200
+	Mon, 7 Apr 2014 01:48:00 -0400
+Message-ID: <53423C0C.6050308@monstr.eu>
+Date: Mon, 07 Apr 2014 07:47:56 +0200
 From: Michal Simek <monstr@monstr.eu>
 Reply-To: monstr@monstr.eu
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
@@ -17,50 +17,53 @@ To: Soren Brinkmann <soren.brinkmann@xilinx.com>
 CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
         Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: Re: [PATCH v2 1/5] ARM: zynq: DT: Add 'clock-latency' property
-References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com> <1396653256-28397-2-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1396653256-28397-2-git-send-email-soren.brinkmann@xilinx.com>
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Harini Katakam <harinik@xilinx.com>, devicetree@vger.kernel.org,
+        Mike Looijmans <mike.looijmans@topic.nl>, Gerhard Sittig <gsi@denx.de>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 3/3] ARM: zynq: dt: Add I2C nodes to Zynq device tree
+References: <1396646876-27336-1-git-send-email-soren.brinkmann@xilinx.com> <1396646876-27336-3-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1396646876-27336-3-git-send-email-soren.brinkmann@xilinx.com>
 X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
  protocol="application/pgp-signature";
- boundary="9UtMLjXJhM7Hg9PdiTpC0VWpwCMi0HEOQ"
+ boundary="p8bsXLsKiuUrJUtiaswMo2LuPJXrHE5aa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---9UtMLjXJhM7Hg9PdiTpC0VWpwCMi0HEOQ
+--p8bsXLsKiuUrJUtiaswMo2LuPJXrHE5aa
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 04/05/2014 01:14 AM, Soren Brinkmann wrote:
-> Specify the 'clock-latency' property to avoid certain cpufreq governors=
-
-> from refusing to work with the following error:
->   ondemand governor failed, too long transition latency of HW, fallback=
- to performance governor
->=20
-> Reported-by: Mike Looijmans <mike.looijmans@topic.nl>
+On 04/04/2014 11:27 PM, Soren Brinkmann wrote:
 > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Tested-by: Mike Looijmans <mike.looijmans@topic.nl>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> Tested-by: Michal Simek <michal.simek@xilinx.com>
 > ---
-> This is a fix from our vendor tree
 >=20
+> Changes in v5:
+>  - use lower case hex digits in 'reg' property
+>=20
+> Changes in v4: None
+> Changes in v3: None
 > Changes in v2:
->  - This patch has been added
+>  - replace 'pmbus' with 'ti' in compatibility strings of UCD devices
 >=20
 > ---
->  arch/arm/boot/dts/zynq-7000.dtsi | 1 +
->  1 file changed, 1 insertion(+)
+>  arch/arm/boot/dts/zynq-7000.dtsi | 22 ++++++++++++
+>  arch/arm/boot/dts/zynq-zc702.dts | 76 ++++++++++++++++++++++++++++++++=
+++++++++
+>  arch/arm/boot/dts/zynq-zc706.dts | 68 ++++++++++++++++++++++++++++++++=
++++
+>  3 files changed, 166 insertions(+)
 
-Applied to zynq-dt.
+Applied to zynq-dt branch.
 
 Thanks,
 Michal
@@ -75,7 +78,7 @@ Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
---9UtMLjXJhM7Hg9PdiTpC0VWpwCMi0HEOQ
+--p8bsXLsKiuUrJUtiaswMo2LuPJXrHE5aa
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -84,9 +87,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.10 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iEYEARECAAYFAlNCO7cACgkQykllyylKDCGeAQCeKvbpUSMzF8u1c0peEOwBpe+I
-1WYAn0lClK852fpiNvEK5mVHIY4JiZ9A
-=Wakn
+iEYEARECAAYFAlNCPAwACgkQykllyylKDCFuIACfW6FjWlMzosUcfWOUH3s13ylR
+qD4AoJT9Jkx61X4OHweHaL4u5tX4Xkt8
+=hafe
 -----END PGP SIGNATURE-----
 
---9UtMLjXJhM7Hg9PdiTpC0VWpwCMi0HEOQ--
+--p8bsXLsKiuUrJUtiaswMo2LuPJXrHE5aa--
