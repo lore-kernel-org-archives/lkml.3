@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365AbaDGNOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:14:08 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:60892 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992AbaDGNOH (ORCPT
+	id S1755325AbaDGNPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:15:40 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:49790 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaDGNPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:14:07 -0400
+	Mon, 7 Apr 2014 09:15:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <1396339273-15904-1-git-send-email-tlinder@codeaurora.org>
-References: <1396339273-15904-1-git-send-email-tlinder@codeaurora.org>
-Date: Mon, 7 Apr 2014 15:14:05 +0200
-Message-ID: <CAFLxGvwXXx2q=yRW6agt5pjJkfnYB40j_u7udLP7yOSHP8eLmw@mail.gmail.com>
-Subject: Re: [RFC/PATCH] mtd: ubi: Test return value of __wl_get_peb
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140404234358.GE10275@thunk.org>
+References: <20140403191558.GA8745@thunk.org>
+	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
+	<20140404035308.GC2525@thunk.org>
+	<20140404134429.GB26806@quack.suse.cz>
+	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
+	<20140404234358.GE10275@thunk.org>
+Date: Mon, 7 Apr 2014 15:15:36 +0200
+Message-ID: <CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Theodore Ts'o" <tytso@mit.edu>, Miklos Szeredi <miklos@szeredi.hu>,
+        Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 10:01 AM, Tanya Brokhman <tlinder@codeaurora.org> wrote:
-> In case of an error (if there are not free PEB's for example),
-> __wl_get_peb will return a negative value. In order to prevent access
-> violation we need to test the returned value prior to using it later on.
+On Sat, Apr 5, 2014 at 1:43 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Fri, Apr 04, 2014 at 07:16:25PM +0200, Miklos Szeredi wrote:
+>>
+>> http://marc.info/?l=linux-kernel&m=139523745403081&w=2
 >
-> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+> I tried applying this patch on top of xfstests commit 3948694eb1, but
+> running on ext4.git's test branch, which has the your cross-rename
+> patches applied:
 >
-> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-> index 02317c1..457ead3 100644
-> --- a/drivers/mtd/ubi/wl.c
-> +++ b/drivers/mtd/ubi/wl.c
-> @@ -684,6 +684,9 @@ int ubi_wl_get_peb(struct ubi_device *ubi)
->         peb = __wl_get_peb(ubi);
->         spin_unlock(&ubi->wl_lock);
+> http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/commit/?h=test&id=b7bcc46d4f80139930c2e6bd04ff8ebbff121bc9
 >
-> +       if (peb < 0)
-> +               return peb;
-> +
->         err = ubi_self_check_all_ff(ubi, peb, ubi->vid_hdr_aloffset,
->                                     ubi->peb_size - ubi->vid_hdr_aloffset);
->         if (err) {
+> I see the following:
+>
+> BEGIN TEST: Ext4 4k block Fri Apr  4 23:21:50 UTC 2014
+> Device: /dev/vdb
+> mk2fs options: -q
+> mount options: -o block_validity
+> FSTYP         -- ext4
+> PLATFORM      -- Linux/i686 candygram 3.14.0-00061-gb7bcc46
+> MKFS_OPTIONS  -- -q /dev/vdc
+> MOUNT_OPTIONS -- -o acl,user_xattr -o block_validity /dev/vdc /vdc
+>
+> generic/323             [23:22:03] [23:22:04] [not run]
+>         generic/323 -- kernel doesn't support renameat2 syscall
+> generic/324             [23:22:04] [23:22:05] [not run]
+>         generic/324 -- kernel doesn't support renameat2 syscall
+> generic/325             [23:22:05] [23:22:06] [not run]
+>         generic/325 -- kernel doesn't support renameat2 syscall
+> Not run: generic/323 generic/324 generic/325
+>
+> Is there anything obvious that I might be doing wrong?
 
-Acked-by: Richard Weinberger <richard@nod.at>
+I only wired up the syscall for x86_64.   Who's responsible for adding
+all the syscall tables for the various architectures?
 
--- 
 Thanks,
-//richard
+Miklos
