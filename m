@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314AbaDGXF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 19:05:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60120 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197AbaDGXFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 19:05:24 -0400
-Date: Mon, 7 Apr 2014 18:02:18 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Apelete Seketeli <apelete@seketeli.net>, <linux-doc@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
-        David Fries <David@Fries.net>,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>
-Subject: Re: [RESEND PATCH v2] documentation: docbook: document process of
- writing an musb glue layer
-Message-ID: <20140407230218.GA28921@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140405183636.GO22445@amegan>
- <20140405184205.GP22445@amegan>
- <534322B9.30605@infradead.org>
+	id S1755856AbaDGXHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 19:07:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21382 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754044AbaDGXHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 19:07:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,813,1389772800"; 
+   d="scan'208";a="488819210"
+Date: Mon, 7 Apr 2014 13:42:21 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, tpowa@archlinux.org,
+        matt.fleming@intel.com, hpa@zytor.com
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+Message-ID: <20140407204221.GW32556@tassilo.jf.intel.com>
+References: <52E4CF03.8030208@archlinux.org>
+ <5339F739.2060207@archlinux.org>
+ <20140331233450.GI32556@tassilo.jf.intel.com>
+ <5339FC62.8060207@archlinux.org>
+ <20140405011332.GR32556@tassilo.jf.intel.com>
+ <5340134B.4010705@archlinux.org>
+ <20140407173016.GU32556@tassilo.jf.intel.com>
+ <5342E46B.4080603@archlinux.org>
+ <53430646.40507@archlinux.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <534322B9.30605@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53430646.40507@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 07, 2014 at 10:10:46PM +0200, Thomas Bächler wrote:
+> Am 07.04.2014 19:46, schrieb Thomas Bächler:
+> > Am 07.04.2014 19:30, schrieb Andi Kleen:
+> >>>> Do you have a specific config?
+> >>>> Specific compiler version?
+> >>>
+> >>> Using gcc 4.8 from Arch Linux with the configuration at [1] and Linux 3.14.
+> >>
+> >> I tested this configuration (with gcc 4.8 on FC20/19) and it loads
+> >> ext4 and all the other modules without any problems.
+> >>
+> >> Base tree: 
+> >>
+> >> commit e06df6a7eae1ab1ef4deb076aeeaed90e948e5c0
+> >> Merge: c0fc3cb 9dd721c
+> >> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> >> Date:   Mon Mar 31 12:34:49 2014 -0700
+> >>
+> >> Must be something really archlinux specific. Please do some debugging.
+> >> Also please double check that all your test procedures are correct.
+> > 
+> > Tetsuo was so kind to install Arch Linux and reproduce the exact
+> > procedure I use to create the kernel (which includes the automated
+> > creation of a pristine build environment) - his kernel booted just fine.
+> > I will do more tests today on two of my own computers to narrow this down.
+> 
+> I think I found out why nobody could reproduce the problem.
+> 
+> I did a few more tests and it turns out that the problem only occurs
+> when I boot the kernel with UEFI (using Gummiboot+EFISTUB). Now, except
+> for OVMF virtual machines, there are barely any 32 Bit UEFI machines
+> around, so nobody noticed. When I boot the kernel with 32 Bit BIOS, it
+> boots fine.
+> 
+> Just to clarify: As mentioned in my first mail, some symbols still get a
+> 0x0 CRC (which I still think is wrong), but the mismatch does not occur
+> in BIOS mode.
+> 
+> On x86_64, the problem does not occur at all.
 
-Hi,
+Thanks.
 
-On Mon, Apr 07, 2014 at 03:12:09PM -0700, Randy Dunlap wrote:
-> On 04/05/2014 11:42 AM, Apelete Seketeli wrote:
-> > Document the process of writing an musb glue layer by taking the
-> > Ingenic JZ4740 glue layer as an example, as it seems more simple than
-> > most glue layers due to the basic feature set of the JZ4740 USB device
-> > controller.
-> >=20
-> > Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
->=20
-> Hi,
->=20
-> You should be cc-ing the musb maintainer and the USB mailing list (so now=
- done).
->=20
-> Felipe should probably be the person to merge this unless he wants me
-> to do it...
+This sounds like the UEFI boot corrupts some memory? 
 
-I'll merge it, just resend once -rc1 is out. Thanks
+Copying some UEFI experts.
 
---=20
-balbi
+Maybe we need some CRC checksum checking in the kernel?
 
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-Andi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTQy56AAoJEIaOsuA1yqREf/IP/i0SKBtUeJznzQRZi+vx0NDW
-ADubTV5aP99z6rJzUyqGAJsKbUfkMKLH/EqwbTlSXXAQKsIPKGZzyHrmsspwpbdt
-Pm9YMgVhDtgiWvmq7LvjT/1eGsfdzgsSEMOTtC1gn7FZhNCrW/BIz49Qpg6bGltu
-bGqvW6UV8o7qIRaNe3TAWABFLvB0INIHrlZkfKU7EoEjFk0Xe8tgZ7E+VIFoHeqt
-xye4g7NHwFyJpMFGJFObM4VpA/gKhuippmcQVAMFy8UgNUP64bM7BbqiCY65bdlP
-99sWI2Dxqid7DX/XKqaT4B2nv8P2tP/7MAVzw2pZybedOne2CMMSc0U0J6+i2FU7
-CsXKz4WDsm/ZM+ZmkOOp2yT+XqfcmbkS3vto8aGOW5jynoVQiNN+vW1WZ/jE+rNw
-+hveGKNcaxEqQCIF1am2oFF+y3p9APwgnoeIIFqffuwrocR8Fhpx/H90PnJHUtJf
-xHuEgAQFGpeH4R3M1n0RLDj9E/iQ+/ftb9daIrpIHtRQlfwznMAGxie6jNonC0Ml
-AfG1Jw60nTZNolO/x7YL9UrTwjt+urYOaowIR631xXZNs46o0b8dBTlkygxD28JT
-rv8FeJEwz78OTzyRqued2JP6LuDxIcxIm/cC+aN7LLzWyHl0egcdJdIhFk2BlupA
-Ekf8NsLxbkBpPmSNIUrY
-=/+l/
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
+-- 
+ak@linux.intel.com -- Speaking for myself only
