@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaDGLef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 07:34:35 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:34436 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408AbaDGLeb (ORCPT
+	id S1755183AbaDGLhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 07:37:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59224 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274AbaDGLhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 07:34:31 -0400
-Date: Mon, 7 Apr 2014 13:33:40 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] leds: pwm: set polarity on non DT platforms
-Message-ID: <20140407113339.GD26985@ulmo>
-References: <1395081521-16568-1-git-send-email-alexandre.belloni@free-electrons.com>
- <CAK5ve-JU-XfX-wTnr72riWbnSfOcnofjsXpVuyweCndjBe=UgQ@mail.gmail.com>
- <20140318230946.GL12021@piout.net>
+	Mon, 7 Apr 2014 07:37:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
+Date: Mon, 07 Apr 2014 13:36:15 +0200
+Message-ID: <5183143.FxBNM0xTAV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com> <20140405001953.GE15806@google.com> <20140407083120.GE17163@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bajzpZikUji1w+G9"
-Content-Disposition: inline
-In-Reply-To: <20140318230946.GL12021@piout.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5Z/gPyNhDrVQE2p8dp1rU04SJtZR8ORfgF1PWO/t4v1
+ vusPMGq1a35Mw9jmmtjuPaMdT3UivzuPqUa+oF/xO2N46ZRsLC
+ Hq0vmikQGWItrv2g5Y4ANYM/98RpSYFKLXmu4dP+n/eQPFQemi
+ WUOVtHmDrLHi67fgzmzcq1UgC2RJ989Ooww5OSW14kEwxysvhC
+ ZHhW2HOhVPLMmJAftwKpGcEft2FFQT0fuRORRnxLiQTTd61xKr
+ 2WjmzrrzB8l1+1sX3Or1hQwmkMTvSv+RkSzmvghhdq1FjdGjt1
+ 3z+E0U4RmZ2voPa9lLohlYmxwDUw0H2W/N6O7BT80FycMoen7B
+ ny+vw6ONEYDzmfPFmk34=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 07 April 2014 09:31:20 Liviu Dudau wrote:
+> On Sat, Apr 05, 2014 at 01:19:53AM +0100, Bjorn Helgaas wrote:
+>
+> > Host bridges on x86 could have MMIO apertures that turn CPU memory accesses
+> > into PCI port accesses.  We could implement any number of I/O port spaces
+> > this way, by making the kernel inb()/outb()/etc. interfaces smart enough to
+> > use the memory-mapped space instead of (or in addition to) the
+> > INB/OUTB/etc. instructions.
 
---bajzpZikUji1w+G9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+PowerPC actually has this already, as CONFIG_PPC_INDIRECT_PIO meaning that
+access to PIO registers is bus specific, and there is also CONFIG_PPC_INDIRECT_MMIO
+for the case where MMIO access is not native.
+ 
+> Right, sorry for my ignorance then: how does *currently* the device driver do
+> the I/O transfer transparent of the implementation mechanism? Or they have
+> intimate knowledge of wether the device is behind a host bridge and can do MMIO
+> or is on an ISA or CF bus and then it needs INB/OUTB ? And if we make inb/outb
+> smarter, does that mean that we need to change the drivers?
 
-On Wed, Mar 19, 2014 at 12:09:46AM +0100, Alexandre Belloni wrote:
-> On 18/03/2014 at 16:02:51 -0700, Bryan Wu wrote :
-> > On Mon, Mar 17, 2014 at 11:38 AM, Alexandre Belloni
-> > <alexandre.belloni@free-electrons.com> wrote:
-> > > Set inversed polarity when .active_low is set in the platform_data. W=
-ith device
-> > > tree, this is taken care of by of_pwm_xlate_with_flags(), called from
-> > > of_pwm_get().
-> > >
-> > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.co=
-m>
-> > > ---
-> > >  drivers/leds/leds-pwm.c | 5 +++++
-> > >  1 file changed, 5 insertions(+)
-> > >
-> > > diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-> > > index 605047428b5a..09681556a6aa 100644
-> > > --- a/drivers/leds/leds-pwm.c
-> > > +++ b/drivers/leds/leds-pwm.c
-> > > @@ -180,6 +180,11 @@ static int led_pwm_probe(struct platform_device =
-*pdev)
-> > >                         led_dat->cdev.max_brightness =3D cur_led->max=
-_brightness;
-> > >                         led_dat->cdev.flags |=3D LED_CORE_SUSPENDRESU=
-ME;
-> > >
-> > > +                       if (led_dat->active_low)
-> >=20
-> > Why .active_low needs to inverse PWM polarity? In
-> > of_pwm_xlate_with_flags(), it checked with PWM_POLARITY_INVERSED in
-> > args. Moreover in of_pwm_simple_xlate() and pxa_pwm_of_xlate(), we
-> > didn't inverse PWM polarity at all.
-> >=20
->=20
-> Yeah, exactly, there is no issue when using device tree. What I'm trying
-> to fix here is th non-DT case where of_pwm_xlate_with_flags() is not
-> called.
+The idea of that would be to not change drivers.
 
-The goal here would be to move to a common interface, irrespective of
-whether DT or platform code was used to instantiate a device. So like I
-mentioned in a reply to another patch of yours, I think a better
-approach would be to provide a mechanism to specify the PWMs polarity
-within the PWM lookup table.
+My preference here would be to only have a generic function for those
+architectures that have the simple MMIO access all the time.
 
-Thierry
+> > ia64 does this (see arch/ia64/include/asm/io.h for a little description)
+> > and I think maybe one or two other arches have something similar.
+> > 
+> > > Introduce a pci_register_io_range() helper function that can be used
+> > > by the architecture code to keep track of the I/O ranges described by the
+> > > PCI bindings. If the PCI_IOBASE macro is not defined that signals
+> > > lack of support for PCI and we return an error.
+> > 
+> > I don't quite see how you intend to use this, because this series doesn't
+> > include any non-stub implementation of pci_register_io_range().
+> > 
+> > Is this anything like the ia64 strategy I mentioned above?  If so, it would
+> > be really nice to unify some of this stuff.
+> 
+> After discussions with Arnd and Catalin I know have a new series that moves
+> some of the code from arm64 series into this one. I am putting it through
+> testing right know as I am going to have to depend on another series that
+> makes PCI_IOBASE defined only for architectures that do MMIO in order to
+> choose the correct default implementation for these functions. My hope is
+> that I will be able to send the series this week.
 
---bajzpZikUji1w+G9
-Content-Type: application/pgp-signature
+I think migrating other architectures to use the same code should be
+a separate effort from adding a generic implementation that can be
+used by arm64. It's probably a good idea to have patches to convert
+arm32 and/or microblaze.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTQo0TAAoJEN0jrNd/PrOhwX8P/3N/GKO1GdYLwiZYWqqs/hYf
-OIzCiMDWRNRV/V6oLPL2+NEOWLZ0VqhZVREEXuuSUVGX6FsZ/JKne3tZxF++70h7
-vrSwAtDKYdhSpZFAKXYSTUuaNh+rSZekDnVxLEZjayoyx//65VyomiFQOnLNmAzb
-bN3g+UFMcdcCUmlsDWq8YUyHsxuG6X4ijohoMTYE1s60GJvT/+LHPbTDz/2rtPW5
-kLgwwAA1h6EgT69pTcFF743KKqAvfTUUE2TBlxKpu49PekbNeiQBsk/o+sCguU3j
-lYX80EEbx1cPUkt5m7op8ZtQYo7+ZqRQFw33zToVzMTfChHvh+5UGABNv/m/jAwX
-6keUYAAmBvLf8o1Kes5nM+7Hh8lSOvEciaCVQQCoQyHtj/9FuzR9exTylOG98qzl
-BTYaLGYZ2G3iEPu+p41vYumMlBv6XgUkoixa/qvlVciKttxNgby/9RS6JxNd1CCF
-N3o0wWCf/iu8Vsjj48s/zqAqL5WUzYJyhn6kVYZsXnhfTISbg58umEQZAcNzikNX
-aSx5RQ7XE5DmOLgcOatpFyV0ua47L5Q33HYSc2OQFmF4R343MtAqrF3PKVLwO0+D
-2slaDkJoiWMn8r8ZAX/V/vQtwiY+G56BVPLmTOzfhwN1u83xJYatc4Ox901baote
-hYL2xqrq1jjmGChAcJEV
-=Avbn
------END PGP SIGNATURE-----
-
---bajzpZikUji1w+G9--
+	Arnd
