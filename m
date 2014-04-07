@@ -1,93 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbaDGPD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:03:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48015 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaDGPDx (ORCPT
+	id S1754874AbaDGPE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:04:58 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:39789 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaDGPEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:03:53 -0400
-Date: Mon, 7 Apr 2014 17:03:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michele Ballabio <barra_cuda@katamail.com>
-Cc: linux-kernel@vger.kernel.org, toralf.foerster@gmx.de, fweisbec@gmail.com,
-        mingo@kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-Message-ID: <20140407150337.GO10526@twins.programming.kicks-ass.net>
-References: <5341707F.5000406@katamail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5341707F.5000406@katamail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 7 Apr 2014 11:04:55 -0400
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH v4 00/16] perf, persistent: Add persistent events
+Date: Mon,  7 Apr 2014 17:04:22 +0200
+Message-Id: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 06, 2014 at 05:19:27PM +0200, Michele Ballabio wrote:
-> Toralf Förster reported this in
->   http://article.gmane.org/gmane.linux.kernel/1662567
->   http://article.gmane.org/gmane.linux.kernel/1658422
->   http://article.gmane.org/gmane.linux.kernel/1657962
-> 
->   "The issue happens here at a 32 bit stable Gentoo Linux if
->    I try to start a KVM image. Kernels 3.12.X works fine,
->    kernel >= v3.13 will hang shortly after I started the image
->    with the virtual-manager. The last syslog messages are
->    something like:
->    Feb 28 16:22:00 n22 kernel: INFO: rcu_sched detected stalls
->        on CPUs/tasks: {} (detected by 2, t=60002 jiffies,
->        g=14689, c=14688, q=21051)
->    Feb 28 16:22:00 n22 kernel: INFO: Stall ended before state
->        dump start"
-> 
-> He correctly pointed out that the bisection blamed the merge
-> commit 37bf06375c90a42fe07b9bebdb07bc316ae5a0ce
-> "Merge tag 'v3.12-rc4' into sched/core".
-> 
-> This bug is obviously caused by at least two patches, one
-> on each side of the merge, that only when combined together
-> (at that merge point) cause the bug in kvm. By rebasing
-> the "sched/core" branch on "master" before the merge and
-> going on with the bisection, I found commit
-> 3e8e42c69bb7d9fc12ebc23ff308e8523a2a59a0
-> "sched: Revert need_resched() to look at TIF_NEED_RESCHED"
-> as one of the causes. The other patch that contributes to the
-> bug is commit ded797547548a5b8e7b92383a41e4c0e6b0ecb7f
-> "irq: Force hardirq exit's softirq processing on its own stack".
-> 
-> Reverting either one of them solves the problem reported with kvm,
-> but revert is probably not the correct answer.
-> 
-> I wonder if the solution is as simple as this:
-> 
-> --->8---
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 0af5250..f3b985d 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -126,6 +126,7 @@ config X86
->  	select RTC_LIB
->  	select HAVE_DEBUG_STACKOVERFLOW
->  	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
-> +	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_32
->  	select HAVE_CC_STACKPROTECTOR
+Jean Pihet <jean.pihet@linaro.org>:
+- In order to restart the discussion on the topic, here is a rebased
+ version of Robert's latest patches (v3) on acme/perf/core.
+ It has been compiled and lightly tested on ARM64.
 
-Ohh ahh.. shiney!
+- From the latest discussion on ML the ioctls are renamed from
+ PERF_EVENT_IOC_ATTACH/DETACH to PERF_EVENT_IOC_CLAIM/UNCLAIM.
 
-So what I suspect at this point is that because i386 and x86_64 have a
-difference in current_thread_info() (i386 is stack based), we end up
-setting the TIF_NEED_RESCHED bit on the wrong stack.
 
-Now I have some vague memories of propagating the TIF flags on stack
-switch, but I cannot remember what arch we did that for. Let me stare at
-this a little more.
+Robert Richter <rric@kernel.org>:
+This patch set implements the necessary kernel changes for persistent
+events.
 
-Also, IFF this is the case, then the fingered patch above (and your
-suggested 'fix') aren't the real curlpit/cure but simply make it
-more/less likely to happen.
+Persistent events run standalone in the system without the need of a
+controlling process that holds an event's file descriptor. The events
+are always enabled and collect data samples in a ring buffer.
+Processes may connect to existing persistent events using the
+perf_event_open() syscall. For this the syscall must be configured
+using the new PERF_TYPE_PERSISTENT event type and a unique event
+identifier specified in attr.config. The id is propagated in sysfs or
+using ioctl (see below).
 
-Now, Steve had a patch somewhere that would make i386 use per-cpu
-variables for current_thread_info() just like x86_64 already does I
-think. Let me go find them too.
+Persistent event buffers may be accessed with mmap() in the same way
+as for any other event. Since the buffers may be used by multiple
+processes at the same time, there is only read-only access to them.
+Currently there is only support for per-cpu events, thus root access
+is needed too.
+
+Persistent events are visible in sysfs. They are added or removed
+dynamically. With the information in sysfs userland knows about how to
+setup the perf_event attribute of a persistent event. Since a
+persistent event always has the persistent flag set, a way is needed
+to express this in sysfs. A new syntax is used for this. With
+'attr<num>:<mask>' any bit in the attribute structure may be set in a
+similar way as using 'config<num>', but <num> is an index that points
+to the u64 value to change within the attribute.
+
+For persistent events the persistent flag (bit 24 of flag field in
+struct perf_event_attr) needs to be set which is expressed in sysfs
+with "attr5:24". E.g. the mce_record event is described in sysfs as
+follows:
+
+ /sys/bus/event_source/devices/persistent/events/mce_record:persistent,config=106
+ /sys/bus/event_source/devices/persistent/format/persistent:attr5:24
+
+Note that perf tools need to support the 'attr<num>' syntax that is
+added in a separate patch set. With it we are able to run perf tool
+commands to read persistent events, e.g.:
+
+ # perf record -e persistent/mce_record/ sleep 10
+ # perf top -e persistent/mce_record/
+
+In general the new syntax is flexible to describe with sysfs any event
+to be setup by perf tools.
+
+There are ioctl functions to control persistent events that can be
+used to detach or attach an event to or from a process. The
+PERF_EVENT_IOC_UNCLAIM ioctl call makes an event persistent. The
+perf_event_open() syscall can be used to re-open the event by any
+process. The PERF_EVENT_IOC_CLAIM ioctl attaches the event again so
+that it is removed after closing the event's fd.
+
+The patches base on the originally work from Borislav Petkov.
+
+This version 3 of the patch set is a complete rework of the code.
+There are the following major changes:
+
+ * new event type PERF_TYPE_PERSISTENT introduced,
+
+ * support for all type of events,
+
+ * unique event ids,
+
+ * improvements in reference counting and locking,
+
+ * ioctl functions are added to control persistency,
+
+ * the sysfs implementation now uses variable list size.
+
+This should address most issues discussed during last review of
+version 2. The following is unresolved yet and can be added later on
+top of this patches, if necessary:
+
+ * support for per-task events (also allowing non-root access),
+
+ * creation of persistent events for disabled cpus,
+
+ * make event persistent with already open (mmap'ed) buffers,
+
+ * make event persistent while creating it.
+
+First patches contain some rework of the perf mmap code to reuse it
+for persistent events.
+
+Also note that patch 12 (ioctl functions to control persistency) is
+RFC and untested. A perf tools implementation for this is missing and
+some ideas are needed how this could be integrated, esp. in something
+like perf trace or so.
+
+All v3 patches can be found here:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git persistent-v3
+
+Note: I will resent the perf tools patch necessary to use persistent
+events.
+
+-Robert
+
+
+Borislav Petkov (1):
+  mce, x86: Enable persistent events
+
+Robert Richter (15):
+  perf, mmap: Factor out ring_buffer_detach_all()
+  perf, mmap: Factor out try_get_event()/put_event()
+  perf, mmap: Factor out perf_alloc/free_rb()
+  perf, mmap: Factor out perf_get_fd()
+  perf: Add persistent events
+  perf, persistent: Implementing a persistent pmu
+  perf, persistent: Exposing persistent events using sysfs
+  perf, persistent: Use unique event ids
+  perf, persistent: Implement reference counter for events
+  perf, persistent: Dynamically resize list of sysfs entries
+  perf, persistent: ioctl functions to control persistency
+  perf tools: Rename flex conditions to avoid name conflicts
+  perf tools: Modify event parser to update event attribute by index
+  perf tools: Add attr<num> syntax to event parser
+  perf tools: Retry mapping buffers readonly on EACCES
+
+ .../testing/sysfs-bus-event_source-devices-format  |  43 +-
+ arch/x86/kernel/cpu/mcheck/mce.c                   |  19 +
+ include/linux/perf_event.h                         |  12 +-
+ include/uapi/linux/perf_event.h                    |   6 +-
+ kernel/events/Makefile                             |   2 +-
+ kernel/events/core.c                               | 214 +++++---
+ kernel/events/internal.h                           |  20 +
+ kernel/events/persistent.c                         | 563 +++++++++++++++++++++
+ tools/perf/builtin-record.c                        |  11 +-
+ tools/perf/builtin-top.c                           |   8 +-
+ tools/perf/perf.h                                  |   1 +
+ tools/perf/tests/parse-events.c                    |  12 +-
+ tools/perf/util/parse-events.c                     |  59 +--
+ tools/perf/util/parse-events.h                     |  12 +-
+ tools/perf/util/parse-events.l                     |  58 ++-
+ tools/perf/util/parse-events.y                     |  24 +-
+ tools/perf/util/pmu.c                              |  32 +-
+ tools/perf/util/pmu.h                              |   9 +-
+ tools/perf/util/pmu.l                              |   1 +
+ tools/perf/util/pmu.y                              |  18 +-
+ 20 files changed, 911 insertions(+), 213 deletions(-)
+ create mode 100644 kernel/events/persistent.c
+
+-- 
+1.7.11.7
+
