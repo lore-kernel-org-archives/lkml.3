@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaDGQTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 12:19:17 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:61986 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057AbaDGQTM (ORCPT
+	id S1754723AbaDGQ2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 12:28:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36308 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162AbaDGQ2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 12:19:12 -0400
-Date: Mon, 7 Apr 2014 20:19:10 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
- bits PMD and PTE levels
-Message-ID: <20140407161910.GJ1444@moon>
-References: <1396883443-11696-1-git-send-email-mgorman@suse.de>
- <1396883443-11696-3-git-send-email-mgorman@suse.de>
- <5342C517.2020305@citrix.com>
- <20140407154935.GD7292@suse.de>
+	Mon, 7 Apr 2014 12:28:50 -0400
+Date: Mon, 7 Apr 2014 09:31:19 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Christoph Jaeger <christophjaeger@linux.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: mcb: fix memory leak in chameleon_parse_cells()
+ error path
+Message-ID: <20140407163119.GB5658@kroah.com>
+References: <1396638298-3173-1-git-send-email-christophjaeger@linux.com>
+ <20140407140206.GA23383@jtlinux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140407154935.GD7292@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140407140206.GA23383@jtlinux>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 04:49:35PM +0100, Mel Gorman wrote:
-> On Mon, Apr 07, 2014 at 04:32:39PM +0100, David Vrabel wrote:
-> > On 07/04/14 16:10, Mel Gorman wrote:
-> > > _PAGE_NUMA is currently an alias of _PROT_PROTNONE to trap NUMA hinting
-> > > faults. As the bit is shared care is taken that _PAGE_NUMA is only used in
-> > > places where _PAGE_PROTNONE could not reach but this still causes problems
-> > > on Xen and conceptually difficult.
-> > 
-> > The problem with Xen guests occurred because mprotect() /was/ confusing
-> > PROTNONE mappings with _PAGE_NUMA and clearing the non-existant NUMA hints.
+On Mon, Apr 07, 2014 at 04:02:06PM +0200, Johannes Thumshirn wrote:
+> On Fri, Apr 04, 2014 at 09:04:58PM +0200, Christoph Jaeger wrote:
+> > chameleon_parse_cells() bails out if chameleon descriptor type is
+> > invalid but does not free the storage 'header' points to.
+> >
+> > Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+> > ---
+> >  drivers/mcb/mcb-parse.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/mcb/mcb-parse.c b/drivers/mcb/mcb-parse.c
+> > index d1278b5..0049269 100644
+> > --- a/drivers/mcb/mcb-parse.c
+> > +++ b/drivers/mcb/mcb-parse.c
+> > @@ -141,6 +141,7 @@ int chameleon_parse_cells(struct mcb_bus *bus, phys_addr_t mapbase,
+> >  		default:
+> >  			pr_err("Invalid chameleon descriptor type 0x%x\n",
+> >  				dtype);
+> > +			kfree(header);
+> >  			return -EINVAL;
+> >  		}
+> >  		num_cells++;
+> > --
+> > 1.9.0
+> >
 > 
-> I didn't bother spelling it out in case I gave the impression that I was
-> blaming Xen for the problem.  As the bit is now changes, does it help
-> the Xen problem or cause another collision of some sort? There is no
-> guarantee _PAGE_NUMA will remain as bit 62 but at worst it'll use bit 11
-> and NUMA_BALANCING will depend in !KMEMCHECK.
+> *Doh*
+> 
+> Thanks for the patch.
+> 
+> @Greg, how should be the process here? Should I collect MCB related patches
+> somewhere and forward them to you, or do you pick them up yourself?
 
-Fwiw, we're using bit 11 for soft-dirty tracking, so i really hope worst case
-never happen. (At the moment I'm trying to figure out if with this set
-it would be possible to clean up ugly macros in pgoff_to_pte for 2 level pages).
+Please collect them up and forward them on to me, that's what a
+maintainer's job is :)
+
+thanks,
+
+greg k-h
