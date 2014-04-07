@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313AbaDGNYm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:24:42 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:34209 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790AbaDGNYk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:24:40 -0400
-Date: Mon, 7 Apr 2014 17:24:37 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [rfc 0/3] Cleaning up soft-dirty bit usage
-Message-ID: <20140407132437.GH1444@moon>
-References: <20140403184844.260532690@openvz.org>
- <20140407130701.GA16677@node.dhcp.inet.fi>
+	id S1755340AbaDGNZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:25:42 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:53394 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755182AbaDGNZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 09:25:39 -0400
+Date: Mon, 7 Apr 2014 15:25:30 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Message-ID: <20140407132530.GF3339@pcnci.linuxbox.cz>
+References: <20140310145530.GA27230@pcnci.linuxbox.cz>
+ <20140329121550.GA5878@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+ <20140331120102.GY3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
+ <20140402135812.GI3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB112D@HASMSX106.ger.corp.intel.com>
+ <20140402143635.GA4410@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB7151@HASMSX106.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lJyeR2ag8/NQ+I8N"
 Content-Disposition: inline
-In-Reply-To: <20140407130701.GA16677@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AFB7151@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-04-07_02
+X-Milter-Copy-Status: I
+X-Milter-Copy-Status: I
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 04:07:01PM +0300, Kirill A. Shutemov wrote:
-> On Thu, Apr 03, 2014 at 10:48:44PM +0400, Cyrill Gorcunov wrote:
-> > Hi! I've been trying to clean up soft-dirty bit usage. I can't cleanup
-> > "ridiculous macros in pgtable-2level.h" completely because I need to
-> > define _PAGE_FILE,_PAGE_PROTNONE,_PAGE_NUMA bits in sequence manner
-> > like
-> > 
-> > #define _PAGE_BIT_FILE		(_PAGE_BIT_PRESENT + 1)	/* _PAGE_BIT_RW */
-> > #define _PAGE_BIT_NUMA		(_PAGE_BIT_PRESENT + 2)	/* _PAGE_BIT_USER */
-> > #define _PAGE_BIT_PROTNONE	(_PAGE_BIT_PRESENT + 3)	/* _PAGE_BIT_PWT */
-> > 
-> > which can't be done right now because numa code needs to save original
-> > pte bits for example in __split_huge_page_map, if I'm not missing something
-> > obvious.
-> 
-> Sorry, I didn't get this. How __split_huge_page_map() does depend on pte
-> bits order?
 
-__split_huge_page_map
-  ...
-  for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-    ...
-    here we modify with pte bits
-    entry = pte_mknuma(entry); --> clean _PAGE_PRESENT and set _PAGE_NUMA
+--lJyeR2ag8/NQ+I8N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    pte bits must remain valid and meaningful, for example we might
-    have set _PAGE_RW here
+Hi Tomas,
 
-> >     is it intentional, and @prot_numa argument is supposed to be passed
-> >     with prot_numa = 1 one day, or it's leftover from old times?
-> 
-> I see one more user of change_protection() -- change_prot_numa(), which
-> has .prot_numa == 1.
+yes, I just checked source rpm and it's applied..
 
-Yeah, thanks, managed to miss this.
+here are the dumps:
+
+[root@k310test ~]# hexdump -s 0x48 -n 4 /proc/bus/pci/00/16.0
+0000048 a301 3900                             =20
+000004c
+[root@k310test ~]# hexdump -s 0x40 -n 4 /proc/bus/pci/00/16.0
+0000040 0345 000f                             =20
+0000044
+
+BR
+
+nik
+
+
+> Are use you have the patch applied, because the driver just should not lo=
+ad.=20
+> If any case  you dump the firmware status registers"
+> At offset 0x40 and 0x48 in PCI config space=20
+> sudo hexdump -s 0x48 -n 4 /proc/bus/pci/00/16.0
+> sudo hexdump -s 0x40 -n 4 /proc/bus/pci/00/16.0
+>=20
+> Thanks
+> Tomas
+>=20
+>=20
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--lJyeR2ag8/NQ+I8N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlNCp0oACgkQ3xdJJrLygV5CdgCfeDsOcWWz1A2kbXq0IAKTopvf
+LJIAnizUeo1BlqlE+BpJr/I+sv6N8tLX
+=xqeM
+-----END PGP SIGNATURE-----
+
+--lJyeR2ag8/NQ+I8N--
