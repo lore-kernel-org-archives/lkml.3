@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663AbaDGTS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 15:18:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57353 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310AbaDGTS5 (ORCPT
+	id S1755694AbaDGTVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 15:21:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38837 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaDGTVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 15:18:57 -0400
-Date: Mon, 07 Apr 2014 15:18:54 -0400 (EDT)
-Message-Id: <20140407.151854.411047851818388937.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: sasha.levin@oracle.com, netdev@vger.kernel.org,
-        linux-decnet-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        davej@redhat.com
-Subject: Re: [PATCH] decnet: fix possible NULL deref in dnet_select_source()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1396821554.12330.51.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <5341A3C1.9060101@oracle.com>
-	<1396821554.12330.51.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Apr 2014 15:21:19 -0400
+Date: Mon, 7 Apr 2014 12:23:47 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ken Cox <jkc@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, devel@driverdev.osuosl.org,
+        sparmaintainer@unisys.com, linux-kernel@vger.kernel.org,
+        Jet Chen <jet.chen@intel.com>
+Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
+Message-ID: <20140407192347.GA8272@kroah.com>
+References: <20140407111725.GC25152@localhost>
+ <20140407140958.GA7346@kroah.com>
+ <5342B525.80407@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5342B525.80407@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sun, 06 Apr 2014 14:59:14 -0700
-
-> From: Eric Dumazet <edumazet@google.com>
+On Mon, Apr 07, 2014 at 09:24:37AM -0500, Ken Cox wrote:
 > 
-> dnet_select_source() should make sure dn_ptr is not NULL.
-> 
-> While looking at this decnet code, I believe I found a device
-> reference leak, lets fix it as well.
->  
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> ---
-> It seems this bug is very old, no recent change is involved.
+> On 04/07/2014 09:09 AM, Greg Kroah-Hartman wrote:
+> >On Mon, Apr 07, 2014 at 07:17:25PM +0800, Fengguang Wu wrote:
+> >>Hi Ken,
+> >>
+> >>I got the below dmesg and the first bad commit is
+> >>
+> >>git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
+> >>
+> >>commit 12e364b9f08aa335dc7716ce74113e834c993765
+> >>Author:     Ken Cox <jkc@redhat.com>
+> >>AuthorDate: Tue Mar 4 07:58:07 2014 -0600
+> >>Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>CommitDate: Tue Mar 4 16:58:21 2014 -0800
+> >>
+> >>     staging: visorchipset driver to provide registration and other services
+> >I think Sasha has already sent a fix to resolve this issue that I'll be
+> >sending to Linus in a day or so.
+> >
+> >Ken, is Sasha's patch going to resolve this issue as well?  It looks
+> >like people haven't tested what happens when the module is loaded
+> >without the hardware present in the system :(
+> You are exactly right.  The driver needs to check for hardware early on
+> before trying to use it.  Unfortunately, Sasha's patch will not resolve this
+> one.  I'll work with Ben Romer to get a patch out ASAP.
 
-The callers work hard to ensure this.
+Wait, in looking at this closer, I don't see any of the "normal"
+hardware checks to determine that this really is a valid piece of
+hardware present, before it starts to just go and initialize a whole
+bunch of things (sysfs busses, proc files and directories, and other
+things.)
 
-Analyzing all call sites:
+That's not ok, and it's obvious it's starting to affect people's work
+systems.
 
-1) __dn_fib_res_prefsrc() uses the FIB entry device pointer, we should not
-   be adding FIB entries pointing to devices which do not have their
-   decnet private initialized yet.
+How about I just mark the whole thing BROKEN for now, disabling the
+build, until "correct" hardware probing can be added to the driver, so
+no one else gets hurt by this?
 
-2) dn_route_output_slow()
+thanks,
 
-   The paths leading to the dnet_select_address() call(s) check if
-   dev_out->dn_ptr is not NULL, except when using loopback.
-
-In some other paths the device comes from neigh->dev, from which the
-'neigh' was looked up in dn_neigh_table.  There should not be neighbour
-entries in this table pointing to devices which do not have their
-decnet private setup yet.
-
-And in the loopback case, it is the decnet stack's responsibility to
-make sure ->dn_ptr is setup properly, else it should fail the module
-load and stack initialization.
-
-I think there is some core fundamental issue here, and just adding
-a NULL check to dnet_select_source() is just papering around the issue.
-
-Please look closer at the stack trace, this code, and my analysis
-above to figure out what's really going on so we can fix this properly.
-
-Thanks.
+greg k-h
