@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165AbaDGKuP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 06:50:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57333 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642AbaDGKuK (ORCPT
+	id S1755107AbaDGKye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 06:54:34 -0400
+Received: from [217.156.133.130] ([217.156.133.130]:26981 "EHLO
+	imgpgp01.kl.imgtec.org" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754699AbaDGKyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 06:50:10 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <cl@linux-foundation.org>, <penberg@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH] slub: fix memcg_propagate_slab_attrs
-Date: Mon, 7 Apr 2014 14:50:07 +0400
-Message-ID: <1396867807-22824-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 7 Apr 2014 06:54:31 -0400
+X-PGP-Universal: processed;
+	by imgpgp01.kl.imgtec.org on Mon, 07 Apr 2014 11:54:19 +0100
+Message-ID: <534283D3.7060704@imgtec.com>
+Date: Mon, 7 Apr 2014 11:54:11 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Rob Herring <robherring2@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh@kernel.org>, Vineet Gupta <vgupta@synopsys.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        <linux-metag@vger.kernel.org>, <linux-mips@linux-mips.org>,
+        <linux@openrisc.net>, <linux-xtensa@linux-xtensa.org>
+Subject: Re: [PATCH 08/20] of/fdt: consolidate built-in dtb section variables
+References: <1396563423-30893-1-git-send-email-robherring2@gmail.com> <1396563423-30893-9-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1396563423-30893-9-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="Gfk1QLSHjtOWmUr7AwUXJUmxWIMf6JPRk"
+X-Originating-IP: [192.168.154.65]
+X-ESG-ENCRYPT-TAG: ea208f3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After creating a cache for a memcg we should initialize its sysfs attrs
-with the values from its parent. That's what memcg_propagate_slab_attrs
-is for. Currently it's broken - we clearly muddled root-vs-memcg caches
-there. Let's fix it up.
+--Gfk1QLSHjtOWmUr7AwUXJUmxWIMf6JPRk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slub.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+On 03/04/14 23:16, Rob Herring wrote:
+> From: Rob Herring <robh@kernel.org>
+>=20
+> Unify the various architectures __dtb_start and __dtb_end definitions
+> moving them into of_fdt.h.
+>=20
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Jonas Bonn <jonas@southpole.se>
+> Cc: Chris Zankel <chris@zankel.net>
+> Cc: Max Filippov <jcmvbkbc@gmail.com>
+> Cc: linux-metag@vger.kernel.org
+> Cc: linux-mips@linux-mips.org
+> Cc: linux@lists.openrisc.net
+> Cc: linux-xtensa@linux-xtensa.org
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 09660b9ff5bd..9fc144f9a542 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5070,15 +5070,18 @@ static void memcg_propagate_slab_attrs(struct kmem_cache *s)
- #ifdef CONFIG_MEMCG_KMEM
- 	int i;
- 	char *buffer = NULL;
-+	struct kmem_cache *root_cache;
- 
--	if (!is_root_cache(s))
-+	if (is_root_cache(s))
- 		return;
- 
-+	root_cache = s->memcg_params->root_cache;
-+
- 	/*
- 	 * This mean this cache had no attribute written. Therefore, no point
- 	 * in copying default values around
- 	 */
--	if (!s->max_attr_size)
-+	if (!root_cache->max_attr_size)
- 		return;
- 
- 	for (i = 0; i < ARRAY_SIZE(slab_attrs); i++) {
-@@ -5100,7 +5103,7 @@ static void memcg_propagate_slab_attrs(struct kmem_cache *s)
- 		 */
- 		if (buffer)
- 			buf = buffer;
--		else if (s->max_attr_size < ARRAY_SIZE(mbuf))
-+		else if (root_cache->max_attr_size < ARRAY_SIZE(mbuf))
- 			buf = mbuf;
- 		else {
- 			buffer = (char *) get_zeroed_page(GFP_KERNEL);
-@@ -5109,7 +5112,7 @@ static void memcg_propagate_slab_attrs(struct kmem_cache *s)
- 			buf = buffer;
- 		}
- 
--		attr->show(s->memcg_params->root_cache, buf);
-+		attr->show(root_cache, buf);
- 		attr->store(s, buf, strlen(buf));
- 	}
- 
--- 
-1.7.10.4
+Acked-by: James Hogan <james.hogan@imgtec.com> [metag]
 
+Cheers
+James
+
+
+--Gfk1QLSHjtOWmUr7AwUXJUmxWIMf6JPRk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTQoPaAAoJEGwLaZPeOHZ6+toQAIb0ewv1g3ZgJoFKpR2ZwIHe
+kqRjmitkiyUKh/agMjq2xW5wE1L9Rnxm4wToqS3BBcOJV4Rg+90Hm8+dIgZbPRam
+hiNT1E8oyTuHfjEcJdGTHmCn2gvfyYKyuf68PQ6mTLVRTmizcWXI3uS6CVaq98Gg
+19ulvfjhxOA0aakdisvnhhW8h0ADqYtGv3wn2vE7CevE9JtK8T5qFNzaCgSPhPL4
+phe06ApG1utiZ3XQO1zSheO5amnjPCytNHG+l+hRfQgmtxad0cs6/Ba66Nak36WL
+8M5aja6uQkZ+5XroX2T3dkcBSpMwenCsX9fYAuui0Gjmlsv+8k/C4tGG4d0MTNG2
+Saj5yWxd4LcyfnWsRQIezEpJUCIViwCrfRDlppFSVaUCx1gHBrSG+4zPLuumdURB
+I5qDhk7Q1tZgJb3Z5GBCW1TZLPM6VAkWyVvOHHlnbnVPekFG1wp2DBYGYyIoapSc
+gG5vvACxIjBDrgK5WlSBQaD+l7m6d7TUhQAljHYJmmMReBmyefgltl2PNtIAtk8A
+rQ1diw3ZkryOg5kWowsL99/iH+KCAwp4eIlgfEMFfHULnTldAPhQNnSXer3Kn+yj
+Sp82NNjRiZCcdVcX9NkdEcjpaSpphMAL6papiS6F6baCCEdOcb4cBJzr1NIWDJUZ
+lIHd9h8T/MMB6Ls2DJyx
+=Qpb9
+-----END PGP SIGNATURE-----
+
+--Gfk1QLSHjtOWmUr7AwUXJUmxWIMf6JPRk--
