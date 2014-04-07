@@ -1,72 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451AbaDGPF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 11:05:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14862 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755333AbaDGPFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 11:05:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,810,1389772800"; 
-   d="scan'208";a="515880490"
-Date: Mon, 7 Apr 2014 18:11:08 +0300
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: "Du, Wenkai" <wenkai.du@intel.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller
- enable
-Message-ID: <20140407151107.GL19349@intel.com>
-References: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70E1F@ORSMSX109.amr.corp.intel.com>
- <20140404181613.GB19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
- <20140404184232.GC19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
- <20140405061316.GF19349@intel.com>
- <20140406185818.3aaca03d@alan.etchedpixels.co.uk>
- <20140407090403.GG19349@intel.com>
- <20140407154252.6b8f0f7e@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140407154252.6b8f0f7e@alan.etchedpixels.co.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755557AbaDGPHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 11:07:06 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:48394 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414AbaDGPF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 11:05:26 -0400
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>
+Cc: Robert Richter <robert.richter@linaro.org>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH 13/16] perf tools: Rename flex conditions to avoid name conflicts
+Date: Mon,  7 Apr 2014 17:04:35 +0200
+Message-Id: <1396883078-25320-14-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 03:42:52PM +0100, One Thousand Gnomes wrote:
-> > I had to check BYT specs about that and I couldn't find if it does
-> > posted-writes. 
-> 
-> Then I would assume it does unless you can find a hardware engineer to
-> sign a statement in blood to that effect 8)
+From: Robert Richter <robert.richter@linaro.org>
 
-Fair enough.
+These define's may cause conflicts with other definitions:
 
-> > Actually the following patch should fix the problem as well. Just move the
-> > HW enable to happen last. That way we can make sure that there is a valid
-> > interrupt mask programmed before the controller is enabled.
-> 
-> This fixes the init case, it doesn't fix the question about returning
-> from the IRQ before the mask write takes effect and thus taking another
-> interrupt.
+ #define INITIAL 0
+ #define mem 1
+ #define config 2
+ #define event 3
 
-Do you think we can fix it with adding a dummy read right after write to
-the mask register, like the snippet below?
+Prefix them with cond_* to avoid this.
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 14c4b30d4ccc..ff9090381d8b 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -535,6 +535,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
- 		intr_mask = 0;
+Signed-off-by: Robert Richter <robert.richter@linaro.org>
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+---
+ tools/perf/util/parse-events.l | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..a5808d1 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -69,9 +69,9 @@ static int term(yyscan_t scanner, int type)
  
- 	dw_writel(dev, intr_mask,  DW_IC_INTR_MASK);
-+	dw_readl(dev, DW_IC_INTR_MASK);
+ %}
+ 
+-%x mem
+-%s config
+-%x event
++%x cond_mem
++%s cond_config
++%x cond_event
+ 
+ group		[^,{}/]*[{][^}]*[}][^,{}/]*
+ event_pmu	[^,{}/]+[/][^/]*[/][^,{}/]*
+@@ -95,9 +95,9 @@ modifier_bp	[rwx]{1,3}
+ 		start_token = parse_events_get_extra(yyscanner);
+ 
+ 		if (start_token == PE_START_TERMS)
+-			BEGIN(config);
++			BEGIN(cond_config);
+ 		else if (start_token == PE_START_EVENTS)
+-			BEGIN(event);
++			BEGIN(cond_event);
+ 
+ 		if (start_token) {
+ 			parse_events_set_extra(NULL, yyscanner);
+@@ -106,7 +106,7 @@ modifier_bp	[rwx]{1,3}
+          }
+ %}
+ 
+-<event>{
++<cond_event>{
+ 
+ {group}		{
+ 			BEGIN(INITIAL); yyless(0);
+@@ -126,7 +126,7 @@ modifier_bp	[rwx]{1,3}
+ 
  }
  
- static void
+-<config>{
++<cond_config>{
+ config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
+ config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
+ config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
+@@ -138,7 +138,7 @@ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE
+ {name_minus}		{ return str(yyscanner, PE_NAME); }
+ }
+ 
+-<mem>{
++<cond_mem>{
+ {modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
+ :			{ return ':'; }
+ {num_dec}		{ return value(yyscanner, 10); }
+@@ -146,7 +146,7 @@ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE
+ 	/*
+ 	 * We need to separate 'mem:' scanner part, in order to get specific
+ 	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
+-	 * and we'd need to parse it manually. During the escape from <mem>
++	 * and we'd need to parse it manually. During the escape from <cond_mem>
+ 	 * state we need to put the escaping char back, so we dont miss it.
+ 	 */
+ .			{ unput(*yytext); BEGIN(INITIAL); }
+@@ -193,18 +193,18 @@ speculative-read|speculative-load	|
+ refs|Reference|ops|access		|
+ misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
+ 
+-mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
++mem:			{ BEGIN(cond_mem); return PE_PREFIX_MEM; }
+ r{num_raw_hex}		{ return raw(yyscanner); }
+ {num_dec}		{ return value(yyscanner, 10); }
+ {num_hex}		{ return value(yyscanner, 16); }
+ 
+ {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+ {name}			{ return str(yyscanner, PE_NAME); }
+-"/"			{ BEGIN(config); return '/'; }
++"/"			{ BEGIN(cond_config); return '/'; }
+ -			{ return '-'; }
+-,			{ BEGIN(event); return ','; }
++,			{ BEGIN(cond_event); return ','; }
+ :			{ return ':'; }
+-"{"			{ BEGIN(event); return '{'; }
++"{"			{ BEGIN(cond_event); return '{'; }
+ "}"			{ return '}'; }
+ =			{ return '='; }
+ \n			{ }
+-- 
+1.7.11.7
+
