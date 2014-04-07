@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbaDGNqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 09:46:16 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:51885 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274AbaDGNqM (ORCPT
+	id S1755323AbaDGNrU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 09:47:20 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:59495 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754760AbaDGNrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 09:46:12 -0400
+	Mon, 7 Apr 2014 09:47:17 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 7 Apr 2014 21:46:54 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>, <kernel@pengutronix.de>
+Subject: Re: [PATCH] imx-drm: imx-drm-core: Fix imx_drm_encoder_get_mux_id
+Message-ID: <20140407134649.GA3860@dragon>
+References: <1396858956-7096-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1396834881.11513.41.camel@deadeye.wl.decadent.org.uk>
-References: <lsq.1396827348.486893332@decadent.org.uk> <1396834881.11513.41.camel@deadeye.wl.decadent.org.uk>
-From: Raphael Geissert <geissert@debian.org>
-Date: Mon, 7 Apr 2014 15:45:51 +0200
-X-Google-Sender-Auth: Csz0SputLN0Pn7_1-e9a3vmC-JM
-Message-ID: <CAA7hUgEiAtb_R3_ODpXVgVSVoQvREChjPCL6GyyVTF8VXiYNyg@mail.gmail.com>
-Subject: Re: [PATCH 3.2 17/18] cifs: ensure that uncached writes handle
- unmapped areas correctly
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Pavel Shilovsky <piastry@etersoft.ru>, 741958@bugs.debian.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1396858956-7096-1-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Apr 07, 2014 at 10:22:36AM +0200, Philipp Zabel wrote:
+> The decoder mux id is equal to the port id of the encoder's input port
+> that is connected to the given crtc, not to the endpoint id (which is
+> arbitrary and usually zero).
+> 
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 
-On 7 April 2014 03:41, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Mon, 2014-04-07 at 00:35 +0100, Ben Hutchings wrote:
->> 3.2.57-rc1 review patch.  If anyone has any objections, please let me know.
-> [...]
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-[...]
-> +               /*
-> +                * i + 1 now represents the number of pages we actually used in
-> +                * the copy phase above.
-> +                */
-> +               npages = min(npages, i + 1);
+It fixes a color corruption issue on my dual display case (LVDS + HDMI).
 
-I'm having trouble understanding why min() is needed here. It
-shouldn't harm either, but I find it confusing.
+Tested-by: Shawn Guo <shawn.guo@freescale.com>
 
-Cheers,
--- 
-Raphael Geissert - Debian Developer
-www.debian.org - get.debian.net
+Shawn
+
+> ---
+>  drivers/staging/imx-drm/imx-drm-core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+> index 4144a75..bc7f8bd 100644
+> --- a/drivers/staging/imx-drm/imx-drm-core.c
+> +++ b/drivers/staging/imx-drm/imx-drm-core.c
+> @@ -517,7 +517,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
+>  		of_node_put(port);
+>  		if (port == imx_crtc->port) {
+>  			ret = of_graph_parse_endpoint(ep, &endpoint);
+> -			return ret ? ret : endpoint.id;
+> +			return ret ? ret : endpoint.port;
+>  		}
+>  	} while (ep);
+>  
+> -- 
+> 1.9.1
+> 
+
