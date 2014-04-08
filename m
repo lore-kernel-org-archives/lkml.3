@@ -1,115 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849AbaDHUbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 16:31:38 -0400
-Received: from mout.gmx.net ([212.227.15.19]:56083 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756207AbaDHUbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 16:31:36 -0400
-Message-ID: <53445BEA.1060702@gmx.de>
-Date: Tue, 08 Apr 2014 22:28:26 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Michele Ballabio <barra_cuda@katamail.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-References: <5341707F.5000406@katamail.com> <20140407150337.GO10526@twins.programming.kicks-ass.net> <20140407150705.GB13658@twins.programming.kicks-ass.net> <5342EB78.3060002@gmx.de> <20140407185658.GK11096@twins.programming.kicks-ass.net> <20140408122128.GC13658@twins.programming.kicks-ass.net>
-In-Reply-To: <20140408122128.GC13658@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:GMC+NsjYx7ElxZwg8DJ8mrlieA7OJDSRSehLYoM4YiJrQet+BFK
- 0Qn0GWxKVGjl+NUJ6DAA9rOUw9iNPE4b84n4eOiq1KlJKVCdceH62rgB1PeFnQtTKNTaFYb
- d2nn3ZzN3KiJ35z2hHLfQE2fGo+tmOHW630jPBEtyLMX1AR/jnkJn3AdRlJwg2T0wnIhUsw
- IVsy+0tXHNCNN+xkhWPHg==
+	id S1757047AbaDHUg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 16:36:58 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58076 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756586AbaDHUg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 16:36:56 -0400
+Subject: Re: [RFC PATCH 1/6] uprobes/x86: Emulate unconditional
+ rip-relative jmp's
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140406201617.GA493@redhat.com>
+References: <20140406201617.GA493@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Apr 2014 13:36:51 -0700
+Message-ID: <1396989411.5056.16.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040820-0928-0000-0000-000001175B06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
+> 0xeb and 0xe9. Anything else?
 
-On 04/08/2014 02:21 PM, Peter Zijlstra wrote:
-> On Mon, Apr 07, 2014 at 08:56:58PM +0200, Peter Zijlstra wrote:
->> On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
->> 
->>> v3.14-10353-g2b3a8fd works fine AFAICS (BTW the fix is stable
->>> material, right ?)
->> 
->> I'm fairly sure its not; its a rather invasive series; see:
->> 
->> 2432e1364bbe x86: Nuke the supervisor_stack field in i386
->> thread_info b807902a88c4 x86: Nuke GET_THREAD_INFO_WITH_ESP()
->> macro for i386 0788aa6a23cb x86: Prepare removal of previous_esp
->> from i386 thread_info structure 198d208df437 x86: Keep
->> thread_info on thread stack in x86_32
->> 
->> Let me see if there's anything 'simpler' we can stuff in .13+
-> 
-> OK.. so could someone test the below patch to see if that makes
-> things work for .13 and .14?
-> 
-patch applied on 3.1.3.9 and 3.14.0 it fixed the issue AFAICT
+For unconditional rip-relative jumps, yes, I'm pretty sure that's it.
 
-> --- arch/x86/include/asm/preempt.h | 11 +++++++++++ 
-> include/linux/preempt.h        |  4 ++++ 
-> include/linux/thread_info.h    |  2 -- 3 files changed, 15
-> insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/preempt.h
-> b/arch/x86/include/asm/preempt.h index c8b051933b1b..7ada46d8d4d8
-> 100644 --- a/arch/x86/include/asm/preempt.h +++
-> b/arch/x86/include/asm/preempt.h @@ -5,6 +5,17 @@ #include
-> <asm/percpu.h> #include <linux/thread_info.h>
+> TODO: move ->fixup into the union along with rip_rela_target_address.
 > 
-> +#ifdef CONFIG_X86_32 +/* + * i386's current_thread_info() depends
-> on ESP and for interrupt/exception + * stacks this doesn't yield
-> the actual task thread_info. + * + * We hard rely on the fact that
-> all the TIF_NEED_RESCHED bits are + * the same, therefore use the
-> slightly more expensive version below. + */ +#define
-> tif_need_resched() test_tsk_thread_flag(current, TIF_NEED_RESCHED) 
-> +#endif + DECLARE_PER_CPU(int, __preempt_count);
+> Reported-by: Jonathan Lebon <jlebon@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  arch/x86/include/asm/uprobes.h |    8 +++++++-
+>  arch/x86/kernel/uprobes.c      |   40 ++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 47 insertions(+), 1 deletions(-)
 > 
-> /* diff --git a/include/linux/preempt.h b/include/linux/preempt.h 
-> index de83b4eb1642..891c8f8b52fe 100644 ---
-> a/include/linux/preempt.h +++ b/include/linux/preempt.h @@ -17,6
-> +17,10 @@
+> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+> index 9f8210b..cca62c5 100644
+> --- a/arch/x86/include/asm/uprobes.h
+> +++ b/arch/x86/include/asm/uprobes.h
+> @@ -44,9 +44,15 @@ struct arch_uprobe {
+>  	u16				fixups;
+>  	const struct uprobe_xol_ops	*ops;
 > 
-> #include <asm/preempt.h>
+> +	union {
+>  #ifdef CONFIG_X86_64
+> -	unsigned long			rip_rela_target_address;
+> +		unsigned long			rip_rela_target_address;
+>  #endif
+> +		struct {
+> +			s32	disp;
+> +			u8	ilen;
+> +		}				ttt;
+
+Are you planning to stick with ttt as the name/prefix for all this
+jump-emulation code?  Seems like you could come up with something more
+descriptive without adding a lot of characters.
+ 
+> +	};
+>  };
 > 
-> +#ifndef tif_need_resched +#define tif_need_resched()
-> test_thread_flag(TIF_NEED_RESCHED) +#endif + #if
-> defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER) 
-> extern void preempt_count_add(int val); extern void
-> preempt_count_sub(int val); diff --git
-> a/include/linux/thread_info.h b/include/linux/thread_info.h index
-> fddbe2023a5d..a629e4b23217 100644 ---
-> a/include/linux/thread_info.h +++ b/include/linux/thread_info.h @@
-> -118,8 +118,6 @@ static inline __deprecated void
-> set_need_resched(void) */ }
+>  struct arch_uprobe_task {
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index 1ea7e1a..32ab147 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -466,6 +466,42 @@ static struct uprobe_xol_ops default_xol_ops = {
+>  	.post_xol = default_post_xol_op,
+>  };
 > 
-> -#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED) - 
-> #if defined TIF_RESTORE_SIGMASK && !defined
-> HAVE_SET_RESTORE_SIGMASK /* * An arch can define its own version of
-> set_restore_sigmask() to get the
+> +static bool ttt_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> +{
+> +	regs->ip += auprobe->ttt.ilen + auprobe->ttt.disp;
+> +	return true;
+> +}
+> +
+> +static struct uprobe_xol_ops ttt_xol_ops = {
+> +	.emulate  = ttt_emulate_op,
+> +};
+> +
+> +static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+> +{
+> +
+> +	switch (OPCODE1(insn)) {
+> +	case 0xeb:	/* jmp 8 */
+> +	case 0xe9:	/* jmp 32 */
+> +		break;
+> +	default:
+> +		return -ENOSYS;
+
+-ENOSYS looks like an error return, as opposed to what it is, the normal
+return when the probed instruction is something other than a jump.  This
+gets more bewildering as you add patches and this switch grows and gets
+more complicated.  Add a comment here?
+
+> +	}
+> +
+> +	/* has the side-effect of processing the entire instruction */
+> +	insn_get_length(insn);
+> +	if (WARN_ON_ONCE(!insn_complete(insn)))
+> +		return -ENOEXEC;
+> +
+> +	auprobe->ttt.ilen = insn->length;
+> +	auprobe->ttt.disp = insn->moffset1.value;
+> +	/* so far we assume that it fits into ->moffset1 */
+> +	if (WARN_ON_ONCE(insn->moffset2.nbytes))
+> +		return -ENOEXEC;
+
+s/moffset1/immediate/ -- which you've already addressed.
+
+> +
+> +	auprobe->ops = &ttt_xol_ops;
+> +	return 0;
+> +}
+> +
+>  /**
+>   * arch_uprobe_analyze_insn - instruction analysis including validity and fixups.
+>   * @mm: the probed address space.
+> @@ -483,6 +519,10 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  	if (ret)
+>  		return ret;
 > 
+> +	ret = ttt_setup_xol_ops(auprobe, &insn);
+> +	if (ret == 0 || ret != ENOSYS)
+
+This looks wrong in a couple of ways:
+a. I think you intend to compare against -ENOSYS, not ENOSYS.
+b. Given the (ret != [-]ENOSYS) test, the  (ret == 0) test is
+superfluous.
 
 
-- -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+> +		return ret;
+> +
+>  	/*
+>  	 * Figure out which fixups arch_uprobe_post_xol() will need to perform,
+>  	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
 
-iF0EAREIAAYFAlNEW+EACgkQxOrN3gB26U5RkAD4ysUp9CrCajM7zXLsdWRLTZFi
-oX0lYgrKo/gCrcS9UwD/ZdaRPlP6vTKApfxQ7F48KTTA+tNcyTD4xSyCdwI8l0Q=
-=WeKZ
------END PGP SIGNATURE-----
+Jim
+
