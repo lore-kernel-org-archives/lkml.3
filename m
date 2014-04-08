@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbaDHL7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 07:59:03 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57433 "HELO
+	id S1756714AbaDHL71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:59:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55571 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756551AbaDHL7A (ORCPT
+	with SMTP id S1756227AbaDHL7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 07:59:00 -0400
+	Tue, 8 Apr 2014 07:59:25 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, l.majewski@samsung.com
-Subject: Re: [PATCH V2 1/4] cpufreq: ia64: don't set .driver_data to index
-Date: Tue, 08 Apr 2014 14:14:59 +0200
-Message-ID: <2698524.P4nWCs3Rzq@vostro.rjw.lan>
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: Re: [PATCH] PM / Wakeup: Correct presence vs. emptiness of wakeup_* attributes
+Date: Tue, 08 Apr 2014 14:15:24 +0200
+Message-ID: <8123548.YsDpP5cfSC@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
-References: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
+In-Reply-To: <1396001714-17824-1-git-send-email-geert@linux-m68k.org>
+References: <1396001714-17824-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,38 +25,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 28, 2014 07:11:44 PM Viresh Kumar wrote:
-> .driver_data field is only required to be filled if drivers want to preserve
-> some data in there which they can use according to the value of .frequency
-> field. But this driver isn't using this field at all, but just setting it equal
-> to the index value. Which isn't required. Fix it.
+On Friday, March 28, 2014 11:15:14 AM Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@glider.be>
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> According to the documentation, the various wakeup_* attributes in sysfs
+> are not present if the device is not enabled to wake up the system.
+> 
+> This is not correct: the attributes are not present if the device is not
+> capable to wake up the system. They are empty if the device is not enabled
+> to wake up the system.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-All four queued up for the next pull request, thanks!
+Queued up for the next PM pull request, thanks!
 
 > ---
-> V1->V2: No Change
+>  Documentation/ABI/testing/sysfs-devices-power |   46 ++++++++++++++++---------
+>  1 file changed, 30 insertions(+), 16 deletions(-)
 > 
-> Hi Rafael,
-> 
-> To avoid confusion I am sending all related cpufreq patches again.
-> 
->  drivers/cpufreq/ia64-acpi-cpufreq.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/ia64-acpi-cpufreq.c b/drivers/cpufreq/ia64-acpi-cpufreq.c
-> index a22b5d1..beb191b 100644
-> --- a/drivers/cpufreq/ia64-acpi-cpufreq.c
-> +++ b/drivers/cpufreq/ia64-acpi-cpufreq.c
-> @@ -275,7 +275,6 @@ acpi_cpufreq_cpu_init (
->  	/* table init */
->  	for (i = 0; i <= data->acpi_data.state_count; i++)
->  	{
-> -		data->freq_table[i].driver_data = i;
->  		if (i < data->acpi_data.state_count) {
->  			data->freq_table[i].frequency =
->  			      data->acpi_data.states[i].core_frequency * 1000;
+> diff --git a/Documentation/ABI/testing/sysfs-devices-power b/Documentation/ABI/testing/sysfs-devices-power
+> index efe449bdf811..39b7b39b352e 100644
+> --- a/Documentation/ABI/testing/sysfs-devices-power
+> +++ b/Documentation/ABI/testing/sysfs-devices-power
+> @@ -83,8 +83,10 @@ Contact:	Rafael J. Wysocki <rjw@rjwysocki.net>
+>  Description:
+>  		The /sys/devices/.../wakeup_count attribute contains the number
+>  		of signaled wakeup events associated with the device.  This
+> -		attribute is read-only.  If the device is not enabled to wake up
+> +		attribute is read-only.  If the device is not capable to wake up
+>  		the system from sleep states, this attribute is not present.
+> +		If the device is not enabled to wake up the system from sleep
+> +		states, this attribute is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_active_count
+>  Date:		September 2010
+> @@ -93,8 +95,10 @@ Description:
+>  		The /sys/devices/.../wakeup_active_count attribute contains the
+>  		number of times the processing of wakeup events associated with
+>  		the device was completed (at the kernel level).  This attribute
+> -		is read-only.  If the device is not enabled to wake up the
+> -		system from sleep states, this attribute is not present.
+> +		is read-only.  If the device is not capable to wake up the
+> +		system from sleep states, this attribute is not present.  If
+> +		the device is not enabled to wake up the system from sleep
+> +		states, this attribute is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_abort_count
+>  Date:		February 2012
+> @@ -104,8 +108,9 @@ Description:
+>  		number of times the processing of a wakeup event associated with
+>  		the device might have aborted system transition into a sleep
+>  		state in progress.  This attribute is read-only.  If the device
+> -		is not enabled to wake up the system from sleep states, this
+> -		attribute is not present.
+> +		is not capable to wake up the system from sleep states, this
+> +		attribute is not present.  If the device is not enabled to wake
+> +		up the system from sleep states, this attribute is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_expire_count
+>  Date:		February 2012
+> @@ -114,8 +119,10 @@ Description:
+>  		The /sys/devices/.../wakeup_expire_count attribute contains the
+>  		number of times a wakeup event associated with the device has
+>  		been reported with a timeout that expired.  This attribute is
+> -		read-only.  If the device is not enabled to wake up the system
+> -		from sleep states, this attribute is not present.
+> +		read-only.  If the device is not capable to wake up the system
+> +		from sleep states, this attribute is not present.  If the
+> +		device is not enabled to wake up the system from sleep states,
+> +		this attribute is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_active
+>  Date:		September 2010
+> @@ -124,8 +131,10 @@ Description:
+>  		The /sys/devices/.../wakeup_active attribute contains either 1,
+>  		or 0, depending on whether or not a wakeup event associated with
+>  		the device is being processed (1).  This attribute is read-only.
+> -		If the device is not enabled to wake up the system from sleep
+> -		states, this attribute is not present.
+> +		If the device is not capable to wake up the system from sleep
+> +		states, this attribute is not present.  If the device is not
+> +		enabled to wake up the system from sleep states, this attribute
+> +		is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_total_time_ms
+>  Date:		September 2010
+> @@ -134,8 +143,9 @@ Description:
+>  		The /sys/devices/.../wakeup_total_time_ms attribute contains
+>  		the total time of processing wakeup events associated with the
+>  		device, in milliseconds.  This attribute is read-only.  If the
+> -		device is not enabled to wake up the system from sleep states,
+> -		this attribute is not present.
+> +		device is not capable to wake up the system from sleep states,
+> +		this attribute is not present.  If the device is not enabled to
+> +		wake up the system from sleep states, this attribute is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_max_time_ms
+>  Date:		September 2010
+> @@ -144,8 +154,10 @@ Description:
+>  		The /sys/devices/.../wakeup_max_time_ms attribute contains
+>  		the maximum time of processing a single wakeup event associated
+>  		with the device, in milliseconds.  This attribute is read-only.
+> -		If the device is not enabled to wake up the system from sleep
+> -		states, this attribute is not present.
+> +		If the device is not capable to wake up the system from sleep
+> +		states, this attribute is not present.  If the device is not
+> +		enabled to wake up the system from sleep states, this attribute
+> +		is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_last_time_ms
+>  Date:		September 2010
+> @@ -156,7 +168,8 @@ Description:
+>  		signaling the last wakeup event associated with the device, in
+>  		milliseconds.  This attribute is read-only.  If the device is
+>  		not enabled to wake up the system from sleep states, this
+> -		attribute is not present.
+> +		attribute is not present.  If the device is not enabled to wake
+> +		up the system from sleep states, this attribute is empty.
+>  
+>  What:		/sys/devices/.../power/wakeup_prevent_sleep_time_ms
+>  Date:		February 2012
+> @@ -165,9 +178,10 @@ Description:
+>  		The /sys/devices/.../wakeup_prevent_sleep_time_ms attribute
+>  		contains the total time the device has been preventing
+>  		opportunistic transitions to sleep states from occurring.
+> -		This attribute is read-only.  If the device is not enabled to
+> +		This attribute is read-only.  If the device is not capable to
+>  		wake up the system from sleep states, this attribute is not
+> -		present.
+> +		present.  If the device is not enabled to wake up the system
+> +		from sleep states, this attribute is empty.
+>  
+>  What:		/sys/devices/.../power/autosuspend_delay_ms
+>  Date:		September 2010
 > 
 
 -- 
