@@ -1,90 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246AbaDHO7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:59:25 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:11593 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757071AbaDHO7Y (ORCPT
+	id S1757275AbaDHPBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:01:23 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:59961 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756780AbaDHPBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:59:24 -0400
-Date: Tue, 8 Apr 2014 10:59:21 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: fweisbec@gmail.com, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ftrace: ftrace_bug, ftrace failed to modify nva3_ram_init
-Message-ID: <20140408105921.0e62da8f@gandalf.local.home>
-In-Reply-To: <53440730.3070507@oracle.com>
-References: <53440730.3070507@oracle.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Tue, 8 Apr 2014 11:01:20 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: pankaj.dubey@samsung.com, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v3] mfd: syscon: Support early initialization
+Date: Tue,  8 Apr 2014 17:00:57 +0200
+Message-Id: <3eb785d83c406f4a57508dc03610b05492e12bfd.1396969250.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-13126-1396969257-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Apr 2014 10:26:56 -0400
-Sasha Levin <sasha.levin@oracle.com> wrote:
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following:
-> 
-> [ 2983.109380] WARNING: CPU: 0 PID: 744 at kernel/trace/ftrace.c:1704 ftrace_bug+0xb0/0x280()
-> [ 2983.110893] Modules linked in:
-> [ 2983.111439] CPU: 0 PID: 744 Comm: trinity-main Tainted: G        W     3.14.0-next-20140407-sasha-00023-gd35b0d6 #382
+--=_mimegpg-monstr-desktop-13126-1396969257-0001
 
-What was the warning before this?
+Some platforms need to get system controller
+ready as soon as possible.
+The patch provides early_syscon_initialization
+which create early mapping for all syscon compatible
+devices in early_syscon_probe.
+Regmap is get via syscon_early_regmap_lookup_by_phandle()
 
-> [ 2983.112845]  0000000000000009 ffff88002c4e3b88 ffffffffa252ee51 0000000000002420
-> [ 2983.113993]  0000000000000000 ffff88002c4e3bc8 ffffffff9f15a2dc ffffffff9fffffc0
-> [ 2983.115134]  ffff88018aaad530 ffffffffa0000000 000000000000ad53 ffffffffa6486e10
-> [ 2983.116221] Call Trace:
-> [ 2983.116603] dump_stack (lib/dump_stack.c:52)
-> [ 2983.117306] warn_slowpath_common (kernel/panic.c:419)
-> [ 2983.118252] ? nva3_ram_prog (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:318)
-> [ 2983.119091] ? nva3_ram_tidy (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:326)
-> [ 2983.119836] ? __fentry__ (arch/x86/kernel/entry_64.S:106)
-> [ 2983.121379] warn_slowpath_null (kernel/panic.c:454)
-> [ 2983.122635] ftrace_bug (kernel/trace/ftrace.c:1704 (discriminator 3))
-> [ 2983.123688] ftrace_replace_code (arch/x86/kernel/ftrace.c:625 (discriminator 3))
-> [ 2983.124938] ftrace_modify_all_code (kernel/trace/ftrace.c:2011)
-> [ 2983.126208] arch_ftrace_update_code (arch/x86/include/asm/atomic.h:103 arch/x86/kernel/ftrace.c:680)
-> [ 2983.127613] ftrace_run_update_code (kernel/trace/ftrace.c:2088)
-> [ 2983.128540] ftrace_startup_enable (kernel/trace/ftrace.c:2114)
-> [ 2983.129392] ftrace_startup (kernel/trace/ftrace.c:2146)
-> [ 2983.130679] register_ftrace_function (kernel/trace/ftrace.c:4864)
-> [ 2983.131667] perf_ftrace_event_register (kernel/trace/trace_event_perf.c:356)
-> [ 2983.132590] perf_trace_init (kernel/trace/trace_event_perf.c:187 kernel/trace/trace_event_perf.c:206)
-> [ 2983.133377] ? __lock_is_held (kernel/locking/lockdep.c:3516)
-> [ 2983.134181] perf_tp_event_init (kernel/events/core.c:5937)
-> [ 2983.135043] perf_init_event (kernel/events/core.c:6598)
-> [ 2983.135882] ? perf_pmu_unregister (kernel/events/core.c:6577)
-> [ 2983.136803] perf_event_alloc (kernel/events/core.c:6754)
-> [ 2983.137831] SYSC_perf_event_open (kernel/events/core.c:7062)
-> [ 2983.138798] ? preempt_count_sub (kernel/sched/core.c:2526)
-> [ 2983.139643] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
-> [ 2983.140912] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
-> [ 2983.141941] SyS_perf_event_open (kernel/events/core.c:6990)
-> [ 2983.142771] tracesys (arch/x86/kernel/entry_64.S:749)
-> [ 2983.144740] ---[ end trace 6321065f5978f85b ]---
-> [ 2983.145355] ftrace failed to modify nva3_ram_init (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:326)
-> [ 2983.146357]  actual: 90:66:66:66:90
+Regular device probes attach device to regmap
+via regmap_attach_dev().
 
-Hmm, I wonder what the "ideal" nop is on this machine. But I think it
-should probably have been 66:66:66:66:90?
+For early syscon initialization is necessary to extend
+struct syscon and provide remove function
+which unmap all early init structures.
 
-Is this reproducible?
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
--- Steve
+Changes in v3:
+- Keep backward compatibility for platform drivers and test it
+- Use only one probe method which is early_syscon_probe
+  suggested by Lee Jones. Do not force anybody to call early_syscon_init
+- Add kernel-doc description
 
-> [ 2983.147116] Failed on adding breakpoints (44371):
-> 
-> 
-> Thanks,
-> Sasha
+Changes in v2:
+- Fix bad logic in early_syscon_probe
+- Fix compilation failure for x86_64 reported by zero day testing system
+- Regmap change available here
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/nodev
 
+ drivers/mfd/syscon.c       | 159 ++++++++++++++++++++++++++++++++++++++++-----
+ include/linux/mfd/syscon.h |  11 ++++
+ 2 files changed, 153 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index 71841f9..8e2ff88 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -20,12 +20,15 @@
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
++#include <linux/slab.h>
+ #include <linux/mfd/syscon.h>
+
+ static struct platform_driver syscon_driver;
+
+ struct syscon {
++	void __iomem *base;
+ 	struct regmap *regmap;
++	struct resource res;
+ };
+
+ static int syscon_match_node(struct device *dev, void *data)
+@@ -95,6 +98,30 @@ struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
+ }
+ EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+
++/**
++ * syscon_early_regmap_lookup_by_phandle - Early phandle lookup function
++ * @np:		device_node pointer
++ * @property:	property name which handle system controller phandle
++ * Return:	regmap pointer, an error pointer otherwise
++ */
++struct regmap *syscon_early_regmap_lookup_by_phandle(struct device_node *np,
++						     const char *property)
++{
++	struct device_node *syscon_np;
++	struct syscon *syscon;
++
++	syscon_np = of_parse_phandle(np, property, 0);
++	if (!syscon_np)
++		return ERR_PTR(-ENODEV);
++
++	syscon = syscon_np->data;
++
++	of_node_put(syscon_np);
++
++	return syscon->regmap;
++}
++EXPORT_SYMBOL_GPL(syscon_early_regmap_lookup_by_phandle);
++
+ struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
+ 					const char *property)
+ {
+@@ -123,36 +150,118 @@ static struct regmap_config syscon_regmap_config = {
+ 	.reg_stride = 4,
+ };
+
+-static int syscon_probe(struct platform_device *pdev)
++/**
++ * early_syscon_probe - Early system controller probe method
++ * @np:		device_node pointer
++ * @syscon_p:	syscon pointer
++ * @res:	device IO resource
++ * Return:	0 if successful, a negative error code otherwise
++ */
++static int early_syscon_probe(struct device_node *np, struct syscon **syscon_p,
++			      struct resource *res)
+ {
+-	struct device *dev = &pdev->dev;
+ 	struct syscon *syscon;
+-	struct resource *res;
+-	void __iomem *base;
++	int ret;
++
++	if (np && np->data) {
++		pr_debug("Early syscon was called\n");
++		*syscon_p = (struct syscon *)&np->data;
++		return 0;
++	}
+
+-	syscon = devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
++	syscon = kzalloc(sizeof(*syscon), GFP_KERNEL);
+ 	if (!syscon)
+ 		return -ENOMEM;
+
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENOENT;
++	*syscon_p = (struct syscon *)&syscon;
+
+-	base = devm_ioremap(dev, res->start, resource_size(res));
+-	if (!base)
+-		return -ENOMEM;
++	if (!res && np) {
++		if (of_address_to_resource(np, 0, &syscon->res)) {
++			ret = -EINVAL;
++			goto alloc;
++		}
++
++		np->data = syscon;
++		of_node_put(np);
++	} else {
++		syscon->res = *res;
++	}
+
+-	syscon_regmap_config.max_register = res->end - res->start - 3;
+-	syscon->regmap = devm_regmap_init_mmio(dev, base,
+-					&syscon_regmap_config);
++	syscon->base = ioremap(syscon->res.start, resource_size(&syscon->res));
++	if (!syscon->base) {
++		pr_err("%s: Unable to map I/O memory\n", __func__);
++		ret = PTR_ERR(syscon->base);
++		goto alloc;
++	}
++
++	syscon_regmap_config.max_register = syscon->res.end -
++					    syscon->res.start - 3;
++	syscon->regmap = regmap_init_mmio(NULL, syscon->base,
++					  &syscon_regmap_config);
+ 	if (IS_ERR(syscon->regmap)) {
+-		dev_err(dev, "regmap init failed\n");
+-		return PTR_ERR(syscon->regmap);
++		pr_err("regmap init failed\n");
++		ret = PTR_ERR(syscon->regmap);
++		goto iomap;
+ 	}
++	if (np)
++		pr_info("syscon: %s regmap %pR registered\n", np->name,
++			&syscon->res);
++
++	return 0;
++
++iomap:
++	iounmap(syscon->base);
++alloc:
++	kfree(syscon);
++
++	return ret;
++}
++
++/**
++ * early_syscon_init - Early system controller initialization
++ */
++void __init early_syscon_init(void)
++{
++	struct device_node *np;
++	struct syscon *syscon = NULL;
++
++	for_each_matching_node_and_match(np, of_syscon_match, NULL) {
++		if (early_syscon_probe(np, &syscon, NULL))
++			BUG();
++	}
++}
++
++/**
++ * syscon_probe - System controller probe method
++ * @pdev:	Platform device
++ * Return:	0 if successful, a negative error code otherwise
++ */
++static int syscon_probe(struct platform_device *pdev)
++{
++	struct syscon *syscon, *syscon_p;
++	struct resource *res = NULL;
++	struct device *dev = &pdev->dev;
++	struct device_node *np = pdev->dev.of_node;
++	int ret;
++
++	if (!np) {
++		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++		if (!res)
++			return -ENOENT;
++	}
++	ret = early_syscon_probe(np, &syscon_p, res);
++	if (ret) {
++		dev_err(dev, "Syscon probe failed\n");
++		return ret;
++	}
++
++	syscon = *(struct syscon **)syscon_p;
++
++	regmap_attach_dev(dev, syscon->regmap, &syscon_regmap_config);
+
+ 	platform_set_drvdata(pdev, syscon);
+
+-	dev_info(dev, "regmap %pR registered\n", res);
++	dev_info(dev, "regmap attach device to %pR\n", &syscon->res);
+
+ 	return 0;
+ }
+@@ -162,6 +271,21 @@ static const struct platform_device_id syscon_ids[] = {
+ 	{ }
+ };
+
++/**
++ * syscon_remove - System controller cleanup function
++ * @pdev:	Platform device
++ * Return:	0 always
++ */
++static int syscon_remove(struct platform_device *pdev)
++{
++	struct syscon *syscon = platform_get_drvdata(pdev);
++
++	iounmap(syscon->base);
++	kfree(syscon);
++
++	return 0;
++}
++
+ static struct platform_driver syscon_driver = {
+ 	.driver = {
+ 		.name = "syscon",
+@@ -169,6 +293,7 @@ static struct platform_driver syscon_driver = {
+ 		.of_match_table = of_syscon_match,
+ 	},
+ 	.probe		= syscon_probe,
++	.remove		= syscon_remove,
+ 	.id_table	= syscon_ids,
+ };
+
+diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
+index 8789fa3..465c092 100644
+--- a/include/linux/mfd/syscon.h
++++ b/include/linux/mfd/syscon.h
+@@ -24,6 +24,10 @@ extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
+ extern struct regmap *syscon_regmap_lookup_by_phandle(
+ 					struct device_node *np,
+ 					const char *property);
++extern struct regmap *syscon_early_regmap_lookup_by_phandle(
++					struct device_node *np,
++					const char *property);
++extern void early_syscon_init(void);
+ #else
+ static inline struct regmap *syscon_node_to_regmap(struct device_node *np)
+ {
+@@ -46,6 +50,13 @@ static inline struct regmap *syscon_regmap_lookup_by_phandle(
+ {
+ 	return ERR_PTR(-ENOSYS);
+ }
++
++static struct regmap *syscon_early_regmap_lookup_by_phandle(
++					struct device_node *np,
++					const char *property)
++{
++	return ERR_PTR(-ENOSYS);
++}
+ #endif
+
+ #endif /* __LINUX_MFD_SYSCON_H__ */
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-13126-1396969257-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlNEDyoACgkQykllyylKDCFRTwCdFEvnfm2r261DE7spqz3RLIaF
+5TUAn2dlPqggoZxqlDIzP1s1D2scDucI
+=FSo+
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-13126-1396969257-0001--
