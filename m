@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561AbaDHKro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:47:44 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:53672 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756308AbaDHKrm (ORCPT
+	id S1756655AbaDHKsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:48:00 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59142 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756634AbaDHKr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:47:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlBYADrTQ1N5LEcvPGdsb2JhbABZDoJ4g0qFC7cChV+BIBcDAQEBATg1giUBAQEDATocKAsIAxgJJQ8FJQMHGgESh3EHyjcXFo5bgySBFASYW5UxUis
-Date: Tue, 8 Apr 2014 20:47:38 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Miklos Szeredi <miklos@szeredi.hu>,
-        Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-Message-ID: <20140408104738.GD22917@dastard>
-References: <20140403191558.GA8745@thunk.org>
- <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
- <20140404035308.GC2525@thunk.org>
- <20140404134429.GB26806@quack.suse.cz>
- <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
- <20140404202323.GB10275@thunk.org>
+	Tue, 8 Apr 2014 06:47:58 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpuidle: sysfs: Export target residency information
+Date: Tue, 08 Apr 2014 13:03:57 +0200
+Message-ID: <9839403.J56jNEsGD1@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5343BDAC.70603@linaro.org>
+References: <1395055050-27729-1-git-send-email-daniel.lezcano@linaro.org> <5343BDAC.70603@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140404202323.GB10275@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 04:23:23PM -0400, Theodore Ts'o wrote:
-> Ah yes, I had forgotten that you had sent those patches, thanks.
+On Tuesday, April 08, 2014 11:13:16 AM Daniel Lezcano wrote:
+> On 03/17/2014 12:17 PM, Daniel Lezcano wrote:
+> >  From userspace, there is no way to know the target residency for each idle
+> > state. If we want to write tools to measure the accuracy of the idle state
+> > selection from the governor, we need this info.
+> >
+> > As the exit latency is exported through sysfs, exporting the target residency
+> > in the same place makes sense.
+> >
+> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > ---
 > 
-> It looks like that since you worded it as "just RFC for now since they
-> aren't in 3.15 yet", the xfstests folks never actually accepted your
-> changes into xfstests, and so I never picked it up.
+> Hi Rafael,
 > 
-> For future reference, the tests for COLLAPSE_RANGE and ZERO_RANGE were
-> accepted into xfstests well before the merge window opened, and that
-> was awfully convenience since we could pull the latest from the
-> xfstests.git tree and do automated testing while those patches were in
-> the ext4 and xfs trees.
+> are you willing to take this patch ?
 
-The xfstests for those features were merged into xfstests at the
-same time the the kernel code was pulled into the XFS tree. i.e.
-once the kernel code had been merged into a maintainer's tree. That's
-why they were there for the testing you needed to do with ext4.
+Yes, I'm going to take it.
 
-There hasn't been any XFS patches written for renameat2 and the
-patches that were posted as "here's some tests, maybe we'll get
-renameat2 into 3.15" so there hasn't been any urgency indicated to
-the xfstests folks that they were needed. We've been pretty much out
-of the loop here....
+Thanks!
 
-> So feel free to be a bit more insistent about asking for your xfstests
-> to be merged upstream; you don't have to wait until the changes reach
-> mainline.
+> >   drivers/cpuidle/sysfs.c |    3 +++
+> >   1 file changed, 3 insertions(+)
+> >
+> > diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> > index e918b6d..efe2f17 100644
+> > --- a/drivers/cpuidle/sysfs.c
+> > +++ b/drivers/cpuidle/sysfs.c
+> > @@ -293,6 +293,7 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
+> >   }
+> >
+> >   define_show_state_function(exit_latency)
+> > +define_show_state_function(target_residency)
+> >   define_show_state_function(power_usage)
+> >   define_show_state_ull_function(usage)
+> >   define_show_state_ull_function(time)
+> > @@ -304,6 +305,7 @@ define_store_state_ull_function(disable)
+> >   define_one_state_ro(name, show_state_name);
+> >   define_one_state_ro(desc, show_state_desc);
+> >   define_one_state_ro(latency, show_state_exit_latency);
+> > +define_one_state_ro(residency, show_state_target_residency);
+> >   define_one_state_ro(power, show_state_power_usage);
+> >   define_one_state_ro(usage, show_state_usage);
+> >   define_one_state_ro(time, show_state_time);
+> > @@ -313,6 +315,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
+> >   	&attr_name.attr,
+> >   	&attr_desc.attr,
+> >   	&attr_latency.attr,
+> > +	&attr_residency.attr,
+> >   	&attr_power.attr,
+> >   	&attr_usage.attr,
+> >   	&attr_time.attr,
+> >
+> 
+> 
+> 
 
-Actually, we don't add tests to xfstests until the patches that they
-test are committed to an upstream repository somewhere. i.e. we need
-some guarantee that the code is actually accepted by a maintainer
-and is on it's way to mainline before we'll include the tests. We
-don't want to have to waste time on reviewing and committing tests
-for functionality that never goes into the mainline tree....
-
-> If it's clear that the patches are going to be accepted,
-> and they are in the subsystem trees, that's a fine time to push to get
-> the changes into xfstests.
-
-I asked whether this patchset is going to make 3.15 and reviewed the
-xfstests patches that had been posted earlier today. About 12 hours
-before I read this thread.... ;)
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
