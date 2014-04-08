@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286AbaDHQWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:22:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38398 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756849AbaDHQWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:22:18 -0400
-Date: Tue, 8 Apr 2014 18:22:13 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Thor Thayer <tthayer@altera.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "dinguyen@altera.com" <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
- CycloneV/ArriaV
-Message-ID: <20140408162213.GL30077@pd.tnic>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
- <1396907649-20212-4-git-send-email-tthayer@altera.com>
- <20140408100851.GF30077@pd.tnic>
- <1396965459.23349.4.camel@dinh-ubuntu>
- <20140408152406.GI30077@pd.tnic>
- <20140408154017.GF11876@e106331-lin.cambridge.arm.com>
- <20140408160351.GK30077@pd.tnic>
- <20140408161054.GA26210@e106331-lin.cambridge.arm.com>
+	id S932200AbaDHQZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:25:12 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:51343 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117AbaDHQZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 12:25:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140408161054.GA26210@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140408112533.GB4504@osiris>
+References: <20140403191558.GA8745@thunk.org>
+	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
+	<20140404035308.GC2525@thunk.org>
+	<20140404134429.GB26806@quack.suse.cz>
+	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
+	<20140404234358.GE10275@thunk.org>
+	<CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
+	<20140407140745.GA8855@thunk.org>
+	<CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
+	<20140408112533.GB4504@osiris>
+Date: Tue, 8 Apr 2014 09:25:08 -0700
+X-Google-Sender-Auth: Iod9FdPSFD93kdCjXVt-6g-oAwE
+Message-ID: <CA+55aFw4zYdFk4YAst2Kk6eGkCZ+4iG_Tq3yoG-Z9M4H+89k2w@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 05:10:54PM +0100, Mark Rutland wrote:
-> Typically the bindings would go with the driver via the appropriate
-> subsystem maintainer. That way we don't get bindings without drivers
-> or vice-versa if there's a problem part-way, and we don't end up with
-> every other driver going via a dt tree.
+On Tue, Apr 8, 2014 at 4:25 AM, Heiko Carstens
+<heiko.carstens@de.ibm.com> wrote:
+>
+> Also it would be nice if somebody would pick up the patch below as well :)
 
-Ok, I can pick them up then, once review is done.
+Picked up.
 
-@Thor, please CC linux-edac on the whole patchset for your next
-submission.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+              Linus
