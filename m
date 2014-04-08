@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757021AbaDHUVc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 16:21:32 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:61922 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036AbaDHUVa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 16:21:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1396988442.14321.0.camel@joe-AO722>
-References: <1396988297-29240-1-git-send-email-eu@opreamatei.ro>
-	<1396988442.14321.0.camel@joe-AO722>
-Date: Tue, 8 Apr 2014 23:21:30 +0300
-Message-ID: <CABeAxac1mPiF9_=eiMn4_KFUNkgD9UDop_anwevtBm7nRE0O4Q@mail.gmail.com>
-Subject: Re: [PATCH] scsi: lpfc: lpfc_init: use kcalloc for allocating memory
-From: Matei Oprea <eu@opreamatei.ro>
-To: Joe Perches <joe@perches.com>
-Cc: jbottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        ROSEdu Kernel Community <firefly@lists.rosedu.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756777AbaDHU0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 16:26:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756079AbaDHU0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 16:26:08 -0400
+Date: Tue, 8 Apr 2014 16:25:39 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
+        aarcange@redhat.com, mgorman@suse.de, akpm@linux-foundation.org,
+        andi@firstfloor.org, davidlohr@hp.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com
+Subject: Re: [PATCH 1/5] hugetlb: prep_compound_gigantic_page(): drop __init
+ marker
+Message-ID: <20140408162539.41f68428@redhat.com>
+In-Reply-To: <1396986711-o0m2kq1v@n-horiguchi@ah.jp.nec.com>
+References: <1396983740-26047-1-git-send-email-lcapitulino@redhat.com>
+	<1396983740-26047-2-git-send-email-lcapitulino@redhat.com>
+	<1396986711-o0m2kq1v@n-horiguchi@ah.jp.nec.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok. Sorry.
-ᐧ
+On Tue, 08 Apr 2014 15:51:51 -0400
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-On Tue, Apr 8, 2014 at 11:20 PM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2014-04-08 at 23:18 +0300, Matei Oprea wrote:
->> It's easier to use kcalloc for allocating arrays. While at it
->> also remove useless casting value.
->
-> Don't send a patch against your bad patch.
-> Send a new patch with just the appropriate
-> changes.
->
->
+> Hi Luiz,
+> 
+> On Tue, Apr 08, 2014 at 03:02:16PM -0400, Luiz Capitulino wrote:
+> > This function is going to be used by non-init code in a future
+> > commit.
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > ---
+> >  mm/hugetlb.c | 3 +--
+> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 7c02b9d..319db28 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -689,8 +689,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+> >  	put_page(page); /* free it into the hugepage allocator */
+> >  }
+> >  
+> > -static void __init prep_compound_gigantic_page(struct page *page,
+> > -					       unsigned long order)
+> > +static void prep_compound_gigantic_page(struct page *page, unsigned long order)
+> >  {
+> >  	int i;
+> >  	int nr_pages = 1 << order;
+> 
+> Is __ClearPageReserved() in this function relevant only in boot time
+> allocation? 
 
+Yes.
 
+> If yes, it might be good to avoid calling it in runtime
+> allocation.
 
--- 
-Oprea Matei
+The problem is that prep_compound_gigantic_page() is good and used by
+both boottime and runtime allocations. Having two functions to do the
+same thing seems like overkill, especially because the runtime allocation
+code skips reserved pages. So the reserved bit should always be cleared
+for runtime allocated gigantic pages.
