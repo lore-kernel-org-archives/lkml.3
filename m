@@ -1,106 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123AbaDHBTI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 21:19:08 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:35083 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754690AbaDHBTD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 21:19:03 -0400
-X-IronPort-AV: E=Sophos;i="4.97,814,1389715200"; 
-   d="scan'208";a="28974183"
-Message-ID: <53434E41.1010306@cn.fujitsu.com>
-Date: Tue, 8 Apr 2014 09:17:53 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
-        Andres Freund <andres@2ndquadrant.com>,
-        Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: page_alloc: Do not cache reclaim distances
-References: <1396910068-11637-1-git-send-email-mgorman@suse.de> <1396910068-11637-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1396910068-11637-3-git-send-email-mgorman@suse.de>
+	id S1756150AbaDHBTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 21:19:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2443 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753162AbaDHBT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 21:19:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,814,1389772800"; 
+   d="scan'208";a="516289232"
+Subject: [PATCH] Gadget: race between ffs_epfile_io() and
+ ffs_func_eps_disable()
+From: Chao Bi <chao.bi@intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Apr 2014 09:50:17 +0800
+Message-ID: <1396921817.10644.16.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.197]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 06:34 AM, Mel Gorman wrote:
-> pgdat->reclaim_nodes tracks if a remote node is allowed to be reclaimed by
-> zone_reclaim due to its distance. As it is expected that zone_reclaim_mode
-> will be rarely enabled it is unreasonable for all machines to take a penalty.
-> Fortunately, the zone_reclaim_mode() path is already slow and it is the path
-> that takes the hit.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+ffs_epfile_io() is called from userspace, while ffs_func_esp_disable() might
+be called from USB disconnect interrupt, the two functions would run in parallel
+but they are not well protected, that epfile->ep would be removed by
+ffs_func_esp_disable() during ffs_epfile_io() is referring this pointer, then it
+leads to kernel PANIC.
 
-> ---
->  include/linux/mmzone.h |  1 -
->  mm/page_alloc.c        | 15 +--------------
->  2 files changed, 1 insertion(+), 15 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 9b61b9b..564b169 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -757,7 +757,6 @@ typedef struct pglist_data {
->  	unsigned long node_spanned_pages; /* total size of physical page
->  					     range, including holes */
->  	int node_id;
-> -	nodemask_t reclaim_nodes;	/* Nodes allowed to reclaim from */
->  	wait_queue_head_t kswapd_wait;
->  	wait_queue_head_t pfmemalloc_wait;
->  	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index a256f85..574928e 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1863,16 +1863,7 @@ static bool zone_local(struct zone *local_zone, struct zone *zone)
->  
->  static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
->  {
-> -	return node_isset(local_zone->node, zone->zone_pgdat->reclaim_nodes);
-> -}
-> -
-> -static void __paginginit init_zone_allows_reclaim(int nid)
-> -{
-> -	int i;
-> -
-> -	for_each_online_node(i)
-> -		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
-> -			node_set(i, NODE_DATA(nid)->reclaim_nodes);
-> +	return node_distance(zone_to_nid(local_zone), zone_to_nid(zone)) < RECLAIM_DISTANCE;
->  }
->  
->  #else	/* CONFIG_NUMA */
-> @@ -1906,9 +1897,6 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
->  	return true;
->  }
->  
-> -static inline void init_zone_allows_reclaim(int nid)
-> -{
-> -}
->  #endif	/* CONFIG_NUMA */
->  
->  /*
-> @@ -4917,7 +4905,6 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
->  
->  	pgdat->node_id = nid;
->  	pgdat->node_start_pfn = node_start_pfn;
-> -	init_zone_allows_reclaim(nid);
->  #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
->  	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
->  #endif
-> 
+The scenario is as below:
 
+Thread 1                                 Thread 2
+   |                                        |
+SyS_read                             dwc3_gadget_disconnect_interrupt
+   |                                        |From 772c1c9ef451a9a84e48acf14ba613328920a2f4 Mon Sep 17 00:00:00 2001
+From: channing <chao.bi@intel.com>
+Date: Wed, 2 Apr 2014 16:37:57 +0800
+Subject: [PATCH] Gadget: race between ffs_epfile_io() and
+ ffs_func_eps_disable()
 
+ffs_epfile_io() is called from userspace, while ffs_func_esp_disable() might
+be called from USB disconnect interrupt, the two functions would run in parallel
+but they are not well protected, that epfile->ep would be removed by
+ffs_func_esp_disable() during ffs_epfile_io() is referring this pointer, then it
+leads to kernel PANIC.
+
+The scenario is as below:
+
+Thread 1                                 Thread 2
+   |                                        |
+SyS_read                             dwc3_gadget_disconnect_interrupt
+   |                                        |
+ffs_epfile_read                         reset_config
+   |                                        |
+ffs_epfile_io                       ffs_func_eps_disable
+   |                                        |
+ -----                      usb_ep_disable():  epfile->ep->ep->desc = NULL
+   |                                        |
+usb_ep_align_maybe():                     -----
+it refers ep->desc->wMaxPacketSize        -----
+
+Signed-off-by: Chao Bi <chao.bi@intel.com>
+---
+ drivers/usb/gadget/f_fs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 2e164dc..1e12b3e 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -745,6 +745,12 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 		 */
+ 		struct usb_gadget *gadget = epfile->ffs->gadget;
+ 
++		spin_lock_irq(&epfile->ffs->eps_lock);
++		/* In the meantime, endpoint got disabled or changed. */
++		if (epfile->ep != ep) {
++			spin_unlock_irq(&epfile->ffs->eps_lock);
++			return -ESHUTDOWN;
++		}
+ 		/*
+ 		 * Controller may require buffer size to be aligned to
+ 		 * maxpacketsize of an out endpoint.
+@@ -752,6 +758,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 		data_len = io_data->read ?
+ 			   usb_ep_align_maybe(gadget, ep->ep, io_data->len) :
+ 			   io_data->len;
++		spin_unlock_irq(&epfile->ffs->eps_lock);
+ 
+ 		data = kmalloc(data_len, GFP_KERNEL);
+ 		if (unlikely(!data))
 -- 
-Thanks.
-Zhang Yanfei
+1.7.9.5
+
+
+ffs_epfile_read                         reset_config
+   |                                        |
+ffs_epfile_io                       ffs_func_eps_disable
+   |                                        |
+ -----                      usb_ep_disable():  epfile->ep->ep->desc = NULL
+   |                                        |
+usb_ep_align_maybe():                     -----
+it refers ep->desc->wMaxPacketSize        -----
+
+Signed-off-by: Chao Bi <chao.bi@intel.com>
+---
+ drivers/usb/gadget/f_fs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 2e164dc..1e12b3e 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -745,6 +745,12 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 		 */
+ 		struct usb_gadget *gadget = epfile->ffs->gadget;
+ 
++		spin_lock_irq(&epfile->ffs->eps_lock);
++		/* In the meantime, endpoint got disabled or changed. */
++		if (epfile->ep != ep) {
++			spin_unlock_irq(&epfile->ffs->eps_lock);
++			return -ESHUTDOWN;
++		}
+ 		/*
+ 		 * Controller may require buffer size to be aligned to
+ 		 * maxpacketsize of an out endpoint.
+@@ -752,6 +758,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 		data_len = io_data->read ?
+ 			   usb_ep_align_maybe(gadget, ep->ep, io_data->len) :
+ 			   io_data->len;
++		spin_unlock_irq(&epfile->ffs->eps_lock);
+ 
+ 		data = kmalloc(data_len, GFP_KERNEL);
+ 		if (unlikely(!data))
+-- 
+1.7.9.5
+
+
+
