@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaDHQMt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:12:49 -0400
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:44711 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757061AbaDHQMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:12:47 -0400
-Message-ID: <1396973561.14809.26.camel@linaro1.home>
-Subject: Re: [PATCH 2/2] ARM: mm: make text and rodata read-only
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Rabin Vincent <rabin@rab.in>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 08 Apr 2014 17:12:41 +0100
-In-Reply-To: <CAGXu5jJq24k4uQbBJmihJ4RScJ40o41oKFtm13hBO_YZOvHpkA@mail.gmail.com>
-References: <1396577719-14786-1-git-send-email-keescook@chromium.org>
-	 <1396577719-14786-3-git-send-email-keescook@chromium.org>
-	 <20140404195818.GA21028@debian>
-	 <CAGXu5jKPX2igsb2rQzdCZQZ8X3h4YZihCV9D+cDW3F+qii8H2A@mail.gmail.com>
-	 <1396960898.3567.55.camel@linaro1.home>
-	 <CAGXu5jJq24k4uQbBJmihJ4RScJ40o41oKFtm13hBO_YZOvHpkA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
+	id S1757166AbaDHQMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:12:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757055AbaDHQMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 12:12:46 -0400
+Date: Tue, 8 Apr 2014 18:10:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/9] uprobes/x86: Introduce uprobe_xol_ops and
+	arch_uprobe->ops
+Message-ID: <20140408161020.GB31460@redhat.com>
+References: <20140404185131.GA14738@redhat.com> <5343BCF0.3030605@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5343BCF0.3030605@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-08 at 09:01 -0700, Kees Cook wrote:
-> On Tue, Apr 8, 2014 at 5:41 AM, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> > On Fri, 2014-04-04 at 17:07 -0700, Kees Cook wrote:
-> >> On Fri, Apr 4, 2014 at 12:58 PM, Rabin Vincent <rabin@rab.in> wrote:
-> > [...]
-> >> > You need a TLB flush.  I had a flush_tlb_all() in my example patch,
-> >> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/244335.html,
-> >> > but the following is probably nicer (on top of this patch):
-> >> >
-> >> > diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> >> > index 9bea524..a92c45a 100644
-> >> > --- a/arch/arm/mm/init.c
-> >> > +++ b/arch/arm/mm/init.c
-> >> > @@ -741,6 +741,8 @@ static inline bool arch_has_strict_perms(void)
-> >> >                      addr += SECTION_SIZE)                              \
-> >> >                         section_update(addr, perms[i].mask,             \
-> >> >                                        perms[i].field);                 \
-> >> > +                                                                       \
-> >> > +               flush_tlb_kernel_range(perms[i].start, perms[i].end);   \
-> >> >         }                                                               \
-> >> >  }
-> >> >
-> >>
-> >> When I do this, I hang the system, and get a WARN due to the tlb call
-> >> attempting to flush on all CPUs, I think:
-> >>
-> >> [   34.246034] WARNING: at
-> >> /mnt/host/source/src/third_party/kernel-next/kernel/smp.c:466
-> >> smp_call_function_many+0xac/0x26c()
-> >> ...
-> >> [   34.246617] Backtrace:
-> >> [   34.246697] [<c010d3b8>] (unwind_backtrace+0x0/0x118) from
-> >> [<c060b9d8>] (dump_stack+0x28/0x30)
-> >> [   34.246765] [<c060b9d8>] (dump_stack+0x28/0x30) from [<c0123044>]
-> >> (warn_slowpath_null+0x44/0x5c)
-> >> [   34.246824] [<c0123044>] (warn_slowpath_null+0x44/0x5c) from
-> >> [<c017426c>] (smp_call_function_many+0xac/0x26c)
-> >> [   34.246881] [<c017426c>] (smp_call_function_many+0xac/0x26c) from
-> >> [<c0174468>] (smp_call_function+0x3c/0x48)
-> >> [   34.246937] [<c0174468>] (smp_call_function+0x3c/0x48) from
-> >> [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c)
-> >> [   34.246994] [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c) from
-> >> [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0)
-> >> [   34.247046] [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0) from
-> >> [<c011403c>] (set_kernel_text_rw+0xd8/0xec)
-> >> [   34.247099] [<c011403c>] (set_kernel_text_rw+0xd8/0xec) from
-> >> [<c010c878>] (__ftrace_modify_code+0x14/0x28)
-> >> [   34.247156] [<c010c878>] (__ftrace_modify_code+0x14/0x28) from
-> >> [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114)
-> >> [   34.247212] [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114) from
-> >> [<c01841cc>] (cpu_stopper_thread+0xd8/0x164)
-> >> [   34.247266] [<c01841cc>] (cpu_stopper_thread+0xd8/0x164) from
-> >> [<c0145c14>] (kthread+0xc8/0xd8)
-> >> [   34.247323] [<c0145c14>] (kthread+0xc8/0xd8) from [<c0106118>]
-> >> (ret_from_fork+0x14/0x20)
-> >>
-> >> Using local_flush_tlb_kernel_range() fixed it though.
+On 04/08, Masami Hiramatsu wrote:
+>
+> (2014/04/05 3:51), Oleg Nesterov wrote:
 > >
-> > What about if another CPU had a TLB entry with the old permissions in?
-> > Or do you consider that the likelihood and consequences of that aren't
-> > significant?
-> 
-> The purpose of the function is to temporarily make text writable, do
-> the write, and then restore read-only. Since only the writer needs to
-> care about TLB state, this works fine. It's actually nice that only
-> the current CPU can make text writes.
+> > TODO: An error from adjust_ret_addr() shouldn't be silently ignored,
+> > we should teach arch_uprobe_post_xol() or handle_singlestep() paths
+> > to restart the probed insn in this case. And probably "adjust" can
+> > be simplified and turned into set_ret_addr(). It seems that we do
+> > not really need copy_from_user(), we can always calculate the value
+> > we need to write into *regs->sp.
+>
+> It seems that you fixed this in 8/9, we don't need the TODO list in
+> the description.
 
-And is the page table being modified unique to the current CPU? I
-thought a common set of page tables was shared across all of them. If
-that is the case then one CPU can modify the PTE to be writeable,
-another CPU take a TLB miss and pull in that writeable entry, which will
-stay there until it drops out the TLB at some indefinite point in the
-future. That's the scenario I was getting at with my previous comment.
+Well, OK, I'll update the changelog and remove the "error ... ignored"
+part. Although to be honest, I do not understand why do you think it
+is bad to document the other problems you found while you were writing
+the patch.
 
--- 
-Tixy
+> > +	if (auprobe->ops->emulate)
+> > +		return auprobe->ops->emulate(auprobe, regs);
+> > +
+> > +	/* TODO: move this code into ->emulate() hook */
+>
+> If you think this can move into the emulate(),
 
+Yes sure,
+
+> you should do in this
+> patch.
+
+No, sorry, I strongly disagree, this should come as a separate change,
+and only after "Emulate jmp's".
+
+> Since the following code runs by default, there should be
+> no problem to do that.
+
+Hmm. Not sure I understand "by default". If you meant that this should
+go into default_emulate_op() (which we do not have), then I strongly
+disagree again.
+
+It should not, if nothing else we need to record insn->length somewhere,
+this should go into ttt_emulate_op() we add later. And it simply looks
+much more natural to handle jmp's and nop's together.
+
+Masami, this time I simply can't understand your objections, please
+clarify.
+
+Thanks,
+
+Oleg.
 
