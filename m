@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590AbaDHI14 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 04:27:56 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:39484 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935AbaDHI1v (ORCPT
+	id S1756389AbaDHIaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 04:30:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51573 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755407AbaDHIaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 04:27:51 -0400
-Message-ID: <1396945659.3162.6.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index
- reflect the start/end section number
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
-        gregkh@linuxfoundation.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Date: Tue, 08 Apr 2014 16:27:39 +0800
-In-Reply-To: <533E0B0E.9020909@jp.fujitsu.com>
-References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
-	 <533E0B0E.9020909@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040808-3864-0000-0000-00000D723091
+	Tue, 8 Apr 2014 04:30:05 -0400
+Date: Tue, 8 Apr 2014 10:28:17 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com
+Subject: Re: [PATCH v5 0/7] Add support for the Allwinner A31 DMA Controller
+Message-ID: <20140408082817.GA28585@lukather>
+References: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
+Content-Disposition: inline
+In-Reply-To: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-04 at 10:29 +0900, Yasuaki Ishimatsu wrote:
-> (2014/04/02 17:56), Li Zhong wrote:
-> > I noticed the phys_index and end_phys_index under
-> > /sys/devices/system/memory/memoryXXX/ have the same value, e.g.
-> > (for the test machine, one memory block has 8 sections, that is
-> >   sections_per_block equals 8)
-> >
-> > # cd /sys/devices/system/memory/memory100/
-> > # cat phys_index end_phys_index
-> > 00000064
-> > 00000064
-> >
-> > Seems they should reflect the start/end section number respectively, which
-> > also matches what is said in Documentation/memory-hotplug.txt
-> >
-> > This patch tries to modify that so the two files could show the start/end
-> > section number of the memory block.
-> >
-> > After this change, output of the above example looks like:
-> >
-> > # cat phys_index end_phys_index
-> > 00000320
-> > 00000327
-> >
-> > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> > ---
-> 
-> Good catch! This is a bug. So I think the bug should be fixed.
-> 
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Thank you all for the review. 
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If Dave and others don't have further objections, it seems this small
-userspace incompatibility could be accepted by most of us, and I don't
-need to make a version 2. 
+Dan, Vinod,
 
-Thanks, Zhong 
-
+On Thu, Mar 13, 2014 at 04:14:12PM +0100, Maxime Ripard wrote:
+> Hi,
+>=20
+> This patchset adds support for the DMA controller found in the
+> Allwinner A31 and A23 SoCs.
+>=20
+> This has been tested using the newly introduced SPI driver on an A31
+> EVK. Support for DMA-driven SPI transfers will be the subject of
+> another patch serie.
+>=20
 > Thanks,
-> Yasuaki Ishimatsu
-> 
-> >   drivers/base/memory.c | 4 ++--
-> >   1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> > index bece691..b10f2fa 100644
-> > --- a/drivers/base/memory.c
-> > +++ b/drivers/base/memory.c
-> > @@ -114,7 +114,7 @@ static ssize_t show_mem_start_phys_index(struct device *dev,
-> >   	struct memory_block *mem = to_memory_block(dev);
-> >   	unsigned long phys_index;
-> >
-> > -	phys_index = mem->start_section_nr / sections_per_block;
-> > +	phys_index = mem->start_section_nr;
-> >   	return sprintf(buf, "%08lx\n", phys_index);
-> >   }
-> >
-> > @@ -124,7 +124,7 @@ static ssize_t show_mem_end_phys_index(struct device *dev,
-> >   	struct memory_block *mem = to_memory_block(dev);
-> >   	unsigned long phys_index;
-> >
-> > -	phys_index = mem->end_section_nr / sections_per_block;
-> > +	phys_index = mem->end_section_nr;
-> >   	return sprintf(buf, "%08lx\n", phys_index);
-> >   }
-> >
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Maxime
 
+I first sent this patch set a month and a half ago, and since then
+never had *any* comment from you. It seems like it has reached the
+point where people start to be happy about it, how can we move
+forward?
 
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--HlL+5n6rz5pIUxbD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTQ7MhAAoJEBx+YmzsjxAg03AP+QFuLGoYHoJ1yNKIXKRFZPFw
+GjaKDiwc8ofla+PPublNCt7WnmVD+wsT4qVZBJb08LRKNK0vpP4aTU8Kgd0z9wMg
+MFBPWxhbf1QJksu8Mmb7IHnOFblarhJ5YHcHbBKCZo3ZTj1wHV7voqWtvcarf5ZR
+X+Nz32SPSutpQAlXTyEjQKbBMVcd8aYFoM+Qy+LBc5hY1SgwKflLxLXPYIfTSkL7
+eNrMGviYdyalCkl/X8Hqpk8M++AbIfpD9TTT+JpPTTIiGqtYAjn3vS9nUPwY/MA7
+HeVHCtjiMhdMFH0HR1PJnySq7bvpJLpKRoOOH7BxmYP3XcsZHhRHe/Q+AXv/0adC
+sPDDAw+gPjI5OvLiJPSuQWu3GavlCmn2/DleW21j3bHcksiIL0iiuClICEKKdfZD
+GiEm8E+dn129IE3SdQpv8oYgwfCd8ltPqNOxvLnLGspJqxQX1E5s/oc9HeWOwlEf
+VbeQ+pDi/bEjfbPZRAchxVIKmZ15b9cxCjcMSJ19xzv2G+xhXCzUFJHr/Omx578A
+/xqooXLmhP6/QQasghcf/aI5Y1gpqJr3ONQXbvMmFCORxaVrTjvSY/deF3a1gzj4
+YnVdPT8YUv6MlZY26tntafQNXoms67HD7YRSfi9vu1edt4o/7uuDraXLKW+Q/PS2
+PWb2yLusfR1PeK37FFvn
+=+Aqp
+-----END PGP SIGNATURE-----
+
+--HlL+5n6rz5pIUxbD--
