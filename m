@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878AbaDHNJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:09:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32782 "EHLO mx2.suse.de"
+	id S1756857AbaDHNJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:09:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60967 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756778AbaDHNJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:09:42 -0400
+	id S1756552AbaDHNJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 09:09:39 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-X86 <x86@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -19,9 +19,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] x86: Allow Xen to enable NUMA_BALANCING
-Date: Tue,  8 Apr 2014 14:09:30 +0100
-Message-Id: <1396962570-18762-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/5] x86: Define _PAGE_NUMA by reusing software bits on the PMD and PTE levels
+Date: Tue,  8 Apr 2014 14:09:27 +0100
+Message-Id: <1396962570-18762-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1396962570-18762-1-git-send-email-mgorman@suse.de>
 References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
@@ -29,62 +29,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen cannot use automatic NUMA balancing as they are depending on the same PTE
-bit. There is another software bit that is currently used by software dirty
-tracking of pages. This patch allows Xen to use that bit for automatic NUMA
-balancing if MEM_SOFT_DIRTY is not enabled. If KMEMCHECK is enabled then
-the bit is only set on global page tables so there should be no collision
-with NUMA_BALANCING. This shuffling can be disabled if/when Xen moves away
-from using _PAGE_BIT_IOMAP.
+_PAGE_NUMA is currently an alias of _PROT_PROTNONE to trap NUMA hinting
+faults. Care is taken such that _PAGE_NUMA is used only in situations where
+the VMA flags distinguish between NUMA hinting faults and prot_none faults.
+Conceptually this is difficult and it has caused problems.
+
+Fundamentally, we only need the _PAGE_NUMA bit to tell the difference between
+an entry that is really unmapped and a page that is protected for NUMA
+hinting faults as if the PTE is not present then a fault will be trapped.
+
+Currently one of the software bits is used for identifying IO mappings and
+by Xen to track if it's a Xen PTE or a machine PFN.  This patch reuses the
+software bit for IOMAP for NUMA hinting faults with the expectation that
+the bit is not used for userspace addresses. Xen and NUMA balancing are
+now mutually exclusive in Kconfig.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
  arch/x86/Kconfig                     |  2 +-
- arch/x86/include/asm/pgtable_types.h | 14 +++++++++++++-
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/pgtable.h       |  5 ++++
+ arch/x86/include/asm/pgtable_types.h | 54 +++++++++++++++++-------------------
+ 3 files changed, 31 insertions(+), 30 deletions(-)
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 4fab25a..3c4ba81 100644
+index 084b1c1..4fab25a 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
 @@ -26,7 +26,7 @@ config X86
  	select ARCH_MIGHT_HAVE_PC_SERIO
  	select HAVE_AOUT if X86_32
  	select HAVE_UNSTABLE_SCHED_CLOCK
--	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64 && !XEN
-+	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64 && (!XEN || !MEM_SOFT_DIRTY)
+-	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64
++	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64 && !XEN
  	select ARCH_SUPPORTS_INT128 if X86_64
  	select ARCH_WANTS_PROT_NUMA_PROT_NONE
  	select HAVE_IDE
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index bbc8b12..076daff 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -447,6 +447,8 @@ static inline int pte_same(pte_t a, pte_t b)
+ 
+ static inline int pte_present(pte_t a)
+ {
++	VM_BUG_ON((pte_flags(a) & (_PAGE_NUMA | _PAGE_GLOBAL)) ==
++			(_PAGE_NUMA | _PAGE_GLOBAL));
+ 	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
+ 			       _PAGE_NUMA);
+ }
+@@ -471,6 +473,9 @@ static inline int pte_hidden(pte_t pte)
+ 
+ static inline int pmd_present(pmd_t pmd)
+ {
++	VM_BUG_ON((pmd_flags(pmd) & (_PAGE_NUMA | _PAGE_GLOBAL)) ==
++			(_PAGE_NUMA | _PAGE_GLOBAL));
++
+ 	/*
+ 	 * Checking for _PAGE_PSE is needed too because
+ 	 * split_huge_page will temporarily clear the present bit (but
 diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 49b3e15..fa84d1f 100644
+index 1aa9ccd..49b3e15 100644
 --- a/arch/x86/include/asm/pgtable_types.h
 +++ b/arch/x86/include/asm/pgtable_types.h
-@@ -24,11 +24,23 @@
- #define _PAGE_BIT_CPA_TEST	_PAGE_BIT_SOFTW1
- #define _PAGE_BIT_SPLITTING	_PAGE_BIT_SOFTW1 /* only valid on a PSE pmd */
- #define _PAGE_BIT_IOMAP		_PAGE_BIT_SOFTW2 /* flag used to indicate IO mapping */
--#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW2 /* for NUMA balancing hinting */
- #define _PAGE_BIT_HIDDEN	_PAGE_BIT_SOFTW3 /* hidden by kmemcheck */
- #define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_SOFTW3 /* software dirty tracking */
+@@ -16,13 +16,17 @@
+ #define _PAGE_BIT_PSE		7	/* 4 MB (or 2MB) page */
+ #define _PAGE_BIT_PAT		7	/* on 4KB pages */
+ #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
+-#define _PAGE_BIT_UNUSED1	9	/* available for programmer */
+-#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
+-#define _PAGE_BIT_HIDDEN	11	/* hidden by kmemcheck */
++#define _PAGE_BIT_SOFTW1	9	/* available for programmer */
++#define _PAGE_BIT_SOFTW2	10	/* " */
++#define _PAGE_BIT_SOFTW3	11	/* " */
+ #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
+-#define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
+-#define _PAGE_BIT_CPA_TEST	_PAGE_BIT_UNUSED1
+-#define _PAGE_BIT_SPLITTING	_PAGE_BIT_UNUSED1 /* only valid on a PSE pmd */
++#define _PAGE_BIT_SPECIAL	_PAGE_BIT_SOFTW1
++#define _PAGE_BIT_CPA_TEST	_PAGE_BIT_SOFTW1
++#define _PAGE_BIT_SPLITTING	_PAGE_BIT_SOFTW1 /* only valid on a PSE pmd */
++#define _PAGE_BIT_IOMAP		_PAGE_BIT_SOFTW2 /* flag used to indicate IO mapping */
++#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW2 /* for NUMA balancing hinting */
++#define _PAGE_BIT_HIDDEN	_PAGE_BIT_SOFTW3 /* hidden by kmemcheck */
++#define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_SOFTW3 /* software dirty tracking */
  #define _PAGE_BIT_NX           63       /* No execute: only valid after cpuid check */
  
-+/*
-+ * Automatic NUMA balancing uses _PAGE_BIT_SOFTW2 if available as generally it
-+ * is only used on the kernel page tables and is easily shared. Unfortunately,
-+ * Xen also uses this bit so on those configurations it is necessary to use
-+ * _PAGE_BIT_SOFTW3 but then MEM_SOFT_DIRTY cannot be enabled at the same time
-+ * as it also requires that bit. Constraint is enforced by Kconfig.
+ /* If _PAGE_BIT_PRESENT is clear, we use these: */
+@@ -40,7 +44,6 @@
+ #define _PAGE_DIRTY	(_AT(pteval_t, 1) << _PAGE_BIT_DIRTY)
+ #define _PAGE_PSE	(_AT(pteval_t, 1) << _PAGE_BIT_PSE)
+ #define _PAGE_GLOBAL	(_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
+-#define _PAGE_UNUSED1	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED1)
+ #define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_IOMAP)
+ #define _PAGE_PAT	(_AT(pteval_t, 1) << _PAGE_BIT_PAT)
+ #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
+@@ -61,8 +64,6 @@
+  * they do not conflict with each other.
+  */
+ 
+-#define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_HIDDEN
+-
+ #ifdef CONFIG_MEM_SOFT_DIRTY
+ #define _PAGE_SOFT_DIRTY	(_AT(pteval_t, 1) << _PAGE_BIT_SOFT_DIRTY)
+ #else
+@@ -70,6 +71,21 @@
+ #endif
+ 
+ /*
++ * _PAGE_NUMA distinguishes between a numa hinting minor fault and a page
++ * that is not present. The hinting fault gathers numa placement statistics
++ * (see pte_numa()). The bit is always zero when the PTE is not present.
++ *
++ * The bit picked must be always zero when the pmd is present and not
++ * present, so that we don't lose information when we set it while
++ * atomically clearing the present bit.
 + */
-+#ifndef CONFIG_XEN
-+#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW2
++#ifdef CONFIG_NUMA_BALANCING
++#define _PAGE_NUMA	(_AT(pteval_t, 1) << _PAGE_BIT_NUMA)
 +#else
-+#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW3
++#define _PAGE_NUMA	(_AT(pteval_t, 0))
 +#endif
 +
- /* If _PAGE_BIT_PRESENT is clear, we use these: */
- /* - if the user mapped it with PROT_NONE; pte_present gives true */
- #define _PAGE_BIT_PROTNONE	_PAGE_BIT_GLOBAL
++/*
+  * Tracking soft dirty bit when a page goes to a swap is tricky.
+  * We need a bit which can be stored in pte _and_ not conflict
+  * with swap entry format. On x86 bits 6 and 7 are *not* involved
+@@ -94,26 +110,6 @@
+ #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
+ #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
+ 
+-/*
+- * _PAGE_NUMA indicates that this page will trigger a numa hinting
+- * minor page fault to gather numa placement statistics (see
+- * pte_numa()). The bit picked (8) is within the range between
+- * _PAGE_FILE (6) and _PAGE_PROTNONE (8) bits. Therefore, it doesn't
+- * require changes to the swp entry format because that bit is always
+- * zero when the pte is not present.
+- *
+- * The bit picked must be always zero when the pmd is present and not
+- * present, so that we don't lose information when we set it while
+- * atomically clearing the present bit.
+- *
+- * Because we shared the same bit (8) with _PAGE_PROTNONE this can be
+- * interpreted as _PAGE_NUMA only in places that _PAGE_PROTNONE
+- * couldn't reach, like handle_mm_fault() (see access_error in
+- * arch/x86/mm/fault.c, the vma protection must not be PROT_NONE for
+- * handle_mm_fault() to be invoked).
+- */
+-#define _PAGE_NUMA	_PAGE_PROTNONE
+-
+ #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
+ 			 _PAGE_ACCESSED | _PAGE_DIRTY)
+ #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
 -- 
 1.8.4.5
 
