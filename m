@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133AbaDHNrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:47:53 -0400
-Received: from imap.thunk.org ([74.207.234.97]:51616 "EHLO imap.thunk.org"
+	id S932100AbaDHNrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:47:52 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:40656 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756976AbaDHNrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:47:48 -0400
-Date: Tue, 8 Apr 2014 09:47:40 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-Message-ID: <20140408134740.GB28822@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Geert Uytterhoeven <geert@linux-m68k.org>,
-	Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <20140403191558.GA8745@thunk.org>
- <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
- <20140404035308.GC2525@thunk.org>
- <20140404134429.GB26806@quack.suse.cz>
- <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
- <20140404234358.GE10275@thunk.org>
- <CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
- <20140407140745.GA8855@thunk.org>
- <CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1756871AbaDHNrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 09:47:47 -0400
+Message-ID: <1396964805.28420.53.camel@iivanov-dev>
+Subject: Re: [PATCH 2/2] ARM: dts: MSM8974: Add pinctrl node
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Timur Tabi <timur@codeaurora.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org
+Date: Tue, 08 Apr 2014 16:46:45 +0300
+In-Reply-To: <5343EC87.700@codeaurora.org>
+References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
+		 <1391700529-11816-2-git-send-email-iivanov@mm-sol.com>
+		 <CAOZdJXVE7MSMBaL+bt0kjw5LEidz-aVp+vrWqQWkye6HdE7EeA@mail.gmail.com>
+	 <1396959284.28420.45.camel@iivanov-dev> <5343EC87.700@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 10:25:30PM +0200, Geert Uytterhoeven wrote:
-> > maintainers would have no idea that a new syscall has been added.
+On Tue, 2014-04-08 at 07:33 -0500, Timur Tabi wrote:
+> Ivan T. Ivanov wrote:
+> >> >I'm confused by this.  Isn't this information already defined in the
+> >> >pinctrl-msm8x74.c driver?
+> >> >
+> >> >static const char * const blsp_spi8_groups[] = {
+> >> >     "gpio45", "gpio46", "gpio47", "gpio48"
+> >> >};
+> > I am not sure that I understand the question. This is one of
+> > possible ways to describe relationship between pins and functions.
+> > As they are described is visible what is their real purpose.
 > 
-> If i386 has the new syscall, scripts/checksyscalls.sh will catch it and
-> inform us about it during our next kernel build.
+> Ok, let me rephrase.
 > 
-> If you add it to x86_64 only, bad luck for anyone else ;-)
+> The 8x74 pinctrl driver already contains this information.  It already 
+> defines a "blsp_spi8" group consisting of GPIOs 45, 46, 47, and 48.
+> 
+> This patch adds that same exact information into the device tree.  Why 
+> are we duplicating that information?  Why add it to the device tree when 
+> it's already in the driver (and already working).
 
-Maybe we should change scripts/checksyscalls.sh to check the x86_64
-list of syscalls, and not i386?
+Probably. It was my natural way of thinking. Pin have a functions. 
+It is easier if I measure signals to just look at the device
+tree file. What are you suggesting?
 
-It's been a long time since "all the world's an i386" --- these days,
-it's "all the world's an x86_64".  :-)
+> 
+> Also, I don't see any code anywhere that uses these new device tree nodes.
 
-						- Ted
+This is easy to fix :-).
 
-"Thou shalt foreswear, renounce, and abjure the vile heresy which
-claimeth that ``All the world's a VAX'', and have no commerce with the
-benighted heathens who cling to this barbarous belief, that the days
-of thy program may be long even though the days of thy current machine
-be short."  -- The Ten Commandments for C Programmers
+Regards,
+Ivan
 
-- http://www.lysator.liu.se/c/ten-commandments.html
