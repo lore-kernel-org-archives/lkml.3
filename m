@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167AbaDHOSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:18:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50656 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757063AbaDHOSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:18:46 -0400
-Message-ID: <53440544.9040502@codeaurora.org>
-Date: Tue, 08 Apr 2014 09:18:44 -0500
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1757180AbaDHOTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:19:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57656 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756956AbaDHOTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:19:32 -0400
+Date: Tue, 8 Apr 2014 10:17:58 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com
+Subject: Re: [PATCH 07/15 V3] perf, c2c: Add in sort on physid
+Message-ID: <20140408141758.GU8488@redhat.com>
+References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+ <1395689826-215033-8-git-send-email-dzickus@redhat.com>
+ <87k3b0w8ye.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: dts: MSM8974: Add pinctrl node
-References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com> 	 <1391700529-11816-2-git-send-email-iivanov@mm-sol.com> 	 <CAOZdJXVE7MSMBaL+bt0kjw5LEidz-aVp+vrWqQWkye6HdE7EeA@mail.gmail.com>  <1396959284.28420.45.camel@iivanov-dev> <5343EC87.700@codeaurora.org> <1396964805.28420.53.camel@iivanov-dev>
-In-Reply-To: <1396964805.28420.53.camel@iivanov-dev>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k3b0w8ye.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 08:46 AM, Ivan T. Ivanov wrote:
->> >This patch adds that same exact information into the device tree.  Why
->> >are we duplicating that information?  Why add it to the device tree when
->> >it's already in the driver (and already working).
+On Tue, Apr 08, 2014 at 04:56:25PM +0900, Namhyung Kim wrote:
+> On Mon, 24 Mar 2014 15:36:58 -0400, Don Zickus wrote:
+> > Now that the infrastructure is set, add in the support to use
+> > hist_entry to sort on physid.
+> >
+> > V2: use new mmap2 sort
+> >
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  tools/perf/builtin-c2c.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++-
+> >  1 file changed, 51 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
+> > index d7eaf81..b5742bd 100644
+> > --- a/tools/perf/builtin-c2c.c
+> > +++ b/tools/perf/builtin-c2c.c
+> > @@ -7,6 +7,7 @@
+> >  #include "util/tool.h"
+> >  #include "util/debug.h"
+> >  #include <api/fs/fs.h>
+> > +#include "util/annotate.h"
+> 
+> Why is this #include needed?
+> 
+> 
+> [SNIP]
+> > @@ -163,7 +169,33 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
+> >  		return 0;
+> >  	}
+> >  
+> > -	return 0;
+> > +	cost = sample->weight;
+> > +	if (!cost)
+> > +		cost = 1;
+> > +
+> > +	/*
+> > +	 * must pass period=weight in order to get the correct
+> > +	 * sorting from hists__collapse_resort() which is solely
+> > +	 * based on periods. We want sorting be done on nr_events * weight
+> > +	 * and this is indirectly achieved by passing period=weight here
+> > +	 * and the he_stat__add_period() function.
+> > +	 */
+> > +	he = __hists__add_entry(&c2c->hists, al, parent, NULL, mi,
+> > +				cost, cost, 0);
+> > +	if (!he) {
+> > +		err = -ENOMEM;
+> > +		goto out_mem;
+> > +	}
+> > +
+> > +	c2c->hists.stats.total_period += cost;
+> > +	hists__inc_nr_events(&c2c->hists, PERF_RECORD_SAMPLE);
+> > +	return err;
+> > +
+> > +out_mem:
+> > +	/* implicitly freed by __hists__add_entry */
+> > +	free(mi);
+> > +out:
+> 
+> It seems this 'out' lable is not used anywhere..
+> 
+> 
+> > +	return err;
+> >  }
+> >  
+> >  /* setup the basic events for most coverage, options added later */
+> > @@ -266,10 +298,28 @@ out:
+> >  	return err;
+> >  }
+> >  
+> > +static int perf_c2c__init(struct perf_c2c *c2c)
+> > +{
+> > +	sort__mode = SORT_MODE__PHYSID;
+> > +	sort__wants_unique = 1;
+> > +	sort_order = "daddr,iaddr,pid,tid";
+> 
+> Where are the SORT_MODE__PHYSID, sort__wants_unique and "daddr", "iaddr"
+> sort keys defined?
 
-> Probably. It was my natural way of thinking. Pin have a functions.
-> It is easier if I measure signals to just look at the device
-> tree file. What are you suggesting?
+In a previous patchset that enables the mmap2 interface.
 
-Back in July, Qualcomm submitted a patch that added this information 
-into the device tree:
+> 
+> Also, more importantly, I think the sort order should contain at least
+> "mem" and "snoop" keys to group samples based on the exact hitm
+> information.
 
-http://marc.info/?t=137185166100003&r=1&w=2
+I can look into it, but after iaddr, pid and tid, sorting on snoop doesn't
+really change anything if I recall.  The hitms are scattered across iaddr.
 
-However, this was rejected.  Now it appears that this information is 
-again being added to the device tree, but it's being accepted.  What's 
-different now?
+> 
+> In my understanding, if two samples are captured at exactly same
+> position with a same data access but different hitm info, they cannot be
+> classified and just use the hitm info of first entry.
 
-Another problem is that these device tree changes makes it difficult to 
-support ACPI.  It's easy to move information between the drivers and the 
-device tree, because they're kept together.  It's not so easy with ACPI. 
-  I'm trying to add ACPI support to the 8x74 pinctrl driver, but it's a 
-moving target.
+Why?  If the first hitm access was local and the second one remote,
+doesn't that indicate the accessed data is being pulled onto different
+nodes?
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, hosted by the Linux Foundation.
+Cheers,
+Don
