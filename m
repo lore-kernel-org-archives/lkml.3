@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934AbaDHSEE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:04:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31194 "EHLO mx1.redhat.com"
+	id S1757967AbaDHSEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:04:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49435 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757802AbaDHSBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757799AbaDHSBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Apr 2014 14:01:37 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 04/10] tools lib traceevent: Do not call warning() directly
-Date: Tue,  8 Apr 2014 20:01:02 +0200
-Message-Id: <1396980068-27124-5-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 08/10] perf lock: Introduce --list-cmds for use by scripts
+Date: Tue,  8 Apr 2014 20:01:06 +0200
+Message-Id: <1396980068-27124-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-The patch 3a3ffa2e82205 ("tools lib traceevent: Report better error
-message on bad function args") added the error message but it seems
-there's no reason to call warning() directly.
-
-So change it to do_warning_event() to provide event information too.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1395192174-26273-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1394853474-31019-4-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/builtin-lock.c     | 10 ++++++----
+ tools/perf/perf-completion.sh |  2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 33803c0b9..baec7d8 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -2742,14 +2742,16 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 		type = process_arg(event, farg, &token);
- 		if (i < (func->nr_args - 1)) {
- 			if (type != EVENT_DELIM || strcmp(token, ",") != 0) {
--				warning("Error: function '%s()' expects %d arguments but event %s only uses %d",
-+				do_warning_event(event,
-+					"Error: function '%s()' expects %d arguments but event %s only uses %d",
- 					func->name, func->nr_args,
- 					event->name, i + 1);
- 				goto err;
- 			}
- 		} else {
- 			if (type != EVENT_DELIM || strcmp(token, ")") != 0) {
--				warning("Error: function '%s()' only expects %d arguments but event %s has more",
-+				do_warning_event(event,
-+					"Error: function '%s()' only expects %d arguments but event %s has more",
- 					func->name, func->nr_args, event->name);
- 				goto err;
- 			}
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index c852c7a..6148afc 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -961,8 +961,10 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"perf lock info [<options>]",
+ 		NULL
+ 	};
+-	const char * const lock_usage[] = {
+-		"perf lock [<options>] {record|report|script|info}",
++	const char *const lock_subcommands[] = { "record", "report", "script",
++						 "info", NULL };
++	const char *lock_usage[] = {
++		NULL,
+ 		NULL
+ 	};
+ 	const char * const report_usage[] = {
+@@ -976,8 +978,8 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	for (i = 0; i < LOCKHASH_SIZE; i++)
+ 		INIT_LIST_HEAD(lockhash_table + i);
+ 
+-	argc = parse_options(argc, argv, lock_options, lock_usage,
+-			     PARSE_OPT_STOP_AT_NON_OPTION);
++	argc = parse_options_subcommand(argc, argv, lock_options, lock_subcommands,
++					lock_usage, PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (!argc)
+ 		usage_with_options(lock_usage, lock_options);
+ 
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index f44c04b..ecedab6 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -122,7 +122,7 @@ __perf_main ()
+ 		evts=$($cmd list --raw-dump)
+ 		__perfcomp_colon "$evts" "$cur"
+ 	# List subcommands for perf commands
+-	elif [[ $prev == @(kvm|kmem|mem) ]]; then
++	elif [[ $prev == @(kvm|kmem|mem|lock) ]]; then
+ 		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
 -- 
 1.8.3.1
 
