@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575AbaDHPkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:40:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52277 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755932AbaDHPke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:40:34 -0400
-Date: Tue, 8 Apr 2014 16:40:17 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thor Thayer <tthayer@altera.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "dinguyen@altera.com" <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
- CycloneV/ArriaV
-Message-ID: <20140408154017.GF11876@e106331-lin.cambridge.arm.com>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
- <1396907649-20212-4-git-send-email-tthayer@altera.com>
- <20140408100851.GF30077@pd.tnic>
- <1396965459.23349.4.camel@dinh-ubuntu>
- <20140408152406.GI30077@pd.tnic>
+	id S1757442AbaDHPlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:41:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756891AbaDHPlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 11:41:17 -0400
+Date: Tue, 8 Apr 2014 17:41:01 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Vladimir Nikulichev <nvs@tbricks.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-perf-users@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Correctly handle symbols in VDSO
+Message-ID: <20140408154101.GA21094@krava.brq.redhat.com>
+References: <D6A5CDD8-F8F1-4C9D-8BCF-83A739FD6A2F@tbricks.com>
+ <87eh19y8cm.fsf@sejong.aot.lge.com>
+ <3C60FB26-A78B-4E37-B4A6-E6F7283CEB4C@tbricks.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140408152406.GI30077@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <3C60FB26-A78B-4E37-B4A6-E6F7283CEB4C@tbricks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 04:24:06PM +0100, Borislav Petkov wrote:
-> On Tue, Apr 08, 2014 at 08:57:39AM -0500, Thor Thayer wrote:
-> > Yes, Altera has a group specifically supporting Linux drivers on the
-> > Altera SoCs.
+On Tue, Apr 08, 2014 at 07:24:22PM +0400, Vladimir Nikulichev wrote:
+> Hi Namhyung,
 > 
-> Then please add MAINTAINERS file entry for this EDAC driver so that
-> people can send issues/reports to that group.
+> On Apr 7, 2014, at 10:14 AM, Namhyung Kim <namhyung@kernel.org> wrote:
 > 
-> > I was told that the device tree additions should be separate patches
-> > in a series since the device tree additions go to a separate group for
-> > approval.
+> > Just one question below..
+> > 
+> >> 
+> >> ---------------------------------------------------------------------------------------------------------------------------
+> >> 
+> >> perf tools: Adjust symbols in VDSO
+> >> 
+> >> Signed-off-by: Vladimir Nikulichev <nvs@tbricks.com>
+> >> 
+> >> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+> >> index 3b7dbf5..9c8b23b 100644
+> >> --- a/tools/perf/util/symbol-elf.c
+> >> +++ b/tools/perf/util/symbol-elf.c
+> >> @@ -6,6 +6,7 @@
+> >> #include <inttypes.h>
+> >> 
+> >> #include "symbol.h"
+> >> +#include "vdso.h"
+> >> #include <symbol/kallsyms.h>
+> >> #include "debug.h"
+> >> 
+> >> @@ -618,6 +619,8 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+> >> 		GElf_Shdr shdr;
+> >> 		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
+> >> 				ehdr.e_type == ET_REL ||
+> >> +				(dso->symsrc_filename == NULL &&
+> > 
+> > Is this really needed?  Just checking is_vdso_map() seems to work well
+> > for me.  Did you have a specific reason to add it?
+> > 
 > 
-> Well, the EDAC driver depends on the devicetree stuff, right? If so,
-> they should go together.
+> Nothing specific, just to don't call string operations in most cases. But here it is only a matter of coding style, of course.
+> Attaching shorter version of the patch.
+> 
+> ----------------------------
+> 
+> perf tools: Adjust symbols in VDSO
 
-The patches should be in the same series, but for review purposes it's
-nicer if the bindings are separate patches from the code within that
-series.
+hi,
+could you please put explanation from first email
+into the patch changelog?
 
-I usually look at the drivers implementing bindings and prefer to be
-Cc'd on the whole series, with both the binding and driver.
+cc-ing lkml
 
-Cheers,
-Mark.
+thanks,
+jirka
