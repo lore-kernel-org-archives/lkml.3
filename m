@@ -1,16 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027AbaDHDch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 23:32:37 -0400
-Received: from chicago.guarana.org ([192.210.136.102]:38979 "EHLO
-	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaDHDcf (ORCPT
+	id S1755394AbaDHDiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 23:38:14 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36212 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690AbaDHDiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 23:32:35 -0400
-Date: Tue, 8 Apr 2014 14:32:33 +1000
-From: Kevin Easton <kevin@guarana.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
+	Mon, 7 Apr 2014 23:38:13 -0400
+Message-ID: <53436F20.7000305@linaro.org>
+Date: Mon, 07 Apr 2014 20:38:08 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Kevin Easton <kevin@guarana.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
         "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Android Kernel Team <kernel-team@android.com>,
@@ -24,76 +27,76 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
         Minchan Kim <minchan@kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
 Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Message-ID: <20140408043233.GA11711@chicago.guarana.org>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
- <20140401212102.GM4407@cmpxchg.org>
- <533B313E.5000403@zytor.com>
- <533B4555.3000608@sr71.net>
- <533B8E3C.3090606@linaro.org>
- <20140402163638.GQ14688@cmpxchg.org>
- <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org> <533B313E.5000403@zytor.com> <533B4555.3000608@sr71.net> <533B8E3C.3090606@linaro.org> <20140402163638.GQ14688@cmpxchg.org> <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com> <20140408043233.GA11711@chicago.guarana.org>
+In-Reply-To: <20140408043233.GA11711@chicago.guarana.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
-> On Wed, Apr 2, 2014 at 9:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > I'm just dying to hear a "normal" use case then. :)
-> 
-> So the more "normal" use cause would be marking objects volatile and
-> then non-volatile w/o accessing them in-between. In this case the
-> zero-fill vs SIGBUS semantics don't really matter, its really just a
-> trade off in how we handle applications deviating (intentionally or
-> not) from this use case.
-> 
-> So to maybe flesh out the context here for folks who are following
-> along (but weren't in the hallway at LSF :),  Johannes made a fairly
-> interesting proposal (Johannes: Please correct me here where I'm maybe
-> slightly off here) to use only the dirty bits of the ptes to mark a
-> page as volatile. Then the kernel could reclaim these clean pages as
-> it needed, and when we marked the range as non-volatile, the pages
-> would be re-dirtied and if any of the pages were missing, we could
-> return a flag with the purged state.  This had some different
-> semantics then what I've been working with for awhile (for example,
-> any writes to pages would implicitly clear volatility), so I wasn't
-> completely comfortable with it, but figured I'd think about it to see
-> if it could be done. Particularly since it would in some ways simplify
-> tmpfs/shm shared volatility that I'd eventually like to do.
-...
-> Now, while for the case I'm personally most interested in (ashmem),
-> zero-fill would technically be ok, since that's what Android does.
-> Even so, I don't think its the best approach for the interface, since
-> applications may end up quite surprised by the results when they
-> accidentally don't follow the "don't touch volatile pages" rule.
-> 
-> That point beside, I think the other problem with the page-cleaning
-> volatility approach is that there are other awkward side effects. For
-> example: Say an application marks a range as volatile. One page in the
-> range is then purged. The application, due to a bug or otherwise,
-> reads the volatile range. This causes the page to be zero-filled in,
-> and the application silently uses the corrupted data (which isn't
-> great). More problematic though, is that by faulting the page in,
-> they've in effect lost the purge state for that page. When the
-> application then goes to mark the range as non-volatile, all pages are
-> present, so we'd return that no pages were purged.  From an
-> application perspective this is pretty ugly.
+On 04/07/2014 09:32 PM, Kevin Easton wrote:
+> On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
+>> On Wed, Apr 2, 2014 at 9:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>>> I'm just dying to hear a "normal" use case then. :)
+>> So the more "normal" use cause would be marking objects volatile and
+>> then non-volatile w/o accessing them in-between. In this case the
+>> zero-fill vs SIGBUS semantics don't really matter, its really just a
+>> trade off in how we handle applications deviating (intentionally or
+>> not) from this use case.
+>>
+>> So to maybe flesh out the context here for folks who are following
+>> along (but weren't in the hallway at LSF :),  Johannes made a fairly
+>> interesting proposal (Johannes: Please correct me here where I'm maybe
+>> slightly off here) to use only the dirty bits of the ptes to mark a
+>> page as volatile. Then the kernel could reclaim these clean pages as
+>> it needed, and when we marked the range as non-volatile, the pages
+>> would be re-dirtied and if any of the pages were missing, we could
+>> return a flag with the purged state.  This had some different
+>> semantics then what I've been working with for awhile (for example,
+>> any writes to pages would implicitly clear volatility), so I wasn't
+>> completely comfortable with it, but figured I'd think about it to see
+>> if it could be done. Particularly since it would in some ways simplify
+>> tmpfs/shm shared volatility that I'd eventually like to do.
+> ...
+>> Now, while for the case I'm personally most interested in (ashmem),
+>> zero-fill would technically be ok, since that's what Android does.
+>> Even so, I don't think its the best approach for the interface, since
+>> applications may end up quite surprised by the results when they
+>> accidentally don't follow the "don't touch volatile pages" rule.
+>>
+>> That point beside, I think the other problem with the page-cleaning
+>> volatility approach is that there are other awkward side effects. For
+>> example: Say an application marks a range as volatile. One page in the
+>> range is then purged. The application, due to a bug or otherwise,
+>> reads the volatile range. This causes the page to be zero-filled in,
+>> and the application silently uses the corrupted data (which isn't
+>> great). More problematic though, is that by faulting the page in,
+>> they've in effect lost the purge state for that page. When the
+>> application then goes to mark the range as non-volatile, all pages are
+>> present, so we'd return that no pages were purged.  From an
+>> application perspective this is pretty ugly.
+> The write-implicitly-clears-volatile semantics would actually be
+> an advantage for some use cases.  If you have a volatile cache of
+> many sub-page-size objects, the application can just include at
+> the start of each page "int present, in_use;".  "present" is set
+> to non-zero before marking volatile, and when the application wants
+> unmark as volatile it writes to "in_use" and tests the value of 
+> "present".  No need for a syscall at all, although it does take a
+> minor fault.
+>
+> The syscall would be better for the case of large objects, though.
+>
+> Or is that fatally flawed?
 
-The write-implicitly-clears-volatile semantics would actually be
-an advantage for some use cases.  If you have a volatile cache of
-many sub-page-size objects, the application can just include at
-the start of each page "int present, in_use;".  "present" is set
-to non-zero before marking volatile, and when the application wants
-unmark as volatile it writes to "in_use" and tests the value of 
-"present".  No need for a syscall at all, although it does take a
-minor fault.
+Well, as you note, each object would then have to be page size or
+smaller, which limits some of the potential use cases.
 
-The syscall would be better for the case of large objects, though.
+However, these semantics would match better to the MADV_FREE proposal
+Minchan is pushing. So this method would work fine there.
 
-Or is that fatally flawed?
+thanks
+-john
 
-    - Kevin
+
