@@ -1,131 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275AbaDHXcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 19:32:06 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52013 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756798AbaDHXcE (ORCPT
+	id S932433AbaDHXd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 19:33:28 -0400
+Received: from toccata.ens-lyon.org ([140.77.166.68]:44006 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313AbaDHXd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 19:32:04 -0400
-Date: Tue, 8 Apr 2014 16:32:02 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: qcom: Add initial APQ8064 SoC and IFC6410 board
- device trees
-Message-ID: <20140408233202.GM9985@codeaurora.org>
-References: <1396972391-11759-1-git-send-email-galak@codeaurora.org>
+	Tue, 8 Apr 2014 19:33:27 -0400
+Date: Wed, 9 Apr 2014 01:33:06 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        akpm@linux-foundation.org, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
+Message-ID: <20140408233306.GJ27820@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+	akpm@linux-foundation.org, jslaby@suse.cz,
+	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org,
+	Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+References: <20140331122323.GC6044@type.bordeaux.inria.fr>
+ <20140407021015.GA8518@core.coreip.homeip.net>
+ <20140407075423.GZ7179@type.wlan.youpi.perso.aquilenet.fr>
+ <20140408083940.GA22855@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1396972391-11759-1-git-send-email-galak@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140408083940.GA22855@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08, Kumar Gala wrote:
-> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> new file mode 100644
-> index 0000000..e336c09
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> @@ -0,0 +1,154 @@
-> +/dts-v1/;
-> +
-> +#include "skeleton.dtsi"
-> +#include <dt-bindings/clock/qcom,gcc-msm8960.h>
-> +
-> +/ {
-> +	model = "Qualcomm APQ8064";
-> +	compatible = "qcom,apq8064";
-> +	interrupt-parent = <&intc>;
-> +
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		compatible = "qcom,krait";
+Hello,
 
-This doesn't follow the binding. We're supposed to put the
-compatible in each cpu node even though it's always the same.
+Dmitry Torokhov, le Tue 08 Apr 2014 01:39:40 -0700, a écrit :
+> It is not about the VT, I am talking about pure input core. If I
+> repurpose CapsLock LED for my WiFi indicator I do not want to go into
+> other programs and teach them that they should stay away from trying to
+> control this LED.
 
-> +		enable-method = "qcom,kpss-acc-v1";
-> +
-> +		cpu@0 {
-> +			device_type = "cpu";
-> +			reg = <0>;
-> +			next-level-cache = <&L2>;
-> +			qcom,acc = <&acc0>;
-> +			qcom,saw = <&saw0>;
-> +		};
-> +
-> +		cpu@1 {
-> +			device_type = "cpu";
-> +			reg = <1>;
-> +			next-level-cache = <&L2>;
-> +			qcom,acc = <&acc1>;
-> +			qcom,saw = <&saw1>;
-> +		};
-> +
-> +		cpu@2 {
-> +			device_type = "cpu";
-> +			reg = <2>;
-> +			next-level-cache = <&L2>;
-> +			qcom,acc = <&acc2>;
-> +			qcom,saw = <&saw2>;
-> +		};
-> +
-> +		cpu@3 {
-> +			device_type = "cpu";
-> +			reg = <3>;
-> +			next-level-cache = <&L2>;
-> +			qcom,acc = <&acc3>;
-> +			qcom,saw = <&saw3>;
-> +		};
-> +
-> +		L2: l2-cache {
-> +			compatible = "cache";
+Err, but even without talking about repurposing Capslock LED for WiFi...
+How is managed the conflict between the normal capslock behavior and
+other programs' action on the underlying input device?  I don't think
+this patch does not introduce the problem.
 
-This would be "qcom,arch-cache" if the binding is accepted.
+Now you may answer "well, if it could fix the problem along the way it'd
+be good".  I'd like to answer "well, this is not my shit" :)
 
-> +			cache-level = <2>;
-> +			interrupts = <0 2 0x4>;
+But still, the problem is interesting, and I don't know how to deal
+properly with it. More precisely, I don't think we *want* to deal with
+it.  Currently, what happens is that there is no priority between what
+the VT keyboard events produce and what applications produce, so things
+happily mix with strange results as soon as a user tries to combine
+both. My concern is:
 
-These interrupts here are also not accepted as a binding yet.
+How to decide which one to prioritize?
 
-> +		};
-> +	};
-> +
-> +	cpu-pmu {
-> +		compatible = "qcom,krait-pmu";
-> +		interrupts = <1 10 0x304>;
-> +	};
-> +
-> +	soc: soc {
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges;
-> +		compatible = "simple-bus";
-> +
-> +
+Is it just because console-setup happens to repurpose the capslock LED
+key that applications should suddenly not have capslock LED control
+at all?  That's contradictory with the use case you have given.  That
+leads me into believing that we should not try to push a hard rule, and
+just let the user manage what accesses it.  We could indeed make the VT
+always take priority, but then that would probably break some existing
+applications.  Then, is "repurposing a keyboard LED" enough of an action
+to be able to decide that applications modifying that LED should be just
+ignored?  I doubt it.
 
-Nit: Weird two newlines here
+> I understand the desire, however I still wonder if we should be
+> extending legacy VT given that David wants to move it all to userspace.
 
-> +		intc: interrupt-controller@2000000 {
-> +			compatible = "qcom,msm-qgic2";
-> +			interrupt-controller;
-> +			#interrupt-cells = <3>;
-> +			reg = < 0x02000000 0x1000 >,
-> +			      < 0x02002000 0x1000 >;
-> +		};
-> +
+I believe I have heard about moving the console implementation to
+userland for more that a decide.  Will that really happen any time?
+In the meanwhile, we have broken capslock keys on e.g. all Debian and
+Ubuntu systems for a couple of years already (because they have adopted
+console-setup), and some ARM systems don't have keyboard LEDs at all
+without a patched kernel.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Samuel
