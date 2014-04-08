@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501AbaDHPnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:43:37 -0400
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.27]:29369 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756944AbaDHPne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:43:34 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Sharat Masetty <sharat04@gmail.com>, David Miller <davem@davemloft.net>
-CC: Linux Netdev List <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Subject: RE: [PATCH net-next,v4] hyperv: Add support for virtual Receive
- Side Scaling (vRSS)
-Thread-Topic: [PATCH net-next,v4] hyperv: Add support for virtual Receive
- Side Scaling (vRSS)
-Thread-Index: AQHPUo9hwVfmBzXAgEOnJHwk6QrgC5sG8p4AgAA6kICAAK1G4A==
-Date: Tue, 8 Apr 2014 15:43:25 +0000
-Message-ID: <44c82a884313465184d9a15a66248d3b@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1396898623-31667-1-git-send-email-haiyangz@microsoft.com>
-	<20140407.144258.2113005286706932770.davem@davemloft.net>
- <CAJzFV36G7Qq1jc1nNkU2h19=c3-N-q9SEOmyMobCRwdirf0+vQ@mail.gmail.com>
-In-Reply-To: <CAJzFV36G7Qq1jc1nNkU2h19=c3-N-q9SEOmyMobCRwdirf0+vQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.59.235.233]
-Content-Type: text/plain; charset="utf-8"
+	id S1757512AbaDHPoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:44:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36735 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756232AbaDHPoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 11:44:06 -0400
+Message-ID: <53441943.1080102@suse.cz>
+Date: Tue, 08 Apr 2014 17:44:03 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(13464003)(377454003)(164054003)(51704005)(199002)(189002)(23676002)(99396002)(2009001)(2656002)(47976001)(97736001)(46102001)(4396001)(51856001)(53806001)(47736001)(6806004)(81342001)(87266001)(74662001)(49866001)(50986002)(87936001)(74876001)(94946001)(33646001)(59766001)(77982001)(56776001)(31966008)(93516002)(80976001)(92566001)(95666003)(79102001)(97336001)(63696002)(94316002)(19580395003)(76796001)(85852003)(65816001)(80022001)(47776003)(76786001)(76482001)(83322001)(81542001)(97186001)(74706001)(54356001)(74366001)(56816005)(19580405001)(74502001)(86612001)(47446002)(90146001)(81816001)(83072002)(50466002)(69226001)(81686001)(84676001)(98676001)(85306002)(54316002)(44976005)(95416001)(20776003)(66066001)(93136001)(15975445006)(142933001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2SR01MB592;H:hybrid.exchange.microsoft.com;FPR:687C411E.2CF3B7C1.71EB1F0F.44E4DA7B.20230;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Exchange-Organization-AntiSpam-Internal: BULK:None;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:(2001)
-X-Forefront-PRVS: 017589626D
-X-OriginatorOrg: msft.ccsctp.net
+To: Sasha Levin <sasha.levin@oracle.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] mm,tracing: improve current situation
+References: <1396561440.4661.33.camel@buesod1.americas.hpqcorp.net> <533DEDC5.5070500@oracle.com>
+In-Reply-To: <533DEDC5.5070500@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s38Fhn1M012107
 
+On 04/04/2014 01:24 AM, Sasha Levin wrote:
+> On 04/03/2014 05:44 PM, Davidlohr Bueso wrote:
+>> Hi All,
+>>
+>> During LSFMM Dave Jones discussed the current situation around
+>> testing/trinity in the mm. One of the conclusions was that basically we
+>> lack tools to gather the necessary information to make debugging a less
+>> painful process, making it pretty much a black box for a lot of cases.
+>>
+>> One of the suggested ways to do so was to improve our tracing. Currently
+>> we have events for kmem, vmscan and oom (which really just traces the
+>> tunable updates) -- In addition Dave Hansen also also been trying to add
+>> tracing for TLB range flushing, hopefully that can make it in some time
+>> soon. However, this lacks the more general data that governs all of the
+>> core VM, such as vmas and of course the mm_struct.
+>>
+>> To this end, I've started adding events to trace the vma lifecycle,
+>> including: creating, removing, splitting, merging, copying and
+>> adjusting. Currently it only prints out the start and end virtual
+>> addresses, such as:
+>>
+>> bash-3661   [000]  ....  222.964847: split_vma: [8a8000-9a6000] => new: [9a6000-9b6000]
+>>
+>> Now, on a more general scenario, I basically would like to know, 1) is
+>> this actually useful... I'm hoping that, if in fact something like this
+>> gets merged, it won't just sit there. 2) What other general data would
+>> be useful for debugging purposes? I'm happy to collect feedback and send
+>> out something we can all benefit from.
 
+I think that adding more tracepoints might be more useful for debugging 
+performance-related problems (e.g. compaction) that don't manifest as 
+panic, and that VM_BUG_ON is more suited for this kind of debugging. But 
+I might be wrong.
 
-> -----Original Message-----
-> From: Sharat Masetty [mailto:sharat04@gmail.com]
-> Sent: Monday, April 7, 2014 6:13 PM
-> To: David Miller
-> Cc: Haiyang Zhang; Linux Netdev List; KY Srinivasan; olaf@aepfle.de;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive Side
-> Scaling (vRSS)
-> 
-> Hi Zhang,
-> 
-> How is this beneficial when compared to RPS(receive packet steering)?
-> Can you please provide more details on what this patch does?
+> There's another thing we have to think about, which is the bottleneck of
+> getting that debug info out.
+>
+> Turning on any sort of tracing/logging in mm/ would trigger huge amounts
+> of data flowing out. Any attempt to store that data anywhere would result
+> either in too much interference to the tests so that issues stop reproducing,
+> or way too much data to even be able to get through the guest <-> host pipe.
+>
+> I was working on a similar idea, which is similar to what lockdep does now:
+> when you get a lockdep spew you see a nice output which also shows call
+> traces of relevant locks. What if, for example, we could make dump_page()
+> also dump the traces of where each of it's flags was set or cleared?
 
-This patch supports the virtual RSS feature provided by Hyper-V hosts. Currently,
-the interrupts are received on only one CPU per vNIC. With this feature, we can 
-receive interrupts from multiple CPUs and VMBus channels for one vNIC. Outgoing 
-packets are put into multiple channels as well. So the network throughput can 
-scale up with the number of CPUs for a VM.
+Hm doesn't the oops printing already print accumulated trace buffers? 
+Wouldn't it be easier to post-process that instead of trying to do some 
+smart "unwinding" during oops? Is it possible to enable tracing without 
+actually consuming the data, just for this purpose?
 
-RPS is basically a software implementation of RSS. This is an online doc about 
-these features:
-https://www.kernel.org/doc/Documentation/networking/scaling.txt
+Vlastimil
 
-Thanks,
-- Haiyang
+> Thanks,
+> Sasha
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
