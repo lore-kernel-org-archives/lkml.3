@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729AbaDHMVf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 08:21:35 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:41104 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351AbaDHMVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 08:21:33 -0400
-Message-ID: <5343E9BE.7030608@linaro.org>
-Date: Tue, 08 Apr 2014 20:21:18 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756649AbaDHM1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 08:27:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59285 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756521AbaDHM1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 08:27:35 -0400
+Date: Tue, 8 Apr 2014 14:27:31 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/3] hw_random: Move UML_RANDOM at the last position
+Message-ID: <20140408142731.48c9f92f@endymion.delvare>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Grant Likely <grant.likely@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH V2] ACPI: Update the ownership and developers for ACPI
- in Kconfig
-References: <1396956241-8337-1-git-send-email-hanjun.guo@linaro.org> <3442476.Y3PYFAt6A7@vostro.rjw.lan>
-In-Reply-To: <3442476.Y3PYFAt6A7@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+UML_RANDOM is the only hardware random number generator option which
+does not depend on HW_RANDOM. Having it in the middle of the other
+options breaks the alignment in "make menuconfig". Move it at the last
+position to avoid that.
 
-On 2014-4-8 20:01, Rafael J. Wysocki wrote:
-> On Tuesday, April 08, 2014 07:24:01 PM Hanjun Guo wrote:
->> The UEFI Forum included the ACPI spec in its portfolio in October 2013
->> and will host future spec iterations, following the ACPI v5.0a release.
->>
->> A UEFI Forum working group named ACPI Specification Working Group (ASWG)
->> has been established to handle future ACPI developments, any UEFI member
->> can join the group and contribute to ACPI specification.
->>
->> So update the ownership and developers for ACPI in Kconfig accordingly,
->> and add another website link to ACPI specification too.
->>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>  drivers/acpi/Kconfig |    4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
->> index c205653..6bbf36e 100644
->> --- a/drivers/acpi/Kconfig
->> +++ b/drivers/acpi/Kconfig
->> @@ -32,9 +32,11 @@ menuconfig ACPI
->>  	  <http://acpica.org/>
->>  
->>  	  ACPI is an open industry specification co-developed by
->> -	  Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.
->> +	  ACPI Specification Working Group (ASWG) under UEFI Forum, any
->> +	  UEFI member can join ASWG and contribute to ACPI specification.
-> 
-> Thinking a bit more about that, I'd prefer this wording:
-> 
-> 	ACPI is an open industry specification originally co-developed by
-> 	Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.  Currently,
-> 	it is developed by the ACPI Specification Working Group (ASWG) under
-> 	the UEFI Forum and any UEFI member can join the ASWG and contribute
-> 	to the ACPI specification.
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+---
+ drivers/char/hw_random/Kconfig |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-Great, I like your wording very much, will sent another version shortly :)
+--- linux-3.15-rc0.orig/drivers/char/hw_random/Kconfig	2014-04-08 13:12:21.590656248 +0200
++++ linux-3.15-rc0/drivers/char/hw_random/Kconfig	2014-04-08 13:12:50.845233756 +0200
+@@ -275,21 +275,6 @@ config HW_RANDOM_PPC4XX
+ 
+ 	 If unsure, say N.
+ 
+-config UML_RANDOM
+-	depends on UML
+-	tristate "Hardware random number generator"
+-	help
+-	  This option enables UML's "hardware" random number generator.  It
+-	  attaches itself to the host's /dev/random, supplying as much entropy
+-	  as the host has, rather than the small amount the UML gets from its
+-	  own drivers.  It registers itself as a standard hardware random number
+-	  generator, major 10, minor 183, and the canonical device name is
+-	  /dev/hwrng.
+-	  The way to make use of this is to install the rng-tools package
+-	  (check your distro, or download from
+-	  http://sourceforge.net/projects/gkernel/).  rngd periodically reads
+-	  /dev/hwrng and injects the entropy into /dev/random.
+-
+ config HW_RANDOM_PSERIES
+ 	tristate "pSeries HW Random Number Generator support"
+ 	depends on HW_RANDOM && PPC64 && IBMVIO
+@@ -352,3 +337,18 @@ config HW_RANDOM_MSM
+ 	  module will be called msm-rng.
+ 
+ 	  If unsure, say Y.
++
++config UML_RANDOM
++	depends on UML
++	tristate "Hardware random number generator"
++	help
++	  This option enables UML's "hardware" random number generator.  It
++	  attaches itself to the host's /dev/random, supplying as much entropy
++	  as the host has, rather than the small amount the UML gets from its
++	  own drivers.  It registers itself as a standard hardware random number
++	  generator, major 10, minor 183, and the canonical device name is
++	  /dev/hwrng.
++	  The way to make use of this is to install the rng-tools package
++	  (check your distro, or download from
++	  http://sourceforge.net/projects/gkernel/).  rngd periodically reads
++	  /dev/hwrng and injects the entropy into /dev/random.
 
-Thanks
-Hanjun
 
+-- 
+Jean Delvare
+SUSE L3 Support
