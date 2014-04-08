@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbaDHRiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 13:38:10 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:38633 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932117AbaDHRiI (ORCPT
+	id S1757415AbaDHRl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 13:41:56 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:60930 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837AbaDHRlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 13:38:08 -0400
-Date: Tue, 8 Apr 2014 18:37:32 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 patches for 3.15
-Message-ID: <20140408173711.GA1588@arm.com>
+	Tue, 8 Apr 2014 13:41:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140408173031.GS10526@twins.programming.kicks-ass.net>
+References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
+	<53440A5D.6050301@zytor.com>
+	<CA+55aFwc6Jdf+As9RJ3wJWuOGEGmiaYWNa-jp2aCb9=ZiiqV+A@mail.gmail.com>
+	<20140408164652.GL7292@suse.de>
+	<20140408173031.GS10526@twins.programming.kicks-ass.net>
+Date: Tue, 8 Apr 2014 10:41:54 -0700
+X-Google-Sender-Auth: Tq9reFimVoLgWNsZf4Pn_9FDeT4
+Message-ID: <CA+55aFyAY4LrVZEZLNH8Pyxpz0ixjeBkkBbWR3fcGJ13qqRJGw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] Use an alternative to _PAGE_PROTNONE for
+ _PAGE_NUMA v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Noonan <steven@uplinklabs.net>,
+        Rik van Riel <riel@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Apr 8, 2014 at 10:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> Like this:
+>
+>   https://lkml.org/lkml/2012/11/13/431
+>
+> That used the generic PROT_NONE infrastructure and compared, on fault,
+> the page protection bits against the vma->vm_page_prot bits?
+>
+> So the objection to that approach was the vma-> dereference in
+> pte_numa() ?
 
-The following changes since commit 196adf2f3015eacac0567278ba538e3ffdd16d0e:
+So the important thing is that as long as it works exactly like
+PROT_NONE as far as hardware (and that includes paravirtualized setups
+too!) then I guess we should be ok.
 
-  arm64: Remove pgprot_dmacoherent() (2014-03-24 10:35:35 +0000)
+But that "pte_numa()" does make me go "Hmm.. but does it?". If virtual
+environments have to look at the vma in order to look at page tables,
+that's not possible. They have to be able to work with the page tables
+on their own, _without_ any special rules that are private to the
+guest.
 
-are available in the git repository at:
+So I'm not seeing any *use* of pte_numa() in places that would make me
+worry, though. So maybe it works.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-upstream
-
-for you to fetch changes up to ebf81a938dade3b450eb11c57fa744cfac4b523f:
-
-  arm64: Fix DMA range invalidation for cache line unaligned buffers (2014-04-08 11:45:08 +0100)
-
-A second pull request for this merging window, mainly with fixes and
-docs clarification. As I haven't rebased my tree, you'll get a conflict
-with latest mainline in arch/arm64/kernel/head.S. The fix-up is below.
-Thanks.
-
-diff --cc arch/arm64/kernel/head.S
-index 1fe5d8d2bdfd,26109682d2fa..0fd565000772
---- a/arch/arm64/kernel/head.S
-+++ b/arch/arm64/kernel/head.S
-@@@ -461,12 -476,26 +476,23 @@@ __create_page_tables
-  	sub	x6, x6, #1			// inclusive range
-  	create_block_map x0, x7, x3, x5, x6
-  1:
- -#ifdef CONFIG_EARLY_PRINTK
-  	/*
- -	 * Create the pgd entry for the UART mapping. The full mapping is done
- -	 * later based earlyprintk kernel parameter.
- +	 * Create the pgd entry for the fixed mappings.
-  	 */
- -	ldr	x5, =EARLYCON_IOBASE		// UART virtual address
- +	ldr	x5, =FIXADDR_TOP		// Fixed mapping virtual address
-  	add	x0, x26, #2 * PAGE_SIZE		// section table address
-  	create_pgd_entry x26, x0, x5, x6, x7
- -#endif
-+ 
-+ 	/*
-+ 	 * Since the page tables have been populated with non-cacheable
-+ 	 * accesses (MMU disabled), invalidate the idmap and swapper page
-+ 	 * tables again to remove any speculatively loaded cache lines.
-+ 	 */
-+ 	mov	x0, x25
-+ 	add	x1, x26, #SWAPPER_DIR_SIZE
-+ 	bl	__inval_cache_range
-+ 
-+ 	mov	lr, x27
-  	ret
-  ENDPROC(__create_page_tables)
-  	.ltorg
-
-----------------------------------------------------------------
-- Documentation clarification on CPU topology and booting requirements
-- Additional cache flushing during boot (needed in the presence of
-  external caches or under virtualisation)
-- DMA range invalidation fix for non cache line aligned buffers
-- Build failure fix with !COMPAT
-- Kconfig update for STRICT_DEVMEM
-
-----------------------------------------------------------------
-Catalin Marinas (4):
-      arm64: Update the TCR_EL1 translation granule definitions for 16K pages
-      arm64: Relax the kernel cache requirements for boot
-      Revert "arm64: virt: ensure visibility of __boot_cpu_mode"
-      arm64: Fix DMA range invalidation for cache line unaligned buffers
-
-Laura Abbott (1):
-      arm64: Add missing Kconfig for CONFIG_STRICT_DEVMEM
-
-Mark Brown (1):
-      ARM: topology: Make it clear that all CPUs need to be described
-
-Mark Salter (1):
-      arm64: fix !CONFIG_COMPAT build failures
-
- Documentation/arm64/booting.txt                    | 10 ++++++--
- Documentation/devicetree/bindings/arm/topology.txt |  7 ++---
- arch/arm64/Kconfig.debug                           | 14 ++++++++++
- arch/arm64/include/asm/pgtable-hwdef.h             |  6 ++++-
- arch/arm64/include/asm/virt.h                      | 13 ----------
- arch/arm64/kernel/head.S                           | 30 ++++++++++++++++++++--
- arch/arm64/kernel/perf_event.c                     |  4 +++
- arch/arm64/kernel/perf_regs.c                      |  2 ++
- arch/arm64/mm/cache.S                              | 24 ++++++++++++++---
- arch/arm64/mm/proc.S                               | 25 ++++++++++--------
- 10 files changed, 99 insertions(+), 36 deletions(-)
-
--- 
-Catalin
+             Linus
