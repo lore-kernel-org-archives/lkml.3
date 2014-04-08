@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028AbaDHS4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:56:21 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:47380 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790AbaDHS4R (ORCPT
+	id S1757809AbaDHS5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:57:12 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:50119 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757267AbaDHS5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:56:17 -0400
-Date: Tue, 8 Apr 2014 20:56:13 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>
-Subject: Re: [RFC PATCH] time: Fix truncation in jiffies_to_usecs()
-Message-ID: <20140408185609.GA14519@localhost.localdomain>
-References: <0214020@agluck-desk.sc.intel.com>
- <CA+8MBb+E_zT47qu4a6pqQWArrhs0gv1W=JKoy252_-Uw6HfbkA@mail.gmail.com>
- <20140408174946.GA11121@localhost.localdomain>
- <20140408141543.2de9449d@gandalf.local.home>
+	Tue, 8 Apr 2014 14:57:10 -0400
+Message-ID: <53444681.1070902@archlinux.org>
+Date: Tue, 08 Apr 2014 20:57:05 +0200
+From: =?ISO-8859-1?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140408141543.2de9449d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matt Fleming <matt@console-pimps.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: matt.fleming@intel.com, ak@linux.intel.com, viro@zeniv.linux.org.uk,
+        geert@linux-m68k.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        tpowa@archlinux.org, hpa@zytor.com
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+References: <20140407173016.GU32556@tassilo.jf.intel.com> <5342E46B.4080603@archlinux.org> <53430646.40507@archlinux.org> <20140407204221.GW32556@tassilo.jf.intel.com> <CAL01qpvjZz-XnVT+S3E5E2XGcuFoetE5cwnArYfW-TwYZVKtKw@mail.gmail.com> <201404080646.BID87018.SOOVJMFOLFtQHF@I-love.SAKURA.ne.jp> <20140408121400.GI5222@console-pimps.org>
+In-Reply-To: <20140408121400.GI5222@console-pimps.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="Q7Fx1L7nOIIBCfImiBpuB29d1qFQ95SAp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 02:15:43PM -0400, Steven Rostedt wrote:
-> On Tue, 8 Apr 2014 19:49:51 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Mon, Apr 07, 2014 at 10:34:51PM -0700, Tony Luck wrote:
-> > > On Mon, Apr 7, 2014 at 3:25 PM, Tony Luck <tony.luck@intel.com> wrote:
-> > > 
-> > > > c) If not this ... then what? Separate routine to convert large numbers
-> > > >    of jiffies to usec/nsecs?  Should we make the existing one barf when
-> > > >    handed a number that overflows?
-> > > 
-> > > Having thought about this a bit more - I'm leaning towards leaving
-> > > jiffies_to_usecs() alone, but using it as a model for a from-scratch
-> > > implementation of:
-> > > u64 jiffies_to_nsecs(const unsigned long j)
-> > > {
-> > > }
-> > > 
-> > > This is what the uptime tracer actually needs - and there is only
-> > > one user of jiffies_to_nsecs() to worry about.
-> > 
-> > I'm not sure I get what you're trying to do. We already have jiffies_to_nsecs().
-> > Anyway I'll just wait and check out the next patch :)
-> 
-> I believe the issue is the way it's implemented:
-> 
-> static inline u64 jiffies_to_nsecs(const unsigned long j)
-> {
-> 	return (u64)jiffies_to_usecs(j) * NSEC_PER_USEC;
-> }
-> 
-> The problem is with jiffies_to_usecs(). Which we probably should
-> change.
-> 
-> With HZ = 100,
-> 1 second jiffies_to_usecs(100) = 1000,000.
-> 1 minute jiffies_to_usec(6000) = 60,000,000.
-> 1 hour jiffies_to_usecs(360000) = 3,600,000,000
-> 1 hour 11 minutes 35 seconds -
->     jiffies_to_usecs(429500) = 4,295,000,000
-> 
-> 2^32 = 4294967296  <  4,295,000,000
-> 
-> Overflow!
-> 
-> That means after 1 hour, 11 minutes and 35 seconds, jiffies_to_usecs()
-> will return a reset number. Time will go backwards. It doesn't matter
-> what you typecast the return value of jiffies_to_usecs() to, the result
-> is wrong.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Q7Fx1L7nOIIBCfImiBpuB29d1qFQ95SAp
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ah! Ok got it now.
- 
-> Actually, I like Tony's first patch. I really think jiffies_to_usecs()
-> should return a u64 number.
+Am 08.04.2014 14:14, schrieb Matt Fleming:
+> On Tue, 08 Apr, at 06:46:49AM, Tetsuo Handa wrote:
+>> Fleming, Matt wrote:
+>>> On 7 April 2014 21:42, Andi Kleen <ak@linux.intel.com> wrote:
+>>>>
+>>>> This sounds like the UEFI boot corrupts some memory?
+>>>
+>>> Hmpf, yeah. I'll take a look in the morning.
+>>>
+>>> Thomas, you mention you're running in a 32-bit vm earlier in this
+>>> thread. Any chance you're using ovmf because that would make it much
+>>> easier to track this down?
+>>>
+>>
+>> I'm not familiar with UEFI boot, but it could happen because what
+>> I experienced with BIOS boot was an address dependent behavior.
+>>
+>> https://lkml.org/lkml/2013/9/4/188
+>=20
+> OK, that's a pretty good clue, thanks Tetsuo.
+>=20
+> Thomas, could you try this patch? It seems the use of code32_start in
+> the EFI boot stub was totally wrong for the case where the boot stub
+> relocates the kernel - you're likely to hit this path if using the EFI
+> boot stub directly from the EFI shell or gummiboot.
+>=20
+> It was pointing at the start of the kernel image and not the protected
+> mode code.
 
-Agreed it's way too error-prone. OTOH there are too many users to allow such a blind
-broad conversion of its return type:
+Hello Matt,
 
-    $ git grep jiffies_to_usecs | cut -f1 | wc -l
-    52
+I am unable to backport this to 3.14 for lack of assembler magic. While
+I can test this with git master, I eventually still need a version that
+is backported to 3.14. Any chance you could provide that, too?
 
-So it may indeed be a better idea to first create a standalone jiffies_to_nsecs().
-It can then be used to deprecate and replace most (if not all) calls to jiffies_to_usecs()
-altogether. Just the conversion must be made one by one to make sure that users can
-handle that.
 
-Of course a big fat comment on jiffies_to_usecs() to describe that it's unsafe
-and deprecated would help a bit.
+
+--Q7Fx1L7nOIIBCfImiBpuB29d1qFQ95SAp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTREaCAAoJEChPw0yOSxol4AoQAJhnLsFmsYBS7GhXWDdT19GN
+17fqK2Fcwfuj4CWUuBXjkkap/6uBvxDGoiOX9B6r/Yq5FDSa5laXTYQBP95znSTK
+4wKwX1lZrFg7DVjkG2VAMCo9Aekk5+1TNmMVybA9Rt4UiiVfpg2crh4Dvbqhlc1f
+6LtK0mqQsVLtkih/3VSv7Fp6EHc3tO9xlzpfNhkTYrCdfGBArQAesn0qhbNgIcwA
+98DPBEZTcdbjhc30OxBaQRGOvikQKQh+me30dmujR7AxPGChslnNucKUAUr0Lquc
+Xuayy3NVNjG8NlGAl1hvo0+qTb8QSiozExnmXSqskVMSSwFvxFiE4bJt/NrVSHEH
+D2fXmP0rgHqXJydl7RjJtRtiH6YQf3SPjOik5phrmZsSQOiqzuBehNEyuDr/b7O9
+cKpJW1rh7H2JbBfdafvkmasmpmCIKHq1RKoR+0hfL7UJD+s/zHzUBXfuwO9xQb6Y
+uj/rBHXrseHMcLSv+QSAbhWBVaT+Z4JIpcDagD2W5JOaK138KXkMMU/npA3LCUCa
+d1VFSrebnchxapZ84klSahf35i0ArErufsrsSS90ukyYTHKPeaP0nk6k7qTv14qr
+ofUxBnW5YhzVnryTs+eZ/alFwEjNP19jod3yLNt4onLfw7OpgjEr4aqIvPMG//lj
+SL5UMt2TseT0ltpfH9j5
+=ldhr
+-----END PGP SIGNATURE-----
+
+--Q7Fx1L7nOIIBCfImiBpuB29d1qFQ95SAp--
