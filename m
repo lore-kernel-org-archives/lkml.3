@@ -1,93 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113AbaDHIXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 04:23:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54290 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756267AbaDHIXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 04:23:05 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
-        Andres Freund <andres@2ndquadrant.com>,
-        Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/2] mm: page_alloc: Do not cache reclaim distances
-Date: Tue,  8 Apr 2014 09:23:00 +0100
-Message-Id: <1396945380-18592-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1396945380-18592-1-git-send-email-mgorman@suse.de>
-References: <1396945380-18592-1-git-send-email-mgorman@suse.de>
+	id S1756452AbaDHIZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 04:25:22 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:37156 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935AbaDHIZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 04:25:18 -0400
+Message-ID: <5343B246.1080909@linux.vnet.ibm.com>
+Date: Tue, 08 Apr 2014 13:54:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        benh@kernel.crashing.org, paulus@samba.org, nfont@linux.vnet.ibm.com,
+        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
+        rcj@linux.vnet.ibm.com, alistair@popple.id.au
+Subject: Re: [PATCH v2] power, sched: stop updating inside arch_update_cpu_topology()
+ when nothing to be update
+References: <533B8431.8090507@linux.vnet.ibm.com> <53436AC8.5020705@linux.vnet.ibm.com>
+In-Reply-To: <53436AC8.5020705@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040808-5140-0000-0000-000004DA7A0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pgdat->reclaim_nodes tracks if a remote node is allowed to be reclaimed by
-zone_reclaim due to its distance. As it is expected that zone_reclaim_mode
-will be rarely enabled it is unreasonable for all machines to take a penalty.
-Fortunately, the zone_reclaim_mode() path is already slow and it is the path
-that takes the hit.
+On 04/08/2014 08:49 AM, Michael wang wrote:
+> Since v1:
+> 	Edited the comment according to Srivatsa's suggestion.
+> 
+> During the testing, we encounter below WARN followed by Oops:
+> 
+> 	WARNING: at kernel/sched/core.c:6218
+> 	...
+> 	NIP [c000000000101660] .build_sched_domains+0x11d0/0x1200
+> 	LR [c000000000101358] .build_sched_domains+0xec8/0x1200
+> 	PACATMSCRATCH [800000000000f032]
+> 	Call Trace:
+> 	[c00000001b103850] [c000000000101358] .build_sched_domains+0xec8/0x1200
+> 	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+> 	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+> 	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+> 	...
+> 	Oops: Kernel access of bad area, sig: 11 [#1]
+> 	...
+> 	NIP [c00000000045c000] .__bitmap_weight+0x60/0xf0
+> 	LR [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+> 	PACATMSCRATCH [8000000000029032]
+> 	Call Trace:
+> 	[c00000001b1037a0] [c000000000288ff4] .kmem_cache_alloc_node_trace+0x184/0x3a0
+> 	[c00000001b103850] [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+> 	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+> 	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+> 	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+> 	...
+> 
+> This was caused by that 'sd->groups == NULL' after building groups, which
+> was caused by the empty 'sd->span'.
+> 
+> The cpu's domain contained nothing because the cpu was assigned to a wrong
+> node, due to the following unfortunate sequence of events:
+> 
+> 1. The hypervisor sent a topology update to the guest OS, to notify changes
+>    to the cpu-node mapping. However, the update was actually redundant - i.e.,
+>    the "new" mapping was exactly the same as the old one.
+> 
+> 2. Due to this, the 'updated_cpus' mask turned out to be empty after exiting
+>    the 'for-loop' in arch_update_cpu_topology().
+> 
+> 3. So we ended up calling stop-machine() with an empty cpumask list, which made
+>    stop-machine internally elect cpumask_first(cpu_online_mask), i.e., CPU0 as
+>    the cpu to run the payload (the update_cpu_topology() function).
+> 
+> 4. This causes update_cpu_topology() to be run by CPU0. And since 'updates'
+>    is kzalloc()'ed inside arch_update_cpu_topology(), update_cpu_topology()
+>    finds update->cpu as well as update->new_nid to be 0. In other words, we
+>    end up assigning CPU0 (and eventually its siblings) to node 0, incorrectly.
+> 
+> Along with the following wrong updating, it causes the sched-domain rebuild
+> code to break and crash the system.
+> 
+> Fix this by skipping the topology update in cases where we find that
+> the topology has not actually changed in reality (ie., spurious updates).
+> 
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+> CC: Stephen Rothwell <sfr@canb.auug.org.au>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Robert Jennings <rcj@linux.vnet.ibm.com>
+> CC: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+> CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> CC: Alistair Popple <alistair@popple.id.au>
+> Suggested-by: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/linux/mmzone.h |  1 -
- mm/page_alloc.c        | 15 +--------------
- 2 files changed, 1 insertion(+), 15 deletions(-)
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 9b61b9b..564b169 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -757,7 +757,6 @@ typedef struct pglist_data {
- 	unsigned long node_spanned_pages; /* total size of physical page
- 					     range, including holes */
- 	int node_id;
--	nodemask_t reclaim_nodes;	/* Nodes allowed to reclaim from */
- 	wait_queue_head_t kswapd_wait;
- 	wait_queue_head_t pfmemalloc_wait;
- 	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a256f85..574928e 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1863,16 +1863,7 @@ static bool zone_local(struct zone *local_zone, struct zone *zone)
- 
- static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
- {
--	return node_isset(local_zone->node, zone->zone_pgdat->reclaim_nodes);
--}
--
--static void __paginginit init_zone_allows_reclaim(int nid)
--{
--	int i;
--
--	for_each_online_node(i)
--		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
--			node_set(i, NODE_DATA(nid)->reclaim_nodes);
-+	return node_distance(zone_to_nid(local_zone), zone_to_nid(zone)) < RECLAIM_DISTANCE;
- }
- 
- #else	/* CONFIG_NUMA */
-@@ -1906,9 +1897,6 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
- 	return true;
- }
- 
--static inline void init_zone_allows_reclaim(int nid)
--{
--}
- #endif	/* CONFIG_NUMA */
- 
- /*
-@@ -4917,7 +4905,6 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
- 
- 	pgdat->node_id = nid;
- 	pgdat->node_start_pfn = node_start_pfn;
--	init_zone_allows_reclaim(nid);
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
- #endif
--- 
-1.8.4.5
+Regards,
+Srivatsa S. Bhat
+
+>  arch/powerpc/mm/numa.c |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+> index 30a42e2..4ebbb9e 100644
+> --- a/arch/powerpc/mm/numa.c
+> +++ b/arch/powerpc/mm/numa.c
+> @@ -1591,6 +1591,20 @@ int arch_update_cpu_topology(void)
+>  		cpu = cpu_last_thread_sibling(cpu);
+>  	}
+> 
+> +	/*
+> +	 * In cases where we have nothing to update (because the updates list
+> +	 * is too short or because the new topology is same as the old one),
+> +	 * skip invoking update_cpu_topology() via stop-machine(). This is
+> +	 * necessary (and not just a fast-path optimization) since stop-machine
+> +	 * can end up electing a random CPU to run update_cpu_topology(), and
+> +	 * thus trick us into setting up incorrect cpu-node mappings (since
+> +	 * 'updates' is kzalloc()'ed).
+> +	 *
+> +	 * And for the similar reason, we will skip all the following updating.
+> +	 */
+> +	if (!cpumask_weight(&updated_cpus))
+> +		goto out;
+> +
+>  	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
+> 
+>  	/*
+> @@ -1612,6 +1626,7 @@ int arch_update_cpu_topology(void)
+>  		changed = 1;
+>  	}
+> 
+> +out:
+>  	kfree(updates);
+>  	return changed;
+>  }
+> 
 
