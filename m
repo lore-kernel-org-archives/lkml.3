@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344AbaDHOqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:46:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39701 "EHLO mail.zytor.com"
+	id S932476AbaDHOrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:47:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35234 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756762AbaDHOqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:46:46 -0400
-Message-ID: <53440A5D.6050301@zytor.com>
-Date: Tue, 08 Apr 2014 07:40:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932294AbaDHOrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:47:40 -0400
+Date: Tue, 8 Apr 2014 15:47:35 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: sivanich@sgi.com, Andrew Morton <akpm@linux-foundation.org>,
+        Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
+        Andres Freund <andres@2ndquadrant.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mm: Disable zone_reclaim_mode by default
+Message-ID: <20140408144735.GK7292@suse.de>
+References: <1396910068-11637-1-git-send-email-mgorman@suse.de>
+ <1396910068-11637-2-git-send-email-mgorman@suse.de>
+ <alpine.DEB.2.10.1404080910040.8782@nuc>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Linux-X86 <x86@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [RFC PATCH 0/5] Use an alternative to _PAGE_PROTNONE for _PAGE_NUMA
- v2
-References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
-In-Reply-To: <1396962570-18762-1-git-send-email-mgorman@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1404080910040.8782@nuc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 06:09 AM, Mel Gorman wrote:
-> Using unused physical bits is something that will break eventually.
+On Tue, Apr 08, 2014 at 09:14:05AM -0500, Christoph Lameter wrote:
+> On Mon, 7 Apr 2014, Mel Gorman wrote:
 > 
-> Changelog since V1
-> o Reuse software-bits
-> o Use paravirt ops when modifying PTEs in the NUMA helpers
+> > zone_reclaim_mode causes processes to prefer reclaiming memory from local
+> > node instead of spilling over to other nodes. This made sense initially when
+> > NUMA machines were almost exclusively HPC and the workload was partitioned
+> > into nodes. The NUMA penalties were sufficiently high to justify reclaiming
+> > the memory. On current machines and workloads it is often the case that
+> > zone_reclaim_mode destroys performance but not all users know how to detect
+> > this. Favour the common case and disable it by default. Users that are
+> > sophisticated enough to know they need zone_reclaim_mode will detect it.
 > 
-> Aliasing _PAGE_NUMA and _PAGE_PROTNONE had some convenient properties but
-> it ultimately gave Xen a headache and pisses almost everybody off that
-> looks closely at it. Two discussions on "why this makes sense" is one
-> discussion too many so rather than having a third so here is this series.
-> This series reuses the PTE bits that are available to the programmer.
-> This adds some contraints on how and when automatic NUMA balancing can be
-> enabled but it should go away again when Xen stops using _PAGE_IOMAP.
-> 
-> The series also converts the NUMA helpers to use paravirt-friendly operations
-> but it needs a Tested-by from the Xen and powerpc people.
+> Ok that is going to require SGI machines to deal with zone_reclaim
+> configurations on bootup. Dimitri? Any comments?
 > 
 
-It is proably simpler to just base this patchset on top of David
-Vrabel's which actually *does* remove _PAGE_IOMAP.
+The SGI machines are also likely to be managed by system administrators
+who are both aware of zone_reclaim_mode and know how to evaluate if it
+should be enabled or not. The pair of patches is really aimmed at the
+common case of 2-8 socket machines running workloads that are not NUMA
+aware.
 
-David, is your patchset going to be pushed in this merge window as expected?
-
-That being said, these bits are precious, and if this ends up being a
-case where "only Xen needs another bit" once again then Xen should
-expect to get kicked to the curb at a moment's notice.
-
-	-hpa
-
-
+-- 
+Mel Gorman
+SUSE Labs
