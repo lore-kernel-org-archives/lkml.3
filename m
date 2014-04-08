@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841AbaDHNZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:25:22 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:45653 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756586AbaDHNZT (ORCPT
+	id S1756790AbaDHNZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:25:21 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:42409 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756369AbaDHNZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:25:19 -0400
+	Tue, 8 Apr 2014 09:25:18 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>, Andy Whitcroft <apw@canonical.com>,
-        Joe Perches <joe@perches.com>,
+Cc: Rob Herring <robh@kernel.org>, Florian Vaussard <florian.vaussard@epfl.ch>,
+        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] checkpatch: skip directories in file checking mode
-Date: Tue,  8 Apr 2014 08:25:05 -0500
-Message-Id: <1396963505-11119-2-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 1/2] checkpatch: fix wildcard DT compatible string checking
+Date: Tue,  8 Apr 2014 08:25:04 -0500
+Message-Id: <1396963505-11119-1-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1396963505-11119-1-git-send-email-robherring2@gmail.com>
-References: <1396963505-11119-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-Running checkpatch.pl on a list of files using a wildcard will exit if
-a directory is encountered. For example:
+We attempt to search for compatible strings which use a variable
+token in the documented name such as <chip> or <soc>. While this
+was attempted to be handled, it's utterly broken.
 
-$ scripts/checkpatch.pl -f arch/*
-diff: arch/alpha/null: No such file or directory
+The desired forms of matching are:
 
-The correct operation is arch/Kconfig should be checked. Fix this by
-skipping files which are not regular files.
+vendor,<chip>-*
+vendor,name<part#>-*
 
+For <chip>, lower case characters and numbers are permitted. For
+<part#>, only numeric values are allowed.
+
+With this change, the number of missing compatible strings reported in
+arch/arm/boot/dts is reduced from 1071 to 960.
+
+Reported-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Florian Vaussard <florian.vaussard@epfl.ch>
 Cc: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- scripts/checkpatch.pl | 1 +
- 1 file changed, 1 insertion(+)
+ scripts/checkpatch.pl | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 0e960b1..b646b95 100755
+index 34eb216..0e960b1 100755
 --- a/scripts/checkpatch.pl
 +++ b/scripts/checkpatch.pl
-@@ -552,6 +552,7 @@ my $vname;
- for my $filename (@ARGV) {
- 	my $FILE;
- 	if ($file) {
-+		next if (!(-f $filename));
- 		open($FILE, '-|', "diff -u /dev/null $filename") ||
- 			die "$P: $filename: diff failed - $!\n";
- 	} elsif ($filename eq '-') {
+@@ -2093,8 +2093,11 @@ sub process {
+ 
+ 			foreach my $compat (@compats) {
+ 				my $compat2 = $compat;
+-				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
+-				`grep -Erq "$compat|$compat2" $dt_path`;
++				$compat2 =~ s/\,[a-zA-Z0-9]*\-/\,<\.\*>\-/;
++				my $compat3 = $compat;
++				$compat3 =~ s/\,([a-z]*)[0-9]*\-/\,$1<\.\*>\-/;
++				print "$compat3\n";
++				`grep -Erq "$compat|$compat2|$compat3" $dt_path`;
+ 				if ( $? >> 8 ) {
+ 					WARN("UNDOCUMENTED_DT_STRING",
+ 					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
 -- 
 1.9.1
 
