@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334AbaDHPKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:10:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35825 "EHLO mx2.suse.de"
+	id S1757342AbaDHPLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:11:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41860 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757065AbaDHPKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:10:02 -0400
-Message-ID: <53441149.8010902@suse.cz>
-Date: Tue, 08 Apr 2014 17:10:01 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756627AbaDHPLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 11:11:00 -0400
+Date: Tue, 8 Apr 2014 17:10:56 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-edac@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>
+Subject: Re: [PATCH v6 2/5] ARM: Add Krait L2 register accessor functions
+Message-ID: <20140408151056.GH30077@pd.tnic>
+References: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
+ <1396641450-12854-3-git-send-email-sboyd@codeaurora.org>
+ <20140407201838.GC20822@pd.tnic>
+ <20140407215649.GH9985@codeaurora.org>
+ <20140408064328.GB30077@pd.tnic>
+ <534406BD.8000702@codeaurora.org>
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>, Christian Engelmayer <cengelma@gmx.at>
-CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] modpost: Fix ressource leak in read_dump()
-References: <20140406003649.1ba3c993@spike> <20140406000512.GS32556@tassilo.jf.intel.com>
-In-Reply-To: <20140406000512.GS32556@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <534406BD.8000702@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-06 02:05, Andi Kleen wrote:
-> On Sun, Apr 06, 2014 at 12:36:49AM +0200, Christian Engelmayer wrote:
->> Function read_dump() memory maps the input via grab_file(), but fails to call
->> the corresponding unmap function. Add the missing call to release_file().
->> Detected by Coverity: CID 1192419
+On Tue, Apr 08, 2014 at 10:25:01AM -0400, Christopher Covington wrote:
+> As I understand it, the license authors. They find it important to maintain
+> clarity even when files get copied into other projects.
 > 
-> It doesn't matter at all. All memory is freed on exit() in this program.
+> http://www.gnu.org/licenses/gpl-howto.html
+> 
+> http://www.gnu.org/licenses/gpl-faq.html#NoticeInSourceFile
 
-The leak can disturb in valgrind output.
+Right, so what is wrong with stating the same thing in two lines:
 
-Michal
+"Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
 
+This file is licensed under GNU GPLv2. See COPYING for full license text."
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
