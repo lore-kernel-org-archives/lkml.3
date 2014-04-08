@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291AbaDHG4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 02:56:13 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40465 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195AbaDHG4J (ORCPT
+	id S1756276AbaDHG4M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 02:56:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29679 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756165AbaDHG4J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Apr 2014 02:56:09 -0400
-Date: Tue, 8 Apr 2014 10:56:00 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: Andrey Vagin <avagin@openvz.org>, <linux-kernel@vger.kernel.org>,
-        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
-        <coreteam@netfilter.org>, <netdev@vger.kernel.org>,
-        <vvs@parallels.com>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] [RFC] netfilter: ct: flush net_gre->keymap_list only in
- nf_conntrack_proto_gre
-Message-ID: <20140408065600.GA15309@paralelels.com>
-References: <1396275258-19015-1-git-send-email-avagin@openvz.org>
- <20140407145158.GA25974@localhost>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,816,1389772800"; 
+   d="scan'208";a="516699377"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Thread-Topic: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Thread-Index: AQHPS0iuvgiDnehMNEeghRTCX5Z79Jr4hhDwgAJi2QCAADLdEIADEokAgAA5rQD//9ENgIAH8M5Q///W/gCAAI6bcIAAlTGAgAAy3YA=
+Date: Tue, 8 Apr 2014 06:56:04 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AFB7D28@HASMSX106.ger.corp.intel.com>
+References: <20140329121550.GA5878@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
+ <20140331120102.GY3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
+ <20140402135812.GI3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB112D@HASMSX106.ger.corp.intel.com>
+ <20140402143635.GA4410@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB7151@HASMSX106.ger.corp.intel.com>
+ <20140407132530.GF3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB7512@HASMSX106.ger.corp.intel.com>
+ <20140408064953.GH3339@pcnci.linuxbox.cz>
+In-Reply-To: <20140408064953.GH3339@pcnci.linuxbox.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <20140407145158.GA25974@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 04:51:58PM +0200, Pablo Neira Ayuso wrote:
-> On Mon, Mar 31, 2014 at 06:14:18PM +0400, Andrey Vagin wrote:
-> > nf_ct_gre_keymap_flush() removes a nf_ct_gre_keymap object from
-> > net_gre->keymap_list and frees the object. But it doesn't clean
-> > a reference on this object from ct_pptp_info->keymap[dir].
-> > Then nf_ct_gre_keymap_destroy() may release the same object again.
-> > 
-> > So nf_ct_gre_keymap_flush() can be called only when we are sure that
-> > when nf_ct_gre_keymap_destroy will not be called.
-> > 
-> > nf_ct_gre_keymap is created by nf_ct_gre_keymap_add() and the right way
-> > to destroy it is to call nf_ct_gre_keymap_destroy().
+
+
+> -----Original Message-----
+> From: Nikola Ciprich [mailto:nikola.ciprich@linuxbox.cz]
+> Sent: Tuesday, April 08, 2014 09:50
+> To: Winkler, Tomas
+> Cc: Greg KH (gregkh@linuxfoundation.org); linux-kernel@vger.kernel.org; Nikola
+> Ciprich
+> Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
+> > Sorry for asking but can you please double check your compilation setup.
 > 
-> I think you use call nf_ct_iterate_cleanup() to get rid of all GRE
-> conntrack entries that have a ct->master, which means that they were
-> created by PPTP. That implicitly calls gre_destroy, which releases the
-> keymap object.
-
-I'm not sure that I understand your comment. Currently I change nothing
-about nf_ct_iterate_cleanup(). In this sentence I point to the right
-procedure of destroying a gre conntrack.
-
-nf_ct_iterate_cleanup() is called from nf_ct_l4proto_pernet_unregister().
-
-[ 1858.693250]   <idle>-0       1..s. 118795582us : nf_ct_gre_keymap_add <-exp_gre
-[ 1858.693250]   <idle>-0       1..s. 118795598us : nf_ct_gre_keymap_add <-exp_gre
-[ 1858.693250]   <idle>-0       1..s. 118795652us : nf_ct_gre_keymap_add <-exp_gre
-[ 1858.693250]   <idle>-0       1..s. 118795683us : nf_ct_gre_keymap_add <-exp_gre
-[ 1858.693250] kworker/-44      1.... 133620272us : nf_conntrack_pptp_net_exit <-ops_exit_list.isra.1
-[ 1858.693250] kworker/-44      1.... 133620274us : nf_ct_gre_keymap_flush <-nf_conntrack_pptp_net_exit
-[ 1858.693250] kworker/-44      1.... 133621145us : proto_gre_net_exit <-ops_exit_list.isra.1
-[ 1858.693250] kworker/-44      1.... 133621145us : nf_ct_l4proto_pernet_unregister <-proto_gre_net_exit
-[ 1858.693250] kworker/-44      1.... 133621146us : nf_ct_iterate_cleanup <-nf_ct_l4proto_pernet_unregister
-[ 1858.693250] kworker/-44      1.... 133621187us : nf_ct_gre_keymap_destroy <-gre_destroy
-
+> You're right of course :-(
 > 
-> > This patch marks nf_ct_gre_keymap_flush() as static, so this patch can
-> > break compilation of third party modules, which use
-> > nf_ct_gre_keymap_flush. I'm not sure this is the right way to deprecate
-> > this function.
+> I tried rebuilding rpm again now, and patch spits following:
 > 
-> No problem with that, we don't mind about out of tree modules. With
-> the approach I'm proposing I think you will also need to make this
-> function static as it won't be used by PPTP anymore.
+> Hunk #1 succeeded at 105 (offset -2 lines).
+> patch unexpectedly ends in middle of line
+> 
+> it's bad rpm build didn't abort at this point, but apparently
+> this is patch's fault:
+> 
+> [root@dev6 linux-3.10]# cat /tmp/mei/1 | patch -sp1
+> patch unexpectedly ends in middle of line
+> [root@dev6 linux-3.10]# echo $?
+> 0
+> 
+> :-(
+> 
+> well, this sucks, I really wouldn't expect that kind of bug in such widely
+> used program as patch :(
+>
+> I'll report that.
 
-I have made this function static. If you don't have other comment, could
-you take this patch?
 
-Thanks,
-Andrey
+> (btw this error was caused by one whitespace character at last line of patch)
+
+This is really strange, can it be that your mailer has introduced some blanks into the patch,
+I've checked that patch applies to all relevant stable kernels.
+ 
+> anyways, You can certainly forgot about that, it was my fault :(
+> 
+> sorry about that
+
+No harm done, it's good this was sorted out.
+Thanks
+Tomas
+ 
+
