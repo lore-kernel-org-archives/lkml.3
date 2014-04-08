@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaDHDbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 23:31:21 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:60270 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaDHDbS (ORCPT
+	id S1756027AbaDHDch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 23:32:37 -0400
+Received: from chicago.guarana.org ([192.210.136.102]:38979 "EHLO
+	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665AbaDHDcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 23:31:18 -0400
-Date: Tue, 8 Apr 2014 04:31:14 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Peter Tyser <ptyser@xes-inc.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: Adding interrupt support to gpio-ich driver (possibly via SCI)
-Message-ID: <20140408033114.GA28159@srcf.ucam.org>
-References: <533EDD0E.8010304@roeck-us.net>
- <20140408024851.GA3594@srcf.ucam.org>
- <53436B1C.8010102@roeck-us.net>
+	Mon, 7 Apr 2014 23:32:35 -0400
+Date: Tue, 8 Apr 2014 14:32:33 +1000
+From: Kevin Easton <kevin@guarana.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+Message-ID: <20140408043233.GA11711@chicago.guarana.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+ <20140401212102.GM4407@cmpxchg.org>
+ <533B313E.5000403@zytor.com>
+ <533B4555.3000608@sr71.net>
+ <533B8E3C.3090606@linaro.org>
+ <20140402163638.GQ14688@cmpxchg.org>
+ <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53436B1C.8010102@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 08:21:00PM -0700, Guenter Roeck wrote:
-> On 04/07/2014 07:48 PM, Matthew Garrett wrote:
-> >You shouldn't need to install an SCI handler - the way the hardware will
-> >generate an SCI is to raise a GPE. If you know which GPE the device
-> >raises (my recollection is that for most Intel chipsets it's GPIO number
-> >+ 0x10) then you can just call acpi_install_gpe_handler(). The problem
+On Wed, Apr 02, 2014 at 10:40:16AM -0700, John Stultz wrote:
+> On Wed, Apr 2, 2014 at 9:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > I'm just dying to hear a "normal" use case then. :)
 > 
-> Sounds good. Do you by any chance have a pointer to some documentation
-> explaining this in some more detail ?
+> So the more "normal" use cause would be marking objects volatile and
+> then non-volatile w/o accessing them in-between. In this case the
+> zero-fill vs SIGBUS semantics don't really matter, its really just a
+> trade off in how we handle applications deviating (intentionally or
+> not) from this use case.
+> 
+> So to maybe flesh out the context here for folks who are following
+> along (but weren't in the hallway at LSF :),  Johannes made a fairly
+> interesting proposal (Johannes: Please correct me here where I'm maybe
+> slightly off here) to use only the dirty bits of the ptes to mark a
+> page as volatile. Then the kernel could reclaim these clean pages as
+> it needed, and when we marked the range as non-volatile, the pages
+> would be re-dirtied and if any of the pages were missing, we could
+> return a flag with the purged state.  This had some different
+> semantics then what I've been working with for awhile (for example,
+> any writes to pages would implicitly clear volatility), so I wasn't
+> completely comfortable with it, but figured I'd think about it to see
+> if it could be done. Particularly since it would in some ways simplify
+> tmpfs/shm shared volatility that I'd eventually like to do.
+...
+> Now, while for the case I'm personally most interested in (ashmem),
+> zero-fill would technically be ok, since that's what Android does.
+> Even so, I don't think its the best approach for the interface, since
+> applications may end up quite surprised by the results when they
+> accidentally don't follow the "don't touch volatile pages" rule.
+> 
+> That point beside, I think the other problem with the page-cleaning
+> volatility approach is that there are other awkward side effects. For
+> example: Say an application marks a range as volatile. One page in the
+> range is then purged. The application, due to a bug or otherwise,
+> reads the volatile range. This causes the page to be zero-filled in,
+> and the application silently uses the corrupted data (which isn't
+> great). More problematic though, is that by faulting the page in,
+> they've in effect lost the purge state for that page. When the
+> application then goes to mark the range as non-volatile, all pages are
+> present, so we'd return that no pages were purged.  From an
+> application perspective this is pretty ugly.
 
-The SCI is just IRQ 9 - it tells the OS that there's a firmware event, 
-but in itself doesn't say what that event was. This is handled by the 
-platform setting bits in the GPE*_STS registers. The ACPI code reads 
-that and then dispatches the event to the appropriate handler. This will 
-typically be some ACPI code (declared by _Lxx and _Exx methods in the 
-ACPI tables - xx corresponds to the GPE number, L and E whether it's 
-level or edge triggered), but in some cases you want to install a 
-hardcoded event handler.
+The write-implicitly-clears-volatile semantics would actually be
+an advantage for some use cases.  If you have a volatile cache of
+many sub-page-size objects, the application can just include at
+the start of each page "int present, in_use;".  "present" is set
+to non-zero before marking volatile, and when the application wants
+unmark as volatile it writes to "in_use" and tests the value of 
+"present".  No need for a syscall at all, although it does take a
+minor fault.
 
-I've only got the 5-series docs to hand, and I can't remember whether 
-that's Panther Point, but you want to look at the definition of GPE0_STS 
-to figure out which hardware events cause which GPEs. GPEs 16 to 31 
-appear to correspond to GPIO 0 to 15, which is easy enough to handle.
+The syscall would be better for the case of large objects, though.
 
-> >is that the firmware may well already be using some of those GPIOs, and
-> >there's no easy way to tell. Checking the interrupt configuration isn't
-> >sufficient, since some of them may just be used as outputs.
-> >
-> The gpio-ich driver already has some magic to detect that condition - I
-> noticed that I can not request all GPIO pins on all hardware. Either case,
-> the gpio pins I am interested in are well defined on the hardware I am
-> dealing with, so I can be sure I won't step on some unexpected use.
+Or is that fatally flawed?
 
-Ok. As long as you don't reprogram anything by default, I think this 
-should be fine.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+    - Kevin
