@@ -1,159 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbaDHO2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:28:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932170AbaDHO2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:28:12 -0400
-Date: Tue, 8 Apr 2014 10:22:26 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 03/15 V3] perf c2c: Shared data analyser
-Message-ID: <20140408142226.GV8488@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
- <1395689826-215033-4-git-send-email-dzickus@redhat.com>
- <87a9bwxq64.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9bwxq64.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757111AbaDHOcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:32:48 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:59263 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757033AbaDHOcr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:32:47 -0400
+Message-ID: <1396967565.24714.6.camel@x220>
+Subject: Re: [PATCH] initramfs: remove "compression mode" choice
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Prasad J. Pandit" <ppandit@redhat.com>
+Cc: Hristo Venev <hristo@venev.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 Apr 2014 16:32:45 +0200
+In-Reply-To: <alpine.LFD.2.10.1404081851490.29689@wniryva.cad.erqung.pbz>
+References: <1396958857.26620.35.camel@x220>
+	 <alpine.LFD.2.10.1404081851490.29689@wniryva.cad.erqung.pbz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Apr 2014 14:32:45.0736 (UTC) FILETIME=[686DB280:01CF5337]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 03:59:15PM +0900, Namhyung Kim wrote:
-> Hi Don,
-> 
-> On Mon, 24 Mar 2014 15:36:54 -0400, Don Zickus wrote:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> >
-> > This is the start of a new perf tool that will collect information about
-> > memory accesses and analyse it to find things like hot cachelines, etc.
-> 
-> So why not integrating this into existing 'perf mem' command if it's all
-> about analyzing memory accesses?
+On Tue, 2014-04-08 at 18:59 +0530, P J P wrote:
+> +-- On Tue, 8 Apr 2014, Paul Bolle wrote --+
+> | "Built-in initramfs compression mode" choice is a set of knobs connected
+> | to nothing. The entire choice can safely be removed.
 
-Our expectations were different.  We expeted to do system-wide analysis
-with loads and stores.  With 'perf mem' you didn't have the ability to
-anlayze both load and stores at the same time.
+>    This patch has already been submitted upstream; though not sure if it is 
+> merged yet.
 
-In all my private conversations with Stephane, Arnalado and Jiri, it was
-never brought up.  We had just assumed that is made more sense to keep it
-separate.
+Not in mainline or linux-next.
 
+> Please see -> https://lkml.org/lkml/2013/11/25/21
 > 
-> >
-> > This is basically trying to get a prototype written by Richard Fowles
-> > written using the tools/perf coding style and libraries.
-> >
-> > Start it from 'perf sched', this patch starts the process by adding the
-> > 'record' subcommand to collect the needed mem loads and stores samples.
-> >
-> > It also have the basic 'report' skeleton, resolving the sample address
-> > and hooking the events found in a perf.data file with methods to handle
-> > them, right now just printing the resolved perf_sample data structure
-> > after each event name.
-> >
-> > [dcz: refreshed to latest upstream changes]
-> 
-> [SNIP]
-> > +perf-c2c(1)
-> > +===========
-> > +
-> > +NAME
-> > +----
-> > +perf-c2c - Shared Data C2C/HITM Analyzer.
-> > +
-> > +SYNOPSIS
-> > +--------
-> > +[verse]
-> > +'perf c2c' record
-> > +
-> > +DESCRIPTION
-> > +-----------
-> > +These are the variants of perf c2c:
-> > +
-> > +  'perf c2c record <command>' to record the memory accesses of an arbitrary
-> > +  workload.
-> > +
-> > +SEE ALSO
-> > +--------
-> > +linkperf:perf-record[1], linkperf:perf-mem[1]
-> 
-> This document is very terse and only memtions the 'record' subcommand -
-> also it's not updated throughout the series.  So I'd like to suggest
-> adding a separate documentation patch with full/verbose descriptions at
-> the end of this series.
-> 
-> 
-> [SNIP]
-> > +static int perf_c2c__read_events(struct perf_c2c *c2c)
-> > +{
-> > +	int err = -1;
-> > +	struct perf_session *session;
-> > +	struct perf_data_file file = {
-> > +			.path = input_name,
-> > +			.mode = PERF_DATA_MODE_READ,
-> > +	};
-> > +	struct perf_evsel *evsel;
-> > +
-> > +	session = perf_session__new(&file, 0, &c2c->tool);
-> > +	if (session == NULL) {
-> > +		pr_debug("No memory for session\n");
-> > +		goto out;
-> > +	}
-> > +
-> > +	/* setup the evsel handlers for each event type */
-> > +	evlist__for_each(session->evlist, evsel) {
-> > +		const char *name = perf_evsel__name(evsel);
-> > +		unsigned int i;
-> > +
-> > +		for (i = 0; i < ARRAY_SIZE(handlers); i++) {
-> > +			if (!strcmp(name, handlers[i].name))
-> > +				evsel->handler = handlers[i].handler;
-> > +		}
-> > +	}
-> > +
-> > +	err = perf_session__process_events(session, &c2c->tool);
-> > +	if (err)
-> > +		pr_err("Failed to process events, error %d", err);
-> 
-> You may want to add perf_session__delete() here.
-> 
-> > +
-> > +out:
-> > +	return err;
-> > +}
-> 
-> 
-> [SNIP]
-> > +int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
-> > +{
-> > +	struct perf_c2c c2c = {
-> > +		.tool = {
-> > +			.sample		 = perf_c2c__process_sample,
-> > +			.comm		 = perf_event__process_comm,
-> > +			.exit		 = perf_event__process_exit,
-> > +			.fork		 = perf_event__process_fork,
-> > +			.lost		 = perf_event__process_lost,
-> 
-> It seems that it also needs to handle mmap[2] events otherwise it cannot
-> find symbols from an address.
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> > +			.ordered_samples = true,
-> > +		},
-> > +	};
+> @Andrew: is it queued to be merged upstream?
+
+lkml.org shows nothing for me, currently, but I think it's the same one as
+http://marc.info/?l=linux-kernel&m=138536209816822&w=2 . Though I think
+the commit explanation of my patch is clearer I'm fine with Hristo's
+patch. And that patch also predates mine by five months. 
+
+Thanks,
+
+
+Paul Bolle
+
