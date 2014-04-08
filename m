@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265AbaDHUnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 16:43:24 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:57616 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757203AbaDHUnW convert rfc822-to-8bit (ORCPT
+	id S1756868AbaDHUtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 16:49:13 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55070 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756121AbaDHUtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 16:43:22 -0400
+	Tue, 8 Apr 2014 16:49:11 -0400
+Date: Tue, 8 Apr 2014 13:49:06 -0700
+From: josh@joshtriplett.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>, Andi Kleen <ak@linux.intel.com>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
+Message-ID: <20140408204906.GA3616@cloud>
+References: <20140407201919.GA15838@sepie.suse.cz>
+ <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140408070259.68923987@ipc1.ka-ro>
-References: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
-	<1395996540-10999-1-git-send-email-LW@KARO-electronics.de>
-	<1395996540-10999-2-git-send-email-LW@KARO-electronics.de>
-	<20140402055350.GX17250@pengutronix.de>
-	<20140407113652.GE26985@ulmo>
-	<20140408070259.68923987@ipc1.ka-ro>
-Date: Tue, 8 Apr 2014 13:43:22 -0700
-Message-ID: <CAAYSxhpqe1BVDigMKQ18qEpYNyHGFQ6n5cXWdnUO7HZKSCwzWQ@mail.gmail.com>
-Subject: Re: [PATCHv3 1/3] pwm: make the PWM_POLARITY flag in DTB optional
-From: Tim Kryger <tim.kryger@linaro.org>
-To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 10:02 PM, Lothar Waﬂmann <LW@karo-electronics.de> wrote:
-> Thierry Reding wrote:
+On Tue, Apr 08, 2014 at 08:26:09AM -0700, Linus Torvalds wrote:
+> On Mon, Apr 7, 2014 at 1:19 PM, Michal Marek <mmarek@suse.cz> wrote:
+> > besides the kbuild branch, here is the LTO build support by Andi. It is
+> > a separate branch, because it depends on other patches by Andi which
+> > were merged through other trees. The link-time-optimization build is an
+> > experimental feature, so there one kconfig option to enable it and
+> > another kconfig option to disable it (behind a door with a sign "Beware
+> > of the Leopard"...), so that it is not enabled by
+> > allmodconfig/allyesconfig.
+> 
+> So right now, I see several reasons not to merge it ("It's so
+> experimental that we don't even want to encourage people to test it"
+> to "it's not fully fleshed out yet and makes compile times _much_
+> longer").
+> 
+> And yet nobody has actually talked about why I *should* merge it.
+> 
+> Which - I think understandably - makes me less than enthusiastic.
+> 
+> So I think I'll let this wait a bit longer, _unless_ people start
+> talking about the upsides. How much smaller is the end result? How
+> much faster is it? How much more beautiful is it? Does it make new
+> cool things possible? Are those cool things really close on the
+> horizon and really want this merged even though it's not really quite
+> ready yet?
+> 
+> So please: convince me.
 
->> No. You cannot emulate polarity inversion in software.
->>
-> Why not?
->
-> duty_ns = period_ns - duty_ns;
+I'd really like to see this feature go in to enable ongoing efforts to
+make the kernel much smaller, so I'll give it a shot:
 
-Since I made the same mistake, I will pass along the pointer Thierry gave me.
+In addition to making the kernel smaller and such (I'll leave the
+specific stats there to Andi), here's the key awesomeness of LTO that
+you, personally, should find useful and compelling: LTO will eliminate
+the need to add many lower-level Kconfig symbols to compile out bits of
+the kernel.  Normally, compiling out a piece of kernel infrastructure
+requires adding a kernel config symbol for that infrastructure, and
+making all the other kernel bits that use that infrastructure depend on
+it (which is an extra step beyond just "include the header and use it").
+LTO will allow the compiler to automatically drop bits of infrastructure
+(such as bits of lib/, kernel/, etc) that aren't used.
 
-In include/linux/pwm.h the second difference for an inverted signal is
-described.
+And with some additional GCC smarts (which exist today for C++ classes,
+but would need adding for C structure-of-function-pointers objects), GCC
+with LTO could even optimize away functions that are only used in the
+function pointer of a data structure for which there are no callers.
+So, it'd be possible to compile out high-level user-facing items like
+syscalls, and have all the infrastructure go away all the way down.
 
-/**
- * enum pwm_polarity - polarity of a PWM signal
- * @PWM_POLARITY_NORMAL: a high signal for the duration of the duty-
- * cycle, followed by a low signal for the remainder of the pulse
- * period
- * @PWM_POLARITY_INVERSED: a low signal for the duration of the duty-
- * cycle, followed by a high signal for the remainder of the pulse
- * period
- */
-enum pwm_polarity {
-PWM_POLARITY_NORMAL,
-PWM_POLARITY_INVERSED,
-};
+So, with LTO merged, the next time you see a patch to add yet another
+Kconfig symbol to compile out some low-level kernel infrastructure when
+not needed, you can say "no, I don't want to add more configuration
+complexity; compile out the high-level bits and use LTO to make the
+compiler drop the infrastructure".  And we can potentially start ripping
+out *existing* Kconfig infrastructure symbols like that, too.
 
-Of course, I suspect not all PWM hardware respects this definition of
-inverted output.
-
-Either way, hacking the duty in software certainly would get the
-high/low order wrong.
-
--Tim
+- Josh Triplett
