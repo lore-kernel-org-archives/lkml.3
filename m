@@ -1,109 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563AbaDHTOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 15:14:20 -0400
-Received: from smtp2.ngi.it ([88.149.128.113]:57988 "EHLO smtp2.ngi.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756222AbaDHTOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 15:14:19 -0400
-Message-ID: <53444A9F.9060207@katamail.com>
-Date: Tue, 08 Apr 2014 21:14:39 +0200
-From: Michele Ballabio <barra_cuda@katamail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757615AbaDHTQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 15:16:10 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:7302 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757463AbaDHTQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 15:16:07 -0400
+Message-ID: <53444AEE.9050705@hp.com>
+Date: Tue, 08 Apr 2014 15:15:58 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        =?ISO-8859-1?Q?Toralf_F=F6rs?= =?ISO-8859-1?Q?ter?= 
-	<toralf.foerster@gmx.de>
-CC: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-References: <5341707F.5000406@katamail.com> <20140407150337.GO10526@twins.programming.kicks-ass.net> <20140407150705.GB13658@twins.programming.kicks-ass.net> <5342EB78.3060002@gmx.de> <20140407185658.GK11096@twins.programming.kicks-ass.net> <20140408122128.GC13658@twins.programming.kicks-ass.net>
-In-Reply-To: <20140408122128.GC13658@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV support
+References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <5342425A.7040005@linux.vnet.ibm.com> <5342D475.7060503@hp.com> <5342E5B2.1070306@linux.vnet.ibm.com>
+In-Reply-To: <5342E5B2.1070306@linux.vnet.ibm.com>
+Content-Type: multipart/mixed;
+ boundary="------------040207070205080604010401"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2014 14:21, Peter Zijlstra wrote:
-> On Mon, Apr 07, 2014 at 08:56:58PM +0200, Peter Zijlstra wrote:
->> On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
->>
->>> v3.14-10353-g2b3a8fd works fine AFAICS
->>> (BTW the fix is stable material, right ?)
->>
->> I'm fairly sure its not; its a rather invasive series; see:
->>
->> 2432e1364bbe x86: Nuke the supervisor_stack field in i386 thread_info
->> b807902a88c4 x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
->> 0788aa6a23cb x86: Prepare removal of previous_esp from i386 thread_info structure
->> 198d208df437 x86: Keep thread_info on thread stack in x86_32
->>
->> Let me see if there's anything 'simpler' we can stuff in .13+
-> 
-> OK.. so could someone test the below patch to see if that makes things
-> work for .13 and .14?
-> 
-> ---
->  arch/x86/include/asm/preempt.h | 11 +++++++++++
->  include/linux/preempt.h        |  4 ++++
->  include/linux/thread_info.h    |  2 --
->  3 files changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
-> index c8b051933b1b..7ada46d8d4d8 100644
-> --- a/arch/x86/include/asm/preempt.h
-> +++ b/arch/x86/include/asm/preempt.h
-> @@ -5,6 +5,17 @@
->  #include <asm/percpu.h>
->  #include <linux/thread_info.h>
->  
-> +#ifdef CONFIG_X86_32
-> +/*
-> + * i386's current_thread_info() depends on ESP and for interrupt/exception
-> + * stacks this doesn't yield the actual task thread_info.
-> + *
-> + * We hard rely on the fact that all the TIF_NEED_RESCHED bits are
-> + * the same, therefore use the slightly more expensive version below.
-> + */
-> +#define tif_need_resched() test_tsk_thread_flag(current, TIF_NEED_RESCHED)
-> +#endif
-> +
->  DECLARE_PER_CPU(int, __preempt_count);
->  
->  /*
-> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-> index de83b4eb1642..891c8f8b52fe 100644
-> --- a/include/linux/preempt.h
-> +++ b/include/linux/preempt.h
-> @@ -17,6 +17,10 @@
->  
->  #include <asm/preempt.h>
->  
-> +#ifndef tif_need_resched
-> +#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
-> +#endif
-> +
->  #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
->  extern void preempt_count_add(int val);
->  extern void preempt_count_sub(int val);
-> diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
-> index fddbe2023a5d..a629e4b23217 100644
-> --- a/include/linux/thread_info.h
-> +++ b/include/linux/thread_info.h
-> @@ -118,8 +118,6 @@ static inline __deprecated void set_need_resched(void)
->  	 */
->  }
->  
-> -#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
-> -
->  #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
->  /*
->   * An arch can define its own version of set_restore_sigmask() to get the
-> 
+This is a multi-part message in MIME format.
+--------------040207070205080604010401
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-It works fine for me on top of v3.14.
+On 04/07/2014 01:51 PM, Raghavendra K T wrote:
+> On 04/07/2014 10:08 PM, Waiman Long wrote:
+>> On 04/07/2014 02:14 AM, Raghavendra K T wrote:
+> [...]
+>>> But I am seeing hang in overcommit cases. Gdb showed that many vcpus
+>>> are halted and there was no progress. Suspecting the problem /race with
+>>> halting, I removed the halt() part of kvm_hibernate().  I am yet to
+>>> take a closer look at the code on halt() related changes.
+>>
+>> It seems like there may still be race conditions where the current code
+>> is not handling correctly. I will look into that to see where the
+>> problem is. BTW, what test do you use to produce the hang condition?
+>
+> Running ebizzy on 2 of the vms simultaneously (for sometime in 
+> repeated loop) could reproduce it.
+>
 
+Yes, I am able to reproduce the hang problem with ebizzy. BTW, could you 
+try to apply the attached patch file on top of the v8 patch series to 
+see if it can fix the hang problem?
+
+>
+>> What is the baseline for the performance improvement? Is it without the
+>> unfair lock and PV qspinlock?
+>
+> Baseline was 3.14-rc8 without any of the qspin patch series.
+>
+
+Does the baseline have PV ticketlock or without any PV support?
+
+-Longman
+
+--------------040207070205080604010401
+Content-Type: text/plain;
+ name="0011"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0011"
+
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index a35cd02..825c535 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -717,9 +717,10 @@ static __always_inline void __queue_kick_cpu(int cpu)
+ 	PVOP_VCALL1(pv_lock_ops.kick_cpu, cpu);
+ }
+ 
+-static __always_inline void __queue_hibernate(enum pv_lock_stats type)
++static __always_inline void
++__queue_hibernate(enum pv_lock_stats type, s8 *state, s8 sval)
+ {
+-	PVOP_VCALL1(pv_lock_ops.hibernate, type);
++	PVOP_VCALL3(pv_lock_ops.hibernate, type, state, sval);
+ }
+ 
+ static __always_inline void __queue_lockstat(enum pv_lock_stats type)
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index a8564b9..0e204dd 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -346,7 +346,7 @@ enum pv_lock_stats {
+ struct pv_lock_ops {
+ #ifdef CONFIG_QUEUE_SPINLOCK
+ 	void (*kick_cpu)(int cpu);
+-	void (*hibernate)(enum pv_lock_stats type);
++	void (*hibernate)(enum pv_lock_stats type, s8 *state, s8 sval);
+ 	void (*lockstat)(enum pv_lock_stats type);
+ #else
+ 	struct paravirt_callee_save lock_spinning;
+diff --git a/arch/x86/include/asm/pvqspinlock.h b/arch/x86/include/asm/pvqspinlock.h
+index a632dcb..4b33769 100644
+--- a/arch/x86/include/asm/pvqspinlock.h
++++ b/arch/x86/include/asm/pvqspinlock.h
+@@ -134,7 +134,7 @@ static __always_inline void pv_head_spin_check(struct pv_qvars *pv, int *count,
+ 			*count = 0;
+ 			return;
+ 		}
+-		__queue_hibernate(PV_HALT_QHEAD);
++		__queue_hibernate(PV_HALT_QHEAD, &pv->cpustate, PV_CPU_HALTED);
+ 		__queue_lockstat((pv->cpustate == PV_CPU_KICKED)
+ 				 ? PV_WAKE_KICKED : PV_WAKE_SPURIOUS);
+ 		ACCESS_ONCE(pv->cpustate) = PV_CPU_ACTIVE;
+@@ -169,7 +169,7 @@ static __always_inline void pv_queue_spin_check(struct pv_qvars *pv, int *count)
+ 		 * pv_next_node_check		pv_queue_spin_check
+ 		 * ------------------		-------------------
+ 		 * [1] qhead = true		[3] cpustate = PV_CPU_HALTED
+-		 *     barrier()		    barrier()
++		 *     smp_mb()			    smp_mb()
+ 		 * [2] if (cpustate		[4] if (qhead)
+ 		 *        == PV_CPU_HALTED)
+ 		 *
+@@ -178,9 +178,10 @@ static __always_inline void pv_queue_spin_check(struct pv_qvars *pv, int *count)
+ 		 *	       _QLOCK_LOCKED_SLOWPATH may or may not be set
+ 		 * 3,4,1,2 - the CPU is halt and _QLOCK_LOCKED_SLOWPATH is set
+ 		 */
+-		barrier();
++		smp_mb();
+ 		if (!ACCESS_ONCE(pv->qhead)) {
+-			__queue_hibernate(PV_HALT_QNODE);
++			__queue_hibernate(PV_HALT_QNODE, &pv->cpustate,
++					  PV_CPU_HALTED);
+ 			__queue_lockstat((pv->cpustate == PV_CPU_KICKED)
+ 					 ? PV_WAKE_KICKED : PV_WAKE_SPURIOUS);
+ 		} else {
+@@ -208,7 +209,7 @@ pv_next_node_check(struct pv_qvars *pv, struct qspinlock *lock)
+ 	/*
+ 	 * Make sure qhead flag is visible before checking the cpustate flag
+ 	 */
+-	barrier();
++	smp_mb();
+ 	if (ACCESS_ONCE(pv->cpustate) == PV_CPU_HALTED)
+ 		ACCESS_ONCE(((union arch_qspinlock *)lock)->lock)
+ 			= _QLOCK_LOCKED_SLOWPATH;
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 7d97e58..ce4b74b 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -880,23 +880,29 @@ static void kvm_kick_cpu_stats(int cpu)
+ /*
+  * Halt the current CPU & release it back to the host
+  */
+-static void kvm_hibernate(enum pv_lock_stats type)
++static void kvm_hibernate(enum pv_lock_stats type, s8 *state, s8 sval)
+ {
+ 	unsigned long flags;
+ 
+ 	if (in_nmi())
+ 		return;
+ 
+-	kvm_halt_stats(type);
+ 	/*
+ 	 * Make sure an interrupt handler can't upset things in a
+ 	 * partially setup state.
+ 	 */
+ 	local_irq_save(flags);
++	/*
++	 * Don't halt if the CPU state has been changed.
++	 */
++	if (ACCESS_ONCE(*state) != sval)
++		goto out;
++	kvm_halt_stats(type);
+ 	if (arch_irqs_disabled_flags(flags))
+ 		halt();
+ 	else
+ 		safe_halt();
++out:
+ 	local_irq_restore(flags);
+ }
+ #endif /* !CONFIG_QUEUE_SPINLOCK */
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 6bbe798..c597bbd 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -271,7 +271,7 @@ static void xen_kick_cpu(int cpu)
+ /*
+  * Halt the current CPU & release it back to the host
+  */
+-static void xen_hibernate(enum pv_lock_stats type)
++static void xen_hibernate(enum pv_lock_stats type, s8 *state, s8 sval)
+ {
+ 	int irq = __this_cpu_read(lock_kicker_irq);
+ 	unsigned long flags;
+@@ -292,7 +292,11 @@ static void xen_hibernate(enum pv_lock_stats type)
+ 
+ 	/* Allow interrupts while blocked */
+ 	local_irq_restore(flags);
+-
++	/*
++	 * Don't halt if the CPU state has been changed.
++	 */
++	if (ACCESS_ONCE(*state) != sval)
++		return;
+ 	/*
+ 	 * If an interrupt happens here, it will leave the wakeup irq
+ 	 * pending, which will cause xen_poll_irq() to return
+
+--------------040207070205080604010401--
