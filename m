@@ -1,102 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaDHPXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:23:37 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:58645 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756704AbaDHPXe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:23:34 -0400
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Joe Perches <joe@perches.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: kernel@stlinux.com, maxime.coquelin@st.com
-Subject: [PATCH 1/2] pinctrl: st: Use const qualifier when required
-Date: Tue,  8 Apr 2014 17:21:48 +0200
-Message-Id: <1396970509-28009-2-git-send-email-maxime.coquelin@st.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1396970509-28009-1-git-send-email-maxime.coquelin@st.com>
-References: <1396970509-28009-1-git-send-email-maxime.coquelin@st.com>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-08_04:2014-04-08,2014-04-08,1970-01-01 signatures=0
+	id S932385AbaDHPYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:24:13 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58296 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932159AbaDHPYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 11:24:10 -0400
+Date: Tue, 8 Apr 2014 17:24:06 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thor Thayer <tthayer@altera.com>
+Cc: robherring2@gmail.com, dougthompson@xmission.com, grant.likely@linaro.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, dinguyen@altera.com,
+        devicetree@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
+ CycloneV/ArriaV
+Message-ID: <20140408152406.GI30077@pd.tnic>
+References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+ <1396907649-20212-4-git-send-email-tthayer@altera.com>
+ <20140408100851.GF30077@pd.tnic>
+ <1396965459.23349.4.camel@dinh-ubuntu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1396965459.23349.4.camel@dinh-ubuntu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds const qualifier where applicable.
+On Tue, Apr 08, 2014 at 08:57:39AM -0500, Thor Thayer wrote:
+> Yes, Altera has a group specifically supporting Linux drivers on the
+> Altera SoCs.
 
-CC: Linus Walleij <linus.walleij@linaro.com>
-Reported-by: Joe Perches <joe@perches.com>
+Then please add MAINTAINERS file entry for this EDAC driver so that
+people can send issues/reports to that group.
 
-Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
----
- drivers/pinctrl/pinctrl-st.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+> I was told that the device tree additions should be separate patches
+> in a series since the device tree additions go to a separate group for
+> approval.
 
-diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-index bd725b0..868f10f 100644
---- a/drivers/pinctrl/pinctrl-st.c
-+++ b/drivers/pinctrl/pinctrl-st.c
-@@ -242,13 +242,13 @@ struct st_pio_control {
- };
- 
- struct st_pctl_data {
--	enum st_retime_style rt_style;
--	unsigned int	*input_delays;
--	int		ninput_delays;
--	unsigned int	*output_delays;
--	int		noutput_delays;
-+	const enum st_retime_style	rt_style;
-+	const unsigned int		*input_delays;
-+	const int			ninput_delays;
-+	const unsigned int		*output_delays;
-+	const int			noutput_delays;
- 	/* register offset information */
--	int alt, oe, pu, od, rt;
-+	const int alt, oe, pu, od, rt;
- };
- 
- struct st_pinconf {
-@@ -342,8 +342,8 @@ struct st_pinctrl {
- 
- /* SOC specific data */
- /* STiH415 data */
--static unsigned int stih415_input_delays[] = {0, 500, 1000, 1500};
--static unsigned int stih415_output_delays[] = {0, 1000, 2000, 3000};
-+static const unsigned int stih415_input_delays[] = {0, 500, 1000, 1500};
-+static const unsigned int stih415_output_delays[] = {0, 1000, 2000, 3000};
- 
- #define STIH415_PCTRL_COMMON_DATA				\
- 	.rt_style	= st_retime_style_packed,		\
-@@ -378,8 +378,8 @@ static const struct st_pctl_data  stih415_right_data = {
- };
- 
- /* STiH416 data */
--static unsigned int stih416_delays[] = {0, 300, 500, 750, 1000, 1250, 1500,
--			1750, 2000, 2250, 2500, 2750, 3000, 3250 };
-+static const unsigned int stih416_delays[] = {0, 300, 500, 750, 1000, 1250,
-+			1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250 };
- 
- static const struct st_pctl_data  stih416_data = {
- 	.rt_style	= st_retime_style_dedicated,
-@@ -468,7 +468,7 @@ static void st_pctl_set_function(struct st_pio_control *pc,
- static unsigned long st_pinconf_delay_to_bit(unsigned int delay,
- 	const struct st_pctl_data *data, unsigned long config)
- {
--	unsigned int *delay_times;
-+	const unsigned int *delay_times;
- 	int num_delay_times, i, closest_index = -1;
- 	unsigned int closest_divergence = UINT_MAX;
- 
-@@ -501,7 +501,7 @@ static unsigned long st_pinconf_delay_to_bit(unsigned int delay,
- static unsigned long st_pinconf_bit_to_delay(unsigned int index,
- 	const struct st_pctl_data *data, unsigned long output)
- {
--	unsigned int *delay_times;
-+	const unsigned int *delay_times;
- 	int num_delay_times;
- 
- 	if (output) {
+Well, the EDAC driver depends on the devicetree stuff, right? If so,
+they should go together.
+
 -- 
-1.9.0
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
