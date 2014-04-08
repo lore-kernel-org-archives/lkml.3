@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbaDIARK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:17:10 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:38177 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757380AbaDIARI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:17:08 -0400
-Date: Tue, 8 Apr 2014 20:17:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: Re: [PATCH 1/1 v11] Tracepoint: register/unregister struct
- tracepoint
-Message-ID: <20140408201705.4dad2c4a@gandalf.local.home>
-In-Reply-To: <1396992381-23785-2-git-send-email-mathieu.desnoyers@efficios.com>
-References: <1396992381-23785-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<1396992381-23785-2-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S932442AbaDIARV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:17:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24222 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932352AbaDIARR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 20:17:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,820,1389772800"; 
+   d="scan'208";a="509621706"
+From: "Brown, Len" <len.brown@intel.com>
+To: Davidlohr Bueso <davidlohr@hp.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: RE: [tip:x86/urgent] x86 idle: Repair large-server 50-watt
+ idle-power regression
+Thread-Topic: [tip:x86/urgent] x86 idle: Repair large-server 50-watt
+ idle-power regression
+Thread-Index: AQHPQj/VSN0qte0zpESrqfzfjeQLU5sIXnZg
+Date: Tue, 8 Apr 2014 21:43:54 +0000
+Message-ID: <1A7043D5F58CCB44A599DFD55ED4C94845CA12EC@fmsmsx115.amr.corp.intel.com>
+References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
+	 <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+	 <tip-40e2d7f9b5dae048789c64672bf3027fbb663ffa@git.kernel.org>
+ <1395102010.2474.21.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1395102010.2474.21.camel@buesod1.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.106]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s390HSqW015428
 
-OK, I kicked off my tests to test this patch. If all goes well, I'll
-push it to linux-next and then off to Linus.
+Davidlohr,
 
-But I also added a patch on top. This shouldn't cause any issues for
-you, does it?
+Thanks for the note.
 
--- Steve
+Ideally (on Linux in general, and on servers, in particular) we strive
+for the performance impact of power saving features to be small enough
+to be considered in "measurement noise".
 
->From a22720af7d7d2e06284fbed68bd93827f75381b1 Mon Sep 17 00:00:00 2001
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Date: Tue, 8 Apr 2014 20:09:40 -0400
-Subject: [PATCH] tracepoint: Simplify tracepoint module search
+Your report for 160 core Westmere AIM numbers being hit at 10-25%
+shows 15% measurement noise?  But even if true, this looks bad.
 
-Instead of copying the num_tracepoints and tracepoints_ptrs from
-the module structure to the tp_mod structure, which only uses it to
-find the module associated to tracepoints of modules that are coming
-and going, simply copy the pointer to the module struct to the tracepoint
-tp_module structure.
+Any chance you can re-run, with the following two tweaks,
+one at a time?
 
-Also removed un-needed brackets around an if statement.
+I'd be curious if you can wrap the invocation in turbostat -v
+and capture that output to how what states we are seeing
+during the benchmark run.
 
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/tracepoint.h | 3 +--
- kernel/tracepoint.c        | 9 ++++-----
- 2 files changed, 5 insertions(+), 7 deletions(-)
+thanks,
+-Len
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 08150e2..69a298b 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -47,8 +47,7 @@ for_each_kernel_tracepoint(void (*fct)(struct tracepoint *tp, void *priv),
- #ifdef CONFIG_MODULES
- struct tp_module {
- 	struct list_head list;
--	unsigned int num_tracepoints;
--	struct tracepoint * const *tracepoints_ptrs;
-+	struct module *mod;
- };
+
+
+#1: skip flush for C1
+	
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index f80b700..6027d06 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -377,7 +377,7 @@ static int intel_idle(struct cpuidle_device *dev,
  
- bool trace_module_has_bad_taint(struct module *mod);
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 8c4f2f4..c115ec4 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -374,8 +374,7 @@ static int tracepoint_module_coming(struct module *mod)
- 		ret = -ENOMEM;
- 		goto end;
- 	}
--	tp_mod->num_tracepoints = mod->num_tracepoints;
--	tp_mod->tracepoints_ptrs = mod->tracepoints_ptrs;
-+	tp_mod->mod = mod;
- 	list_add_tail(&tp_mod->list, &tracepoint_module_list);
- 	blocking_notifier_call_chain(&tracepoint_notify_list,
- 			MODULE_STATE_COMING, tp_mod);
-@@ -393,7 +392,7 @@ static void tracepoint_module_going(struct module *mod)
+ 	if (!current_set_polling_and_test()) {
  
- 	mutex_lock(&tracepoint_module_list_mutex);
- 	list_for_each_entry(tp_mod, &tracepoint_module_list, list) {
--		if (tp_mod->tracepoints_ptrs == mod->tracepoints_ptrs) {
-+		if (tp_mod->mod == mod) {
- 			blocking_notifier_call_chain(&tracepoint_notify_list,
- 					MODULE_STATE_GOING, tp_mod);
- 			list_del(&tp_mod->list);
-@@ -447,9 +446,9 @@ static __init int init_tracepoints(void)
- 	int ret;
+-		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
++		if ((eax > 0) && this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+ 			clflush((void *)&current_thread_info()->flags);
  
- 	ret = register_module_notifier(&tracepoint_module_nb);
--	if (ret) {
-+	if (ret)
- 		pr_warning("Failed to register tracepoint module enter notifier\n");
--	}
-+
- 	return ret;
- }
- __initcall(init_tracepoints);
--- 
-1.8.5.3
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
 
 
+#2: skip flush for C1 and C1E
+	
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index f80b700..6027d06 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -377,7 +377,7 @@ static int intel_idle(struct cpuidle_device *dev,
+ 
+ 	if (!current_set_polling_and_test()) {
+ 
+-		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
++		if ((eax > 1) && this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+ 			clflush((void *)&current_thread_info()->flags);
+ 
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
