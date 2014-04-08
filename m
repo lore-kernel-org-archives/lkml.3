@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153AbaDHP0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:26:13 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:52656 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756382AbaDHP0K (ORCPT
+	id S932430AbaDHP0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:26:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59905 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530AbaDHP0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:26:10 -0400
+	Tue, 8 Apr 2014 11:26:20 -0400
+Message-ID: <5344151A.8030108@codeaurora.org>
+Date: Tue, 08 Apr 2014 10:26:18 -0500
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20140407201919.GA15838@sepie.suse.cz>
-References: <20140407201919.GA15838@sepie.suse.cz>
-Date: Tue, 8 Apr 2014 08:26:09 -0700
-X-Google-Sender-Auth: Kh0ocpV2FOB0j9nJ7BTaKisTJzc
-Message-ID: <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
-Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: MSM8974: Add pinctrl node
+References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com> 	 <1391700529-11816-2-git-send-email-iivanov@mm-sol.com> 	 <CAOZdJXVE7MSMBaL+bt0kjw5LEidz-aVp+vrWqQWkye6HdE7EeA@mail.gmail.com>  <1396959284.28420.45.camel@iivanov-dev> <5343EC87.700@codeaurora.org> <1396964805.28420.53.camel@iivanov-dev> <53440544.9040502@codeaurora.org>
+In-Reply-To: <53440544.9040502@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 1:19 PM, Michal Marek <mmarek@suse.cz> wrote:
+On 04/08/2014 09:18 AM, Timur Tabi wrote:
 >
-> besides the kbuild branch, here is the LTO build support by Andi. It is
-> a separate branch, because it depends on other patches by Andi which
-> were merged through other trees. The link-time-optimization build is an
-> experimental feature, so there one kconfig option to enable it and
-> another kconfig option to disable it (behind a door with a sign "Beware
-> of the Leopard"...), so that it is not enabled by
-> allmodconfig/allyesconfig.
+> Back in July, Qualcomm submitted a patch that added this information
+> into the device tree:
+>
+> http://marc.info/?t=137185166100003&r=1&w=2
+>
+> However, this was rejected.  Now it appears that this information is
+> again being added to the device tree, but it's being accepted.  What's
+> different now?
 
-So right now, I see several reasons not to merge it ("It's so
-experimental that we don't even want to encourage people to test it"
-to "it's not fully fleshed out yet and makes compile times _much_
-longer").
+After re-reading the documentation and having someone kindly explain 
+this to me, I understand it now.  The device tree is only specifying 
+specific configurations that a driver wants, not the sum total of all 
+possible groupings.
 
-And yet nobody has actually talked about why I *should* merge it.
-
-Which - I think understandably - makes me less than enthusiastic.
-
-So I think I'll let this wait a bit longer, _unless_ people start
-talking about the upsides. How much smaller is the end result? How
-much faster is it? How much more beautiful is it? Does it make new
-cool things possible? Are those cool things really close on the
-horizon and really want this merged even though it's not really quite
-ready yet?
-
-So please: convince me. Andi?
-
-              Linus
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, hosted by the Linux Foundation.
