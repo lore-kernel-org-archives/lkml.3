@@ -1,74 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062AbaDHCRD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 22:17:03 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:50919 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaDHCRA (ORCPT
+	id S1756035AbaDHCjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 22:39:43 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60195 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690AbaDHCjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 22:17:00 -0400
-Message-ID: <53435C0F.3090908@linaro.org>
-Date: Tue, 08 Apr 2014 10:16:47 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Apr 2014 22:39:41 -0400
+Message-ID: <53436163.1010102@linux.vnet.ibm.com>
+Date: Tue, 08 Apr 2014 10:39:31 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Grant Likely <grant.likely@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH] ACPI: Update the ownership and developers for ACPI in
- Kconfig
-References: <1396528650-7402-1-git-send-email-hanjun.guo@linaro.org> <1487377.07icAKoM8K@vostro.rjw.lan>
-In-Reply-To: <1487377.07icAKoM8K@vostro.rjw.lan>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        benh@kernel.crashing.org, paulus@samba.org, nfont@linux.vnet.ibm.com,
+        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
+        rcj@linux.vnet.ibm.com, alistair@popple.id.au
+Subject: Re: [PATCH] power, sched: stop updating inside arch_update_cpu_topology()
+ when nothing to be update
+References: <533B8431.8090507@linux.vnet.ibm.com> <53427AC1.9010801@linux.vnet.ibm.com>
+In-Reply-To: <53427AC1.9010801@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040802-4790-0000-0000-000000996C40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-4-7 20:21, Rafael J. Wysocki wrote:
-> On Thursday, April 03, 2014 08:37:30 PM Hanjun Guo wrote:
->> The UEFI Forum included the ACPI spec in its portfolio in October 2013
->> and will host future spec iterations, following the ACPI v5.0a release.
+Hi, Srivatsa
+
+It's nice to have you confirmed the fix, and thanks for the well-writing
+comments, will apply them and send out the new patch later :)
+
+Regards,
+Michael Wang
+
+On 04/07/2014 06:15 PM, Srivatsa S. Bhat wrote:
+> Hi Michael,
+> 
+> On 04/02/2014 08:59 AM, Michael wang wrote:
+>> During the testing, we encounter below WARN followed by Oops:
 >>
->> A UEFI Forum working group named ACPI Specification Working Group (ASWG)
->> has been established to handle future ACPI developments, any UEFI member
->> can join the group and contribute to ACPI specification.
+>> 	WARNING: at kernel/sched/core.c:6218
+>> 	...
+>> 	NIP [c000000000101660] .build_sched_domains+0x11d0/0x1200
+>> 	LR [c000000000101358] .build_sched_domains+0xec8/0x1200
+>> 	PACATMSCRATCH [800000000000f032]
+>> 	Call Trace:
+>> 	[c00000001b103850] [c000000000101358] .build_sched_domains+0xec8/0x1200
+>> 	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+>> 	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+>> 	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+>> 	...
+>> 	Oops: Kernel access of bad area, sig: 11 [#1]
+>> 	...
+>> 	NIP [c00000000045c000] .__bitmap_weight+0x60/0xf0
+>> 	LR [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+>> 	PACATMSCRATCH [8000000000029032]
+>> 	Call Trace:
+>> 	[c00000001b1037a0] [c000000000288ff4] .kmem_cache_alloc_node_trace+0x184/0x3a0
+>> 	[c00000001b103850] [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+>> 	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+>> 	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+>> 	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+>> 	...
 >>
->> So update the ownership and developers for ACPI in Kconfig accordingly,
->> and update the website link to ACPI specification too.
+>> This was caused by that 'sd->groups == NULL' after building groups, which
+>> was caused by the empty 'sd->span'.
 >>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> The cpu's domain contain nothing because the cpu was assigned to wrong
+>> node inside arch_update_cpu_topology() by calling update_lookup_table()
+>> with the uninitialized param, in the case when there is nothing to be
+>> update.
+>>
+> 
+> Can you reword the above paragraph to something like this:
+> 
+> The cpu's domain contained nothing because the cpu was assigned to a wrong
+> node, due to the following unfortunate sequence of events:
+> 
+> 1. The hypervisor sent a topology update to the guest OS, to notify changes
+>    to the cpu-node mapping. However, the update was actually redundant - i.e.,
+>    the "new" mapping was exactly the same as the old one.
+> 
+> 2. Due to this, the 'updated_cpus' mask turned out to be empty after exiting
+>    the 'for-loop' in arch_update_cpu_topology().
+> 
+> 3. So we ended up calling stop-machine() with an empty cpumask list, which made
+>    stop-machine internally elect cpumask_first(cpu_online_mask), i.e., CPU0 as
+>    the cpu to run the payload (the update_cpu_topology() function).
+> 
+> 4. This causes update_cpu_topology() to be run by CPU0. And since 'updates'
+>    is kzalloc()'ed inside arch_update_cpu_topology(), update_cpu_topology()
+>    finds update->cpu as well as update->new_nid to be 0. In other words, we
+>    end up assigning CPU0 (and eventually its siblings) to node 0, incorrectly.
+> 
+> This causes the sched-domain rebuild code to break and crash the system.
+> 
+> 
+>> Thus we should stop the updating in such cases, this patch will achieve
+>> this and fix the issue.
+>>
+> 
+> We can reword this part as:
+> 
+> Fix this by skipping the topology update in cases where we find that
+> the topology has not actually changed in reality (ie., spurious updates).
+> 
+>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Paul Mackerras <paulus@samba.org>
+>> CC: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+>> CC: Stephen Rothwell <sfr@canb.auug.org.au>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: Robert Jennings <rcj@linux.vnet.ibm.com>
+>> CC: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+>> CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+>> CC: Alistair Popple <alistair@popple.id.au>
+>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 >> ---
->>  drivers/acpi/Kconfig |    5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
+>>  arch/powerpc/mm/numa.c |    9 +++++++++
+>>  1 file changed, 9 insertions(+)
 >>
->> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
->> index c205653..831e541 100644
->> --- a/drivers/acpi/Kconfig
->> +++ b/drivers/acpi/Kconfig
->> @@ -32,9 +32,10 @@ menuconfig ACPI
->>  	  <http://acpica.org/>
+>> diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+>> index 30a42e2..6757690 100644
+>> --- a/arch/powerpc/mm/numa.c
+>> +++ b/arch/powerpc/mm/numa.c
+>> @@ -1591,6 +1591,14 @@ int arch_update_cpu_topology(void)
+>>  		cpu = cpu_last_thread_sibling(cpu);
+>>  	}
 >>  
->>  	  ACPI is an open industry specification co-developed by
->> -	  Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.
->> +	  ACPI Specification Working Group (ASWG) under UEFI Forum, any
->> +	  UEFI member can join ASWG and contribute to ACPI specification.
->>  	  The specification is available at:
->> -	  <http://www.acpi.info>
+>> +	/*
+>> +	 * The 'cpu_associativity_changes_mask' could be cleared if
+>> +	 * all the cpus it indicates won't change their node, in
+>> +	 * which case the 'updated_cpus' will be empty.
+>> +	 */
 > 
-> The spec is still available from here, so why are you removing this link?
-
-My bad, I thought the link below is the replacement for the above one.
-
+> How about rewording the comment like this:
 > 
->> +	  <http://www.uefi.org/acpi/specs>
+> In cases where we have nothing to update (because the updates list
+> is too short or because the new topology is same as the old one),
+> skip invoking update_cpu_topology() via stop-machine(). This is
+> necessary (and not just a fast-path optimization) because stop-machine
+> can end up electing a random CPU to run update_cpu_topology(), and
+> thus trick us into setting up incorrect cpu-node mappings (since
+> 'updates' is kzalloc()'ed).
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
+>> +	if (!cpumask_weight(&updated_cpus))
+>> +		goto out;
+>> +
+>>  	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
+>>  
+>>  	/*
+>> @@ -1612,6 +1620,7 @@ int arch_update_cpu_topology(void)
+>>  		changed = 1;
+>>  	}
+>>  
+>> +out:
+>>  	kfree(updates);
+>>  	return changed;
+>>  }
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-How about the replacement below?
-
--	  <http://www.acpi.info>
-+	  <http://www.acpi.info>, or:
-+	  <http://www.uefi.org/acpi/specs>
-
-Thanks
-Hanjun
