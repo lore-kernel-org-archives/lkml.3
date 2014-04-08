@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027AbaDHQmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:42:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39789 "EHLO mail.skyhub.de"
+	id S1757065AbaDHQrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:47:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38009 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756024AbaDHQmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:42:33 -0400
-Date: Tue, 8 Apr 2014 18:42:29 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-edac@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: Re: [PATCH v6 2/5] ARM: Add Krait L2 register accessor functions
-Message-ID: <20140408164228.GM30077@pd.tnic>
-References: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
- <1396641450-12854-3-git-send-email-sboyd@codeaurora.org>
- <20140407201838.GC20822@pd.tnic>
- <20140407215649.GH9985@codeaurora.org>
- <20140408064328.GB30077@pd.tnic>
- <534406BD.8000702@codeaurora.org>
- <20140408151056.GH30077@pd.tnic>
- <20140408171929.68f328a9@alan.etchedpixels.co.uk>
+	id S1756227AbaDHQq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 12:46:59 -0400
+Date: Tue, 8 Apr 2014 17:46:52 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Use an alternative to _PAGE_PROTNONE for
+ _PAGE_NUMA v2
+Message-ID: <20140408164652.GL7292@suse.de>
+References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
+ <53440A5D.6050301@zytor.com>
+ <CA+55aFwc6Jdf+As9RJ3wJWuOGEGmiaYWNa-jp2aCb9=ZiiqV+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140408171929.68f328a9@alan.etchedpixels.co.uk>
+In-Reply-To: <CA+55aFwc6Jdf+As9RJ3wJWuOGEGmiaYWNa-jp2aCb9=ZiiqV+A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 05:19:29PM +0100, One Thousand Gnomes wrote:
-> Including the without warranty is standard practice at a lot of
-> companies. It's not even wasting space - it'll compress beautifully as
-> there are already lots of similar headers all over the tree.
+On Tue, Apr 08, 2014 at 08:22:15AM -0700, Linus Torvalds wrote:
+> On Tue, Apr 8, 2014 at 7:40 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> >
+> > David, is your patchset going to be pushed in this merge window as expected?
+> 
+> Apparently aiming for 3.16 right now.
+> 
 
-Right, I was just trying to find out from Stephen/Christopher whether
-they're actually really required by legal to slap the boilerplate or
-they can get by with a smaller chunk. That's all.
+> > That being said, these bits are precious, and if this ends up being a
+> > case where "only Xen needs another bit" once again then Xen should
+> > expect to get kicked to the curb at a moment's notice.
+> 
+> Quite frankly, I don't think it's a Xen-only issue. The code was hard
+> to figure out even without the Xen issues. For example, nobody ever
+> explained to me why it
+> 
+>  (a) could be the same as PROTNONE on x86
+>  (b) could not be the same as PROTNONE in general
 
-But thanks for this Alan, I was hoping someone would school me on the
-legal practice wrt license boilerplates in the kernel, and there you
-are. :-)
+This series exists in response to your comment
 
-Thanks.
+	I fundamentally think that it was a horrible horrible disaster to
+	make _PAGE_NUMA alias onto _PAGE_PROTNONE.
+
+As long as _PAGE_NUMA aliases to _PAGE_PROTNONE on x86 then the core has to
+play games to take that into account and the code will be "hard to figure
+out even without the Xen issues". FWIW, ppc64 already uses a different
+bit to identify a NUMA pte so it's already the case that _PAGE_NUMA is
+not always _PAGE_PROTNONE. The series is an alternative approach but it
+needs to use a different bit.
+
+If you are ok with leaving _PAGE_NUMA as _PAGE_PROTNONE on x86 then most of
+this series goes away and we're left patch 1 (as NUMA_BALANCING on 32-bit is
+pointless) and "[PATCH 4/5] mm: use paravirt friendly ops for NUMA hinting
+ptes" which is an (untested on Xen) alternative to David Vrabel's patch
+"x86: use pv-ops in {pte,pmd}_{set,clear}_flags()".  The alternative patch
+modifies the NUMA PTE helpers instead of the main set/clear helpers to
+limit the performance hit when PARAVIRT is enabled.
+
+Someone will ask why automatic NUMA balancing hints do not use "real"
+PROT_NONE but as it would need VMA information to do that on all
+architectures it would mean that VMA-fixups would be required when marking
+PTEs for NUMA hinting faults so would be expensive.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Mel Gorman
+SUSE Labs
