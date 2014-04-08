@@ -1,207 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211AbaDHDTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 23:19:00 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46420 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755964AbaDHDS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 23:18:59 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH v2 2/2] ARM: mm: allow text and rodata sections to be read-only
-Date: Mon,  7 Apr 2014 20:15:10 -0700
-Message-Id: <1396926910-11227-3-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396926910-11227-1-git-send-email-keescook@chromium.org>
-References: <1396926910-11227-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S932080AbaDHDTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 23:19:48 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58468 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755964AbaDHDTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 23:19:47 -0400
+Message-ID: <53436AC8.5020705@linux.vnet.ibm.com>
+Date: Tue, 08 Apr 2014 11:19:36 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        benh@kernel.crashing.org, paulus@samba.org, nfont@linux.vnet.ibm.com,
+        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
+        rcj@linux.vnet.ibm.com, jlarrew@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, alistair@popple.id.au
+Subject: [PATCH v2] power, sched: stop updating inside arch_update_cpu_topology()
+ when nothing to be update
+References: <533B8431.8090507@linux.vnet.ibm.com>
+In-Reply-To: <533B8431.8090507@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040803-5816-0000-0000-00000D507964
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduces CONFIG_DEBUG_RODATA, making kernel text and rodata
-read-only. Additionally, this splits rodata from text so that rodata can
-also be NX, which may lead to wasted memory when aligning to SECTION_SIZE.
+Since v1:
+	Edited the comment according to Srivatsa's suggestion.
 
-The read-only areas are made writable during ftrace updates. Additional
-work is needed for kprobes and kexec, so the feature is temporarily
-marked as unavailable in Kconfig when those options are selected.
+During the testing, we encounter below WARN followed by Oops:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+	WARNING: at kernel/sched/core.c:6218
+	...
+	NIP [c000000000101660] .build_sched_domains+0x11d0/0x1200
+	LR [c000000000101358] .build_sched_domains+0xec8/0x1200
+	PACATMSCRATCH [800000000000f032]
+	Call Trace:
+	[c00000001b103850] [c000000000101358] .build_sched_domains+0xec8/0x1200
+	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+	...
+	Oops: Kernel access of bad area, sig: 11 [#1]
+	...
+	NIP [c00000000045c000] .__bitmap_weight+0x60/0xf0
+	LR [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+	PACATMSCRATCH [8000000000029032]
+	Call Trace:
+	[c00000001b1037a0] [c000000000288ff4] .kmem_cache_alloc_node_trace+0x184/0x3a0
+	[c00000001b103850] [c00000000010132c] .build_sched_domains+0xe9c/0x1200
+	[c00000001b1039a0] [c00000000010aad4] .partition_sched_domains+0x484/0x510
+	[c00000001b103aa0] [c00000000016d0a8] .rebuild_sched_domains+0x68/0xa0
+	[c00000001b103b30] [c00000000005cbf0] .topology_work_fn+0x10/0x30
+	...
+
+This was caused by that 'sd->groups == NULL' after building groups, which
+was caused by the empty 'sd->span'.
+
+The cpu's domain contained nothing because the cpu was assigned to a wrong
+node, due to the following unfortunate sequence of events:
+
+1. The hypervisor sent a topology update to the guest OS, to notify changes
+   to the cpu-node mapping. However, the update was actually redundant - i.e.,
+   the "new" mapping was exactly the same as the old one.
+
+2. Due to this, the 'updated_cpus' mask turned out to be empty after exiting
+   the 'for-loop' in arch_update_cpu_topology().
+
+3. So we ended up calling stop-machine() with an empty cpumask list, which made
+   stop-machine internally elect cpumask_first(cpu_online_mask), i.e., CPU0 as
+   the cpu to run the payload (the update_cpu_topology() function).
+
+4. This causes update_cpu_topology() to be run by CPU0. And since 'updates'
+   is kzalloc()'ed inside arch_update_cpu_topology(), update_cpu_topology()
+   finds update->cpu as well as update->new_nid to be 0. In other words, we
+   end up assigning CPU0 (and eventually its siblings) to node 0, incorrectly.
+
+Along with the following wrong updating, it causes the sched-domain rebuild
+code to break and crash the system.
+
+Fix this by skipping the topology update in cases where we find that
+the topology has not actually changed in reality (ie., spurious updates).
+
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Robert Jennings <rcj@linux.vnet.ibm.com>
+CC: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Alistair Popple <alistair@popple.id.au>
+Suggested-by: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
- arch/arm/include/asm/cacheflush.h |    9 ++++++++
- arch/arm/kernel/ftrace.c          |   17 ++++++++++++++
- arch/arm/kernel/vmlinux.lds.S     |    3 +++
- arch/arm/mm/Kconfig               |   12 ++++++++++
- arch/arm/mm/init.c                |   46 +++++++++++++++++++++++++++++++++++++
- 5 files changed, 87 insertions(+)
+ arch/powerpc/mm/numa.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
-index 8b8b61685a34..b6fea0a1a88b 100644
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -487,4 +487,13 @@ int set_memory_rw(unsigned long addr, int numpages);
- int set_memory_x(unsigned long addr, int numpages);
- int set_memory_nx(unsigned long addr, int numpages);
- 
-+#ifdef CONFIG_DEBUG_RODATA
-+void mark_rodata_ro(void);
-+void set_kernel_text_rw(void);
-+void set_kernel_text_ro(void);
-+#else
-+static inline void set_kernel_text_rw(void) { }
-+static inline void set_kernel_text_ro(void) { }
-+#endif
-+
- #endif
-diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-index af9a8a927a4e..ea446ae09c89 100644
---- a/arch/arm/kernel/ftrace.c
-+++ b/arch/arm/kernel/ftrace.c
-@@ -15,6 +15,7 @@
- #include <linux/ftrace.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
-+#include <linux/stop_machine.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/opcodes.h>
-@@ -35,6 +36,22 @@
- 
- #define	OLD_NOP		0xe1a00000	/* mov r0, r0 */
- 
-+static int __ftrace_modify_code(void *data)
-+{
-+	int *command = data;
-+
-+	set_kernel_text_rw();
-+	ftrace_modify_all_code(*command);
-+	set_kernel_text_ro();
-+
-+	return 0;
-+}
-+
-+void arch_ftrace_update_code(int command)
-+{
-+	stop_machine(__ftrace_modify_code, &command, NULL);
-+}
-+
- static unsigned long ftrace_nop_replace(struct dyn_ftrace *rec)
- {
- 	return rec->arch.old_mcount ? OLD_NOP : NOP;
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index 08fa667ef2f1..ec79e7268e09 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -120,6 +120,9 @@ SECTIONS
- 			ARM_CPU_KEEP(PROC_INFO)
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 30a42e2..4ebbb9e 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -1591,6 +1591,20 @@ int arch_update_cpu_topology(void)
+ 		cpu = cpu_last_thread_sibling(cpu);
  	}
  
-+#ifdef CONFIG_DEBUG_RODATA
-+	. = ALIGN(1<<SECTION_SHIFT);
-+#endif
- 	RO_DATA(PAGE_SIZE)
- 
- 	. = ALIGN(4);
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index b484fb04cf6f..e767ab6e1c27 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -966,3 +966,15 @@ config ARM_KERNMEM_PERMS
- 	  padded to section-size (1MiB) boundaries (because their permissions
- 	  are different and splitting the 1M pages into 4K ones causes TLB
- 	  performance problems), wasting memory.
++	/*
++	 * In cases where we have nothing to update (because the updates list
++	 * is too short or because the new topology is same as the old one),
++	 * skip invoking update_cpu_topology() via stop-machine(). This is
++	 * necessary (and not just a fast-path optimization) since stop-machine
++	 * can end up electing a random CPU to run update_cpu_topology(), and
++	 * thus trick us into setting up incorrect cpu-node mappings (since
++	 * 'updates' is kzalloc()'ed).
++	 *
++	 * And for the similar reason, we will skip all the following updating.
++	 */
++	if (!cpumask_weight(&updated_cpus))
++		goto out;
 +
-+config DEBUG_RODATA
-+	bool "Make kernel text and rodata read-only"
-+	depends on ARM_KERNMEM_PERMS && KEXEC=n && KPROBES=n
-+	default y
-+	help
-+	  If this is set, kernel text and rodata will be made read-only. This
-+	  is to help catch accidental or malicious attempts to change the
-+	  kernel's executable code. Additionally splits rodata from kernel
-+	  text so it can be made explicitly non-executable. This creates
-+	  another section-size padded region, so it can waste more memory
-+	  space while gaining the read-only protections.
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 66a7283583cd..74647a4f1af4 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -634,6 +634,7 @@ struct section_perm {
- 	unsigned long end;
- 	pmdval_t mask;
- 	pmdval_t prot;
-+	pmdval_t clear;
- };
+ 	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
  
- struct section_perm nx_perms[] = {
-@@ -651,8 +652,35 @@ struct section_perm nx_perms[] = {
- 		.mask	= ~PMD_SECT_XN,
- 		.prot	= PMD_SECT_XN,
- 	},
-+#ifdef CONFIG_DEBUG_RODATA
-+	/* Make rodata NX (set RO in ro_perms below). */
-+	{
-+		.start  = (unsigned long)__start_rodata,
-+		.end    = (unsigned long)__init_begin,
-+		.mask   = ~PMD_SECT_XN,
-+		.prot   = PMD_SECT_XN,
-+	},
-+#endif
- };
+ 	/*
+@@ -1612,6 +1626,7 @@ int arch_update_cpu_topology(void)
+ 		changed = 1;
+ 	}
  
-+#ifdef CONFIG_DEBUG_RODATA
-+struct section_perm ro_perms[] = {
-+	/* Make kernel code and rodata RX (set RO). */
-+	{
-+		.start  = (unsigned long)_stext,
-+		.end    = (unsigned long)__init_begin,
-+#ifdef CONFIG_ARM_LPAE
-+		.mask   = ~PMD_SECT_RDONLY,
-+		.prot   = PMD_SECT_RDONLY,
-+#else
-+		.mask   = ~(PMD_SECT_APX | PMD_SECT_AP_WRITE),
-+		.prot   = PMD_SECT_APX | PMD_SECT_AP_WRITE,
-+		.clear  = PMD_SECT_AP_WRITE,
-+#endif
-+	},
-+};
-+#endif
-+
- /*
-  * Updates section permissions only for the current mm (sections are
-  * copied into each mm). During startup, this is the init_mm.
-@@ -721,6 +749,24 @@ static inline void fix_kernmem_perms(void)
- {
- 	set_section_perms(nx_perms, prot);
++out:
+ 	kfree(updates);
+ 	return changed;
  }
-+
-+#ifdef CONFIG_DEBUG_RODATA
-+void mark_rodata_ro(void)
-+{
-+	set_section_perms(ro_perms, prot);
-+}
-+
-+void set_kernel_text_rw(void)
-+{
-+	set_section_perms(ro_perms, clear);
-+}
-+
-+void set_kernel_text_ro(void)
-+{
-+	set_section_perms(ro_perms, prot);
-+}
-+#endif /* CONFIG_DEBUG_RODATA */
-+
- #else
- static inline void fix_kernmem_perms(void) { }
- #endif /* CONFIG_ARM_KERNMEM_PERMS */
 -- 
 1.7.9.5
 
