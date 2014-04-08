@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210AbaDHOz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:55:27 -0400
-Received: from smtp.01.com ([199.36.142.181]:46749 "EHLO smtp.01.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756780AbaDHOzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:55:25 -0400
-X-Greylist: delayed 515 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Apr 2014 10:55:25 EDT
-Message-ID: <53440BD6.5030008@agliodbs.com>
-Date: Tue, 08 Apr 2014 10:46:46 -0400
-From: Josh Berkus <josh@agliodbs.com>
-Organization: PostgreSQL Experts Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757246AbaDHO7Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:59:25 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:11593 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757071AbaDHO7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:59:24 -0400
+Date: Tue, 8 Apr 2014 10:59:21 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: fweisbec@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ftrace: ftrace_bug, ftrace failed to modify nva3_ram_init
+Message-ID: <20140408105921.0e62da8f@gandalf.local.home>
+In-Reply-To: <53440730.3070507@oracle.com>
+References: <53440730.3070507@oracle.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>, Vlastimil Babka <vbabka@suse.cz>
-CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Robert Haas <robertmhaas@gmail.com>,
-        Andres Freund <andres@2ndquadrant.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, sivanich@sgi.com
-Subject: Re: [PATCH 0/2] Disable zone_reclaim_mode by default
-References: <1396910068-11637-1-git-send-email-mgorman@suse.de> <5343A494.9070707@suse.cz> <alpine.DEB.2.10.1404080914280.8782@nuc> <WM!ea1193ee171854a74828ee30c859d97ff2ce66405ffa3a0b8c31a1233c6a0b55530cdf3cbfcd989c0ec18fef1d533f81!@asav-3.01.com>
-In-Reply-To: <WM!ea1193ee171854a74828ee30c859d97ff2ce66405ffa3a0b8c31a1233c6a0b55530cdf3cbfcd989c0ec18fef1d533f81!@asav-3.01.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 10:17 AM, Christoph Lameter wrote:
+On Tue, 08 Apr 2014 10:26:56 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-> Another solution here would be to increase the threshhold so that
-> 4 socket machines do not enable zone reclaim by default. The larger the
-> NUMA system is the more memory is off node from the perspective of a
-> processor and the larger the hit from remote memory.
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following:
+> 
+> [ 2983.109380] WARNING: CPU: 0 PID: 744 at kernel/trace/ftrace.c:1704 ftrace_bug+0xb0/0x280()
+> [ 2983.110893] Modules linked in:
+> [ 2983.111439] CPU: 0 PID: 744 Comm: trinity-main Tainted: G        W     3.14.0-next-20140407-sasha-00023-gd35b0d6 #382
 
-8 and 16 socket machines aren't common for nonspecialist workloads
-*now*, but by the time these changes make it into supported distribution
-kernels, they may very well be.  So having zone_reclaim_mode
-automatically turn itself on if you have more than 8 sockets would still
-be a booby-trap ("Boss, I dunno.  I installed the additional processors
-and memory performance went to hell!")
+What was the warning before this?
 
-For zone_reclaim_mode=1 to be useful on standard servers, both of the
-following need to be true:
+> [ 2983.112845]  0000000000000009 ffff88002c4e3b88 ffffffffa252ee51 0000000000002420
+> [ 2983.113993]  0000000000000000 ffff88002c4e3bc8 ffffffff9f15a2dc ffffffff9fffffc0
+> [ 2983.115134]  ffff88018aaad530 ffffffffa0000000 000000000000ad53 ffffffffa6486e10
+> [ 2983.116221] Call Trace:
+> [ 2983.116603] dump_stack (lib/dump_stack.c:52)
+> [ 2983.117306] warn_slowpath_common (kernel/panic.c:419)
+> [ 2983.118252] ? nva3_ram_prog (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:318)
+> [ 2983.119091] ? nva3_ram_tidy (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:326)
+> [ 2983.119836] ? __fentry__ (arch/x86/kernel/entry_64.S:106)
+> [ 2983.121379] warn_slowpath_null (kernel/panic.c:454)
+> [ 2983.122635] ftrace_bug (kernel/trace/ftrace.c:1704 (discriminator 3))
+> [ 2983.123688] ftrace_replace_code (arch/x86/kernel/ftrace.c:625 (discriminator 3))
+> [ 2983.124938] ftrace_modify_all_code (kernel/trace/ftrace.c:2011)
+> [ 2983.126208] arch_ftrace_update_code (arch/x86/include/asm/atomic.h:103 arch/x86/kernel/ftrace.c:680)
+> [ 2983.127613] ftrace_run_update_code (kernel/trace/ftrace.c:2088)
+> [ 2983.128540] ftrace_startup_enable (kernel/trace/ftrace.c:2114)
+> [ 2983.129392] ftrace_startup (kernel/trace/ftrace.c:2146)
+> [ 2983.130679] register_ftrace_function (kernel/trace/ftrace.c:4864)
+> [ 2983.131667] perf_ftrace_event_register (kernel/trace/trace_event_perf.c:356)
+> [ 2983.132590] perf_trace_init (kernel/trace/trace_event_perf.c:187 kernel/trace/trace_event_perf.c:206)
+> [ 2983.133377] ? __lock_is_held (kernel/locking/lockdep.c:3516)
+> [ 2983.134181] perf_tp_event_init (kernel/events/core.c:5937)
+> [ 2983.135043] perf_init_event (kernel/events/core.c:6598)
+> [ 2983.135882] ? perf_pmu_unregister (kernel/events/core.c:6577)
+> [ 2983.136803] perf_event_alloc (kernel/events/core.c:6754)
+> [ 2983.137831] SYSC_perf_event_open (kernel/events/core.c:7062)
+> [ 2983.138798] ? preempt_count_sub (kernel/sched/core.c:2526)
+> [ 2983.139643] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+> [ 2983.140912] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+> [ 2983.141941] SyS_perf_event_open (kernel/events/core.c:6990)
+> [ 2983.142771] tracesys (arch/x86/kernel/entry_64.S:749)
+> [ 2983.144740] ---[ end trace 6321065f5978f85b ]---
+> [ 2983.145355] ftrace failed to modify nva3_ram_init (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:326)
+> [ 2983.146357]  actual: 90:66:66:66:90
 
-1. the user has to have set CPU affinity for their applications;
+Hmm, I wonder what the "ideal" nop is on this machine. But I think it
+should probably have been 66:66:66:66:90?
 
-2. the applications can't need more than one memory bank worth of cache.
+Is this reproducible?
 
-The thing is, there is *no way* for Linux to know if the above is true.
+-- Steve
 
-Now, I can certainly imagine non-HPC workloads for which both of the
-above would be true; for example, I've set up VMware ESX servers where
-each VM has one socket and one memory bank. However, if the user knows
-enough to set up socket affinity, they know enough to set
-zone_reclaim_mode = 1.  The default should cover the know-nothing case,
-not the experienced specialist case.
+> [ 2983.147116] Failed on adding breakpoints (44371):
+> 
+> 
+> Thanks,
+> Sasha
 
-I'd also argue that there's a fundamental false assumption in the entire
-algorithm of zone_reclaim_mode, because there is no memory bank which is
-as distant as disk is, ever.  However, if it's off by default, then I
-don't care.
-
--- 
-Josh Berkus
-PostgreSQL Experts Inc.
-http://pgexperts.com
