@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435AbaDHMHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 08:07:40 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:49248 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755384AbaDHMHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 08:07:39 -0400
-Message-ID: <1396958857.26620.35.camel@x220>
-Subject: [PATCH] initramfs: remove "compression mode" choice
-From: Paul Bolle <pebolle@tiscali.nl>
-To: P J P <ppandit@redhat.com>, P J P <prasad@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 08 Apr 2014 14:07:37 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1756640AbaDHMIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 08:08:51 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:35711 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756552AbaDHMIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 08:08:49 -0400
+Message-ID: <5343E6CF.8000409@mm-sol.com>
+Date: Tue, 08 Apr 2014 15:08:47 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 3/9] crypto: qce: Add dma and sg helpers
+References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com> <1396541886-10966-4-git-send-email-svarbanov@mm-sol.com> <20140403231525.GE17066@sonymobile.com> <533EAE81.6060109@mm-sol.com> <20140407224256.GG17066@sonymobile.com>
+In-Reply-To: <20140407224256.GG17066@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Apr 2014 12:07:37.0458 (UTC) FILETIME=[21E3ED20:01CF5323]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9ba4bcb64589 ("initramfs: read CONFIG_RD_ variables for
-initramfs compression") removed the users of the various
-INITRAMFS_COMPRESSION_* Kconfig symbols. So since v3.13 the entire
-"Built-in initramfs compression mode" choice is a set of knobs connected
-to nothing. The entire choice can safely be removed.
+Hi
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-The help texts that are removed here contain a bit of information, eg on
-the various compression algorithms. Is it useful enough to be readded
-somewhere else?
+On 04/08/2014 01:42 AM, Courtney Cavin wrote:
+> On Fri, Apr 04, 2014 at 03:07:13PM +0200, Stanimir Varbanov wrote:
+>>>> diff --git a/drivers/crypto/qce/dma.h b/drivers/crypto/qce/dma.h
+>>>> new file mode 100644
+>>>> index 000000000000..932b02fd8f25
+>>>> --- /dev/null
+>>>> +++ b/drivers/crypto/qce/dma.h
+>>>> @@ -0,0 +1,57 @@
+>>>> +/*
+>>>> + * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
+>>>> + *
+>>>> + * This program is free software; you can redistribute it and/or modify
+>>>> + * it under the terms of the GNU General Public License version 2 and
+>>>> + * only version 2 as published by the Free Software Foundation.
+>>>> + *
+>>>> + * This program is distributed in the hope that it will be useful,
+>>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>>> + * GNU General Public License for more details.
+>>>> + */
+>>>> +
+>>>> +#ifndef _DMA_H_
+>>>> +#define _DMA_H_
+>>>> +
+>>>> +#define QCE_AUTHIV_REGS_CNT		16
+>>>> +#define QCE_AUTH_BYTECOUNT_REGS_CNT	4
+>>>> +#define QCE_CNTRIV_REGS_CNT		4
+>>>> +
+>>>> +/* result dump format */
+>>>> +struct qce_result_dump {
+>>>> +	u32 auth_iv[QCE_AUTHIV_REGS_CNT];
+>>>> +	u32 auth_byte_count[QCE_AUTH_BYTECOUNT_REGS_CNT];
+>>>> +	u32 encr_cntr_iv[QCE_CNTRIV_REGS_CNT];
+>>>> +	u32 status;
+>>>> +	u32 status2;
+>>>> +};
+>>>> +
+>>>> +#define QCE_IGNORE_BUF_SZ	(2 * QCE_BAM_BURST_SIZE)
+>>>
+>>> QCE_BAM_BURST_SIZE is defined in common.h in 6/9.  Either that file
+>>> needs to be included from this one, or the definition needs to be moved.
+>>
+>> I decided to not include any files in driver private headers. Thus I
+>> include the private header files in relevant c files in order.
+> 
+> Actually, that is exactly what I was trying to indicate as undesirable.
+> Please modify this so that each individual header file doesn't require
+> you to include another file for usage.
 
-"P J P" apparently has two redhat.com addresses. 
+OK, queued for version 2.
 
- usr/Kconfig | 77 -------------------------------------------------------------
- 1 file changed, 77 deletions(-)
-
-diff --git a/usr/Kconfig b/usr/Kconfig
-index 642f503d3e9f..2d4c77eecf2e 100644
---- a/usr/Kconfig
-+++ b/usr/Kconfig
-@@ -98,80 +98,3 @@ config RD_LZ4
- 	help
- 	  Support loading of a LZ4 encoded initial ramdisk or cpio buffer
- 	  If unsure, say N.
--
--choice
--	prompt "Built-in initramfs compression mode" if INITRAMFS_SOURCE!=""
--	help
--	  This option decides by which algorithm the builtin initramfs
--	  will be compressed.  Several compression algorithms are
--	  available, which differ in efficiency, compression and
--	  decompression speed.  Compression speed is only relevant
--	  when building a kernel.  Decompression speed is relevant at
--	  each boot.
--
--	  If you have any problems with bzip2 or LZMA compressed
--	  initramfs, mail me (Alain Knaff) <alain@knaff.lu>.
--
--	  High compression options are mostly useful for users who are
--	  low on RAM, since it reduces the memory consumption during
--	  boot.
--
--	  If in doubt, select 'gzip'
--
--config INITRAMFS_COMPRESSION_NONE
--	bool "None"
--	help
--	  Do not compress the built-in initramfs at all. This may
--	  sound wasteful in space, but, you should be aware that the
--	  built-in initramfs will be compressed at a later stage
--	  anyways along with the rest of the kernel, on those
--	  architectures that support this.
--	  However, not compressing the initramfs may lead to slightly
--	  higher memory consumption during a short time at boot, while
--	  both the cpio image and the unpacked filesystem image will
--	  be present in memory simultaneously
--
--config INITRAMFS_COMPRESSION_GZIP
--	bool "Gzip"
--	depends on RD_GZIP
--	help
--	  The old and tried gzip compression. It provides a good balance
--	  between compression ratio and decompression speed.
--
--config INITRAMFS_COMPRESSION_BZIP2
--	bool "Bzip2"
--	depends on RD_BZIP2
--	help
--	  Its compression ratio and speed is intermediate.
--	  Decompression speed is slowest among the choices.  The initramfs
--	  size is about 10% smaller with bzip2, in comparison to gzip.
--	  Bzip2 uses a large amount of memory. For modern kernels you
--	  will need at least 8MB RAM or more for booting.
--
--config INITRAMFS_COMPRESSION_LZMA
--	bool "LZMA"
--	depends on RD_LZMA
--	help
--	  This algorithm's compression ratio is best.
--	  Decompression speed is between the other choices.
--	  Compression is slowest. The initramfs size is about 33%
--	  smaller with LZMA in comparison to gzip.
--
--config INITRAMFS_COMPRESSION_XZ
--	bool "XZ"
--	depends on RD_XZ
--	help
--	  XZ uses the LZMA2 algorithm. The initramfs size is about 30%
--	  smaller with XZ in comparison to gzip. Decompression speed
--	  is better than that of bzip2 but worse than gzip and LZO.
--	  Compression is slow.
--
--config INITRAMFS_COMPRESSION_LZO
--	bool "LZO"
--	depends on RD_LZO
--	help
--	  Its compression ratio is the poorest among the choices. The kernel
--	  size is about 10% bigger than gzip; however its speed
--	  (both compression and decompression) is the fastest.
--
--endchoice
 -- 
-1.9.0
-
+regards,
+Stan
