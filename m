@@ -1,80 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399AbaDHQsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:48:41 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:57409 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890AbaDHQsi (ORCPT
+	id S1757417AbaDHQvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:51:15 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:17239 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768AbaDHQvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:48:38 -0400
+	Tue, 8 Apr 2014 12:51:13 -0400
+X-IronPort-AV: E=Sophos;i="4.97,819,1389744000"; 
+   d="scan'208";a="117962145"
+Message-ID: <534428F2.2040205@citrix.com>
+Date: Tue, 8 Apr 2014 17:50:58 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <6228807.4v9ZRtib77@wuerfel>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <CAErSpo6S49qNuJQB-XXEfJ1Nkz=4gZ5_hE93=gb_yGZesA1H9Q@mail.gmail.com>
- <20140408094933.GS17163@e106497-lin.cambridge.arm.com> <6228807.4v9ZRtib77@wuerfel>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 8 Apr 2014 10:48:18 -0600
-Message-ID: <CAErSpo4nZiEcTth5W6ZhcRSne80T8VWTWR2zm0yN7ogFR0Norw@mail.gmail.com>
-Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Steven Noonan <steven@uplinklabs.net>, Mel Gorman <mgorman@suse.de>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
+ bits PMD and PTE levels
+References: <5342C517.2020305@citrix.com> <20140407154935.GD7292@suse.de> <20140407161910.GJ1444@moon> <20140407182854.GH7292@suse.de> <5342FC0E.9080701@zytor.com> <20140407193646.GC23983@moon> <5342FFB0.6010501@zytor.com> <20140407212535.GJ7292@suse.de> <CAKbGBLhsWKVYnBqR0ZJ2kfaF_h=XAYkjq=v3RLoRBDkF_w=6ag@mail.gmail.com> <e9801da2-3aa4-4c23-9a64-90c890b9ebbc@email.android.com> <20140408160250.GE31554@phenom.dumpdata.com> <534420F1.3030301@zytor.com>
+In-Reply-To: <534420F1.3030301@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 4:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+On 08/04/14 17:16, H. Peter Anvin wrote:
+> On 04/08/2014 09:02 AM, Konrad Rzeszutek Wilk wrote:
+>>>>
+>>>> Amazon EC2 does have large memory instance types with NUMA exposed to
+>>>> the guest (e.g. c3.8xlarge, i2.8xlarge, etc), so it'd be preferable
+>>>> (to me anyway) if we didn't require !XEN.
+>>
+>> What about the patch that David Vrabel posted:
+>>
+>> http://osdir.com/ml/general/2014-03/msg41979.html
+>>
+>> Has anybody taken it for a spin?
+>>
+> 
+> Oh lovely, more pvops in low level paths.  I'm so thrilled.
+> 
+> Incidentally, I wasn't even Cc:'d on that patch and was only added to
+> the thread by Linus, but never saw the early bits of the thread
+> including the actual patch.
 
-> There is a wide range of implementations across architectures:
->
-> a) no access to I/O ports at all (tile, s390, ...)
-> b) access to I/O ports only through special instructions (x86, ...)
-> c) all MMIO is mapped virtual contiguous to PCI_IOBASE or _IO_BASE
->    (most ppc64, arm32 with MMU, arm64, ...)
-> d) only one PCI host can have an I/O space (mips, microblaze, ...)
-> e) each host controller can have its own method (ppc64 with indirect pio)
-> f) PIO token equals virtual address plus offset (some legacy ARM platforms,
->    probably some other architectures), or physical address (sparc)
-> g) PIO token encodes address space number plus offset (ia64)
->
-> a) and b) are trivially handled by any implementation that falls
-> back to 'return -EINVAL'.
-> I believe that c) is the most appropriate solution and we should be
-> able to adopt it by most of the architectures that have an MMU and
-> make it the default implementation.
-> d) seems like a good fallback for noMMU architectures: While we do
-> need to support I/O spaces, we need to support multiple PCI domains,
-> and we need to support noMMU, the combination of all three should
-> be extremely rare, and I'd leave it up to the architecture to support
-> that if there is a real use case, rather than trying to put that into
-> common code.
-> Anything that currently requires e), f) or g) I think should keep
-> doing that and not try to use the generic implementation.
+I did resend a version CC'd to all the x86 maintainers and included some
+performance figures for native (~1 extra clock cycle).
 
-Thanks for the nice summary.  That's way more than I had figured out myself.
+I've included it again below.
 
-I don't know whether it'd be worth it, especially for something that's
-so close to obsolete, but it seems like it should be *possible* to
-generalize and unify this somewhat.  I would argue that g) (which I
-wrote, so I know it better than the others) could fairly easily
-subsume c), d), and f), since it maps an ioport number to a virtual
-address for an MMIO access, but it doesn't assume that all the MMIO
-spaces are contiguous.
+My preference would be take this patch as it fixes it for both NUMA
+rebalancing and any future uses that want to set/clear _PAGE_PRESENT.
 
-b), e), and maybe a) could be handled with an exception, e.g., inside
-inb(), look up the struct io_space (e.g., similar to what ia64 does in
-__ia64_mk_io_addr()), and if that struct contains a non-zero ops
-pointer, use that instead of doing the MMIO access.  The ops pointer
-functions could use the x86 INB instruction or do the indirect PIO
-thing or whatever.
+David
 
-Bjorn
+8<--------------
+x86: use pv-ops in {pte, pmd}_{set,clear}_flags()
+
+Instead of using native functions to operate on the PTEs in
+pte_set_flags(), pte_clear_flags(), pmd_set_flags(), pmd_clear_flags()
+use the PV aware ones.
+
+This fixes a regression in Xen PV guests introduced by 1667918b6483
+(mm: numa: clear numa hinting information on mprotect).
+
+This has negligible performance impact on native since the pte_val()
+and __pte() (etc.) calls are patched at runtime when running on bare
+metal.  Measurements on a 3 GHz AMD 4284 give approx. 0.3 ns (~1 clock
+cycle) of additional time for each function.
+
+Xen PV guest page tables require that their entries use machine
+addresses if the preset bit (_PAGE_PRESENT) is set, and (for
+successful migration) non-present PTEs must use pseudo-physical
+addresses.  This is because on migration MFNs only present PTEs are
+translated to PFNs (canonicalised) so they may be translated back to
+the new MFN in the destination domain (uncanonicalised).
+
+pte_mknonnuma(), pmd_mknonnuma(), pte_mknuma() and pmd_mknuma() set
+and clear the _PAGE_PRESENT bit using pte_set_flags(),
+pte_clear_flags(), etc.
+
+In a Xen PV guest, these functions must translate MFNs to PFNs when
+clearing _PAGE_PRESENT and translate PFNs to MFNs when setting
+_PAGE_PRESENT.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Steven Noonan <steven@uplinklabs.net>
+Cc: Elena Ufimtseva <ufimtseva@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: <stable@vger.kernel.org>        [3.12+]
+---
+ arch/x86/include/asm/pgtable.h |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index bbc8b12..323e5e2 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -174,16 +174,16 @@ static inline int has_transparent_hugepage(void)
+
+ static inline pte_t pte_set_flags(pte_t pte, pteval_t set)
+ {
+-	pteval_t v = native_pte_val(pte);
++	pteval_t v = pte_val(pte);
+
+-	return native_make_pte(v | set);
++	return __pte(v | set);
+ }
+
+ static inline pte_t pte_clear_flags(pte_t pte, pteval_t clear)
+ {
+-	pteval_t v = native_pte_val(pte);
++	pteval_t v = pte_val(pte);
+
+-	return native_make_pte(v & ~clear);
++	return __pte(v & ~clear);
+ }
+
+ static inline pte_t pte_mkclean(pte_t pte)
+@@ -248,14 +248,14 @@ static inline pte_t pte_mkspecial(pte_t pte)
+
+ static inline pmd_t pmd_set_flags(pmd_t pmd, pmdval_t set)
+ {
+-	pmdval_t v = native_pmd_val(pmd);
++	pmdval_t v = pmd_val(pmd);
+
+ 	return __pmd(v | set);
+ }
+
+ static inline pmd_t pmd_clear_flags(pmd_t pmd, pmdval_t clear)
+ {
+-	pmdval_t v = native_pmd_val(pmd);
++	pmdval_t v = pmd_val(pmd);
+
+ 	return __pmd(v & ~clear);
+ }
