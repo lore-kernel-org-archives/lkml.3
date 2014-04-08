@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649AbaDHM1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 08:27:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59285 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756521AbaDHM1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 08:27:35 -0400
-Date: Tue, 8 Apr 2014 14:27:31 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/3] hw_random: Move UML_RANDOM at the last position
-Message-ID: <20140408142731.48c9f92f@endymion.delvare>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756710AbaDHM1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 08:27:54 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:35245 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521AbaDHM1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 08:27:51 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
+        Barry Song <baohua@kernel.org>
+Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] pinctrl: sirf: rename inlined accessor
+Date: Tue,  8 Apr 2014 14:27:43 +0200
+Message-Id: <1396960063-30552-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UML_RANDOM is the only hardware random number generator option which
-does not depend on HW_RANDOM. Having it in the middle of the other
-options breaks the alignment in "make menuconfig". Move it at the last
-position to avoid that.
+The sirfsoc_irqchip_to_bank() is obviously misnamed, as it is
+not converting an irqchip to a bank but converts a gpiochip
+to a bank so rename it sirfsoc_gpiochip_to_bank().
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/char/hw_random/Kconfig |   30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+ drivers/pinctrl/sirf/pinctrl-sirf.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- linux-3.15-rc0.orig/drivers/char/hw_random/Kconfig	2014-04-08 13:12:21.590656248 +0200
-+++ linux-3.15-rc0/drivers/char/hw_random/Kconfig	2014-04-08 13:12:50.845233756 +0200
-@@ -275,21 +275,6 @@ config HW_RANDOM_PPC4XX
+diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c b/drivers/pinctrl/sirf/pinctrl-sirf.c
+index 76502aab2cb1..2c3eb207ff87 100644
+--- a/drivers/pinctrl/sirf/pinctrl-sirf.c
++++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
+@@ -483,7 +483,7 @@ static inline struct sirfsoc_gpio_bank *sirfsoc_gpio_to_bank(unsigned int gpio)
+ 	return &sgpio_bank[gpio / SIRFSOC_GPIO_BANK_SIZE];
+ }
  
- 	 If unsure, say N.
+-static inline struct sirfsoc_gpio_bank *sirfsoc_irqchip_to_bank(struct gpio_chip *chip)
++static inline struct sirfsoc_gpio_bank *sirfsoc_gpiochip_to_bank(struct gpio_chip *chip)
+ {
+ 	return container_of(to_of_mm_gpio_chip(chip), struct sirfsoc_gpio_bank, chip);
+ }
+@@ -675,7 +675,7 @@ static inline void sirfsoc_gpio_set_input(struct sirfsoc_gpio_bank *bank, unsign
  
--config UML_RANDOM
--	depends on UML
--	tristate "Hardware random number generator"
--	help
--	  This option enables UML's "hardware" random number generator.  It
--	  attaches itself to the host's /dev/random, supplying as much entropy
--	  as the host has, rather than the small amount the UML gets from its
--	  own drivers.  It registers itself as a standard hardware random number
--	  generator, major 10, minor 183, and the canonical device name is
--	  /dev/hwrng.
--	  The way to make use of this is to install the rng-tools package
--	  (check your distro, or download from
--	  http://sourceforge.net/projects/gkernel/).  rngd periodically reads
--	  /dev/hwrng and injects the entropy into /dev/random.
--
- config HW_RANDOM_PSERIES
- 	tristate "pSeries HW Random Number Generator support"
- 	depends on HW_RANDOM && PPC64 && IBMVIO
-@@ -352,3 +337,18 @@ config HW_RANDOM_MSM
- 	  module will be called msm-rng.
+ static int sirfsoc_gpio_request(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
++	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+ 	unsigned long flags;
  
- 	  If unsure, say Y.
-+
-+config UML_RANDOM
-+	depends on UML
-+	tristate "Hardware random number generator"
-+	help
-+	  This option enables UML's "hardware" random number generator.  It
-+	  attaches itself to the host's /dev/random, supplying as much entropy
-+	  as the host has, rather than the small amount the UML gets from its
-+	  own drivers.  It registers itself as a standard hardware random number
-+	  generator, major 10, minor 183, and the canonical device name is
-+	  /dev/hwrng.
-+	  The way to make use of this is to install the rng-tools package
-+	  (check your distro, or download from
-+	  http://sourceforge.net/projects/gkernel/).  rngd periodically reads
-+	  /dev/hwrng and injects the entropy into /dev/random.
-
-
+ 	if (pinctrl_request_gpio(chip->base + offset))
+@@ -697,7 +697,7 @@ static int sirfsoc_gpio_request(struct gpio_chip *chip, unsigned offset)
+ 
+ static void sirfsoc_gpio_free(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
++	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&bank->lock, flags);
+@@ -712,7 +712,7 @@ static void sirfsoc_gpio_free(struct gpio_chip *chip, unsigned offset)
+ 
+ static int sirfsoc_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
+ {
+-	struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
++	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+ 	int idx = sirfsoc_gpio_to_offset(gpio);
+ 	unsigned long flags;
+ 	unsigned offset;
+@@ -751,7 +751,7 @@ static inline void sirfsoc_gpio_set_output(struct sirfsoc_gpio_bank *bank, unsig
+ 
+ static int sirfsoc_gpio_direction_output(struct gpio_chip *chip, unsigned gpio, int value)
+ {
+-	struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
++	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+ 	int idx = sirfsoc_gpio_to_offset(gpio);
+ 	u32 offset;
+ 	unsigned long flags;
+@@ -769,7 +769,7 @@ static int sirfsoc_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
+ 
+ static int sirfsoc_gpio_get_value(struct gpio_chip *chip, unsigned offset)
+ {
+-	struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
++	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+ 	u32 val;
+ 	unsigned long flags;
+ 
+@@ -785,7 +785,7 @@ static int sirfsoc_gpio_get_value(struct gpio_chip *chip, unsigned offset)
+ static void sirfsoc_gpio_set_value(struct gpio_chip *chip, unsigned offset,
+ 	int value)
+ {
+-	struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
++	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+ 	u32 ctrl;
+ 	unsigned long flags;
+ 
 -- 
-Jean Delvare
-SUSE L3 Support
+1.9.0
+
