@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850AbaDHNQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:16:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47117 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756521AbaDHNQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:16:36 -0400
-Message-ID: <5343F6AD.9050300@ti.com>
-Date: Tue, 8 Apr 2014 16:16:29 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756876AbaDHNRw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:17:52 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:50709 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756210AbaDHNRu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 09:17:50 -0400
+Date: Tue, 8 Apr 2014 15:17:18 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Johan Hovold <jhovold@gmail.com>, Xiao Jin <jin.xiao@intel.com>,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, david.a.cohen@linux.intel.com,
+        yanmin.zhang@intel.com,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
+Message-ID: <20140408131718.GE25779@localhost>
+References: <53436770.9090008@intel.com>
+ <20140408073306.GB25779@localhost>
+ <1396953211.25633.16.camel@linux-fkkt.site>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>, Mark Brown <broonie@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND] drivercore: deferral race condition fix
-References: <1396509127-23819-1-git-send-email-peter.ujfalusi@ti.com> <20140403094059.GR14763@sirena.org.uk> <20140408102731.6C331C40933@trevor.secretlab.ca> <CACxGe6sUSsTuVBOYj3siHOUUnRhzM_jmdmnj0xZg3kLtNMEzCw@mail.gmail.com>
-In-Reply-To: <CACxGe6sUSsTuVBOYj3siHOUUnRhzM_jmdmnj0xZg3kLtNMEzCw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396953211.25633.16.camel@linux-fkkt.site>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 03:47 PM, Grant Likely wrote:
-> On Tue, Apr 8, 2014 at 3:27 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Thu, 3 Apr 2014 10:40:59 +0100, Mark Brown <broonie@kernel.org> wrote:
->>> On Thu, Apr 03, 2014 at 10:12:07AM +0300, Peter Ujfalusi wrote:
->>>> When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
->>>> when all modules loaded but some driver still stuck in the deferred list
->>>> and there is a need for external event to kick the deferred queue to probe
->>>> these drivers.
->>>
->>> Acked-by: Mark Brown <broonie@linaro.org>
->>
->> It's a pretty crude solution though. The problem is any "in-flight"
->> probes that are going to defer will not get added to the active list.
->> Rerunning the entire active list is a bit much (but it does have the
->> advantage of still being conceptually simple). I think we can do better.
->>
->> Instead of running the entire list, we could add a check to
->> driver_deferred_probe_add() that adds the device to the active list
->> instead of pending list on the condition that another driver probe
->> completed while the deferred probe was in-flight.
->>
->> I'm playing with a solution now. I'll email a proposal shortly.
+[ +CC: Alan ]
+
+On Tue, Apr 08, 2014 at 12:33:31PM +0200, Oliver Neukum wrote:
+> On Tue, 2014-04-08 at 09:33 +0200, Johan Hovold wrote:
+> > On Tue, Apr 08, 2014 at 11:05:20AM +0800, Xiao Jin wrote:
 > 
-> Thinking out loud now...
+> > > (2) acm tty port ASYNCB_INITIALIZED flag will be cleared when
+> > > close. If acm resume callback run after ASYNCB_INITIALIZED flag
+> > > cleared, there will have no chance for delayed write to start.
+> > > That lead to acm_wb.use can't be cleared. If user space open
+> > > acm tty again and try to setd, tty will be blocked in
+> > > tty_wait_until_sent for ever.
+> > >
+> > > This patch have two modification.
+> > > (1) use list_head to save the write acm_wb during acm suspend.
+> > > It can ensure no acm write abandoned.
+> > > (2) enable flush buffer callback when acm tty close. acm delayed
+> > > wb will start before acm port shutdown callback, it make sure
+> > > the delayed acm_wb.use to be cleared. The patch also clear
+> > > acm_wb.use and acm.transmitting when port shutdown.
+> > 
+> > This is not the right way to do this. See below.
 > 
-> The race can occur whenever a probe in another thread completes
-> successfully while the current probe is in-flight. If that has
-> happened, then the defer condition may be resolved and the driver
-> should be scheduled for retry immediately. If the core code can check
-> for that condition, then we can add the driver directly to the active
-> list and kick the workqueue.
-> 
-> The problem is that we don't currently have an easy way to test if a
-> probe has completed in another thread. This patch handles it with a
-> single flag that gets set whenever a probe completes while another
-> probe is executing. I was worried that this approach would be racy,
-> but after running through the scenarios I can't find a situation where
-> it wouldn't get added. I only concern I have remaining on this
-> approach is that it will trigger unnecessary retries, but even that
-> isn't really a problem because the pending list will have been moved
-> to the active list *anyway*. It isn't even a retry of the whole list
-> that's happening because most likely the only device on the pending
-> list will be the one that completed with -EPROBE_DEFER.
+> If I see this correctly, then ASYNCB_INITIALIZED is cleared in
+> tty_port_close() we is called from acm_tty_close(). Thus it should
+> be enough to make sure that the device is resumed at the beginning
+> of acm_tty_close() and acm_resume() will do the job automatically.
+> What do you think?
 
-This code will only going to add one retry and it is going to that only under
-the condition you have described:
-the last driver which finishes it's probe ends up with -EPROBE_DEFER and while
-it's probe was in-flight another driver loaded with success.
-In all other cases this will not trigger a retry:
-If you load only one driver which ends up deferring,
-If the driver which differing is not the last driver to load - since we will
-have other drivers to be loaded and they will kick the list anyways.
+But the device should already be about to be resumed, right? If the port
+is closed fast enough that resume hasn't had time to run before
+shutdown is called I think the right thing to do is simply to discard
+the delayed bytes (in shutdown).
 
-> So, I actually think this is the right approach now. I'll reply to the
-> patch itself and make some comments on the code.
-
-Thanks, I'll check the comments.
-
--- 
-Péter
+Johan
