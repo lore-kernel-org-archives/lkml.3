@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900AbaDHTD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 15:03:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57321 "EHLO mx1.redhat.com"
+	id S1757834AbaDHTD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 15:03:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757677AbaDHTC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757664AbaDHTC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Apr 2014 15:02:59 -0400
 From: Luiz Capitulino <lcapitulino@redhat.com>
 To: linux-mm@kvack.org
@@ -12,192 +12,170 @@ Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
         mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
         davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
         yinghai@kernel.org, riel@redhat.com, n-horiguchi@ah.jp.nec.com
-Subject: [PATCH 4/5] hugetlb: move helpers up in the file
-Date: Tue,  8 Apr 2014 15:02:19 -0400
-Message-Id: <1396983740-26047-5-git-send-email-lcapitulino@redhat.com>
+Subject: [PATCH 2/5] hugetlb: add hstate_is_gigantic()
+Date: Tue,  8 Apr 2014 15:02:17 -0400
+Message-Id: <1396983740-26047-3-git-send-email-lcapitulino@redhat.com>
 In-Reply-To: <1396983740-26047-1-git-send-email-lcapitulino@redhat.com>
 References: <1396983740-26047-1-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Next commit will add new code which will want to call
-for_each_node_mask_to_alloc() macro. Move it, its buddy
-for_each_node_mask_to_free() and their dependencies up in the file so
-the new code can use them. This is just code movement, no logic change.
-
 Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
 Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
 Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- mm/hugetlb.c | 146 +++++++++++++++++++++++++++++------------------------------
- 1 file changed, 73 insertions(+), 73 deletions(-)
+ include/linux/hugetlb.h |  5 +++++
+ mm/hugetlb.c            | 28 ++++++++++++++--------------
+ 2 files changed, 19 insertions(+), 14 deletions(-)
 
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 5b337cf..62a8b88 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -343,6 +343,11 @@ static inline unsigned huge_page_shift(struct hstate *h)
+ 	return h->order + PAGE_SHIFT;
+ }
+ 
++static inline bool hstate_is_gigantic(struct hstate *h)
++{
++	return huge_page_order(h) >= MAX_ORDER;
++}
++
+ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ {
+ 	return 1 << h->order;
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c295bba..9dded98 100644
+index 319db28..8674eda 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -606,6 +606,79 @@ err:
- 	return NULL;
- }
- 
-+/*
-+ * common helper functions for hstate_next_node_to_{alloc|free}.
-+ * We may have allocated or freed a huge page based on a different
-+ * nodes_allowed previously, so h->next_node_to_{alloc|free} might
-+ * be outside of *nodes_allowed.  Ensure that we use an allowed
-+ * node for alloc or free.
-+ */
-+static int next_node_allowed(int nid, nodemask_t *nodes_allowed)
-+{
-+	nid = next_node(nid, *nodes_allowed);
-+	if (nid == MAX_NUMNODES)
-+		nid = first_node(*nodes_allowed);
-+	VM_BUG_ON(nid >= MAX_NUMNODES);
-+
-+	return nid;
-+}
-+
-+static int get_valid_node_allowed(int nid, nodemask_t *nodes_allowed)
-+{
-+	if (!node_isset(nid, *nodes_allowed))
-+		nid = next_node_allowed(nid, nodes_allowed);
-+	return nid;
-+}
-+
-+/*
-+ * returns the previously saved node ["this node"] from which to
-+ * allocate a persistent huge page for the pool and advance the
-+ * next node from which to allocate, handling wrap at end of node
-+ * mask.
-+ */
-+static int hstate_next_node_to_alloc(struct hstate *h,
-+					nodemask_t *nodes_allowed)
-+{
-+	int nid;
-+
-+	VM_BUG_ON(!nodes_allowed);
-+
-+	nid = get_valid_node_allowed(h->next_nid_to_alloc, nodes_allowed);
-+	h->next_nid_to_alloc = next_node_allowed(nid, nodes_allowed);
-+
-+	return nid;
-+}
-+
-+/*
-+ * helper for free_pool_huge_page() - return the previously saved
-+ * node ["this node"] from which to free a huge page.  Advance the
-+ * next node id whether or not we find a free huge page to free so
-+ * that the next attempt to free addresses the next node.
-+ */
-+static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
-+{
-+	int nid;
-+
-+	VM_BUG_ON(!nodes_allowed);
-+
-+	nid = get_valid_node_allowed(h->next_nid_to_free, nodes_allowed);
-+	h->next_nid_to_free = next_node_allowed(nid, nodes_allowed);
-+
-+	return nid;
-+}
-+
-+#define for_each_node_mask_to_alloc(hs, nr_nodes, node, mask)		\
-+	for (nr_nodes = nodes_weight(*mask);				\
-+		nr_nodes > 0 &&						\
-+		((node = hstate_next_node_to_alloc(hs, mask)) || 1);	\
-+		nr_nodes--)
-+
-+#define for_each_node_mask_to_free(hs, nr_nodes, node, mask)		\
-+	for (nr_nodes = nodes_weight(*mask);				\
-+		nr_nodes > 0 &&						\
-+		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
-+		nr_nodes--)
-+
- static void update_and_free_page(struct hstate *h, struct page *page)
+@@ -610,7 +610,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
  {
  	int i;
-@@ -786,79 +859,6 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
- 	return page;
- }
  
--/*
-- * common helper functions for hstate_next_node_to_{alloc|free}.
-- * We may have allocated or freed a huge page based on a different
-- * nodes_allowed previously, so h->next_node_to_{alloc|free} might
-- * be outside of *nodes_allowed.  Ensure that we use an allowed
-- * node for alloc or free.
-- */
--static int next_node_allowed(int nid, nodemask_t *nodes_allowed)
--{
--	nid = next_node(nid, *nodes_allowed);
--	if (nid == MAX_NUMNODES)
--		nid = first_node(*nodes_allowed);
--	VM_BUG_ON(nid >= MAX_NUMNODES);
--
--	return nid;
--}
--
--static int get_valid_node_allowed(int nid, nodemask_t *nodes_allowed)
--{
--	if (!node_isset(nid, *nodes_allowed))
--		nid = next_node_allowed(nid, nodes_allowed);
--	return nid;
--}
--
--/*
-- * returns the previously saved node ["this node"] from which to
-- * allocate a persistent huge page for the pool and advance the
-- * next node from which to allocate, handling wrap at end of node
-- * mask.
-- */
--static int hstate_next_node_to_alloc(struct hstate *h,
--					nodemask_t *nodes_allowed)
--{
--	int nid;
--
--	VM_BUG_ON(!nodes_allowed);
--
--	nid = get_valid_node_allowed(h->next_nid_to_alloc, nodes_allowed);
--	h->next_nid_to_alloc = next_node_allowed(nid, nodes_allowed);
--
--	return nid;
--}
--
--/*
-- * helper for free_pool_huge_page() - return the previously saved
-- * node ["this node"] from which to free a huge page.  Advance the
-- * next node id whether or not we find a free huge page to free so
-- * that the next attempt to free addresses the next node.
-- */
--static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
--{
--	int nid;
--
--	VM_BUG_ON(!nodes_allowed);
--
--	nid = get_valid_node_allowed(h->next_nid_to_free, nodes_allowed);
--	h->next_nid_to_free = next_node_allowed(nid, nodes_allowed);
--
--	return nid;
--}
--
--#define for_each_node_mask_to_alloc(hs, nr_nodes, node, mask)		\
--	for (nr_nodes = nodes_weight(*mask);				\
--		nr_nodes > 0 &&						\
--		((node = hstate_next_node_to_alloc(hs, mask)) || 1);	\
--		nr_nodes--)
--
--#define for_each_node_mask_to_free(hs, nr_nodes, node, mask)		\
--	for (nr_nodes = nodes_weight(*mask);				\
--		nr_nodes > 0 &&						\
--		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
--		nr_nodes--)
--
- static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
+-	VM_BUG_ON(h->order >= MAX_ORDER);
++	VM_BUG_ON(hstate_is_gigantic(h));
+ 
+ 	h->nr_huge_pages--;
+ 	h->nr_huge_pages_node[page_to_nid(page)]--;
+@@ -663,7 +663,7 @@ static void free_huge_page(struct page *page)
+ 	if (restore_reserve)
+ 		h->resv_huge_pages++;
+ 
+-	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
++	if (h->surplus_huge_pages_node[nid] && !hstate_is_gigantic(h)) {
+ 		/* remove the page from active list */
+ 		list_del(&page->lru);
+ 		update_and_free_page(h, page);
+@@ -767,7 +767,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
  {
  	struct page *page;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (hstate_is_gigantic(h))
+ 		return NULL;
+ 
+ 	page = alloc_pages_exact_node(nid,
+@@ -961,7 +961,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 	struct page *page;
+ 	unsigned int r_nid;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (hstate_is_gigantic(h))
+ 		return NULL;
+ 
+ 	/*
+@@ -1154,7 +1154,7 @@ static void return_unused_surplus_pages(struct hstate *h,
+ 	h->resv_huge_pages -= unused_resv_pages;
+ 
+ 	/* Cannot return gigantic pages currently */
+-	if (h->order >= MAX_ORDER)
++	if (hstate_is_gigantic(h))
+ 		return;
+ 
+ 	nr_pages = min(unused_resv_pages, h->surplus_huge_pages);
+@@ -1353,7 +1353,7 @@ static void __init gather_bootmem_prealloc(void)
+ 		 * fix confusing memory reports from free(1) and another
+ 		 * side-effects, like CommitLimit going negative.
+ 		 */
+-		if (h->order > (MAX_ORDER - 1))
++		if (hstate_is_gigantic(h))
+ 			adjust_managed_page_count(page, 1 << h->order);
+ 	}
+ }
+@@ -1363,7 +1363,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+ 	unsigned long i;
+ 
+ 	for (i = 0; i < h->max_huge_pages; ++i) {
+-		if (h->order >= MAX_ORDER) {
++		if (hstate_is_gigantic(h)) {
+ 			if (!alloc_bootmem_huge_page(h))
+ 				break;
+ 		} else if (!alloc_fresh_huge_page(h,
+@@ -1379,7 +1379,7 @@ static void __init hugetlb_init_hstates(void)
+ 
+ 	for_each_hstate(h) {
+ 		/* oversize hugepages were init'ed in early boot */
+-		if (h->order < MAX_ORDER)
++		if (!hstate_is_gigantic(h))
+ 			hugetlb_hstate_alloc_pages(h);
+ 	}
+ }
+@@ -1413,7 +1413,7 @@ static void try_to_free_low(struct hstate *h, unsigned long count,
+ {
+ 	int i;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (hstate_is_gigantic(h))
+ 		return;
+ 
+ 	for_each_node_mask(i, *nodes_allowed) {
+@@ -1476,7 +1476,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
+ {
+ 	unsigned long min_count, ret;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (hstate_is_gigantic(h))
+ 		return h->max_huge_pages;
+ 
+ 	/*
+@@ -1602,7 +1602,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 		goto out;
+ 
+ 	h = kobj_to_hstate(kobj, &nid);
+-	if (h->order >= MAX_ORDER) {
++	if (hstate_is_gigantic(h)) {
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
+@@ -1685,7 +1685,7 @@ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
+ 	unsigned long input;
+ 	struct hstate *h = kobj_to_hstate(kobj, NULL);
+ 
+-	if (h->order >= MAX_ORDER)
++	if (hstate_is_gigantic(h))
+ 		return -EINVAL;
+ 
+ 	err = kstrtoul(buf, 10, &input);
+@@ -2110,7 +2110,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+ 
+ 	tmp = h->max_huge_pages;
+ 
+-	if (write && h->order >= MAX_ORDER)
++	if (write && hstate_is_gigantic(h))
+ 		return -EINVAL;
+ 
+ 	table->data = &tmp;
+@@ -2163,7 +2163,7 @@ int hugetlb_overcommit_handler(struct ctl_table *table, int write,
+ 
+ 	tmp = h->nr_overcommit_huge_pages;
+ 
+-	if (write && h->order >= MAX_ORDER)
++	if (write && hstate_is_gigantic(h))
+ 		return -EINVAL;
+ 
+ 	table->data = &tmp;
 -- 
 1.8.1.4
 
