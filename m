@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822AbaDHNJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:09:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60969 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756372AbaDHNJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:09:39 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-X86 <x86@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/5] x86: Require x86-64 for automatic NUMA balancing
-Date: Tue,  8 Apr 2014 14:09:26 +0100
-Message-Id: <1396962570-18762-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1396962570-18762-1-git-send-email-mgorman@suse.de>
-References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
+	id S932254AbaDHNNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:13:50 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54671 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932233AbaDHNNr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 09:13:47 -0400
+Date: Tue, 8 Apr 2014 14:13:11 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Jay Foad <jay.foad@gmail.com>
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: VFP: Fix emulation of multiply accumulate
+ instructions
+Message-ID: <20140408131256.GA5637@e103592.cambridge.arm.com>
+References: <1395852549-2745-1-git-send-email-jay.foad@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395852549-2745-1-git-send-email-jay.foad@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-32-bit support for NUMA is an oddity on its own but with automatic NUMA
-balancing on top there is a reasonable risk that the CPUPID information
-cannot be stored in the page flags. This patch removes support for
-automatic NUMA support on 32-bit x86.
+On Wed, Mar 26, 2014 at 04:49:09PM +0000, Jay Foad wrote:
+> The emulation for single and double precision multiply accumulate
+> instructions correctly normalised any denormal values in the operand
+> registers, but failed to normalise the destination (accumulator)
+> register.
+> 
+> This fixes https://bugzilla.kernel.org/show_bug.cgi?id=70501
+> 
+> Signed-off-by: Jay Foad <jay.foad@gmail.com>
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/x86/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Reviewed-by: Dave Martin <Dave.Martin@arm.com>
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0af5250..084b1c1 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -26,7 +26,7 @@ config X86
- 	select ARCH_MIGHT_HAVE_PC_SERIO
- 	select HAVE_AOUT if X86_32
- 	select HAVE_UNSTABLE_SCHED_CLOCK
--	select ARCH_SUPPORTS_NUMA_BALANCING
-+	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64
- 	select ARCH_SUPPORTS_INT128 if X86_64
- 	select ARCH_WANTS_PROT_NUMA_PROT_NONE
- 	select HAVE_IDE
--- 
-1.8.4.5
+This appears to be clean and straightforward, so if nobody else has
+commented on this by the time -rc1 comes out, I suggest you rebase it
+and send it to the patch system.  (See
+http://www.arm.linux.org.uk/developer/patches/info.php for details
+-- make sure you read it carefully.)
 
+Has this issue been hitting real-world users of the kernel, or is
+this fixing a latent bug?
+
+Cheers
+---Dave
+
+> ---
+>  arch/arm/vfp/vfpdouble.c | 2 ++
+>  arch/arm/vfp/vfpsingle.c | 2 ++
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/arch/arm/vfp/vfpdouble.c b/arch/arm/vfp/vfpdouble.c
+> index 6cac43bd1d86..423f56dd4028 100644
+> --- a/arch/arm/vfp/vfpdouble.c
+> +++ b/arch/arm/vfp/vfpdouble.c
+> @@ -866,6 +866,8 @@ vfp_double_multiply_accumulate(int dd, int dn, int dm, u32 fpscr, u32 negate, ch
+>  		vdp.sign = vfp_sign_negate(vdp.sign);
+>  
+>  	vfp_double_unpack(&vdn, vfp_get_double(dd));
+> +	if (vdn.exponent == 0 && vdn.significand)
+> +		vfp_double_normalise_denormal(&vdn);
+>  	if (negate & NEG_SUBTRACT)
+>  		vdn.sign = vfp_sign_negate(vdn.sign);
+>  
+> diff --git a/arch/arm/vfp/vfpsingle.c b/arch/arm/vfp/vfpsingle.c
+> index b252631b406b..4f96c1617aae 100644
+> --- a/arch/arm/vfp/vfpsingle.c
+> +++ b/arch/arm/vfp/vfpsingle.c
+> @@ -915,6 +915,8 @@ vfp_single_multiply_accumulate(int sd, int sn, s32 m, u32 fpscr, u32 negate, cha
+>  	v = vfp_get_float(sd);
+>  	pr_debug("VFP: s%u = %08x\n", sd, v);
+>  	vfp_single_unpack(&vsn, v);
+> +	if (vsn.exponent == 0 && vsn.significand)
+> +		vfp_single_normalise_denormal(&vsn);
+>  	if (negate & NEG_SUBTRACT)
+>  		vsn.sign = vfp_sign_negate(vsn.sign);
+>  
+> -- 
+> 1.8.3.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
