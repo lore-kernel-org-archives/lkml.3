@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbaDHEyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 00:54:24 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:33747 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaDHEyX (ORCPT
+	id S1754988AbaDHE5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 00:57:42 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:54333 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710AbaDHE5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 00:54:23 -0400
-Message-ID: <534380F6.7090703@gmail.com>
-Date: Tue, 08 Apr 2014 12:54:14 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 8 Apr 2014 00:57:40 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, akpm@linux-foundation.org,
-        liuj97@gmail.com, rientjes@google.com, dhowells@redhat.com,
-        mhocko@suse.cz, mgorman@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFtQQVRDSF0gYXJjaDp1bmljb3JlMzI6bW06IGE=?=
- =?UTF-8?B?ZGQgZGV2bWVtX2lzX2FsbG93ZWQoKSB0byBzdXBwb3J0IFNUUklDVF9ERVZNRU0=?=
-References: <629583968.18592.1396927216694.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <629583968.18592.1396927216694.JavaMail.root@bj-mail03.pku.edu.cn>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <227e5e019c175010b593d41cf1154e2e6505c22e.1396699157.git.viresh.kumar@linaro.org>
+References: <227e5e019c175010b593d41cf1154e2e6505c22e.1396699157.git.viresh.kumar@linaro.org>
+Date: Tue, 8 Apr 2014 10:27:39 +0530
+Message-ID: <CAKohpom7n=cbWJttvxgYCv7uzXQeJx4FzMZuyKWvNvbM6kmqjA@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: register cpu notifier to remove timer from
+ dying CPU
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5 April 2014 17:33, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>  kernel/time/clocksource.c | 64 +++++++++++++++++++++++++++++++++++++++--------
+>  1 file changed, 53 insertions(+), 11 deletions(-)
+>
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index ba3e502..8054fb1 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -23,16 +23,21 @@
+>   *   o Allow clocksource drivers to be unregistered
+>   */
+>
+> +#include <linux/cpu.h>
+>  #include <linux/device.h>
+>  #include <linux/clocksource.h>
+>  #include <linux/init.h>
+>  #include <linux/module.h>
+> +#include <linux/notifier.h>
+>  #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
+>  #include <linux/tick.h>
+>  #include <linux/kthread.h>
+>
+>  #include "tick-internal.h"
+>
+> +/* Tracks current CPU to queue watchdog timer on */
+> +static int timer_cpu;
+> +
 
-On 04/08/2014 11:20 AM, 管雪涛 wrote:
-> I'd like to put the code into asm/io.h, and make it static.
-> 
+Minor fixup, will send V2 after few days:
 
-It sounds OK to me, but I don't know why the other architectures (e.g.
-arm, powerpc, x86) put them into ".c".
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index 8054fb1..356c6c6 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -35,9 +35,6 @@
 
-iomem_is_exclusive() and page_is_ram() are all extern functions, so for
-me, devmem_is_allowed() is shot enough to be as inline function.
+ #include "tick-internal.h"
 
->> +#ifdef CONFIG_STRICT_DEVMEM
->> +/*
->> + * devmem_is_allowed() checks to see if /dev/mem access to a certain
->> + * address is valid. The argument is a physical page number.
->> + * We mimic x86 here by disallowing access to system RAM as well as
->> + * device-exclusive MMIO regions. This effectively disable read()/write()
->> + * on /dev/mem.
->> + */
->> +static int devmem_is_allowed(unsigned long pfn)
+-/* Tracks current CPU to queue watchdog timer on */
+-static int timer_cpu;
+-
+ void timecounter_init(struct timecounter *tc,
+                      const struct cyclecounter *cc,
+                      u64 start_tstamp)
+@@ -185,6 +182,9 @@ static char override_name[CS_NAME_LEN];
+ static int finished_booting;
 
-How about "static inline int devmem_is_allowed(unsigned long pfn)"?
-
->> +{
->> +	if (iomem_is_exclusive(pfn << PAGE_SHIFT))
->> +		return 0;
->> +	if (!page_is_ram(pfn))
->> +		return 1;
->> +	return 0;
->> +}
->> +#endif /* CONFIG_STRICT_DEVMEM */
-> 
-> Thanks,
-> 
-> Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-> 
-
-[...]
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+ #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
++/* Tracks current CPU to queue watchdog timer on */
++static int timer_cpu;
++
+ static void clocksource_watchdog_work(struct work_struct *work);
+ static void clocksource_select(void);
