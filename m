@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781AbaDHMzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 08:55:37 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:49629 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756369AbaDHMzf (ORCPT
+	id S1756806AbaDHM6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 08:58:15 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:40943 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756369AbaDHM6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 08:55:35 -0400
-Date: Tue, 8 Apr 2014 08:55:31 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Lars-Peter Clausen <lars@metafoo.de>, Greg KH <greg@kroah.com>,
-        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: rtc: hang on boot during unregistration
-Message-ID: <20140408125531.GB21329@htj.dyndns.org>
-References: <533F77F2.1050107@oracle.com>
- <20140407123328.1481dc51543235ce53e65254@linux-foundation.org>
+	Tue, 8 Apr 2014 08:58:12 -0400
+Message-ID: <5343F252.2050708@linaro.org>
+Date: Tue, 08 Apr 2014 20:57:54 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140407123328.1481dc51543235ce53e65254@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: Re: [PATCH v7 6/6] pci: Add support for creating a generic host_bridge
+ from device tree
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com> <1394811272-1547-7-git-send-email-Liviu.Dudau@arm.com>
+In-Reply-To: <1394811272-1547-7-git-send-email-Liviu.Dudau@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Liviu,
 
-On Mon, Apr 07, 2014 at 12:33:28PM -0700, Andrew Morton wrote:
-> > [   16.625261] kworker/0:1/1069 is trying to acquire lock:
-> > [   16.626300] ((&(&kobj->release)->work)){+.+.+.}, at: flush_work (kernel/workqueue.c:2880)
-> > [   16.628258]
-> > [   16.628258] but task is already holding lock:
-> > [   16.629415] ((&(&kobj->release)->work)){+.+.+.}, at: process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
+On 2014-3-14 23:34, Liviu Dudau wrote:
+> Several platforms use a rather generic version of parsing
+> the device tree to find the host bridge ranges. Move the common code
+> into the generic PCI code and use it to create a pci_host_bridge
+> structure that can be used by arch code.
 > 
-> This is making my head spin a bit.  Why is lockdep babbling about
-> include/linux/workqueue.h:186 and similar sites which appear to have
-> nothing to do with locking?  Later it points a finger at
-> include/linux/jump_label.h:105, wtf.
-
-flush_work() and flush_workqueue() make use of lockdep anntations so
-that dependency problems involving them can be detected through
-lockdep.
-
-> > [   16.630106] other info that might help us debug this:
-> > [   16.630106]  Possible unsafe locking scenario:
-> > [   16.630106]
-> > [   16.630106]        CPU0
-> > [   16.630106]        ----
-> > [   16.630106]   lock((&(&kobj->release)->work));
-> > [   16.630106]   lock((&(&kobj->release)->work));
-
-Looks like a work item is trying to flush itself.
-
-> > [   16.630106] Call Trace:
-> > [   16.630106] dump_stack (lib/dump_stack.c:52)
-> > [   16.630106] __lock_acquire (kernel/locking/lockdep.c:1740 kernel/locking/lockdep.c:1783 kernel/locking/lockdep.c:2115 kernel/locking/lockdep.c:3182)
-> > [   16.630106] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-> > [   16.630106] flush_work (kernel/workqueue.c:2884)
-> > [   16.630106] __cancel_work_timer (arch/x86/include/asm/bitops.h:313 kernel/workqueue.c:610 kernel/workqueue.c:644 kernel/workqueue.c:2916)
-> > [   16.630106] cancel_work_sync (kernel/workqueue.c:2941)
-> > [   16.630106] work_fixup_free (kernel/workqueue.c:479)
-
-Hah, this is debugobj fixup code trying to perform cancel_work_sync()
-to make the object unused because it's being freed while active;
-however, because free() is being called from the work item itself,
-it's falling into deadlock and triggering the lockdep anntation.
-
-> > [   16.630106] __debug_check_no_obj_freed (lib/debugobjects.c:277 lib/debugobjects.c:700)
-> > [   16.630106] debug_check_no_obj_freed (lib/debugobjects.c:726)
-> > [   16.630106] kfree (mm/slub.c:2679 mm/slub.c:3401)
-> > [   16.630106] rtc_device_release (drivers/rtc/class.c:35)
-
-IOW, rtc_device_release() is freeing the memory area this work item is
-embedded in while the work item is queued on a workqueue.
-
-> > [   16.630106] device_release (drivers/base/core.c:246)
-> > [   16.630106] kobject_delayed_cleanup (lib/kobject.c:629 lib/kobject.c:638)
-> > [   16.630106] process_one_work (kernel/workqueue.c:2221 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2226)
-> > [   16.630106] worker_thread (kernel/workqueue.c:2348)
-> > [   16.630106] kthread (kernel/kthread.c:219)
-> > [   16.630106] ret_from_fork (arch/x86/kernel/entry_64.S:555)
+> Based on early attempts by Andrew Murray to unify the code.
+> Used powerpc and microblaze PCI code as starting point.
 > 
-> I think rtc's role in this is to trigger case ODEBUG_STATE_ACTIVE in
-> __debug_check_no_obj_freed(), which might be due to an RTC bug.  This
-> then triggers problems in the workqueue core - calling flush_work() and
-> cancel_work_sync() within work_fixup_free() seems, umm, optimistic.
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> ---
+>  drivers/pci/host-bridge.c | 158 ++++++++++++++++++++++++++++++++++++
+>  include/linux/pci.h       |  13 +++
+>  2 files changed, 171 insertions(+)
+> 
+> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+> index 8708b652..7cda90b 100644
+> --- a/drivers/pci/host-bridge.c
+> +++ b/drivers/pci/host-bridge.c
+> @@ -6,9 +6,14 @@
+>  #include <linux/init.h>
+>  #include <linux/pci.h>
+>  #include <linux/module.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_pci.h>
+> +#include <linux/slab.h>
+>  
+>  #include "pci.h"
+>  
+> +static atomic_t domain_nr = ATOMIC_INIT(-1);
 
-It's debugobj fixup code which is opportunistically trying to take the
-work item off workqueue to avoid use-after-free.  As free() is being
-called from work item itself, it falls into A-A deadlock.
+domain_nr will only be used inside the #ifdef CONFIG_OF,
+and this will lead to compile warning which complains that
+'domain_nr' defined but not used when CONFIG_OF=n (for example
+on x86).
 
-> Maybe the semi-recursive code is OK and we're just missing lockdep
-> annotations, and the hang you saw was for other reasons.
+How about moving the definition to --->
 
-I've been always a bit suspicious about the fixup parts of debugobj.
-I suppose they aren't too harmful as these types of chained failures
-always follow proper error messages from debugobj itself.  Anyways,
-the lockdep annotation is only because debugobj fixup isn't too smart.
-I'm not quite sure we wanna try harder tho.
+> +
+>  static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
+>  {
+>  	while (bus->parent)
+> @@ -92,3 +97,156 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
+>  	res->end = region->end + offset;
+>  }
+>  EXPORT_SYMBOL(pcibios_bus_to_resource);
+> +
+> +#ifdef CONFIG_OF
 
-Thanks.
+here?
 
--- 
-tejun
+Thanks
+Hanjun
