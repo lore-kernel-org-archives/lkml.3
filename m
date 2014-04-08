@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983AbaDHSPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:15:47 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:13646 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932649AbaDHSPp (ORCPT
+	id S933040AbaDHSQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:16:12 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:32810 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932649AbaDHSQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:15:45 -0400
-Date: Tue, 8 Apr 2014 14:15:43 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>
-Subject: Re: [RFC PATCH] time: Fix truncation in jiffies_to_usecs()
-Message-ID: <20140408141543.2de9449d@gandalf.local.home>
-In-Reply-To: <20140408174946.GA11121@localhost.localdomain>
-References: <0214020@agluck-desk.sc.intel.com>
-	<CA+8MBb+E_zT47qu4a6pqQWArrhs0gv1W=JKoy252_-Uw6HfbkA@mail.gmail.com>
-	<20140408174946.GA11121@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 8 Apr 2014 14:16:09 -0400
+Date: Tue, 8 Apr 2014 22:16:06 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Steven Noonan <steven@uplinklabs.net>,
+        Rik van Riel <riel@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [RFC PATCH 0/5] Use an alternative to _PAGE_PROTNONE for
+ _PAGE_NUMA v2
+Message-ID: <20140408181606.GL23983@moon>
+References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
+ <53440A5D.6050301@zytor.com>
+ <CA+55aFwc6Jdf+As9RJ3wJWuOGEGmiaYWNa-jp2aCb9=ZiiqV+A@mail.gmail.com>
+ <20140408164652.GL7292@suse.de>
+ <20140408173031.GS10526@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140408173031.GS10526@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Apr 2014 19:49:51 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> On Mon, Apr 07, 2014 at 10:34:51PM -0700, Tony Luck wrote:
-> > On Mon, Apr 7, 2014 at 3:25 PM, Tony Luck <tony.luck@intel.com> wrote:
-> > 
-> > > c) If not this ... then what? Separate routine to convert large numbers
-> > >    of jiffies to usec/nsecs?  Should we make the existing one barf when
-> > >    handed a number that overflows?
-> > 
-> > Having thought about this a bit more - I'm leaning towards leaving
-> > jiffies_to_usecs() alone, but using it as a model for a from-scratch
-> > implementation of:
-> > u64 jiffies_to_nsecs(const unsigned long j)
-> > {
-> > }
-> > 
-> > This is what the uptime tracer actually needs - and there is only
-> > one user of jiffies_to_nsecs() to worry about.
+On Tue, Apr 08, 2014 at 07:30:31PM +0200, Peter Zijlstra wrote:
+> On Tue, Apr 08, 2014 at 05:46:52PM +0100, Mel Gorman wrote:
+> > Someone will ask why automatic NUMA balancing hints do not use "real"
+> > PROT_NONE but as it would need VMA information to do that on all
+> > architectures it would mean that VMA-fixups would be required when marking
+> > PTEs for NUMA hinting faults so would be expensive.
 > 
-> I'm not sure I get what you're trying to do. We already have jiffies_to_nsecs().
-> Anyway I'll just wait and check out the next patch :)
+> Like this:
+> 
+>   https://lkml.org/lkml/2012/11/13/431
+> 
+> That used the generic PROT_NONE infrastructure and compared, on fault,
+> the page protection bits against the vma->vm_page_prot bits?
+> 
+> So the objection to that approach was the vma-> dereference in
+> pte_numa() ?
 
-I believe the issue is the way it's implemented:
+Peter, I somehow missing, with this patch would it be possible to
+get rid of ugly macros in 2 level pages like we have now? (I've
+dropped off softdirty support for non x86-64 now [patches are
+flying around]) but still there are a few remains which make
+Linus unhappy.
 
-static inline u64 jiffies_to_nsecs(const unsigned long j)
+static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
 {
-	return (u64)jiffies_to_usecs(j) * NSEC_PER_USEC;
+	return (pgoff_t)
+		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3,           -1UL,  PTE_FILE_LSHIFT3));
 }
-
-The problem is with jiffies_to_usecs(). Which we probably should
-change.
-
-With HZ = 100,
-1 second jiffies_to_usecs(100) = 1000,000.
-1 minute jiffies_to_usec(6000) = 60,000,000.
-1 hour jiffies_to_usecs(360000) = 3,600,000,000
-1 hour 11 minutes 35 seconds -
-    jiffies_to_usecs(429500) = 4,295,000,000
-
-2^32 = 4294967296  <  4,295,000,000
-
-Overflow!
-
-That means after 1 hour, 11 minutes and 35 seconds, jiffies_to_usecs()
-will return a reset number. Time will go backwards. It doesn't matter
-what you typecast the return value of jiffies_to_usecs() to, the result
-is wrong.
-
-Actually, I like Tony's first patch. I really think jiffies_to_usecs()
-should return a u64 number.
-
--- Steve
