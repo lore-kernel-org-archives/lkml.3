@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212AbaDHHEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 03:04:36 -0400
-Received: from seketeli.net ([94.23.218.202]:54285 "EHLO ms.seketeli.fr"
+	id S1756260AbaDHHFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 03:05:51 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:35916 "EHLO gwu.lbox.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789AbaDHHEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 03:04:34 -0400
-Date: Tue, 8 Apr 2014 09:05:25 +0200
-From: Apelete Seketeli <apelete@seketeli.net>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
-        David Fries <David@Fries.net>,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [RESEND PATCH v2] documentation: docbook: document process of
- writing an musb glue layer
-Message-ID: <20140408070525.GL10199@tao>
-References: <20140405183636.GO22445@amegan>
- <20140405184205.GP22445@amegan>
- <534322B9.30605@infradead.org>
- <20140407230218.GA28921@saruman.home>
+	id S1756220AbaDHHFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 03:05:49 -0400
+Date: Tue, 8 Apr 2014 09:00:35 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Message-ID: <20140408070035.GI3339@pcnci.linuxbox.cz>
+References: <20140331120102.GY3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
+ <20140402135812.GI3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB112D@HASMSX106.ger.corp.intel.com>
+ <20140402143635.GA4410@nik-comp.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB7151@HASMSX106.ger.corp.intel.com>
+ <20140407132530.GF3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB7512@HASMSX106.ger.corp.intel.com>
+ <20140408064953.GH3339@pcnci.linuxbox.cz>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFB7D28@HASMSX106.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="32mFWuI8C7a/mRQ2"
 Content-Disposition: inline
-In-Reply-To: <20140407230218.GA28921@saruman.home>
-X-Operating-System: Debian GNU/Linux 7
-X-URL: http://apelete.seketeli.net
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AFB7D28@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-04-08_02
+X-Milter-Copy-Status: I
+X-Milter-Copy-Status: I
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, Apr-07-2014 at 06:02:18 PM -0500, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Apr 07, 2014 at 03:12:09PM -0700, Randy Dunlap wrote:
-> > On 04/05/2014 11:42 AM, Apelete Seketeli wrote:
-> > > Document the process of writing an musb glue layer by taking the
-> > > Ingenic JZ4740 glue layer as an example, as it seems more simple than
-> > > most glue layers due to the basic feature set of the JZ4740 USB device
-> > > controller.
-> > > 
-> > > Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
-> > 
-> > Hi,
-> > 
-> > You should be cc-ing the musb maintainer and the USB mailing list (so now done).
+--32mFWuI8C7a/mRQ2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That was my intent in the first place -- I mentioned the USB mailing
-list in the cover letter and then forgot to actually cc the people
-over there. Thanks for taking care of that.
+> This is really strange, can it be that your mailer has introduced some bl=
+anks into the patch,
+> I've checked that patch applies to all relevant stable kernels.
 
-> > Felipe should probably be the person to merge this unless he wants me
-> > to do it...
-> 
-> I'll merge it, just resend once -rc1 is out. Thanks
+I had it downloaded from link You've sent:
+https://lkml.org/lkml/2014/3/25/396
 
-Ok, I'll resend once -rc1 is out. Thanks for your time.
+using=20
 
-Cheers.
--- 
-        Apelete
+wget https://lkml.org/lkml/diff/2014/3/25/396/1
+
+I get two whitespaces on the last line..
+
+n.
+
+
+> =20
+> > anyways, You can certainly forgot about that, it was my fault :(
+> >=20
+> > sorry about that
+>=20
+> No harm done, it's good this was sorted out.
+> Thanks
+> Tomas
+> =20
+>=20
+>=20
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--32mFWuI8C7a/mRQ2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlNDnpMACgkQ3xdJJrLygV7q4QCfdbYLAXr4aHULEAB0G5BlRGLm
+fDsAoKzWqUKo/2GiG4QBFob0vnISKOBm
+=TdSD
+-----END PGP SIGNATURE-----
+
+--32mFWuI8C7a/mRQ2--
