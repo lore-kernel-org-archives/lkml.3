@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145AbaDHOhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:37:04 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:47596 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756864AbaDHOhB (ORCPT
+	id S932318AbaDHOpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:45:41 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28356 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197AbaDHOpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:37:01 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org, kishon@ti.com
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        t.figa@samsung.com, k.debski@samsung.com, jg1.han@samsung.com,
-        sylvester.nawrocki@gmail.com, gautam.vivek@samsung.com
-Subject: [PATCH V4 0/5] Add Exynos5 USB 3.0 phy driver based on generic PHY framework
-Date: Tue,  8 Apr 2014 20:06:38 +0530
-Message-Id: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 8 Apr 2014 10:45:40 -0400
+Message-ID: <53440B8B.1010304@oracle.com>
+Date: Tue, 08 Apr 2014 10:45:31 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: linux-fsdevel <linux-fsdevel@vger.kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>
+Subject: fs,seq_file: huge allocations for seq file reads
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on 'next' branch of Kishon's phy tree (linux-phy).
-Tested on 'usb-next' of Greg's usb tree.
+Hi all,
 
-Changes from V3:
-1) Separated out the phy init sequences for utmi and pipe3 phys.
-2) Changed the nomenclature across the phy to 'usbdrd-phy' to
-   indicate USB 3.0 DRD PHY controller; and thereby changed the names                
-   of functions correspondingly, including specific functions for
-   utmi and pipe3 phys.                                                              
-3) Modified the DT nodes for the updated nomenclature.
-4) Using BIT macro for single bit definitions.                                       
-5) Keeping track of reference clock after getting till the removal of                
-   phy, and getting the ref clock using devm_clk_get() api.
-6) Removed aliases for mutiple channel PHYs, and instead using
-   'samsung,pmu-offset' property for PHY power control register offset.
-7) Keeping the phy_init() and phy_power_on() separately in order to
-   align with phy handling in the consumer (DWC3).
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel, I've stumbled on the following:
 
-Changes from v2:
-1) Added support for multiple PHYs (UTMI+ and PIPE3) and                   
-   related changes in the driver structuring.
-2) Added a xlate function to get the required phy out of
-   number of PHYs in mutiple PHY scenerio.
-3) Changed the names of few structures and variables to                
-   have a clearer meaning. 
-4) Added 'usb3phy_config' structure to take care of mutiple
-   phys for a SoC having 'exynos5_usb3phy_drv_data' driver data.      
-5) Not deleting support for old driver 'phy-samsung-usb3' until
-   required support for generic phy is added to DWC3.  
- 
-Changes from RFC patch-set:
-1) fixes in documentation file
- - added provision for syscon interface for using PMU register.
- - added clock names and description
- - modified description style for 'compatible property'                    
- - made usb30_sclk as additional clock rather then making it optional, since
-   it is actually an additional clock for Exynos5420 Soc.
-2) fixes in phy-exynos5-usb3 driver file
- - removed unnecessary #ifndef around KHZ and MHZ definitions            
- - removed 'samsung_cpu_type', 'usb3phy_state' enums; and merged necessary
-   necessary from 'usb3phy_instance' structure to 'usb3phy_driver'.
- - changed name 'sclk_usbphy30' to 'usb30_sclk_100m' since this is the name
-   indicated as input to the PHY block; and also added (!IS_ERR()) check for
-   using usb30_sclk.
- - removed unnecessary 'state' check code.
- - moved 'of_device_id' structure definitions before 'probe()' to avoid
-   unnecessary declaration.
- - added (pdev->dev.of_node == NULL) check at the starting of probe()
- - moved 'devm_of_phy_provider_register()' call to end of the probe().
- - removed 'label' for usb3drd phy.
- - corrected macros definition 'PHYCLKRST_MPLL_MULTIPLIER_50M_REF' from
-   0x02 to 0x32 after confirming same from PHY's data sheet.
- - replaced pmu register handling, used for power-isolation, with syscon
-   interface api's.
- - added '.init' and '.exit' callbacks and using them for one time
-   PHY-initialization and deinitialization.
- - Filtering out the PHY 'power-on' and 'power-off' sequence to '.power_on"
-   and ".power_off" callbacks.
- - Removed drivers/usb/phy/phy-samsung-usb3.c driver and related code.
-3) fixes in dt files
- - added reference for 'samsung,syscon-phandle' to used for PMU register.
- - removed second register field which was earlier used for PMU.
+[ 2052.444910] WARNING: CPU: 3 PID: 26525 at mm/page_alloc.c:2513 __alloc_pages_slowpat
+h+0x6a/0x801()
+[ 2052.447575] Modules linked in:
+[ 2052.448438] CPU: 3 PID: 26525 Comm: trinity-c3 Tainted: G        W     3.14.0-next-2
+0140407-sasha-00023-gd35b0d6 #382
+[ 2052.452147]  0000000000000009 ffff88010f485af8 ffffffff9d52ee51 0000000000005d20
+[ 2052.454425]  0000000000000000 ffff88010f485b38 ffffffff9a15a2dc 000000174802a016
+[ 2052.456676]  00000000001040d0 0000000000000000 0000000000000002 0000000000000000
+[ 2052.458851] Call Trace:
+[ 2052.459587] dump_stack (lib/dump_stack.c:52)
+[ 2052.461211] warn_slowpath_common (kernel/panic.c:419)
+[ 2052.462914] warn_slowpath_null (kernel/panic.c:454)
+[ 2052.464512] __alloc_pages_slowpath (mm/page_alloc.c:2513 (discriminator 3))
+[ 2052.466160] ? get_page_from_freelist (mm/page_alloc.c:1939)
+[ 2052.468020] ? sched_clock_local (kernel/sched/clock.c:213)
+[ 2052.469633] ? get_parent_ip (kernel/sched/core.c:2471)
+[ 2052.471329] __alloc_pages_nodemask (mm/page_alloc.c:2766)
+[ 2052.473084] alloc_pages_current (mm/mempolicy.c:2131)
+[ 2052.474688] ? __get_free_pages (mm/page_alloc.c:2803)
+[ 2052.476273] ? __free_pages_ok (arch/x86/include/asm/paravirt.h:809 (discriminator 2) mm/page_alloc.c:766 (discriminator 2))
+[ 2052.477980] __get_free_pages (mm/page_alloc.c:2803)
+[ 2052.481082] kmalloc_order_trace (include/linux/slab.h:379 mm/slab_common.c:525)
+[ 2052.483193] __kmalloc (include/linux/slab.h:396 mm/slub.c:3303)
+[ 2052.485417] ? kfree (mm/slub.c:3395)
+[ 2052.486337] traverse (fs/seq_file.c:141)
+[ 2052.487289] seq_read (fs/seq_file.c:179 (discriminator 1))
+[ 2052.488161] vfs_read (fs/read_write.c:408)
+[ 2052.489001] SyS_pread64 (include/linux/file.h:38 fs/read_write.c:557 fs/read_write.c:544)
+[ 2052.489959] tracesys (arch/x86/kernel/entry_64.S:749)
 
-Vivek Gautam (5):
-  phy: Add new Exynos5 USB 3.0 PHY driver
-  dt: exynos5420: Enable support for USB 3.0 PHY controller
-  dt: exynos5420: Enable support for DWC3 controller
-  dt: exynos5250: Enable support for generic USB DRD phy
-  usb-phy: samsung-usb3: Remove older phy-samsung-usb3 driver
+It seems that when we attempt to read huge chunks of data from a seq file
+there would be no check for the size being read, leading to the kernel
+attempting to allocate huge chunks of data internally.
 
- .../devicetree/bindings/phy/samsung-phy.txt        |   42 ++
- arch/arm/boot/dts/exynos5250.dtsi                  |   21 +-
- arch/arm/boot/dts/exynos5420.dtsi                  |   54 ++
- drivers/phy/Kconfig                                |   11 +
- drivers/phy/Makefile                               |    1 +
- drivers/phy/phy-exynos5-usbdrd.c                   |  668 ++++++++++++++++++++
- drivers/usb/phy/phy-samsung-usb.h                  |   83 ---
- drivers/usb/phy/phy-samsung-usb3.c                 |  350 ----------
- 8 files changed, 785 insertions(+), 445 deletions(-)
- create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
- delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
+As far as I remember, there was a PAGE_SIZE limitation on those, but I'm
+not certain about that. Could someone please confirm it?
 
--- 
-1.7.10.4
 
+Thanks,
+Sasha
