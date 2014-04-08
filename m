@@ -1,102 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926AbaDHV4H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 17:56:07 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52863 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757232AbaDHV4E (ORCPT
+	id S1756925AbaDHV6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 17:58:47 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:17259 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756121AbaDHV6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 17:56:04 -0400
-Date: Tue, 8 Apr 2014 23:56:00 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
+	Tue, 8 Apr 2014 17:58:44 -0400
+Date: Tue, 8 Apr 2014 15:00:44 -0700
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
- kthreadd V2
-Message-ID: <20140408215556.GB14519@localhost.localdomain>
-References: <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
- <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
- <20131107225049.GC28130@localhost.localdomain>
- <0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
- <20131108163112.GA12853@localhost.localdomain>
- <0000014238ad0fb9-aa252280-8e44-48ac-a096-e6dee26e09ea-000000@email.amazonses.com>
- <20131108191235.GB12853@localhost.localdomain>
- <000001423945fde3-f846f403-58b9-4acd-a2b8-43b62991ce02-000000@email.amazonses.com>
- <20131108200620.GC14606@localhost.localdomain>
- <20140408135712.c761d7b01bd451be5fc41c00@linux-foundation.org>
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 1/9] crypto: qce: Add core driver implementation
+Message-ID: <20140408220044.GH17066@sonymobile.com>
+References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com>
+ <1396541886-10966-2-git-send-email-svarbanov@mm-sol.com>
+ <20140403233844.GF17066@sonymobile.com>
+ <53442344.8000801@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140408135712.c761d7b01bd451be5fc41c00@linux-foundation.org>
+In-Reply-To: <53442344.8000801@mm-sol.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 01:57:12PM -0700, Andrew Morton wrote:
-> On Fri, 8 Nov 2013 21:06:22 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Fri, Nov 08, 2013 at 07:52:37PM +0000, Christoph Lameter wrote:
-> > > On Fri, 8 Nov 2013, Frederic Weisbecker wrote:
-> > > 
-> > > > I understand, but why not solving that from the workqueue affinity? We want to
-> > > > solve the issue of unbound workqueues in CPU isolation anyway.
-> > > 
-> > > Sure if you can solve that with an unbound work queue then this patch is
-> > > not needed. Do you have a patch that addresses this issue in your
-> > > patchset?
+On Tue, Apr 08, 2014 at 06:26:44PM +0200, Stanimir Varbanov wrote:
+> On 04/04/2014 02:38 AM, Courtney Cavin wrote:
+> > On Thu, Apr 03, 2014 at 06:17:58PM +0200, Stanimir Varbanov wrote:
+> >> This adds core driver files. The core part is implementing a
+> >> platform driver probe and remove callbaks, the probe enables
+> >> clocks, checks crypto version, initialize and request dma
+> >> channels, create done tasklet and work queue and finally
+> >> register the algorithms into crypto subsystem.
+> >>
+> >> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> >> ---
+> >>  drivers/crypto/qce/core.c | 333 ++++++++++++++++++++++++++++++++++++++++++++++
+> >>  drivers/crypto/qce/core.h |  69 ++++++++++
+> >>  2 files changed, 402 insertions(+)
+> >>  create mode 100644 drivers/crypto/qce/core.c
+> >>  create mode 100644 drivers/crypto/qce/core.h
+> >>
+> >> diff --git a/drivers/crypto/qce/core.c b/drivers/crypto/qce/core.c
+> > [...]
+> >> +static struct qce_algo_ops qce_ops[] = {
+> >> +	{
+> >> +		.type = CRYPTO_ALG_TYPE_ABLKCIPHER,
+> >> +		.register_alg = qce_ablkcipher_register,
+> >> +	},
+> >> +	{
+> >> +		.type = CRYPTO_ALG_TYPE_AHASH,
+> >> +		.register_alg = qce_ahash_register,
+> >> +	},
+> >> +};
+> >> +
+> >> +static void qce_unregister_algs(struct qce_device *qce)
+> >> +{
+> >> +	struct qce_alg_template *tmpl, *n;
+> >> +
+> >> +	list_for_each_entry_safe(tmpl, n, &qce->alg_list, entry) {
+> >> +		if (tmpl->crypto_alg_type == CRYPTO_ALG_TYPE_AHASH)
+> >> +			crypto_unregister_ahash(&tmpl->alg.ahash);
+> >> +		else
+> >> +			crypto_unregister_alg(&tmpl->alg.crypto);
+> >> +
+> >> +		list_del(&tmpl->entry);
+> >> +		kfree(tmpl);
 > > 
-> > No. Sorry.
+> > I find this whole memory/list management to be very disorganised.
+> > ops->register_alg() is supposed to allocate this item--more precisely,
+> > multiple items--using something that must be able to be kfree'd
+> > directly, register it with the crypto core, and put it on this list
+> > manually.  Here we unregister/remove/free this in the core.  Josh's
+> > recommendation of a unregister_alg callback might help, but it all
+> > remains a bit unclear with register_alg/unregister_alg managing X
+> > algorithms per call. 
+> > 
+> > Additionally, above you have qce_ops, which clearly defines the
+> > operations for specific algorithms types/groups, which in later patches
+> > are shown to be seperated out into independent implementations.
+> > 
+> > From what I can tell, this seems to be a framework with built-in yet
+> > independent crypto implementations which call the crypto API directly.
+> > 
+> > It would be more logical to me if this was seperated out into a
+> > "library/core" API, with the individual implementations as platform
+> > drivers of their own.  Then they can register with the core, managing
+> > memory how they please.
+> > 
+> > What am I missing?
 > > 
 > 
-> Several months have passed and nothgin has happened.  Any thoughts on
-> what we should do with Christoph's patch?
+> No, you have not miss nothing.
+> 
+> OK I see your point. I made few changes in the core, killed the alg_list
+> and its manipulation function and added a .unregister_algs operation.
+> Now every type of algorithm will handle all core crypto api functions
+> itself. Also I'm using devm_kzalloc() in .register_algs when allocating
+> memory for qce_alg_template structures to avoid kfree(). The callbacks
+> async_req_queue/done are now embedded in qce_device structure and they
+> are invoked directly from algorithm implementations. Thus I have
+> separated the interfaces: functions implemented in core part of the
+> driver and struct qce_algo_ops having the function pointers implemented
+> by every type of algorithm.
+> 
+> If you don't have some objections I can send out a version 2.
 
-We have taken another direction to solve the initial problem which is
-that usermodehelper threads disturb CPUs on some workloads requiring isolation
-(ie: workloads that want specific CPUs to not be disturbed by kernel noise)
 
-We eventually agreed that setting the WQ_SYSFS flag to the usermodehelper
-workqueue would allow us to control the affinity of these jobs through sysfs.
+Well, I'd have to see the code to understand clearly what you are
+describing here, but the mention of devm_kzalloc() concerns me.  The
+only device which I currently see to which this allocation could be
+associated is the single platform_device in the core.  Associating the
+memory with the core gets rid of the explicit call to kfree() by the
+core, but doesn't rearrange the way the memory is actually managed.
 
-But eventually I took it one step further by considering that the real problem
-is much broader and concerns all unbound workqueues. Not just usermodehelper.
-Christoph finds usermodehelper workqueue disturbing on his workloads, but other
-CPU isolation users runnning other workloads on other hardware, other IO protocols, etc..
-may be disturbed by many other kind of unbound workqueues. Because unbound
-workqueues are globally affined and this behaviour can't be tweaked sanely yet.
+If you have changed it so that each algorithm "block" has its own
+device, then this would seem more reasonable, but I don't see that in
+the explanation you provided.
 
-And there are a big lot of them. Singlethread workqueues for example has more
-than 200 users in the kernel:
-
-      $ git grep create_singlethread_workqueue | wc -l
-        219
-
-It's actually something that we wanted to fix for a while now. So I'm
-currently working on a more general solution that allow users to affine all
-unbound workqueues to the desired set of CPUs.
-
-The last version of the patchset is https://lkml.org/lkml/2014/3/27/246
-After some discussion with Tejun and others, I'm working on the next iteration.
-
-So I strongly think we should drop Christoph's patch and focus on the
-unbound workqueues sysfs' affinity interface patchset.
-
-Ah there is also the problem of this explicit call in kmod:
-
-       "set_cpus_allowed_ptr(current, cpu_all_mask);"
-
-But it looks like something we can drop. The comment above says:
-
-       /* We can run anywhere, unlike our parent keventd(). */
-
-Looks like a stale issue that concerned the old workqueue times when workqueues
-really mapped to named thread. But even then I don't see the reason for this
-affinity overwrite.
-
-Thanks.
+-Courtney
