@@ -1,63 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244AbaDHPPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:15:16 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:38161 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756859AbaDHPPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:15:14 -0400
-From: Aaro Koskinen <aaro.koskinen@nsn.com>
-To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@nsn.com>
-Subject: [PATCH] MIPS: Add __SANE_USERSPACE_TYPES__ to asm/types.h for LL64
-Date: Tue,  8 Apr 2014 18:13:06 +0300
-Message-Id: <1396969986-6144-1-git-send-email-aaro.koskinen@nsn.com>
-X-Mailer: git-send-email 1.9.1
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 1272
-X-purgate-ID: 151667::1396970107-00001564-6B02441C/0/0
+	id S1757308AbaDHPQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:16:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35916 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756533AbaDHPQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 11:16:08 -0400
+Date: Tue, 8 Apr 2014 17:16:06 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v2] scripts/bootgraph.pl: Add graphic header
+Message-ID: <20140408151606.GB4894@sepie.suse.cz>
+References: <20140402213952.7c05ff6d77a85f97b3b3e19e@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140402213952.7c05ff6d77a85f97b3b3e19e@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow 64-bit userspace programs to use ll64 types. The define name
-comes from commit 2c9c6ce0199a4d252e20c531cfdc9d24e39235c0 (powerpc:
-Add __SANE_USERSPACE_TYPES__ to asm/types.h for LL64).
+On Wed, Apr 02, 2014 at 09:39:52PM +0200, Fabian Frederick wrote:
+> Adding -header + help function like other .pl in /scripts.
+> 
+> Cc: linux-kbuild@vger.kernel.org
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  v2: fix some typos
 
-The patch allows to compile perf on MIPS64 and eliminates the following
-warnings:
+Applied to kbuild.git#misc, thanks.
 
-tests/attr.c:74:4: error: format '%llu' expects argument of type 'long
-long unsigned int', but argument 6 has type '__u64' [-Werror=format=]
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
----
- arch/mips/include/uapi/asm/types.h | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/arch/mips/include/uapi/asm/types.h b/arch/mips/include/uapi/asm/types.h
-index 7ac9d0b..f3dd9ff 100644
---- a/arch/mips/include/uapi/asm/types.h
-+++ b/arch/mips/include/uapi/asm/types.h
-@@ -14,9 +14,12 @@
- /*
-  * We don't use int-l64.h for the kernel anymore but still use it for
-  * userspace to avoid code changes.
-+ *
-+ * However, some user programs (e.g. perf) may not want this. They can
-+ * flag __SANE_USERSPACE_TYPES__ to get int-ll64.h here.
-  */
- #ifndef __KERNEL__
--# if _MIPS_SZLONG == 64
-+# if _MIPS_SZLONG == 64 && !defined(__SANE_USERSPACE_TYPES__)
- #  include <asm-generic/int-l64.h>
- # else
- #  include <asm-generic/int-ll64.h>
--- 
-1.9.1
-
+Michal
