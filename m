@@ -1,157 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227AbaDHOYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:24:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756986AbaDHOYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:24:01 -0400
-Date: Tue, 8 Apr 2014 10:23:21 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 03/15 V3] perf c2c: Shared data analyser
-Message-ID: <20140408142321.GW8488@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
- <1395689826-215033-4-git-send-email-dzickus@redhat.com>
- <87a9bwxq64.fsf@sejong.aot.lge.com>
+	id S1757162AbaDHOYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:24:04 -0400
+Received: from mail-by2on0137.outbound.protection.outlook.com ([207.46.100.137]:30784
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756713AbaDHOYA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:24:00 -0400
+Message-ID: <1396967390.23349.15.camel@dinh-ubuntu>
+Subject: Re: [PATCH 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+From: Thor Thayer <tthayer@altera.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: <robherring2@gmail.com>, <dougthompson@xmission.com>,
+        <grant.likely@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <dinguyen@altera.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>
+Date: Tue, 8 Apr 2014 09:29:50 -0500
+In-Reply-To: <20140408133818.GB16054@pengutronix.de>
+References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+	 <1396907649-20212-2-git-send-email-tthayer@altera.com>
+	 <20140408133818.GB16054@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9bwxq64.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: =?utf-8?B?Q0lQOjY2LjM1LjIzNi4yMzI7Q1RSWTpVUztJUFY6TkxJO0VGVjpOTEk7U0ZW?=
+ =?utf-8?B?Ok5TUE07U0ZTOigxMDAxOTAwMSkoNjAwOTAwMSkoNDU4MDAxKSgzNzc0MjQw?=
+ =?utf-8?B?MDQpKDUxNDQ0MDAzKSg1MTcwNDAwNSkoMTk5MDAyKSgxODkwMDIpKDI0NDU0?=
+ =?utf-8?B?MDAyKSgyMzY3NjAwMikoODE1NDIwMDEpKDE5NTgwMzk1MDAzKSg0NzQ0NjAw?=
+ =?utf-8?B?MikoNzY3ODYwMDEpKDMzNjQ2MDAxKSg2Mjk2NjAwMikoNTY4MTYwMDUpKDk1?=
+ =?utf-8?B?NjY2MDAzKSg5MzkxNjAwMikoNDM5NjAwMSkoODE4MTYwMDEpKDMzNzE2MDAx?=
+ =?utf-8?B?KSg5OTM5NjAwMikoODQ2NzYwMDEpKDIwMDkwMDEpKDQ0OTc2MDA1KSg0Nzc3?=
+ =?utf-8?B?NjAwMykoMTk1ODA0MDUwMDEpKDUwMjI2MDAxKSg5MDE0NjAwMSkoNzY0ODIw?=
+ =?utf-8?B?MDEpKDc0MzY2MDAxKSg4MzMyMjAwMSkoODc5MzYwMDEpKDQ5ODY2MDAxKSg3?=
+ =?utf-8?B?Nzk4MjAwMSkoMTY3OTYwMDIpKDk3MTg2MDAxKSgzMTk2NjAwOCkoNTA0NjYw?=
+ =?utf-8?B?MDIpKDg1MzA2MDAyKSg3NzE1NjAwMSkoODgxMzYwMDIpKDk3MzM2MDAxKSg4?=
+ =?utf-8?B?MTY4NjAwMSkoOTg2NzYwMDEpKDIwNzc2MDAzKSg1NDMxNjAwMikoNzQ4NzYw?=
+ =?utf-8?B?MDEpKDc5MTAyMDAxKSg2MzY5NjAwMikoOTI3MjYwMDEpKDY1ODE2MDAxKSg4?=
+ =?utf-8?B?MTM0MjAwMSkoNjkyMjYwMDEpKDkyNTY2MDAxKSg4MDk3NjAwMSkoNDYxMDIw?=
+ =?utf-8?B?MDEpKDc0NzA2MDAxKSg4MzA3MjAwMikoNDc3MzYwMDEpKDg1ODUyMDAzKSg1?=
+ =?utf-8?B?MzgwNjAwMSkoNTY3NzYwMDEpKDc3MDk2MDAxKSg5NDk0NjAwMSkoNjgwNjAw?=
+ =?utf-8?B?NCkoOTc3MzYwMDEpKDkzNTE2MDAyKSg4NjM2MjAwMSkoNTk3NjYwMDEpKDc0?=
+ =?utf-8?B?NTAyMDAxKSg4NzI4NjAwMSkoODk5OTYwMDEpKDc2Nzk2MDAxKSg4MDAyMjAw?=
+ =?utf-8?B?MSkoNDc5NzYwMDEpKDk0MzE2MDAyKSg1MDk4NjAwMSkoNzQ2NjIwMDEpKDk1?=
+ =?utf-8?B?NDE2MDAxKSg4NzI2NjAwMSkoOTMxMzYwMDEpKDQyMTg2MDA0KTtESVI6T1VU?=
+ =?utf-8?B?O1NGUDoxMTAyO1NDTDoxO1NSVlI6Qk4xQkZGTzExSFVCMDU0O0g6U0otSVRF?=
+ =?utf-8?B?WEVER0UwMi5hbHRlcmEucHJpdi5hbHRlcmEuY29tO0ZQUjo2MkM1Rjc2MS5B?=
+ =?utf-8?B?QjJBREJFOC5GQ0Q0MkQxMy40QURBRTMzMS4yMDJEMTtNTFY6c2Z2O1BUUjpJ?=
+ =?utf-8?Q?nfoDomainNonexistent;A:1;MX:1;LANG:en;?=
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 017589626D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 03:59:15PM +0900, Namhyung Kim wrote:
-> Hi Don,
+On Tue, 2014-04-08 at 15:38 +0200, Steffen Trumtrar wrote:
+> Hi!
+> 
+> On Mon, Apr 07, 2014 at 04:54:07PM -0500, tthayer@altera.com wrote:
+> > From: Thor Thayer <tthayer@altera.com>
+> > 
+> > Addition of the Altera SDRAM controller bindings and device
+> > tree changes to the Altera SoC project.
+> > 
+[snip]
+> > +
+> > +Required properties:
+> > +- compatible : "altr,sdr-ctl", "syscon";
+> > +                Note that syscon is invoked for this device to support the FPGA
+> > +		bridge driver, EDAC driver and other devices that share the
+> > +		registers.
+> > +- reg : Should contain 1 register ranges(address and length)
+> 
+> I haven't really thought this through, but why would the FPGA bridge driver
+> access the sdram controller? For releasing the resets in fpgaportrst ? Or is
+> there more?
 
-Oh by the way, thank you for your review.  I will clean up a bunch of
-stuff based on your suggestions.
+Hi Steffan. No, not for resets. We need to enable the FPGA to SDRAM
+path. Our SDRAM controller allows FPGA master access to the SDRAM.
 
-Cheers,
-Don
+> Wouldn't it be more appropriate to represent those bits as a reset-controller to
+> some hypothetical IP core driver?
+> Then you could have something like
+> 
+> 	hps2fpga@c0000000 {
+> 		ipcore@0 {
+> 			resets = <&sdr 1>;
+> 			reset-names = "foo";
+> 			resets = <&rst 96>;
+> 			reset-names = "bar";
+> 			(...)
+> 		};
+> 
+> 		ipcore@1000 {
+> 			resets = <&rst 96>;
+> 			reset-names = "baz";
+> 			(...)
+> 		};
+> 	};
+> 
+> And you would always have the correct bridges released out of reset for your
+> IP core. Does the FPGA bridge driver do more? I think that is basically it.
+> Where we maybe could run into problems though is the early_init stuff.
+> 
+> I think syscon is nice for some things, but we should try not to overuse it.
 
+Understood. In this case, syscon seems to be appropriate.
 > 
-> On Mon, 24 Mar 2014 15:36:54 -0400, Don Zickus wrote:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> >
-> > This is the start of a new perf tool that will collect information about
-> > memory accesses and analyse it to find things like hot cachelines, etc.
+> Regards,
+> Steffen
 > 
-> So why not integrating this into existing 'perf mem' command if it's all
-> about analyzing memory accesses?
-> 
-> >
-> > This is basically trying to get a prototype written by Richard Fowles
-> > written using the tools/perf coding style and libraries.
-> >
-> > Start it from 'perf sched', this patch starts the process by adding the
-> > 'record' subcommand to collect the needed mem loads and stores samples.
-> >
-> > It also have the basic 'report' skeleton, resolving the sample address
-> > and hooking the events found in a perf.data file with methods to handle
-> > them, right now just printing the resolved perf_sample data structure
-> > after each event name.
-> >
-> > [dcz: refreshed to latest upstream changes]
-> 
-> [SNIP]
-> > +perf-c2c(1)
-> > +===========
-> > +
-> > +NAME
-> > +----
-> > +perf-c2c - Shared Data C2C/HITM Analyzer.
-> > +
-> > +SYNOPSIS
-> > +--------
-> > +[verse]
-> > +'perf c2c' record
-> > +
-> > +DESCRIPTION
-> > +-----------
-> > +These are the variants of perf c2c:
-> > +
-> > +  'perf c2c record <command>' to record the memory accesses of an arbitrary
-> > +  workload.
-> > +
-> > +SEE ALSO
-> > +--------
-> > +linkperf:perf-record[1], linkperf:perf-mem[1]
-> 
-> This document is very terse and only memtions the 'record' subcommand -
-> also it's not updated throughout the series.  So I'd like to suggest
-> adding a separate documentation patch with full/verbose descriptions at
-> the end of this series.
-> 
-> 
-> [SNIP]
-> > +static int perf_c2c__read_events(struct perf_c2c *c2c)
-> > +{
-> > +	int err = -1;
-> > +	struct perf_session *session;
-> > +	struct perf_data_file file = {
-> > +			.path = input_name,
-> > +			.mode = PERF_DATA_MODE_READ,
+> > +Example:
+> > +	sdrctl@ffc25000 {
+> > +		compatible = "altr,sdr-ctl", "syscon";
+> > +		reg = <0xffc25000 0x1000>;
 > > +	};
-> > +	struct perf_evsel *evsel;
+> > diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> > index df43702..6ce912e 100644
+> > --- a/arch/arm/boot/dts/socfpga.dtsi
+> > +++ b/arch/arm/boot/dts/socfpga.dtsi
+> > @@ -676,6 +676,11 @@
+> >  			clocks = <&l4_sp_clk>;
+> >  		};
+> >  
+> > +		sdrctl@ffc25000 {
+> > +			compatible = "altr,sdr-ctl", "syscon";
+> > +			reg = <0xffc25000 0x1000>;
+> > +		};
 > > +
-> > +	session = perf_session__new(&file, 0, &c2c->tool);
-> > +	if (session == NULL) {
-> > +		pr_debug("No memory for session\n");
-> > +		goto out;
-> > +	}
-> > +
-> > +	/* setup the evsel handlers for each event type */
-> > +	evlist__for_each(session->evlist, evsel) {
-> > +		const char *name = perf_evsel__name(evsel);
-> > +		unsigned int i;
-> > +
-> > +		for (i = 0; i < ARRAY_SIZE(handlers); i++) {
-> > +			if (!strcmp(name, handlers[i].name))
-> > +				evsel->handler = handlers[i].handler;
-> > +		}
-> > +	}
-> > +
-> > +	err = perf_session__process_events(session, &c2c->tool);
-> > +	if (err)
-> > +		pr_err("Failed to process events, error %d", err);
+> >  		rstmgr@ffd05000 {
+> >  			compatible = "altr,rst-mgr";
+> >  			reg = <0xffd05000 0x1000>;
 > 
-> You may want to add perf_session__delete() here.
-> 
-> > +
-> > +out:
-> > +	return err;
-> > +}
-> 
-> 
-> [SNIP]
-> > +int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
-> > +{
-> > +	struct perf_c2c c2c = {
-> > +		.tool = {
-> > +			.sample		 = perf_c2c__process_sample,
-> > +			.comm		 = perf_event__process_comm,
-> > +			.exit		 = perf_event__process_exit,
-> > +			.fork		 = perf_event__process_fork,
-> > +			.lost		 = perf_event__process_lost,
-> 
-> It seems that it also needs to handle mmap[2] events otherwise it cannot
-> find symbols from an address.
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> > +			.ordered_samples = true,
-> > +		},
-> > +	};
+
