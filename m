@@ -1,83 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344AbaDHJrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 05:47:17 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:65261 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaDHJrQ (ORCPT
+	id S1756472AbaDHJtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 05:49:41 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59678 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaDHJti convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 05:47:16 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: Freeing of dev->p
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jean Delvare <khali@linux-fr.org>
-Cc: linux-kernel@vger.kernel.org, Peter Wu <lekensteyn@gmail.com>
-In-Reply-To: <20140108165628.GA15820@kroah.com>
-References: <20140108164058.059cf461@endymion.delvare> <20140108165628. GA15820@kroah.com>
-Date: Tue, 08 Apr 2014 10:47:04 +0100
-Message-Id: <20140408094704.3B561C40933@trevor.secretlab.ca>
+	Tue, 8 Apr 2014 05:49:38 -0400
+Date: Tue, 8 Apr 2014 10:49:33 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper
+ function.
+Message-ID: <20140408094933.GS17163@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Bjorn Helgaas <bhelgaas@google.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811272-1547-2-git-send-email-Liviu.Dudau@arm.com>
+ <CAErSpo6S49qNuJQB-XXEfJ1Nkz=4gZ5_hE93=gb_yGZesA1H9Q@mail.gmail.com>
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo6S49qNuJQB-XXEfJ1Nkz=4gZ5_hE93=gb_yGZesA1H9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 08 Apr 2014 09:49:50.0498 (UTC) FILETIME=[E265F020:01CF530F]
+X-MC-Unique: 114040810493600901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jan 2014 08:56:28 -0800, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> On Wed, Jan 08, 2014 at 04:40:58PM +0100, Jean Delvare wrote:
-> > Hi Greg, hi all,
-> > 
-> > A memory leak has been reported to me:
-> > http://marc.info/?l=linux-i2c&m=138779165123331&w=2
-> > 
-> > The leak is in i801_probe, caused by an early call to
-> > i2c_set_adapdata() which in turn calls dev_set_drvdata() which
-> > allocates some memory in device_private_init(). That memory is only
-> > freed by the driver core when the i2c_adapter class device is removed.
-> > But if the parent (PCI) device probing itself fails for whatever
-> > reason, the class device never gets to be created, so it's never
-> > removed, thus the memory is never freed.
-> > 
-> > It is not possible to move the call to i2c_set_adapdata() until after
-> > the class device is created, because the data pointed is needed very
-> > early after (almost during) i2c adapter creation. So I could make the
-> > leak less likely to happen but I can't fix it completely.
+On Tue, Apr 08, 2014 at 12:21:51AM +0100, Bjorn Helgaas wrote:
+> On Fri, Mar 14, 2014 at 9:34 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > Some architectures do not share x86 simple view of the PCI I/O space
+> > and instead use a range of addresses that map to bus addresses. For
+> > some architectures these ranges will be expressed by OF bindings
+> > in a device tree file.
+> >
+> > Introduce a pci_register_io_range() helper function that can be used
+> > by the architecture code to keep track of the I/O ranges described by the
+> > PCI bindings. If the PCI_IOBASE macro is not defined that signals
+> > lack of support for PCI and we return an error.
+> >
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > Acked-by: Grant Likely <grant.likely@linaro.org>
+> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> > ---
+> >  drivers/of/address.c       | 9 +++++++++
+> >  include/linux/of_address.h | 1 +
+> >  2 files changed, 10 insertions(+)
+> >
+> > diff --git a/drivers/of/address.c b/drivers/of/address.c
+> > index 1a54f1f..be958ed 100644
+> > --- a/drivers/of/address.c
+> > +++ b/drivers/of/address.c
+> > @@ -619,6 +619,15 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
+> >  }
+> >  EXPORT_SYMBOL(of_get_address);
+> >
+> > +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
+> > +{
+> > +#ifndef PCI_IOBASE
+> > +       return -EINVAL;
+> > +#else
+> > +       return 0;
+> > +#endif
+> > +}
 > 
-> I don't understand, what exactly is leaking?  You have control over your
-> own structures, so can't you clean things up on the error path if you
-> know something went wrong?
+> This isn't PCI code, so I'm fine with it in that sense, but I'm not
+> sure the idea of a PCI_IOBASE #define is really what we need.  It's
+> not really determined by the processor architecture, it's determined
+> by the platform.  And a single address isn't enough in general,
+> either, because if there are multiple host bridges, there's no reason
+> the apertures that generate PCI I/O transactions need to be contiguous
+> on the CPU side.
+
+It should not be only platform's choice if the architecture doesn't support it.
+To my mind PCI_IOBASE means "I support MMIO operations and this is the
+start of the virtual address where my I/O ranges are mapped." It's the
+same as ppc's _IO_BASE. And pci_address_to_pio() will take care to give
+you the correct io_offset in the presence of multiple host bridges,
+while keeping the io resource in the range [0 .. host_bridge_io_range_size - 1]
+
 > 
-> > I am wondering how this can be solved, and this brought three questions:
-> > 
-> > 1* What is the rationale for allocating dev->p dynamically? It is
-> > allocated as soon as the device is created (in device_add), so as far
-> > as I can see every device will need the allocation. Including struct
-> > device_private in struct device would not cost more memory, plus it
-> > would reduce memory fragmentation. So is this a lifetime issue? Or
-> > something else I can't think of?
+> That's just a long way of saying that if we ever came up with a more
+> generic way to handle I/O port spaces, PCI_IOBASE might go away.  And
+> I guess part of that rework could be changing this use of it along
+> with the others.
+
+And I have a patch series that #defines PCI_IOBASE only in those architectures
+that support MMIO, where this macro makes sense. Also notice that the
+arm64 series has a patch that I'm going to roll into this one where ioport_map()
+gets fixed to include PCI_IOBASE when !CONFIG_GENERIC_MAP.
+
+Best regards,
+Liviu
+
 > 
-> I did it to keep things that non-driver-core code should not be
-> touching.  Previously, lots of people messed around with the device
-> private fields that could confuse the driver core.  Ideally, I'd like to
-> be able to move the kobject itself into this structure, to allow devices
-> to handle static initialization better, but that never happened, unlike
-> other driver core structures.
+> >  unsigned long __weak pci_address_to_pio(phys_addr_t address)
+> >  {
+> >         if (address > IO_SPACE_LIMIT)
+> > diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+> > index 5f6ed6b..40c418d 100644
+> > --- a/include/linux/of_address.h
+> > +++ b/include/linux/of_address.h
+> > @@ -56,6 +56,7 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
+> >  extern const __be32 *of_get_address(struct device_node *dev, int index,
+> >                            u64 *size, unsigned int *flags);
+> >
+> > +extern int pci_register_io_range(phys_addr_t addr, resource_size_t size);
+> >  extern unsigned long pci_address_to_pio(phys_addr_t addr);
+> >
+> >  extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
+> > --
+> > 1.9.0
+> >
+> 
 
-Picking up on an old thread, but speaking generally. I see that Jean has
-posted a patch for this sspecific issue...
-
-I do get concerned about this approach of protect fields by putting them
-behind an allocated structure that always needs to be there. It
-complicates the code and increases the runtime overhead with no benefits
-other than catching badly behaved driver writers. Those /should/ be the
-sort of failures we can catch at build time.
-
-I like tglx's approach here in include/linux/irqdesc.h:
-
-struct irq_desc {
-		...
-		unsigned int core_internal_state__do_not_mess_with_it;
-		...
-
-We could have a naming convention for private members and do a sparse or
-checkpatch test for non-core code touching private data.
-
-g.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
