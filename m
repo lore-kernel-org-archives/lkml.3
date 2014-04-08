@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251AbaDHGyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 02:54:53 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40177 "EHLO
+	id S1756291AbaDHG4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 02:56:13 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40465 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaDHGyv (ORCPT
+	with ESMTP id S1756195AbaDHG4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 02:54:51 -0400
-Message-ID: <53439D35.3050201@parallels.com>
-Date: Tue, 8 Apr 2014 10:54:45 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Tue, 8 Apr 2014 02:56:09 -0400
+Date: Tue, 8 Apr 2014 10:56:00 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: Andrey Vagin <avagin@openvz.org>, <linux-kernel@vger.kernel.org>,
+        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <coreteam@netfilter.org>, <netdev@vger.kernel.org>,
+        <vvs@parallels.com>, Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] [RFC] netfilter: ct: flush net_gre->keymap_list only in
+ nf_conntrack_proto_gre
+Message-ID: <20140408065600.GA15309@paralelels.com>
+References: <1396275258-19015-1-git-send-email-avagin@openvz.org>
+ <20140407145158.GA25974@localhost>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <shawn@churchofgit.com>,
-        <tglx@linutronix.de>, <akpm@linux-foundation.org>, <avagin@openvz.org>,
-        <xemul@parallels.com>
-Subject: Re: [patch 1/3] timerfd: Implement show_fdinfo method
-References: <20140407174701.734703531@openvz.org> <20140407174933.641611536@openvz.org> <5343946A.6000601@parallels.com> <20140408064223.GD23983@moon>
-In-Reply-To: <20140408064223.GD23983@moon>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <20140407145158.GA25974@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 10:42 AM, Cyrill Gorcunov wrote:
-> On Tue, Apr 08, 2014 at 10:17:14AM +0400, Vladimir Davydov wrote:
-> ...
->>> +static int timerfd_show(struct seq_file *m, struct file *file)
->>> +{
->>> +	struct timerfd_ctx *ctx = file->private_data;
->>> +	struct itimerspec t;
->>> +
->>> +	spin_lock_irq(&ctx->wqh.lock);
->>> +	t.it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
->>> +	t.it_interval = ktime_to_timespec(ctx->tintv);
->>> +	spin_unlock_irq(&ctx->wqh.lock);
->>> +
->>> +	return seq_printf(m,
->>> +			  "clockid: %d\n"
->>> +			  "ticks: %llu\n"
->>> +			  "settime flags: 0%o\n"
->>> +			  "it_value: (%llu, %llu)\n"
->>> +			  "it_interval: (%llu, %llu)\n",
->> IMO, one would expect to setup the timer on restore by passing the
->> values of settime_flags, it_value, and it_interval obtained from the
->> fdinfo to sys_timerfd_settime, but this will be incorrect, because AFAIU
->> the it_value you report here is always relative to the current time, no
->> matter whether TFD_TIMER_ABSTIME was set in settime_flags or not. Is it OK?
-> Hi Vladimir! Well it_value returns remaining time so it's up to user to
-> adjust this value when restore with abs time. That said one can examinate
-> if abs flag was set and restore accordingly. If this is vague I'm open
-> to change it to more clear way. Ideas?
+On Mon, Apr 07, 2014 at 04:51:58PM +0200, Pablo Neira Ayuso wrote:
+> On Mon, Mar 31, 2014 at 06:14:18PM +0400, Andrey Vagin wrote:
+> > nf_ct_gre_keymap_flush() removes a nf_ct_gre_keymap object from
+> > net_gre->keymap_list and frees the object. But it doesn't clean
+> > a reference on this object from ct_pptp_info->keymap[dir].
+> > Then nf_ct_gre_keymap_destroy() may release the same object again.
+> > 
+> > So nf_ct_gre_keymap_flush() can be called only when we are sure that
+> > when nf_ct_gre_keymap_destroy will not be called.
+> > 
+> > nf_ct_gre_keymap is created by nf_ct_gre_keymap_add() and the right way
+> > to destroy it is to call nf_ct_gre_keymap_destroy().
+> 
+> I think you use call nf_ct_iterate_cleanup() to get rid of all GRE
+> conntrack entries that have a ct->master, which means that they were
+> created by PPTP. That implicitly calls gre_destroy, which releases the
+> keymap object.
 
-If it's intended, it should be documented explicitly I think. Currently
-in the doc patch I see nothing about whether expiration time is absolute
-or relative:
+I'm not sure that I understand your comment. Currently I change nothing
+about nf_ct_iterate_cleanup(). In this sentence I point to the right
+procedure of destroying a gre conntrack.
 
-> 'it_value' and 'it_interval' are the expiration time and interval for the timer.
+nf_ct_iterate_cleanup() is called from nf_ct_l4proto_pernet_unregister().
 
-Thanks.
+[ 1858.693250]   <idle>-0       1..s. 118795582us : nf_ct_gre_keymap_add <-exp_gre
+[ 1858.693250]   <idle>-0       1..s. 118795598us : nf_ct_gre_keymap_add <-exp_gre
+[ 1858.693250]   <idle>-0       1..s. 118795652us : nf_ct_gre_keymap_add <-exp_gre
+[ 1858.693250]   <idle>-0       1..s. 118795683us : nf_ct_gre_keymap_add <-exp_gre
+[ 1858.693250] kworker/-44      1.... 133620272us : nf_conntrack_pptp_net_exit <-ops_exit_list.isra.1
+[ 1858.693250] kworker/-44      1.... 133620274us : nf_ct_gre_keymap_flush <-nf_conntrack_pptp_net_exit
+[ 1858.693250] kworker/-44      1.... 133621145us : proto_gre_net_exit <-ops_exit_list.isra.1
+[ 1858.693250] kworker/-44      1.... 133621145us : nf_ct_l4proto_pernet_unregister <-proto_gre_net_exit
+[ 1858.693250] kworker/-44      1.... 133621146us : nf_ct_iterate_cleanup <-nf_ct_l4proto_pernet_unregister
+[ 1858.693250] kworker/-44      1.... 133621187us : nf_ct_gre_keymap_destroy <-gre_destroy
+
+> 
+> > This patch marks nf_ct_gre_keymap_flush() as static, so this patch can
+> > break compilation of third party modules, which use
+> > nf_ct_gre_keymap_flush. I'm not sure this is the right way to deprecate
+> > this function.
+> 
+> No problem with that, we don't mind about out of tree modules. With
+> the approach I'm proposing I think you will also need to make this
+> function static as it won't be used by PPTP anymore.
+
+I have made this function static. If you don't have other comment, could
+you take this patch?
+
+Thanks,
+Andrey
