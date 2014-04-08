@@ -1,142 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbaDHKVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:21:08 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36032 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756558AbaDHKUs convert rfc822-to-8bit (ORCPT
+	id S1756594AbaDHKV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:21:26 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:50135 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756496AbaDHKVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:20:48 -0400
-Date: Tue, 8 Apr 2014 11:20:43 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140408102043.GV17163@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Bjorn Helgaas <bhelgaas@google.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
- <20140405000007.GD15806@google.com>
- <20140407084623.GG17163@e106497-lin.cambridge.arm.com>
- <1396862058.3671.40.camel@pasglop>
- <20140407100715.GI17163@e106497-lin.cambridge.arm.com>
- <CAErSpo7h+Yew2hBztzkOzcHU5r4OQebxFbcZGkNUwJwfTFsbfg@mail.gmail.com>
+	Tue, 8 Apr 2014 06:21:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7h+Yew2hBztzkOzcHU5r4OQebxFbcZGkNUwJwfTFsbfg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Apr 2014 10:21:00.0172 (UTC) FILETIME=[3CCF8CC0:01CF5314]
-X-MC-Unique: 114040811204601201
+In-Reply-To: <CALZtONBQZYeRTx_=Z70H7v4g=39C=caJgoZV3mVFwoPHTHVTuQ@mail.gmail.com>
+References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
+	<20140327222605.GB16495@medulla.variantweb.net>
+	<CALZtONDBNzL_S+UUxKgvNjEYu49eM5Fc2yJ37dJ8E+PEK+C7qg@mail.gmail.com>
+	<533587FD.7000006@redhat.com>
+	<CALZtONA=v+3_+6qEvyY0SruT=aGxAfV_N5fsHvLMJKFp4Stnww@mail.gmail.com>
+	<CAA_GA1er3d+_LJp67aD8tE0SLMod--FpRFvGBdKmpzU_aQNdUg@mail.gmail.com>
+	<CALZtONBQZYeRTx_=Z70H7v4g=39C=caJgoZV3mVFwoPHTHVTuQ@mail.gmail.com>
+Date: Tue, 8 Apr 2014 18:21:18 +0800
+Message-ID: <CAA_GA1e+241XDho9EjKc=eDRt3eN5rm27yE8RcNQRhswzf1vPA@mail.gmail.com>
+Subject: Re: Adding compression before/above swapcache
+From: Bob Liu <lliubbo@gmail.com>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Rik van Riel <riel@redhat.com>, Seth Jennings <sjennings@variantweb.net>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Bob Liu <bob.liu@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 11:44:51PM +0100, Bjorn Helgaas wrote:
-> On Mon, Apr 7, 2014 at 4:07 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Mon, Apr 07, 2014 at 10:14:18AM +0100, Benjamin Herrenschmidt wrote:
-> >> On Mon, 2014-04-07 at 09:46 +0100, Liviu Dudau wrote:
-> >> >
-> >> > *My* strategy is to get rid of pci_domain_nr(). I don't see why we need
-> >> > to have arch specific way of providing the number, specially after looking
-> >> > at the existing implementations that return a value from a variable that
-> >> > is never touched or incremented. My guess is that pci_domain_nr() was
-> >> > created to work around the fact that there was no domain_nr maintainance in
-> >> > the generic code.
-> >>
-> >> Well, there was no generic host bridge structure. There is one now, it should
-> >> go there.
-> >
-> > Exactly! Hence my patch. After it gets accepted I will go through architectures
-> > and remove their version of pci_domain_nr().
-> 
-> Currently the arch has to supply pci_domain_nr() because that's the
-> only way for the generic code to learn the domain.  After you add
-> pci_create_root_bus_in_domain(), the arch can supply the domain that
-> way, and we won't need the arch-specific pci_domain_nr().  Right?
-> That makes more sense to me; thanks for the explanation.
+On Mon, Mar 31, 2014 at 11:35 PM, Dan Streetman <ddstreet@ieee.org> wrote:
+> On Mon, Mar 31, 2014 at 8:43 AM, Bob Liu <lliubbo@gmail.com> wrote:
+>> On Fri, Mar 28, 2014 at 10:47 PM, Dan Streetman <ddstreet@ieee.org> wrote:
+>>> On Fri, Mar 28, 2014 at 10:32 AM, Rik van Riel <riel@redhat.com> wrote:
+>>>> On 03/28/2014 08:36 AM, Dan Streetman wrote:
+>>>>
+>>>>> Well my general idea was to modify shrink_page_list() so that instead
+>>>>> of calling add_to_swap() and then pageout(), anonymous pages would be
+>>>>> added to a compressed cache.  I haven't worked out all the specific
+>>>>> details, but I am initially thinking that the compressed cache could
+>>>>> simply repurpose incoming pages to use as the compressed cache storage
+>>>>> (using its own page mapping, similar to swap page mapping), and then
+>>>>> add_to_swap() the storage pages when the compressed cache gets to a
+>>>>> certain size.  Pages that don't compress well could just bypass the
+>>>>> compressed cache, and get sent the current route directly to
+>>>>> add_to_swap().
+>>>>
+>>>>
+>>>> That sounds a lot like what zswap does. How is your
+>>>> proposal different?
+>>>
+>>> Two main ways:
+>>> 1) it's above swap, so it would still work without any real swap.
+>>
+>> Zswap can also be extended without any real swap device.
+>
+> Ok I'm interested - how is that possible? :-)
+>
+>>> 2) compressed pages could be written to swap disk.
+>>>
+>>
+>> Yes, how to handle the write back of zswap is a problem. And I think
+>> your patch making zswap write through is a good start.
+>
+> but it's still writethrough of uncompressed pages.
+>
+>>> Essentially, the two existing memory compression approaches are both
+>>> tied to swap.  But, AFAIK there's no reason that memory compression
+>>> has to be tied to swap.  So my approach uncouples it.
+>>>
+>>
+>> Yes, it's not necessary but swap page is a good candidate and easy to
+>> handle. There are also clean file pages which may suitable for
+>> compression. See http://lwn.net/Articles/545244/.
+>
+> Yep, and what is the current state of cleancache?  Was there a
+> definitive reason it hasn't made it in yet?
+>
+>>>> And, is there an easier way to implement that difference? :)
+>>>
+>>> I'm hoping that it wouldn't actually be too complex.  But that's part
+>>> of why I emailed for feedback before digging into a prototype... :-)
+>>>
+>>
+>> I'm afraid your idea may not that easy to be implemented and need to
+>> add many tricky code to current mm subsystem, but the benefit is still
+>> uncertain. As Mel pointed out we really need better demonstration
+>> workloads for memory compression before changes.
+>> https://lwn.net/Articles/591961
+>
+> Well I think it's hard to argue that memory compression provides *no*
+> obvious benefit - I'm pretty sure it's quite useful for minor
+> overcommit on systems without any disk swap, and even for systems with
+> swap it at least softens the steep performance cliff that we currently
+> have when starting to overcommit memory into swap space.
+>
+> As far as its benefits for larger systems, or how realistic it is to
+> start routinely overcommitting systems with the expectation that
+> memory compression magically gives you more effective RAM, I certainly
+> don't know the answer, and I agree, more widespread testing and
+> demonstration surely will be needed.
+>
+> But to ask a more pointed question - what do you think would be the
+> tricky part(s)?
 
-Right.
-
-> 
-> Let me try to explain my concern about the
-> pci_create_root_bus_in_domain() interface.  We currently have these
-> interfaces:
-> 
->   pci_scan_root_bus()
->   pci_scan_bus()
->   pci_scan_bus_parented()
->   pci_create_root_bus()
-> 
-> pci_scan_root_bus() is a higher-level interface than
-> pci_create_root_bus(), so I'm trying to migrate toward it because it
-> lets us remove a little code from the arch, e.g., pci_scan_child_bus()
-> and pci_bus_add_devices().
-> 
-> I think we can only remove the arch-specific pci_domain_nr() if that
-> arch uses pci_create_root_bus_in_domain().  When we convert an arch
-> from using scan_bus interfaces to using
-> pci_create_root_bus_in_domain(), we will have to move the rest of the
-> scan_bus code (pci_scan_child_bus(), pci_bus_add_devices()) back into
-> the arch code.
-> 
-> One alternative is to add an _in_domain() variant of each of these
-> interfaces, but that doesn't seem very convenient either.  My idea of
-> passing in a structure would also require adding variants, so there's
-> not really an advantage there, but I am thinking of the next
-> unification effort, e.g., for NUMA node info.  I don't really want to
-> have to change all the _in_domain() interfaces to also take yet
-> another parameter for the node number.
-
-OK, what about this: all the functions that you have mentioned take a
-void *sysdata parameter. Should we convert this opaque pointer into a
-specific structure that holds the domain_nr and (in future) the NUMA
-node info?
-
-Converting all the architectures is going to be a long winded job as
-everyone loved to add their own stuff in the structure pointed by sysdata,
-breaking that will lead to frustrations, but maybe the framework should
-take back ownership of it.
-
-Best regards,
-Liviu
-
-> 
-> Bjorn
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Just thought it may make things more complex and more race conditions
+might be introduced.
+That's why zswap was based on top of frontswap(a simple interface).
+Personally, I'd prefer to make zswap/zram better instead of a new one.
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Regards,
+--Bob
