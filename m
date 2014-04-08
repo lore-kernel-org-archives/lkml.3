@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611AbaDHKm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:42:59 -0400
-Received: from ozlabs.org ([203.10.76.45]:54047 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579AbaDHKm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:42:57 -0400
-Date: Tue, 8 Apr 2014 20:42:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: strange state of the kbuild tree
-Message-Id: <20140408204249.375a96e79bac0d8500fa3e7b@canb.auug.org.au>
-In-Reply-To: <5343ADF1.1060906@suse.cz>
-References: <20140408074734.34deb43270183941b5118c7f@canb.auug.org.au>
-	<5343ADF1.1060906@suse.cz>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_Apr_2014_20_42_49_+1000_a+hCSraFhH1iSedD"
+	id S1756631AbaDHKps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:45:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43891 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756308AbaDHKpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:45:44 -0400
+Date: Tue, 8 Apr 2014 11:45:25 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "tthayer@altera.com" <tthayer@altera.com>
+Cc: "robherring2@gmail.com" <robherring2@gmail.com>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dinguyen@altera.com" <dinguyen@altera.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
+ CycloneV/ArriaV
+Message-ID: <20140408104525.GA11876@e106331-lin.cambridge.arm.com>
+References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+ <1396907649-20212-4-git-send-email-tthayer@altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396907649-20212-4-git-send-email-tthayer@altera.com>
+Thread-Topic: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
+ CycloneV/ArriaV
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Apr_2014_20_42_49_+1000_a+hCSraFhH1iSedD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 07, 2014 at 10:54:09PM +0100, tthayer@altera.com wrote:
+> From: Thor Thayer <tthayer@altera.com>
+> 
+> Added EDAC support for reporting ECC errors of CycloneV
+> and ArriaV SDRAM controller.
+> - The SDRAM Controller registers are used by the FPGA bridge so
+>   these are accessed through the syscon interface.
+> - The configuration of the SDRAM memory size for the EDAC framework
+>   is discovered from the memory node of the device tree.
+> - Documentation of the bindings in devicetree/bindings/arm/altera/
+>   socfpga-sdram-edac.txt
+> - Correction of single bit errors, detection of double bit errors.
+> 
+> Signed-off-by: Thor Thayer <tthayer@altera.com>
+> To: Rob Herring <robherring2@gmail.com>
+> To: Doug Thompson <dougthompson@xmission.com>
+> To: Grant Likely <grant.likely@linaro.org>
+> Cc: Dinh Nguyen <dinguyen@altera.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-edac@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/edac/Kconfig          |    9 ++
+>  drivers/edac/Makefile         |    2 +
+>  drivers/edac/altera_mc_edac.c |  360 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 371 insertions(+)
+>  create mode 100644 drivers/edac/altera_mc_edac.c
 
-Hi Michal,
+[...]
 
-On Tue, 08 Apr 2014 10:06:09 +0200 Michal Marek <mmarek@suse.cz> wrote:
->
-> Right, I send the individual topic branches to Linus. Will it be OK if I
-> reset the for-next branch to v3.15-rc1 after this merge window?
+> +/* Get total memory size from Open Firmware DTB */
+> +static u32 altr_sdram_get_total_mem_size(void)
+> +{
+> +       struct device_node *np;
+> +       u32 retcode, reg_array[2];
+> +
+> +       np = of_find_node_by_type(NULL, "memory");
+> +       if (!np)
+> +               return 0;
+> +
+> +       retcode = of_property_read_u32_array(np, "reg",
+> +                                            reg_array, ARRAY_SIZE(reg_array));
 
-Yep, fine.
+There's no requirement that #address-cells = <1> or #size-cells = <1>,
+even if any values in either would fit into 32 bits. If we must read
+this from the DTB rather than elsewhere, please check
+of_n_{addr,size}_cells.
 
---=20
+Additionally, it's possible that the physical memory might be described
+over multiple reg entries, or multiple memory nodes for some arbitrary
+reason.
+
+Can we not get this info from elsewhere rather than having to parse the
+memory node within a driver?
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__8_Apr_2014_20_42_49_+1000_a+hCSraFhH1iSedD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTQ9KvAAoJEMDTa8Ir7ZwV4bsP/jtvwhJviQSncupZe/zCICV5
-MhbH3lwo/bx5oEEGiXuJCKTVNBUctwJoLA9guM2ajUom0YVun6ELly+NqNSrCJYg
-vPTgzXLKCu8spdnayS9PtqdpyL8KumtFKklp42tjB6MCB8LNkcMug4N2B03Vme7N
-srxCxXZ2CskO1FQy3T7sExLW/StC75PbnUrD2n/LIuKbyfqsGMDyVW+D0Kd3mw0y
-hSiQonad2yi+5Z7wRJPm+FgvUC7RZGcpV4FaUu+MQ/lJWwgDX9JvS4UVPCMyNrJf
-27dTuTgF8XyNV/6fP5jjyBrb+HYco4JPcqyuduXFphd7CCuqB06H0CgE1kVnVmz2
-JOAHC88tQTxhbXqBRShztXyA0C/PSHr4Xfj5MzVIhGHfudWQbpvOoCa7jVJd3krZ
-Ov3NyBsC/LlFON8J2aktSa1s69SUz/emSDZCfXmiPotodSEyvC08bwF8M5CtdyCI
-pMrm+ywGhbdMWSq5Gudf4zE9pC2EC/V0AiMrssiPDBSE9CicukwUW1VAROSfjEVS
-PrF7Br1ayElXNKwf9VLXQNrvp/Xqt2E0U0hyx/UeJns47774+FEUD8dD7oI4HO9B
-Fwqd5EWG0++oL3mR/yMC0m7583to+AwC6rFa5niDRJj3nM0dVPlVqbSM6kt9GMHC
-7NZpWa31o/cB1pfAHApI
-=L0yA
------END PGP SIGNATURE-----
-
---Signature=_Tue__8_Apr_2014_20_42_49_+1000_a+hCSraFhH1iSedD--
+Mark.
