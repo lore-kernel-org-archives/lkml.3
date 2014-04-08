@@ -1,137 +1,445 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757663AbaDHSBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:01:04 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:41946 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757465AbaDHSA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:00:57 -0400
-X-Greylist: delayed 3452 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Apr 2014 14:00:57 EDT
-Date: Tue, 8 Apr 2014 13:03:11 -0400 (EDT)
-From: Jan Stancek <jstancek@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>
-Message-ID: <1669675952.1688479.1396976591124.JavaMail.zimbra@redhat.com>
-In-Reply-To: <CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com>
-References: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com> <CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com>
-Subject: Re: [PATCH] futex: avoid race between requeue and wake
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF28 (Win)/8.0.6_GA_5922)
-Thread-Topic: futex: avoid race between requeue and wake
-Thread-Index: NUieAM6vX96u0+7sg8wVmvIxGt+x/g==
+	id S1757828AbaDHSBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:01:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757796AbaDHSBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 14:01:34 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 03/10] tools lib traceevent: Print event name when show warning if possible
+Date: Tue,  8 Apr 2014 20:01:01 +0200
+Message-Id: <1396980068-27124-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
+References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Namhyung Kim <namhyung@kernel.org>
 
+It's sometimes useful to know where the parse failure was occurred.  Add
+do_warning_event() macro to see the failing event.
 
+It now shows the messages like below:
 
+  $ perf test 5
+   5: parse events tests                                     :  Warning: [kvmmmu:kvm_mmu_get_page] bad op token {
+    Warning: [kvmmmu:kvm_mmu_sync_page] bad op token {
+    Warning: [kvmmmu:kvm_mmu_unsync_page] bad op token {
+    Warning: [kvmmmu:kvm_mmu_prepare_zap_page] bad op token {
+    Warning: [kvmmmu:fast_page_fault] function is_writable_pte not defined
+    Warning: [xen:xen_mmu_ptep_modify_prot_commit] function sizeof not defined
+    Warning: [xen:xen_mmu_ptep_modify_prot_start] function sizeof not defined
+    Warning: [xen:xen_mmu_set_pgd] function sizeof not defined
+    Warning: [xen:xen_mmu_set_pud] function sizeof not defined
+    Warning: [xen:xen_mmu_set_pmd] function sizeof not defined
+    ...
 
------ Original Message -----
-> From: "Linus Torvalds" <torvalds@linux-foundation.org>
-> To: "Jan Stancek" <jstancek@redhat.com>
-> Cc: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, "Srikar Dronamraju" <srikar@linux.vnet.ibm.com>,
-> "Davidlohr Bueso" <davidlohr@hp.com>, "Ingo Molnar" <mingo@kernel.org>, "Larry Woodman" <lwoodman@redhat.com>
-> Sent: Tuesday, 8 April, 2014 6:20:42 PM
-> Subject: Re: [PATCH] futex: avoid race between requeue and wake
-> 
-> Davidlohr, comments?
-> 
-> On Tue, Apr 8, 2014 at 1:47 AM, Jan Stancek <jstancek@redhat.com> wrote:
-> > pthread_cond_broadcast/4-1.c testcase from openposix testsuite (LTP)
-> > occasionally fails, because some threads fail to wake up.
-> 
-> Jan, I _assume_ this is on x86(-64), but can you please confirm?
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1395192174-26273-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/lib/traceevent/event-parse.c | 103 ++++++++++++++++++++++---------------
+ 1 file changed, 62 insertions(+), 41 deletions(-)
 
-I was able to reproduce this on x86-64 and s390x. I used mostly
-s390x system with 2 CPUs, because I could reproduce it there
-a lot faster (usually in seconds).
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 1587ea39..33803c0b9 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -50,6 +50,18 @@ static int show_warning = 1;
+ 			warning(fmt, ##__VA_ARGS__);	\
+ 	} while (0)
+ 
++#define do_warning_event(event, fmt, ...)			\
++	do {							\
++		if (!show_warning)				\
++			continue;				\
++								\
++		if (event)					\
++			warning("[%s:%s] " fmt, event->system,	\
++				event->name, ##__VA_ARGS__);	\
++		else						\
++			warning(fmt, ##__VA_ARGS__);		\
++	} while (0)
++
+ static void init_input_buf(const char *buf, unsigned long long size)
+ {
+ 	input_buf = buf;
+@@ -1355,7 +1367,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 		}
+ 
+ 		if (!field->type) {
+-			do_warning("%s: no type found", __func__);
++			do_warning_event(event, "%s: no type found", __func__);
+ 			goto fail;
+ 		}
+ 		field->name = last_token;
+@@ -1402,7 +1414,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 				free_token(token);
+ 				type = read_token(&token);
+ 				if (type == EVENT_NONE) {
+-					do_warning("failed to find token");
++					do_warning_event(event, "failed to find token");
+ 					goto fail;
+ 				}
+ 			}
+@@ -1636,7 +1648,7 @@ process_cond(struct event_format *event, struct print_arg *top, char **tok)
+ 	right = alloc_arg();
+ 
+ 	if (!arg || !left || !right) {
+-		do_warning("%s: not enough memory!", __func__);
++		do_warning_event(event, "%s: not enough memory!", __func__);
+ 		/* arg will be freed at out_free */
+ 		free_arg(left);
+ 		free_arg(right);
+@@ -1686,7 +1698,7 @@ process_array(struct event_format *event, struct print_arg *top, char **tok)
+ 
+ 	arg = alloc_arg();
+ 	if (!arg) {
+-		do_warning("%s: not enough memory!", __func__);
++		do_warning_event(event, "%s: not enough memory!", __func__);
+ 		/* '*tok' is set to top->op.op.  No need to free. */
+ 		*tok = NULL;
+ 		return EVENT_ERROR;
+@@ -1792,7 +1804,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 	if (arg->type == PRINT_OP && !arg->op.left) {
+ 		/* handle single op */
+ 		if (token[1]) {
+-			do_warning("bad op token %s", token);
++			do_warning_event(event, "bad op token %s", token);
+ 			goto out_free;
+ 		}
+ 		switch (token[0]) {
+@@ -1802,7 +1814,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 		case '-':
+ 			break;
+ 		default:
+-			do_warning("bad op token %s", token);
++			do_warning_event(event, "bad op token %s", token);
+ 			goto out_free;
+ 
+ 		}
+@@ -1888,7 +1900,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 			char *new_atom;
+ 
+ 			if (left->type != PRINT_ATOM) {
+-				do_warning("bad pointer type");
++				do_warning_event(event, "bad pointer type");
+ 				goto out_free;
+ 			}
+ 			new_atom = realloc(left->atom.atom,
+@@ -1930,7 +1942,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 		type = process_array(event, arg, tok);
+ 
+ 	} else {
+-		do_warning("unknown op '%s'", token);
++		do_warning_event(event, "unknown op '%s'", token);
+ 		event->flags |= EVENT_FL_FAILED;
+ 		/* the arg is now the left side */
+ 		goto out_free;
+@@ -1951,7 +1963,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 	return type;
+ 
+ out_warn_free:
+-	do_warning("%s: not enough memory!", __func__);
++	do_warning_event(event, "%s: not enough memory!", __func__);
+ out_free:
+ 	free_token(token);
+ 	*tok = NULL;
+@@ -2385,7 +2397,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 	field = alloc_arg();
+ 	if (!field) {
+-		do_warning("%s: not enough memory!", __func__);
++		do_warning_event(event, "%s: not enough memory!", __func__);
+ 		goto out_free;
+ 	}
+ 
+@@ -2438,7 +2450,7 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 	field = alloc_arg();
+ 	if (!field) {
+-		do_warning("%s: not enough memory!", __func__);
++		do_warning_event(event, "%s: not enough memory!", __func__);
+ 		goto out_free;
+ 	}
+ 
+@@ -2477,7 +2489,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 	field = alloc_arg();
+ 	if (!field) {
+-		do_warning("%s: not enough memory!", __func__);
++		do_warning_event(event, "%s: not enough memory!", __func__);
+ 		goto out_free;
+ 	}
+ 
+@@ -2492,7 +2504,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 	field = alloc_arg();
+ 	if (!field) {
+-		do_warning("%s: not enough memory!", __func__);
++		do_warning_event(event, "%s: not enough memory!", __func__);
+ 		*tok = NULL;
+ 		return EVENT_ERROR;
+ 	}
+@@ -2555,7 +2567,7 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
+ 	free_token(token);
+ 	arg = alloc_arg();
+ 	if (!arg) {
+-		do_warning("%s: not enough memory!", __func__);
++		do_warning_event(event, "%s: not enough memory!", __func__);
+ 		*tok = NULL;
+ 		return EVENT_ERROR;
+ 	}
+@@ -2614,13 +2626,14 @@ process_paren(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 		/* prevous must be an atom */
+ 		if (arg->type != PRINT_ATOM) {
+-			do_warning("previous needed to be PRINT_ATOM");
++			do_warning_event(event, "previous needed to be PRINT_ATOM");
+ 			goto out_free;
+ 		}
+ 
+ 		item_arg = alloc_arg();
+ 		if (!item_arg) {
+-			do_warning("%s: not enough memory!", __func__);
++			do_warning_event(event, "%s: not enough memory!",
++					 __func__);
+ 			goto out_free;
+ 		}
+ 
+@@ -2721,7 +2734,8 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 	for (i = 0; i < func->nr_args; i++) {
+ 		farg = alloc_arg();
+ 		if (!farg) {
+-			do_warning("%s: not enough memory!", __func__);
++			do_warning_event(event, "%s: not enough memory!",
++					 __func__);
+ 			return EVENT_ERROR;
+ 		}
+ 
+@@ -2792,7 +2806,7 @@ process_function(struct event_format *event, struct print_arg *arg,
+ 		return process_func_handler(event, func, arg, tok);
+ 	}
+ 
+-	do_warning("function %s not defined", token);
++	do_warning_event(event, "function %s not defined", token);
+ 	free_token(token);
+ 	return EVENT_ERROR;
+ }
+@@ -2878,7 +2892,7 @@ process_arg_token(struct event_format *event, struct print_arg *arg,
+ 
+ 	case EVENT_ERROR ... EVENT_NEWLINE:
+ 	default:
+-		do_warning("unexpected type %d", type);
++		do_warning_event(event, "unexpected type %d", type);
+ 		return EVENT_ERROR;
+ 	}
+ 	*tok = token;
+@@ -2901,7 +2915,8 @@ static int event_read_print_args(struct event_format *event, struct print_arg **
+ 
+ 		arg = alloc_arg();
+ 		if (!arg) {
+-			do_warning("%s: not enough memory!", __func__);
++			do_warning_event(event, "%s: not enough memory!",
++					 __func__);
+ 			return -1;
+ 		}
+ 
+@@ -3481,11 +3496,12 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 	return val;
+ 
+ out_warning_op:
+-	do_warning("%s: unknown op '%s'", __func__, arg->op.op);
++	do_warning_event(event, "%s: unknown op '%s'", __func__, arg->op.op);
+ 	return 0;
+ 
+ out_warning_field:
+-	do_warning("%s: field %s not found", __func__, arg->field.name);
++	do_warning_event(event, "%s: field %s not found",
++			 __func__, arg->field.name);
+ 	return 0;
+ }
+ 
+@@ -3591,7 +3607,8 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 		}
+ 		str = malloc(len + 1);
+ 		if (!str) {
+-			do_warning("%s: not enough memory!", __func__);
++			do_warning_event(event, "%s: not enough memory!",
++					 __func__);
+ 			return;
+ 		}
+ 		memcpy(str, data + field->offset, len);
+@@ -3697,7 +3714,8 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 	return;
+ 
+ out_warning_field:
+-	do_warning("%s: field %s not found", __func__, arg->field.name);
++	do_warning_event(event, "%s: field %s not found",
++			 __func__, arg->field.name);
+ }
+ 
+ static unsigned long long
+@@ -3742,14 +3760,16 @@ process_defined_func(struct trace_seq *s, void *data, int size,
+ 			trace_seq_terminate(&str);
+ 			string = malloc(sizeof(*string));
+ 			if (!string) {
+-				do_warning("%s(%d): malloc str", __func__, __LINE__);
++				do_warning_event(event, "%s(%d): malloc str",
++						 __func__, __LINE__);
+ 				goto out_free;
+ 			}
+ 			string->next = strings;
+ 			string->str = strdup(str.buffer);
+ 			if (!string->str) {
+ 				free(string);
+-				do_warning("%s(%d): malloc str", __func__, __LINE__);
++				do_warning_event(event, "%s(%d): malloc str",
++						 __func__, __LINE__);
+ 				goto out_free;
+ 			}
+ 			args[i] = (uintptr_t)string->str;
+@@ -3761,7 +3781,7 @@ process_defined_func(struct trace_seq *s, void *data, int size,
+ 			 * Something went totally wrong, this is not
+ 			 * an input error, something in this code broke.
+ 			 */
+-			do_warning("Unexpected end of arguments\n");
++			do_warning_event(event, "Unexpected end of arguments\n");
+ 			goto out_free;
+ 		}
+ 		farg = farg->next;
+@@ -3811,12 +3831,12 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 	if (!field) {
+ 		field = pevent_find_field(event, "buf");
+ 		if (!field) {
+-			do_warning("can't find buffer field for binary printk");
++			do_warning_event(event, "can't find buffer field for binary printk");
+ 			return NULL;
+ 		}
+ 		ip_field = pevent_find_field(event, "ip");
+ 		if (!ip_field) {
+-			do_warning("can't find ip field for binary printk");
++			do_warning_event(event, "can't find ip field for binary printk");
+ 			return NULL;
+ 		}
+ 		pevent->bprint_buf_field = field;
+@@ -3830,7 +3850,8 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 	 */
+ 	args = alloc_arg();
+ 	if (!args) {
+-		do_warning("%s(%d): not enough memory!", __func__, __LINE__);
++		do_warning_event(event, "%s(%d): not enough memory!",
++				 __func__, __LINE__);
+ 		return NULL;
+ 	}
+ 	arg = args;
+@@ -3896,7 +3917,7 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 				bptr += vsize;
+ 				arg = alloc_arg();
+ 				if (!arg) {
+-					do_warning("%s(%d): not enough memory!",
++					do_warning_event(event, "%s(%d): not enough memory!",
+ 						   __func__, __LINE__);
+ 					goto out_free;
+ 				}
+@@ -3919,7 +3940,7 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 			case 's':
+ 				arg = alloc_arg();
+ 				if (!arg) {
+-					do_warning("%s(%d): not enough memory!",
++					do_warning_event(event, "%s(%d): not enough memory!",
+ 						   __func__, __LINE__);
+ 					goto out_free;
+ 				}
+@@ -3959,7 +3980,7 @@ get_bprint_format(void *data, int size __maybe_unused,
+ 	if (!field) {
+ 		field = pevent_find_field(event, "fmt");
+ 		if (!field) {
+-			do_warning("can't find format field for binary printk");
++			do_warning_event(event, "can't find format field for binary printk");
+ 			return NULL;
+ 		}
+ 		pevent->bprint_fmt_field = field;
+@@ -4003,8 +4024,8 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
+ 		arg->field.field =
+ 			pevent_find_any_field(event, arg->field.name);
+ 		if (!arg->field.field) {
+-			do_warning("%s: field %s not found",
+-				   __func__, arg->field.name);
++			do_warning_event(event, "%s: field %s not found",
++					 __func__, arg->field.name);
+ 			return;
+ 		}
+ 	}
+@@ -4176,7 +4197,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 			case '*':
+ 				/* The argument is the length. */
+ 				if (!arg) {
+-					do_warning("no argument match");
++					do_warning_event(event, "no argument match");
+ 					event->flags |= EVENT_FL_FAILED;
+ 					goto out_failed;
+ 				}
+@@ -4213,7 +4234,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 			case 'X':
+ 			case 'u':
+ 				if (!arg) {
+-					do_warning("no argument match");
++					do_warning_event(event, "no argument match");
+ 					event->flags |= EVENT_FL_FAILED;
+ 					goto out_failed;
+ 				}
+@@ -4223,7 +4244,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 
+ 				/* should never happen */
+ 				if (len > 31) {
+-					do_warning("bad format!");
++					do_warning_event(event, "bad format!");
+ 					event->flags |= EVENT_FL_FAILED;
+ 					len = 31;
+ 				}
+@@ -4290,13 +4311,13 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 						trace_seq_printf(s, format, (long long)val);
+ 					break;
+ 				default:
+-					do_warning("bad count (%d)", ls);
++					do_warning_event(event, "bad count (%d)", ls);
+ 					event->flags |= EVENT_FL_FAILED;
+ 				}
+ 				break;
+ 			case 's':
+ 				if (!arg) {
+-					do_warning("no matching argument");
++					do_warning_event(event, "no matching argument");
+ 					event->flags |= EVENT_FL_FAILED;
+ 					goto out_failed;
+ 				}
+@@ -4306,7 +4327,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 
+ 				/* should never happen */
+ 				if (len > 31) {
+-					do_warning("bad format!");
++					do_warning_event(event, "bad format!");
+ 					event->flags |= EVENT_FL_FAILED;
+ 					len = 31;
+ 				}
+-- 
+1.8.3.1
 
-My reproducer is modified pthread_cond_broadcast/4-1.c testcase,
-with some sleeps removed/shortened:
-  http://jan.stancek.eu/tmp/futex_race/pcb.c
-  gcc pcb.c -o pcb -lpthread
-I'm running it in loop until retcode != 0.
-
-I also experimented with this patch when trying to make it
-more visible (so I could capture some strace logs):
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 5ff12f5..290a67f 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -47,6 +47,7 @@
- #include <linux/slab.h>
- #include <linux/poll.h>
- #include <linux/fs.h>
-+#include <linux/delay.h>
- #include <linux/file.h>
- #include <linux/jhash.h>
- #include <linux/init.h>
-@@ -1554,6 +1555,7 @@ retry_private:
-                 */
-                if (++task_count <= nr_wake && !requeue_pi) {
-                        wake_futex(this);
-+                       udelay(10000);
-                        continue;
-                }
-
-> 
-> Because if it's on anything else, the whole situation changes.
-> 
-> > Taking hb->lock in this situation will ensure that thread A needs to wait
-> > in futex_wake() until main thread finishes requeue operation.
-> 
-> So the argument was that doing *both* spin_is_locked() and
-> atomic_read(&hb->waiters) _should_ be unnecessary, because
-> hb_waiters_inc() is done *before* getting the spinlock
-> 
-> However, one exception to this is "requeue_futex()". Which is in fact
-> the test-case that Jan points to. There, when we move a futex from one
-> hash bucket to another, we do the increment inside the spinlock.
-> 
-> So I think the change is correct, although the commit message might
-> need a bit of improvement. I also hate that "if/else" thing, since
-> there's no point in an "else" if the if-statement did a "return". So
-> either make it just
-> 
->     if (spin_is_locked(&hb->lock))
->         return 1;
->     return atomic_read(&hb->waiters);
-> 
-> or (perhaps preferably) make it
-> 
->     return spin_is_locked(&hb->lock) || atomic_read(&hb->waiters);
-> 
-> but that "if/else" just makes me go "why?".
-
-Understood, I can submit v2 if Davidlohr will also be in favor.
-If not, I'm happy to test different patch proposal with my setup.
-
-Regards,
-Jan
-
-> 
-> But I'd also like to have Davidlohr look at this, because I have a few
-> questions:
-> 
->  - how did this never show up in the original loads? No requeueing
-> under those test-loads?
-> 
->  - would we be better off incrementing the waiter count at the top of
-> futex_requeue(), at the retry_private label?
-> 
-> That would make us follow the "has to be incremented before taking the
-> lock" rule, but at the expense of making the error case handling more
-> complex. Although maybe we could do it as part of
-> "double_lock/unlock_hb()" and just mark both hb1/hb2 busy?
-> 
->                       Linus
-> 
