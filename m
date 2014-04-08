@@ -1,119 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701AbaDHKvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:51:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44089 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756353AbaDHKvj (ORCPT
+	id S1756725AbaDHKv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:51:56 -0400
+Received: from smtprelay.synopsys.com ([198.182.44.111]:45153 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756353AbaDHKvv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:51:39 -0400
-Date: Tue, 8 Apr 2014 11:51:23 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "tthayer@altera.com" <tthayer@altera.com>
-Cc: "robherring2@gmail.com" <robherring2@gmail.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "dinguyen@altera.com" <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] dts: socfpga: Add bindings for Altera SoC SDRAM
- EDAC
-Message-ID: <20140408105123.GC11876@e106331-lin.cambridge.arm.com>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
- <1396907649-20212-3-git-send-email-tthayer@altera.com>
+	Tue, 8 Apr 2014 06:51:51 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARC: Remove ISS_SMP_EXTN entirely
+Thread-Topic: [PATCH] ARC: Remove ISS_SMP_EXTN entirely
+Thread-Index: AQHPUwhlTEyJveja0ESkki83qvmg4A==
+Date: Tue, 8 Apr 2014 10:49:05 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751AC680@IN01WEMBXA.internal.synopsys.com>
+References: <1396947368.26620.2.camel@x220>
+	 <C2D7FE5348E1B147BCA15975FBA230751AC602@IN01WEMBXA.internal.synopsys.com>
+ <1396953743.26620.23.camel@x220>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.197.213]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396907649-20212-3-git-send-email-tthayer@altera.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 10:54:08PM +0100, tthayer@altera.com wrote:
-> From: Thor Thayer <tthayer@altera.com>
-> 
-> Addition of the Altera SDRAM EDAC bindings and device
-> tree changes to the Altera SoC project.
-> 
-> Signed-off-by: Thor Thayer <tthayer@altera.com>
-> To: Rob Herring <robherring2@gmail.com>
-> To: Pawel Moll <pawel.moll@arm.com>
-> To: Mark Rutland <mark.rutland@arm.com>
-> To: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> To: Kumar Gala <galak@codeaurora.org>
-> To: Rob Landley <rob@landley.net>
-> To: Russell King <linux@arm.linux.org.uk>
-> To: Dinh Nguyen <dinguyen@altera.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
->  .../bindings/arm/altera/socfpga-sdram-edac.txt     |   12 ++++++++++++
->  arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
->  2 files changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-> new file mode 100644
-> index 0000000..9348c53
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-> @@ -0,0 +1,12 @@
-> +Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
-> +
-> +Required properties:
-> +- compatible : should contain "altr,sdr-edac";
-> +- interrupts : Should contain the SDRAM ECC IRQ in the
-> +	appropriate format for the IRQ controller.
-> +
-> +Example:
-> +	sdramedac@0 {
+On Tuesday 08 April 2014 04:12 PM, Paul Bolle wrote:
+> Vineet,
+>
+> On Tue, 2014-04-08 at 09:18 +0000, Vineet Gupta wrote:
+>> There's obvious bitrot here - however this code is not dead yet !
+>> I have a unpushed fix which uses this Kconfig item.
+>>
+>> diff --git a/arch/arc/plat-arcfpga/Makefile b/arch/arc/plat-arcfpga/Makefile
+>> index a44e22ebc1b7..4d1bddc34b5b 100644
+>> --- a/arch/arc/plat-arcfpga/Makefile
+>> +++ b/arch/arc/plat-arcfpga/Makefile
+>> @@ -9,4 +9,4 @@
+>>  KBUILD_CFLAGS  += -Iarch/arc/plat-arcfpga/include
+>>  
+>>  obj-y := platform.o irq.o
+>> -obj-$(CONFIG_SMP)              += smp.o
+>> +obj-$(CONFIG_ISS_SMP_EXTN)             += smp.o
+> I just realized that this means you're only using ISS_SMP_EXTN as an
+> alias for SMP, aren't you? Ie, smp.o will now be built if both
+> ARC_PLAT_FPGA_LEGACY and SMP are set. That will not change by this
+> patch.
+>
+> So unless you're planning to do something else too if ISS_SMP_EXTN is
+> set there seems to be little value in using this symbol like that.
 
-Nit: If there's no reg, there shouldn't be a unit-address (the "@0").
+Indeed so - I just sent u one hunk to give an idea. There's other code too where
+CONFIG_SMP will be replaced by CONFIG_ISS_SMP_EXTN as I'm decoupling SMP support
+from this SMP extension.
 
-> +		compatible = "altr,sdram-edac";
-> +		interrupts = <0 39 4>;
-> +	};
+I'll push a patch later today - which will hopefully hit mainline within this
+merge window - if not in one of the rcs.
 
-No phandle to the actual SDRAM controller node? Is there a guaranteed
-limitation of a single SDRAM controller?
-
-I don't see the point in describing this separately from the main SDRAM
-controller node, given this seems to be a subcomponent.
-
-> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> index 6ce912e..a0ea69b 100644
-> --- a/arch/arm/boot/dts/socfpga.dtsi
-> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> @@ -681,6 +681,11 @@
->  			reg = <0xffc25000 0x1000>;
->  		};
->  
-> +		sdramedac@0 {
-
-Nit: get rid of the unit-address here too.
-
-Cheers,
-Mark.
-
-> +			compatible = "altr,sdram-edac";
-> +			interrupts = <0 39 4>;
-> +		};
-> +
->  		rstmgr@ffd05000 {
->  			compatible = "altr,rst-mgr";
->  			reg = <0xffd05000 0x1000>;
-> -- 
-> 1.7.9.5
-> 
-> 
+-Vineet
