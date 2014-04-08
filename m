@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093AbaDHSRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:17:10 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:33876 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644AbaDHSRI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:17:08 -0400
+	id S1757646AbaDHSSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:18:52 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:55793 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754579AbaDHSSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 14:18:51 -0400
+X-IronPort-AV: E=Sophos;i="4.97,819,1389744000"; 
+   d="scan'208";a="119195990"
+Message-ID: <53443D88.6010202@citrix.com>
+Date: Tue, 8 Apr 2014 20:18:48 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Date: Tue, 8 Apr 2014 11:17:07 -0700
-Message-ID: <CABPqkBQeAqRUW8LLMsHhHBR8gJcE4VPZa++ji8i=RKUCd2jSvQ@mail.gmail.com>
-Subject: [BUG] perf record: does not propagate command error code
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: <konrad@kernel.org>, <xen-devel@lists.xenproject.org>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <keir@xen.org>, <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [XEN PATCH 1/2] hvm: Support more than 32 VCPUS when
+ migrating.
+References: <1396859560.22845.4.camel@kazak.uk.xensource.com>	<1396977950-8789-1-git-send-email-konrad@kernel.org> <1396977950-8789-2-git-send-email-konrad@kernel.org>
+In-Reply-To: <1396977950-8789-2-git-send-email-konrad@kernel.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 08/04/14 19:25, konrad@kernel.org wrote:
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> When we migrate an HVM guest, by default our shared_info can
+> only hold up to 32 CPUs. As such the hypercall
+> VCPUOP_register_vcpu_info was introduced which allowed us to
+> setup per-page areas for VCPUs. This means we can boot PVHVM
+> guest with more than 32 VCPUs. During migration the per-cpu
+> structure is allocated fresh by the hypervisor (vcpu_info_mfn
+> is set to INVALID_MFN) so that the newly migrated guest
+> can do make the VCPUOP_register_vcpu_info hypercall.
+> 
+> Unfortunatly we end up triggering this condition:
+> /* Run this command on yourself or on other offline VCPUS. */
+>  if ( (v != current) && !test_bit(_VPF_down, &v->pause_flags) )
+> 
+> which means we are unable to setup the per-cpu VCPU structures
+> for running vCPUS. The Linux PV code paths make this work by
+> iterating over every vCPU with:
+> 
+>  1) is target CPU up (VCPUOP_is_up hypercall?)
+>  2) if yes, then VCPUOP_down to pause it.
+>  3) VCPUOP_register_vcpu_info
+>  4) if it was down, then VCPUOP_up to bring it back up
+> 
+> But since VCPUOP_down, VCPUOP_is_up, and VCPUOP_up are
+> not allowed on HVM guests we can't do this. This patch
+> enables this.
 
-There is a discrepancy in the way perf stat and perf record propagate
-command error code back when they launch a process:
+Hmmm, this looks like a very convoluted approach to something that could
+be solved more easily IMHO. What we do on FreeBSD is put all vCPUs into
+suspension, which means that all vCPUs except vCPU#0 will be in the
+cpususpend_handler, see:
 
-$ perf record -e cycles false && echo "yes" || echo "no"
-yes
+http://svnweb.freebsd.org/base/head/sys/amd64/amd64/mp_machdep.c?revision=263878&view=markup#l1460
 
-That's wrong!
+Then on resume we unblock the "suspended" CPUs, and the first thing they
+do is call cpu_ops.cpu_resume which is basically going to setup the
+vcpu_info using VCPUOP_register_vcpu_info. Not sure if something similar
+is possible under Linux, but it seems easier and doesn't require any
+Xen-side changes.
 
-But perf stat:
+Roger.
 
-$ perf stat -e cycles false && echo "yes" || echo "no"
-no
-
-That's correct!
-
-You want the error to be propagated back because it helps
-catch errors in monitoring scripts.
-
-I looked at the perf record code handling the error from the child.
-It is complicated and uses atexit() to cleanup the child. It is hard
-to get the child exit status back. I wonder why this was handled
-that way.
-
-Anybody has a fix for this?
-
-Thanks
