@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804AbaDHS1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:27:41 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:63384 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757553AbaDHS1h (ORCPT
+	id S1757591AbaDHSjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:39:51 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:60462 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757464AbaDHSjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:27:37 -0400
+	Tue, 8 Apr 2014 14:39:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <5344251D.7040805@pobox.com>
-References: <5344251D.7040805@pobox.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 8 Apr 2014 12:27:16 -0600
-Message-ID: <CAErSpo6KuYLaoEsxR4jJQ98P23kNEMzMcu_-RyM3nWd6YRxgag@mail.gmail.com>
-Subject: Re: driver skip pci_set_master, fix it? No.
-To: Mark Lord <mlord@pobox.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <53440544.9040502@codeaurora.org>
+References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
+	<1391700529-11816-2-git-send-email-iivanov@mm-sol.com>
+	<CAOZdJXVE7MSMBaL+bt0kjw5LEidz-aVp+vrWqQWkye6HdE7EeA@mail.gmail.com>
+	<1396959284.28420.45.camel@iivanov-dev>
+	<5343EC87.700@codeaurora.org>
+	<1396964805.28420.53.camel@iivanov-dev>
+	<53440544.9040502@codeaurora.org>
+Date: Tue, 8 Apr 2014 11:39:48 -0700
+Message-ID: <CAJAp7OjnUaBE=Ma-B54=z_w5L6zDP4tn52_kwXekbj2sbYrOLA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: dts: MSM8974: Add pinctrl node
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Timur Tabi <timur@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Ben, linux-pci]
-
-On Tue, Apr 8, 2014 at 10:34 AM, Mark Lord <mlord@pobox.com> wrote:
-> I am working a couple of drivers for chips that perform extensive bus-mastering ops.
-> These including full SRIOV support, and allow assigning virtual functions to virtual machines, etc.
+On Tue, Apr 8, 2014 at 7:18 AM, Timur Tabi <timur@codeaurora.org> wrote:
+> On 04/08/2014 08:46 AM, Ivan T. Ivanov wrote:
+>>>
+>>> >This patch adds that same exact information into the device tree.  Why
+>>> >are we duplicating that information?  Why add it to the device tree when
+>>> >it's already in the driver (and already working).
 >
-> One thing the driver (still in development) does for safety,
-> is defer the call to pci_set_master() until *after* it has mapped
-> the MMIO space of the chips, so it can reset/flush the DMA engines
-> before giving them permission to scribble over host RAM.
 >
-> But a recent patch to the kernel has removed this from the driver's control.
-> The core PCI now does pci_set_master() immediately on pci_enable_device().
+>> Probably. It was my natural way of thinking. Pin have a functions.
+>> It is easier if I measure signals to just look at the device
+>> tree file. What are you suggesting?
+>
+>
+> Back in July, Qualcomm submitted a patch that added this information into
+> the device tree:
+>
+> http://marc.info/?t=137185166100003&r=1&w=2
+>
+> However, this was rejected.  Now it appears that this information is again
+> being added to the device tree, but it's being accepted.  What's different
+> now?
 
-I assume you're talking about the one added by cf3e1feba7f9 ("PCI:
-Workaround missing pci_set_master in pci drivers"), but as far as I
-can tell, it only calls pci_set_master() for *bridge* devices.  What
-am I missing?  Is pci_set_master() being called for your endpoint?
-What path is that?
+The difference is that in the first proposal pins, groups and
+functions where defined in DT, in the accepted proposal the devicetree
+merely selects pins, functions and their configuration.
 
+>
+> Another problem is that these device tree changes makes it difficult to
+> support ACPI.  It's easy to move information between the drivers and the
+> device tree, because they're kept together.  It's not so easy with ACPI.
+> I'm trying to add ACPI support to the 8x74 pinctrl driver, but it's a moving
+> target.
+
+The DT bindings for 8x74 is all standard pinctrl, so I presume that
+what you should be looking at is how pinctrl and acpi is interacting,
+not the specific case of 8x74...
+
+Maybe Linus have some input on this?
+
+Regards,
 Bjorn
