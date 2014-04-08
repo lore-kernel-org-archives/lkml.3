@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220AbaDHOd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:33:58 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33073 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757093AbaDHOd5 (ORCPT
+	id S1757237AbaDHOed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:34:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36584 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598AbaDHOeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:33:57 -0400
-Date: Tue, 8 Apr 2014 16:33:27 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Thor Thayer <tthayer@altera.com>
-Cc: robherring2@gmail.com, dougthompson@xmission.com, grant.likely@linaro.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, dinguyen@altera.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
- controller
-Message-ID: <20140408143327.GC16054@pengutronix.de>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
- <1396907649-20212-2-git-send-email-tthayer@altera.com>
- <20140408133818.GB16054@pengutronix.de>
- <1396967390.23349.15.camel@dinh-ubuntu>
+	Tue, 8 Apr 2014 10:34:31 -0400
+Date: Tue, 8 Apr 2014 11:08:36 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Alexei Starovoitov <ast@plumgrid.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>,
+        Geoff.Levand@huawei.com
+Subject: Re: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool
+ for Linux
+Message-ID: <20140408090836.GN11096@twins.programming.kicks-ass.net>
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+ <20140331071749.GA1252@gmail.com>
+ <CAGdX0WEV5OEfk4vfMKYeEpHP_7XqpUKk2-iwTVoTup1ObYu3eg@mail.gmail.com>
+ <CAMEtUuw24=+CkcdwDnJ4AbSCjGBBFx+8pTFzn5gXbQAy=KYWng@mail.gmail.com>
+ <CAGdX0WEvsPqWjE8Uade5_i58AepKxGndM0eSg=viB+UYGOSkJw@mail.gmail.com>
+ <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com>
+ <20140402074202.GB22680@gmail.com>
+ <20140407135519.GJ10526@twins.programming.kicks-ass.net>
+ <5343A7F4.80702@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396967390.23349.15.camel@dinh-ubuntu>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:26:28 up 226 days, 23:57, 55 users,  load average: 0,13, 0,14,
- 0,14
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <5343A7F4.80702@hitachi.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 09:29:50AM -0500, Thor Thayer wrote:
-> On Tue, 2014-04-08 at 15:38 +0200, Steffen Trumtrar wrote:
-> > Hi!
+On Tue, Apr 08, 2014 at 04:40:36PM +0900, Masami Hiramatsu wrote:
+> (2014/04/07 22:55), Peter Zijlstra wrote:
+> > On Wed, Apr 02, 2014 at 09:42:03AM +0200, Ingo Molnar wrote:
+> >> I'd suggest using C syntax instead initially, because that's what the 
+> >> kernel is using.
+> >>
+> >> The overwhelming majority of people probing the kernel are 
+> >> programmers, so there's no point in inventing new syntax, we should 
+> >> reuse existing syntax!
 > > 
-> > On Mon, Apr 07, 2014 at 04:54:07PM -0500, tthayer@altera.com wrote:
-> > > From: Thor Thayer <tthayer@altera.com>
-> > > 
-> > > Addition of the Altera SDRAM controller bindings and device
-> > > tree changes to the Altera SoC project.
-> > > 
-> [snip]
-> > > +
-> > > +Required properties:
-> > > +- compatible : "altr,sdr-ctl", "syscon";
-> > > +                Note that syscon is invoked for this device to support the FPGA
-> > > +		bridge driver, EDAC driver and other devices that share the
-> > > +		registers.
-> > > +- reg : Should contain 1 register ranges(address and length)
-> > 
-> > I haven't really thought this through, but why would the FPGA bridge driver
-> > access the sdram controller? For releasing the resets in fpgaportrst ? Or is
-> > there more?
+> > Yes please, keep it C, I forever forget all other syntaxes. While I have
+> > in the past known other languages, I never use them frequently enough to
+> > remember them. And there's nothing more frustrating than having to fight
+> > a tool/language when you just want to get work done.
 > 
-> Hi Steffan. No, not for resets. We need to enable the FPGA to SDRAM
-> path. Our SDRAM controller allows FPGA master access to the SDRAM.
->
+> Why wouldn't you write a kernel module in C directly? :)
+> It seems that all what you need is not a tracing language nor a bytecode
+> engine, but an well organized tracing APIs(library?) for writing a kernel
+> module for tracing...
 
-Yes. But what you have to do to enable the path is let the FPGA port you use
-out of reset. And that is it as far as I can see. The rest happens in the
-bitstream. Or is there more to enable the path?
-The FPGA2SDRAM bridge is the one I didn't use as of yet, so if I miss something
-please elaborate.
+Most my kernels are CONFIG_MODULE=n :-) Also, I never can remember how
+to do modules.
 
-> > Wouldn't it be more appropriate to represent those bits as a reset-controller to
-> > some hypothetical IP core driver?
-> > Then you could have something like
-> > 
-> > 	hps2fpga@c0000000 {
-> > 		ipcore@0 {
-> > 			resets = <&sdr 1>;
-> > 			reset-names = "foo";
-> > 			resets = <&rst 96>;
-> > 			reset-names = "bar";
-> > 			(...)
-> > 		};
-> > 
-> > 		ipcore@1000 {
-> > 			resets = <&rst 96>;
-> > 			reset-names = "baz";
-> > 			(...)
-> > 		};
-> > 	};
-> > 
-> > And you would always have the correct bridges released out of reset for your
-> > IP core. Does the FPGA bridge driver do more? I think that is basically it.
-> > Where we maybe could run into problems though is the early_init stuff.
-> > 
-> > I think syscon is nice for some things, but we should try not to overuse it.
-> 
-> Understood. In this case, syscon seems to be appropriate.
+That said; what I currently do it hack the kernel with debug bits and
+pieces and run that, which is effectively the same. Its just that its
+impossible to save/share these hacks in any sane fashion.
 
-I'm not convinced yet.
-
-Steffen
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
