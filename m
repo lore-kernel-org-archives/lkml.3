@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871AbaDHSCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:02:12 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:39557 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757787AbaDHSCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757856AbaDHSCI (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 Apr 2014 14:02:08 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] Staging:android:uapi:binder.h __packed
-Date: Tue,  8 Apr 2014 19:02:04 +0100
-Message-Id: <1396980124-4679-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+Received: from mx1.redhat.com ([209.132.183.28]:14393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757810AbaDHSBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 14:01:38 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 09/10] perf sched: Introduce --list-cmds for use by scripts
+Date: Tue,  8 Apr 2014 20:01:07 +0200
+Message-Id: <1396980068-27124-10-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
+References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: __packed is preferred over __attribute__((packed))
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1394853474-31019-5-git-send-email-artagnon@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- drivers/staging/android/uapi/binder.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-sched.c    | 10 ++++++----
+ tools/perf/perf-completion.sh |  2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
-index 904adb7..dba4cef 100644
---- a/drivers/staging/android/uapi/binder.h
-+++ b/drivers/staging/android/uapi/binder.h
-@@ -169,7 +169,7 @@ struct binder_ptr_cookie {
- struct binder_handle_cookie {
- 	__u32 handle;
- 	binder_uintptr_t cookie;
--} __attribute__((packed));
-+} __packed;
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 9ac0a49..d3fb0ed 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1713,8 +1713,10 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"perf sched replay [<options>]",
+ 		NULL
+ 	};
+-	const char * const sched_usage[] = {
+-		"perf sched [<options>] {record|latency|map|replay|script}",
++	const char *const sched_subcommands[] = { "record", "latency", "map",
++						  "replay", "script", NULL };
++	const char *sched_usage[] = {
++		NULL,
+ 		NULL
+ 	};
+ 	struct trace_sched_handler lat_ops  = {
+@@ -1736,8 +1738,8 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	for (i = 0; i < ARRAY_SIZE(sched.curr_pid); i++)
+ 		sched.curr_pid[i] = -1;
  
- struct binder_pri_desc {
- 	__s32 priority;
+-	argc = parse_options(argc, argv, sched_options, sched_usage,
+-			     PARSE_OPT_STOP_AT_NON_OPTION);
++	argc = parse_options_subcommand(argc, argv, sched_options, sched_subcommands,
++					sched_usage, PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (!argc)
+ 		usage_with_options(sched_usage, sched_options);
+ 
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index ecedab6..3356984 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -122,7 +122,7 @@ __perf_main ()
+ 		evts=$($cmd list --raw-dump)
+ 		__perfcomp_colon "$evts" "$cur"
+ 	# List subcommands for perf commands
+-	elif [[ $prev == @(kvm|kmem|mem|lock) ]]; then
++	elif [[ $prev == @(kvm|kmem|mem|lock|sched) ]]; then
+ 		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
 -- 
-1.8.3.2
+1.8.3.1
 
