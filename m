@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145AbaDHOvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:51:41 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31646 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521AbaDHOvj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:51:39 -0400
-Message-ID: <53440CEF.7090408@oracle.com>
-Date: Tue, 08 Apr 2014 10:51:27 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
+	id S1757210AbaDHOz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:55:27 -0400
+Received: from smtp.01.com ([199.36.142.181]:46749 "EHLO smtp.01.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756780AbaDHOzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:55:25 -0400
+X-Greylist: delayed 515 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Apr 2014 10:55:25 EDT
+Message-ID: <53440BD6.5030008@agliodbs.com>
+Date: Tue, 08 Apr 2014 10:46:46 -0400
+From: Josh Berkus <josh@agliodbs.com>
+Organization: PostgreSQL Experts Inc.
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-Subject: Re: fs,seq_file: huge allocations for seq file reads
-References: <53440B8B.1010304@oracle.com> <20140408144943.GA6165@redhat.com>
-In-Reply-To: <20140408144943.GA6165@redhat.com>
+To: Christoph Lameter <cl@linux.com>, Vlastimil Babka <vbabka@suse.cz>
+CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Robert Haas <robertmhaas@gmail.com>,
+        Andres Freund <andres@2ndquadrant.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, sivanich@sgi.com
+Subject: Re: [PATCH 0/2] Disable zone_reclaim_mode by default
+References: <1396910068-11637-1-git-send-email-mgorman@suse.de> <5343A494.9070707@suse.cz> <alpine.DEB.2.10.1404080914280.8782@nuc> <WM!ea1193ee171854a74828ee30c859d97ff2ce66405ffa3a0b8c31a1233c6a0b55530cdf3cbfcd989c0ec18fef1d533f81!@asav-3.01.com>
+In-Reply-To: <WM!ea1193ee171854a74828ee30c859d97ff2ce66405ffa3a0b8c31a1233c6a0b55530cdf3cbfcd989c0ec18fef1d533f81!@asav-3.01.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 10:49 AM, Dave Jones wrote:
-> On Tue, Apr 08, 2014 at 10:45:31AM -0400, Sasha Levin wrote:
->  
->  > It seems that when we attempt to read huge chunks of data from a seq file
->  > there would be no check for the size being read, leading to the kernel
->  > attempting to allocate huge chunks of data internally.
->  > 
->  > As far as I remember, there was a PAGE_SIZE limitation on those, but I'm
->  > not certain about that. Could someone please confirm it?
-> 
-> I've had this diff sitting around for a while to figure out which
-> seq_file we're talking about.  I think Al wrote it, I forget..
+On 04/08/2014 10:17 AM, Christoph Lameter wrote:
 
-I'll add it in.
+> Another solution here would be to increase the threshhold so that
+> 4 socket machines do not enable zone reclaim by default. The larger the
+> NUMA system is the more memory is off node from the perspective of a
+> processor and the larger the hit from remote memory.
 
-I didn't realize it was a problem with a specific file, I thought it was
-an issue with seq files in general.
+8 and 16 socket machines aren't common for nonspecialist workloads
+*now*, but by the time these changes make it into supported distribution
+kernels, they may very well be.  So having zone_reclaim_mode
+automatically turn itself on if you have more than 8 sockets would still
+be a booby-trap ("Boss, I dunno.  I installed the additional processors
+and memory performance went to hell!")
 
+For zone_reclaim_mode=1 to be useful on standard servers, both of the
+following need to be true:
 
-Thanks,
-Sasha
+1. the user has to have set CPU affinity for their applications;
+
+2. the applications can't need more than one memory bank worth of cache.
+
+The thing is, there is *no way* for Linux to know if the above is true.
+
+Now, I can certainly imagine non-HPC workloads for which both of the
+above would be true; for example, I've set up VMware ESX servers where
+each VM has one socket and one memory bank. However, if the user knows
+enough to set up socket affinity, they know enough to set
+zone_reclaim_mode = 1.  The default should cover the know-nothing case,
+not the experienced specialist case.
+
+I'd also argue that there's a fundamental false assumption in the entire
+algorithm of zone_reclaim_mode, because there is no memory bank which is
+as distant as disk is, ever.  However, if it's off by default, then I
+don't care.
+
+-- 
+Josh Berkus
+PostgreSQL Experts Inc.
+http://pgexperts.com
