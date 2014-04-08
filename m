@@ -1,128 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498AbaDHK2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:28:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25719 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756079AbaDHK2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:28:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,817,1389772800"; 
-   d="scan'208";a="509160026"
-Date: Tue, 8 Apr 2014 13:30:06 +0300
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: "Du, Wenkai" <wenkai.du@intel.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller
- enable
-Message-ID: <20140408103006.GQ19349@intel.com>
-References: <20140404181613.GB19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
- <20140404184232.GC19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
- <20140405061316.GF19349@intel.com>
- <20140406185818.3aaca03d@alan.etchedpixels.co.uk>
- <20140407090403.GG19349@intel.com>
- <20140407154252.6b8f0f7e@alan.etchedpixels.co.uk>
- <20140407151107.GL19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A72207@ORSMSX109.amr.corp.intel.com>
+	id S1756584AbaDHKai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:30:38 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:55481 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756311AbaDHKag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:30:36 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlBYAIvOQ1N5LEcvPGdsb2JhbABRCIMGg0qFC7cBhV+BHxcDAQEBATg1giUBAQEDATocIwULCAMYCSUPBSUDBxoTh3EHyjYXFo1+VgeDJIEUBJhblgMr
+Date: Tue, 8 Apr 2014 20:30:27 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Jan Kara <jack@suse.cz>, Daniel J Blueman <daniel@numascale.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steffen Persvold <sp@numascale.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: Re: ext4 performance falloff
+Message-ID: <20140408103027.GC22917@dastard>
+References: <533EE547.3030504@numascale.com>
+ <20140404205604.GC10275@thunk.org>
+ <533F7851.30803@numascale.com>
+ <20140407141935.GA22171@quack.suse.cz>
+ <87bnwdjdoj.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A72207@ORSMSX109.amr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <87bnwdjdoj.fsf@tassilo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 07:48:02PM +0300, Du, Wenkai wrote:
-> > -----Original Message-----
-> > From: Westerberg, Mika
-> > Sent: Monday, April 07, 2014 8:11 AM
-> > To: One Thousand Gnomes
-> > Cc: Du, Wenkai; linux-i2c@vger.kernel.org; Wolfram Sang; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller enable
-> > 
-> > 
-> > Do you think we can fix it with adding a dummy read right after write to the mask register, like
-> > the snippet below?
-> > 
-> > diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-
-> > core.c
-> > index 14c4b30d4ccc..ff9090381d8b 100644
-> > --- a/drivers/i2c/busses/i2c-designware-core.c
-> > +++ b/drivers/i2c/busses/i2c-designware-core.c
-> > @@ -535,6 +535,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
-> >  		intr_mask = 0;
-> > 
-> >  	dw_writel(dev, intr_mask,  DW_IC_INTR_MASK);
-> > +	dw_readl(dev, DW_IC_INTR_MASK);
-> >  }
-> > 
-> 
-> I have tried this read back earlier during debugging, it didn't help. You
-> can confirm yourself as well.
+On Mon, Apr 07, 2014 at 09:40:28AM -0700, Andi Kleen wrote:
+> Jan Kara <jack@suse.cz> writes:
+> >
+> > What we really need is a counter where we can better estimate counts
+> > accumulated in the percpu part of it. As the counter approaches zero, it's
+> > CPU overhead will have to become that of a single locked variable but when
+> > the value of counter is relatively high, we want it to be fast as the
+> > percpu one.  Possibly, each CPU could "reserve" part of the value in the
+> > counter (by just decrementing the total value; how large that part should
+> > be really needs to depend to the total value of the counter and number of
+> > CPUs - in this regard we really differ from classical percpu couters) and
+> > allocate/free using that part. If CPU cannot reserve what it is asked for
+> > anymore, it would go and steal from parts other CPUs have accumulated,
+> > returning them to global pool until it can satisfy the allocation.
 
-I mean that it helps for the posted writes to the mask register issue, Alan
-pointed out.
+Yup, that's pretty much what the slow path/fast path breakdown of
+the xfs_icsb_* (XFS In-Core Super Block) code in fs/xfs/xfs_mount.c
+does. :)
 
-> On the ISR code execution path, here is the list to my understanding:
-> 
-> 1. TX abort: this path masks all interrupt by writing 0 to interrupt mask register;
-> 2. RX full: this path doesn't do anything on masking interrupts;
-> 3. TX empty: this path only mask TX empty under certain conditions; it
-> doesn't mask other interrupt sources;
-> 4. i2c STOP condition: this path call complete() to finish the transfer;
-> it doesn't do anything on masking interrupts;
+It distributes free space across all the CPUs and
+rebalances them when a per-CPu counter runs out. And to avoid lots
+of rebalances when ENOSPC approaches (512 blocks per CPU, IIRC),
+it disables the per-CPU counters completely and falls back to a
+global counter protected by a mutex to avoid wasting hundreds of
+CPUs spinning on a contended global lock. When the free space goes
+back above that threshold, it returns to per-cpu mode (the fast
+path code).
 
-You are right.
+> That's a percpu_counter() isn't it? (or cookie jar)
 
-The driver enables the controller and then unmasks following interrupt
-sources:
+No. percpu_counters do not guarantee accuracy nor can the counters
+be externally serialised for things like concurrent ENOSPC detection
+that require a guarantee that the counter never, ever goes below
+zero.
 
-	DW_IC_INTR_RX_FULL
-	DW_IC_INTR_TX_EMPTY
-	DW_IC_INTR_TX_ABRT
-	DW_IC_INTR_STOP_DET
+> The MM uses similar techniques.
 
-This will immediately trigger TX_EMPTY interrupt and the transfer begins.
-If it finishes successfully, the driver only clears DW_IC_INTR_TX_EMPTY and
-disables the controller. In Subsequent transfers the same happens and it
-seems to work fine (as we have the controller disabled whenever we are done
-with the transfer).
+I haven't seen anything else that uses similar techniques to the XFS
+code - I wrote it back in 2005 before there was generic per-cpu
+counter infrastructure, and I've been keeping an eye out as
+to whether it could be replaced with generic code ever since....
 
-I'm not sure I agree that this is the best approach but like I said, it
-seems to work just fine.
+Cheers,
 
-Except when we resume after suspend when the controller is reset. This will
-mess up the "expected" mask and trigger interrupt immediately when the
-controller is enabled in i2c_dw_xfer_init().
-
-> The above analysis agrees with the debug logs: most of interrupts are
-> left unmasked in original code when i2c core is being enabled.
-
-Yes, but only after resume. In normal cases the driver re-programs
-DW_IC_INTR_TX_EMPTY to the mask (the other 3 flags are already set but
-they should be harmless as long as the TX fifo is still empty).
-
-> I think we want all interrupts masked when enabling HW. This will ensure
-> the required 25us core turn on delay being respected. Also there could be
-> spurious interrupts when HW is being turned on that should be ignored.
-
-Where did you get this 25us required delay? My spec doesn't say anything
-about that. It does however say that if the state bit is not yet changed,
-wait 25us (@400kHz) and re-read the bit. So it can be that we don't wait at
-all once we toggle that bit.
-
-All in all, I think we can solve this resume path timeout issue, by moving
-__i2c_dw_enable() to be last in i2c_dw_xfer_init().
-
-In addition we should fix the potential posted-write problem Alan pointed
-out (as a separate patch). That could actually explain the issue you have
-seen where timeout occurs during normal operation. Maybe fix here is to
-mask all interrupts at the end of the ISR and make sure that possible
-posted writes gets flushed to the hardware before returning?
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
