@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082AbaDHB3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 21:29:32 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:54765 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976AbaDHB33 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 21:29:29 -0400
-Message-ID: <534350F6.9050604@gmail.com>
-Date: Tue, 08 Apr 2014 03:29:26 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
-Subject: WARNING ... drivers/gpu/drm/ttm/ttm_bo_vm.c...
-Content-Type: text/plain; charset=UTF-8
+	id S1755971AbaDHBik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 21:38:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33071 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755174AbaDHBij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 21:38:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,814,1389772800"; 
+   d="scan'208";a="516301323"
+Subject: [PATCH] Gadget: race between ffs_epfile_io() and
+ ffs_func_eps_disable()
+From: Chao Bi <chao.bi@intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Apr 2014 10:08:47 +0800
+Message-ID: <1396922927.2733.3.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...
-Command line: initrd=initrd.img
-inst.stage2=hd:LABEL=Fedora\x20rawhide\x20x86_64  xdriver=modesetting
-BOOT_IMAGE=vmlinuz
-Kernel command line: initrd=initrd.img
-inst.stage2=hd:LABEL=Fedora\x20rawhide\x20x86_64  xdriver=modesetting
-BOOT_IMAGE=vmlinuz
-...
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 1230 at drivers/gpu/drm/ttm/ttm_bo_vm.c:269
-ttm_bo_vm_open+0x52/0x80 [ttm]()
-CPU: 1 PID: 1230 Comm: Xorg Not tainted 3.15.0-0.rc0.git9.1.fc21.x86_64 #1
-Call Trace:
- [<ffffffff817db690>] dump_stack+0x4d/0x66
- [<ffffffff81096b9d>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff81096cca>] warn_slowpath_null+0x1a/0x20
- [<ffffffffa0250452>] ttm_bo_vm_open+0x52/0x80 [ttm]
- [<ffffffff810956fe>] copy_process.part.23+0x1b9e/0x1e90
- [<ffffffff81095bb6>] do_fork+0xc6/0x4b0
- [<ffffffff811de68f>] ? might_fault+0x5f/0xb0
- [<ffffffff817ef695>] ? sysret_check+0x22/0x5d
- [<ffffffff81096026>] SyS_clone+0x16/0x20
- [<ffffffff817efa49>] stub_clone+0x69/0x90
- [<ffffffff817ef669>] ? system_call_fastpath+0x16/0x1b
----[ end trace bc31de8c9c4c4d52 ]---
-...
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1085145
-https://bugzilla.redhat.com/attachment.cgi?id=883813
+ffs_epfile_io() is called from userspace, while ffs_func_esp_disable() might
+be called from USB disconnect interrupt, the two functions would run in parallel
+but they are not well protected, that epfile->ep would be removed by
+ffs_func_esp_disable() during ffs_epfile_io() is referring this pointer, then it
+leads to kernel PANIC.
+
+The scenario is as below:
+
+Thread 1                                 Thread 2
+   |                                        |
+SyS_read                             dwc3_gadget_disconnect_interrupt
+   |                                        |
+ffs_epfile_read                         reset_config
+   |                                        |
+ffs_epfile_io                       ffs_func_eps_disable
+   |                                        |
+ -----                      usb_ep_disable():  epfile->ep->ep->desc = NULL
+   |                                        |
+usb_ep_align_maybe():                     -----
+it refers ep->desc->wMaxPacketSize        -----
+
+Signed-off-by: Chao Bi <chao.bi@intel.com>
+---
+ drivers/usb/gadget/f_fs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 2e164dc..1e12b3e 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -745,6 +745,12 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 		 */
+ 		struct usb_gadget *gadget = epfile->ffs->gadget;
+ 
++		spin_lock_irq(&epfile->ffs->eps_lock);
++		/* In the meantime, endpoint got disabled or changed. */
++		if (epfile->ep != ep) {
++			spin_unlock_irq(&epfile->ffs->eps_lock);
++			return -ESHUTDOWN;
++		}
+ 		/*
+ 		 * Controller may require buffer size to be aligned to
+ 		 * maxpacketsize of an out endpoint.
+@@ -752,6 +758,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 		data_len = io_data->read ?
+ 			   usb_ep_align_maybe(gadget, ep->ep, io_data->len) :
+ 			   io_data->len;
++		spin_unlock_irq(&epfile->ffs->eps_lock);
+ 
+ 		data = kmalloc(data_len, GFP_KERNEL);
+ 		if (unlikely(!data))
+-- 
+1.7.9.5
 
 
-poma
 
