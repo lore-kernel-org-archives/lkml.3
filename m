@@ -1,96 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567AbaDHIHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 04:07:23 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:46829 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242AbaDHIHT (ORCPT
+	id S1756493AbaDHIQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 04:16:17 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:49829 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756383AbaDHIQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 04:07:19 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3886deS029804, This message is accepted by code: ctloc85258
-Message-ID: <5343ADFA.7010703@realtek.com>
-Date: Tue, 8 Apr 2014 16:06:18 +0800
-From: Roger <rogerable@realtek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 8 Apr 2014 04:16:12 -0400
+Message-ID: <5343B047.7010405@suse.cz>
+Date: Tue, 08 Apr 2014 10:16:07 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
-        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
-Subject: Re: [PATCH v5 3/3] memstick: Add realtek USB memstick host driver
-References: <1395744293-24398-1-git-send-email-rogerable@realtek.com> <1395744293-24398-4-git-send-email-rogerable@realtek.com> <533A3080.2020008@realtek.com> <20140401150654.fe27636428a62fdf9e0d2dc1@linux-foundation.org> <20140402151654.GA24060@lee--X1>
-In-Reply-To: <20140402151654.GA24060@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+CC: lwn@lwn.net
+Subject: Linux 3.12.17
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'm announcing the release of the 3.12.17 kernel.
 
-On 04/02/2014 11:16 PM, Lee Jones wrote:
-> On Tue, 01 Apr 2014, Andrew Morton wrote:
->
->> On Tue, 1 Apr 2014 11:20:32 +0800 Roger <rogerable@realtek.com> wrote:
->>
->>> On 03/25/2014 06:44 PM, rogerable@realtek.com wrote:
->>>> From: Roger Tseng <rogerable@realtek.com>
->>>>
->>>> Realtek USB memstick host driver provides memstick host support based on the
->>>> Realtek USB card reader MFD driver.
->>>>
->>>> Signed-off-by: Roger Tseng <rogerable@realtek.com>
->>>> ---
->>>>    drivers/memstick/host/Kconfig       |  10 +
->>>>    drivers/memstick/host/Makefile      |   1 +
->>>>    drivers/memstick/host/rtsx_usb_ms.c | 839 ++++++++++++++++++++++++++++++++++++
->>>>    3 files changed, 850 insertions(+)
->>>>    create mode 100644 drivers/memstick/host/rtsx_usb_ms.c
->>> Hi Andrew,
->>>
->>> Since I'll have to send next revision(v6, to modify patch 1/3) and
->>> you've commented v4, would you also comment or Ack the 3/3 of this one?
->>> This should save one revision for me to make any necessary change.
->>
->> It looks OK to my inexpert eye.  It would be better if Maxim and/or Alex
->> could review the code.  If that doesn't happen then I guess the best we
->> can do is to go ahead and merge it.  Have you worked out via which tree
->> the patches will be merged?
->
-> I'll be happy to take the set if one of the subsystem experts would be
-> kind enough to cast an eye over it.
->
-> Maxim, Alex?
->
-Lee,
+All users of the 3.12 kernel series must upgrade.
 
-When I prepare my next submission, I found a previous version of this 
-patch set(and only the 1/3 'mfd' part)  seems to be merged in the 
-following commit:
+The updated 3.12.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+linux-3.12.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-commit e5744abb2fa3629aa5a94e21ca1eae32ff2fe00b
-Merge: c29aa15 2d28ca7
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Mon Apr 7 10:24:18 2014 -0700
+----------------------------------------------------------------
+Al Viro (1):
+      make prepend_name() work correctly when called with negative *buflen
 
-     Merge tag 'mfd-for-linus-3.15' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd
+Alexander Aring (1):
+      nfs: fix dead code of ipv6_addr_scope
 
-Is there any chance to revert it? Or what can I do to help current 
-situation?
+Andy Adamson (2):
+      SUNRPC: do not fail gss proc NULL calls with EACCES
+      NFSv4.1 free slot before resending I/O to MDS
 
-note: the merged commit:
-commit 730876be256603b4ee7225a125467d97a7ce9060
-Author: Roger Tseng <rogerable@realtek.com>
-Date:   Wed Feb 12 18:00:36 2014 +0800
+Artem Fetishev (1):
+      x86: fix boot on uniprocessor systems
 
-     mfd: Add realtek USB card reader driver
+Benjamin Tissoires (1):
+      Input: synaptics - add manual min/max quirk
+
+Bockholdt Arne (1):
+      intel_idle: Fixed C6 state on Avoton/Rangeley processors
+
+Christoph Hellwig (3):
+      nfs: fix size updates for aio writes
+      nfs: defer inode_dio_done call until size update is done
+      nfs: increment i_dio_count for reads, too
+
+Daniel Borkmann (1):
+      netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+
+Daniel Vetter (1):
+      drm/i915: Undo gtt scratch pte unmapping again
+
+David Howells (2):
+      X.509: struct x509_certificate needs struct tm declaring
+      FS-Cache: Handle removal of unadded object to the
+fscache_object_list rb tree
+
+David Rientjes (1):
+      mm: close PageTail race
+
+David Vrabel (1):
+      Revert "xen: properly account for _PAGE_NUMA during xen pte
+translations"
+
+Dmitry Torokhov (1):
+      Input: mousedev - fix race when creating mixed device
+
+Dongmao Zhang (1):
+      dlm: set zero linger time on sctp socket
+
+Hans de Goede (2):
+      Input: synaptics - add manual min/max quirk for ThinkPad X240
+      Input: cypress_ps2 - don't report as a button pads
+
+J. Bruce Fields (1):
+      nfs: use IS_ROOT not DCACHE_DISCONNECTED
+
+James Ralston (1):
+      i2c: i801: Add Device IDs for Intel Wildcat Point-LP PCH
+
+Jeff Layton (2):
+      NFS: fix the handling of NFS_INO_INVALID_DATA flag in
+nfs_revalidate_mapping
+      nfs: add memory barriers around NFS_INO_INVALID_DATA and
+NFS_INO_INVALIDATING
+
+Jeff Mahoney (1):
+      drm/nouveau: make vga_switcheroo code depend on VGA_SWITCHEROO
+
+Jiri Slaby (1):
+      Linux 3.12.17
+
+Len Brown (1):
+      intel_idle: Support Intel Atom Processor C2000 Product Family
+
+Martin Schwidefsky (1):
+      s390/time,vdso: fix clock_gettime for CLOCK_MONOTONIC
+
+Michal Kubecek (1):
+      ipvs: fix AF assignment in ip_vs_conn_new()
+
+Olaf Hering (1):
+      fbmem: really support wildcard video=options for all fbdev drivers
+
+Oliver Neukum (1):
+      crypto: sha256_ssse3 - also test for BMI2
+
+Ping Cheng (1):
+      Input: wacom - add support for three new Intuos Pro devices
+
+Scott Wood (1):
+      i2c: cpm: Fix build by adding of_address.h and of_irq.h
+
+Takashi Iwai (1):
+      ALSA: hda - Fix inconsistent Mic mute LED
+
+Theodore Ts'o (1):
+      ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+
+Thomas Petazzoni (2):
+      net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to
+MVNETA_GMAC2_PCS_ENABLE
+      net: mvneta: fix usage as a module on RGMII configurations
+
+Toshi Kani (1):
+      arch/x86/mm/srat: Skip NUMA_NO_NODE while parsing SLIT
+
+Trond Myklebust (2):
+      NFSv4.1: Prevent a 3-way deadlock between layoutreturn, open and
+state recovery
+      NFS: Fix races in nfs_revalidate_mapping
+
+Wei Liu (1):
+      xen/balloon: flush persistent kmaps in correct position
+
+Weston Andros Adamson (1):
+      pnfs: fix BUG in filelayout_recover_commit_reqs
+
+ Documentation/i2c/busses/i2c-i801       |  1 +
+ Makefile                                |  2 +-
+ arch/s390/kernel/vdso32/clock_gettime.S |  9 +---
+ arch/s390/kernel/vdso64/clock_gettime.S |  6 +--
+ arch/x86/crypto/sha256_ssse3_glue.c     |  2 +-
+ arch/x86/include/asm/pgtable.h          | 14 +------
+ arch/x86/include/asm/topology.h         |  3 +-
+ arch/x86/mm/srat.c                      | 16 ++++++--
+ arch/x86/xen/mmu.c                      |  4 +-
+ crypto/asymmetric_keys/x509_parser.h    |  1 +
+ drivers/block/aoe/aoecmd.c              |  4 +-
+ drivers/gpu/drm/i915/i915_gem_gtt.c     |  2 +-
+ drivers/gpu/drm/nouveau/nouveau_acpi.c  |  6 +++
+ drivers/i2c/busses/Kconfig              |  1 +
+ drivers/i2c/busses/i2c-cpm.c            |  2 +
+ drivers/i2c/busses/i2c-i801.c           |  3 ++
+ drivers/idle/intel_idle.c               | 24 ++++++++++-
+ drivers/input/mouse/cypress_ps2.c       |  1 -
+ drivers/input/mouse/synaptics.c         | 55 +++++++++++++++++++++++++
+ drivers/input/mousedev.c                | 73
++++++++++++++++++++--------------
+ drivers/input/tablet/wacom_sys.c        | 10 ++++-
+ drivers/input/tablet/wacom_wac.c        | 61 ++++++++++++++++++++-------
+ drivers/input/tablet/wacom_wac.h        |  3 ++
+ drivers/net/ethernet/marvell/mvneta.c   | 43 ++++---------------
+ drivers/vfio/vfio_iommu_type1.c         |  4 +-
+ drivers/video/fbmem.c                   |  3 ++
+ drivers/xen/balloon.c                   | 24 ++++++++---
+ fs/dcache.c                             |  4 +-
+ fs/dlm/lowcomms.c                       |  8 ++++
+ fs/ext4/inode.c                         | 15 ++++---
+ fs/fscache/object-list.c                |  5 +++
+ fs/fscache/object.c                     |  3 ++
+ fs/nfs/dir.c                            | 21 ++++++++--
+ fs/nfs/direct.c                         | 38 +++++++++++------
+ fs/nfs/inode.c                          | 51 +++++++++++++++++++----
+ fs/nfs/nfs4_fs.h                        |  1 +
+ fs/nfs/nfs4filelayout.c                 | 18 +++++---
+ fs/nfs/nfs4filelayoutdev.c              |  2 +-
+ fs/nfs/nfs4proc.c                       | 12 +++++-
+ fs/nfs/nfstrace.h                       |  1 +
+ fs/nfs/write.c                          |  7 +++-
+ fs/proc/page.c                          |  2 +-
+ include/linux/bitops.h                  | 15 +++++++
+ include/linux/huge_mm.h                 | 18 --------
+ include/linux/mm.h                      | 14 ++++++-
+ include/linux/nfs_fs.h                  |  1 +
+ mm/ksm.c                                |  2 +-
+ mm/memory-failure.c                     |  2 +-
+ mm/page_alloc.c                         |  4 +-
+ mm/swap.c                               |  4 +-
+ net/netfilter/ipvs/ip_vs_conn.c         |  8 ++--
+ net/netfilter/nf_conntrack_proto_dccp.c |  6 +--
+ net/sunrpc/auth_gss/auth_gss.c          |  2 +-
+ sound/pci/hda/hda_generic.c             |  8 ++--
+ sound/pci/hda/hda_generic.h             |  1 +
+ sound/pci/hda/patch_conexant.c          |  3 +-
+ sound/pci/hda/patch_realtek.c           |  9 ++--
+ sound/pci/hda/patch_sigmatel.c          | 27 +++++++-----
+ 58 files changed, 470 insertions(+), 219 deletions(-)
 
 
-Best regards,
-Roger Tseng
+
+thanks,
+-- 
+js
