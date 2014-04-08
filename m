@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538AbaDHJYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 05:24:44 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:36068 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384AbaDHJYn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 05:24:43 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARC: Remove ISS_SMP_EXTN entirely
-Thread-Topic: [PATCH] ARC: Remove ISS_SMP_EXTN entirely
-Thread-Index: AQHPUwhlTEyJveja0ESkki83qvmg4A==
-Date: Tue, 8 Apr 2014 09:18:04 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230751AC602@IN01WEMBXA.internal.synopsys.com>
-References: <1396947368.26620.2.camel@x220>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.197.213]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756371AbaDHJ0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 05:26:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58379 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756131AbaDHJ0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 05:26:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,816,1389772800"; 
+   d="scan'208";a="516537965"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jacob Keller <jacob.e.keller@intel.com>, linux-kernel@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] doc: update SubmittingPatches about the Fixes tag
+Date: Tue,  8 Apr 2014 02:25:35 -0700
+Message-Id: <1396949135-27122-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-On Tuesday 08 April 2014 02:26 PM, Paul Bolle wrote:
-> The Kconfig symbol ARC_HAS_COH_RTSC was removed in v3.13. The Kconfig
-> entry for ISS_SMP_EXTN still had a select for that symbol. That select
-> was just removed in commit d345ea2892ae ("ARC: Remove
-> ARC_HAS_COH_RTSC").
->
-> But selecting ARC_HAS_COH_RTSC was the only thing ISS_SMP_EXTN ever
-> did. That means that since v3.13 setting ISS_SMP_EXTN was effectively a
-> nop anyhow. So ISS_SMP_EXTN can as well be removed entirely.
+This patch updates the SubmittingPatches process to include howto about
+the new 'Fixed' tag to be used when a patch fixes an issue in a previous
+commit (found by git-bisect for example).
 
-There's obvious bitrot here - however this code is not dead yet !
-I have a unpushed fix which uses this Kconfig item.
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ Documentation/SubmittingPatches | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arc/plat-arcfpga/Makefile b/arch/arc/plat-arcfpga/Makefile
-index a44e22ebc1b7..4d1bddc34b5b 100644
---- a/arch/arc/plat-arcfpga/Makefile
-+++ b/arch/arc/plat-arcfpga/Makefile
-@@ -9,4 +9,4 @@
- KBUILD_CFLAGS  += -Iarch/arc/plat-arcfpga/include
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index 2a8e89e..7e9abb8 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -132,6 +132,20 @@ Example:
+ 	platform_set_drvdata(), but left the variable "dev" unused,
+ 	delete it.
  
- obj-y := platform.o irq.o
--obj-$(CONFIG_SMP)              += smp.o
-+obj-$(CONFIG_ISS_SMP_EXTN)             += smp.o
++If your patch fixes a bug in a specific commit, e.g. you found an issue using
++git-bisect, please use the 'Fixes:' tag with the first 12 characters of the
++SHA-1 ID, and the one line summary.
++Example:
++
++	Fixes: e21d2170f366 ("video: remove unnecessary platform_set_drvdata()")
++
++The following git-config settings can be used to add a pretty format for
++outputting the above style in the git log or git show commands
++
++	[core]
++		abbrev = 12
++	[pretty]
++		fixes = Fixes: %h (\"%s\")
+ 
+ 3) Separate your changes.
+ 
+@@ -443,7 +457,7 @@ person it names.  This tag documents that potentially interested parties
+ have been included in the discussion
+ 
+ 
+-14) Using Reported-by:, Tested-by:, Reviewed-by: and Suggested-by:
++14) Using Reported-by:, Tested-by:, Reviewed-by:, Suggested-by: and Fixes:
+ 
+ If this patch fixes a problem reported by somebody else, consider adding a
+ Reported-by: tag to credit the reporter for their contribution.  Please
+@@ -498,6 +512,12 @@ idea was not posted in a public forum. That said, if we diligently credit our
+ idea reporters, they will, hopefully, be inspired to help us again in the
+ future.
+ 
++A Fixes: tag indicates that the patch fixes an issue in a previous commit. It
++is used to make it easy to determine where a bug originated, which can help
++review a bug fix. This tag also assists the stable kernel team in determining
++which stable kernel versions should receive your fix. This is the preferred
++method for indicating a bug fixed by the patch. See #2 above for more details.
++
+ 
+ 15) The canonical patch format
+ 
+-- 
+1.9.0
 
--Vineet
