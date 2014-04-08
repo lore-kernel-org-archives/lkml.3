@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370AbaDHHny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 03:43:54 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:51178 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaDHHnv (ORCPT
+	id S1756399AbaDHHum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 03:50:42 -0400
+Received: from fallback3.mail.ru ([94.100.176.58]:51651 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756331AbaDHHuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 03:43:51 -0400
-Date: Tue, 8 Apr 2014 11:43:49 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: vdavydov@parallels.com
-Cc: linux-kernel@vger.kernel.org, shawn@churchofgit.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, avagin@openvz.org, xemul@parallels.com
-Subject: [patch 2/3] docs: procfs -- Document timerfd output, v2
-Message-ID: <20140408074349.GF23983@moon>
-References: <20140407174701.734703531@openvz.org>
- <20140407174933.753755321@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140407174933.753755321@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 Apr 2014 03:50:39 -0400
+From: =?UTF-8?B?RXJpYyBTY2h1bHpl?= <eric862946@mail.ru>
+To: linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?V2llc28gaXN0IElociBEaXNwbyBzbyB0ZXVlcj8gQmFuIGtlIG4gYXXDn2Vy?=
+ =?UTF-8?B?aGFsYiBkZXIgRVUgc2MgaHUgbGRlIG4gZ8O8bnN0aWcgdW0=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.53.76.172]
+Date: Tue, 08 Apr 2014 11:50:17 +0400
+Reply-To: =?UTF-8?B?RXJpYyBTY2h1bHpl?= <eric862946@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1396943417.558141781@f398.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s387ooWS008657
 
-CC: Shawn Landden <shawn@churchofgit.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Andrey Vagin <avagin@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
+Ich grÃ¼ÃŸe Sie, ... ich habe eine gute Nachricht fÃ¼r Sie!
 
-Vladimir, would the below text be more clear?
+immer dasselbe, zeigt sich Ihre Bank auch nicht sehr kulant, wenn Sie nach einem Kre dit fragen? 
+Gehen Sie doch dorthin, wo man Sie als Kunden noch anstÃ¤ndig behandelt.
+Auch bei laufenden Ratenzahlungen und zuvor von Ihrer eigenen Hausbank abgelehntem Antrag kÃ¶nnen wir Ihnen ein Darlehen vermitteln zu niedrigen Zinsen (z.B. ab 3,2% fÃ¼r Konsumentenkredite, ab 1,8% Zinsen p.a. fÃ¼r Grundbesitz und ab 3,1% fÃ¼r Firmen). 
 
- Documentation/filesystems/proc.txt |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+Ihren Kredit bekommen Sie jetzt aus Lateinamerika ohne viele Unterlagen, ohne Bankauskunft und schnell. Mehrere Banken stehen Ihnen offen, und wir erledigen fÃ¼r Sie alle FormalitÃ¤ten.
+Unser    Bank en   b ehand eln    Sie   w ie   ei nen    Kund en,   n icht    wie   e inen    Bit tste ller .
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -1741,6 +1741,23 @@ pair provide additional information part
- 	While the first three lines are mandatory and always printed, the rest is
- 	optional and may be omitted if no marks created yet.
- 
-+	Timerfd files
-+	~~~~~~~~~~~~~
-+
-+	pos:	0
-+	flags:	02
-+	mnt_id:	9
-+	clockid: 0
-+	ticks: 0
-+	settime flags: 01
-+	it_value: (0, 49406829)
-+	it_interval: (1, 0)
-+
-+	where 'clockid' is the clock type and 'ticks' is the number of the timer expirations
-+	that have occurred [see timerfd_create(2) for details]. 'settime flags' are
-+	flags in octal form used to setup the timer [see timerfd_settime(2) for
-+	details]. 'it_value' is remaining time until the timer exiration.
-+	'it_interval' is the interval for the timer.
- 
- ------------------------------------------------------------------------------
- Configuring procfs
+
+
+Also ideal fÃ¼r UnternehmensgrÃ¼nder, Angestellte und Rentner.
+Holen Sie sich Kapital dort, wo die Tresore voll sind, die Zinsen unglaublich niedrig und die Laufzeiten lang sind. 
+Ihre Bank wÃ¼rgt Sie ab, wir haben die Alternative.
+
+
+Interessiert? Hier finden Sie weitere Informationen:  directintercredit und fÃ¼gen Sie an c om
+
+Mit freundlichem GruÃŸ 
+
+Alfred Schulz
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
