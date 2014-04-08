@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149AbaDHBJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 21:09:58 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:42770 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202AbaDHBJ4 (ORCPT
+	id S1756084AbaDHBSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 21:18:46 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:21027 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754690AbaDHBSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 21:09:56 -0400
+	Mon, 7 Apr 2014 21:18:44 -0400
+X-IronPort-AV: E=Sophos;i="4.97,814,1389715200"; 
+   d="scan'208";a="28974175"
+Message-ID: <53434E28.4040304@cn.fujitsu.com>
+Date: Tue, 8 Apr 2014 09:17:28 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <37724B2049F71D4C9B086F99DDB2DE112A8F09E3@CMEXMB1.ad.emulex.com>
-References: <8505576.9F9pTSfgP9@daeseok-laptop.cloud.net>
-	<37724B2049F71D4C9B086F99DDB2DE112A8F09E3@CMEXMB1.ad.emulex.com>
-Date: Tue, 8 Apr 2014 10:09:55 +0900
-Message-ID: <CAHb8M2CaXisd1k=i6ZFQZ8kYGhxs5TA6UmXS=L7W8zT_E5M-iw@mail.gmail.com>
-Subject: Re: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: "JBottomley@parallels.com" <JBottomley@parallels.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jayamohan Kallickal <Jayamohan.Kallickal@emulex.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
+        Andres Freund <andres@2ndquadrant.com>,
+        Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mm: Disable zone_reclaim_mode by default
+References: <1396910068-11637-1-git-send-email-mgorman@suse.de> <1396910068-11637-2-git-send-email-mgorman@suse.de>
+In-Reply-To: <1396910068-11637-2-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.197]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/08/2014 06:34 AM, Mel Gorman wrote:
+> zone_reclaim_mode causes processes to prefer reclaiming memory from local
+> node instead of spilling over to other nodes. This made sense initially when
+> NUMA machines were almost exclusively HPC and the workload was partitioned
+> into nodes. The NUMA penalties were sufficiently high to justify reclaiming
+> the memory. On current machines and workloads it is often the case that
+> zone_reclaim_mode destroys performance but not all users know how to detect
+> this. Favour the common case and disable it by default. Users that are
+> sophisticated enough to know they need zone_reclaim_mode will detect it.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-This patch didn't apply. Please check for me.
-Thanks.
-Daeseok Youn
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-2014-03-12 2:02 GMT+09:00 Jayamohan Kallickal <Jayamohan.Kallickal@emulex.com>:
->
->
-> -----Original Message-----
-> From: Daeseok Youn [mailto:daeseok.youn@gmail.com]
-> Sent: Thursday, February 20, 2014 5:13 PM
-> To: JBottomley@parallels.com
-> Cc: Jayamohan Kallickal; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
->
-> From b483ef302f7d77c586949ae170754d589e8a4935 Mon Sep 17 00:00:00 2001
-> From: Daeseok Youn <daeseok.youn@gmail.com>
-> Date: Fri, 21 Feb 2014 08:39:08 +0900
-> Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
->
-> sparse says:
->
-> drivers/scsi/be2iscsi/be_cmds.c:27:32: warning:
->  Using plain integer as NULL pointer
-> drivers/scsi/be2iscsi/be_cmds.c:28:34: warning:
->  Using plain integer as NULL pointer
-> drivers/scsi/be2iscsi/be_cmds.c:29:34: warning:
->  Using plain integer as NULL pointer
->
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 > ---
->  drivers/scsi/be2iscsi/be_cmds.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c index 3338391..1ec9793 100644
-> --- a/drivers/scsi/be2iscsi/be_cmds.c
-> +++ b/drivers/scsi/be2iscsi/be_cmds.c
-> @@ -24,9 +24,9 @@
->  int beiscsi_pci_soft_reset(struct beiscsi_hba *phba)  {
->         u32 sreset;
-> -       u8 *pci_reset_offset = 0;
-> -       u8 *pci_online0_offset = 0;
-> -       u8 *pci_online1_offset = 0;
-> +       u8 *pci_reset_offset = NULL;
-> +       u8 *pci_online0_offset = NULL;
-> +       u8 *pci_online1_offset = NULL;
->         u32 pconline0 = 0;
->         u32 pconline1 = 0;
->         u32 i;
-> --
-> 1.7.9.5
->
-> Acked-By: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
->
-> --
+>  Documentation/sysctl/vm.txt | 17 +++++++++--------
+>  mm/page_alloc.c             |  2 --
+>  2 files changed, 9 insertions(+), 10 deletions(-)
+> 
+> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> index d614a9b..ff5da70 100644
+> --- a/Documentation/sysctl/vm.txt
+> +++ b/Documentation/sysctl/vm.txt
+> @@ -751,16 +751,17 @@ This is value ORed together of
+>  2	= Zone reclaim writes dirty pages out
+>  4	= Zone reclaim swaps pages
+>  
+> -zone_reclaim_mode is set during bootup to 1 if it is determined that pages
+> -from remote zones will cause a measurable performance reduction. The
+> -page allocator will then reclaim easily reusable pages (those page
+> -cache pages that are currently not used) before allocating off node pages.
+> -
+> -It may be beneficial to switch off zone reclaim if the system is
+> -used for a file server and all of memory should be used for caching files
+> -from disk. In that case the caching effect is more important than
+> +zone_reclaim_mode is disabled by default.  For file servers or workloads
+> +that benefit from having their data cached, zone_reclaim_mode should be
+> +left disabled as the caching effect is likely to be more important than
+>  data locality.
+>  
+> +zone_reclaim may be enabled if it's known that the workload is partitioned
+> +such that each partition fits within a NUMA node and that accessing remote
+> +memory would cause a measurable performance reduction.  The page allocator
+> +will then reclaim easily reusable pages (those page cache pages that are
+> +currently not used) before allocating off node pages.
+> +
+>  Allowing zone reclaim to write out pages stops processes that are
+>  writing large amounts of data from dirtying pages on other nodes. Zone
+>  reclaim will write out dirty pages if a zone fills up and so effectively
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 3bac76a..a256f85 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1873,8 +1873,6 @@ static void __paginginit init_zone_allows_reclaim(int nid)
+>  	for_each_online_node(i)
+>  		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+>  			node_set(i, NODE_DATA(nid)->reclaim_nodes);
+> -		else
+> -			zone_reclaim_mode = 1;
+>  }
+>  
+>  #else	/* CONFIG_NUMA */
+> 
+
+
+-- 
+Thanks.
+Zhang Yanfei
