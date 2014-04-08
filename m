@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373AbaDHHhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 03:37:21 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54940 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaDHHhT (ORCPT
+	id S1756316AbaDHHkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 03:40:45 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:54942 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaDHHko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 03:37:19 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>, jmario@redhat.com,
-        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
-        andi.kleen@intel.com
-Subject: Re: [PATCH 06/15 V3] perf, c2c: Add in new options to configure latency and stores
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-	<1395689826-215033-7-git-send-email-dzickus@redhat.com>
-	<20140329171138.GF2022@krava.redhat.com>
-	<20140401025535.GT25953@redhat.com>
-	<20140406131422.GL1164@krava.brq.redhat.com>
-Date: Tue, 08 Apr 2014 16:37:12 +0900
-In-Reply-To: <20140406131422.GL1164@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Sun, 6 Apr 2014 15:14:22 +0200")
-Message-ID: <87sipow9uf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 8 Apr 2014 03:40:44 -0400
+Message-ID: <5343A7F4.80702@hitachi.com>
+Date: Tue, 08 Apr 2014 16:40:36 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Alexei Starovoitov <ast@plumgrid.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>,
+        Geoff.Levand@huawei.com
+Subject: Re: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing
+ tool for Linux
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com> <20140331071749.GA1252@gmail.com> <CAGdX0WEV5OEfk4vfMKYeEpHP_7XqpUKk2-iwTVoTup1ObYu3eg@mail.gmail.com> <CAMEtUuw24=+CkcdwDnJ4AbSCjGBBFx+8pTFzn5gXbQAy=KYWng@mail.gmail.com> <CAGdX0WEvsPqWjE8Uade5_i58AepKxGndM0eSg=viB+UYGOSkJw@mail.gmail.com> <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com> <20140402074202.GB22680@gmail.com> <20140407135519.GJ10526@twins.programming.kicks-ass.net>
+In-Reply-To: <20140407135519.GJ10526@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+(2014/04/07 22:55), Peter Zijlstra wrote:
+> On Wed, Apr 02, 2014 at 09:42:03AM +0200, Ingo Molnar wrote:
+>> I'd suggest using C syntax instead initially, because that's what the 
+>> kernel is using.
+>>
+>> The overwhelming majority of people probing the kernel are 
+>> programmers, so there's no point in inventing new syntax, we should 
+>> reuse existing syntax!
+> 
+> Yes please, keep it C, I forever forget all other syntaxes. While I have
+> in the past known other languages, I never use them frequently enough to
+> remember them. And there's nothing more frustrating than having to fight
+> a tool/language when you just want to get work done.
 
-On Sun, 6 Apr 2014 15:14:22 +0200, Jiri Olsa wrote:
-> On Mon, Mar 31, 2014 at 10:55:35PM -0400, Don Zickus wrote:
->> On Sat, Mar 29, 2014 at 06:11:38PM +0100, Jiri Olsa wrote:
->> > On Mon, Mar 24, 2014 at 03:36:57PM -0400, Don Zickus wrote:
->> > > Modified the code to allow latency settings to be tweaked on the command line
->> > > and also the ability to dynamically profile stores (or disable using stores).
->> > > 
->> > > This allows the tool to be used on older Intel platforms like Westmere.
->> > > 
->> > > Signed-off-by: Don Zickus <dzickus@redhat.com>
->> > > ---
->> > 
->> > SNIP
->> > 
->> > > @@ -316,6 +369,12 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
->> > >  	};
->> > >  	const struct option c2c_options[] = {
->> > >  	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
->> > > +	OPT_INTEGER('l', "latency-level", &lat_level,
->> > > +		 "specify the latency threshold for loads [default=30]"),
->> > > +	OPT_INTEGER('p', "precision-level", &prec_level,
->> > > +		 "specify the precision level of events (0,1,2,3) [default=1]"),
->> > 
->> > could we get also option for user space modifier?
->> 
->> You mean the 'u' modifier, ie cpu/mem-loads/u ?  If so, then I can do that
->> but will that work with the -a option (which is hardcoded in the c2c
->> tool [system-wide mode])?
->
-> right, forgot about that.. 
+Why wouldn't you write a kernel module in C directly? :)
+It seems that all what you need is not a tracing language nor a bytecode
+engine, but an well organized tracing APIs(library?) for writing a kernel
+module for tracing...
 
-Why?  I think the -a option behavior is orthogonal to the user/kernel
-modifier behavior, no?  Do the mem-loads/stores events have any
-restriction on that?
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
-> could the -a option be optional as well?
-> probably the same way as for record would be the best:
->
->   perf c2c record ./foo       # workload specific
->   perf c2c record -a sleep 3  # system wide
-
-Agreed.
-
-Thanks,
-Namhyung
