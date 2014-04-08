@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990AbaDHQcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:32:52 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:32922 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783AbaDHQct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:32:49 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] Staging:keucr:scsiglue.c-no semicolon terminated
-Date: Tue,  8 Apr 2014 17:32:45 +0100
-Message-Id: <1396974765-30902-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1757150AbaDHQey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:34:54 -0400
+Received: from mail1.start.ca ([64.140.120.57]:48680 "EHLO mail1.start.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756757AbaDHQex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 12:34:53 -0400
+Message-ID: <5344251D.7040805@pobox.com>
+Date: Tue, 08 Apr 2014 12:34:37 -0400
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, yinghai@kernel.org, tytso@mit.edu
+Subject: driver skip pci_set_master, fix it?  No.
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: do {} while (0) macros should not be semicolon terminated
+I am working a couple of drivers for chips that perform extensive bus-mastering ops.
+These including full SRIOV support, and allow assigning virtual functions to virtual machines, etc.
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
----
- drivers/staging/keucr/scsiglue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+One thing the driver (still in development) does for safety,
+is defer the call to pci_set_master() until *after* it has mapped
+the MMIO space of the chips, so it can reset/flush the DMA engines
+before giving them permission to scribble over host RAM.
 
-diff --git a/drivers/staging/keucr/scsiglue.c b/drivers/staging/keucr/scsiglue.c
-index ac3d34d..fce19a4 100644
---- a/drivers/staging/keucr/scsiglue.c
-+++ b/drivers/staging/keucr/scsiglue.c
-@@ -277,7 +277,7 @@ static int show_info(struct seq_file *m, struct Scsi_Host *host)
- 	do { \
- 		if (us->fflags & value) \
- 			SPRINTF(" " #name); \
--	} while (0);
-+	} while (0)
- US_DO_ALL_FLAGS
- #undef US_FLAG
- 	seq_putc(m, '\n');
--- 
-1.8.3.2
+But a recent patch to the kernel has removed this from the driver's control.
+The core PCI now does pci_set_master() immediately on pci_enable_device().
 
+This could be catastrophic in some situations, depending upon the state
+of the DMA engines in the device.  If they have "leftovers" from a previous "life"
+(or a previous VM assignment), then they'll immediately resume accessing host RAM
+as soon as the driver calls pci_enable_device(), courtesy of the embedded call
+to pci_set_master().
+
+This isn't good, and these may not be the only devices affected in this way.
+
+Can we perhaps not do that, or provide some other way to return control of bus-mastering
+to the device driver ?
+--
+mlord@pobox.com
+Mark Lord
