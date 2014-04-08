@@ -1,37 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505AbaDHI0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 04:26:47 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54805 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756183AbaDHI0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 04:26:44 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com
-Subject: Re: [PATCH 10/15 V3] perf, c2c: Display cacheline HITM analysis to stdout
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-	<1395689826-215033-11-git-send-email-dzickus@redhat.com>
-Date: Tue, 08 Apr 2014 17:26:43 +0900
-In-Reply-To: <1395689826-215033-11-git-send-email-dzickus@redhat.com> (Don
-	Zickus's message of "Mon, 24 Mar 2014 15:37:01 -0400")
-Message-ID: <8738how7jw.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756542AbaDHI1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 04:27:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61329 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756445AbaDHI0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 04:26:46 -0400
+Date: Tue, 8 Apr 2014 10:21:37 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH] vfs: add closefrom(2) syscall
+Message-ID: <20140408082136.GA21510@mguzik.redhat.com>
+References: <1396941142-24821-1-git-send-email-wenqing.lz@taobao.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1396941142-24821-1-git-send-email-wenqing.lz@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	if (coalesce_level > MAX_LVL)
-> +		printf("DON: bad coalesce level %d\n", coalesce_level);
+On Tue, Apr 08, 2014 at 03:12:22PM +0800, Zheng Liu wrote:
+>  
+> +int __close_fds(struct files_struct *files, int lowfd)
+> +{
+> +	struct file *file;
+> +	struct fdtable *fdt;
+> +	int fd;
+> +
+> +	if (lowfd < 0)
+> +		lowfd = 0;
+> +	spin_lock(&files->file_lock);
+> +	fdt = files_fdtable(files);
+> +	if (lowfd >= fdt->max_fds)
+> +		goto out_unlock;
+> +	for (fd = lowfd; fd < fdt->max_fds; fd++) {
+> +		file = fdt->fd[fd];
+> +		if (!file)
+> +			continue;
+> +
+> +		rcu_assign_pointer(fdt->fd[fd], NULL);
+> +		__clear_close_on_exec(fd, fdt);
+> +		__put_unused_fd(files, fd);
+> +		spin_unlock(&files->file_lock);
+> +		filp_close(file, files);
+> +		spin_lock(&files->file_lock);
+> +	}
+> +
+> +out_unlock:
+> +	spin_unlock(&files->file_lock);
+> +	return 0;
+> +}
+> +
 
-Please use pr_warning() with the "DON" prefix removed :)
+Can't comment on the usefulness of the patch, but I would like to note:
 
-Thanks,
-Namhyung
+1. fdt could be freed after you drop the lock, but you never reload the
+pointer, thus this looks like use-after-free
+2. most of this looks like __close_fd, maybe some parts could be moved
+to an inline function so that code duplication is reduced?
+
+-- 
+Mateusz Guzik
