@@ -1,33 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504AbaDHOsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:48:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37450 "EHLO
+	id S932549AbaDHOtB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:49:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37460 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217AbaDHOss (ORCPT
+	with ESMTP id S932217AbaDHOs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:48:48 -0400
-Date: Tue, 8 Apr 2014 10:49:35 +0200
+	Tue, 8 Apr 2014 10:48:57 -0400
+Date: Tue, 8 Apr 2014 14:21:28 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        kpreempt-tech@lists.sourceforge.net
-Subject: Re: Soft lockup regression since kernel 3.13
-Message-ID: <20140408084935.GM11096@twins.programming.kicks-ass.net>
-References: <20140402232948.GA4725@psi-dev26.jf.intel.com>
+To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: Michele Ballabio <barra_cuda@katamail.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
+Message-ID: <20140408122128.GC13658@twins.programming.kicks-ass.net>
+References: <5341707F.5000406@katamail.com>
+ <20140407150337.GO10526@twins.programming.kicks-ass.net>
+ <20140407150705.GB13658@twins.programming.kicks-ass.net>
+ <5342EB78.3060002@gmx.de>
+ <20140407185658.GK11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140402232948.GA4725@psi-dev26.jf.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140407185658.GK11096@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 04:29:48PM -0700, David Cohen wrote:
-> Is this a known issue being worked currently?
+On Mon, Apr 07, 2014 at 08:56:58PM +0200, Peter Zijlstra wrote:
+> On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
+> 
+> > v3.14-10353-g2b3a8fd works fine AFAICS
+> > (BTW the fix is stable material, right ?)
+> 
+> I'm fairly sure its not; its a rather invasive series; see:
+> 
+> 2432e1364bbe x86: Nuke the supervisor_stack field in i386 thread_info
+> b807902a88c4 x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
+> 0788aa6a23cb x86: Prepare removal of previous_esp from i386 thread_info structure
+> 198d208df437 x86: Keep thread_info on thread stack in x86_32
+> 
+> Let me see if there's anything 'simpler' we can stuff in .13+
 
-Yah; could you try current linus.git ? Others report that that tree now
-works and I think I know what it the root cause of all this.
+OK.. so could someone test the below patch to see if that makes things
+work for .13 and .14?
 
-All I need to do is figure out a sane patch for .13 and .14 :/
+---
+ arch/x86/include/asm/preempt.h | 11 +++++++++++
+ include/linux/preempt.h        |  4 ++++
+ include/linux/thread_info.h    |  2 --
+ 3 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
+index c8b051933b1b..7ada46d8d4d8 100644
+--- a/arch/x86/include/asm/preempt.h
++++ b/arch/x86/include/asm/preempt.h
+@@ -5,6 +5,17 @@
+ #include <asm/percpu.h>
+ #include <linux/thread_info.h>
+ 
++#ifdef CONFIG_X86_32
++/*
++ * i386's current_thread_info() depends on ESP and for interrupt/exception
++ * stacks this doesn't yield the actual task thread_info.
++ *
++ * We hard rely on the fact that all the TIF_NEED_RESCHED bits are
++ * the same, therefore use the slightly more expensive version below.
++ */
++#define tif_need_resched() test_tsk_thread_flag(current, TIF_NEED_RESCHED)
++#endif
++
+ DECLARE_PER_CPU(int, __preempt_count);
+ 
+ /*
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index de83b4eb1642..891c8f8b52fe 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -17,6 +17,10 @@
+ 
+ #include <asm/preempt.h>
+ 
++#ifndef tif_need_resched
++#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
++#endif
++
+ #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
+ extern void preempt_count_add(int val);
+ extern void preempt_count_sub(int val);
+diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+index fddbe2023a5d..a629e4b23217 100644
+--- a/include/linux/thread_info.h
++++ b/include/linux/thread_info.h
+@@ -118,8 +118,6 @@ static inline __deprecated void set_need_resched(void)
+ 	 */
+ }
+ 
+-#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
+-
+ #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
+ /*
+  * An arch can define its own version of set_restore_sigmask() to get the
