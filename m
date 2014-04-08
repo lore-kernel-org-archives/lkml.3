@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaDHBBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 21:01:16 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:61668 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671AbaDHBBM (ORCPT
+	id S1756149AbaDHBJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 21:09:58 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:42770 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202AbaDHBJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 21:01:12 -0400
-Message-ID: <53434A4E.2050407@gmail.com>
-Date: Tue, 08 Apr 2014 09:01:02 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Apr 2014 21:09:56 -0400
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+In-Reply-To: <37724B2049F71D4C9B086F99DDB2DE112A8F09E3@CMEXMB1.ad.emulex.com>
+References: <8505576.9F9pTSfgP9@daeseok-laptop.cloud.net>
+	<37724B2049F71D4C9B086F99DDB2DE112A8F09E3@CMEXMB1.ad.emulex.com>
+Date: Tue, 8 Apr 2014 10:09:55 +0900
+Message-ID: <CAHb8M2CaXisd1k=i6ZFQZ8kYGhxs5TA6UmXS=L7W8zT_E5M-iw@mail.gmail.com>
+Subject: Re: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: "JBottomley@parallels.com" <JBottomley@parallels.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] drivers:cpufreq:unicore32: fix typo issue for 'clk'
-References: <53429445.5000005@gmail.com> <CAKohpok189SxuJoGNvgshwEaUozMDM9mzA8wse5COkN8MBUaPg@mail.gmail.com>
-In-Reply-To: <CAKohpok189SxuJoGNvgshwEaUozMDM9mzA8wse5COkN8MBUaPg@mail.gmail.com>
+        Jayamohan Kallickal <Jayamohan.Kallickal@emulex.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 08:08 PM, Viresh Kumar wrote:
-> On 7 April 2014 17:34, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->> Need use 'clk' instead of 'mclk', which is the original removed local
->> variable.
->>
->> The related original commit:
->>
->>   "652ed95 cpufreq: introduce cpufreq_generic_get() routine"
->>
->> The related error with allmodconfig for unicore32:
->>
->>     CC      drivers/cpufreq/unicore2-cpufreq.o
->>   drivers/cpufreq/unicore2-cpufreq.c: In function 'ucv2_target':
->>   drivers/cpufreq/unicore2-cpufreq.c:48: error: 'struct cpufreq_policy' has no member named 'mclk'
->>   make[2]: *** [drivers/cpufreq/unicore2-cpufreq.o] Error 1
->>   make[1]: *** [drivers/cpufreq] Error 2
->>   make: *** [drivers] Error 2
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  drivers/cpufreq/unicore2-cpufreq.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Stupid mistake.
-> 
+Hi,
 
-It is very easy to lead other members to make mistakes, or let ourself
-make mistakes.
-
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
-> @stable: please apply this for v3.14, as it broke in that cycle..
-> 
-
-Thank you.
-
-
+This patch didn't apply. Please check for me.
 Thanks.
--- 
-Chen Gang
+Daeseok Youn
 
-Open, share, and attitude like air, water, and life which God blessed
+2014-03-12 2:02 GMT+09:00 Jayamohan Kallickal <Jayamohan.Kallickal@emulex.com>:
+>
+>
+> -----Original Message-----
+> From: Daeseok Youn [mailto:daeseok.youn@gmail.com]
+> Sent: Thursday, February 20, 2014 5:13 PM
+> To: JBottomley@parallels.com
+> Cc: Jayamohan Kallickal; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
+>
+> From b483ef302f7d77c586949ae170754d589e8a4935 Mon Sep 17 00:00:00 2001
+> From: Daeseok Youn <daeseok.youn@gmail.com>
+> Date: Fri, 21 Feb 2014 08:39:08 +0900
+> Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
+>
+> sparse says:
+>
+> drivers/scsi/be2iscsi/be_cmds.c:27:32: warning:
+>  Using plain integer as NULL pointer
+> drivers/scsi/be2iscsi/be_cmds.c:28:34: warning:
+>  Using plain integer as NULL pointer
+> drivers/scsi/be2iscsi/be_cmds.c:29:34: warning:
+>  Using plain integer as NULL pointer
+>
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/scsi/be2iscsi/be_cmds.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c index 3338391..1ec9793 100644
+> --- a/drivers/scsi/be2iscsi/be_cmds.c
+> +++ b/drivers/scsi/be2iscsi/be_cmds.c
+> @@ -24,9 +24,9 @@
+>  int beiscsi_pci_soft_reset(struct beiscsi_hba *phba)  {
+>         u32 sreset;
+> -       u8 *pci_reset_offset = 0;
+> -       u8 *pci_online0_offset = 0;
+> -       u8 *pci_online1_offset = 0;
+> +       u8 *pci_reset_offset = NULL;
+> +       u8 *pci_online0_offset = NULL;
+> +       u8 *pci_online1_offset = NULL;
+>         u32 pconline0 = 0;
+>         u32 pconline1 = 0;
+>         u32 i;
+> --
+> 1.7.9.5
+>
+> Acked-By: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
+>
+> --
