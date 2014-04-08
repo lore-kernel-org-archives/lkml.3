@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950AbaDHVhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 17:37:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52726 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757898AbaDHVhi (ORCPT
+	id S1758033AbaDHVnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 17:43:21 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:61437 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757745AbaDHVnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 17:37:38 -0400
-Message-ID: <53446C20.1040409@infradead.org>
-Date: Tue, 08 Apr 2014 14:37:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: =?UTF-8?B?SXNtYWVsIEZhcmbDoW4=?= <sulfurfff@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Modules.Symvers - What is (not) and how to use it?
-References: <CANXECd79aK39SB=gKQ4Cbvi-B_FNh7oB+uv9Th6FQKx0hWZrkQ@mail.gmail.com>
-In-Reply-To: <CANXECd79aK39SB=gKQ4Cbvi-B_FNh7oB+uv9Th6FQKx0hWZrkQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 8 Apr 2014 17:43:15 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 3/7] clk: bcm281xx: change some symbol names
+Date: Tue,  8 Apr 2014 16:43:41 -0500
+Message-Id: <1396993425-30683-4-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1396993425-30683-1-git-send-email-elder@linaro.org>
+References: <1396993425-30683-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 09:55 AM, Ismael Farfán wrote:
-> Hello guys
-> 
-> I work on 3 modules, let's say:
-> KServervices, mod1, mod2
-> 
-> KServices exports functions consumed by mod1 and mod2.
-> 
-> Accidentally I was deleting Modules.Symvers after compiling KServices
-> and mod1 and mod2 failed to load because thery where looking for the
-> functions in a different offset than the one shown in /proc/kallsyms
-> 
-> 
-> QUESTION:
-> What is and how do I use that file?
-> 
-> 
-> I was hopping to find some good documentation in tldp.org, but
-> nothing, I only find forums that mention it, but nothing that can help
-> me understand it and probably find a way to stop requiring it.
+As I developed the bcm281xx clock code I understood there were
+restrictions on device tree "compatible" strings names, and as a
+result "bcm11351" was used in places despite the part family being
+more properly called "bcm281xx".  This can be a little confusing.
 
-There is a small bit of documentation for it in
-kernel tree:Documentation/kbuild/modules.txt.
+In some cases I went to far and things using "bcm11351" when that
+was not necessary.
 
+This patch remedies this.  It renames the symbol used to define the
+"compatible" string (but not its value) so it uses "BCM281XX".
+Similarly, the name names provided to the CLK_OF_DECLARE() macro
+are changed, hoping to minimize the number of places that the
+confusing "11351" string is used.
 
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/bcm/clk-bcm281xx.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/clk/bcm/clk-bcm281xx.c b/drivers/clk/bcm/clk-bcm281xx.c
+index 3c66de6..bb947af 100644
+--- a/drivers/clk/bcm/clk-bcm281xx.c
++++ b/drivers/clk/bcm/clk-bcm281xx.c
+@@ -15,12 +15,17 @@
+ #include "clk-kona.h"
+ #include "dt-bindings/clock/bcm281xx.h"
+ 
+-/* bcm11351 CCU device tree "compatible" strings */
+-#define BCM11351_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
+-#define BCM11351_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
+-#define BCM11351_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
+-#define BCM11351_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
+-#define BCM11351_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
++/*
++ * These are the bcm281xx CCU device tree "compatible" strings.
++ * We're stuck with using "bcm11351" in the string because wild
++ * cards aren't allowed, and that name was the first one defined
++ * in this family of devices.
++ */
++#define BCM281XX_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
++#define BCM281XX_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
++#define BCM281XX_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
++#define BCM281XX_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
++#define BCM281XX_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
+ 
+ /* Root CCU clocks */
+ 
+@@ -404,13 +409,13 @@ static void __init kona_dt_slave_ccu_setup(struct device_node *node)
+ 	kona_dt_ccu_setup(node, bcm281xx_slave_ccu_clks_setup);
+ }
+ 
+-CLK_OF_DECLARE(bcm11351_root_ccu, BCM11351_DT_ROOT_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_root_ccu, BCM281XX_DT_ROOT_CCU_COMPAT,
+ 			kona_dt_root_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_aon_ccu, BCM11351_DT_AON_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_aon_ccu, BCM281XX_DT_AON_CCU_COMPAT,
+ 			kona_dt_aon_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_hub_ccu, BCM11351_DT_HUB_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_hub_ccu, BCM281XX_DT_HUB_CCU_COMPAT,
+ 			kona_dt_hub_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_master_ccu, BCM11351_DT_MASTER_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_master_ccu, BCM281XX_DT_MASTER_CCU_COMPAT,
+ 			kona_dt_master_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_slave_ccu, BCM11351_DT_SLAVE_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_slave_ccu, BCM281XX_DT_SLAVE_CCU_COMPAT,
+ 			kona_dt_slave_ccu_setup);
 -- 
-~Randy
+1.7.9.5
+
