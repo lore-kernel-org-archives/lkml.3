@@ -1,187 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469AbaDHQwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:52:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39921 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572AbaDHQwL (ORCPT
+	id S1757490AbaDHQwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:52:44 -0400
+Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:31989
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756659AbaDHQwm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:52:11 -0400
-Message-ID: <53442934.8010107@oracle.com>
-Date: Tue, 08 Apr 2014 12:52:04 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 8 Apr 2014 12:52:42 -0400
+From: Insop Song <Insop.Song@gainspeed.com>
+To: "grmoore@altera.com" <grmoore@altera.com>,
+        "ggrahammoore@gmail.com" <ggrahammoore@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Marek Vasut <marex@denx.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Tull <atull@altera.com>, Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Subject: RE: [PATCH] Add support for flag status register on Micron chips.
+Thread-Topic: [PATCH] Add support for flag status register on Micron chips.
+Thread-Index: AQHPU0Wgifqud4MhpEuKU7TlDalRspsH7kUQ
+Date: Tue, 8 Apr 2014 16:52:19 +0000
+Message-ID: <56e0c8db22bc41a7887243ea61220589@BY2PR07MB011.namprd07.prod.outlook.com>
+References: <1396973570-13995-1-git-send-email-grmoore@altera.com>
+ <1396973570-13995-2-git-send-email-grmoore@altera.com>
+In-Reply-To: <1396973570-13995-2-git-send-email-grmoore@altera.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [108.60.97.2]
+x-forefront-prvs: 017589626D
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(377454003)(189002)(199002)(80022001)(66066001)(63696002)(65816001)(20776003)(98676001)(99396002)(49866001)(79102001)(95416001)(33646001)(87266001)(87936001)(2656002)(59766001)(77982001)(83322001)(4396001)(56776001)(95666003)(54316003)(46102001)(85306002)(77096001)(31966008)(19580405001)(19580395003)(92566001)(56816005)(81686001)(81816001)(93136001)(74662001)(74502001)(93516002)(81542001)(74366001)(74316001)(90146001)(575784001)(97186001)(80976001)(94946001)(76796001)(81342001)(94316002)(76786001)(85852003)(83072002)(74706001)(74876001)(69226001)(97336001)(86362001)(50986002)(53806002)(54356002)(47446003)(76576001)(47976002)(47736002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR07MB009;H:BY2PR07MB011.namprd07.prod.outlook.com;FPR:EC117057.BAC65B2A.30D157A3.8CDB4AFA.205A4;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [for-next][PATCH 14/14] tracing: Get trace_array ref counts when
- accessing trace files
-References: <20130702202216.623562799@goodmis.org>	<20130702202427.455930200@goodmis.org>	<53401A3E.2090302@oracle.com> <20140408123638.7f340dd5@gandalf.local.home>
-In-Reply-To: <20140408123638.7f340dd5@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-OriginatorOrg: gainspeed.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 12:36 PM, Steven Rostedt wrote:
-> On Sat, 05 Apr 2014 10:59:10 -0400
-> Sasha Levin <sasha.levin@oracle.com> wrote:
+
+On Tuesday, April 08, 2014 9:13 AM, Graham Moore <grmoore@altera.com>
 > 
->> On 07/02/2013 04:22 PM, Steven Rostedt wrote:
->>> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
->>>
->>> When a trace file is opened that may access a trace array, it must
->>> increment its ref count to prevent it from being deleted.
->>>
->>> Cc: stable@vger.kernel.org # 3.10
->>> Reported-by: Alexander Lam <azl@google.com>
->>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->>
->> Hi Steven,
->>
->> This patch seems to cause the following lockdep warning:
->>
->> [ 5644.288019] ======================================================
->> [ 5644.288771] [ INFO: possible circular locking dependency detected ]
->> [ 5644.289657] 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376 Not tainted
->> [ 5644.290568] -------------------------------------------------------
->> [ 5644.290783] trinity-c17/19105 is trying to acquire lock:
->> [ 5644.290783] (trace_types_lock){+.+.+.}, at: trace_array_get (kernel/trace/trace.c:225)
->> [ 5644.290783]
->> [ 5644.290783] but task is already holding lock:
->> [ 5644.290783] (&sig->cred_guard_mutex){+.+.+.}, at: prepare_bprm_creds (fs/exec.c:1165)
->> [ 5644.290783]
->> [ 5644.290783] which lock already depends on the new lock.
->> [ 5644.290783]
->> [ 5644.290783]
->> [ 5644.290783] the existing dependency chain (in reverse order) is:
->> [ 5644.290783]
->> -> #2 (&sig->cred_guard_mutex){+.+.+.}:
->> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
->> [ 5644.290783] mutex_lock_interruptible_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:616)
->> [ 5644.290783] proc_pid_attr_write (fs/proc/base.c:2250)
->> [ 5644.290783] __kernel_write (fs/read_write.c:457)
->> [ 5644.290783] write_pipe_buf (fs/splice.c:1072)
->> [ 5644.290783] splice_from_pipe_feed (fs/splice.c:834)
->> [ 5644.290783] __splice_from_pipe (fs/splice.c:955)
->> [ 5644.290783] splice_from_pipe (fs/splice.c:990)
->> [ 5644.290783] default_file_splice_write (fs/splice.c:1084)
->> [ 5644.290783] SyS_splice (include/linux/fs.h:2333 fs/splice.c:1391 fs/splice.c:1764 fs/splice.c:1749)
->> [ 5644.290783] tracesys (arch/x86/kernel/entry_64.S:749)
->> [ 5644.290783]
->> -> #1 (&pipe->mutex/1){+.+.+.}:
->> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
->> [ 5644.290783] mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
->> [ 5644.290783] pipe_lock_nested (fs/pipe.c:61)
->> [ 5644.290783] pipe_lock (fs/pipe.c:69)
->> [ 5644.290783] splice_to_pipe (include/linux/wait.h:103 fs/splice.c:247)
->> [ 5644.290783] tracing_buffers_splice_read (kernel/trace/trace.c:5423)
->> [ 5644.290783] do_splice_to (fs/splice.c:1151)
->> [ 5644.290783] SyS_splice (fs/splice.c:1416 fs/splice.c:1764 fs/splice.c:1749)
->> [ 5644.290783] ia32_sysret (arch/x86/ia32/ia32entry.S:430)
->> [ 5644.290783]
->> -> #0 (trace_types_lock){+.+.+.}:
->> [ 5644.290783] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
->> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
->> [ 5644.290783] mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
->> [ 5644.290783] trace_array_get (kernel/trace/trace.c:225)
->> [ 5644.290783] tracing_open_generic_tr (kernel/trace/trace.c:3053)
->> [ 5644.290783] do_dentry_open (fs/open.c:753)
->> [ 5644.290783] finish_open (fs/open.c:818)
->> [ 5644.290783] do_last (fs/namei.c:3040)
->> [ 5644.290783] path_openat (fs/namei.c:3182)
->> [ 5644.290783] do_filp_open (fs/namei.c:3231)
->> [ 5644.290783] do_open_exec (fs/exec.c:766)
->> [ 5644.290783] do_execve_common.isra.19 (fs/exec.c:1491)
->> [ 5644.290783] compat_SyS_execve (fs/exec.c:1627)
->> [ 5644.290783] ia32_ptregs_common (arch/x86/ia32/ia32entry.S:495)
->> [ 5644.290783]
->> [ 5644.290783] other info that might help us debug this:
->> [ 5644.290783]
->> [ 5644.290783] Chain exists of:
->> trace_types_lock --> &pipe->mutex/1 --> &sig->cred_guard_mutex
->>
->> [ 5644.290783]  Possible unsafe locking scenario:
->> [ 5644.290783]
->> [ 5644.290783]        CPU0                    CPU1
->> [ 5644.290783]        ----                    ----
->> [ 5644.290783]   lock(&sig->cred_guard_mutex);
->> [ 5644.290783]                                lock(&pipe->mutex/1);
->> [ 5644.290783]                                lock(&sig->cred_guard_mutex);
->> [ 5644.290783]   lock(trace_types_lock);
->> [ 5644.290783]
->> [ 5644.290783]  *** DEADLOCK ***
->> [ 5644.290783]
->> [ 5644.290783] 1 lock held by trinity-c17/19105:
->> [ 5644.290783] #0: (&sig->cred_guard_mutex){+.+.+.}, at: prepare_bprm_creds (fs/exec.c:1165)
->> [ 5644.290783]
->> [ 5644.290783] stack backtrace:
->> [ 5644.290783] CPU: 10 PID: 19105 Comm: trinity-c17 Not tainted 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376
->> [ 5644.290783]  ffffffffb4a1a1e0 ffff88071a7738f8 ffffffffb14bfb2f 0000000000000000
->> [ 5644.290783]  ffffffffb49a9dd0 ffff88071a773948 ffffffffb14b2527 0000000000000001
->> [ 5644.290783]  ffff88071a7739d8 ffff88071a773948 ffff8805d98cbcf0 ffff8805d98cbd28
->> [ 5644.290783] Call Trace:
->> [ 5644.290783] dump_stack (lib/dump_stack.c:52)
->> [ 5644.290783] print_circular_bug (kernel/locking/lockdep.c:1214)
->> [ 5644.290783] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
->> [ 5644.290783] ? _raw_spin_unlock_irqrestore (arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
->> [ 5644.290783] ? preempt_count_sub (kernel/sched/core.c:2527)
->> [ 5644.290783] ? __slab_free (mm/slub.c:2598)
->> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
->> [ 5644.290783] ? trace_array_get (kernel/trace/trace.c:225)
->> [ 5644.290783] mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
->> [ 5644.290783] ? trace_array_get (kernel/trace/trace.c:225)
->> [ 5644.290783] ? locks_free_lock (fs/locks.c:244)
->> [ 5644.290783] ? trace_array_get (kernel/trace/trace.c:225)
->> [ 5644.290783] ? preempt_count_sub (kernel/sched/core.c:2527)
->> [ 5644.290783] trace_array_get (kernel/trace/trace.c:225)
->> [ 5644.290783] tracing_open_generic_tr (kernel/trace/trace.c:3053)
->> [ 5644.290783] do_dentry_open (fs/open.c:753)
->> [ 5644.290783] ? tracing_open_pipe (kernel/trace/trace.c:3047)
->> [ 5644.290783] finish_open (fs/open.c:818)
->> [ 5644.290783] do_last (fs/namei.c:3040)
->> [ 5644.290783] ? link_path_walk (fs/namei.c:1473 fs/namei.c:1744)
->> [ 5644.290783] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
->> [ 5644.290783] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
->> [ 5644.290783] path_openat (fs/namei.c:3182)
->> [ 5644.290783] ? __lock_acquire (kernel/locking/lockdep.c:3189)
->> [ 5644.290783] do_filp_open (fs/namei.c:3231)
->> [ 5644.290783] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
->> [ 5644.290783] ? do_execve_common.isra.19 (fs/exec.c:1489)
->> [ 5644.290783] ? get_parent_ip (kernel/sched/core.c:2472)
->> [ 5644.290783] do_open_exec (fs/exec.c:766)
->> [ 5644.290783] do_execve_common.isra.19 (fs/exec.c:1491)
->> [ 5644.290783] ? do_execve_common.isra.19 (include/linux/spinlock.h:303 fs/exec.c:1258 fs/exec.c:1486)
->> [ 5644.290783] compat_SyS_execve (fs/exec.c:1627)
->> [ 5644.290783] ia32_ptregs_common (arch/x86/ia32/ia32entry.S:495)
->>
+> From: Graham Moore <grmoore@altera.com>
 > 
-> Wait a minute! The syscall is a compat_SyS_execve, which does an
-> do_execve_common, which does a do_open_exec, which ends up opening a
-> tracing file????
+> Some new Micron flash chips require reading the flag status register to
+> determine when operations have completed.
 > 
-> How the hell did that happen. Is your tool execing files in the tracing
-> directory? I wonder if that's even possible, and if so, how can we
-> prevent that? The trace_pipe file (which is what uses the
-> tracing_open_pipe) is set to rrr. No exec should be allowed.
+> Furthermore, chips with multi-die stacks of the 65nm 256Mb QSPI also
+> require reading the status register before reading the flag status register.
+> 
+> This patch adds support for the flag status register in the n25q512a1 and
+> n25q00 Micron QSPI flash chips.
+> 
 
-It could happen easily manually:
+Reviewed his change, and it is more generic then my previous patch.
 
-# ls -al trace_pipe
--r--r--r-- 1 root 0 0 Apr  8 16:43 trace_pipe
-# chmod 777 trace_pipe
-# ls -al trace_pipe
--rwxrwxrwx 1 root 0 0 Apr  8 16:43 trace_pipe
-# ./trace_pipe
+Reviewed-by: Insop Song <insop.song@gainspeed.com>
 
-Although when I mount everything for the fuzzer I do it with '-onoexec,nosuid'
-and the fuzzer is banned from testing mount(), so I'm not sure how it would
-do that thing on it's own.
+> Signed-off-by: Graham Moore <grmoore@altera.com>
+> ---
+>  drivers/mtd/devices/m25p80.c |   94
+> +++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 80 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+> index ad19139..38306aa 100644
+> --- a/drivers/mtd/devices/m25p80.c
+> +++ b/drivers/mtd/devices/m25p80.c
+> @@ -39,6 +39,7 @@
+>  #define	OPCODE_WREN		0x06	/* Write enable */
+>  #define	OPCODE_RDSR		0x05	/* Read status register */
+>  #define	OPCODE_WRSR		0x01	/* Write status
+> register 1 byte */
+> +#define	OPCODE_RDFSR		0x70  /* read flag status
+> register */
+>  #define	OPCODE_NORM_READ	0x03	/* Read data bytes (low
+> frequency) */
+>  #define	OPCODE_FAST_READ	0x0b	/* Read data bytes (high
+> frequency) */
+>  #define	OPCODE_QUAD_READ        0x6b    /* Read data bytes */
+> @@ -81,6 +82,9 @@
+> 
+>  #define SR_QUAD_EN_MX           0x40    /* Macronix Quad I/O */
+> 
+> +/* Flag Status Register bits */
+> +#define FSR_READY               0x80    /* FSR ready */
+> +
+>  /* Configuration Register bits. */
+>  #define CR_QUAD_EN_SPAN		0x2     /* Spansion Quad I/O */
+> 
+> @@ -108,6 +112,7 @@ struct m25p {
+>  	u8			read_opcode;
+>  	u8			program_opcode;
+>  	u8			*command;
+> +	int (*wait_till_ready)(struct m25p *flash);
+>  	enum read_type		flash_read;
+>  };
+> 
+> @@ -145,6 +150,27 @@ static int read_sr(struct m25p *flash)  }
+> 
+>  /*
+> + * Read the flag status register, returning its value in the location
+> + * Return the status register value.
+> + * Returns negative if error occurred.
+> + */
+> +static int read_fsr(struct m25p *flash) {
+> +	ssize_t retval;
+> +	u8 code = OPCODE_RDFSR;
+> +	u8 val;
+> +
+> +	retval = spi_write_then_read(flash->spi, &code, 1, &val, 1);
+> +
+> +	if (retval < 0) {
+> +		dev_err(&flash->spi->dev, "error %d reading FSR\n",
+> +				(int) retval);
+> +		return retval;
+> +	}
+> +
+> +	return val;
+> +}
+> +/*
+>   * Read configuration register, returning its value in the
+>   * location. Return the configuration register value.
+>   * Returns negative if error occured.
+> @@ -233,7 +259,7 @@ static inline int set_4byte(struct m25p *flash, u32
+> jedec_id, int enable)
+>   * Service routine to read status register until ready, or timeout occurs.
+>   * Returns non-zero if error.
+>   */
+> -static int wait_till_ready(struct m25p *flash)
+> +static int _wait_till_ready(struct m25p *flash)
+>  {
+>  	unsigned long deadline;
+>  	int sr;
+> @@ -254,6 +280,37 @@ static int wait_till_ready(struct m25p *flash)  }
+> 
+>  /*
+> + * Service routine to read flag status register until ready, or timeout occurs.
+> + * Returns non-zero if error.
+> + */
+> +static int _wait_till_fsr_ready(struct m25p *flash) {
+> +	unsigned long deadline;
+> +	int fsr;
+> +	int sr;
+> +
+> +	deadline = jiffies + MAX_READY_WAIT_JIFFIES;
+> +
+> +	do {
+> +		sr = read_sr(flash);
+> +		if (sr < 0)
+> +			break;
+> +		/* only check fsr if sr not busy */
+> +		if (!(sr & SR_WIP)) {
+> +			fsr = read_fsr(flash);
+> +			if (fsr < 0)
+> +				break;
+> +			if (fsr & FSR_READY)
+> +				return 0;
+> +		}
+> +
+> +		cond_resched();
+> +
+> +	} while (!time_after_eq(jiffies, deadline));
+> +
+> +	return 1;
+> +}
+> +/*
+>   * Write status Register and configuration register with 2 bytes
+>   * The first byte will be written to the status register, while the
+>   * second byte will be written to the configuration register.
+> @@ -280,7 +337,7 @@ static int macronix_quad_enable(struct m25p *flash)
+> 
+>  	spi_write(flash->spi, &cmd, 2);
+> 
+> -	if (wait_till_ready(flash))
+> +	if (flash->wait_till_ready(flash))
+>  		return 1;
+> 
+>  	ret = read_sr(flash);
+> @@ -351,7 +408,7 @@ static int erase_chip(struct m25p *flash)
+>  			(long long)(flash->mtd.size >> 10));
+> 
+>  	/* Wait until finished previous write command. */
+> -	if (wait_till_ready(flash))
+> +	if (flash->wait_till_ready(flash))
+>  		return 1;
+> 
+>  	/* Send write enable, then erase commands. */ @@ -391,7 +448,7
+> @@ static int erase_sector(struct m25p *flash, u32 offset)
+>  			__func__, flash->mtd.erasesize / 1024, offset);
+> 
+>  	/* Wait until finished previous write command. */
+> -	if (wait_till_ready(flash))
+> +	if (flash->wait_till_ready(flash))
+>  		return 1;
+> 
+>  	/* Send write enable, then erase commands. */ @@ -536,7 +593,7
+> @@ static int m25p80_read(struct mtd_info *mtd, loff_t from, size_t len,
+>  	mutex_lock(&flash->lock);
+> 
+>  	/* Wait till previous write/erase is done. */
+> -	if (wait_till_ready(flash)) {
+> +	if (flash->wait_till_ready(flash)) {
+>  		/* REVISIT status return?? */
+>  		mutex_unlock(&flash->lock);
+>  		return 1;
+> @@ -585,7 +642,7 @@ static int m25p80_write(struct mtd_info *mtd, loff_t
+> to, size_t len,
+>  	mutex_lock(&flash->lock);
+> 
+>  	/* Wait until finished previous write command. */
+> -	if (wait_till_ready(flash)) {
+> +	if (flash->wait_till_ready(flash)) {
+>  		mutex_unlock(&flash->lock);
+>  		return 1;
+>  	}
+> @@ -628,7 +685,7 @@ static int m25p80_write(struct mtd_info *mtd, loff_t
+> to, size_t len,
+>  			t[1].tx_buf = buf + i;
+>  			t[1].len = page_size;
+> 
+> -			wait_till_ready(flash);
+> +			flash->wait_till_ready(flash);
+> 
+>  			write_enable(flash);
+> 
+> @@ -668,7 +725,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to,
+> size_t len,
+>  	mutex_lock(&flash->lock);
+> 
+>  	/* Wait until finished previous write command. */
+> -	ret = wait_till_ready(flash);
+> +	ret = flash->wait_till_ready(flash);
+>  	if (ret)
+>  		goto time_out;
+> 
+> @@ -683,7 +740,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to,
+> size_t len,
+>  		/* write one byte. */
+>  		t[1].len = 1;
+>  		spi_sync(flash->spi, &m);
+> -		ret = wait_till_ready(flash);
+> +		ret = flash->wait_till_ready(flash);
+>  		if (ret)
+>  			goto time_out;
+>  		*retlen += m.actual_length - m25p_cmdsz(flash); @@ -702,7
+> +759,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to, size_t len,
+>  		t[1].tx_buf = buf + actual;
+> 
+>  		spi_sync(flash->spi, &m);
+> -		ret = wait_till_ready(flash);
+> +		ret = flash->wait_till_ready(flash);
+>  		if (ret)
+>  			goto time_out;
+>  		*retlen += m.actual_length - cmd_sz;
+> @@ -710,7 +767,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to,
+> size_t len,
+>  		to += 2;
+>  	}
+>  	write_disable(flash);
+> -	ret = wait_till_ready(flash);
+> +	ret = flash->wait_till_ready(flash);
+>  	if (ret)
+>  		goto time_out;
+> 
+> @@ -724,7 +781,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to,
+> size_t len,
+>  		t[1].tx_buf = buf + actual;
+> 
+>  		spi_sync(flash->spi, &m);
+> -		ret = wait_till_ready(flash);
+> +		ret = flash->wait_till_ready(flash);
+>  		if (ret)
+>  			goto time_out;
+>  		*retlen += m.actual_length - m25p_cmdsz(flash); @@ -745,7
+> +802,7 @@ static int m25p80_lock(struct mtd_info *mtd, loff_t ofs, uint64_t
+> len)
+> 
+>  	mutex_lock(&flash->lock);
+>  	/* Wait until finished previous command */
+> -	if (wait_till_ready(flash)) {
+> +	if (flash->wait_till_ready(flash)) {
+>  		res = 1;
+>  		goto err;
+>  	}
+> @@ -790,7 +847,7 @@ static int m25p80_unlock(struct mtd_info *mtd, loff_t
+> ofs, uint64_t len)
+> 
+>  	mutex_lock(&flash->lock);
+>  	/* Wait until finished previous command */
+> -	if (wait_till_ready(flash)) {
+> +	if (flash->wait_till_ready(flash)) {
+>  		res = 1;
+>  		goto err;
+>  	}
+> @@ -856,6 +913,7 @@ struct flash_info {
+>  #define	M25P_NO_FR	0x08		/* Can't do fastread */
+>  #define	SECT_4K_PMC	0x10		/* OPCODE_BE_4K_PMC
+> works uniformly */
+>  #define	M25P80_QUAD_READ	0x20    /* Flash supports Quad Read
+> */
+> +#define	USE_FSR		0x40		/* use flag status
+> register */
+>  };
+> 
+>  #define INFO(_jedec_id, _ext_id, _sector_size, _n_sectors, _flags)	\
+> @@ -941,6 +999,8 @@ static const struct spi_device_id m25p_ids[] = {
+>  	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
+>  	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
+>  	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
+> +	{ "n25q512a1",   INFO(0x20ba20, 0, 64 * 1024, 1024, USE_FSR) },
+> +	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, USE_FSR) },
+> 
+>  	/* PMC */
+>  	{ "pm25lv512",   INFO(0,        0, 32 * 1024,    2, SECT_4K_PMC) },
+> @@ -1206,6 +1266,12 @@ static int m25p_probe(struct spi_device *spi)
+>  	if (info->flags & M25P_NO_ERASE)
+>  		flash->mtd.flags |= MTD_NO_ERASE;
+> 
+> +	if (info->flags & USE_FSR)
+> +		flash->wait_till_ready = &_wait_till_fsr_ready;
+> +	else
+> +		flash->wait_till_ready = &_wait_till_ready;
+> +
+> +
+>  	ppdata.of_node = spi->dev.of_node;
+>  	flash->mtd.dev.parent = &spi->dev;
+>  	flash->page_size = info->page_size;
+> --
+> 1.7.10.4
 
-
-Thanks,
-Sasha
