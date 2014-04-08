@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380AbaDHTbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 15:31:34 -0400
-Received: from pepsicomail02.pepsico.com ([204.136.66.25]:38854 "EHLO
-	PepsiComail02.pepsico.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159AbaDHTbd convert rfc822-to-8bit (ORCPT
+	id S932522AbaDHTeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 15:34:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:16937 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932159AbaDHTeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 15:31:33 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Apr 2014 15:31:33 EDT
-X-SBRS: 3.9
-X-HAT: Sender Group RELAY_LIST, Policy $RELAY applied.
-From: "Allen, Vicki A {FLNA}" <Vicki.A.Allen@pepsico.com>
-Date: Tue, 8 Apr 2014 14:21:17 -0500
-Subject: IT Helpdesk ISQ.
-Thread-Topic: IT Helpdesk ISQ.
-Thread-Index: AQHPU1+2V4rdnLlb8k+4QmAYp9NWDg==
-Message-ID: <3212B3829546A74495E2A9A6E253B432AC5145CB93@PEPWMV00073.corp.pep.pvt>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 8 Apr 2014 15:34:14 -0400
+Date: Tue, 8 Apr 2014 15:34:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>
+Subject: Re: [RFC PATCH] time: Fix truncation in jiffies_to_usecs()
+Message-ID: <20140408153412.0648fb96@gandalf.local.home>
+In-Reply-To: <20140408185609.GA14519@localhost.localdomain>
+References: <0214020@agluck-desk.sc.intel.com>
+	<CA+8MBb+E_zT47qu4a6pqQWArrhs0gv1W=JKoy252_-Uw6HfbkA@mail.gmail.com>
+	<20140408174946.GA11121@localhost.localdomain>
+	<20140408141543.2de9449d@gandalf.local.home>
+	<20140408185609.GA14519@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 8 Apr 2014 20:56:13 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
+ 
+> So it may indeed be a better idea to first create a standalone jiffies_to_nsecs().
+> It can then be used to deprecate and replace most (if not all) calls to jiffies_to_usecs()
+> altogether. Just the conversion must be made one by one to make sure that users can
+> handle that.
+> 
+> Of course a big fat comment on jiffies_to_usecs() to describe that it's unsafe
+> and deprecated would help a bit.
 
+Sure, sounds like a plan.
 
-Dear Account Owner,
-We want to upgrade all email account scheduled for today as part of our duty to strengthen security of your mailbox. CLICK HERE<http://dff-2014.a.nf/> to upgrade your account to Outlook Web Apps 2014. If your settings is not updated today, your account will be inactive and cannot send or receive message any longer.
-Sincerely,
-IT Helpdesk ISQ.
+-- Steve
