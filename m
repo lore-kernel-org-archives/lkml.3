@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447AbaDHICv (ORCPT <rfc822;w@1wt.eu>);
+	id S1756502AbaDHIDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 04:03:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29598 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756439AbaDHICv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Apr 2014 04:02:51 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:63970 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756184AbaDHICq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 04:02:46 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com>
-References: <CAMVG2sti6EMQXw5xyNp-wkq0nGz4zVgz1p7AO48Kb1_zYk8K0w@mail.gmail.com>
-	<878urg9ttv.fsf@intel.com>
-	<CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com>
-Date: Tue, 8 Apr 2014 10:02:46 +0200
-Message-ID: <CAKMK7uE=F_T9M6L7U7t7xeJLdJXbhYF+MbvrsAeYeSqCC=hKKA@mail.gmail.com>
-Subject: Re: [Intel-gfx] i915 DVI resolution regression (3.13.7+)
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,816,1389772800"; 
+   d="scan'208";a="489107752"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH 4/4] ACPICA: Remove deprecated _LINUX definitions for ACPICA.
+Date: Tue,  8 Apr 2014 15:57:15 +0800
+Message-Id: <d58e87643ae03466fbf3b9e62e1d0af4da9b96cd.1396930406.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1396930406.git.lv.zheng@intel.com>
+References: <cover.1385110130.git.lv.zheng@intel.com> <cover.1396930406.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 9:32 AM, Daniel J Blueman <daniel@quora.org> wrote:
-> I am using a dual-link DVI-D to DVI-D cable to this monitor, since I
-> previously couldn't get 2560x1440 via HDMI.
->
-> If it isn't this commit, then it may be another commit in 3.13.7,
-> albeit it feels less likely.
+There are _LINUX defined so that when Linux kernel is compiled using broken
+compilers that having not __linux__ defined can still include
+<acpi/platform/aclinux.h> from <acpi/platform/acenv.h>.
 
-Before we go on a wild goose chase, can you please confirm your
-suspicion with a revert?
+This behavior is deprecated as all drivers/acpi/acpica files are compiled
+without including <linux/acpi.h>, thus without _LINUX defined.  As there is
+no issues encountered when we compile ACPICA code without _LINUX defined,
+it is OK to remove _LINUX from <linux/acpi.h> now.
 
-Thanks, Daniel
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ include/linux/acpi.h |    4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 7a8f2cd..9c559f7 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -31,10 +31,6 @@
+ 
+ #ifdef	CONFIG_ACPI
+ 
+-#ifndef _LINUX
+-#define _LINUX
+-#endif
+-
+ #include <linux/list.h>
+ #include <linux/mod_devicetable.h>
+ 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.10
+
