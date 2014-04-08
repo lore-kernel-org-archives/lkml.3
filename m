@@ -1,239 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175AbaDHCAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 22:00:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26282 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756096AbaDHB7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 21:59:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,814,1389772800"; 
-   d="scan'208";a="488940416"
-From: Jon Mason <jon.mason@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Subject: [PATCH 8/9] ntb: Split ntb_setup_msix() into separate BWD/SNB routines
-Date: Mon,  7 Apr 2014 17:52:53 -0700
-Message-Id: <1396918374-5196-9-git-send-email-jon.mason@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
-References: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
+	id S932074AbaDHCBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 22:01:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45523 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaDHCBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 22:01:32 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53435848.1050601@jp.fujitsu.com>
+Date: Tue, 8 Apr 2014 11:00:40 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Luiz Capitulino <lcapitulino@redhat.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <mtosatti@redhat.com>, <aarcange@redhat.com>, <mgorman@suse.de>,
+        <akpm@linux-foundation.org>, <andi@firstfloor.org>, <davidlohr@hp.com>,
+        <rientjes@google.com>, <yinghai@kernel.org>, <riel@redhat.com>
+Subject: Re: [PATCH 1/4] hugetlb: add hstate_is_gigantic()
+References: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com> <1396462128-32626-2-git-send-email-lcapitulino@redhat.com>
+In-Reply-To: <1396462128-32626-2-git-send-email-lcapitulino@redhat.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Gordeev <agordeev@redhat.com>
+(2014/04/03 3:08), Luiz Capitulino wrote:
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> ---
 
-This is an cleanup effort to make ntb_setup_msix() more
-readable - use ntb_setup_bwd_msix() to init MSI-Xs on
-BWD hardware and ntb_setup_snb_msix() - on SNB hardware.
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Function ntb_setup_snb_msix() also initializes MSI-Xs the
-way it should has been done - looping pci_enable_msix()
-until success or failure.
+Thanks,
+Yasuaki Ishimatsu
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Signed-off-by: Jon Mason <jon.mason@intel.com>
----
- drivers/ntb/ntb_hw.c | 167 +++++++++++++++++++++++++++++++--------------------
- 1 file changed, 102 insertions(+), 65 deletions(-)
+>   include/linux/hugetlb.h |  5 +++++
+>   mm/hugetlb.c            | 28 ++++++++++++++--------------
+>   2 files changed, 19 insertions(+), 14 deletions(-)
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 8c43cc4..8590134 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -333,6 +333,11 @@ static inline unsigned huge_page_shift(struct hstate *h)
+>   	return h->order + PAGE_SHIFT;
+>   }
+>   
+> +static inline bool hstate_is_gigantic(struct hstate *h)
+> +{
+> +	return huge_page_order(h) >= MAX_ORDER;
+> +}
+> +
+>   static inline unsigned int pages_per_huge_page(struct hstate *h)
+>   {
+>   	return 1 << h->order;
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index c01cb9f..8c50547 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -574,7 +574,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+>   {
+>   	int i;
+>   
+> -	VM_BUG_ON(h->order >= MAX_ORDER);
+> +	VM_BUG_ON(hstate_is_gigantic(h));
+>   
+>   	h->nr_huge_pages--;
+>   	h->nr_huge_pages_node[page_to_nid(page)]--;
+> @@ -627,7 +627,7 @@ static void free_huge_page(struct page *page)
+>   	if (restore_reserve)
+>   		h->resv_huge_pages++;
+>   
+> -	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
+> +	if (h->surplus_huge_pages_node[nid] && !hstate_is_gigantic(h)) {
+>   		/* remove the page from active list */
+>   		list_del(&page->lru);
+>   		update_and_free_page(h, page);
+> @@ -731,7 +731,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+>   {
+>   	struct page *page;
+>   
+> -	if (h->order >= MAX_ORDER)
+> +	if (hstate_is_gigantic(h))
+>   		return NULL;
+>   
+>   	page = alloc_pages_exact_node(nid,
+> @@ -925,7 +925,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+>   	struct page *page;
+>   	unsigned int r_nid;
+>   
+> -	if (h->order >= MAX_ORDER)
+> +	if (hstate_is_gigantic(h))
+>   		return NULL;
+>   
+>   	/*
+> @@ -1118,7 +1118,7 @@ static void return_unused_surplus_pages(struct hstate *h,
+>   	h->resv_huge_pages -= unused_resv_pages;
+>   
+>   	/* Cannot return gigantic pages currently */
+> -	if (h->order >= MAX_ORDER)
+> +	if (hstate_is_gigantic(h))
+>   		return;
+>   
+>   	nr_pages = min(unused_resv_pages, h->surplus_huge_pages);
+> @@ -1328,7 +1328,7 @@ static void __init gather_bootmem_prealloc(void)
+>   		 * fix confusing memory reports from free(1) and another
+>   		 * side-effects, like CommitLimit going negative.
+>   		 */
+> -		if (h->order > (MAX_ORDER - 1))
+> +		if (hstate_is_gigantic(h))
+>   			adjust_managed_page_count(page, 1 << h->order);
+>   	}
+>   }
+> @@ -1338,7 +1338,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+>   	unsigned long i;
+>   
+>   	for (i = 0; i < h->max_huge_pages; ++i) {
+> -		if (h->order >= MAX_ORDER) {
+> +		if (hstate_is_gigantic(h)) {
+>   			if (!alloc_bootmem_huge_page(h))
+>   				break;
+>   		} else if (!alloc_fresh_huge_page(h,
+> @@ -1354,7 +1354,7 @@ static void __init hugetlb_init_hstates(void)
+>   
+>   	for_each_hstate(h) {
+>   		/* oversize hugepages were init'ed in early boot */
+> -		if (h->order < MAX_ORDER)
+> +		if (!hstate_is_gigantic(h))
+>   			hugetlb_hstate_alloc_pages(h);
+>   	}
+>   }
+> @@ -1388,7 +1388,7 @@ static void try_to_free_low(struct hstate *h, unsigned long count,
+>   {
+>   	int i;
+>   
+> -	if (h->order >= MAX_ORDER)
+> +	if (hstate_is_gigantic(h))
+>   		return;
+>   
+>   	for_each_node_mask(i, *nodes_allowed) {
+> @@ -1451,7 +1451,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
+>   {
+>   	unsigned long min_count, ret;
+>   
+> -	if (h->order >= MAX_ORDER)
+> +	if (hstate_is_gigantic(h))
+>   		return h->max_huge_pages;
+>   
+>   	/*
+> @@ -1577,7 +1577,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+>   		goto out;
+>   
+>   	h = kobj_to_hstate(kobj, &nid);
+> -	if (h->order >= MAX_ORDER) {
+> +	if (hstate_is_gigantic(h)) {
+>   		err = -EINVAL;
+>   		goto out;
+>   	}
+> @@ -1660,7 +1660,7 @@ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
+>   	unsigned long input;
+>   	struct hstate *h = kobj_to_hstate(kobj, NULL);
+>   
+> -	if (h->order >= MAX_ORDER)
+> +	if (hstate_is_gigantic(h))
+>   		return -EINVAL;
+>   
+>   	err = kstrtoul(buf, 10, &input);
+> @@ -2071,7 +2071,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+>   
+>   	tmp = h->max_huge_pages;
+>   
+> -	if (write && h->order >= MAX_ORDER)
+> +	if (write && hstate_is_gigantic(h))
+>   		return -EINVAL;
+>   
+>   	table->data = &tmp;
+> @@ -2124,7 +2124,7 @@ int hugetlb_overcommit_handler(struct ctl_table *table, int write,
+>   
+>   	tmp = h->nr_overcommit_huge_pages;
+>   
+> -	if (write && h->order >= MAX_ORDER)
+> +	if (write && hstate_is_gigantic(h))
+>   		return -EINVAL;
+>   
+>   	table->data = &tmp;
+> 
 
-diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-index 06d605c..22a7eb4 100644
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -1080,10 +1080,106 @@ static irqreturn_t ntb_interrupt(int irq, void *dev)
- 	return IRQ_HANDLED;
- }
- 
--static int ntb_setup_msix(struct ntb_device *ndev)
-+static int ntb_setup_snb_msix(struct ntb_device *ndev, int msix_entries)
- {
- 	struct pci_dev *pdev = ndev->pdev;
- 	struct msix_entry *msix;
-+	int rc, i;
-+
-+	if (msix_entries < ndev->limits.msix_cnt)
-+		return -ENOSPC;
-+
-+	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-+	if (rc < 0)
-+		return rc;
-+	else if (rc > 0)
-+		return -ENOSPC;
-+
-+	for (i = 0; i < msix_entries; i++) {
-+		msix = &ndev->msix_entries[i];
-+		WARN_ON(!msix->vector);
-+
-+		if (i == msix_entries - 1) {
-+			rc = request_irq(msix->vector,
-+					 xeon_event_msix_irq, 0,
-+					 "ntb-event-msix", ndev);
-+			if (rc)
-+				goto err;
-+		} else {
-+			rc = request_irq(msix->vector,
-+					 xeon_callback_msix_irq, 0,
-+					 "ntb-callback-msix",
-+					 &ndev->db_cb[i]);
-+			if (rc)
-+				goto err;
-+		}
-+	}
-+
-+	ndev->num_msix = msix_entries;
-+	ndev->max_cbs = msix_entries - 1;
-+
-+	return 0;
-+
-+err:
-+	while (--i >= 0) {
-+		/* Code never reaches here for entry nr 'ndev->num_msix - 1' */
-+		msix = &ndev->msix_entries[i];
-+		free_irq(msix->vector, &ndev->db_cb[i]);
-+	}
-+
-+	pci_disable_msix(pdev);
-+	ndev->num_msix = 0;
-+
-+	return rc;
-+}
-+
-+static int ntb_setup_bwd_msix(struct ntb_device *ndev, int msix_entries)
-+{
-+	struct pci_dev *pdev = ndev->pdev;
-+	struct msix_entry *msix;
-+	int rc, i;
-+
-+retry:
-+	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-+	if (rc < 0)
-+		return rc;
-+	else if (rc > 0) {
-+		dev_warn(&pdev->dev,
-+			 "Only %d MSI-X vectors. "
-+			 "Limiting the number of queues to that number.\n",
-+			 rc);
-+		msix_entries = rc;
-+		goto retry;
-+	}
-+
-+	for (i = 0; i < msix_entries; i++) {
-+		msix = &ndev->msix_entries[i];
-+		WARN_ON(!msix->vector);
-+
-+		rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
-+				 "ntb-callback-msix", &ndev->db_cb[i]);
-+		if (rc)
-+			goto err;
-+	}
-+
-+	ndev->num_msix = msix_entries;
-+	ndev->max_cbs = msix_entries;
-+
-+	return 0;
-+
-+err:
-+	while (--i >= 0)
-+		free_irq(msix->vector, &ndev->db_cb[i]);
-+
-+	pci_disable_msix(pdev);
-+	ndev->num_msix = 0;
-+
-+	return rc;
-+}
-+
-+static int ntb_setup_msix(struct ntb_device *ndev)
-+{
-+	struct pci_dev *pdev = ndev->pdev;
- 	int msix_entries;
- 	int rc, i;
- 
-@@ -1106,78 +1202,19 @@ static int ntb_setup_msix(struct ntb_device *ndev)
- 	for (i = 0; i < msix_entries; i++)
- 		ndev->msix_entries[i].entry = i;
- 
--	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
--	if (rc < 0)
--		goto err1;
--	if (rc > 0) {
--		/* On SNB, the link interrupt is always tied to 4th vector.  If
--		 * we can't get all 4, then we can't use MSI-X.
--		 */
--		if (ndev->hw_type != BWD_HW) {
--			rc = -EIO;
--			goto err1;
--		}
--
--		dev_warn(&pdev->dev,
--			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
--			 rc);
--		msix_entries = rc;
--
--		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
--		if (rc)
--			goto err1;
--	}
--
--	for (i = 0; i < msix_entries; i++) {
--		msix = &ndev->msix_entries[i];
--		WARN_ON(!msix->vector);
--
--		/* Use the last MSI-X vector for Link status */
--		if (ndev->hw_type == BWD_HW) {
--			rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
--					 "ntb-callback-msix", &ndev->db_cb[i]);
--			if (rc)
--				goto err2;
--		} else {
--			if (i == msix_entries - 1) {
--				rc = request_irq(msix->vector,
--						 xeon_event_msix_irq, 0,
--						 "ntb-event-msix", ndev);
--				if (rc)
--					goto err2;
--			} else {
--				rc = request_irq(msix->vector,
--						 xeon_callback_msix_irq, 0,
--						 "ntb-callback-msix",
--						 &ndev->db_cb[i]);
--				if (rc)
--					goto err2;
--			}
--		}
--	}
--
--	ndev->num_msix = msix_entries;
- 	if (ndev->hw_type == BWD_HW)
--		ndev->max_cbs = msix_entries;
-+		rc = ntb_setup_bwd_msix(ndev, msix_entries);
- 	else
--		ndev->max_cbs = msix_entries - 1;
-+		rc = ntb_setup_snb_msix(ndev, msix_entries);
-+	if (rc)
-+		goto err1;
- 
- 	return 0;
- 
--err2:
--	while (--i >= 0) {
--		msix = &ndev->msix_entries[i];
--		if (ndev->hw_type != BWD_HW && i == ndev->num_msix - 1)
--			free_irq(msix->vector, ndev);
--		else
--			free_irq(msix->vector, &ndev->db_cb[i]);
--	}
--	pci_disable_msix(pdev);
- err1:
- 	kfree(ndev->msix_entries);
--	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
- err:
--	ndev->num_msix = 0;
-+	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
- 	return rc;
- }
- 
--- 
-1.8.3.2
 
