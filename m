@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085AbaDHAzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 20:55:32 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:3941 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754690AbaDHAz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 20:55:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmpVAIRIQ1N5LEcvPGdsb2JhbABZgwaDSoULtwyFX4EjFwMBAQEBODWCJQEBAQQ6HCMQCAMOBwMJJQ8FJQMHGhOHeMs6FxaOWweEOASYWophiyEr
-Date: Tue, 8 Apr 2014 10:54:17 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, hch@infradead.org, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 0/3] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
-Message-ID: <20140408005417.GI27017@dastard>
-References: <1396277611-10759-1-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396277611-10759-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755994AbaDHAzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 20:55:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3720 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754690AbaDHAzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 20:55:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,814,1389772800"; 
+   d="scan'208";a="516267267"
+From: Jon Mason <jon.mason@intel.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/9] ntb_netdev: Fix skb free issue in open
+Date: Mon,  7 Apr 2014 17:52:47 -0700
+Message-Id: <1396918374-5196-3-git-send-email-jon.mason@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
+References: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 11:53:31PM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> FALLOC_FL_INSERT_RANGE was mentioned as the opposite command of collapse
-> range from discussion between Hugh Dickins and Dave Chinner.
-> 
-> In continuation of the work of making the process of non linear editing of
-> media files faster, we introduce here the new flag FALLOC_FL_INSERT_RANGE
-> for fallocate.
-> 
-> This flag will work opposite to the newly added FALLOC_FL_COLLAPSE_RANGE flag.
-> As such, specifying FALLOC_FL_INSERT_RANGE flag will insert zeroed-out space
-> in between the file within the range specified by offset and len. User can
-> write new data in this space. e.g. ads.
-> Like collapse range, currently we have the limitation that offset and len
-> should be block size aligned for both XFS and Ext4.
-> 
-> The semantics of the flag are :
-> 1) It allocates new zeroed out on disk space of len bytes starting
->    at offset byte without overwriting any existing data. All the data blocks
->    from offset to EOF are shifted towards right to make space for inserting
->    new blocks
-> 2) It should be used exclusively. No other fallocate flag in combination.
-> 3) Offset and length supplied to fallocate should be fs block size aligned
->    in case of xfs and ext4.
-> 4) Insert range does not work for the case when offset is overlapping/beyond
->    i_size. If the user wants to allocate space at the end of file they are
->    advised to use either ftruncate(2) or fallocate(2) with mode 0.
-> 5) It increses the size of file by len bytes.
-> 
-> Namjae Jeon (3):
->  fs: Add FALLOC_FL_INSERT_RANGE flags for fallocate
->  xfs: Add support FALLOC_FL_INSERT_RANGE for fallocate
->  ext4: Add support FALLOC_FL_INSERT_RANGE for fallocate
->  TODO : xfsprog: xfsio: Add support FALLOC_FL_INSERT_RANGE for fallocate
->  TODO : xfstests: Add insert range testcase
+In ntb_netdev_open, when ntb_transport_rx_enqueue fails the skb that was
+attempting to be enqueued is not freed.  Free this skb on the
+ntb_transport_rx_enqueue error.
 
-Namjae, what's your proposed timeframe on getting the xfs_io and tes
-cases sorted out? I'm just trying to plan ahead for the next couple
-of months (i.e. the 3.16 merge cycle), so some indication of whether
-I can expect this to be complete and ready for merge within that
-timeframe would be helpful to me.
+Signed-off-by: Jon Mason <jon.mason@intel.com>
+---
+ drivers/net/ntb_netdev.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-FWIW, it would be really nice if you could add support for fsx and
-fsstress for this as well as adding corner case tests. :)
-
-Cheers,
-
-Dave.
+diff --git a/drivers/net/ntb_netdev.c b/drivers/net/ntb_netdev.c
+index 8298880..8e6752f 100644
+--- a/drivers/net/ntb_netdev.c
++++ b/drivers/net/ntb_netdev.c
+@@ -182,8 +182,10 @@ static int ntb_netdev_open(struct net_device *ndev)
+ 
+ 		rc = ntb_transport_rx_enqueue(dev->qp, skb, skb->data,
+ 					      ndev->mtu + ETH_HLEN);
+-		if (rc == -EINVAL)
++		if (rc == -EINVAL) {
++			dev_kfree_skb(skb);
+ 			goto err;
++		}
+ 	}
+ 
+ 	netif_carrier_off(ndev);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.3.2
+
