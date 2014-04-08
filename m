@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367AbaDHQrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:47:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38032 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756894AbaDHQrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:47:48 -0400
-Date: Tue, 8 Apr 2014 17:47:44 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Steven Noonan <steven@uplinklabs.net>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
- bits PMD and PTE levels
-Message-ID: <20140408164744.GM7292@suse.de>
-References: <20140407161910.GJ1444@moon>
- <20140407182854.GH7292@suse.de>
- <5342FC0E.9080701@zytor.com>
- <20140407193646.GC23983@moon>
- <5342FFB0.6010501@zytor.com>
- <20140407212535.GJ7292@suse.de>
- <CAKbGBLhsWKVYnBqR0ZJ2kfaF_h=XAYkjq=v3RLoRBDkF_w=6ag@mail.gmail.com>
- <e9801da2-3aa4-4c23-9a64-90c890b9ebbc@email.android.com>
- <20140408160250.GE31554@phenom.dumpdata.com>
- <534420F1.3030301@zytor.com>
+	id S1757399AbaDHQsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:48:41 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57409 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756890AbaDHQsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 12:48:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <534420F1.3030301@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <6228807.4v9ZRtib77@wuerfel>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <CAErSpo6S49qNuJQB-XXEfJ1Nkz=4gZ5_hE93=gb_yGZesA1H9Q@mail.gmail.com>
+ <20140408094933.GS17163@e106497-lin.cambridge.arm.com> <6228807.4v9ZRtib77@wuerfel>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 8 Apr 2014 10:48:18 -0600
+Message-ID: <CAErSpo4nZiEcTth5W6ZhcRSne80T8VWTWR2zm0yN7ogFR0Norw@mail.gmail.com>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 09:16:49AM -0700, H. Peter Anvin wrote:
-> On 04/08/2014 09:02 AM, Konrad Rzeszutek Wilk wrote:
-> >>>
-> >>> Amazon EC2 does have large memory instance types with NUMA exposed to
-> >>> the guest (e.g. c3.8xlarge, i2.8xlarge, etc), so it'd be preferable
-> >>> (to me anyway) if we didn't require !XEN.
-> > 
-> > What about the patch that David Vrabel posted:
-> > 
-> > http://osdir.com/ml/general/2014-03/msg41979.html
-> > 
-> > Has anybody taken it for a spin?
-> > 
-> 
-> Oh lovely, more pvops in low level paths.  I'm so thrilled.
-> 
-> Incidentally, I wasn't even Cc:'d on that patch and was only added to
-> the thread by Linus, but never saw the early bits of the thread
-> including the actual patch.
-> 
+On Tue, Apr 8, 2014 at 4:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-I posted an alternative to that patch that confines the damage to the
-NUMA pte helpers.
+> There is a wide range of implementations across architectures:
+>
+> a) no access to I/O ports at all (tile, s390, ...)
+> b) access to I/O ports only through special instructions (x86, ...)
+> c) all MMIO is mapped virtual contiguous to PCI_IOBASE or _IO_BASE
+>    (most ppc64, arm32 with MMU, arm64, ...)
+> d) only one PCI host can have an I/O space (mips, microblaze, ...)
+> e) each host controller can have its own method (ppc64 with indirect pio)
+> f) PIO token equals virtual address plus offset (some legacy ARM platforms,
+>    probably some other architectures), or physical address (sparc)
+> g) PIO token encodes address space number plus offset (ia64)
+>
+> a) and b) are trivially handled by any implementation that falls
+> back to 'return -EINVAL'.
+> I believe that c) is the most appropriate solution and we should be
+> able to adopt it by most of the architectures that have an MMU and
+> make it the default implementation.
+> d) seems like a good fallback for noMMU architectures: While we do
+> need to support I/O spaces, we need to support multiple PCI domains,
+> and we need to support noMMU, the combination of all three should
+> be extremely rare, and I'd leave it up to the architecture to support
+> that if there is a real use case, rather than trying to put that into
+> common code.
+> Anything that currently requires e), f) or g) I think should keep
+> doing that and not try to use the generic implementation.
 
--- 
-Mel Gorman
-SUSE Labs
+Thanks for the nice summary.  That's way more than I had figured out myself.
+
+I don't know whether it'd be worth it, especially for something that's
+so close to obsolete, but it seems like it should be *possible* to
+generalize and unify this somewhat.  I would argue that g) (which I
+wrote, so I know it better than the others) could fairly easily
+subsume c), d), and f), since it maps an ioport number to a virtual
+address for an MMIO access, but it doesn't assume that all the MMIO
+spaces are contiguous.
+
+b), e), and maybe a) could be handled with an exception, e.g., inside
+inb(), look up the struct io_space (e.g., similar to what ia64 does in
+__ia64_mk_io_addr()), and if that struct contains a non-zero ops
+pointer, use that instead of doing the MMIO access.  The ops pointer
+functions could use the x86 INB instruction or do the indirect PIO
+thing or whatever.
+
+Bjorn
