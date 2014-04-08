@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496AbaDHQyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:54:25 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:37767 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079AbaDHQyW (ORCPT
+	id S1757520AbaDHQy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:54:57 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58100 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaDHQyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:54:22 -0400
+	Tue, 8 Apr 2014 12:54:55 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Olivier Langlois <olivier@trillion01.com>
+Cc: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stable <stable@vger.kernel.org>,
+        ffmpeg-devel@ffmpeg.com
+Subject: Re: [PATCH] [media] uvcvideo: Fix clock param realtime setting
+Date: Tue, 08 Apr 2014 18:57:04 +0200
+Message-ID: <2912342.xkGF6kaQOW@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1396412820.3383.111.camel@Wailaba2>
+References: <1395985358-17047-1-git-send-email-olivier@trillion01.com> <1711768.4zHOjaJUg6@avalon> <1396412820.3383.111.camel@Wailaba2>
 MIME-Version: 1.0
-In-Reply-To: <4778371.oH3kIlbD0f@wuerfel>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
- <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com>
- <20140408095038.GT17163@e106497-lin.cambridge.arm.com> <4778371.oH3kIlbD0f@wuerfel>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 8 Apr 2014 10:54:01 -0600
-Message-ID: <CAErSpo4RtEovyRXw=UXxBSz_hD4kfayBOkaKH_4Qk_s+hsEAxg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 4:22 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 08 April 2014 10:50:39 Liviu Dudau wrote:
->> On Mon, Apr 07, 2014 at 06:58:24PM +0100, Bjorn Helgaas wrote:
->> > On Mon, Apr 7, 2014 at 5:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> >
->> > > I think migrating other architectures to use the same code should be
->> > > a separate effort from adding a generic implementation that can be
->> > > used by arm64. It's probably a good idea to have patches to convert
->> > > arm32 and/or microblaze.
->> >
->> > Let me reiterate that I am 100% in favor of replacing arch-specific
->> > code with more generic implementations.
->> >
->> > However, I am not 100% in favor of doing it as separate efforts
->> > (although maybe I could be convinced).  The reasons I hesitate are
->> > that (1) if only one architecture uses a new "generic" implementation,
->> > we really don't know whether it is generic enough, (2) until I see the
->> > patches to convert other architectures, I have to assume that I'm the
->> > one who will write them, and (3) as soon as we add the code to
->> > drivers/pci, it becomes partly my headache to maintain it, even if
->> > only one arch benefits from it.
->
-> Fair enough.
->
-> My approach to the asm-generic infrastruction has mostly been to ensure
-> that whoever adds a new architecture has to make things easier for the
-> next person.
+Hi Olivier,
 
-That's a good rule.  But if we add a generic implementation used only
-by one architecture, the overall complexity has increased (we added
-new unshared code), so the next person has to look at N+1 existing
-implementations.  If we even convert one existing arch, that seems
-like an improvement: we have N implementations with one being used by
-at least two arches.
+On Wednesday 02 April 2014 00:31:59 Olivier Langlois wrote:
+> On Tue, 2014-04-01 at 15:49 +0200, Laurent Pinchart wrote:
+> > On Sunday 30 March 2014 00:23:01 Olivier Langlois wrote:
+> > > > > Yes. ffmpeg uses wall clock time to create timestamps for audio
+> > > > > packets from ALSA device.
+> > > > 
+> > > > OK. I suppose I shouldn't drop support for the realtime clock like I
+> > > > wanted to then :-)
+> > > > 
+> > > > > There is a bug in ffmpeg describing problems to synchronize audio
+> > > > > and the video from a v4l2 webcam.
+> > > > > 
+> > > > > https://trac.ffmpeg.org/ticket/692
+> > > > > 
+> > > > > To workaround this issue, ffmpeg devs added a switch to convert back
+> > > > > 
+> > > > > monotonic to realtime. From ffmpeg/libavdevice/v4l2.c:
+> > > > >   -ts                <int>        .D.... set type of timestamps for
+> > > > >                                          grabbed frames (from 0 to
+> > > > >                                          2) (default 0)
+> > > > >      default                      .D.... use timestamps from the
+> > > > >                                          kernel
+> > > > >      abs                          .D.... use absolute timestamps
+> > > > >                                          (wall clock)
+> > > > >      mono2abs                     .D.... force conversion from
+> > > > >                                          monotonic to absolute
+> > > > >                                          timestamps
+> > > > > 
+> > > > > If the v4l2 driver is able to send realtime ts, it is easier
+> > > > > synchronize in userspace if all inputs use the same clock.
+> > > > 
+> > > > That might be a stupid question, but shouldn't ALSA use the monotonic
+> > > > clock instead ?
+> > > 
+> > > I think that I have that answer why ffmpeg use realtime clock for ALSA
+> > > data. In fact ffmpeg uses realtime clock for every data coming from
+> > > capture devices and the purpose is to be able to seek into the recorded
+> > > stream by using the date where the recording occured. Same principle
+> > > than a camera recording dates when pictures are taken.
+> > > 
+> > > now a tougher question is whether or not it is up to the driver to
+> > > provide these realtime ts.
+> > 
+> > It makes sense to associate a wall time with recorded streams for that
+> > purpose, but synchronization should in my opinion be performed using the
+> > monotonic clock, as the wall time can jump around. I believe drivers
+> > should provide monotonic timestamps only. However, given that the uvcvideo
+> > driver has the option of providing wall clock timestamps, that option
+> > should work, so your patch makes sense. I'd still like to remove support
+> > for the wall clock though, but I don't want to break userspace. ffmpeg
+> > should be fixed, especially given that most V4L devices provide monotonic
+> > timestamps only.
+>
+> Please do not stop yourself to remove realtime ts support in your driver
+> because that would not break ffmpeg, IMHO. It is just me that have tried
+> to leverage options offered by your driver to remove the need to use
+> ffmpeg workaround for a sync issue. I apparently have been the first
+> ffmpeg user to try out!
 
-Bjorn
+Then let's fix it first, and then I'll remove the option :-)
+
+> I am currently in the process to contribute the introduction of using
+> CLOCK_MONOTONIC inside ffmpeg. CCing their list because I think your
+> reply is relevant to the discussion we have on the topic there at the
+> moment.
+
+Very nice. Please keep me informed of the progress.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
