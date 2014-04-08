@@ -1,194 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaDHIXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 04:23:48 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:40250 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaDHIXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 04:23:44 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com
-Subject: Re: [PATCH 09/15 V3] perf, c2c: Sort based on hottest cache line
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-	<1395689826-215033-10-git-send-email-dzickus@redhat.com>
-Date: Tue, 08 Apr 2014 17:23:41 +0900
-In-Reply-To: <1395689826-215033-10-git-send-email-dzickus@redhat.com> (Don
-	Zickus's message of "Mon, 24 Mar 2014 15:37:00 -0400")
-Message-ID: <877g70w7oy.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932113AbaDHIXc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 04:23:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54290 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756267AbaDHIXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 04:23:05 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
+        Andres Freund <andres@2ndquadrant.com>,
+        Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 2/2] mm: page_alloc: Do not cache reclaim distances
+Date: Tue,  8 Apr 2014 09:23:00 +0100
+Message-Id: <1396945380-18592-3-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1396945380-18592-1-git-send-email-mgorman@suse.de>
+References: <1396945380-18592-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Mar 2014 15:37:00 -0400, Don Zickus wrote:
-> Now that we have all the events sort on a unique address, we can walk
-> the rbtree sequential and count up all the HITMs for each cacheline
-> fairly easily.
->
-> Once we encounter a new event on a different cacheline, process the previous
-> cacheline.  That includes determining if any HITMs were present on that
-> cacheline and if so, add it to another rbtree sorted on the number of HITMs.
->
-> This second rbtree sorted on number of HITMs will be the interesting data
-> we want to report and will be displayed in a follow up patch.
->
-> For now, organize the data properly.
+pgdat->reclaim_nodes tracks if a remote node is allowed to be reclaimed by
+zone_reclaim due to its distance. As it is expected that zone_reclaim_mode
+will be rarely enabled it is unreasonable for all machines to take a penalty.
+Fortunately, the zone_reclaim_mode() path is already slow and it is the path
+that takes the hit.
 
-just a few minor nitpicks below..
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ include/linux/mmzone.h |  1 -
+ mm/page_alloc.c        | 15 +--------------
+ 2 files changed, 1 insertion(+), 15 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 9b61b9b..564b169 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -757,7 +757,6 @@ typedef struct pglist_data {
+ 	unsigned long node_spanned_pages; /* total size of physical page
+ 					     range, including holes */
+ 	int node_id;
+-	nodemask_t reclaim_nodes;	/* Nodes allowed to reclaim from */
+ 	wait_queue_head_t kswapd_wait;
+ 	wait_queue_head_t pfmemalloc_wait;
+ 	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a256f85..574928e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1863,16 +1863,7 @@ static bool zone_local(struct zone *local_zone, struct zone *zone)
+ 
+ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+ {
+-	return node_isset(local_zone->node, zone->zone_pgdat->reclaim_nodes);
+-}
+-
+-static void __paginginit init_zone_allows_reclaim(int nid)
+-{
+-	int i;
+-
+-	for_each_online_node(i)
+-		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
+-			node_set(i, NODE_DATA(nid)->reclaim_nodes);
++	return node_distance(zone_to_nid(local_zone), zone_to_nid(zone)) < RECLAIM_DISTANCE;
+ }
+ 
+ #else	/* CONFIG_NUMA */
+@@ -1906,9 +1897,6 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+ 	return true;
+ }
+ 
+-static inline void init_zone_allows_reclaim(int nid)
+-{
+-}
+ #endif	/* CONFIG_NUMA */
+ 
+ /*
+@@ -4917,7 +4905,6 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
+ 
+ 	pgdat->node_id = nid;
+ 	pgdat->node_start_pfn = node_start_pfn;
+-	init_zone_allows_reclaim(nid);
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
+ #endif
+-- 
+1.8.4.5
 
-> +static int c2c_hitm__add_to_list(struct rb_root *root, struct c2c_hit *h)
-
-Why does it have 'list' in the name while it's not a list?  Maybe just
-using c2c_hit__add_entry() ?
-
-
-> +{
-> +	struct rb_node **p;
-> +	struct rb_node *parent = NULL;
-> +	struct c2c_hit *he;
-> +	int64_t cmp;
-> +	u64 l_hitms, r_hitms;
-> +
-> +	p = &root->rb_node;
-> +
-> +	while (*p != NULL) {
-> +		parent = *p;
-> +		he = rb_entry(parent, struct c2c_hit, rb_node);
-> +
-> +		/* sort on remote hitms first */
-> +		l_hitms = he->stats.t.rmt_hitm;
-> +		r_hitms = h->stats.t.rmt_hitm;
-> +		cmp = r_hitms - l_hitms;
-> +
-> +		if (!cmp) {
-> +			/* sort on local hitms */
-> +			l_hitms = he->stats.t.lcl_hitm;
-> +			r_hitms = h->stats.t.lcl_hitm;
-> +			cmp = r_hitms - l_hitms;
-> +		}
-> +
-> +		if (cmp > 0)
-> +			p = &(*p)->rb_left;
-> +		else
-> +			p = &(*p)->rb_right;
-> +	}
-> +
-> +	rb_link_node(&h->rb_node, parent, p);
-> +	rb_insert_color(&h->rb_node, root);
-> +
-> +	return 0;
-> +}
-
-
-[SNIP]
-> +static void c2c_hit__update_strings(struct c2c_hit *h,
-> +				    struct hist_entry *n)
-
-This one also has nothing with any string IMHO.
-
-
-> +{
-> +	if (h->pid != n->thread->pid_)
-> +		h->pid = -1;
-> +
-> +	if (h->tid != n->thread->tid)
-> +		h->tid = -1;
-> +
-> +	/* use original addresses here, not adjusted al_addr */
-> +	if (h->iaddr != n->mem_info->iaddr.addr)
-> +		h->iaddr = -1;
-> +
-> +	if (CLADRS(h->daddr) != CLADRS(n->mem_info->daddr.addr))
-> +		h->daddr = -1;
-> +
-> +	CPU_SET(n->cpu, &h->stats.cpuset);
-> +}
-
-
-[SNIP]
-> +static void c2c_analyze_hitms(struct perf_c2c *c2c)
-> +{
-> +
-> +	struct rb_node *next = rb_first(c2c->hists.entries_in);
-> +	struct hist_entry *he;
-> +	struct c2c_hit *h = NULL;
-> +	struct c2c_stats hitm_stats;
-> +	struct rb_root hitm_tree = RB_ROOT;
-> +	int shared_clines = 0;
-
-It seems the shared_clines is set but not used in this patch.  Maybe
-it'd better moving it to a patch which use it actually.
-
-Thanks,
-Namhyung
-
-
-> +	u64 cl = 0;
-> +
-> +	memset(&hitm_stats, 0, sizeof(struct c2c_stats));
-> +
-> +	/* find HITMs */
-> +	while (next) {
-> +		he = rb_entry(next, struct hist_entry, rb_node_in);
-> +		next = rb_next(&he->rb_node_in);
-> +
-> +		cl = he->mem_info->daddr.al_addr;
-> +
-> +		/* switch cache line objects */
-> +		/* 'color' forces a boundary change based on the original sort */
-> +		if (!h || !he->color || (CLADRS(cl) != h->cacheline)) {
-> +			if (h && HAS_HITMS(h)) {
-> +				c2c_hit__update_stats(&hitm_stats, &h->stats);
-> +
-> +				/* sort based on hottest cacheline */
-> +				c2c_hitm__add_to_list(&hitm_tree, h);
-> +				shared_clines++;
-> +			} else {
-> +				/* stores-only are un-interesting */
-> +				free(h);
-> +			}
-> +			h = c2c_hit__new(CLADRS(cl), he);
-> +			if (!h)
-> +				goto cleanup;
-> +		}
-> +
-> +
-> +		c2c_decode_stats(&h->stats, he);
-> +
-> +		/* filter out non-hitms as un-interesting noise */
-> +		if (valid_hitm_or_store(&he->mem_info->data_src)) {
-> +			/* save the entry for later processing */
-> +			list_add_tail(&he->pairs.node, &h->list);
-> +
-> +			c2c_hit__update_strings(h, he);
-> +		}
-> +	}
-> +
-> +	/* last chunk */
-> +	if (h && HAS_HITMS(h)) {
-> +		c2c_hit__update_stats(&hitm_stats, &h->stats);
-> +		c2c_hitm__add_to_list(&hitm_tree, h);
-> +		shared_clines++;
-> +	} else
-> +		free(h);
-> +
-> +cleanup:
-> +	next = rb_first(&hitm_tree);
-> +	while (next) {
-> +		h = rb_entry(next, struct c2c_hit, rb_node);
-> +		next = rb_next(&h->rb_node);
-> +		rb_erase(&h->rb_node, &hitm_tree);
-> +
-> +		free(h);
-> +	}
-> +	return;
-> +}
