@@ -1,445 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757828AbaDHSBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:01:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32941 "EHLO mx1.redhat.com"
+	id S1757815AbaDHSBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:01:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36594 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757796AbaDHSBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756982AbaDHSBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Apr 2014 14:01:34 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 03/10] tools lib traceevent: Print event name when show warning if possible
-Date: Tue,  8 Apr 2014 20:01:01 +0200
-Message-Id: <1396980068-27124-4-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 06/10] perf kmem: Introduce --list-cmds for use by scripts
+Date: Tue,  8 Apr 2014 20:01:04 +0200
+Message-Id: <1396980068-27124-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-It's sometimes useful to know where the parse failure was occurred.  Add
-do_warning_event() macro to see the failing event.
-
-It now shows the messages like below:
-
-  $ perf test 5
-   5: parse events tests                                     :  Warning: [kvmmmu:kvm_mmu_get_page] bad op token {
-    Warning: [kvmmmu:kvm_mmu_sync_page] bad op token {
-    Warning: [kvmmmu:kvm_mmu_unsync_page] bad op token {
-    Warning: [kvmmmu:kvm_mmu_prepare_zap_page] bad op token {
-    Warning: [kvmmmu:fast_page_fault] function is_writable_pte not defined
-    Warning: [xen:xen_mmu_ptep_modify_prot_commit] function sizeof not defined
-    Warning: [xen:xen_mmu_ptep_modify_prot_start] function sizeof not defined
-    Warning: [xen:xen_mmu_set_pgd] function sizeof not defined
-    Warning: [xen:xen_mmu_set_pud] function sizeof not defined
-    Warning: [xen:xen_mmu_set_pmd] function sizeof not defined
-    ...
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1395192174-26273-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1394853474-31019-2-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c | 103 ++++++++++++++++++++++---------------
- 1 file changed, 62 insertions(+), 41 deletions(-)
+ tools/perf/builtin-kmem.c     | 8 +++++---
+ tools/perf/perf-completion.sh | 4 ++--
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 1587ea39..33803c0b9 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -50,6 +50,18 @@ static int show_warning = 1;
- 			warning(fmt, ##__VA_ARGS__);	\
- 	} while (0)
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index 929462a..bd91de0 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -756,11 +756,13 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
+ 	OPT_END()
+ 	};
+-	const char * const kmem_usage[] = {
+-		"perf kmem [<options>] {record|stat}",
++	const char *const kmem_subcommands[] = { "record", "stat", NULL };
++	const char *kmem_usage[] = {
++		NULL,
+ 		NULL
+ 	};
+-	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
++	argc = parse_options_subcommand(argc, argv, kmem_options,
++					kmem_subcommands, kmem_usage, 0);
  
-+#define do_warning_event(event, fmt, ...)			\
-+	do {							\
-+		if (!show_warning)				\
-+			continue;				\
-+								\
-+		if (event)					\
-+			warning("[%s:%s] " fmt, event->system,	\
-+				event->name, ##__VA_ARGS__);	\
-+		else						\
-+			warning(fmt, ##__VA_ARGS__);		\
-+	} while (0)
-+
- static void init_input_buf(const char *buf, unsigned long long size)
- {
- 	input_buf = buf;
-@@ -1355,7 +1367,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		}
- 
- 		if (!field->type) {
--			do_warning("%s: no type found", __func__);
-+			do_warning_event(event, "%s: no type found", __func__);
- 			goto fail;
- 		}
- 		field->name = last_token;
-@@ -1402,7 +1414,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				free_token(token);
- 				type = read_token(&token);
- 				if (type == EVENT_NONE) {
--					do_warning("failed to find token");
-+					do_warning_event(event, "failed to find token");
- 					goto fail;
- 				}
- 			}
-@@ -1636,7 +1648,7 @@ process_cond(struct event_format *event, struct print_arg *top, char **tok)
- 	right = alloc_arg();
- 
- 	if (!arg || !left || !right) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		/* arg will be freed at out_free */
- 		free_arg(left);
- 		free_arg(right);
-@@ -1686,7 +1698,7 @@ process_array(struct event_format *event, struct print_arg *top, char **tok)
- 
- 	arg = alloc_arg();
- 	if (!arg) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		/* '*tok' is set to top->op.op.  No need to free. */
- 		*tok = NULL;
- 		return EVENT_ERROR;
-@@ -1792,7 +1804,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 	if (arg->type == PRINT_OP && !arg->op.left) {
- 		/* handle single op */
- 		if (token[1]) {
--			do_warning("bad op token %s", token);
-+			do_warning_event(event, "bad op token %s", token);
- 			goto out_free;
- 		}
- 		switch (token[0]) {
-@@ -1802,7 +1814,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		case '-':
- 			break;
- 		default:
--			do_warning("bad op token %s", token);
-+			do_warning_event(event, "bad op token %s", token);
- 			goto out_free;
- 
- 		}
-@@ -1888,7 +1900,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 			char *new_atom;
- 
- 			if (left->type != PRINT_ATOM) {
--				do_warning("bad pointer type");
-+				do_warning_event(event, "bad pointer type");
- 				goto out_free;
- 			}
- 			new_atom = realloc(left->atom.atom,
-@@ -1930,7 +1942,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		type = process_array(event, arg, tok);
- 
- 	} else {
--		do_warning("unknown op '%s'", token);
-+		do_warning_event(event, "unknown op '%s'", token);
- 		event->flags |= EVENT_FL_FAILED;
- 		/* the arg is now the left side */
- 		goto out_free;
-@@ -1951,7 +1963,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 	return type;
- 
- out_warn_free:
--	do_warning("%s: not enough memory!", __func__);
-+	do_warning_event(event, "%s: not enough memory!", __func__);
- out_free:
- 	free_token(token);
- 	*tok = NULL;
-@@ -2385,7 +2397,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		goto out_free;
- 	}
- 
-@@ -2438,7 +2450,7 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		goto out_free;
- 	}
- 
-@@ -2477,7 +2489,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		goto out_free;
- 	}
- 
-@@ -2492,7 +2504,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		*tok = NULL;
- 		return EVENT_ERROR;
- 	}
-@@ -2555,7 +2567,7 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
- 	free_token(token);
- 	arg = alloc_arg();
- 	if (!arg) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		*tok = NULL;
- 		return EVENT_ERROR;
- 	}
-@@ -2614,13 +2626,14 @@ process_paren(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 		/* prevous must be an atom */
- 		if (arg->type != PRINT_ATOM) {
--			do_warning("previous needed to be PRINT_ATOM");
-+			do_warning_event(event, "previous needed to be PRINT_ATOM");
- 			goto out_free;
- 		}
- 
- 		item_arg = alloc_arg();
- 		if (!item_arg) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			goto out_free;
- 		}
- 
-@@ -2721,7 +2734,8 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 	for (i = 0; i < func->nr_args; i++) {
- 		farg = alloc_arg();
- 		if (!farg) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			return EVENT_ERROR;
- 		}
- 
-@@ -2792,7 +2806,7 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		return process_func_handler(event, func, arg, tok);
- 	}
- 
--	do_warning("function %s not defined", token);
-+	do_warning_event(event, "function %s not defined", token);
- 	free_token(token);
- 	return EVENT_ERROR;
- }
-@@ -2878,7 +2892,7 @@ process_arg_token(struct event_format *event, struct print_arg *arg,
- 
- 	case EVENT_ERROR ... EVENT_NEWLINE:
- 	default:
--		do_warning("unexpected type %d", type);
-+		do_warning_event(event, "unexpected type %d", type);
- 		return EVENT_ERROR;
- 	}
- 	*tok = token;
-@@ -2901,7 +2915,8 @@ static int event_read_print_args(struct event_format *event, struct print_arg **
- 
- 		arg = alloc_arg();
- 		if (!arg) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			return -1;
- 		}
- 
-@@ -3481,11 +3496,12 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 	return val;
- 
- out_warning_op:
--	do_warning("%s: unknown op '%s'", __func__, arg->op.op);
-+	do_warning_event(event, "%s: unknown op '%s'", __func__, arg->op.op);
- 	return 0;
- 
- out_warning_field:
--	do_warning("%s: field %s not found", __func__, arg->field.name);
-+	do_warning_event(event, "%s: field %s not found",
-+			 __func__, arg->field.name);
- 	return 0;
- }
- 
-@@ -3591,7 +3607,8 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 		}
- 		str = malloc(len + 1);
- 		if (!str) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			return;
- 		}
- 		memcpy(str, data + field->offset, len);
-@@ -3697,7 +3714,8 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	return;
- 
- out_warning_field:
--	do_warning("%s: field %s not found", __func__, arg->field.name);
-+	do_warning_event(event, "%s: field %s not found",
-+			 __func__, arg->field.name);
- }
- 
- static unsigned long long
-@@ -3742,14 +3760,16 @@ process_defined_func(struct trace_seq *s, void *data, int size,
- 			trace_seq_terminate(&str);
- 			string = malloc(sizeof(*string));
- 			if (!string) {
--				do_warning("%s(%d): malloc str", __func__, __LINE__);
-+				do_warning_event(event, "%s(%d): malloc str",
-+						 __func__, __LINE__);
- 				goto out_free;
- 			}
- 			string->next = strings;
- 			string->str = strdup(str.buffer);
- 			if (!string->str) {
- 				free(string);
--				do_warning("%s(%d): malloc str", __func__, __LINE__);
-+				do_warning_event(event, "%s(%d): malloc str",
-+						 __func__, __LINE__);
- 				goto out_free;
- 			}
- 			args[i] = (uintptr_t)string->str;
-@@ -3761,7 +3781,7 @@ process_defined_func(struct trace_seq *s, void *data, int size,
- 			 * Something went totally wrong, this is not
- 			 * an input error, something in this code broke.
- 			 */
--			do_warning("Unexpected end of arguments\n");
-+			do_warning_event(event, "Unexpected end of arguments\n");
- 			goto out_free;
- 		}
- 		farg = farg->next;
-@@ -3811,12 +3831,12 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	if (!field) {
- 		field = pevent_find_field(event, "buf");
- 		if (!field) {
--			do_warning("can't find buffer field for binary printk");
-+			do_warning_event(event, "can't find buffer field for binary printk");
- 			return NULL;
- 		}
- 		ip_field = pevent_find_field(event, "ip");
- 		if (!ip_field) {
--			do_warning("can't find ip field for binary printk");
-+			do_warning_event(event, "can't find ip field for binary printk");
- 			return NULL;
- 		}
- 		pevent->bprint_buf_field = field;
-@@ -3830,7 +3850,8 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	 */
- 	args = alloc_arg();
- 	if (!args) {
--		do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+		do_warning_event(event, "%s(%d): not enough memory!",
-+				 __func__, __LINE__);
- 		return NULL;
- 	}
- 	arg = args;
-@@ -3896,7 +3917,7 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 				bptr += vsize;
- 				arg = alloc_arg();
- 				if (!arg) {
--					do_warning("%s(%d): not enough memory!",
-+					do_warning_event(event, "%s(%d): not enough memory!",
- 						   __func__, __LINE__);
- 					goto out_free;
- 				}
-@@ -3919,7 +3940,7 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 			case 's':
- 				arg = alloc_arg();
- 				if (!arg) {
--					do_warning("%s(%d): not enough memory!",
-+					do_warning_event(event, "%s(%d): not enough memory!",
- 						   __func__, __LINE__);
- 					goto out_free;
- 				}
-@@ -3959,7 +3980,7 @@ get_bprint_format(void *data, int size __maybe_unused,
- 	if (!field) {
- 		field = pevent_find_field(event, "fmt");
- 		if (!field) {
--			do_warning("can't find format field for binary printk");
-+			do_warning_event(event, "can't find format field for binary printk");
- 			return NULL;
- 		}
- 		pevent->bprint_fmt_field = field;
-@@ -4003,8 +4024,8 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
- 		arg->field.field =
- 			pevent_find_any_field(event, arg->field.name);
- 		if (!arg->field.field) {
--			do_warning("%s: field %s not found",
--				   __func__, arg->field.name);
-+			do_warning_event(event, "%s: field %s not found",
-+					 __func__, arg->field.name);
- 			return;
- 		}
- 	}
-@@ -4176,7 +4197,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 			case '*':
- 				/* The argument is the length. */
- 				if (!arg) {
--					do_warning("no argument match");
-+					do_warning_event(event, "no argument match");
- 					event->flags |= EVENT_FL_FAILED;
- 					goto out_failed;
- 				}
-@@ -4213,7 +4234,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 			case 'X':
- 			case 'u':
- 				if (!arg) {
--					do_warning("no argument match");
-+					do_warning_event(event, "no argument match");
- 					event->flags |= EVENT_FL_FAILED;
- 					goto out_failed;
- 				}
-@@ -4223,7 +4244,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 
- 				/* should never happen */
- 				if (len > 31) {
--					do_warning("bad format!");
-+					do_warning_event(event, "bad format!");
- 					event->flags |= EVENT_FL_FAILED;
- 					len = 31;
- 				}
-@@ -4290,13 +4311,13 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 						trace_seq_printf(s, format, (long long)val);
- 					break;
- 				default:
--					do_warning("bad count (%d)", ls);
-+					do_warning_event(event, "bad count (%d)", ls);
- 					event->flags |= EVENT_FL_FAILED;
- 				}
- 				break;
- 			case 's':
- 				if (!arg) {
--					do_warning("no matching argument");
-+					do_warning_event(event, "no matching argument");
- 					event->flags |= EVENT_FL_FAILED;
- 					goto out_failed;
- 				}
-@@ -4306,7 +4327,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 
- 				/* should never happen */
- 				if (len > 31) {
--					do_warning("bad format!");
-+					do_warning_event(event, "bad format!");
- 					event->flags |= EVENT_FL_FAILED;
- 					len = 31;
- 				}
+ 	if (!argc)
+ 		usage_with_options(kmem_usage, kmem_options);
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index ae3a576..0ef59dd 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -121,8 +121,8 @@ __perf_main ()
+ 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
+ 		evts=$($cmd list --raw-dump)
+ 		__perfcomp_colon "$evts" "$cur"
+-	# List subcommands for 'perf kvm'
+-	elif [[ $prev == "kvm" ]]; then
++	# List subcommands for perf commands
++	elif [[ $prev == @(kvm|kmem) ]]; then
+ 		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
 -- 
 1.8.3.1
 
