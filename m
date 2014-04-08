@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125AbaDHOZI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:25:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50964 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757131AbaDHOZE (ORCPT
+	id S1757106AbaDHO0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:26:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50105 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677AbaDHO0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:25:04 -0400
-Message-ID: <534406BD.8000702@codeaurora.org>
-Date: Tue, 08 Apr 2014 10:25:01 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 8 Apr 2014 10:26:45 -0400
+Date: Tue, 8 Apr 2014 17:26:11 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jimmy Li <coder.liss@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Teodora Baluta <teobaluta@gmail.com>, Joe Perches <joe@perches.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>,
+        Lisa Nguyen <lisa@xenapiadmin.com>,
+        Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>,
+        Malcolm Priestley <tvboxspy@gmail.com>,
+        =?us-ascii?Q?=3D=3Fus-ascii=3FB=3FPT91cy1hc2NpaT9RPz0zRD0zRnV0Zi04PTNG?=
+	 =?us-ascii?Q?Qj0zRlZNTzhiR2x1SU1T=3F=3D_=3D=3Fus-ascii=3FB=3Fd2VtVnk9M0Y9?=
+	 =?us-ascii?B?TTBRL1BRPT0/PQ==?= <tulinizer@gmail.com>,
+        Archana kumari <archanakumari959@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] Staging: vt6655: iwctl.c: fix a sparse warning
+Message-ID: <20140408142611.GC4912@mwanda>
+References: <20140408110927.GA17308@gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-edac@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: Re: [PATCH v6 2/5] ARM: Add Krait L2 register accessor functions
-References: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org> <1396641450-12854-3-git-send-email-sboyd@codeaurora.org> <20140407201838.GC20822@pd.tnic> <20140407215649.GH9985@codeaurora.org> <20140408064328.GB30077@pd.tnic>
-In-Reply-To: <20140408064328.GB30077@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140408110927.GA17308@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
-
-On 04/08/2014 02:43 AM, Borislav Petkov wrote:
-> On Mon, Apr 07, 2014 at 02:56:49PM -0700, Stephen Boyd wrote:
->> No. This is the template I'm told to use.
+On Tue, Apr 08, 2014 at 09:35:02PM +0800, Jimmy Li wrote:
+> fix a sparse warning and do some clean up.
+> iwctl.c:1846:35: expected restricted gfp_t [usertype] flags
 > 
-> By whom? And why?
+> Signed-off-by: Jimmy Li <coder.liss@gmail.com>
+> ---
 
-As I understand it, the license authors. They find it important to maintain
-clarity even when files get copied into other projects.
+Looks good.
 
-http://www.gnu.org/licenses/gpl-howto.html
+regards,
+dan carpenter
 
-http://www.gnu.org/licenses/gpl-faq.html#NoticeInSourceFile
-
-Regards,
-Christopher
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
