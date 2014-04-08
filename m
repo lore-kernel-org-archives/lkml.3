@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558AbaDHLUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 07:20:04 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42998 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755454AbaDHLUC (ORCPT
+	id S1756336AbaDHLYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:24:34 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:35912 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935AbaDHLYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 07:20:02 -0400
-Date: Tue, 8 Apr 2014 14:19:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jimmy Li <coder.liss@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Teodora Baluta <teobaluta@gmail.com>, Joe Perches <joe@perches.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>,
-        Lisa Nguyen <lisa@xenapiadmin.com>,
-        Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        =?us-ascii?B?PT91cy1hc2NpaT9RPz0zRD0zRnV0Zi04PTNGQj0zRlZNTzhiR2x1SU1T?=
-	 =?us-ascii?B?d2VtVnk9M0Y9M0Q/PQ==?= <tulinizer@gmail.com>,
-        Archana kumari <archanakumari959@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Staging: vt6655: iwctl.c: fix a sparse warning
-Message-ID: <20140408111929.GG4963@mwanda>
-References: <20140408110927.GA17308@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140408110927.GA17308@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 8 Apr 2014 07:24:31 -0400
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-acpi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH V2] ACPI: Update the ownership and developers for ACPI in Kconfig
+Date: Tue,  8 Apr 2014 19:24:01 +0800
+Message-Id: <1396956241-8337-1-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 07:09:27PM +0800, Jimmy Li wrote:
-> thanks for correcting my patch format.
-> 
-> Signed-off-by: Jimmy Li <coder.liss@gmail.com>
-> ---
-> v1 fix a sparse warning.
-> 	(iwctl.c:1846:35: expected restricted gfp_t [usertype] flags)
-> v2 clear up two unnecessary variable, buf and blen.
-> v3 fix patch format.
->  drivers/staging/vt6655/iwctl.c |    9 ++-------
->  1 file changed, 2 insertions(+), 7 deletions(-)
+The UEFI Forum included the ACPI spec in its portfolio in October 2013
+and will host future spec iterations, following the ACPI v5.0a release.
 
-Please try applying your patch.  Save the email as raw text including
-headers and everything.  `cat raw_email.txt | git am`.  Then review the
-log with `git log`.  You'll see that the format is still messed up.  :(
+A UEFI Forum working group named ACPI Specification Working Group (ASWG)
+has been established to handle future ACPI developments, any UEFI member
+can join the group and contribute to ACPI specification.
 
-The part which should be discarded is saved and the part which should be
-saved is deleted.
+So update the ownership and developers for ACPI in Kconfig accordingly,
+and add another website link to ACPI specification too.
 
-regards,
-dan carpenter
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ drivers/acpi/Kconfig |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index c205653..6bbf36e 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -32,9 +32,11 @@ menuconfig ACPI
+ 	  <http://acpica.org/>
+ 
+ 	  ACPI is an open industry specification co-developed by
+-	  Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.
++	  ACPI Specification Working Group (ASWG) under UEFI Forum, any
++	  UEFI member can join ASWG and contribute to ACPI specification.
+ 	  The specification is available at:
+ 	  <http://www.acpi.info>
++	  <http://www.uefi.org/acpi/specs>
+ 
+ if ACPI
+ 
+-- 
+1.7.9.5
 
