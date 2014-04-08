@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617AbaDHTs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 15:48:28 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:43904 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159AbaDHTs0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 15:48:26 -0400
-Date: Tue, 8 Apr 2014 21:48:15 +0200
-From: Rabin Vincent <rabin@rab.in>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: mm: make text and rodata read-only
-Message-ID: <20140408194815.GA6188@debian>
-References: <1396577719-14786-1-git-send-email-keescook@chromium.org>
- <1396577719-14786-3-git-send-email-keescook@chromium.org>
- <20140404195818.GA21028@debian>
- <CAGXu5jKPX2igsb2rQzdCZQZ8X3h4YZihCV9D+cDW3F+qii8H2A@mail.gmail.com>
- <1396960898.3567.55.camel@linaro1.home>
- <CAGXu5jJq24k4uQbBJmihJ4RScJ40o41oKFtm13hBO_YZOvHpkA@mail.gmail.com>
- <1396973561.14809.26.camel@linaro1.home>
- <CAGXu5jJewy0Xy-qUEF2K6bAcEC8ZdKy0Ad2nLPjGRsq20fSQXQ@mail.gmail.com>
+	id S932648AbaDHTvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 15:51:13 -0400
+Received: from smtp2.ngi.it ([88.149.128.113]:51884 "EHLO smtp2.ngi.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932233AbaDHTvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 15:51:11 -0400
+Message-ID: <53445343.1040907@katamail.com>
+Date: Tue, 08 Apr 2014 21:51:31 +0200
+From: Michele Ballabio <barra_cuda@katamail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJewy0Xy-qUEF2K6bAcEC8ZdKy0Ad2nLPjGRsq20fSQXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>,
+        =?ISO-8859-1?Q?Toralf_F=F6rs?= =?ISO-8859-1?Q?ter?= 
+	<toralf.foerster@gmx.de>
+CC: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
+References: <5341707F.5000406@katamail.com> <20140407150337.GO10526@twins.programming.kicks-ass.net> <20140407150705.GB13658@twins.programming.kicks-ass.net> <5342EB78.3060002@gmx.de> <20140407185658.GK11096@twins.programming.kicks-ass.net> <20140408122128.GC13658@twins.programming.kicks-ass.net> <53444A9F.9060207@katamail.com>
+In-Reply-To: <53444A9F.9060207@katamail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 09:59:07AM -0700, Kees Cook wrote:
-> On Tue, Apr 8, 2014 at 9:12 AM, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> > And is the page table being modified unique to the current CPU? I
-> > thought a common set of page tables was shared across all of them. If
-> > that is the case then one CPU can modify the PTE to be writeable,
-> > another CPU take a TLB miss and pull in that writeable entry, which will
-> > stay there until it drops out the TLB at some indefinite point in the
-> > future. That's the scenario I was getting at with my previous comment.
+On 08/04/2014 21:14, Michele Ballabio wrote:
+> On 08/04/2014 14:21, Peter Zijlstra wrote:
+>> On Mon, Apr 07, 2014 at 08:56:58PM +0200, Peter Zijlstra wrote:
+>>> On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
+>>>
+>>>> v3.14-10353-g2b3a8fd works fine AFAICS
+>>>> (BTW the fix is stable material, right ?)
+>>>
+>>> I'm fairly sure its not; its a rather invasive series; see:
+>>>
+>>> 2432e1364bbe x86: Nuke the supervisor_stack field in i386 thread_info
+>>> b807902a88c4 x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
+>>> 0788aa6a23cb x86: Prepare removal of previous_esp from i386 thread_info structure
+>>> 198d208df437 x86: Keep thread_info on thread stack in x86_32
+>>>
+>>> Let me see if there's anything 'simpler' we can stuff in .13+
+>>
+>> OK.. so could someone test the below patch to see if that makes things
+>> work for .13 and .14?
+>>
+>> ---
+>>  arch/x86/include/asm/preempt.h | 11 +++++++++++
+>>  include/linux/preempt.h        |  4 ++++
+>>  include/linux/thread_info.h    |  2 --
+>>  3 files changed, 15 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
+>> index c8b051933b1b..7ada46d8d4d8 100644
+>> --- a/arch/x86/include/asm/preempt.h
+>> +++ b/arch/x86/include/asm/preempt.h
+>> @@ -5,6 +5,17 @@
+>>  #include <asm/percpu.h>
+>>  #include <linux/thread_info.h>
+>>  
+>> +#ifdef CONFIG_X86_32
+>> +/*
+>> + * i386's current_thread_info() depends on ESP and for interrupt/exception
+>> + * stacks this doesn't yield the actual task thread_info.
+>> + *
+>> + * We hard rely on the fact that all the TIF_NEED_RESCHED bits are
+>> + * the same, therefore use the slightly more expensive version below.
+>> + */
+>> +#define tif_need_resched() test_tsk_thread_flag(current, TIF_NEED_RESCHED)
+>> +#endif
+>> +
+>>  DECLARE_PER_CPU(int, __preempt_count);
+>>  
+>>  /*
+>> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+>> index de83b4eb1642..891c8f8b52fe 100644
+>> --- a/include/linux/preempt.h
+>> +++ b/include/linux/preempt.h
+>> @@ -17,6 +17,10 @@
+>>  
+>>  #include <asm/preempt.h>
+>>  
+>> +#ifndef tif_need_resched
+>> +#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
+>> +#endif
+>> +
+>>  #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
+>>  extern void preempt_count_add(int val);
+>>  extern void preempt_count_sub(int val);
+>> diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+>> index fddbe2023a5d..a629e4b23217 100644
+>> --- a/include/linux/thread_info.h
+>> +++ b/include/linux/thread_info.h
+>> @@ -118,8 +118,6 @@ static inline __deprecated void set_need_resched(void)
+>>  	 */
+>>  }
+>>  
+>> -#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
+>> -
+>>  #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
+>>  /*
+>>   * An arch can define its own version of set_restore_sigmask() to get the
+>>
 > 
-> As I understood it, this would be true for small PTEs, but sections
-> are fully duplicated on each CPU so we don't run that risk. This was
-> the whole source of my problem with this patch series: even a full
-> all-CPU TLB flush wasn't working -- the section permissions were
-> unique to the CPU since the entries were duplicated.
+> It works fine for me on top of v3.14.
 
-The PGD is per-mm_struct.  mm_structs can be shared between processes.
-So the PGD is not per CPU.
+And on top of v3.13, too.
 
-This set_kernel_text_rw() is called from ftrace in stop_machine() on one
-CPU.  All other CPUs will be spinning in kernel threads inside the loop
-in multi_cpu_stop(), with interrupts disabled.  Since kernel threads use
-the last process' mm, it is possible for the other CPU(s) to be
-currently using the same mm as the modifying CPU.
+Thanks.
 
-For any other CPU to pull in the writable entry it would have to get a
-TLB miss inside the loop in multi_cpu_stop(), after the state transition
-to MULTI_STOP_RUN and before the state transition to MULTI_STOP_EXIT.
-This is unlikely, but theoretically possible, for example if
-multi_cpu_stop() straddles sections.
-
-To prevent any stale entries being used indefinitely, perhaps the all
-CPU TLB flush can be inserted into
-ftrace_arch_code_modify_post_process(), which is called after the
-stop_machine() and which is where x86 for example makes the entries
-read-only again.
