@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaDHCAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 22:00:19 -0400
+	id S1756129AbaDHCAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 22:00:15 -0400
 Received: from mga09.intel.com ([134.134.136.24]:26266 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756092AbaDHB7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 21:59:40 -0400
+	id S1755316AbaDHB7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 21:59:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,814,1389772800"; 
-   d="scan'208";a="488940354"
+   d="scan'208";a="488940297"
 From: Jon Mason <jon.mason@intel.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Subject: [PATCH 4/9] ntb: Fix leakage of ntb_device::msix_entries[] array
-Date: Mon,  7 Apr 2014 17:52:49 -0700
-Message-Id: <1396918374-5196-5-git-send-email-jon.mason@intel.com>
+Subject: [PATCH 0/9] NTB Update
+Date: Mon,  7 Apr 2014 17:52:45 -0700
+Message-Id: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
-References: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Gordeev <agordeev@redhat.com>
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Signed-off-by: Jon Mason <jon.mason@intel.com>
+The following patches are intended for inclusion in the 3.15 kernel.
+They include a number of bug fixes, some cleanups, and the conversion
+to pci_enable_msix_range.
+
+Please let me know if there are any issues.
+
+Thanks,
+Jon
+
 ---
- drivers/ntb/ntb_hw.c | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-index 2774d35..0e8ae70 100644
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -1281,6 +1281,7 @@ static void ntb_free_interrupts(struct ntb_device *ndev)
- 				free_irq(msix->vector, &ndev->db_cb[i]);
- 		}
- 		pci_disable_msix(pdev);
-+		kfree(ndev->msix_entries);
- 	} else {
- 		free_irq(pdev->irq, ndev);
- 
--- 
-1.8.3.2
+Alexander Gordeev (4):
+      ntb: Fix leakage of ntb_device::msix_entries[] array
+      ntb: Use pci_msix_vec_count() to obtain number of MSI-Xs
+      ntb: Split ntb_setup_msix() into separate BWD/SNB routines
+      ntb: Use pci_enable_msix_range() instead of pci_enable_msix()
 
+Jon Mason (4):
+      ntb_netdev: Fix list_for_each_entry exit issue
+      ntb_netdev: Fix skb free issue in open
+      NTB: client event cleanup
+      NTB: Code Style Clean-up
+
+Roland Dreier (1):
+      NTB: Fix typo in setting one translation register
