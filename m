@@ -1,43 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132AbaDHOWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:22:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11378 "EHLO mga09.intel.com"
+	id S1757227AbaDHOYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:24:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756957AbaDHOWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:22:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,818,1389772800"; 
-   d="scan'208";a="516893064"
-Message-ID: <1396965172.30750.0.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] ubi: avoid workqueue format string leak
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Kees Cook <keescook@chromium.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 08 Apr 2014 16:52:52 +0300
-In-Reply-To: <20140408044407.GA13141@www.outflux.net>
-References: <20140408044407.GA13141@www.outflux.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756986AbaDHOYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:24:01 -0400
+Date: Tue, 8 Apr 2014 10:23:21 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Richard Fowles <rfowles@redhat.com>
+Subject: Re: [PATCH 03/15 V3] perf c2c: Shared data analyser
+Message-ID: <20140408142321.GW8488@redhat.com>
+References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+ <1395689826-215033-4-git-send-email-dzickus@redhat.com>
+ <87a9bwxq64.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a9bwxq64.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-07 at 21:44 -0700, Kees Cook wrote:
-> When building the name for the workqueue thread, make sure a format
-> string cannot leak in from the disk name.
+On Tue, Apr 08, 2014 at 03:59:15PM +0900, Namhyung Kim wrote:
+> Hi Don,
+
+Oh by the way, thank you for your review.  I will clean up a bunch of
+stuff based on your suggestions.
+
+Cheers,
+Don
+
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-
-Pushed to linux-ubifs / master, thanks!
-
--- 
-Best Regards,
-Artem Bityutskiy
-
+> On Mon, 24 Mar 2014 15:36:54 -0400, Don Zickus wrote:
+> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> >
+> > This is the start of a new perf tool that will collect information about
+> > memory accesses and analyse it to find things like hot cachelines, etc.
+> 
+> So why not integrating this into existing 'perf mem' command if it's all
+> about analyzing memory accesses?
+> 
+> >
+> > This is basically trying to get a prototype written by Richard Fowles
+> > written using the tools/perf coding style and libraries.
+> >
+> > Start it from 'perf sched', this patch starts the process by adding the
+> > 'record' subcommand to collect the needed mem loads and stores samples.
+> >
+> > It also have the basic 'report' skeleton, resolving the sample address
+> > and hooking the events found in a perf.data file with methods to handle
+> > them, right now just printing the resolved perf_sample data structure
+> > after each event name.
+> >
+> > [dcz: refreshed to latest upstream changes]
+> 
+> [SNIP]
+> > +perf-c2c(1)
+> > +===========
+> > +
+> > +NAME
+> > +----
+> > +perf-c2c - Shared Data C2C/HITM Analyzer.
+> > +
+> > +SYNOPSIS
+> > +--------
+> > +[verse]
+> > +'perf c2c' record
+> > +
+> > +DESCRIPTION
+> > +-----------
+> > +These are the variants of perf c2c:
+> > +
+> > +  'perf c2c record <command>' to record the memory accesses of an arbitrary
+> > +  workload.
+> > +
+> > +SEE ALSO
+> > +--------
+> > +linkperf:perf-record[1], linkperf:perf-mem[1]
+> 
+> This document is very terse and only memtions the 'record' subcommand -
+> also it's not updated throughout the series.  So I'd like to suggest
+> adding a separate documentation patch with full/verbose descriptions at
+> the end of this series.
+> 
+> 
+> [SNIP]
+> > +static int perf_c2c__read_events(struct perf_c2c *c2c)
+> > +{
+> > +	int err = -1;
+> > +	struct perf_session *session;
+> > +	struct perf_data_file file = {
+> > +			.path = input_name,
+> > +			.mode = PERF_DATA_MODE_READ,
+> > +	};
+> > +	struct perf_evsel *evsel;
+> > +
+> > +	session = perf_session__new(&file, 0, &c2c->tool);
+> > +	if (session == NULL) {
+> > +		pr_debug("No memory for session\n");
+> > +		goto out;
+> > +	}
+> > +
+> > +	/* setup the evsel handlers for each event type */
+> > +	evlist__for_each(session->evlist, evsel) {
+> > +		const char *name = perf_evsel__name(evsel);
+> > +		unsigned int i;
+> > +
+> > +		for (i = 0; i < ARRAY_SIZE(handlers); i++) {
+> > +			if (!strcmp(name, handlers[i].name))
+> > +				evsel->handler = handlers[i].handler;
+> > +		}
+> > +	}
+> > +
+> > +	err = perf_session__process_events(session, &c2c->tool);
+> > +	if (err)
+> > +		pr_err("Failed to process events, error %d", err);
+> 
+> You may want to add perf_session__delete() here.
+> 
+> > +
+> > +out:
+> > +	return err;
+> > +}
+> 
+> 
+> [SNIP]
+> > +int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+> > +{
+> > +	struct perf_c2c c2c = {
+> > +		.tool = {
+> > +			.sample		 = perf_c2c__process_sample,
+> > +			.comm		 = perf_event__process_comm,
+> > +			.exit		 = perf_event__process_exit,
+> > +			.fork		 = perf_event__process_fork,
+> > +			.lost		 = perf_event__process_lost,
+> 
+> It seems that it also needs to handle mmap[2] events otherwise it cannot
+> find symbols from an address.
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> > +			.ordered_samples = true,
+> > +		},
+> > +	};
