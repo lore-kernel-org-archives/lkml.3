@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509AbaDHKdf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:33:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57010 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579AbaDHKdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:33:33 -0400
-Message-ID: <1396953211.25633.16.camel@linux-fkkt.site>
-Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
-From: Oliver Neukum <oneukum@suse.de>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Xiao Jin <jin.xiao@intel.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
-Date: Tue, 08 Apr 2014 12:33:31 +0200
-In-Reply-To: <20140408073306.GB25779@localhost>
-References: <53436770.9090008@intel.com> <20140408073306.GB25779@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932066AbaDHKh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:37:56 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:58824 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579AbaDHKhy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:37:54 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RESEND] drivercore: deferral race condition fix
+To: Mark Brown <broonie@kernel.org>, Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: gregkh@linuxfoundation.org, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140403094059.GR14763@sirena.org.uk>
+References: <1396509127-23819-1-git-send-email-peter.ujfalusi@ti.com> < 20140403094059.GR14763@sirena.org.uk>
+Date: Tue, 08 Apr 2014 11:27:31 +0100
+Message-Id: <20140408102731.6C331C40933@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-08 at 09:33 +0200, Johan Hovold wrote:
-> On Tue, Apr 08, 2014 at 11:05:20AM +0800, Xiao Jin wrote:
-
-> > (2) acm tty port ASYNCB_INITIALIZED flag will be cleared when
-> > close. If acm resume callback run after ASYNCB_INITIALIZED flag
-> > cleared, there will have no chance for delayed write to start.
-> > That lead to acm_wb.use can't be cleared. If user space open
-> > acm tty again and try to setd, tty will be blocked in
-> > tty_wait_until_sent for ever.
-> >
-> > This patch have two modification.
-> > (1) use list_head to save the write acm_wb during acm suspend.
-> > It can ensure no acm write abandoned.
-> > (2) enable flush buffer callback when acm tty close. acm delayed
-> > wb will start before acm port shutdown callback, it make sure
-> > the delayed acm_wb.use to be cleared. The patch also clear
-> > acm_wb.use and acm.transmitting when port shutdown.
+On Thu, 3 Apr 2014 10:40:59 +0100, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Apr 03, 2014 at 10:12:07AM +0300, Peter Ujfalusi wrote:
+> > When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
+> > when all modules loaded but some driver still stuck in the deferred list
+> > and there is a need for external event to kick the deferred queue to probe
+> > these drivers.
 > 
-> This is not the right way to do this. See below.
+> Acked-by: Mark Brown <broonie@linaro.org>
 
-If I see this correctly, then ASYNCB_INITIALIZED is cleared in
-tty_port_close() we is called from acm_tty_close(). Thus it should
-be enough to make sure that the device is resumed at the beginning
-of acm_tty_close() and acm_resume() will do the job automatically.
-What do you think?
+It's a pretty crude solution though. The problem is any "in-flight"
+probes that are going to defer will not get added to the active list.
+Rerunning the entire active list is a bit much (but it does have the
+advantage of still being conceptually simple). I think we can do better.
 
-	Regards
-		Oliver
+Instead of running the entire list, we could add a check to
+driver_deferred_probe_add() that adds the device to the active list
+instead of pending list on the condition that another driver probe
+completed while the deferred probe was in-flight.
+
+I'm playing with a solution now. I'll email a proposal shortly.
+
+g.
+
+
 
 
