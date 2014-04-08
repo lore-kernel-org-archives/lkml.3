@@ -1,98 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637AbaDHMlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 08:41:47 -0400
-Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:33722 "EHLO
-	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756121AbaDHMlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 08:41:45 -0400
-Message-ID: <1396960898.3567.55.camel@linaro1.home>
-Subject: Re: [PATCH 2/2] ARM: mm: make text and rodata read-only
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Rabin Vincent <rabin@rab.in>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 08 Apr 2014 13:41:38 +0100
-In-Reply-To: <CAGXu5jKPX2igsb2rQzdCZQZ8X3h4YZihCV9D+cDW3F+qii8H2A@mail.gmail.com>
-References: <1396577719-14786-1-git-send-email-keescook@chromium.org>
-	 <1396577719-14786-3-git-send-email-keescook@chromium.org>
-	 <20140404195818.GA21028@debian>
-	 <CAGXu5jKPX2igsb2rQzdCZQZ8X3h4YZihCV9D+cDW3F+qii8H2A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S1756754AbaDHMmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 08:42:42 -0400
+Received: from mout.gmx.net ([212.227.17.22]:53779 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756207AbaDHMml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 08:42:41 -0400
+Message-ID: <5343EE56.6010809@gmx.at>
+Date: Tue, 08 Apr 2014 14:40:54 +0200
+From: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@redhat.com>, linux-kernel@vger.kernel.org,
+        Manfred Schlaegl <manfred.schlaegl@ginzinger.com>
+Subject: [PATCH] tty: Fix race condition between __tty_buffer_request_room
+ and flush_to_ldisc
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01b-IP: [82.69.122.217]
+X-Provags-ID: V03:K0:yQo3BZNiKtwRlPJ0JP2tjdeSjgZfco398ams5SoJFuhz0Y6Uyj5
+ tZO1cok+JfeMsuQlp2EbYXH1iqFxUNoPb4HJB1zYcZTmjJOhnVj+YGmAXnLymujlI+gc0Ne
+ F4YvbIT/7dKO5UVVKyWxF4zMtAo1vFHkbrp3AjhrzapIgTp0VnEuBFTGAme73O2+9sMLpuI
+ znzUWOyRar/nip/ip1+JQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Fri, 2014-04-04 at 17:07 -0700, Kees Cook wrote:
-> On Fri, Apr 4, 2014 at 12:58 PM, Rabin Vincent <rabin@rab.in> wrote:
-[...]
-> > You need a TLB flush.  I had a flush_tlb_all() in my example patch,
-> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/244335.html,
-> > but the following is probably nicer (on top of this patch):
-> >
-> > diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> > index 9bea524..a92c45a 100644
-> > --- a/arch/arm/mm/init.c
-> > +++ b/arch/arm/mm/init.c
-> > @@ -741,6 +741,8 @@ static inline bool arch_has_strict_perms(void)
-> >                      addr += SECTION_SIZE)                              \
-> >                         section_update(addr, perms[i].mask,             \
-> >                                        perms[i].field);                 \
-> > +                                                                       \
-> > +               flush_tlb_kernel_range(perms[i].start, perms[i].end);   \
-> >         }                                                               \
-> >  }
-> >
-> 
-> When I do this, I hang the system, and get a WARN due to the tlb call
-> attempting to flush on all CPUs, I think:
-> 
-> [   34.246034] WARNING: at
-> /mnt/host/source/src/third_party/kernel-next/kernel/smp.c:466
-> smp_call_function_many+0xac/0x26c()
-> ...
-> [   34.246617] Backtrace:
-> [   34.246697] [<c010d3b8>] (unwind_backtrace+0x0/0x118) from
-> [<c060b9d8>] (dump_stack+0x28/0x30)
-> [   34.246765] [<c060b9d8>] (dump_stack+0x28/0x30) from [<c0123044>]
-> (warn_slowpath_null+0x44/0x5c)
-> [   34.246824] [<c0123044>] (warn_slowpath_null+0x44/0x5c) from
-> [<c017426c>] (smp_call_function_many+0xac/0x26c)
-> [   34.246881] [<c017426c>] (smp_call_function_many+0xac/0x26c) from
-> [<c0174468>] (smp_call_function+0x3c/0x48)
-> [   34.246937] [<c0174468>] (smp_call_function+0x3c/0x48) from
-> [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c)
-> [   34.246994] [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c) from
-> [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0)
-> [   34.247046] [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0) from
-> [<c011403c>] (set_kernel_text_rw+0xd8/0xec)
-> [   34.247099] [<c011403c>] (set_kernel_text_rw+0xd8/0xec) from
-> [<c010c878>] (__ftrace_modify_code+0x14/0x28)
-> [   34.247156] [<c010c878>] (__ftrace_modify_code+0x14/0x28) from
-> [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114)
-> [   34.247212] [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114) from
-> [<c01841cc>] (cpu_stopper_thread+0xd8/0x164)
-> [   34.247266] [<c01841cc>] (cpu_stopper_thread+0xd8/0x164) from
-> [<c0145c14>] (kthread+0xc8/0xd8)
-> [   34.247323] [<c0145c14>] (kthread+0xc8/0xd8) from [<c0106118>]
-> (ret_from_fork+0x14/0x20)
-> 
-> Using local_flush_tlb_kernel_range() fixed it though.
-
-What about if another CPU had a TLB entry with the old permissions in?
-Or do you consider that the likelihood and consequences of that aren't
-significant?
-
--- 
-Tixy
 
