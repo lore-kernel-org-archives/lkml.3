@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357AbaDHWTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 18:19:51 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:25920 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594AbaDHWTt (ORCPT
+	id S1757466AbaDHWXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 18:23:30 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:46041 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756079AbaDHWX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 18:19:49 -0400
-X-IronPort-AV: E=Sophos;i="4.97,821,1389772800"; 
-   d="scan'208";a="23347121"
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>
-CC: Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] mmc: Delay the card_event callback into the mmc_rescan worker
-Date: Tue, 8 Apr 2014 15:19:43 -0700
-Message-ID: <1396995583-5475-1-git-send-email-markus.mayer@linaro.org>
+	Tue, 8 Apr 2014 18:23:26 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
+        devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/5] clk: bcm281xx: move compatible string definitions
+Date: Tue,  8 Apr 2014 17:23:52 -0500
+Message-Id: <1396995836-31111-2-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1396995836-31111-1-git-send-email-elder@linaro.org>
+References: <1396995836-31111-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change removes the callback from atomic context which it doesn't
-need to be in, and puts it in line with the debounced rescan.
+The Broadcom 281xx clock code uses a #define for the compatible
+string for it's clock control units (CCUs).  Rather than defining
+those in the C source file, define them in the header file that's
+shared by both the code and the device tree source file (along with
+all the clock ids).
 
-This code is based on these e-mail threads with Christian Daudt:
-
-  https://lkml.org/lkml/2013/8/19/539
-  https://lkml.org/lkml/2014/3/19/79
-
-Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- drivers/mmc/core/core.c      |    5 +++++
- drivers/mmc/core/slot-gpio.c |    4 +---
- include/linux/mmc/host.h     |    2 ++
- 3 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/clk/bcm/clk-bcm281xx.c       |   12 ------------
+ include/dt-bindings/clock/bcm281xx.h |   12 ++++++++++++
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 098374b..ff7fd2e 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -2421,6 +2421,11 @@ void mmc_rescan(struct work_struct *work)
- 		container_of(work, struct mmc_host, detect.work);
- 	int i;
+diff --git a/drivers/clk/bcm/clk-bcm281xx.c b/drivers/clk/bcm/clk-bcm281xx.c
+index 71a65a4..502a487 100644
+--- a/drivers/clk/bcm/clk-bcm281xx.c
++++ b/drivers/clk/bcm/clk-bcm281xx.c
+@@ -18,18 +18,6 @@
+ #define BCM281XX_CCU_COMMON(_name, _ucase_name) \
+ 	KONA_CCU_COMMON(BCM281XX, _name, _ucase_name)
  
-+	if (host->trigger_card_event && host->ops->card_event) {
-+		host->ops->card_event(host);
-+		host->trigger_card_event = false;
-+	}
-+
- 	if (host->rescan_disable)
- 		return;
- 
-diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
-index 46596b71..4029c85 100644
---- a/drivers/mmc/core/slot-gpio.c
-+++ b/drivers/mmc/core/slot-gpio.c
-@@ -29,9 +29,7 @@ static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
- 	/* Schedule a card detection after a debounce timeout */
- 	struct mmc_host *host = dev_id;
- 
--	if (host->ops->card_event)
--		host->ops->card_event(host);
+-/*
+- * These are the bcm281xx CCU device tree "compatible" strings.
+- * We're stuck with using "bcm11351" in the string because wild
+- * cards aren't allowed, and that name was the first one defined
+- * in this family of devices.
+- */
+-#define BCM281XX_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
+-#define BCM281XX_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
+-#define BCM281XX_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
+-#define BCM281XX_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
+-#define BCM281XX_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
 -
-+	host->trigger_card_event = true;
- 	mmc_detect_change(host, msecs_to_jiffies(200));
+ /* Root CCU */
  
- 	return IRQ_HANDLED;
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 99f5709..63b983b 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -322,6 +322,8 @@ struct mmc_host {
- 	int			rescan_disable;	/* disable card detection */
- 	int			rescan_entered;	/* used with nonremovable devices */
+ static struct peri_clk_data frac_1m_data = {
+diff --git a/include/dt-bindings/clock/bcm281xx.h b/include/dt-bindings/clock/bcm281xx.h
+index e009694..a763460 100644
+--- a/include/dt-bindings/clock/bcm281xx.h
++++ b/include/dt-bindings/clock/bcm281xx.h
+@@ -20,6 +20,18 @@
+  * the clock control units (CCUs) on Broadcom BCM281XX family SoCs.
+  */
  
-+	bool			trigger_card_event; /* card_event necessary */
++/*
++ * These are the bcm281xx CCU device tree "compatible" strings.
++ * We're stuck with using "bcm11351" in the string because wild
++ * cards aren't allowed, and that name was the first one defined
++ * in this family of devices.
++ */
++#define BCM281XX_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
++#define BCM281XX_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
++#define BCM281XX_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
++#define BCM281XX_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
++#define BCM281XX_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
 +
- 	struct mmc_card		*card;		/* device attached to this host */
+ /* root CCU clock ids */
  
- 	wait_queue_head_t	wq;
+ #define BCM281XX_ROOT_CCU_FRAC_1M		0
 -- 
 1.7.9.5
 
