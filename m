@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228AbaDHNNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:13:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43344 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136AbaDHNNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:13:00 -0400
-Date: Tue, 8 Apr 2014 15:12:27 +0200
-From: Johan Hovold <johan@hovold.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Xiao Jin <jin.xiao@intel.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com,
-        Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
-Message-ID: <20140408131227.GD25779@localhost>
-References: <53436770.9090008@intel.com>
- <20140408122229.67e2658e@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140408122229.67e2658e@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1756822AbaDHNJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:09:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60969 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756372AbaDHNJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 09:09:39 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-X86 <x86@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/5] x86: Require x86-64 for automatic NUMA balancing
+Date: Tue,  8 Apr 2014 14:09:26 +0100
+Message-Id: <1396962570-18762-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1396962570-18762-1-git-send-email-mgorman@suse.de>
+References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +CC: Oliver ]
+32-bit support for NUMA is an oddity on its own but with automatic NUMA
+balancing on top there is a reasonable risk that the CPUPID information
+cannot be stored in the page flags. This patch removes support for
+automatic NUMA support on 32-bit x86.
 
-On Tue, Apr 08, 2014 at 12:22:29PM +0100, One Thousand Gnomes wrote:
-> > (2) acm tty port ASYNCB_INITIALIZED flag will be cleared when
-> > close. If acm resume callback run after ASYNCB_INITIALIZED flag
-> > cleared, there will have no chance for delayed write to start.
-> > That lead to acm_wb.use can't be cleared. If user space open
-> > acm tty again and try to setd, tty will be blocked in
-> > tty_wait_until_sent for ever.
-> 
-> If there is data pending when the close occurs the close path should
-> block until either the close timeout occurs or the buffer is written.
-> This sounds more like the implementation of the ACM chars_in_buffer
-> method is wrong and not counting the deferred bytes as unsent ?
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ arch/x86/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The ACM chars_in_buffer does count the deferred bytes so I guess this
-can only happen if close happens fast enough that resume is never called
-before shutdown (e.g. closing_wait = ASYNC_CLOSING_WAIT_NONE and
-drain_delay = 0).
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..084b1c1 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -26,7 +26,7 @@ config X86
+ 	select ARCH_MIGHT_HAVE_PC_SERIO
+ 	select HAVE_AOUT if X86_32
+ 	select HAVE_UNSTABLE_SCHED_CLOCK
+-	select ARCH_SUPPORTS_NUMA_BALANCING
++	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64
+ 	select ARCH_SUPPORTS_INT128 if X86_64
+ 	select ARCH_WANTS_PROT_NUMA_PROT_NONE
+ 	select HAVE_IDE
+-- 
+1.8.4.5
 
-Johan
