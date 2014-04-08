@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988AbaDHE5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 00:57:42 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:54333 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaDHE5k (ORCPT
+	id S1755565AbaDHFDP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 01:03:15 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:57792 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaDHFDN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 00:57:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <227e5e019c175010b593d41cf1154e2e6505c22e.1396699157.git.viresh.kumar@linaro.org>
-References: <227e5e019c175010b593d41cf1154e2e6505c22e.1396699157.git.viresh.kumar@linaro.org>
-Date: Tue, 8 Apr 2014 10:27:39 +0530
-Message-ID: <CAKohpom7n=cbWJttvxgYCv7uzXQeJx4FzMZuyKWvNvbM6kmqjA@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: register cpu notifier to remove timer from
- dying CPU
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Apr 2014 01:03:13 -0400
+Date: Tue, 8 Apr 2014 07:02:59 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCHv3 1/3] pwm: make the PWM_POLARITY flag in DTB optional
+Message-ID: <20140408070259.68923987@ipc1.ka-ro>
+In-Reply-To: <20140407113652.GE26985@ulmo>
+References: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
+	<1395996540-10999-1-git-send-email-LW@KARO-electronics.de>
+	<1395996540-10999-2-git-send-email-LW@KARO-electronics.de>
+	<20140402055350.GX17250@pengutronix.de>
+	<20140407113652.GE26985@ulmo>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 April 2014 17:33, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->  kernel/time/clocksource.c | 64 +++++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 53 insertions(+), 11 deletions(-)
->
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index ba3e502..8054fb1 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -23,16 +23,21 @@
->   *   o Allow clocksource drivers to be unregistered
->   */
->
-> +#include <linux/cpu.h>
->  #include <linux/device.h>
->  #include <linux/clocksource.h>
->  #include <linux/init.h>
->  #include <linux/module.h>
-> +#include <linux/notifier.h>
->  #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
->  #include <linux/tick.h>
->  #include <linux/kthread.h>
->
->  #include "tick-internal.h"
->
-> +/* Tracks current CPU to queue watchdog timer on */
-> +static int timer_cpu;
-> +
+Hi,
 
-Minor fixup, will send V2 after few days:
+Thierry Reding wrote:
+> On Wed, Apr 02, 2014 at 07:53:50AM +0200, Sascha Hauer wrote:
+> > On Fri, Mar 28, 2014 at 09:48:58AM +0100, Lothar Waßmann wrote:
+> [...]
+> > > @@ -183,8 +173,11 @@ static void of_pwmchip_add(struct pwm_chip *chip)
+> > >  		return;
+> > >  
+> > >  	if (!chip->of_xlate) {
+> > > -		chip->of_xlate = of_pwm_simple_xlate;
+> > > -		chip->of_pwm_n_cells = 2;
+> > > +		chip->of_xlate = of_pwm_xlate;
+> > > +		if (chip->ops->set_polarity)
+> > > +			chip->of_pwm_n_cells = 3;
+> > > +		else
+> > > +			chip->of_pwm_n_cells = 2;
+> > 
+> > I think the presence of the set_polarity callback shouldn't influence
+> > the number of cells the parser expects. As commented on 2/2 this doesn't
+> > actually mean the device actually support polarity inversion.
+> 
+> How so? A driver should only implement .set_polarity() if it supports
+> changing the polarity.
+> 
+> That said, I agree that the presence of .set_polarity() shouldn't
+> determine the number of cells. You could have any number of other flags
+> set via the third cell.
+> 
+> > Also, polarity inversion could still be done in software for hardware
+> > that doesn't support it.
+> 
+> No. You cannot emulate polarity inversion in software.
+> 
+Why not?
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index 8054fb1..356c6c6 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -35,9 +35,6 @@
+duty_ns = period_ns - duty_ns;
 
- #include "tick-internal.h"
 
--/* Tracks current CPU to queue watchdog timer on */
--static int timer_cpu;
--
- void timecounter_init(struct timecounter *tc,
-                      const struct cyclecounter *cc,
-                      u64 start_tstamp)
-@@ -185,6 +182,9 @@ static char override_name[CS_NAME_LEN];
- static int finished_booting;
+Lothar Waßmann
+-- 
+___________________________________________________________
 
- #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
-+/* Tracks current CPU to queue watchdog timer on */
-+static int timer_cpu;
-+
- static void clocksource_watchdog_work(struct work_struct *work);
- static void clocksource_select(void);
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
