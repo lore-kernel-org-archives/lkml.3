@@ -1,119 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594AbaDHKV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:21:26 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:50135 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496AbaDHKVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:21:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALZtONBQZYeRTx_=Z70H7v4g=39C=caJgoZV3mVFwoPHTHVTuQ@mail.gmail.com>
-References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
-	<20140327222605.GB16495@medulla.variantweb.net>
-	<CALZtONDBNzL_S+UUxKgvNjEYu49eM5Fc2yJ37dJ8E+PEK+C7qg@mail.gmail.com>
-	<533587FD.7000006@redhat.com>
-	<CALZtONA=v+3_+6qEvyY0SruT=aGxAfV_N5fsHvLMJKFp4Stnww@mail.gmail.com>
-	<CAA_GA1er3d+_LJp67aD8tE0SLMod--FpRFvGBdKmpzU_aQNdUg@mail.gmail.com>
-	<CALZtONBQZYeRTx_=Z70H7v4g=39C=caJgoZV3mVFwoPHTHVTuQ@mail.gmail.com>
-Date: Tue, 8 Apr 2014 18:21:18 +0800
-Message-ID: <CAA_GA1e+241XDho9EjKc=eDRt3eN5rm27yE8RcNQRhswzf1vPA@mail.gmail.com>
-Subject: Re: Adding compression before/above swapcache
-From: Bob Liu <lliubbo@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Rik van Riel <riel@redhat.com>, Seth Jennings <sjennings@variantweb.net>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Bob Liu <bob.liu@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932121AbaDHKWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:22:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56859 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756402AbaDHKWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:22:24 -0400
+Message-ID: <1396952542.25633.13.camel@linux-fkkt.site>
+Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
+From: Oliver Neukum <oneukum@suse.de>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Xiao Jin <jin.xiao@intel.com>, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
+Date: Tue, 08 Apr 2014 12:22:22 +0200
+In-Reply-To: <20140408073306.GB25779@localhost>
+References: <53436770.9090008@intel.com> <20140408073306.GB25779@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 11:35 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> On Mon, Mar 31, 2014 at 8:43 AM, Bob Liu <lliubbo@gmail.com> wrote:
->> On Fri, Mar 28, 2014 at 10:47 PM, Dan Streetman <ddstreet@ieee.org> wrote:
->>> On Fri, Mar 28, 2014 at 10:32 AM, Rik van Riel <riel@redhat.com> wrote:
->>>> On 03/28/2014 08:36 AM, Dan Streetman wrote:
->>>>
->>>>> Well my general idea was to modify shrink_page_list() so that instead
->>>>> of calling add_to_swap() and then pageout(), anonymous pages would be
->>>>> added to a compressed cache.  I haven't worked out all the specific
->>>>> details, but I am initially thinking that the compressed cache could
->>>>> simply repurpose incoming pages to use as the compressed cache storage
->>>>> (using its own page mapping, similar to swap page mapping), and then
->>>>> add_to_swap() the storage pages when the compressed cache gets to a
->>>>> certain size.  Pages that don't compress well could just bypass the
->>>>> compressed cache, and get sent the current route directly to
->>>>> add_to_swap().
->>>>
->>>>
->>>> That sounds a lot like what zswap does. How is your
->>>> proposal different?
->>>
->>> Two main ways:
->>> 1) it's above swap, so it would still work without any real swap.
->>
->> Zswap can also be extended without any real swap device.
->
-> Ok I'm interested - how is that possible? :-)
->
->>> 2) compressed pages could be written to swap disk.
->>>
->>
->> Yes, how to handle the write back of zswap is a problem. And I think
->> your patch making zswap write through is a good start.
->
-> but it's still writethrough of uncompressed pages.
->
->>> Essentially, the two existing memory compression approaches are both
->>> tied to swap.  But, AFAIK there's no reason that memory compression
->>> has to be tied to swap.  So my approach uncouples it.
->>>
->>
->> Yes, it's not necessary but swap page is a good candidate and easy to
->> handle. There are also clean file pages which may suitable for
->> compression. See http://lwn.net/Articles/545244/.
->
-> Yep, and what is the current state of cleancache?  Was there a
-> definitive reason it hasn't made it in yet?
->
->>>> And, is there an easier way to implement that difference? :)
->>>
->>> I'm hoping that it wouldn't actually be too complex.  But that's part
->>> of why I emailed for feedback before digging into a prototype... :-)
->>>
->>
->> I'm afraid your idea may not that easy to be implemented and need to
->> add many tricky code to current mm subsystem, but the benefit is still
->> uncertain. As Mel pointed out we really need better demonstration
->> workloads for memory compression before changes.
->> https://lwn.net/Articles/591961
->
-> Well I think it's hard to argue that memory compression provides *no*
-> obvious benefit - I'm pretty sure it's quite useful for minor
-> overcommit on systems without any disk swap, and even for systems with
-> swap it at least softens the steep performance cliff that we currently
-> have when starting to overcommit memory into swap space.
->
-> As far as its benefits for larger systems, or how realistic it is to
-> start routinely overcommitting systems with the expectation that
-> memory compression magically gives you more effective RAM, I certainly
-> don't know the answer, and I agree, more widespread testing and
-> demonstration surely will be needed.
->
-> But to ask a more pointed question - what do you think would be the
-> tricky part(s)?
+On Tue, 2014-04-08 at 09:33 +0200, Johan Hovold wrote:
+> On Tue, Apr 08, 2014 at 11:05:20AM +0800, Xiao Jin wrote:
+> > We find two problems on acm tty write delayed mechanism.
+> 
+> Then you should split this into two patches.
+> 
+> > (1) When acm resume, the delayed wb will be started. But now
+> > only one write can be saved during acm suspend. More acm write
+> > may be abandoned.
+> 
+> Why not simply return 0 in write and use the tty buffering rather than
+> implement another buffer in cdc_acm?
 
-Just thought it may make things more complex and more race conditions
-might be introduced.
-That's why zswap was based on top of frontswap(a simple interface).
-Personally, I'd prefer to make zswap/zram better instead of a new one.
+Yes. We need a single buffer because the tty layer is not happy
+when you accept no data. But we should be able to refuse subsequent
+writes. Could you test this patch?
 
+	Regards
+		Oliver
+
+>From 1d44c1f2a10b5617824a37c8ec51f5547e482259 Mon Sep 17 00:00:00 2001
+From: Oliver Neukum <oneukum@suse.de>
+Date: Tue, 8 Apr 2014 12:17:39 +0200
+Subject: [PATCH] cdc-acm: fix consecutive writes while device is suspended
+
+CDC-ACM needs to handle one attempt to write to a suspended
+device because we told the tty layer that there is room.
+A second attempt may and must fail or we drop data.
+
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+CC: stable@vger.kernel.org
+---
+ drivers/usb/class/cdc-acm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 900f7ff..7ad3105 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -646,10 +646,12 @@ static int acm_tty_write(struct tty_struct *tty,
+ 
+ 	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
++		if (!acm->delayed_wb) {
+ 			acm->delayed_wb = wb;
+-		else
++		} else {
+ 			usb_autopm_put_interface_async(acm->control);
++			count = 0;
++		}
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+ 		return count;	/* A white lie */
+ 	}
 -- 
-Regards,
---Bob
+1.8.4.5
+
+
+
