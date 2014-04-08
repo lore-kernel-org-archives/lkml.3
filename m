@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaDHNJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:09:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32769 "EHLO mx2.suse.de"
+	id S1756878AbaDHNJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:09:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32782 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756769AbaDHNJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:09:40 -0400
+	id S1756778AbaDHNJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 09:09:42 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-X86 <x86@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -19,9 +19,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/5] mm: use paravirt friendly ops for NUMA hinting ptes
-Date: Tue,  8 Apr 2014 14:09:29 +0100
-Message-Id: <1396962570-18762-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 5/5] x86: Allow Xen to enable NUMA_BALANCING
+Date: Tue,  8 Apr 2014 14:09:30 +0100
+Message-Id: <1396962570-18762-6-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1396962570-18762-1-git-send-email-mgorman@suse.de>
 References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
@@ -29,101 +29,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Vrabel identified a regression when using automatic NUMA balancing
-under Xen whereby page table entries were getting corrupted due to the
-use of native PTE operations. Quoting him
-
-	Xen PV guest page tables require that their entries use machine
-	addresses if the preset bit (_PAGE_PRESENT) is set, and (for
-	successful migration) non-present PTEs must use pseudo-physical
-	addresses.  This is because on migration MFNs in present PTEs are
-	translated to PFNs (canonicalised) so they may be translated back
-	to the new MFN in the destination domain (uncanonicalised).
-
-	pte_mknonnuma(), pmd_mknonnuma(), pte_mknuma() and pmd_mknuma()
-	set and clear the _PAGE_PRESENT bit using pte_set_flags(),
-	pte_clear_flags(), etc.
-
-	In a Xen PV guest, these functions must translate MFNs to PFNs
-	when clearing _PAGE_PRESENT and translate PFNs to MFNs when setting
-	_PAGE_PRESENT.
-
-His suggested fix converted p[te|md]_[set|clear]_flags to using
-paravirt-friendly ops but this is overkill. He suggested an alternative of
-using p[te|md]_modify in the NUMA page table operations but this is does
-more work than necessary and would require looking up a VMA for protections.
-
-This patch modifies the NUMA page table operations to use paravirt friendly
-operations to set/clear the flags of interest. Unfortunately this will take
-a performance hit when updating the PTEs on CONFIG_PARAVIRT but I do not
-see a way around it that does not break Xen.
+Xen cannot use automatic NUMA balancing as they are depending on the same PTE
+bit. There is another software bit that is currently used by software dirty
+tracking of pages. This patch allows Xen to use that bit for automatic NUMA
+balancing if MEM_SOFT_DIRTY is not enabled. If KMEMCHECK is enabled then
+the bit is only set on global page tables so there should be no collision
+with NUMA_BALANCING. This shuffling can be disabled if/when Xen moves away
+from using _PAGE_BIT_IOMAP.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/asm-generic/pgtable.h | 31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ arch/x86/Kconfig                     |  2 +-
+ arch/x86/include/asm/pgtable_types.h | 14 +++++++++++++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 34c7bdc..38a7437 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -680,24 +680,35 @@ static inline int pmd_numa(pmd_t pmd)
- #ifndef pte_mknonnuma
- static inline pte_t pte_mknonnuma(pte_t pte)
- {
--	pte = pte_clear_flags(pte, _PAGE_NUMA);
--	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
-+	pteval_t val = pte_val(pte);
-+
-+	val &= ~_PAGE_NUMA;
-+	val |= (_PAGE_PRESENT|_PAGE_ACCESSED);
-+	return __pte(val);
- }
- #endif
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 4fab25a..3c4ba81 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -26,7 +26,7 @@ config X86
+ 	select ARCH_MIGHT_HAVE_PC_SERIO
+ 	select HAVE_AOUT if X86_32
+ 	select HAVE_UNSTABLE_SCHED_CLOCK
+-	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64 && !XEN
++	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64 && (!XEN || !MEM_SOFT_DIRTY)
+ 	select ARCH_SUPPORTS_INT128 if X86_64
+ 	select ARCH_WANTS_PROT_NUMA_PROT_NONE
+ 	select HAVE_IDE
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 49b3e15..fa84d1f 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -24,11 +24,23 @@
+ #define _PAGE_BIT_CPA_TEST	_PAGE_BIT_SOFTW1
+ #define _PAGE_BIT_SPLITTING	_PAGE_BIT_SOFTW1 /* only valid on a PSE pmd */
+ #define _PAGE_BIT_IOMAP		_PAGE_BIT_SOFTW2 /* flag used to indicate IO mapping */
+-#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW2 /* for NUMA balancing hinting */
+ #define _PAGE_BIT_HIDDEN	_PAGE_BIT_SOFTW3 /* hidden by kmemcheck */
+ #define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_SOFTW3 /* software dirty tracking */
+ #define _PAGE_BIT_NX           63       /* No execute: only valid after cpuid check */
  
- #ifndef pmd_mknonnuma
- static inline pmd_t pmd_mknonnuma(pmd_t pmd)
- {
--	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
--	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
-+	pmdval_t val = pmd_val(pmd);
++/*
++ * Automatic NUMA balancing uses _PAGE_BIT_SOFTW2 if available as generally it
++ * is only used on the kernel page tables and is easily shared. Unfortunately,
++ * Xen also uses this bit so on those configurations it is necessary to use
++ * _PAGE_BIT_SOFTW3 but then MEM_SOFT_DIRTY cannot be enabled at the same time
++ * as it also requires that bit. Constraint is enforced by Kconfig.
++ */
++#ifndef CONFIG_XEN
++#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW2
++#else
++#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW3
++#endif
 +
-+	val &= ~_PAGE_NUMA;
-+	val |= (_PAGE_PRESENT|_PAGE_ACCESSED);
-+
-+	return __pmd(val);
- }
- #endif
- 
- #ifndef pte_mknuma
- static inline pte_t pte_mknuma(pte_t pte)
- {
--	pte = pte_set_flags(pte, _PAGE_NUMA);
--	return pte_clear_flags(pte, _PAGE_PRESENT);
-+	pteval_t val = pte_val(pte);
-+
-+	val &= ~_PAGE_PRESENT;
-+	val |= _PAGE_NUMA;
-+
-+	return __pte(val);
- }
- #endif
- 
-@@ -716,8 +727,12 @@ static inline void ptep_set_numa(struct mm_struct *mm, unsigned long addr,
- #ifndef pmd_mknuma
- static inline pmd_t pmd_mknuma(pmd_t pmd)
- {
--	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
--	return pmd_clear_flags(pmd, _PAGE_PRESENT);
-+	pmdval_t val = pmd_val(pmd);
-+
-+	val &= ~_PAGE_PRESENT;
-+	val |= _PAGE_NUMA;
-+
-+	return __pmd(val);
- }
- #endif
- 
+ /* If _PAGE_BIT_PRESENT is clear, we use these: */
+ /* - if the user mapped it with PROT_NONE; pte_present gives true */
+ #define _PAGE_BIT_PROTNONE	_PAGE_BIT_GLOBAL
 -- 
 1.8.4.5
 
