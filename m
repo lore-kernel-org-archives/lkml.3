@@ -1,93 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276AbaDHG4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 02:56:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29679 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756165AbaDHG4J convert rfc822-to-8bit (ORCPT
+	id S1756245AbaDHG7U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 02:59:20 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:51808 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaDHG7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 02:56:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,816,1389772800"; 
-   d="scan'208";a="516699377"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Thread-Topic: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Thread-Index: AQHPS0iuvgiDnehMNEeghRTCX5Z79Jr4hhDwgAJi2QCAADLdEIADEokAgAA5rQD//9ENgIAH8M5Q///W/gCAAI6bcIAAlTGAgAAy3YA=
-Date: Tue, 8 Apr 2014 06:56:04 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AFB7D28@HASMSX106.ger.corp.intel.com>
-References: <20140329121550.GA5878@nik-comp.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
- <20140331120102.GY3339@pcnci.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFAE58E@HASMSX106.ger.corp.intel.com>
- <20140402135812.GI3339@pcnci.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFB112D@HASMSX106.ger.corp.intel.com>
- <20140402143635.GA4410@nik-comp.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFB7151@HASMSX106.ger.corp.intel.com>
- <20140407132530.GF3339@pcnci.linuxbox.cz>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFB7512@HASMSX106.ger.corp.intel.com>
- <20140408064953.GH3339@pcnci.linuxbox.cz>
-In-Reply-To: <20140408064953.GH3339@pcnci.linuxbox.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Apr 2014 02:59:18 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Richard Fowles <rfowles@redhat.com>
+Subject: Re: [PATCH 03/15 V3] perf c2c: Shared data analyser
+References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+	<1395689826-215033-4-git-send-email-dzickus@redhat.com>
+Date: Tue, 08 Apr 2014 15:59:15 +0900
+In-Reply-To: <1395689826-215033-4-git-send-email-dzickus@redhat.com> (Don
+	Zickus's message of "Mon, 24 Mar 2014 15:36:54 -0400")
+Message-ID: <87a9bwxq64.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Don,
 
-
-> -----Original Message-----
-> From: Nikola Ciprich [mailto:nikola.ciprich@linuxbox.cz]
-> Sent: Tuesday, April 08, 2014 09:50
-> To: Winkler, Tomas
-> Cc: Greg KH (gregkh@linuxfoundation.org); linux-kernel@vger.kernel.org; Nikola
-> Ciprich
-> Subject: Re: 3.0 -> 3.10 regression? poweroff instead of reboot?
-> > Sorry for asking but can you please double check your compilation setup.
-> 
-> You're right of course :-(
-> 
-> I tried rebuilding rpm again now, and patch spits following:
-> 
-> Hunk #1 succeeded at 105 (offset -2 lines).
-> patch unexpectedly ends in middle of line
-> 
-> it's bad rpm build didn't abort at this point, but apparently
-> this is patch's fault:
-> 
-> [root@dev6 linux-3.10]# cat /tmp/mei/1 | patch -sp1
-> patch unexpectedly ends in middle of line
-> [root@dev6 linux-3.10]# echo $?
-> 0
-> 
-> :-(
-> 
-> well, this sucks, I really wouldn't expect that kind of bug in such widely
-> used program as patch :(
+On Mon, 24 Mar 2014 15:36:54 -0400, Don Zickus wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 >
-> I'll report that.
+> This is the start of a new perf tool that will collect information about
+> memory accesses and analyse it to find things like hot cachelines, etc.
+
+So why not integrating this into existing 'perf mem' command if it's all
+about analyzing memory accesses?
+
+>
+> This is basically trying to get a prototype written by Richard Fowles
+> written using the tools/perf coding style and libraries.
+>
+> Start it from 'perf sched', this patch starts the process by adding the
+> 'record' subcommand to collect the needed mem loads and stores samples.
+>
+> It also have the basic 'report' skeleton, resolving the sample address
+> and hooking the events found in a perf.data file with methods to handle
+> them, right now just printing the resolved perf_sample data structure
+> after each event name.
+>
+> [dcz: refreshed to latest upstream changes]
+
+[SNIP]
+> +perf-c2c(1)
+> +===========
+> +
+> +NAME
+> +----
+> +perf-c2c - Shared Data C2C/HITM Analyzer.
+> +
+> +SYNOPSIS
+> +--------
+> +[verse]
+> +'perf c2c' record
+> +
+> +DESCRIPTION
+> +-----------
+> +These are the variants of perf c2c:
+> +
+> +  'perf c2c record <command>' to record the memory accesses of an arbitrary
+> +  workload.
+> +
+> +SEE ALSO
+> +--------
+> +linkperf:perf-record[1], linkperf:perf-mem[1]
+
+This document is very terse and only memtions the 'record' subcommand -
+also it's not updated throughout the series.  So I'd like to suggest
+adding a separate documentation patch with full/verbose descriptions at
+the end of this series.
 
 
-> (btw this error was caused by one whitespace character at last line of patch)
+[SNIP]
+> +static int perf_c2c__read_events(struct perf_c2c *c2c)
+> +{
+> +	int err = -1;
+> +	struct perf_session *session;
+> +	struct perf_data_file file = {
+> +			.path = input_name,
+> +			.mode = PERF_DATA_MODE_READ,
+> +	};
+> +	struct perf_evsel *evsel;
+> +
+> +	session = perf_session__new(&file, 0, &c2c->tool);
+> +	if (session == NULL) {
+> +		pr_debug("No memory for session\n");
+> +		goto out;
+> +	}
+> +
+> +	/* setup the evsel handlers for each event type */
+> +	evlist__for_each(session->evlist, evsel) {
+> +		const char *name = perf_evsel__name(evsel);
+> +		unsigned int i;
+> +
+> +		for (i = 0; i < ARRAY_SIZE(handlers); i++) {
+> +			if (!strcmp(name, handlers[i].name))
+> +				evsel->handler = handlers[i].handler;
+> +		}
+> +	}
+> +
+> +	err = perf_session__process_events(session, &c2c->tool);
+> +	if (err)
+> +		pr_err("Failed to process events, error %d", err);
 
-This is really strange, can it be that your mailer has introduced some blanks into the patch,
-I've checked that patch applies to all relevant stable kernels.
- 
-> anyways, You can certainly forgot about that, it was my fault :(
-> 
-> sorry about that
+You may want to add perf_session__delete() here.
 
-No harm done, it's good this was sorted out.
-Thanks
-Tomas
- 
+> +
+> +out:
+> +	return err;
+> +}
 
+
+[SNIP]
+> +int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+> +{
+> +	struct perf_c2c c2c = {
+> +		.tool = {
+> +			.sample		 = perf_c2c__process_sample,
+> +			.comm		 = perf_event__process_comm,
+> +			.exit		 = perf_event__process_exit,
+> +			.fork		 = perf_event__process_fork,
+> +			.lost		 = perf_event__process_lost,
+
+It seems that it also needs to handle mmap[2] events otherwise it cannot
+find symbols from an address.
+
+Thanks,
+Namhyung
+
+
+> +			.ordered_samples = true,
+> +		},
+> +	};
