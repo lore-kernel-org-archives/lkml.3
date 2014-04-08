@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbaDHPYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:24:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58296 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932159AbaDHPYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:24:10 -0400
-Date: Tue, 8 Apr 2014 17:24:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thor Thayer <tthayer@altera.com>
-Cc: robherring2@gmail.com, dougthompson@xmission.com, grant.likely@linaro.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, dinguyen@altera.com,
-        devicetree@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
- CycloneV/ArriaV
-Message-ID: <20140408152406.GI30077@pd.tnic>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
- <1396907649-20212-4-git-send-email-tthayer@altera.com>
- <20140408100851.GF30077@pd.tnic>
- <1396965459.23349.4.camel@dinh-ubuntu>
+	id S1757153AbaDHP0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:26:13 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:52656 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756382AbaDHP0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 11:26:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1396965459.23349.4.camel@dinh-ubuntu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140407201919.GA15838@sepie.suse.cz>
+References: <20140407201919.GA15838@sepie.suse.cz>
+Date: Tue, 8 Apr 2014 08:26:09 -0700
+X-Google-Sender-Auth: Kh0ocpV2FOB0j9nJ7BTaKisTJzc
+Message-ID: <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
+Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 08:57:39AM -0500, Thor Thayer wrote:
-> Yes, Altera has a group specifically supporting Linux drivers on the
-> Altera SoCs.
+On Mon, Apr 7, 2014 at 1:19 PM, Michal Marek <mmarek@suse.cz> wrote:
+>
+> besides the kbuild branch, here is the LTO build support by Andi. It is
+> a separate branch, because it depends on other patches by Andi which
+> were merged through other trees. The link-time-optimization build is an
+> experimental feature, so there one kconfig option to enable it and
+> another kconfig option to disable it (behind a door with a sign "Beware
+> of the Leopard"...), so that it is not enabled by
+> allmodconfig/allyesconfig.
 
-Then please add MAINTAINERS file entry for this EDAC driver so that
-people can send issues/reports to that group.
+So right now, I see several reasons not to merge it ("It's so
+experimental that we don't even want to encourage people to test it"
+to "it's not fully fleshed out yet and makes compile times _much_
+longer").
 
-> I was told that the device tree additions should be separate patches
-> in a series since the device tree additions go to a separate group for
-> approval.
+And yet nobody has actually talked about why I *should* merge it.
 
-Well, the EDAC driver depends on the devicetree stuff, right? If so,
-they should go together.
+Which - I think understandably - makes me less than enthusiastic.
 
--- 
-Regards/Gruss,
-    Boris.
+So I think I'll let this wait a bit longer, _unless_ people start
+talking about the upsides. How much smaller is the end result? How
+much faster is it? How much more beautiful is it? Does it make new
+cool things possible? Are those cool things really close on the
+horizon and really want this merged even though it's not really quite
+ready yet?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+So please: convince me. Andi?
+
+              Linus
