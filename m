@@ -1,96 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbaDHU4K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 16:56:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39490 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756778AbaDHU4J (ORCPT
+	id S1757508AbaDHU5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 16:57:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56598 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232AbaDHU5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 16:56:09 -0400
-Message-ID: <53446261.9070903@oracle.com>
-Date: Tue, 08 Apr 2014 16:56:01 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm:  kernel BUG at mm/huge_memory.c:1371!
-References: <5307D74C.5070002@oracle.com> <20140221235145.GA18046@node.dhcp.inet.fi> <5307F90C.9060602@oracle.com> <5310C56C.60709@oracle.com>
-In-Reply-To: <5310C56C.60709@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Apr 2014 16:57:14 -0400
+Date: Tue, 8 Apr 2014 13:57:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd V2
+Message-Id: <20140408135712.c761d7b01bd451be5fc41c00@linux-foundation.org>
+In-Reply-To: <20131108200620.GC14606@localhost.localdomain>
+References: <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org>
+	<00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
+	<20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
+	<0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
+	<20131107225049.GC28130@localhost.localdomain>
+	<0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
+	<20131108163112.GA12853@localhost.localdomain>
+	<0000014238ad0fb9-aa252280-8e44-48ac-a096-e6dee26e09ea-000000@email.amazonses.com>
+	<20131108191235.GB12853@localhost.localdomain>
+	<000001423945fde3-f846f403-58b9-4acd-a2b8-43b62991ce02-000000@email.amazonses.com>
+	<20131108200620.GC14606@localhost.localdomain>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 12:20 PM, Sasha Levin wrote:
-> On 02/21/2014 08:10 PM, Sasha Levin wrote:
->> On 02/21/2014 06:51 PM, Kirill A. Shutemov wrote:
->>> On Fri, Feb 21, 2014 at 05:46:36PM -0500, Sasha Levin wrote:
->>>> >Hi all,
->>>> >
->>>> >While fuzzing with trinity inside a KVM tools guest running latest -next
->>>> >kernel I've stumbled on the following (now with pretty line numbers!) spew:
->>>> >
->>>> >[  746.125099] kernel BUG at mm/huge_memory.c:1371!
->>> It "VM_BUG_ON_PAGE(!PageHead(page), page);", correct?
->>> I don't see dump_page() output.
->>
->> Right. However, I'm not seeing the dump_page() output in the log.
->>
->> I see that dump_page() has been modified not long ago, I'm looking into it.
+On Fri, 8 Nov 2013 21:06:22 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Fri, Nov 08, 2013 at 07:52:37PM +0000, Christoph Lameter wrote:
+> > On Fri, 8 Nov 2013, Frederic Weisbecker wrote:
+> > 
+> > > I understand, but why not solving that from the workqueue affinity? We want to
+> > > solve the issue of unbound workqueues in CPU isolation anyway.
+> > 
+> > Sure if you can solve that with an unbound work queue then this patch is
+> > not needed. Do you have a patch that addresses this issue in your
+> > patchset?
 > 
-> Alright, here we go:
+> No. Sorry.
 > 
-> [ 3323.062742] page:ffffea00080f0000 count:3 mapcount:0 mapping:ffff8802292ee0e1 index:0x7fa2e6800
-> [ 3323.065978] page flags: 0x16fffff80090018(uptodate|dirty|swapcache|swapbacked)
-> [ 3323.068535] ------------[ cut here ]------------
-> [ 3323.069669] kernel BUG at mm/huge_memory.c:1371!
-> [ 3323.070961] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 3323.071028] Dumping ftrace buffer:
-> [ 3323.071028]    (ftrace buffer empty)
-> [ 3323.071028] Modules linked in:
-> [ 3323.071028] CPU: 101 PID: 48284 Comm: trinity-c101 Tainted: G        W 3.14.0-rc4-next-20140228-sasha-00011-g4077c67 #25
-> [ 3323.071028] task: ffff8800c2718000 ti: ffff8800c26ec000 task.ti: ffff8800c26ec000
-> [ 3323.071028] RIP: 0010:[<ffffffff812c083a>]  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
-> [ 3323.071028] RSP: 0018:ffff8800c26edc78  EFLAGS: 00010246
-> [ 3323.071028] RAX: ffff88022febc000 RBX: ffff8800c26edde8 RCX: 0000000000000040
-> [ 3323.071028] RDX: 0000000000000000 RSI: ffff8800c2718cc0 RDI: 000000000203c000
-> [ 3323.071028] RBP: ffff8800c26edcb8 R08: 0000000000000000 R09: 0000000000000000
-> [ 3323.071028] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0008b9e240
-> [ 3323.071028] R13: ffffea00080f0000 R14: 00007fa2e6800000 R15: 00007fa2ffffffff
-> [ 3323.071028] FS:  00007fa31e1b8700(0000) GS:ffff880230600000(0000) knlGS:0000000000000000
-> [ 3323.071028] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 3323.071028] CR2: 00007fa31e1e8990 CR3: 0000000005c25000 CR4: 00000000000006e0
-> [ 3323.071028] DR0: 0000000000698000 DR1: 0000000000698000 DR2: 0000000000698000
-> [ 3323.071028] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [ 3323.071028] Stack:
-> [ 3323.071028]  00000000000004de ffff88022e2139d0 ffff8800c26edcb8 ffff88021b7ef9a0
-> [ 3323.071028]  00007fa2e6800000 00007fa300000000 ffff8800c26edde8 00007fa2ffffffff
-> [ 3323.071028]  ffff8800c26edd48 ffffffff812800c6 ffffea0008454540 00007fa2e6a00000
-> [ 3323.071028] Call Trace:
-> [ 3323.071028]  [<ffffffff812800c6>] unmap_page_range+0x2c6/0x410
-> [ 3323.071028]  [<ffffffff81280301>] unmap_single_vma+0xf1/0x110
-> [ 3323.071028]  [<ffffffff81280381>] unmap_vmas+0x61/0xa0
-> [ 3323.071028]  [<ffffffff812875e0>] exit_mmap+0xd0/0x170
-> [ 3323.071028]  [<ffffffff811387a7>] mmput+0x77/0xe0
-> [ 3323.071028]  [<ffffffff8113c80d>] exit_mm+0x18d/0x1a0
-> [ 3323.071028]  [<ffffffff811ecea5>] ? acct_collect+0x175/0x1b0
-> [ 3323.071028]  [<ffffffff8113ec1a>] do_exit+0x26a/0x510
-> [ 3323.071028]  [<ffffffff8113ef61>] do_group_exit+0xa1/0xe0
-> [ 3323.071028]  [<ffffffff8113efb2>] SyS_exit_group+0x12/0x20
-> [ 3323.071028]  [<ffffffff8439f720>] tracesys+0xdd/0xe2
-> [ 3323.071028] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03 00 00 00 fe ff ff 49 8b 45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 f6 1f f9 ff <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 ff 48
-> [ 3323.071028] RIP  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
-> [ 3323.071028]  RSP <ffff8800c26edc78>
 
-This is still happening in -next. Anything else I can provide that'll be useful?
+Several months have passed and nothgin has happened.  Any thoughts on
+what we should do with Christoph's patch?
 
 
-Thanks,
-Sasha
+From: Christoph Lameter <cl@linux.com>
+Subject: kmod: run usermodehelpers only on cpus allowed for kthreadd V2
+
+usermodehelper() threads can currently run on all processors.  This is an
+issue for low latency cores.  Spawnig a new thread causes cpu holdoffs in
+the range of hundreds of microseconds to a few milliseconds.  Not good for
+cores on which processes run that need to react as fast as possible.
+
+kthreadd threads can be restricted using taskset to a limited set of
+processors.  Then the kernel thread pool will not fork processes on those
+anymore thereby protecting those processors from additional latencies.
+
+Make usermodehelper() threads obey the limitations that kthreadd is
+restricted to.  Kthreadd is not the parent of usermodehelper threads so we
+need to explicitly get the allowed processors for kthreadd.
+
+Before this patch there is no way to limit the cpus that usermodehelper
+can run on since the affinity is set when the thread is spawned to all
+processors.
+
+[akpm@linux-foundation.org: set_cpus_allowed() doesn't exist when CONFIG_CPUMASK_OFFSTACK=y]
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ include/linux/kthread.h |    1 +
+ kernel/kmod.c           |   11 +++++++++--
+ kernel/kthread.c        |    9 +++++++++
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+diff -puN include/linux/kthread.h~kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2 include/linux/kthread.h
+--- a/include/linux/kthread.h~kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2
++++ a/include/linux/kthread.h
+@@ -51,6 +51,7 @@ void kthread_parkme(void);
+ int kthreadd(void *unused);
+ extern struct task_struct *kthreadd_task;
+ extern int tsk_fork_get_node(struct task_struct *tsk);
++void set_kthreadd_affinity(void);
+ 
+ /*
+  * Simple work processor based on kthread.
+diff -puN kernel/kmod.c~kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2 kernel/kmod.c
+--- a/kernel/kmod.c~kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2
++++ a/kernel/kmod.c
+@@ -40,6 +40,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/async.h>
+ #include <asm/uaccess.h>
++#include <linux/kthread.h>
+ 
+ #include <trace/events/module.h>
+ 
+@@ -209,8 +210,14 @@ static int ____call_usermodehelper(void
+ 	flush_signal_handlers(current, 1);
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 
+-	/* We can run anywhere, unlike our parent keventd(). */
+-	set_cpus_allowed_ptr(current, cpu_all_mask);
++	/*
++	 * Kthreadd can be restricted to a set of processors if the user wants
++	 * to protect other processors from OS latencies. If that has happened
++	 * then we do not want to disturb the other processors here either so we
++	 * start the usermode helper threads only on the processors allowed for
++	 * kthreadd.
++	 */
++	set_kthreadd_affinity();
+ 
+ 	/*
+ 	 * Our parent is keventd, which runs with elevated scheduling priority.
+diff -puN kernel/kthread.c~kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2 kernel/kthread.c
+--- a/kernel/kthread.c~kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2
++++ a/kernel/kthread.c
+@@ -136,6 +136,15 @@ void *kthread_data(struct task_struct *t
+ 	return to_kthread(task)->data;
+ }
+ 
++/*
++ * Set the affinity of the calling task to be the same
++ * as the kthreadd affinities.
++ */
++void set_kthreadd_affinity(void)
++{
++	set_cpus_allowed_ptr(current, &kthreadd_task->cpus_allowed);
++}
++
+ /**
+  * probe_kthread_data - speculative version of kthread_data()
+  * @task: possible kthread task in question
+_
 
