@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417AbaDHHgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 03:36:43 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46578 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaDHHgl (ORCPT
+	id S1756373AbaDHHhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 03:37:21 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54940 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaDHHhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 03:36:41 -0400
-Date: Tue, 8 Apr 2014 09:36:24 +0200
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-To: David Airlie <airlied@linux.ie>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Quentin Casasnovas <quentin.casasnovas@oracle.com>
-Subject: Re: [PATCH] drm/radeon: memory leak on bo reservation failure.
-Message-ID: <20140408073556.GA15513@chrystal.home>
-References: <1395159412-12377-1-git-send-email-quentin.casasnovas@oracle.com>
+	Tue, 8 Apr 2014 03:37:19 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>, jmario@redhat.com,
+        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
+        andi.kleen@intel.com
+Subject: Re: [PATCH 06/15 V3] perf, c2c: Add in new options to configure latency and stores
+References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+	<1395689826-215033-7-git-send-email-dzickus@redhat.com>
+	<20140329171138.GF2022@krava.redhat.com>
+	<20140401025535.GT25953@redhat.com>
+	<20140406131422.GL1164@krava.brq.redhat.com>
+Date: Tue, 08 Apr 2014 16:37:12 +0900
+In-Reply-To: <20140406131422.GL1164@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Sun, 6 Apr 2014 15:14:22 +0200")
+Message-ID: <87sipow9uf.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395159412-12377-1-git-send-email-quentin.casasnovas@oracle.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Dave?
+Hi Jiri,
 
-On Tue, Mar 18, 2014 at 05:16:52PM +0100, Quentin Casasnovas wrote:
-> On bo reservation failure, we end up leaking fpriv.
-> 
-> Fixes: 5e386b574cf7e1 ("drm/radeon: fix missing bo reservation")
-> Cc: stable@vger.kernel.org
-> Cc: Christian König <christian.koenig@amd.com>
-> Cc: Alex Deucher <alexander.deucher@amd.com>
-> Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-> ---
->  drivers/gpu/drm/radeon/radeon_kms.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-> index 66ed3ea..51cda80 100644
-> --- a/drivers/gpu/drm/radeon/radeon_kms.c
-> +++ b/drivers/gpu/drm/radeon/radeon_kms.c
-> @@ -546,8 +546,11 @@ int radeon_driver_open_kms(struct drm_device *dev, struct drm_file *file_priv)
->  		radeon_vm_init(rdev, &fpriv->vm);
->  
->  		r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
-> -		if (r)
-> +		if (r) {
-> +			radeon_vm_fini(rdev, &fpriv->vm);
-> +			kfree(fpriv);
->  			return r;
-> +		}
->  
->  		/* map the ib pool buffer read only into
->  		 * virtual address space */
-> -- 
-> 1.8.3.2
-> 
+On Sun, 6 Apr 2014 15:14:22 +0200, Jiri Olsa wrote:
+> On Mon, Mar 31, 2014 at 10:55:35PM -0400, Don Zickus wrote:
+>> On Sat, Mar 29, 2014 at 06:11:38PM +0100, Jiri Olsa wrote:
+>> > On Mon, Mar 24, 2014 at 03:36:57PM -0400, Don Zickus wrote:
+>> > > Modified the code to allow latency settings to be tweaked on the command line
+>> > > and also the ability to dynamically profile stores (or disable using stores).
+>> > > 
+>> > > This allows the tool to be used on older Intel platforms like Westmere.
+>> > > 
+>> > > Signed-off-by: Don Zickus <dzickus@redhat.com>
+>> > > ---
+>> > 
+>> > SNIP
+>> > 
+>> > > @@ -316,6 +369,12 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+>> > >  	};
+>> > >  	const struct option c2c_options[] = {
+>> > >  	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
+>> > > +	OPT_INTEGER('l', "latency-level", &lat_level,
+>> > > +		 "specify the latency threshold for loads [default=30]"),
+>> > > +	OPT_INTEGER('p', "precision-level", &prec_level,
+>> > > +		 "specify the precision level of events (0,1,2,3) [default=1]"),
+>> > 
+>> > could we get also option for user space modifier?
+>> 
+>> You mean the 'u' modifier, ie cpu/mem-loads/u ?  If so, then I can do that
+>> but will that work with the -a option (which is hardcoded in the c2c
+>> tool [system-wide mode])?
+>
+> right, forgot about that.. 
+
+Why?  I think the -a option behavior is orthogonal to the user/kernel
+modifier behavior, no?  Do the mem-loads/stores events have any
+restriction on that?
+
+
+> could the -a option be optional as well?
+> probably the same way as for record would be the best:
+>
+>   perf c2c record ./foo       # workload specific
+>   perf c2c record -a sleep 3  # system wide
+
+Agreed.
+
+Thanks,
+Namhyung
