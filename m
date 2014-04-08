@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622AbaDHLp7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 07:45:59 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59094 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756131AbaDHLp5 (ORCPT
+	id S1756614AbaDHLvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:51:14 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45170 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141AbaDHLvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 07:45:57 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH V2] ACPI: Update the ownership and developers for ACPI in Kconfig
-Date: Tue, 08 Apr 2014 14:01:57 +0200
-Message-ID: <3442476.Y3PYFAt6A7@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1396956241-8337-1-git-send-email-hanjun.guo@linaro.org>
-References: <1396956241-8337-1-git-send-email-hanjun.guo@linaro.org>
+	Tue, 8 Apr 2014 07:51:12 -0400
+Date: Tue, 8 Apr 2014 12:50:53 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        alsa-devel@alsa-project.org
+Message-ID: <20140408115053.GF6518@sirena.org.uk>
+References: <1396595387-4371-1-git-send-email-Guangyu.Chen@freescale.com>
+ <20140404100532.GN14763@sirena.org.uk>
+ <20140408110738.GA10745@MrMyself>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+jhVVhN62yS6hEJ8"
+Content-Disposition: inline
+In-Reply-To: <20140408110738.GA10745@MrMyself>
+X-Cookie: This report is filled with omissions.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: fsl_sai: Fix Bit Clock Polarity configurations
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 08, 2014 07:24:01 PM Hanjun Guo wrote:
-> The UEFI Forum included the ACPI spec in its portfolio in October 2013
-> and will host future spec iterations, following the ACPI v5.0a release.
-> 
-> A UEFI Forum working group named ACPI Specification Working Group (ASWG)
-> has been established to handle future ACPI developments, any UEFI member
-> can join the group and contribute to ACPI specification.
-> 
-> So update the ownership and developers for ACPI in Kconfig accordingly,
-> and add another website link to ACPI specification too.
-> 
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  drivers/acpi/Kconfig |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index c205653..6bbf36e 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -32,9 +32,11 @@ menuconfig ACPI
->  	  <http://acpica.org/>
->  
->  	  ACPI is an open industry specification co-developed by
-> -	  Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.
-> +	  ACPI Specification Working Group (ASWG) under UEFI Forum, any
-> +	  UEFI member can join ASWG and contribute to ACPI specification.
 
-Thinking a bit more about that, I'd prefer this wording:
+--+jhVVhN62yS6hEJ8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	ACPI is an open industry specification originally co-developed by
-	Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.  Currently,
-	it is developed by the ACPI Specification Working Group (ASWG) under
-	the UEFI Forum and any UEFI member can join the ASWG and contribute
-	to the ACPI specification.
+On Tue, Apr 08, 2014 at 07:07:40PM +0800, Nicolin Chen wrote:
 
->  	  The specification is available at:
->  	  <http://www.acpi.info>
-> +	  <http://www.uefi.org/acpi/specs>
->  
->  if ACPI
+> Sir, I can't find this patch on any of the remote branches: for-next,
+> topic/fsl-sai and fix/fsl-sai. Where could I find it?
 
-Thanks!
+It's in the fix branch.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--+jhVVhN62yS6hEJ8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTQ+KaAAoJELSic+t+oim9X5wQAJPVUimekxxWvBuV+u9NUJ1Q
+oG9Wr3ezYxOM4Xm0pOb1X56iRmPrWcnF5/KHscsXQXSnvpACxnFFyT81QlAqUVhM
+T7/8BmwfT2jZ2l22ulzW395nMsuM174VXEh03uA443ZZULFyDTFMdmeFVdNyd+Hq
+MufO08sEXg3qaBXJp1iDmOjKHHFJTExvRWzYk2rKWEEhlv/qBlGe1og1lbhv0V1Q
+OYF/t75eFUvmsN2n2TrG44XBtSnQ/4GKiTX/3M5up1p6/rM1aghJicL3cxczpS15
+BSdlr/0l2CH9y+TEj9I8IXUsy/HdzjyYqzSjU/oiNZLC7J2UXU8Cff1qpHxm24s1
+93SSR9rSOmRJ9hpG9WKqv6dLg9TuGrj18xvwjVMXhwzBHDs1jpgAEMOU+knk9QLR
+7ROI8uf7euDnJZX/EsylRjQi+Y9hZfsEk8PlTKeJmZ/n+TwAMfdm64ZHTsAWXtgq
+CMK5HiwH18o5pZ4u1PCH/JMpD/TR2uzJSYwW3NTnQCJ62h+jB4o2f0t0kIHXZuD0
+Ot45gkwF7Y9ZEcj2Vk8y8rfi3XMtDEmmBdoyu/7WUPN8RI21Zj7tr/CLAhRw3EAz
+ZocptY1c9KB76nFRS1FfZfJJ/GoSdPSB5Ft+HJphRTxeRLgNWtpxAGqh3zFwu3kD
+VUsWL3SrEZkharrBPKJB
+=gSbs
+-----END PGP SIGNATURE-----
+
+--+jhVVhN62yS6hEJ8--
