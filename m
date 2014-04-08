@@ -1,93 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151AbaDHKWg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:22:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:62465 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124AbaDHKWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:22:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
-Date: Tue, 08 Apr 2014 12:22:13 +0200
-Message-ID: <4778371.oH3kIlbD0f@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140408095038.GT17163@e106497-lin.cambridge.arm.com>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com> <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com> <20140408095038.GT17163@e106497-lin.cambridge.arm.com>
+	id S1756498AbaDHK2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:28:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25719 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756079AbaDHK2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:28:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,817,1389772800"; 
+   d="scan'208";a="509160026"
+Date: Tue, 8 Apr 2014 13:30:06 +0300
+From: "Westerberg, Mika" <mika.westerberg@intel.com>
+To: "Du, Wenkai" <wenkai.du@intel.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller
+ enable
+Message-ID: <20140408103006.GQ19349@intel.com>
+References: <20140404181613.GB19349@intel.com>
+ <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
+ <20140404184232.GC19349@intel.com>
+ <7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
+ <20140405061316.GF19349@intel.com>
+ <20140406185818.3aaca03d@alan.etchedpixels.co.uk>
+ <20140407090403.GG19349@intel.com>
+ <20140407154252.6b8f0f7e@alan.etchedpixels.co.uk>
+ <20140407151107.GL19349@intel.com>
+ <7286EAF50D3F4E4AADE7FEECEBF8B5A537A72207@ORSMSX109.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:W6AHNhBO0TPIYDCnYrEdkpLIdK49yhFkCN5Dg6I/VJu
- FdSQchjQICyGbg3XxF2JWRE3y1ThuxK8TuC6Ft6wVIDQ9oQfs6
- L+zxaN1I/Xraej1c0AU7n7h00sLfSN6qryA7JsxumWy3yaIwWD
- cmgVvAkUzLIS8/8vgpXn3GxMK037O1TXBRDGqrsUq/nGKuk2o5
- tPI8w4DxVDlaDjKghWRcgcaOzwxk44IJIFfzLAYR0P6jIy14rL
- J2ZjlSH+61A5EKZmeafI7JETl8Qi4OyIjcAUSn2ERkxlBB8X3t
- tzFTDETyAzPvLJOGkISIzLdVncI2f24IPqdJ3nSffYH8mMInBL
- TgKnyNWbX3tCWiI04l+c=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A72207@ORSMSX109.amr.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 April 2014 10:50:39 Liviu Dudau wrote:
-> On Mon, Apr 07, 2014 at 06:58:24PM +0100, Bjorn Helgaas wrote:
-> > On Mon, Apr 7, 2014 at 5:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Mon, Apr 07, 2014 at 07:48:02PM +0300, Du, Wenkai wrote:
+> > -----Original Message-----
+> > From: Westerberg, Mika
+> > Sent: Monday, April 07, 2014 8:11 AM
+> > To: One Thousand Gnomes
+> > Cc: Du, Wenkai; linux-i2c@vger.kernel.org; Wolfram Sang; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller enable
 > > 
-> > > I think migrating other architectures to use the same code should be
-> > > a separate effort from adding a generic implementation that can be
-> > > used by arm64. It's probably a good idea to have patches to convert
-> > > arm32 and/or microblaze.
 > > 
-> > Let me reiterate that I am 100% in favor of replacing arch-specific
-> > code with more generic implementations.
+> > Do you think we can fix it with adding a dummy read right after write to the mask register, like
+> > the snippet below?
 > > 
-> > However, I am not 100% in favor of doing it as separate efforts
-> > (although maybe I could be convinced).  The reasons I hesitate are
-> > that (1) if only one architecture uses a new "generic" implementation,
-> > we really don't know whether it is generic enough, (2) until I see the
-> > patches to convert other architectures, I have to assume that I'm the
-> > one who will write them, and (3) as soon as we add the code to
-> > drivers/pci, it becomes partly my headache to maintain it, even if
-> > only one arch benefits from it.
-
-Fair enough.
-
-My approach to the asm-generic infrastruction has mostly been to ensure
-that whoever adds a new architecture has to make things easier for the
-next person. For the PCI code it's clearly your call to pick whatever
-works best for you.
-
-> > Please don't think I'm questioning anyone's intent or good will.  It's
-> > just that I understand the business pressures, and I know how hard it
-> > can be to justify this sort of work to one's management, especially
-> > after the immediate problem has been solved.
+> > diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-
+> > core.c
+> > index 14c4b30d4ccc..ff9090381d8b 100644
+> > --- a/drivers/i2c/busses/i2c-designware-core.c
+> > +++ b/drivers/i2c/busses/i2c-designware-core.c
+> > @@ -535,6 +535,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+> >  		intr_mask = 0;
+> > 
+> >  	dw_writel(dev, intr_mask,  DW_IC_INTR_MASK);
+> > +	dw_readl(dev, DW_IC_INTR_MASK);
+> >  }
+> > 
 > 
-> I understand your concern. I guess the only way to prove my good intentions
-> is to shut up and show the code.
+> I have tried this read back earlier during debugging, it didn't help. You
+> can confirm yourself as well.
 
-I'd suggest looking at architectures in this order then:
+I mean that it helps for the posted writes to the mask register issue, Alan
+pointed out.
 
-* microblaze (this one is easy and wants to share code with us)
-* arm32-multiplatform (obviously interesting, but not as easy as microblaze)
-* powerpc64 (they are keen on sharing, code is similar to what you have)
-* mips (this is really platform specific, some want to share drivers with
-  arm32, others should keep their current code. Note that platform selection
-  on mips is compile-time only, they don't have to do it all the same way)
-* powerpc32 (their code is currently different, might not be worth it)
+> On the ISR code execution path, here is the list to my understanding:
+> 
+> 1. TX abort: this path masks all interrupt by writing 0 to interrupt mask register;
+> 2. RX full: this path doesn't do anything on masking interrupts;
+> 3. TX empty: this path only mask TX empty under certain conditions; it
+> doesn't mask other interrupt sources;
+> 4. i2c STOP condition: this path call complete() to finish the transfer;
+> it doesn't do anything on masking interrupts;
 
-My preference would be to have only the first two done initially and leave
-the other ones up to architecture maintainers, but Bjorn should say
-how much he wants to see get done.
+You are right.
 
-	Arnd
+The driver enables the controller and then unmasks following interrupt
+sources:
+
+	DW_IC_INTR_RX_FULL
+	DW_IC_INTR_TX_EMPTY
+	DW_IC_INTR_TX_ABRT
+	DW_IC_INTR_STOP_DET
+
+This will immediately trigger TX_EMPTY interrupt and the transfer begins.
+If it finishes successfully, the driver only clears DW_IC_INTR_TX_EMPTY and
+disables the controller. In Subsequent transfers the same happens and it
+seems to work fine (as we have the controller disabled whenever we are done
+with the transfer).
+
+I'm not sure I agree that this is the best approach but like I said, it
+seems to work just fine.
+
+Except when we resume after suspend when the controller is reset. This will
+mess up the "expected" mask and trigger interrupt immediately when the
+controller is enabled in i2c_dw_xfer_init().
+
+> The above analysis agrees with the debug logs: most of interrupts are
+> left unmasked in original code when i2c core is being enabled.
+
+Yes, but only after resume. In normal cases the driver re-programs
+DW_IC_INTR_TX_EMPTY to the mask (the other 3 flags are already set but
+they should be harmless as long as the TX fifo is still empty).
+
+> I think we want all interrupts masked when enabling HW. This will ensure
+> the required 25us core turn on delay being respected. Also there could be
+> spurious interrupts when HW is being turned on that should be ignored.
+
+Where did you get this 25us required delay? My spec doesn't say anything
+about that. It does however say that if the state bit is not yet changed,
+wait 25us (@400kHz) and re-read the bit. So it can be that we don't wait at
+all once we toggle that bit.
+
+All in all, I think we can solve this resume path timeout issue, by moving
+__i2c_dw_enable() to be last in i2c_dw_xfer_init().
+
+In addition we should fix the potential posted-write problem Alan pointed
+out (as a separate patch). That could actually explain the issue you have
+seen where timeout occurs during normal operation. Maybe fix here is to
+mask all interrupts at the end of the ISR and make sure that possible
+posted writes gets flushed to the hardware before returning?
