@@ -1,279 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744AbaDHM2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 08:28:08 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48194 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521AbaDHM2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 08:28:03 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
-        Barry Song <baohua@kernel.org>
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2] pinctrl: sirf: switch driver to use gpiolib irqchip helpers
-Date: Tue,  8 Apr 2014 14:27:57 +0200
-Message-Id: <1396960077-30599-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.0
+	id S1756671AbaDHMdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 08:33:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59356 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756327AbaDHMdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 08:33:08 -0400
+Date: Tue, 8 Apr 2014 14:33:04 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/3] hw_random: Turn HW_RANDOM into a menuconfig
+Message-ID: <20140408143304.65c9deee@endymion.delvare>
+In-Reply-To: <20140408142731.48c9f92f@endymion.delvare>
+References: <20140408142731.48c9f92f@endymion.delvare>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This switches the Sirf pinctrl driver over to using the gpiolib
-irqchip helpers simplifying some of the code.
+This makes configuration more convenient IMHO, and avoids having to
+repeat the dependency on HW_RANDOM for every single driver.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
 ---
-This really needs testing on real hardware before I dare to
-merge it, but the driver seems simple and straight-forward to
-convert.
----
- drivers/pinctrl/Kconfig             |   1 +
- drivers/pinctrl/sirf/pinctrl-sirf.c | 103 +++++++++---------------------------
- 2 files changed, 27 insertions(+), 77 deletions(-)
+ drivers/char/hw_random/Kconfig |   56 +++++++++++++++++++++--------------------
+ 1 file changed, 30 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index e49324032611..ddd4e6eae3c1 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -270,6 +270,7 @@ config PINCTRL_SIRF
- 	bool "CSR SiRFprimaII/SiRFmarco pin controller driver"
- 	depends on ARCH_SIRF
- 	select PINMUX
-+	select GPIOLIB_IRQCHIP
+--- linux-3.15-rc0.orig/drivers/char/hw_random/Kconfig	2014-04-08 13:12:50.845233756 +0200
++++ linux-3.15-rc0/drivers/char/hw_random/Kconfig	2014-04-08 13:21:15.503752935 +0200
+@@ -2,7 +2,7 @@
+ # Hardware Random Number Generator (RNG) configuration
+ #
  
- config PINCTRL_SUNXI
- 	bool
-diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c b/drivers/pinctrl/sirf/pinctrl-sirf.c
-index 2c3eb207ff87..99dbe61f5fd1 100644
---- a/drivers/pinctrl/sirf/pinctrl-sirf.c
-+++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
-@@ -9,13 +9,10 @@
+-config HW_RANDOM
++menuconfig HW_RANDOM
+ 	tristate "Hardware Random Number Generator Core support"
+ 	default m
+ 	---help---
+@@ -20,9 +20,11 @@ config HW_RANDOM
  
- #include <linux/init.h>
- #include <linux/module.h>
--#include <linux/irq.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/slab.h>
- #include <linux/err.h>
--#include <linux/irqdomain.h>
--#include <linux/irqchip/chained_irq.h>
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/pinctrl/pinmux.h>
- #include <linux/pinctrl/consumer.h>
-@@ -27,7 +24,6 @@
- #include <linux/bitops.h>
- #include <linux/gpio.h>
- #include <linux/of_gpio.h>
--#include <asm/mach/irq.h>
+ 	  If unsure, say Y.
  
- #include "pinctrl-sirf.h"
++if HW_RANDOM
++
+ config HW_RANDOM_TIMERIOMEM
+ 	tristate "Timer IOMEM HW Random Number Generator support"
+-	depends on HW_RANDOM && HAS_IOMEM
++	depends on HAS_IOMEM
+ 	---help---
+ 	  This driver provides kernel-side support for a generic Random
+ 	  Number Generator used by reading a 'dumb' iomem address that
+@@ -36,7 +38,7 @@ config HW_RANDOM_TIMERIOMEM
  
-@@ -35,7 +31,6 @@
+ config HW_RANDOM_INTEL
+ 	tristate "Intel HW Random Number Generator support"
+-	depends on HW_RANDOM && (X86 || IA64) && PCI
++	depends on (X86 || IA64) && PCI
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -49,7 +51,7 @@ config HW_RANDOM_INTEL
  
- struct sirfsoc_gpio_bank {
- 	struct of_mm_gpio_chip chip;
--	struct irq_domain *domain;
- 	int id;
- 	int parent_irq;
- 	spinlock_t lock;
-@@ -464,15 +459,6 @@ static int __init sirfsoc_pinmux_init(void)
- }
- arch_initcall(sirfsoc_pinmux_init);
+ config HW_RANDOM_AMD
+ 	tristate "AMD HW Random Number Generator support"
+-	depends on HW_RANDOM && (X86 || PPC_MAPLE) && PCI
++	depends on (X86 || PPC_MAPLE) && PCI
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -62,7 +64,7 @@ config HW_RANDOM_AMD
  
--static inline int sirfsoc_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
--{
--	struct sirfsoc_gpio_bank *bank = container_of(to_of_mm_gpio_chip(chip),
--		struct sirfsoc_gpio_bank, chip);
--
--	return irq_create_mapping(bank->domain, offset + bank->id *
--		SIRFSOC_GPIO_BANK_SIZE);
--}
--
- static inline int sirfsoc_gpio_to_offset(unsigned int gpio)
- {
- 	return gpio % SIRFSOC_GPIO_BANK_SIZE;
-@@ -490,7 +476,8 @@ static inline struct sirfsoc_gpio_bank *sirfsoc_gpiochip_to_bank(struct gpio_chi
+ config HW_RANDOM_ATMEL
+ 	tristate "Atmel Random Number Generator support"
+-	depends on HW_RANDOM && HAVE_CLK
++	depends on HAVE_CLK
+ 	default (HW_RANDOM && ARCH_AT91)
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -75,7 +77,7 @@ config HW_RANDOM_ATMEL
  
- static void sirfsoc_gpio_irq_ack(struct irq_data *d)
- {
--	struct sirfsoc_gpio_bank *bank = irq_data_get_irq_chip_data(d);
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
-+	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(gc);
- 	int idx = d->hwirq % SIRFSOC_GPIO_BANK_SIZE;
- 	u32 val, offset;
- 	unsigned long flags;
-@@ -525,14 +512,16 @@ static void __sirfsoc_gpio_irq_mask(struct sirfsoc_gpio_bank *bank, int idx)
+ config HW_RANDOM_BCM63XX
+ 	tristate "Broadcom BCM63xx Random Number Generator support"
+-	depends on HW_RANDOM && BCM63XX
++	depends on BCM63XX
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -88,7 +90,7 @@ config HW_RANDOM_BCM63XX
  
- static void sirfsoc_gpio_irq_mask(struct irq_data *d)
- {
--	struct sirfsoc_gpio_bank *bank = irq_data_get_irq_chip_data(d);
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
-+	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(gc);
+ config HW_RANDOM_BCM2835
+ 	tristate "Broadcom BCM2835 Random Number Generator support"
+-	depends on HW_RANDOM && ARCH_BCM2835
++	depends on ARCH_BCM2835
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -101,7 +103,7 @@ config HW_RANDOM_BCM2835
  
- 	__sirfsoc_gpio_irq_mask(bank, d->hwirq % SIRFSOC_GPIO_BANK_SIZE);
- }
+ config HW_RANDOM_GEODE
+ 	tristate "AMD Geode HW Random Number Generator support"
+-	depends on HW_RANDOM && X86_32 && PCI
++	depends on X86_32 && PCI
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -114,7 +116,7 @@ config HW_RANDOM_GEODE
  
- static void sirfsoc_gpio_irq_unmask(struct irq_data *d)
- {
--	struct sirfsoc_gpio_bank *bank = irq_data_get_irq_chip_data(d);
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
-+	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(gc);
- 	int idx = d->hwirq % SIRFSOC_GPIO_BANK_SIZE;
- 	u32 val, offset;
- 	unsigned long flags;
-@@ -551,7 +540,8 @@ static void sirfsoc_gpio_irq_unmask(struct irq_data *d)
+ config HW_RANDOM_N2RNG
+ 	tristate "Niagara2 Random Number Generator support"
+-	depends on HW_RANDOM && SPARC64
++	depends on SPARC64
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -127,7 +129,7 @@ config HW_RANDOM_N2RNG
  
- static int sirfsoc_gpio_irq_type(struct irq_data *d, unsigned type)
- {
--	struct sirfsoc_gpio_bank *bank = irq_data_get_irq_chip_data(d);
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
-+	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(gc);
- 	int idx = d->hwirq % SIRFSOC_GPIO_BANK_SIZE;
- 	u32 val, offset;
- 	unsigned long flags;
-@@ -595,39 +585,18 @@ static int sirfsoc_gpio_irq_type(struct irq_data *d, unsigned type)
- 	return 0;
- }
+ config HW_RANDOM_VIA
+ 	tristate "VIA HW Random Number Generator support"
+-	depends on HW_RANDOM && X86
++	depends on X86
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -140,7 +142,7 @@ config HW_RANDOM_VIA
  
--static int sirfsoc_gpio_irq_reqres(struct irq_data *d)
--{
--	struct sirfsoc_gpio_bank *bank = irq_data_get_irq_chip_data(d);
--
--	if (gpio_lock_as_irq(&bank->chip.gc, d->hwirq % SIRFSOC_GPIO_BANK_SIZE)) {
--		dev_err(bank->chip.gc.dev,
--			"unable to lock HW IRQ %lu for IRQ\n",
--			d->hwirq);
--		return -EINVAL;
--	}
--	return 0;
--}
--
--static void sirfsoc_gpio_irq_relres(struct irq_data *d)
--{
--	struct sirfsoc_gpio_bank *bank = irq_data_get_irq_chip_data(d);
--
--	gpio_unlock_as_irq(&bank->chip.gc, d->hwirq % SIRFSOC_GPIO_BANK_SIZE);
--}
--
- static struct irq_chip sirfsoc_irq_chip = {
- 	.name = "sirf-gpio-irq",
- 	.irq_ack = sirfsoc_gpio_irq_ack,
- 	.irq_mask = sirfsoc_gpio_irq_mask,
- 	.irq_unmask = sirfsoc_gpio_irq_unmask,
- 	.irq_set_type = sirfsoc_gpio_irq_type,
--	.irq_request_resources = sirfsoc_gpio_irq_reqres,
--	.irq_release_resources = sirfsoc_gpio_irq_relres,
- };
+ config HW_RANDOM_IXP4XX
+ 	tristate "Intel IXP4xx NPU HW Pseudo-Random Number Generator support"
+-	depends on HW_RANDOM && ARCH_IXP4XX
++	depends on ARCH_IXP4XX
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Pseudo-Random
+@@ -153,7 +155,7 @@ config HW_RANDOM_IXP4XX
  
- static void sirfsoc_gpio_handle_irq(unsigned int irq, struct irq_desc *desc)
- {
--	struct sirfsoc_gpio_bank *bank = irq_get_handler_data(irq);
-+	struct gpio_chip *gc = irq_desc_get_handler_data(desc);
-+	struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(gc);
- 	u32 status, ctrl;
- 	int idx = 0;
- 	struct irq_chip *chip = irq_get_chip(irq);
-@@ -653,7 +622,7 @@ static void sirfsoc_gpio_handle_irq(unsigned int irq, struct irq_desc *desc)
- 		if ((status & 0x1) && (ctrl & SIRFSOC_GPIO_CTL_INTR_EN_MASK)) {
- 			pr_debug("%s: gpio id %d idx %d happens\n",
- 				__func__, bank->id, idx);
--			generic_handle_irq(irq_find_mapping(bank->domain, idx +
-+			generic_handle_irq(irq_find_mapping(gc->irqdomain, idx +
- 					bank->id * SIRFSOC_GPIO_BANK_SIZE));
- 		}
+ config HW_RANDOM_OMAP
+ 	tristate "OMAP Random Number Generator support"
+-	depends on HW_RANDOM && (ARCH_OMAP16XX || ARCH_OMAP2PLUS)
++	depends on ARCH_OMAP16XX || ARCH_OMAP2PLUS
+ 	default HW_RANDOM
+  	---help---
+  	  This driver provides kernel-side support for the Random Number
+@@ -167,7 +169,7 @@ config HW_RANDOM_OMAP
  
-@@ -801,27 +770,6 @@ static void sirfsoc_gpio_set_value(struct gpio_chip *chip, unsigned offset,
- 	spin_unlock_irqrestore(&bank->lock, flags);
- }
+ config HW_RANDOM_OMAP3_ROM
+ 	tristate "OMAP3 ROM Random Number Generator support"
+-	depends on HW_RANDOM && ARCH_OMAP3
++	depends on ARCH_OMAP3
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -180,7 +182,7 @@ config HW_RANDOM_OMAP3_ROM
  
--static int sirfsoc_gpio_irq_map(struct irq_domain *d, unsigned int irq,
--				irq_hw_number_t hwirq)
--{
--	struct sirfsoc_gpio_bank *bank = d->host_data;
--
--	if (!bank)
--		return -EINVAL;
--
--	irq_set_chip(irq, &sirfsoc_irq_chip);
--	irq_set_handler(irq, handle_level_irq);
--	irq_set_chip_data(irq, bank + hwirq / SIRFSOC_GPIO_BANK_SIZE);
--	set_irq_flags(irq, IRQF_VALID);
--
--	return 0;
--}
--
--static const struct irq_domain_ops sirfsoc_gpio_irq_simple_ops = {
--	.map = sirfsoc_gpio_irq_map,
--	.xlate = irq_domain_xlate_twocell,
--};
--
- static void sirfsoc_gpio_set_pullup(const u32 *pullups)
- {
- 	int i, n;
-@@ -860,7 +808,6 @@ static int sirfsoc_gpio_probe(struct device_node *np)
- 	struct sirfsoc_gpio_bank *bank;
- 	void __iomem *regs;
- 	struct platform_device *pdev;
--	struct irq_domain *domain;
- 	bool is_marco = false;
+ config HW_RANDOM_OCTEON
+ 	tristate "Octeon Random Number Generator support"
+-	depends on HW_RANDOM && CAVIUM_OCTEON_SOC
++	depends on CAVIUM_OCTEON_SOC
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -193,7 +195,7 @@ config HW_RANDOM_OCTEON
  
- 	u32 pullups[SIRFSOC_GPIO_NO_OF_BANKS], pulldowns[SIRFSOC_GPIO_NO_OF_BANKS];
-@@ -876,14 +823,6 @@ static int sirfsoc_gpio_probe(struct device_node *np)
- 	if (of_device_is_compatible(np, "sirf,marco-pinctrl"))
- 		is_marco = 1;
+ config HW_RANDOM_PASEMI
+ 	tristate "PA Semi HW Random Number Generator support"
+-	depends on HW_RANDOM && PPC_PASEMI
++	depends on PPC_PASEMI
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -206,7 +208,7 @@ config HW_RANDOM_PASEMI
  
--	domain = irq_domain_add_linear(np, SIRFSOC_GPIO_BANK_SIZE * SIRFSOC_GPIO_NO_OF_BANKS,
--		&sirfsoc_gpio_irq_simple_ops, sgpio_bank);
--	if (!domain) {
--		pr_err("%s: Failed to create irqdomain\n", np->full_name);
--			err = -ENOSYS;
--		goto out;
--	}
--
- 	for (i = 0; i < SIRFSOC_GPIO_NO_OF_BANKS; i++) {
- 		bank = &sgpio_bank[i];
- 		spin_lock_init(&bank->lock);
-@@ -893,7 +832,6 @@ static int sirfsoc_gpio_probe(struct device_node *np)
- 		bank->chip.gc.get = sirfsoc_gpio_get_value;
- 		bank->chip.gc.direction_output = sirfsoc_gpio_direction_output;
- 		bank->chip.gc.set = sirfsoc_gpio_set_value;
--		bank->chip.gc.to_irq = sirfsoc_gpio_to_irq;
- 		bank->chip.gc.base = i * SIRFSOC_GPIO_BANK_SIZE;
- 		bank->chip.gc.ngpio = SIRFSOC_GPIO_BANK_SIZE;
- 		bank->chip.gc.label = kstrdup(np->full_name, GFP_KERNEL);
-@@ -912,15 +850,26 @@ static int sirfsoc_gpio_probe(struct device_node *np)
+ config HW_RANDOM_VIRTIO
+ 	tristate "VirtIO Random Number Generator support"
+-	depends on HW_RANDOM && VIRTIO
++	depends on VIRTIO
+ 	---help---
+ 	  This driver provides kernel-side support for the virtual Random Number
+ 	  Generator hardware.
+@@ -216,7 +218,7 @@ config HW_RANDOM_VIRTIO
  
- 		err = gpiochip_add(&bank->chip.gc);
- 		if (err) {
--			pr_err("%s: error in probe function with status %d\n",
-+			dev_err(&pdev->dev,
-+				"%s: error in probe function with status %d\n",
- 				np->full_name, err);
- 			goto out;
- 		}
+ config HW_RANDOM_TX4939
+ 	tristate "TX4939 Random Number Generator support"
+-	depends on HW_RANDOM && SOC_TX4939
++	depends on SOC_TX4939
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -229,7 +231,7 @@ config HW_RANDOM_TX4939
  
--		bank->domain = domain;
-+		err =  gpiochip_irqchip_add(&bank->chip.gc,
-+					    &sirfsoc_irq_chip,
-+					    0, handle_level_irq,
-+					    IRQ_TYPE_NONE);
-+		if (err) {
-+			dev_err(&pdev->dev,
-+				"could not connect irqchip to gpiochip\n");
-+			goto out;
-+		}
+ config HW_RANDOM_MXC_RNGA
+ 	tristate "Freescale i.MX RNGA Random Number Generator"
+-	depends on HW_RANDOM && ARCH_HAS_RNGA
++	depends on ARCH_HAS_RNGA
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+ 	  Generator hardware found on Freescale i.MX processors.
+@@ -241,7 +243,7 @@ config HW_RANDOM_MXC_RNGA
  
--		irq_set_chained_handler(bank->parent_irq, sirfsoc_gpio_handle_irq);
--		irq_set_handler_data(bank->parent_irq, bank);
-+		gpiochip_set_chained_irqchip(&bank->chip.gc,
-+					     &sirfsoc_irq_chip,
-+					     bank->parent_irq,
-+					     sirfsoc_gpio_handle_irq);
- 	}
+ config HW_RANDOM_NOMADIK
+ 	tristate "ST-Ericsson Nomadik Random Number Generator support"
+-	depends on HW_RANDOM && ARCH_NOMADIK
++	depends on ARCH_NOMADIK
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+ 	  Generator hardware found on ST-Ericsson SoCs (8815 and 8500).
+@@ -253,7 +255,7 @@ config HW_RANDOM_NOMADIK
  
- 	if (!of_property_read_u32_array(np, "sirf,pullups", pullups,
+ config HW_RANDOM_PICOXCELL
+ 	tristate "Picochip picoXcell true random number generator support"
+-	depends on HW_RANDOM && ARCH_PICOXCELL && PICOXCELL_PC3X3
++	depends on ARCH_PICOXCELL && PICOXCELL_PC3X3
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+ 	  Generator hardware found on Picochip PC3x3 and later devices.
+@@ -265,7 +267,7 @@ config HW_RANDOM_PICOXCELL
+ 
+ config HW_RANDOM_PPC4XX
+ 	tristate "PowerPC 4xx generic true random number generator support"
+-	depends on HW_RANDOM && PPC && 4xx
++	depends on PPC && 4xx
+ 	---help---
+ 	 This driver provides the kernel-side support for the TRNG hardware
+ 	 found in the security function of some PowerPC 4xx SoCs.
+@@ -277,7 +279,7 @@ config HW_RANDOM_PPC4XX
+ 
+ config HW_RANDOM_PSERIES
+ 	tristate "pSeries HW Random Number Generator support"
+-	depends on HW_RANDOM && PPC64 && IBMVIO
++	depends on PPC64 && IBMVIO
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -290,7 +292,7 @@ config HW_RANDOM_PSERIES
+ 
+ config HW_RANDOM_POWERNV
+ 	tristate "PowerNV Random Number Generator support"
+-	depends on HW_RANDOM && PPC_POWERNV
++	depends on PPC_POWERNV
+ 	default HW_RANDOM
+ 	---help---
+ 	  This is the driver for Random Number Generator hardware found
+@@ -303,7 +305,7 @@ config HW_RANDOM_POWERNV
+ 
+ config HW_RANDOM_EXYNOS
+ 	tristate "EXYNOS HW random number generator support"
+-	depends on HW_RANDOM && HAS_IOMEM && HAVE_CLK
++	depends on HAS_IOMEM && HAVE_CLK
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+ 	  Generator hardware found on EXYNOS SOCs.
+@@ -315,7 +317,7 @@ config HW_RANDOM_EXYNOS
+ 
+ config HW_RANDOM_TPM
+ 	tristate "TPM HW Random Number Generator support"
+-	depends on HW_RANDOM && TCG_TPM
++	depends on TCG_TPM
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+@@ -328,7 +330,7 @@ config HW_RANDOM_TPM
+ 
+ config HW_RANDOM_MSM
+ 	tristate "Qualcomm SoCs Random Number Generator support"
+-	depends on HW_RANDOM && ARCH_QCOM
++	depends on ARCH_QCOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+ 	  Generator hardware found on Qualcomm SoCs.
+@@ -338,6 +340,8 @@ config HW_RANDOM_MSM
+ 
+ 	  If unsure, say Y.
+ 
++endif # HW_RANDOM
++
+ config UML_RANDOM
+ 	depends on UML
+ 	tristate "Hardware random number generator"
+
 -- 
-1.9.0
-
+Jean Delvare
+SUSE L3 Support
