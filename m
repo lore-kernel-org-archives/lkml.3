@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304AbaDHQLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:11:13 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53149 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756991AbaDHQLK (ORCPT
+	id S932395AbaDHQLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:11:31 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:46331 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757005AbaDHQL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:11:10 -0400
-Date: Tue, 8 Apr 2014 17:10:54 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thor Thayer <tthayer@altera.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "dinguyen@altera.com" <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
- CycloneV/ArriaV
-Message-ID: <20140408161054.GA26210@e106331-lin.cambridge.arm.com>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
- <1396907649-20212-4-git-send-email-tthayer@altera.com>
- <20140408100851.GF30077@pd.tnic>
- <1396965459.23349.4.camel@dinh-ubuntu>
- <20140408152406.GI30077@pd.tnic>
- <20140408154017.GF11876@e106331-lin.cambridge.arm.com>
- <20140408160351.GK30077@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140408160351.GK30077@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 8 Apr 2014 12:11:29 -0400
+From: Paul McQuade <paulmcquad@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging:Line6:usbdefs.h parenthesis for Marcos
+Date: Tue,  8 Apr 2014 17:11:26 +0100
+Message-Id: <1396973486-30547-1-git-send-email-paulmcquad@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 05:03:51PM +0100, Borislav Petkov wrote:
-> On Tue, Apr 08, 2014 at 04:40:17PM +0100, Mark Rutland wrote:
-> > The patches should be in the same series, but for review purposes it's
-> > nicer if the bindings are separate patches from the code within that
-> > series.
-> >
-> > I usually look at the drivers implementing bindings and prefer to be
-> > Cc'd on the whole series, with both the binding and driver.
-> 
-> Right, but I got only the 3/3 patch on linux-edac which made me wonder.
+ERROR: Macros with complex values should be enclosed in parenthesis
 
-Ah. The whole series should've been Cc'd to linux-edac; I didn't realise
-that wasn't the case.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ drivers/staging/line6/usbdefs.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> So I'm guessing you or someone else would be picking the whole set once
-> I've acked the EDAC part?
+diff --git a/drivers/staging/line6/usbdefs.h b/drivers/staging/line6/usbdefs.h
+index 2d1cc47..48958b5 100644
+--- a/drivers/staging/line6/usbdefs.h
++++ b/drivers/staging/line6/usbdefs.h
+@@ -40,7 +40,7 @@
+ #define LINE6_DEVID_TONEPORT_UX2  0x4142
+ #define LINE6_DEVID_VARIAX        0x534d
+ 
+-#define LINE6_BIT(x) LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x
++#define LINE6_BIT(x) (LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x)
+ 
+ enum {
+ 	LINE6_INDEX_BASSPODXT,
+-- 
+1.8.3.2
 
-Typically the bindings would go with the driver via the appropriate
-subsystem maintainer. That way we don't get bindings without drivers or
-vice-versa if there's a problem part-way, and we don't end up with every
-other driver going via a dt tree.
-
-Cheers,
-Mark.
