@@ -1,148 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495AbaDHRY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 13:24:58 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40370 "EHLO mail.kernel.org"
+	id S1757437AbaDHR2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 13:28:21 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:52576 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932341AbaDHRYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 13:24:49 -0400
-From: konrad@kernel.org
-To: xen-devel@lists.xenproject.org, david.vrabel@Citrix.com,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org, keir@xen.org,
-        jbeulich@suse.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [LINUX PATCH 2/2] xen/pvhvm: Support more than 32 VCPUs when migrating.
-Date: Tue,  8 Apr 2014 13:25:50 -0400
-Message-Id: <1396977950-8789-3-git-send-email-konrad@kernel.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1396977950-8789-1-git-send-email-konrad@kernel.org>
-References: <1396859560.22845.4.camel@kazak.uk.xensource.com>
- <1396977950-8789-1-git-send-email-konrad@kernel.org>
+	id S1756856AbaDHR2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 13:28:19 -0400
+Date: Tue, 8 Apr 2014 11:27:52 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mike Looijmans <mike.looijmans@topic.nl>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCH v2 2/5] ARM: zynq: dt: Convert to preprocessor includes
+Message-ID: <20140408172752.GC27776@obsidianresearch.com>
+References: <1396653256-28397-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1396653256-28397-3-git-send-email-soren.brinkmann@xilinx.com>
+ <53423E75.3020008@monstr.eu>
+ <53429754.8080105@topic.nl>
+ <534298E7.2020409@monstr.eu>
+ <20140407171012.GC9952@obsidianresearch.com>
+ <20140407180228.GN12170@pengutronix.de>
+ <53439F3F.2030801@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53439F3F.2030801@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Tue, Apr 08, 2014 at 09:03:27AM +0200, Michal Simek wrote:
 
-When Xen migrates an HVM guest, by default its shared_info can
-only hold up to 32 CPUs. As such the hypercall
-VCPUOP_register_vcpu_info was introduced which allowed us to
-setup per-page areas for VCPUs. This means we can boot PVHVM
-guest with more than 32 VCPUs. During migration the per-cpu
-structure is allocated freshly by the hypervisor (vcpu_info_mfn
-is set to INVALID_MFN) so that the newly migrated guest
-can make an VCPUOP_register_vcpu_info hypercall.
+> > If in doubt follow common mainline practice. Although using includes
+> > for DT is not necessarily common practice, readability of DTs is
+> > really important IMHO.
+> 
+> Let me give you one example. When you add xilinx intc controller
+> to zynq HW design which uses gic with headers you are using
+> then you will find out that sensitivity for both controllers
+> are just different.
+> This is just one case I am aware of. I expect there will be one more.
 
-Unfortunatly we end up triggering this condition in Xen:
-/* Run this command on yourself or on other offline VCPUS. */
- if ( (v != current) && !test_bit(_VPF_down, &v->pause_flags) )
+I'm not sure I see the problem here, just because some bindings can't
+use the standard shared constants doesn't mean the GIC bindings and
+users should avoid them. The binding documentation is supposed to make
+it clear what is correct.
 
-which means we are unable to setup the per-cpu VCPU structures
-for running vCPUS. The Linux PV code paths make this work by
-iterating over every vCPU with:
+It is just as easy to get confused with numbers, does 4 mean
+XILINX_INTC_IRQ_RISING or IRQ_TYPE_LEVEL_HIGH ?
 
- 1) is target CPU up (VCPUOP_is_up hypercall?)
- 2) if yes, then VCPUOP_down to pause it.
- 3) VCPUOP_register_vcpu_info
- 4) if it was down, then VCPUOP_up to bring it back up
+> Using dtc preprocessor and macros improve DTS readability but at the same
+> time force other users to copy all necessary files from the kernel
+> to that projects which is just hassle.
 
-But since VCPUOP_down, VCPUOP_is_up, and VCPUOP_up are
-not allowed on HVM guests we can't do this. However with the
-Xen commit "hvm: Support more than 32 VCPUS when migrating."
-we can do this. As such first check if VCPUOP_is_up is actually
-possible before trying this dance.
+You can run the DTS through cpp before you export it out of the kernel
+environment, then you get a flat file with no includes.
 
-As most of this dance code is done already in 'xen_setup_vcpu'
-lets make it callable on both PV and HVM. This means moving one
-of the checks out to 'xen_setup_runstate_info'.
+The shared kernel conventions are more important than constraints from
+outside projects.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c |   21 ++++++++++++++++-----
- arch/x86/xen/suspend.c   |    6 +-----
- arch/x86/xen/time.c      |    3 +++
- 3 files changed, 20 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 201d09a..af8be96 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -236,12 +236,23 @@ static void xen_vcpu_setup(int cpu)
- void xen_vcpu_restore(void)
- {
- 	int cpu;
-+	bool vcpuops = true;
-+	const struct cpumask *mask;
- 
--	for_each_possible_cpu(cpu) {
-+	mask = xen_pv_domain() ? cpu_possible_mask : cpu_online_mask;
-+
-+	/* Only Xen 4.5 and higher supports this. */
-+	if (HYPERVISOR_vcpu_op(VCPUOP_is_up, smp_processor_id(), NULL) == -ENOSYS)
-+		vcpuops = false;
-+
-+	for_each_cpu(cpu, mask) {
- 		bool other_cpu = (cpu != smp_processor_id());
--		bool is_up = HYPERVISOR_vcpu_op(VCPUOP_is_up, cpu, NULL);
-+		bool is_up = false;
-+
-+		if (vcpuops)
-+			is_up = HYPERVISOR_vcpu_op(VCPUOP_is_up, cpu, NULL);
- 
--		if (other_cpu && is_up &&
-+		if (vcpuops && other_cpu && is_up &&
- 		    HYPERVISOR_vcpu_op(VCPUOP_down, cpu, NULL))
- 			BUG();
- 
-@@ -250,7 +261,7 @@ void xen_vcpu_restore(void)
- 		if (have_vcpu_info_placement)
- 			xen_vcpu_setup(cpu);
- 
--		if (other_cpu && is_up &&
-+		if (vcpuops && other_cpu && is_up &&
- 		    HYPERVISOR_vcpu_op(VCPUOP_up, cpu, NULL))
- 			BUG();
- 	}
-@@ -1751,7 +1762,7 @@ void __ref xen_hvm_init_shared_info(void)
- 	for_each_online_cpu(cpu) {
- 		/* Leave it to be NULL. */
- 		if (cpu >= MAX_VIRT_CPUS)
--			continue;
-+			per_cpu(xen_vcpu, cpu) = NULL; /* Triggers xen_vcpu_setup.*/
- 		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
- 	}
- }
-diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
-index 45329c8..6fb3298 100644
---- a/arch/x86/xen/suspend.c
-+++ b/arch/x86/xen/suspend.c
-@@ -33,11 +33,7 @@ void xen_arch_hvm_post_suspend(int suspend_cancelled)
- 	xen_hvm_init_shared_info();
- 	xen_callback_vector();
- 	xen_unplug_emulated_devices();
--	if (xen_feature(XENFEAT_hvm_safe_pvclock)) {
--		for_each_online_cpu(cpu) {
--			xen_setup_runstate_info(cpu);
--		}
--	}
-+	xen_vcpu_restore();
- #endif
- }
- 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 7b78f88..d4feb2e 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -105,6 +105,9 @@ void xen_setup_runstate_info(int cpu)
- {
- 	struct vcpu_register_runstate_memory_area area;
- 
-+	if (xen_hvm_domain() && !(xen_feature(XENFEAT_hvm_safe_pvclock)))
-+		return;
-+
- 	area.addr.v = &per_cpu(xen_runstate, cpu);
- 
- 	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
--- 
-1.7.7.6
-
+Jason
