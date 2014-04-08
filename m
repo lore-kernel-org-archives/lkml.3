@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342AbaDHIrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 04:47:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaDHIrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 04:47:33 -0400
-From: Jan Stancek <jstancek@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: jstancek@redhat.com, srikar@linux.vnet.ibm.com, davidlohr@hp.com,
-        torvalds@linux-foundation.org, mingo@kernel.org, lwoodman@redhat.com
-Subject: [PATCH] futex: avoid race between requeue and wake
-Date: Tue,  8 Apr 2014 10:47:15 +0200
-Message-Id: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com>
+	id S1756419AbaDHI4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 04:56:13 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:56693 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750800AbaDHI4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 04:56:10 -0400
+Message-ID: <1396947368.26620.2.camel@x220>
+Subject: [PATCH] ARC: Remove ISS_SMP_EXTN entirely
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Vineet Gupta <vgupta@synopsys.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 08 Apr 2014 10:56:08 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Apr 2014 08:56:08.0684 (UTC) FILETIME=[620C22C0:01CF5308]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pthread_cond_broadcast/4-1.c testcase from openposix testsuite (LTP)
-occasionally fails, because some threads fail to wake up.
+The Kconfig symbol ARC_HAS_COH_RTSC was removed in v3.13. The Kconfig
+entry for ISS_SMP_EXTN still had a select for that symbol. That select
+was just removed in commit d345ea2892ae ("ARC: Remove
+ARC_HAS_COH_RTSC").
 
-Testcase creates 5 threads, which are all waiting on same condition.
-Main thread then calls pthread_cond_broadcast() without holding mutex,
-which calls:
-  futex(uaddr1, FUTEX_CMP_REQUEUE_PRIVATE, 1, 2147483647, uaddr2, ..)
-This immediately wakes up single thread A, which unlocks mutex and
-tries to wake up another thread:
-  futex(uaddr2, FUTEX_WAKE_PRIVATE, 1)
-If thread A manages to call futex_wake() before any waiters are requeued
-for uaddr2, no other thread is woken up.
+But selecting ARC_HAS_COH_RTSC was the only thing ISS_SMP_EXTN ever
+did. That means that since v3.13 setting ISS_SMP_EXTN was effectively a
+nop anyhow. So ISS_SMP_EXTN can as well be removed entirely.
 
-This patch is re-introducing check removed by:
-  commit 11d4616bd07f38d496bd489ed8fad1dc4d928823
-  futex: revert back to the explicit waiter counting code
-
-Taking hb->lock in this situation will ensure that thread A needs to wait
-in futex_wake() until main thread finishes requeue operation.
-
-Signed-off-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- kernel/futex.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Tested wit "git grep" only.
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 67dacaf..5163899 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -284,7 +284,10 @@ static inline void hb_waiters_dec(struct futex_hash_bucket *hb)
- static inline int hb_waiters_pending(struct futex_hash_bucket *hb)
- {
- #ifdef CONFIG_SMP
--	return atomic_read(&hb->waiters);
-+	if (spin_is_locked(&hb->lock))
-+		return 1;
-+	else
-+		return atomic_read(&hb->waiters);
- #else
- 	return 1;
- #endif
+ arch/arc/plat-arcfpga/Kconfig | 13 -------------
+ 1 file changed, 13 deletions(-)
+
+diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+index 33058aa40e77..fde2a3fb604d 100644
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -8,7 +8,6 @@
+ 
+ menuconfig ARC_PLAT_FPGA_LEGACY
+ 	bool "\"Legacy\" ARC FPGA dev Boards"
+-	select ISS_SMP_EXTN if SMP
+ 	help
+ 	  Support for ARC development boards, provided by Synopsys.
+ 	  These are based on FPGA or ISS. e.g.
+@@ -29,18 +28,6 @@ config ARC_BOARD_ML509
+ 	help
+ 	  ARC ML509 FPGA Ref Platform (Xilinx Virtex-5 Based)
+ 
+-config ISS_SMP_EXTN
+-	bool "ARC SMP Extensions (ISS Models only)"
+-	default n
+-	depends on SMP
+-	help
+-	  SMP Extensions to ARC700, in a "simulation only" Model, supported in
+-	  ARC ISS (Instruction Set Simulator).
+-	  The SMP extensions include:
+-	  -IDU (Interrupt Distribution Unit)
+-	  -XTL (To enable CPU start/stop/set-PC for another CPU)
+-	  It doesn't provide coherent Caches and/or Atomic Ops (LLOCK/SCOND)
+-
+ config ARC_SERIAL_BAUD
+ 	int "UART Baud rate"
+ 	default "115200"
 -- 
-1.7.1
+1.9.0
 
