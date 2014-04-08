@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106AbaDHO0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:26:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50105 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677AbaDHO0p (ORCPT
+	id S1757185AbaDHO0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:26:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64472 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756605AbaDHO0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:26:45 -0400
-Date: Tue, 8 Apr 2014 17:26:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jimmy Li <coder.liss@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Teodora Baluta <teobaluta@gmail.com>, Joe Perches <joe@perches.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>,
-        Lisa Nguyen <lisa@xenapiadmin.com>,
-        Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        =?us-ascii?Q?=3D=3Fus-ascii=3FB=3FPT91cy1hc2NpaT9RPz0zRD0zRnV0Zi04PTNG?=
-	 =?us-ascii?Q?Qj0zRlZNTzhiR2x1SU1T=3F=3D_=3D=3Fus-ascii=3FB=3Fd2VtVnk9M0Y9?=
-	 =?us-ascii?B?TTBRL1BRPT0/PQ==?= <tulinizer@gmail.com>,
-        Archana kumari <archanakumari959@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] Staging: vt6655: iwctl.c: fix a sparse warning
-Message-ID: <20140408142611.GC4912@mwanda>
-References: <20140408110927.GA17308@gmail.com>
+	Tue, 8 Apr 2014 10:26:51 -0400
+Date: Tue, 8 Apr 2014 16:26:42 +0200
+From: Andres Freund <andres@2ndquadrant.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        sivanich@sgi.com
+Subject: Re: [PATCH 0/2] Disable zone_reclaim_mode by default
+Message-ID: <20140408142642.GU4161@awork2.anarazel.de>
+References: <1396910068-11637-1-git-send-email-mgorman@suse.de>
+ <5343A494.9070707@suse.cz>
+ <alpine.DEB.2.10.1404080914280.8782@nuc>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140408110927.GA17308@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <alpine.DEB.2.10.1404080914280.8782@nuc>
+X-Provags-ID: V02:K0:oWQZg+uCGw3khjqNFVtzcZeCbforjZDOia/Ij3/TJHr
+ 8BL249u78BmFc37Uxz3P+TPPgViu4TpUq/5EIKayPoDxMLzhLl
+ oNUBdwg0zCHhnCLGa4fVJVXs3mPodj9nk2wEoC82Exi0MaW7h4
+ gXSQpwzdiITOpsjBAP03aW40lb6L24j8bC9JezXzjBfNl9JKjS
+ wjl5evhVfckhGKRihw5PfxwkrFb729jZUS1Af0YoGQ6b6tVz6W
+ OrTnigo9d/C4wupZWEdiLdn1DWQ6RZ9YbdCeniN77kyDnPGtbO
+ 4y1/7IXCdA1hHZNtmYyeIz89d6t6JSczHRHaf/FS37LfBmfRq3
+ Su4dk3tke/+bsyhgtRu+s0ZRHGcd2fSp5KoYhKs21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 09:35:02PM +0800, Jimmy Li wrote:
-> fix a sparse warning and do some clean up.
-> iwctl.c:1846:35: expected restricted gfp_t [usertype] flags
+On 2014-04-08 09:17:04 -0500, Christoph Lameter wrote:
+> On Tue, 8 Apr 2014, Vlastimil Babka wrote:
 > 
-> Signed-off-by: Jimmy Li <coder.liss@gmail.com>
-> ---
+> > On 04/08/2014 12:34 AM, Mel Gorman wrote:
+> > > When it was introduced, zone_reclaim_mode made sense as NUMA distances
+> > > punished and workloads were generally partitioned to fit into a NUMA
+> > > node. NUMA machines are now common but few of the workloads are NUMA-aware
+> > > and it's routine to see major performance due to zone_reclaim_mode being
+> > > disabled but relatively few can identify the problem.
+> >     ^ I think you meant "enabled" here?
+> >
+> > Just in case the cover letter goes to the changelog...
+> 
+> Correct.
+> 
+> Another solution here would be to increase the threshhold so that
+> 4 socket machines do not enable zone reclaim by default. The larger the
+> NUMA system is the more memory is off node from the perspective of a
+> processor and the larger the hit from remote memory.
 
-Looks good.
+FWIW, I've the problem hit majorly on 8 socket machines. Those are the
+largest I have seen so far in postgres scenarios. Everything larger is
+far less likely to be used as single node database server, so that's
+possibly a sensible cutoff.
+But then, I'd think that special many-socket machines are setup by
+specialists, that'd know to enable if it makes sense...
 
-regards,
-dan carpenter
+Greetings,
 
+Andres Freund
+
+-- 
+ Andres Freund	                   http://www.2ndQuadrant.com/
+ PostgreSQL Development, 24x7 Support, Training & Services
