@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591AbaDHSjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:39:51 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:60462 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757464AbaDHSjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:39:49 -0400
+	id S1757617AbaDHSoM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:44:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48086 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756314AbaDHSoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 14:44:11 -0400
+Message-ID: <53444330.2030606@redhat.com>
+Date: Tue, 08 Apr 2014 14:42:56 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <53440544.9040502@codeaurora.org>
-References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
-	<1391700529-11816-2-git-send-email-iivanov@mm-sol.com>
-	<CAOZdJXVE7MSMBaL+bt0kjw5LEidz-aVp+vrWqQWkye6HdE7EeA@mail.gmail.com>
-	<1396959284.28420.45.camel@iivanov-dev>
-	<5343EC87.700@codeaurora.org>
-	<1396964805.28420.53.camel@iivanov-dev>
-	<53440544.9040502@codeaurora.org>
-Date: Tue, 8 Apr 2014 11:39:48 -0700
-Message-ID: <CAJAp7OjnUaBE=Ma-B54=z_w5L6zDP4tn52_kwXekbj2sbYrOLA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: dts: MSM8974: Add pinctrl node
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Timur Tabi <timur@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Bill Sumner <bill.sumner@hp.com>, indou.takao@jp.fujitsu.com,
+        bhe@redhat.com, joro@8bytes.org, iommu@lists.linux-foundation.org,
+        kexec@lists.infradead.org, alex.williamson@redhat.com,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, doug.hatch@hp.com,
+        zhenhua@hp.com
+Subject: Re: [PATCHv3 0/6] Crashdump Accepting Active IOMMU
+References: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>  <53430DE9.9080303@redhat.com> <1396973686.25235.36.camel@i7.infradead.org>
+In-Reply-To: <1396973686.25235.36.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 7:18 AM, Timur Tabi <timur@codeaurora.org> wrote:
-> On 04/08/2014 08:46 AM, Ivan T. Ivanov wrote:
->>>
->>> >This patch adds that same exact information into the device tree.  Why
->>> >are we duplicating that information?  Why add it to the device tree when
->>> >it's already in the driver (and already working).
+On 04/08/2014 12:14 PM, David Woodhouse wrote:
+> On Mon, 2014-04-07 at 16:43 -0400, Don Dutile wrote:
+>>
+>> Additionally, a tidbit of information like "some servers force NMI's
+>> on DMAR faults,
+>> and cause a system reset, thereby, preventing a kdump to occur"
+>> should have been included as one reason to stop DMAR faults from
+>> occurring on kexec-boot,
+>> in addition to the fact that a flood of them can lock up a system.
 >
+> How about allocating a physical scratch page, and setting up a mapping
+> for each device such that *every* virtual address (apart from those
+> listed in RMRRs, perhaps) is mapped to that same scratch page?
 >
->> Probably. It was my natural way of thinking. Pin have a functions.
->> It is easier if I measure signals to just look at the device
->> tree file. What are you suggesting?
+> That way you avoid the faults, but you also avoid stray DMA to parts of
+> the system that you don't want to get corrupted.
 >
->
-> Back in July, Qualcomm submitted a patch that added this information into
-> the device tree:
->
-> http://marc.info/?t=137185166100003&r=1&w=2
->
-> However, this was rejected.  Now it appears that this information is again
-> being added to the device tree, but it's being accepted.  What's different
-> now?
++1... more isolation as second kernel booting sounds good.
 
-The difference is that in the first proposal pins, groups and
-functions where defined in DT, in the accepted proposal the devicetree
-merely selects pins, functions and their configuration.
-
->
-> Another problem is that these device tree changes makes it difficult to
-> support ACPI.  It's easy to move information between the drivers and the
-> device tree, because they're kept together.  It's not so easy with ACPI.
-> I'm trying to add ACPI support to the 8x74 pinctrl driver, but it's a moving
-> target.
-
-The DT bindings for 8x74 is all standard pinctrl, so I presume that
-what you should be looking at is how pinctrl and acpi is interacting,
-not the specific case of 8x74...
-
-Maybe Linus have some input on this?
-
-Regards,
-Bjorn
