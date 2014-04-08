@@ -1,186 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857AbaDHNJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:09:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60967 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756552AbaDHNJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:09:39 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-X86 <x86@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/5] x86: Define _PAGE_NUMA by reusing software bits on the PMD and PTE levels
-Date: Tue,  8 Apr 2014 14:09:27 +0100
-Message-Id: <1396962570-18762-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1396962570-18762-1-git-send-email-mgorman@suse.de>
-References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
+	id S932156AbaDHNLI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:11:08 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:55296 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530AbaDHNLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 09:11:03 -0400
+From: Elias Vanderstuyft <elias.vds@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Elias Vanderstuyft <elias.vds@gmail.com>,
+        Edgar Simo-Serra <bobbens@gmail.com>,
+        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: lg2ff: add rumble magnitude clamping quirk
+Date: Tue,  8 Apr 2014 15:06:07 +0200
+Message-Id: <1396962367-6469-1-git-send-email-elias.vds@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-_PAGE_NUMA is currently an alias of _PROT_PROTNONE to trap NUMA hinting
-faults. Care is taken such that _PAGE_NUMA is used only in situations where
-the VMA flags distinguish between NUMA hinting faults and prot_none faults.
-Conceptually this is difficult and it has caused problems.
+If a magnitude in the output report is lower than 2, i.e. 1 or 0,
+the corresponding rumble motor shakes irregularly,
+instead of being turned (almost) off like when magnitude 2 is used.
+On the other hand, if a magnitude is higher than 0xfd, i.e 0xfe or 0xff,
+the corresponding rumble motor shakes irregularly with a rotation speed
+lower than when magnitude 0xfd is used.
+>From 0x02 to 0xfd, the device behaves well:
+a monotonic increase of rotation speed.
+This applies to both weak and strong rumble motor types.
 
-Fundamentally, we only need the _PAGE_NUMA bit to tell the difference between
-an entry that is really unmapped and a page that is protected for NUMA
-hinting faults as if the PTE is not present then a fault will be trapped.
+This patch fixes this issue by clamping magnitudes from 0x02 to 0xfd.
 
-Currently one of the software bits is used for identifying IO mappings and
-by Xen to track if it's a Xen PTE or a machine PFN.  This patch reuses the
-software bit for IOMAP for NUMA hinting faults with the expectation that
-the bit is not used for userspace addresses. Xen and NUMA balancing are
-now mutually exclusive in Kconfig.
+This behaviour is observed on the Formula Vibration wheel (ca04).
+However it's not present on the Wingman Rumblepad (c20a) device,
+yet the clamping has no effect on the haptic side,
+so that special case handling is not needed.
+Discussion on http://www.spinics.net/lists/linux-input/msg30711.html
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Note: The same thing appears to happen in the Windows Logitech driver,
+      except the max clamping bound is not 0xfd, but 0xfe.
+      Experimentally, I proved this to be wrong.
+
+Tested-by: Hendrik Iben <hendrik_iben@web.de>
+Signed-off-by: Elias Vanderstuyft <elias.vds@gmail.com>
+Cc: Edgar Simo-Serra <bobbens@gmail.com>
+Cc: Michal Malý <madcatxster@devoid-pointer.net>
+Cc: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- arch/x86/Kconfig                     |  2 +-
- arch/x86/include/asm/pgtable.h       |  5 ++++
- arch/x86/include/asm/pgtable_types.h | 54 +++++++++++++++++-------------------
- 3 files changed, 31 insertions(+), 30 deletions(-)
+ drivers/hid/hid-lg2ff.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 084b1c1..4fab25a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -26,7 +26,7 @@ config X86
- 	select ARCH_MIGHT_HAVE_PC_SERIO
- 	select HAVE_AOUT if X86_32
- 	select HAVE_UNSTABLE_SCHED_CLOCK
--	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64
-+	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64 && !XEN
- 	select ARCH_SUPPORTS_INT128 if X86_64
- 	select ARCH_WANTS_PROT_NUMA_PROT_NONE
- 	select HAVE_IDE
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index bbc8b12..076daff 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -447,6 +447,8 @@ static inline int pte_same(pte_t a, pte_t b)
+diff --git a/drivers/hid/hid-lg2ff.c b/drivers/hid/hid-lg2ff.c
+index 0e3fb1a..e180e1e 100644
+--- a/drivers/hid/hid-lg2ff.c
++++ b/drivers/hid/hid-lg2ff.c
+@@ -38,12 +38,17 @@ static int play_effect(struct input_dev *dev, void *data,
+ 	struct lg2ff_device *lg2ff = data;
+ 	int weak, strong;
  
- static inline int pte_present(pte_t a)
- {
-+	VM_BUG_ON((pte_flags(a) & (_PAGE_NUMA | _PAGE_GLOBAL)) ==
-+			(_PAGE_NUMA | _PAGE_GLOBAL));
- 	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
- 			       _PAGE_NUMA);
- }
-@@ -471,6 +473,9 @@ static inline int pte_hidden(pte_t pte)
- 
- static inline int pmd_present(pmd_t pmd)
- {
-+	VM_BUG_ON((pmd_flags(pmd) & (_PAGE_NUMA | _PAGE_GLOBAL)) ==
-+			(_PAGE_NUMA | _PAGE_GLOBAL));
++#define CLAMP_QUIRK(x) do { if (x < 2) x = 2; else if (x > 0xfd) x = 0xfd; } \
++			while (0)
 +
- 	/*
- 	 * Checking for _PAGE_PSE is needed too because
- 	 * split_huge_page will temporarily clear the present bit (but
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 1aa9ccd..49b3e15 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -16,13 +16,17 @@
- #define _PAGE_BIT_PSE		7	/* 4 MB (or 2MB) page */
- #define _PAGE_BIT_PAT		7	/* on 4KB pages */
- #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
--#define _PAGE_BIT_UNUSED1	9	/* available for programmer */
--#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
--#define _PAGE_BIT_HIDDEN	11	/* hidden by kmemcheck */
-+#define _PAGE_BIT_SOFTW1	9	/* available for programmer */
-+#define _PAGE_BIT_SOFTW2	10	/* " */
-+#define _PAGE_BIT_SOFTW3	11	/* " */
- #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
--#define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
--#define _PAGE_BIT_CPA_TEST	_PAGE_BIT_UNUSED1
--#define _PAGE_BIT_SPLITTING	_PAGE_BIT_UNUSED1 /* only valid on a PSE pmd */
-+#define _PAGE_BIT_SPECIAL	_PAGE_BIT_SOFTW1
-+#define _PAGE_BIT_CPA_TEST	_PAGE_BIT_SOFTW1
-+#define _PAGE_BIT_SPLITTING	_PAGE_BIT_SOFTW1 /* only valid on a PSE pmd */
-+#define _PAGE_BIT_IOMAP		_PAGE_BIT_SOFTW2 /* flag used to indicate IO mapping */
-+#define _PAGE_BIT_NUMA		_PAGE_BIT_SOFTW2 /* for NUMA balancing hinting */
-+#define _PAGE_BIT_HIDDEN	_PAGE_BIT_SOFTW3 /* hidden by kmemcheck */
-+#define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_SOFTW3 /* software dirty tracking */
- #define _PAGE_BIT_NX           63       /* No execute: only valid after cpuid check */
+ 	strong = effect->u.rumble.strong_magnitude;
+ 	weak = effect->u.rumble.weak_magnitude;
  
- /* If _PAGE_BIT_PRESENT is clear, we use these: */
-@@ -40,7 +44,6 @@
- #define _PAGE_DIRTY	(_AT(pteval_t, 1) << _PAGE_BIT_DIRTY)
- #define _PAGE_PSE	(_AT(pteval_t, 1) << _PAGE_BIT_PSE)
- #define _PAGE_GLOBAL	(_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
--#define _PAGE_UNUSED1	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED1)
- #define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_IOMAP)
- #define _PAGE_PAT	(_AT(pteval_t, 1) << _PAGE_BIT_PAT)
- #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
-@@ -61,8 +64,6 @@
-  * they do not conflict with each other.
-  */
+ 	if (weak || strong) {
+ 		weak = weak * 0xff / 0xffff;
+ 		strong = strong * 0xff / 0xffff;
++		CLAMP_QUIRK(weak);
++		CLAMP_QUIRK(strong);
  
--#define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_HIDDEN
--
- #ifdef CONFIG_MEM_SOFT_DIRTY
- #define _PAGE_SOFT_DIRTY	(_AT(pteval_t, 1) << _PAGE_BIT_SOFT_DIRTY)
- #else
-@@ -70,6 +71,21 @@
- #endif
- 
- /*
-+ * _PAGE_NUMA distinguishes between a numa hinting minor fault and a page
-+ * that is not present. The hinting fault gathers numa placement statistics
-+ * (see pte_numa()). The bit is always zero when the PTE is not present.
-+ *
-+ * The bit picked must be always zero when the pmd is present and not
-+ * present, so that we don't lose information when we set it while
-+ * atomically clearing the present bit.
-+ */
-+#ifdef CONFIG_NUMA_BALANCING
-+#define _PAGE_NUMA	(_AT(pteval_t, 1) << _PAGE_BIT_NUMA)
-+#else
-+#define _PAGE_NUMA	(_AT(pteval_t, 0))
-+#endif
-+
-+/*
-  * Tracking soft dirty bit when a page goes to a swap is tricky.
-  * We need a bit which can be stored in pte _and_ not conflict
-  * with swap entry format. On x86 bits 6 and 7 are *not* involved
-@@ -94,26 +110,6 @@
- #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
- #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
- 
--/*
-- * _PAGE_NUMA indicates that this page will trigger a numa hinting
-- * minor page fault to gather numa placement statistics (see
-- * pte_numa()). The bit picked (8) is within the range between
-- * _PAGE_FILE (6) and _PAGE_PROTNONE (8) bits. Therefore, it doesn't
-- * require changes to the swp entry format because that bit is always
-- * zero when the pte is not present.
-- *
-- * The bit picked must be always zero when the pmd is present and not
-- * present, so that we don't lose information when we set it while
-- * atomically clearing the present bit.
-- *
-- * Because we shared the same bit (8) with _PAGE_PROTNONE this can be
-- * interpreted as _PAGE_NUMA only in places that _PAGE_PROTNONE
-- * couldn't reach, like handle_mm_fault() (see access_error in
-- * arch/x86/mm/fault.c, the vma protection must not be PROT_NONE for
-- * handle_mm_fault() to be invoked).
-- */
--#define _PAGE_NUMA	_PAGE_PROTNONE
--
- #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
- 			 _PAGE_ACCESSED | _PAGE_DIRTY)
- #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
+ 		lg2ff->report->field[0]->value[0] = 0x51;
+ 		lg2ff->report->field[0]->value[2] = weak;
 -- 
-1.8.4.5
+1.8.3.1
 
