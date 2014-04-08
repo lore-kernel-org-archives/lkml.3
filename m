@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaDHDyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 23:54:50 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:51329 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051AbaDHDys (ORCPT
+	id S1751062AbaDHECj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 00:02:39 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59085 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaDHECh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 23:54:48 -0400
+	Tue, 8 Apr 2014 00:02:37 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <534374D5.3020601@roeck-us.net>
+Date: Mon, 07 Apr 2014 21:02:29 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1396563423-30893-15-git-send-email-robherring2@gmail.com>
-References: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
-	<1396563423-30893-15-git-send-email-robherring2@gmail.com>
-Date: Tue, 8 Apr 2014 07:54:48 +0400
-Message-ID: <CAMo8Bf+2TeKoW76FJY6=GgB05UFW11fX1MuwqyLEMQbcNoL8Mg@mail.gmail.com>
-Subject: Re: [PATCH 14/20] of/fdt: use libfdt accessors for header data
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Peter Tyser <ptyser@xes-inc.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: Adding interrupt support to gpio-ich driver (possibly via SCI)
+References: <533EDD0E.8010304@roeck-us.net> <20140408024851.GA3594@srcf.ucam.org> <53436B1C.8010102@roeck-us.net> <20140408033114.GA28159@srcf.ucam.org>
+In-Reply-To: <20140408033114.GA28159@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On 04/07/2014 08:31 PM, Matthew Garrett wrote:
+> On Mon, Apr 07, 2014 at 08:21:00PM -0700, Guenter Roeck wrote:
+>> On 04/07/2014 07:48 PM, Matthew Garrett wrote:
+>>> You shouldn't need to install an SCI handler - the way the hardware will
+>>> generate an SCI is to raise a GPE. If you know which GPE the device
+>>> raises (my recollection is that for most Intel chipsets it's GPIO number
+>>> + 0x10) then you can just call acpi_install_gpe_handler(). The problem
+>>
+>> Sounds good. Do you by any chance have a pointer to some documentation
+>> explaining this in some more detail ?
+>
+> The SCI is just IRQ 9 - it tells the OS that there's a firmware event,
+> but in itself doesn't say what that event was. This is handled by the
+> platform setting bits in the GPE*_STS registers. The ACPI code reads
+> that and then dispatches the event to the appropriate handler. This will
+> typically be some ACPI code (declared by _Lxx and _Exx methods in the
+> ACPI tables - xx corresponds to the GPE number, L and E whether it's
+> level or edge triggered), but in some cases you want to install a
+> hardcoded event handler.
+>
+> I've only got the 5-series docs to hand, and I can't remember whether
+> that's Panther Point, but you want to look at the definition of GPE0_STS
+> to figure out which hardware events cause which GPEs. GPEs 16 to 31
+> appear to correspond to GPIO 0 to 15, which is easy enough to handle.
+>
+Panther Point is Series 7 if I understand correctly, but the GPE0_STS
+definition is the same.
 
-On Fri, Apr 4, 2014 at 2:16 AM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <robh@kernel.org>
->
-> With libfdt support, we can take advantage of helper accessors in libfdt
-> for accessing the FDT header data. This makes the code more readable and
-> makes the FDT blob structure more opaque to the kernel. This also
-> prepares for removing struct boot_param_header completely.
->
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> ---
->  drivers/of/fdt.c       | 27 ++++++++++++---------------
->  include/linux/of_fdt.h |  8 ++++----
->  2 files changed, 16 insertions(+), 19 deletions(-)
->
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index ee8853c..dc5f233 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-[...]
-> @@ -902,9 +900,8 @@ void __init unflatten_and_copy_device_tree(void)
->                 return;
->         }
->
-> -       size = __be32_to_cpu(initial_boot_params->totalsize);
-> -       dt = early_init_dt_alloc_memory_arch(size,
-> -               __alignof__(struct boot_param_header));
-> +       size = fdt_totalsize(initial_boot_params);
-> +       dt = early_init_dt_alloc_memory_arch(size, FDT_V17_SIZE);
+That should get me started - thanks again!
 
-This change triggers BUG_ON(align & (align - 1)) in the alloc_bootmem_bdata()
-on xtensa.
+Guenter
 
--- 
-Thanks.
--- Max
+>>> is that the firmware may well already be using some of those GPIOs, and
+>>> there's no easy way to tell. Checking the interrupt configuration isn't
+>>> sufficient, since some of them may just be used as outputs.
+>>>
+>> The gpio-ich driver already has some magic to detect that condition - I
+>> noticed that I can not request all GPIO pins on all hardware. Either case,
+>> the gpio pins I am interested in are well defined on the hardware I am
+>> dealing with, so I can be sure I won't step on some unexpected use.
+>
+> Ok. As long as you don't reprogram anything by default, I think this
+> should be fine.
+>
+
