@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826AbaDHWo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 18:44:28 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47187 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210AbaDHWo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 18:44:26 -0400
+	id S1757295AbaDHWqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 18:46:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34723 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756372AbaDHWqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 18:46:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,819,1389772800"; 
+   d="scan'208";a="517072891"
+Message-ID: <53445245.3020400@intel.com>
+Date: Tue, 08 Apr 2014 12:47:17 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140408204906.GA3616@cloud>
-References: <20140407201919.GA15838@sepie.suse.cz>
-	<CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
-	<20140408204906.GA3616@cloud>
-Date: Tue, 8 Apr 2014 15:44:25 -0700
-X-Google-Sender-Auth: ohU8ng_HM-3FjTJJ0rAOPMUB9ao
-Message-ID: <CA+55aFzhyvZRPjXy7PkUxQO_AMqLSTehh-GNRP+Dx3yKnv-eCA@mail.gmail.com>
-Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Michal Marek <mmarek@suse.cz>, Andi Kleen <ak@linux.intel.com>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index reflect
+ the start/end section number
+References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com> <533E0B0E.9020909@jp.fujitsu.com> <1396945659.3162.6.camel@ThinkPad-T5421.cn.ibm.com> <53442021.2060608@intel.com> <53443E8C.4070906@linux.vnet.ibm.com>
+In-Reply-To: <53443E8C.4070906@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 1:49 PM,  <josh@joshtriplett.org> wrote:
->
-> In addition to making the kernel smaller and such (I'll leave the
-> specific stats there to Andi), here's the key awesomeness of LTO that
-> you, personally, should find useful and compelling: LTO will eliminate
-> the need to add many lower-level Kconfig symbols to compile out bits of
-> the kernel.
+On 04/08/2014 11:23 AM, Nathan Fontenot wrote:
+> On 04/08/2014 11:13 AM, Dave Hansen wrote:
+>> On 04/08/2014 01:27 AM, Li Zhong wrote:
+>>> If Dave and others don't have further objections, it seems this small
+>>> userspace incompatibility could be accepted by most of us, and I don't
+>>> need to make a version 2. 
+>>
+>> Let me ask another question then.  What are the units of
+>> phys_index/end_phys_index?  How do we expose those units to userspace?
+>>
+> 
+> The documentation for these files just states that the files contain
+> the first and last section id of memory in the memory block for
+> phys_index and end_phys_index respectively.
+> 
+> I'm not sure the values have ever been units of anything, at least not
+> that I remember.
 
-Actually that, to me, is a negative right now.
+<sigh>
 
-Since there's no way we'll make LTO the default in the foreseeable
-future, people starting to use it like that is just a bad bad thing.
+There are two units.  SECTION_SIZE, which is completely internal to the
+kernel, and block_size_bytes which used to be the same as SECTION_SIZE,
+but is not now.  Which one of those two is phys_index/end_phys_index in,
+and if it is in terms of SECTION_SIZE like this patch proposes, how do
+we tell userspace how large SECTION_SIZE is?
 
-So really, the main advantage of LTO would be any actual optimizations
-it can do. And call me anal, but I want *numbers* for that before I
-merge it. Not handwaving. I'm not actually aware of how well - if at
-all - code generation actually improves.
+block_size_bytes is supposed to tell you how large the sections are.  In
+the case where we lumped a bunch of sections together, we also bumped up
+block_size_bytes.  That's why we currently divide the *ACTUAL* section
+number in phys_index/end_phys_index by block_size_bytes.
 
-                Linus
+That document really needs to be updated to stop referring to sections
+(at least in the descriptions of the user interface).  We can not change
+the units of phys_index/end_phys_index without also changing
+block_size_bytes.
