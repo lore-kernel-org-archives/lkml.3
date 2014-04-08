@@ -1,217 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112AbaDHW0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 18:26:12 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:40460 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757232AbaDHW0J (ORCPT
+	id S1757135AbaDHWaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 18:30:10 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:44347 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594AbaDHWaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 18:26:09 -0400
-Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140406201628.GA507@redhat.com>
-References: <20140406201628.GA507@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Apr 2014 15:26:03 -0700
-Message-ID: <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040822-8236-0000-0000-0000016423AB
+	Tue, 8 Apr 2014 18:30:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1860555101.1890107.1396990941681.JavaMail.zimbra@redhat.com>
+References: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com>
+	<CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com>
+	<CA+55aFyfKOv59hptv9rEcf31X5O8s26z+S8f-MchM1C0WtXx3A@mail.gmail.com>
+	<20140408181305.GT10526@twins.programming.kicks-ass.net>
+	<CA+55aFz+yMdXfsb-t3JzDhj6=M=-ggjDDGAQSbtfEcNhgyoopA@mail.gmail.com>
+	<1860555101.1890107.1396990941681.JavaMail.zimbra@redhat.com>
+Date: Tue, 8 Apr 2014 15:30:07 -0700
+X-Google-Sender-Auth: mEJpO_Qghknw2xITA9BibzeEvrA
+Message-ID: <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
+Subject: Re: [PATCH] futex: avoid race between requeue and wake
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jan Stancek <jstancek@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>
+Content-Type: multipart/mixed; boundary=bcaec547c9d5b1981c04f68f86bc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
-> 0xe8. Anything else?
+--bcaec547c9d5b1981c04f68f86bc
+Content-Type: text/plain; charset=UTF-8
 
-No, I think e8 is the only call instruction uprobes will see.
-
-> 
-
-The following couple of paragraphs should be included in the code,
-perhaps merged with some of the related comments already there.  Without
-it, the code is pretty hard to follow.
-
-> Emulating of rip-relative call is trivial, we only need to additionally
-> push the ret-address. If this fails, we execute this instruction out of
-> line and this should trigger the trap, the probed application should die
-> or the same insn will be restarted if a signal handler expands the stack.
-> We do not even need ->post_xol() for this case.
-> 
-> But there is a corner (and almost theoretical) case: another thread can
-> expand the stack right before we execute this insn out of line. In this
-> case it hit the same problem we are trying to solve. So we simply turn
-> the probed insn into "call 1f; 1:" and add ->post_xol() which restores
-> ->sp and restarts.
-
-Can you explain under what circumstances emulation of the call
-instruction would fail?  Will the copy_to_user() call that writes the
-return address to the stack grow the stack if necessary?  Will
-single-stepping the mangled call instruction expand the stack?
-
-> 
-> Many thanks to Jonathan who finally found the standalone reproducer,
-...
-> Reported-by: Jonathan Lebon <jlebon@redhat.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/include/asm/uprobes.h |    1 +
->  arch/x86/kernel/uprobes.c      |   69 ++++++++++++++++++++++++++++++++++------
->  2 files changed, 60 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-> index cca62c5..9528117 100644
-> --- a/arch/x86/include/asm/uprobes.h
-> +++ b/arch/x86/include/asm/uprobes.h
-> @@ -51,6 +51,7 @@ struct arch_uprobe {
->  		struct {
->  			s32	disp;
->  			u8	ilen;
-> +			u8	opc1;
->  		}				ttt;
->  	};
->  };
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index 3bcc121..9283024 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -461,33 +461,85 @@ static struct uprobe_xol_ops default_xol_ops = {
->  	.post_xol = default_post_xol_op,
->  };
-> 
-> +static bool ttt_is_call(struct arch_uprobe *auprobe)
-> +{
-> +	return auprobe->ttt.opc1 == 0xe8;
-> +}
-> +
->  static bool ttt_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+On Tue, Apr 8, 2014 at 2:02 PM, Jan Stancek <jstancek@redhat.com> wrote:
+>
+> I ran reproducer with following change on s390x system, where this
+> can be reproduced usually within seconds:
+>
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 67dacaf..9150ffd 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -1095,6 +1095,7 @@ static int unlock_futex_pi(u32 __user *uaddr, u32 uval)
+>  static inline void
+>  double_lock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket *hb2)
 >  {
-> -	regs->ip += auprobe->ttt.ilen + auprobe->ttt.disp;
-> +	unsigned long new_ip = regs->ip += auprobe->ttt.ilen;
-> +
-> +	if (ttt_is_call(auprobe)) {
-> +		unsigned long new_sp = regs->sp - sizeof_long();
-> +		if (copy_to_user((void __user *)new_sp, &new_ip, sizeof_long()))
-> +			return false;
-> +		regs->sp = new_sp;
-> +	}
-> +
-> +	regs->ip = new_ip + auprobe->ttt.disp;
->  	return true;
+> +       hb_waiters_inc(hb2);
+>         if (hb1 <= hb2) {
+>                 spin_lock(&hb1->lock);
+>                 if (hb1 < hb2)
+> @@ -1111,6 +1112,7 @@ double_unlock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket *hb2)
+>         spin_unlock(&hb1->lock);
+>         if (hb1 != hb2)
+>                 spin_unlock(&hb2->lock);
+> +       hb_waiters_dec(hb2);
 >  }
-> 
-> +static int ttt_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
-> +{
-> +	BUG_ON(!ttt_is_call(auprobe));
-> +	/*
-> +	 * We can only get here if ttt_emulate_op() failed to push the return
-> +	 * address _and_ another thread expanded our stack before the (mangled)
-> +	 * "call" insn was executed out-of-line. Just restore ->sp and restart.
-> +	 * We could also restore ->ip and try to call ttt_emulate_op() again.
-> +	 */
+>
+>  /*
+>
+> Reproducer is running without failures over an hour now and
+> made ~1.4 million iterations.
 
-As I understand it, this comment assumes that the single-stepped call
-instruction can't grow the stack on its own, and will instead die with a
-SEGV or some such.  As noted above, I don't know if that's correct.  (If
-the single-stepped call doesn't die and doesn't grow the stack -- I'm
-not sure how that would happen -- then it seems like we have an infinite
-loop.)
+Ok, that's encouraging. That is the smallest patch I could come up
+with, but as mentioned, it's not optimal. We only need it for
+futex_requeue(), but if we do it there we'd have to handle all the
+different error cases (there's only one call to double_lock_hb(), but
+due to the error cases there's four calls to double_unlock_hb().
 
-> +	regs->sp += sizeof_long();
-> +	return -ERESTART;
-> +}
-> +
-> +static void ttt_clear_displacement(struct arch_uprobe *auprobe, struct insn *insn)
-> +{
-> +	/*
-> +	 * Turn this insn into "call 1f; 1:", this is what we will execute
-> +	 * out-of-line if ->emulate() fails.
+I'm not sure how much we care. The simple patch basically adds two
+(unnecessary) atomics to the futex_wake_op() path. I don't know how
+critical that path is - not as critical as the regular "futex_wake()",
+I'd expect, but I guess pthread_cond_signal() is the main user.
 
-Add comment: In the unlikely event that this mangled instruction is
-successfully single-stepped, we'll reset regs->ip to the beginning of
-the instruction so the probepoint is hit again and the original
-instruction is emulated (successfully this time, we assume).
+So I'll have to leave this decision to the futex people. But the
+attached slightly more complex patch *may* be the better one.
 
-> +	 *
-> +	 * In the likely case this will lead to arch_uprobe_abort_xol(), but
-> +	 * see the comment in ->emulate(). So we need to ensure that the new
-> +	 * ->ip can't fall into non-canonical area and trigger #GP.
-> +	 *
-> +	 * We could turn it into (say) "pushf", but then we would need to
-> +	 * divorce ->insn[] and ->ixol[]. We need to preserve the 1st byte
-> +	 * of ->insn[] for set_orig_insn().
-> +	 */
-> +	memset(auprobe->insn + insn_offset_displacement(insn),
-> +		0, insn->moffset1.nbytes);
+May I bother you to test this one too? I really think that
+futex_requeue() is the only user that should need this, so doing it
+there rather than in double_[un]lock_hb() should be slightly more
+optimal, but who knows what I've missed. We clearly *all* missed this
+race back when the ordering rules were documented..
 
-s/displacement/immediate/
-s/moffset1/immediate/
-Both already fixed in today's patch.
+Still hoping for comments from PeterZ and Davidlohr.
 
-> +}
-> +
->  static struct uprobe_xol_ops ttt_xol_ops = {
->  	.emulate  = ttt_emulate_op,
-> +	.post_xol = ttt_post_xol_op,
->  };
-> 
->  static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
->  {
-> +	u8 opc1 = OPCODE1(insn);
-> +
-> +	/* has the side-effect of processing the entire instruction */
-> +	insn_get_length(insn);
-> +	if (WARN_ON_ONCE(!insn_complete(insn)))
-> +		return -ENOEXEC;
-> 
-> -	switch (OPCODE1(insn)) {
-> +	switch (opc1) {
->  	case 0xeb:	/* jmp 8 */
->  	case 0xe9:	/* jmp 32 */
->  	case 0x90:	/* prefix* + nop; same as jmp with .disp = 0 */
->  		break;
-> +
-> +	case 0xe8:	/* call relative */
-> +		ttt_clear_displacement(auprobe, insn);
-> +		auprobe->ttt.opc1 = opc1;
+                  Linus
 
-You set ttt.opc1 for call, and later for conditional jumps, but not for
-nop and unconditional jumps.  Might confuse a maintainer down the road?
+--bcaec547c9d5b1981c04f68f86bc
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_htrrgxfu0
 
-> +		break;
->  	default:
->  		return -ENOSYS;
->  	}
-> 
-> -	/* has the side-effect of processing the entire instruction */
-> -	insn_get_length(insn);
-> -	if (WARN_ON_ONCE(!insn_complete(insn)))
-> -		return -ENOEXEC;
-> -
->  	auprobe->ttt.ilen = insn->length;
->  	auprobe->ttt.disp = insn->moffset1.value;
->  	/* so far we assume that it fits into ->moffset1 */
-> @@ -534,9 +586,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
->  	case 0xca:
->  		fix_ip = false;
->  		break;
-> -	case 0xe8:		/* call relative - Fix return addr */
-> -		fix_call = true;
-> -		break;
->  	case 0x9a:		/* call absolute - Fix return addr, not ip */
->  		fix_call = true;
->  		fix_ip = false;
-
-
+IGtlcm5lbC9mdXRleC5jIHwgNSArKysrKwogMSBmaWxlIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygr
+KQoKZGlmZiAtLWdpdCBhL2tlcm5lbC9mdXRleC5jIGIva2VybmVsL2Z1dGV4LmMKaW5kZXggNjdk
+YWNhZjkzZTU2Li42ODAxYjM3NTFhOTUgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9mdXRleC5jCisrKyBi
+L2tlcm5lbC9mdXRleC5jCkBAIC0xNDUyLDYgKzE0NTIsNyBAQCByZXRyeToKIAloYjIgPSBoYXNo
+X2Z1dGV4KCZrZXkyKTsKIAogcmV0cnlfcHJpdmF0ZToKKwloYl93YWl0ZXJzX2luYyhoYjIpOwog
+CWRvdWJsZV9sb2NrX2hiKGhiMSwgaGIyKTsKIAogCWlmIChsaWtlbHkoY21wdmFsICE9IE5VTEwp
+KSB7CkBAIC0xNDYxLDYgKzE0NjIsNyBAQCByZXRyeV9wcml2YXRlOgogCiAJCWlmICh1bmxpa2Vs
+eShyZXQpKSB7CiAJCQlkb3VibGVfdW5sb2NrX2hiKGhiMSwgaGIyKTsKKwkJCWhiX3dhaXRlcnNf
+ZGVjKGhiMik7CiAKIAkJCXJldCA9IGdldF91c2VyKGN1cnZhbCwgdWFkZHIxKTsKIAkJCWlmIChy
+ZXQpCkBAIC0xNTEwLDYgKzE1MTIsNyBAQCByZXRyeV9wcml2YXRlOgogCQkJYnJlYWs7CiAJCWNh
+c2UgLUVGQVVMVDoKIAkJCWRvdWJsZV91bmxvY2tfaGIoaGIxLCBoYjIpOworCQkJaGJfd2FpdGVy
+c19kZWMoaGIyKTsKIAkJCXB1dF9mdXRleF9rZXkoJmtleTIpOwogCQkJcHV0X2Z1dGV4X2tleSgm
+a2V5MSk7CiAJCQlyZXQgPSBmYXVsdF9pbl91c2VyX3dyaXRlYWJsZSh1YWRkcjIpOwpAQCAtMTUx
+OSw2ICsxNTIyLDcgQEAgcmV0cnlfcHJpdmF0ZToKIAkJY2FzZSAtRUFHQUlOOgogCQkJLyogVGhl
+IG93bmVyIHdhcyBleGl0aW5nLCB0cnkgYWdhaW4uICovCiAJCQlkb3VibGVfdW5sb2NrX2hiKGhi
+MSwgaGIyKTsKKwkJCWhiX3dhaXRlcnNfZGVjKGhiMik7CiAJCQlwdXRfZnV0ZXhfa2V5KCZrZXky
+KTsKIAkJCXB1dF9mdXRleF9rZXkoJmtleTEpOwogCQkJY29uZF9yZXNjaGVkKCk7CkBAIC0xNTk0
+LDYgKzE1OTgsNyBAQCByZXRyeV9wcml2YXRlOgogCiBvdXRfdW5sb2NrOgogCWRvdWJsZV91bmxv
+Y2tfaGIoaGIxLCBoYjIpOworCWhiX3dhaXRlcnNfZGVjKGhiMik7CiAKIAkvKgogCSAqIGRyb3Bf
+ZnV0ZXhfa2V5X3JlZnMoKSBtdXN0IGJlIGNhbGxlZCBvdXRzaWRlIHRoZSBzcGlubG9ja3MuIER1
+cmluZwo=
+--bcaec547c9d5b1981c04f68f86bc--
