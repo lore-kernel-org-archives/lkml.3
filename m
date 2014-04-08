@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815AbaDHSBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:01:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36594 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756982AbaDHSBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:01:34 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 06/10] perf kmem: Introduce --list-cmds for use by scripts
-Date: Tue,  8 Apr 2014 20:01:04 +0200
-Message-Id: <1396980068-27124-7-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
-References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
+	id S1757871AbaDHSCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:02:12 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:39557 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757787AbaDHSCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 14:02:08 -0400
+From: Paul McQuade <paulmcquad@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] Staging:android:uapi:binder.h __packed
+Date: Tue,  8 Apr 2014 19:02:04 +0100
+Message-Id: <1396980124-4679-1-git-send-email-paulmcquad@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+WARNING: __packed is preferred over __attribute__((packed))
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1394853474-31019-2-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
 ---
- tools/perf/builtin-kmem.c     | 8 +++++---
- tools/perf/perf-completion.sh | 4 ++--
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/staging/android/uapi/binder.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 929462a..bd91de0 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -756,11 +756,13 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
- 	OPT_END()
- 	};
--	const char * const kmem_usage[] = {
--		"perf kmem [<options>] {record|stat}",
-+	const char *const kmem_subcommands[] = { "record", "stat", NULL };
-+	const char *kmem_usage[] = {
-+		NULL,
- 		NULL
- 	};
--	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
-+	argc = parse_options_subcommand(argc, argv, kmem_options,
-+					kmem_subcommands, kmem_usage, 0);
+diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
+index 904adb7..dba4cef 100644
+--- a/drivers/staging/android/uapi/binder.h
++++ b/drivers/staging/android/uapi/binder.h
+@@ -169,7 +169,7 @@ struct binder_ptr_cookie {
+ struct binder_handle_cookie {
+ 	__u32 handle;
+ 	binder_uintptr_t cookie;
+-} __attribute__((packed));
++} __packed;
  
- 	if (!argc)
- 		usage_with_options(kmem_usage, kmem_options);
-diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
-index ae3a576..0ef59dd 100644
---- a/tools/perf/perf-completion.sh
-+++ b/tools/perf/perf-completion.sh
-@@ -121,8 +121,8 @@ __perf_main ()
- 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
- 		evts=$($cmd list --raw-dump)
- 		__perfcomp_colon "$evts" "$cur"
--	# List subcommands for 'perf kvm'
--	elif [[ $prev == "kvm" ]]; then
-+	# List subcommands for perf commands
-+	elif [[ $prev == @(kvm|kmem) ]]; then
- 		subcmds=$($cmd $prev --list-cmds)
- 		__perfcomp_colon "$subcmds" "$cur"
- 	# List long option names
+ struct binder_pri_desc {
+ 	__s32 priority;
 -- 
-1.8.3.1
+1.8.3.2
 
