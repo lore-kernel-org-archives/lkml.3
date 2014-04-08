@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaDHKsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:48:00 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59142 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756634AbaDHKr6 (ORCPT
+	id S1756674AbaDHKs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:48:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43969 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756605AbaDHKsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:47:58 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: sysfs: Export target residency information
-Date: Tue, 08 Apr 2014 13:03:57 +0200
-Message-ID: <9839403.J56jNEsGD1@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5343BDAC.70603@linaro.org>
-References: <1395055050-27729-1-git-send-email-daniel.lezcano@linaro.org> <5343BDAC.70603@linaro.org>
+	Tue, 8 Apr 2014 06:48:54 -0400
+Date: Tue, 8 Apr 2014 11:48:39 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "tthayer@altera.com" <tthayer@altera.com>
+Cc: "robherring2@gmail.com" <robherring2@gmail.com>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dinguyen@altera.com" <dinguyen@altera.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+Message-ID: <20140408104839.GB11876@e106331-lin.cambridge.arm.com>
+References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+ <1396907649-20212-2-git-send-email-tthayer@altera.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396907649-20212-2-git-send-email-tthayer@altera.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 08, 2014 11:13:16 AM Daniel Lezcano wrote:
-> On 03/17/2014 12:17 PM, Daniel Lezcano wrote:
-> >  From userspace, there is no way to know the target residency for each idle
-> > state. If we want to write tools to measure the accuracy of the idle state
-> > selection from the governor, we need this info.
-> >
-> > As the exit latency is exported through sysfs, exporting the target residency
-> > in the same place makes sense.
-> >
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > ---
+On Mon, Apr 07, 2014 at 10:54:07PM +0100, tthayer@altera.com wrote:
+> From: Thor Thayer <tthayer@altera.com>
 > 
-> Hi Rafael,
+> Addition of the Altera SDRAM controller bindings and device
+> tree changes to the Altera SoC project.
 > 
-> are you willing to take this patch ?
+> Signed-off-by: Thor Thayer <tthayer@altera.com>
+> To: Rob Herring <robherring2@gmail.com>
+> To: Pawel Moll <pawel.moll@arm.com>
+> To: Mark Rutland <mark.rutland@arm.com>
+> To: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> To: Kumar Gala <galak@codeaurora.org>
+> To: Rob Landley <rob@landley.net>
+> To: Russell King <linux@arm.linux.org.uk>
+> To: Dinh Nguyen <dinguyen@altera.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> ---
+>  .../bindings/arm/altera/socfpga-sdram.txt          |   14 ++++++++++++++
+>  arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
+>  2 files changed, 19 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> new file mode 100644
+> index 0000000..525cb76
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> @@ -0,0 +1,14 @@
+> +Altera SOCFPGA SDRAM Controller
+> +
+> +Required properties:
+> +- compatible : "altr,sdr-ctl", "syscon";
+> +                Note that syscon is invoked for this device to support the FPGA
+> +		bridge driver, EDAC driver and other devices that share the
+> +		registers.
 
-Yes, I'm going to take it.
+Is the SDRAM controller really a bag of bits that necessitates the use
+of syscon? Or are the "other devices" just sub-components of the SDRAM
+controller?
 
-Thanks!
+If they are, just describe the SDRAM controller and related interrupts
+as a single node, and only use the EDAC portion in the Linux driver.
 
-> >   drivers/cpuidle/sysfs.c |    3 +++
-> >   1 file changed, 3 insertions(+)
-> >
-> > diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> > index e918b6d..efe2f17 100644
-> > --- a/drivers/cpuidle/sysfs.c
-> > +++ b/drivers/cpuidle/sysfs.c
-> > @@ -293,6 +293,7 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
-> >   }
-> >
-> >   define_show_state_function(exit_latency)
-> > +define_show_state_function(target_residency)
-> >   define_show_state_function(power_usage)
-> >   define_show_state_ull_function(usage)
-> >   define_show_state_ull_function(time)
-> > @@ -304,6 +305,7 @@ define_store_state_ull_function(disable)
-> >   define_one_state_ro(name, show_state_name);
-> >   define_one_state_ro(desc, show_state_desc);
-> >   define_one_state_ro(latency, show_state_exit_latency);
-> > +define_one_state_ro(residency, show_state_target_residency);
-> >   define_one_state_ro(power, show_state_power_usage);
-> >   define_one_state_ro(usage, show_state_usage);
-> >   define_one_state_ro(time, show_state_time);
-> > @@ -313,6 +315,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
-> >   	&attr_name.attr,
-> >   	&attr_desc.attr,
-> >   	&attr_latency.attr,
-> > +	&attr_residency.attr,
-> >   	&attr_power.attr,
-> >   	&attr_usage.attr,
-> >   	&attr_time.attr,
-> >
+Cheers,
+Mark.
+
+> +- reg : Should contain 1 register ranges(address and length)
+> +
+> +Example:
+> +	sdrctl@ffc25000 {
+> +		compatible = "altr,sdr-ctl", "syscon";
+> +		reg = <0xffc25000 0x1000>;
+> +	};
+> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> index df43702..6ce912e 100644
+> --- a/arch/arm/boot/dts/socfpga.dtsi
+> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> @@ -676,6 +676,11 @@
+>  			clocks = <&l4_sp_clk>;
+>  		};
+>  
+> +		sdrctl@ffc25000 {
+> +			compatible = "altr,sdr-ctl", "syscon";
+> +			reg = <0xffc25000 0x1000>;
+> +		};
+> +
+>  		rstmgr@ffd05000 {
+>  			compatible = "altr,rst-mgr";
+>  			reg = <0xffd05000 0x1000>;
+> -- 
+> 1.7.9.5
 > 
 > 
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
