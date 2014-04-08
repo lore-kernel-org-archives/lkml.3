@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972AbaDHSFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 14:05:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62816 "EHLO mx1.redhat.com"
+	id S932692AbaDHSGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 14:06:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39172 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757676AbaDHSBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 14:01:35 -0400
+	id S1757128AbaDHSBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 14:01:31 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 07/10] perf mem: Introduce --list-cmds for use by scripts
-Date: Tue,  8 Apr 2014 20:01:05 +0200
-Message-Id: <1396980068-27124-8-git-send-email-jolsa@redhat.com>
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 02/10] perf top: Fix documentation of invalid -s option
+Date: Tue,  8 Apr 2014 20:01:00 +0200
+Message-Id: <1396980068-27124-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: David Ahern <dsahern@gmail.com>
+On perf top, the -s option is used for --sort, but the man page
+contains invalid documentation of -s option for --sym-annotate.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1394853474-31019-3-git-send-email-artagnon@gmail.com
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1395193578-27098-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-mem.c      | 15 ++++++++-------
- tools/perf/perf-completion.sh |  2 +-
- 2 files changed, 9 insertions(+), 8 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 2e3ade69..4a1a6c9 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -21,11 +21,6 @@ struct perf_mem {
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index cdd8d49..976b00c 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -87,7 +87,6 @@ Default is to monitor all CPUS.
+ --realtime=<priority>::
+ 	Collect data with this RT SCHED_FIFO priority.
  
--static const char * const mem_usage[] = {
--	"perf mem [<options>] {record <command> |report}",
--	NULL
--};
--
- static int __cmd_record(int argc, const char **argv)
- {
- 	int rec_argc, i = 0, j;
-@@ -220,9 +215,15 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   " between columns '.' is reserved."),
- 	OPT_END()
- 	};
-+	const char *const mem_subcommands[] = { "record", "report", NULL };
-+	const char *mem_usage[] = {
-+		NULL,
-+		NULL
-+	};
-+
+--s <symbol>::
+ --sym-annotate=<symbol>::
+         Annotate this symbol.
  
--	argc = parse_options(argc, argv, mem_options, mem_usage,
--			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	argc = parse_options_subcommand(argc, argv, mem_options, mem_subcommands,
-+					mem_usage, PARSE_OPT_STOP_AT_NON_OPTION);
- 
- 	if (!argc || !(strncmp(argv[0], "rec", 3) || mem_operation))
- 		usage_with_options(mem_usage, mem_options);
-diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
-index 0ef59dd..f44c04b 100644
---- a/tools/perf/perf-completion.sh
-+++ b/tools/perf/perf-completion.sh
-@@ -122,7 +122,7 @@ __perf_main ()
- 		evts=$($cmd list --raw-dump)
- 		__perfcomp_colon "$evts" "$cur"
- 	# List subcommands for perf commands
--	elif [[ $prev == @(kvm|kmem) ]]; then
-+	elif [[ $prev == @(kvm|kmem|mem) ]]; then
- 		subcmds=$($cmd $prev --list-cmds)
- 		__perfcomp_colon "$subcmds" "$cur"
- 	# List long option names
 -- 
 1.8.3.1
 
