@@ -1,109 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549AbaDHOtB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:49:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37460 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217AbaDHOs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:48:57 -0400
-Date: Tue, 8 Apr 2014 14:21:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Michele Ballabio <barra_cuda@katamail.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-Message-ID: <20140408122128.GC13658@twins.programming.kicks-ass.net>
-References: <5341707F.5000406@katamail.com>
- <20140407150337.GO10526@twins.programming.kicks-ass.net>
- <20140407150705.GB13658@twins.programming.kicks-ass.net>
- <5342EB78.3060002@gmx.de>
- <20140407185658.GK11096@twins.programming.kicks-ass.net>
+	id S932408AbaDHOt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:49:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54085 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932163AbaDHOty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:49:54 -0400
+Date: Tue, 8 Apr 2014 10:49:43 -0400
+From: Dave Jones <davej@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
+Subject: Re: fs,seq_file: huge allocations for seq file reads
+Message-ID: <20140408144943.GA6165@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+References: <53440B8B.1010304@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140407185658.GK11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53440B8B.1010304@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 08:56:58PM +0200, Peter Zijlstra wrote:
-> On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
-> 
-> > v3.14-10353-g2b3a8fd works fine AFAICS
-> > (BTW the fix is stable material, right ?)
-> 
-> I'm fairly sure its not; its a rather invasive series; see:
-> 
-> 2432e1364bbe x86: Nuke the supervisor_stack field in i386 thread_info
-> b807902a88c4 x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
-> 0788aa6a23cb x86: Prepare removal of previous_esp from i386 thread_info structure
-> 198d208df437 x86: Keep thread_info on thread stack in x86_32
-> 
-> Let me see if there's anything 'simpler' we can stuff in .13+
+On Tue, Apr 08, 2014 at 10:45:31AM -0400, Sasha Levin wrote:
+ 
+ > It seems that when we attempt to read huge chunks of data from a seq file
+ > there would be no check for the size being read, leading to the kernel
+ > attempting to allocate huge chunks of data internally.
+ > 
+ > As far as I remember, there was a PAGE_SIZE limitation on those, but I'm
+ > not certain about that. Could someone please confirm it?
 
-OK.. so could someone test the below patch to see if that makes things
-work for .13 and .14?
+I've had this diff sitting around for a while to figure out which
+seq_file we're talking about.  I think Al wrote it, I forget..
 
----
- arch/x86/include/asm/preempt.h | 11 +++++++++++
- include/linux/preempt.h        |  4 ++++
- include/linux/thread_info.h    |  2 --
- 3 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
-index c8b051933b1b..7ada46d8d4d8 100644
---- a/arch/x86/include/asm/preempt.h
-+++ b/arch/x86/include/asm/preempt.h
-@@ -5,6 +5,17 @@
- #include <asm/percpu.h>
- #include <linux/thread_info.h>
- 
-+#ifdef CONFIG_X86_32
-+/*
-+ * i386's current_thread_info() depends on ESP and for interrupt/exception
-+ * stacks this doesn't yield the actual task thread_info.
-+ *
-+ * We hard rely on the fact that all the TIF_NEED_RESCHED bits are
-+ * the same, therefore use the slightly more expensive version below.
-+ */
-+#define tif_need_resched() test_tsk_thread_flag(current, TIF_NEED_RESCHED)
-+#endif
-+
- DECLARE_PER_CPU(int, __preempt_count);
- 
- /*
-diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index de83b4eb1642..891c8f8b52fe 100644
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -17,6 +17,10 @@
- 
- #include <asm/preempt.h>
- 
-+#ifndef tif_need_resched
-+#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
-+#endif
-+
- #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
- extern void preempt_count_add(int val);
- extern void preempt_count_sub(int val);
-diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
-index fddbe2023a5d..a629e4b23217 100644
---- a/include/linux/thread_info.h
-+++ b/include/linux/thread_info.h
-@@ -118,8 +118,6 @@ static inline __deprecated void set_need_resched(void)
- 	 */
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 1d641bb108d2..e3ca909c8fea 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -82,7 +82,7 @@ int seq_open(struct file *file, const struct seq_operations *op)
  }
+ EXPORT_SYMBOL(seq_open);
  
--#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
--
- #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
- /*
-  * An arch can define its own version of set_restore_sigmask() to get the
+-static int traverse(struct seq_file *m, loff_t offset)
++static int traverse(struct file *file, struct seq_file *m, loff_t offset)
+ {
+ 	loff_t pos = 0, index;
+ 	int error = 0;
+@@ -137,6 +137,13 @@ Eoverflow:
+ 	m->op->stop(m, p);
+ 	kfree(m->buf);
+ 	m->count = 0;
++	if ((m->size <<= 1) >= (PAGE_SIZE << 4)) {
++		printk(KERN_ERR "traverse on %s. Size: %ld\n",
++			file->f_path.dentry->d_name.name,
++			(unsigned long) (m->size));
++		m->buf = NULL;
++		return -ENOMEM;
++	}
+ 	m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
+ 	return !m->buf ? -ENOMEM : -EAGAIN;
+ }
+@@ -176,7 +183,7 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+ 
+ 	/* Don't assume *ppos is where we left it */
+ 	if (unlikely(*ppos != m->read_pos)) {
+-		while ((err = traverse(m, *ppos)) == -EAGAIN)
++		while ((err = traverse(file, m, *ppos)) == -EAGAIN)
+ 			;
+ 		if (err) {
+ 			/* With prejudice... */
+@@ -192,6 +199,14 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+ 
+ 	/* grab buffer if we didn't have one */
+ 	if (!m->buf) {
++		if ((m->size <<= 1) >= (PAGE_SIZE << 4)) {
++			printk(KERN_ERR "seq_read on %s. Size: %ld\n",
++				file->f_path.dentry->d_name.name,
++				(unsigned long) (m->size));
++			m->buf = NULL;
++			goto Enomem;;
++		}
++
+ 		m->buf = kmalloc(m->size = PAGE_SIZE, GFP_KERNEL);
+ 		if (!m->buf)
+ 			goto Enomem;
+@@ -234,6 +249,15 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+ 		m->op->stop(m, p);
+ 		kfree(m->buf);
+ 		m->count = 0;
++
++		if ((m->size <<= 1) >= (PAGE_SIZE << 4)) {
++			printk(KERN_ERR "seq_read on %s. Size: %ld\n",
++				file->f_path.dentry->d_name.name,
++				(unsigned long) (m->size));
++			m->buf = NULL;
++			goto Enomem;;
++		}
++
+ 		m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
+ 		if (!m->buf)
+ 			goto Enomem;
+@@ -316,7 +340,7 @@ loff_t seq_lseek(struct file *file, loff_t offset, int whence)
+ 			break;
+ 		retval = offset;
+ 		if (offset != m->read_pos) {
+-			while ((retval = traverse(m, offset)) == -EAGAIN)
++			while ((retval = traverse(file, m, offset)) == -EAGAIN)
+ 				;
+ 			if (retval) {
+ 				/* with extreme prejudice... */
