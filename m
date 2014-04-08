@@ -1,202 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301AbaDHQfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:35:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37762 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757209AbaDHQfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:35:01 -0400
-Date: Tue, 8 Apr 2014 18:34:57 +0200
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, willy@linux.intel.com
-Subject: Re: [PATCH v7 02/22] Allow page fault handlers to perform the COW
-Message-ID: <20140408163457.GD2713@quack.suse.cz>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <feee29988e167b019f5726cd497b1470b050a3ce.1395591795.git.matthew.r.wilcox@intel.com>
+	id S932370AbaDHQgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:36:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:11298 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932078AbaDHQgm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 12:36:42 -0400
+Date: Tue, 8 Apr 2014 12:36:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [for-next][PATCH 14/14] tracing: Get trace_array ref counts
+ when accessing trace files
+Message-ID: <20140408123638.7f340dd5@gandalf.local.home>
+In-Reply-To: <53401A3E.2090302@oracle.com>
+References: <20130702202216.623562799@goodmis.org>
+	<20130702202427.455930200@goodmis.org>
+	<53401A3E.2090302@oracle.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <feee29988e167b019f5726cd497b1470b050a3ce.1395591795.git.matthew.r.wilcox@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 23-03-14 15:08:28, Matthew Wilcox wrote:
-> Currently COW of an XIP file is done by first bringing in a read-only
-> mapping, then retrying the fault and copying the page.  It is much more
-> efficient to tell the fault handler that a COW is being attempted (by
-> passing in the pre-allocated page in the vm_fault structure), and allow
-> the handler to perform the COW operation itself.
->
-> Where the filemap code protects against truncation of the file until
-> the PTE has been installed with the page lock, the XIP code use the
-> i_mmap_mutex instead.  We must therefore unlock the i_mmap_mutex after
-> inserting the PTE.
-  Eww, leaking of locking details about DAX into generic fault code is
-really ugly. It seems to me that once you pass the cow_page into the fault
-handler (which looks OK to me), you can just directly install it in PTE
-via vm_insert_page() and you don't have to rely on do_cow_fault() for that.
-Thus you can return VM_FAULT_NOPAGE and be done with it? Basically cow
-faults will then work the same way as other faults for DAX... Or am I
-missing something?
+On Sat, 05 Apr 2014 10:59:10 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-								Honza
+> On 07/02/2013 04:22 PM, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > When a trace file is opened that may access a trace array, it must
+> > increment its ref count to prevent it from being deleted.
+> > 
+> > Cc: stable@vger.kernel.org # 3.10
+> > Reported-by: Alexander Lam <azl@google.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Hi Steven,
+> 
+> This patch seems to cause the following lockdep warning:
+> 
+> [ 5644.288019] ======================================================
+> [ 5644.288771] [ INFO: possible circular locking dependency detected ]
+> [ 5644.289657] 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376 Not tainted
+> [ 5644.290568] -------------------------------------------------------
+> [ 5644.290783] trinity-c17/19105 is trying to acquire lock:
+> [ 5644.290783] (trace_types_lock){+.+.+.}, at: trace_array_get (kernel/trace/trace.c:225)
+> [ 5644.290783]
+> [ 5644.290783] but task is already holding lock:
+> [ 5644.290783] (&sig->cred_guard_mutex){+.+.+.}, at: prepare_bprm_creds (fs/exec.c:1165)
+> [ 5644.290783]
+> [ 5644.290783] which lock already depends on the new lock.
+> [ 5644.290783]
+> [ 5644.290783]
+> [ 5644.290783] the existing dependency chain (in reverse order) is:
+> [ 5644.290783]
+> -> #2 (&sig->cred_guard_mutex){+.+.+.}:
+> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [ 5644.290783] mutex_lock_interruptible_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:616)
+> [ 5644.290783] proc_pid_attr_write (fs/proc/base.c:2250)
+> [ 5644.290783] __kernel_write (fs/read_write.c:457)
+> [ 5644.290783] write_pipe_buf (fs/splice.c:1072)
+> [ 5644.290783] splice_from_pipe_feed (fs/splice.c:834)
+> [ 5644.290783] __splice_from_pipe (fs/splice.c:955)
+> [ 5644.290783] splice_from_pipe (fs/splice.c:990)
+> [ 5644.290783] default_file_splice_write (fs/splice.c:1084)
+> [ 5644.290783] SyS_splice (include/linux/fs.h:2333 fs/splice.c:1391 fs/splice.c:1764 fs/splice.c:1749)
+> [ 5644.290783] tracesys (arch/x86/kernel/entry_64.S:749)
+> [ 5644.290783]
+> -> #1 (&pipe->mutex/1){+.+.+.}:
+> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [ 5644.290783] mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
+> [ 5644.290783] pipe_lock_nested (fs/pipe.c:61)
+> [ 5644.290783] pipe_lock (fs/pipe.c:69)
+> [ 5644.290783] splice_to_pipe (include/linux/wait.h:103 fs/splice.c:247)
+> [ 5644.290783] tracing_buffers_splice_read (kernel/trace/trace.c:5423)
+> [ 5644.290783] do_splice_to (fs/splice.c:1151)
+> [ 5644.290783] SyS_splice (fs/splice.c:1416 fs/splice.c:1764 fs/splice.c:1749)
+> [ 5644.290783] ia32_sysret (arch/x86/ia32/ia32entry.S:430)
+> [ 5644.290783]
+> -> #0 (trace_types_lock){+.+.+.}:
+> [ 5644.290783] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [ 5644.290783] mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
+> [ 5644.290783] trace_array_get (kernel/trace/trace.c:225)
+> [ 5644.290783] tracing_open_generic_tr (kernel/trace/trace.c:3053)
+> [ 5644.290783] do_dentry_open (fs/open.c:753)
+> [ 5644.290783] finish_open (fs/open.c:818)
+> [ 5644.290783] do_last (fs/namei.c:3040)
+> [ 5644.290783] path_openat (fs/namei.c:3182)
+> [ 5644.290783] do_filp_open (fs/namei.c:3231)
+> [ 5644.290783] do_open_exec (fs/exec.c:766)
+> [ 5644.290783] do_execve_common.isra.19 (fs/exec.c:1491)
+> [ 5644.290783] compat_SyS_execve (fs/exec.c:1627)
+> [ 5644.290783] ia32_ptregs_common (arch/x86/ia32/ia32entry.S:495)
+> [ 5644.290783]
+> [ 5644.290783] other info that might help us debug this:
+> [ 5644.290783]
+> [ 5644.290783] Chain exists of:
+> trace_types_lock --> &pipe->mutex/1 --> &sig->cred_guard_mutex
+> 
+> [ 5644.290783]  Possible unsafe locking scenario:
+> [ 5644.290783]
+> [ 5644.290783]        CPU0                    CPU1
+> [ 5644.290783]        ----                    ----
+> [ 5644.290783]   lock(&sig->cred_guard_mutex);
+> [ 5644.290783]                                lock(&pipe->mutex/1);
+> [ 5644.290783]                                lock(&sig->cred_guard_mutex);
+> [ 5644.290783]   lock(trace_types_lock);
+> [ 5644.290783]
+> [ 5644.290783]  *** DEADLOCK ***
+> [ 5644.290783]
+> [ 5644.290783] 1 lock held by trinity-c17/19105:
+> [ 5644.290783] #0: (&sig->cred_guard_mutex){+.+.+.}, at: prepare_bprm_creds (fs/exec.c:1165)
+> [ 5644.290783]
+> [ 5644.290783] stack backtrace:
+> [ 5644.290783] CPU: 10 PID: 19105 Comm: trinity-c17 Not tainted 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376
+> [ 5644.290783]  ffffffffb4a1a1e0 ffff88071a7738f8 ffffffffb14bfb2f 0000000000000000
+> [ 5644.290783]  ffffffffb49a9dd0 ffff88071a773948 ffffffffb14b2527 0000000000000001
+> [ 5644.290783]  ffff88071a7739d8 ffff88071a773948 ffff8805d98cbcf0 ffff8805d98cbd28
+> [ 5644.290783] Call Trace:
+> [ 5644.290783] dump_stack (lib/dump_stack.c:52)
+> [ 5644.290783] print_circular_bug (kernel/locking/lockdep.c:1214)
+> [ 5644.290783] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+> [ 5644.290783] ? _raw_spin_unlock_irqrestore (arch/x86/include/asm/paravirt.h:809 include/linux/spinlock_api_smp.h:160 kernel/locking/spinlock.c:191)
+> [ 5644.290783] ? preempt_count_sub (kernel/sched/core.c:2527)
+> [ 5644.290783] ? __slab_free (mm/slub.c:2598)
+> [ 5644.290783] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [ 5644.290783] ? trace_array_get (kernel/trace/trace.c:225)
+> [ 5644.290783] mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
+> [ 5644.290783] ? trace_array_get (kernel/trace/trace.c:225)
+> [ 5644.290783] ? locks_free_lock (fs/locks.c:244)
+> [ 5644.290783] ? trace_array_get (kernel/trace/trace.c:225)
+> [ 5644.290783] ? preempt_count_sub (kernel/sched/core.c:2527)
+> [ 5644.290783] trace_array_get (kernel/trace/trace.c:225)
+> [ 5644.290783] tracing_open_generic_tr (kernel/trace/trace.c:3053)
+> [ 5644.290783] do_dentry_open (fs/open.c:753)
+> [ 5644.290783] ? tracing_open_pipe (kernel/trace/trace.c:3047)
+> [ 5644.290783] finish_open (fs/open.c:818)
+> [ 5644.290783] do_last (fs/namei.c:3040)
+> [ 5644.290783] ? link_path_walk (fs/namei.c:1473 fs/namei.c:1744)
+> [ 5644.290783] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [ 5644.290783] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> [ 5644.290783] path_openat (fs/namei.c:3182)
+> [ 5644.290783] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+> [ 5644.290783] do_filp_open (fs/namei.c:3231)
+> [ 5644.290783] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 5644.290783] ? do_execve_common.isra.19 (fs/exec.c:1489)
+> [ 5644.290783] ? get_parent_ip (kernel/sched/core.c:2472)
+> [ 5644.290783] do_open_exec (fs/exec.c:766)
+> [ 5644.290783] do_execve_common.isra.19 (fs/exec.c:1491)
+> [ 5644.290783] ? do_execve_common.isra.19 (include/linux/spinlock.h:303 fs/exec.c:1258 fs/exec.c:1486)
+> [ 5644.290783] compat_SyS_execve (fs/exec.c:1627)
+> [ 5644.290783] ia32_ptregs_common (arch/x86/ia32/ia32entry.S:495)
+> 
 
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-> ---
->  include/linux/mm.h |  2 ++
->  mm/memory.c        | 45 +++++++++++++++++++++++++++++++++------------
->  2 files changed, 35 insertions(+), 12 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index c1b7414..513b78a 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -205,6 +205,7 @@ struct vm_fault {
->  	pgoff_t pgoff;			/* Logical page offset based on vma */
->  	void __user *virtual_address;	/* Faulting virtual address */
->  
-> +	struct page *cow_page;		/* Handler may choose to COW */
->  	struct page *page;		/* ->fault handlers should return a
->  					 * page here, unless VM_FAULT_NOPAGE
->  					 * is set (which is also implied by
-> @@ -1010,6 +1011,7 @@ static inline int page_mapped(struct page *page)
->  #define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned small page */
->  #define VM_FAULT_HWPOISON_LARGE 0x0020  /* Hit poisoned large page. Index encoded in upper bits */
->  
-> +#define VM_FAULT_COWED	0x0080	/* ->fault COWed the page instead */
->  #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
->  #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
->  #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 07b4287..2a2ecac 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2602,6 +2602,7 @@ static int do_page_mkwrite(struct vm_area_struct *vma, struct page *page,
->  	vmf.pgoff = page->index;
->  	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
->  	vmf.page = page;
-> +	vmf.cow_page = NULL;
->  
->  	ret = vma->vm_ops->page_mkwrite(vma, &vmf);
->  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
-> @@ -3288,7 +3289,8 @@ oom:
->  }
->  
->  static int __do_fault(struct vm_area_struct *vma, unsigned long address,
-> -		pgoff_t pgoff, unsigned int flags, struct page **page)
-> +			pgoff_t pgoff, unsigned int flags,
-> +			struct page *cow_page, struct page **page)
->  {
->  	struct vm_fault vmf;
->  	int ret;
-> @@ -3297,10 +3299,13 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
->  	vmf.pgoff = pgoff;
->  	vmf.flags = flags;
->  	vmf.page = NULL;
-> +	vmf.cow_page = cow_page;
->  
->  	ret = vma->vm_ops->fault(vma, &vmf);
->  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
->  		return ret;
-> +	if (unlikely(ret & VM_FAULT_COWED))
-> +		goto out;
->  
->  	if (unlikely(PageHWPoison(vmf.page))) {
->  		if (ret & VM_FAULT_LOCKED)
-> @@ -3314,6 +3319,7 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
->  	else
->  		VM_BUG_ON_PAGE(!PageLocked(vmf.page), vmf.page);
->  
-> + out:
->  	*page = vmf.page;
->  	return ret;
->  }
-> @@ -3351,7 +3357,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	pte_t *pte;
->  	int ret;
->  
-> -	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-> +	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
->  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
->  		return ret;
->  
-> @@ -3368,6 +3374,12 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	return ret;
->  }
->  
-> +/*
-> + * If the fault handler performs the COW, it does not return a page,
-> + * so cannot use the page's lock to protect against a concurrent truncate
-> + * operation.  Instead it returns with the i_mmap_mutex held, which must
-> + * be released after the PTE has been inserted.
-> + */
->  static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  		unsigned long address, pmd_t *pmd,
->  		pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
-> @@ -3389,25 +3401,34 @@ static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  		return VM_FAULT_OOM;
->  	}
->  
-> -	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-> +	ret = __do_fault(vma, address, pgoff, flags, new_page, &fault_page);
->  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
->  		goto uncharge_out;
->  
-> -	copy_user_highpage(new_page, fault_page, address, vma);
-> +	if (!(ret & VM_FAULT_COWED))
-> +		copy_user_highpage(new_page, fault_page, address, vma);
->  	__SetPageUptodate(new_page);
->  
->  	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
-> -	if (unlikely(!pte_same(*pte, orig_pte))) {
-> -		pte_unmap_unlock(pte, ptl);
-> +	if (unlikely(!pte_same(*pte, orig_pte)))
-> +		goto unlock_out;
-> +	do_set_pte(vma, address, new_page, pte, true, true);
-> +	pte_unmap_unlock(pte, ptl);
-> +	if (ret & VM_FAULT_COWED) {
-> +		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> +	} else {
->  		unlock_page(fault_page);
->  		page_cache_release(fault_page);
-> -		goto uncharge_out;
->  	}
-> -	do_set_pte(vma, address, new_page, pte, true, true);
-> -	pte_unmap_unlock(pte, ptl);
-> -	unlock_page(fault_page);
-> -	page_cache_release(fault_page);
->  	return ret;
-> +unlock_out:
-> +	pte_unmap_unlock(pte, ptl);
-> +	if (ret & VM_FAULT_COWED) {
-> +		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> +	} else {
-> +		unlock_page(fault_page);
-> +		page_cache_release(fault_page);
-> +	}
->  uncharge_out:
->  	mem_cgroup_uncharge_page(new_page);
->  	page_cache_release(new_page);
-> @@ -3424,7 +3445,7 @@ static int do_shared_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	int dirtied = 0;
->  	int ret, tmp;
->  
-> -	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-> +	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
->  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
->  		return ret;
->  
-> -- 
-> 1.9.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Wait a minute! The syscall is a compat_SyS_execve, which does an
+do_execve_common, which does a do_open_exec, which ends up opening a
+tracing file????
+
+How the hell did that happen. Is your tool execing files in the tracing
+directory? I wonder if that's even possible, and if so, how can we
+prevent that? The trace_pipe file (which is what uses the
+tracing_open_pipe) is set to rrr. No exec should be allowed.
+
+-- Steve
