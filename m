@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbaDHKzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:55:32 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49939 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756501AbaDHKz2 (ORCPT
+	id S1756220AbaDHLHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:07:30 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:40007 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaDHLH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:55:28 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] drivers:cpufreq:unicore32: fix typo issue for 'clk'
-Date: Tue, 08 Apr 2014 13:11:28 +0200
-Message-ID: <1431533.Y4a186K14A@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohponSStjFJyKt7Yy7EX1wfk3xbJxoXpt47qStcSGfQVK7aw@mail.gmail.com>
-References: <53429445.5000005@gmail.com> <53434A4E.2050407@gmail.com> <CAKohponSStjFJyKt7Yy7EX1wfk3xbJxoXpt47qStcSGfQVK7aw@mail.gmail.com>
+	Tue, 8 Apr 2014 07:07:27 -0400
+Message-ID: <5343D863.5000802@linaro.org>
+Date: Tue, 08 Apr 2014 19:07:15 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Grant Likely <grant.likely@linaro.org>, linux-acpi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH] ACPI: Update the ownership and developers for ACPI in
+ Kconfig
+References: <1396528650-7402-1-git-send-email-hanjun.guo@linaro.org> <1487377.07icAKoM8K@vostro.rjw.lan> <53435C0F.3090908@linaro.org> <2050013.Bv5IMKBfN1@vostro.rjw.lan>
+In-Reply-To: <2050013.Bv5IMKBfN1@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 08, 2014 09:38:16 AM Viresh Kumar wrote:
-> On 8 April 2014 06:31, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
-> >> @stable: please apply this for v3.14, as it broke in that cycle..
+On 2014-4-8 19:08, Rafael J. Wysocki wrote:
+> On Tuesday, April 08, 2014 10:16:47 AM Hanjun Guo wrote:
+>> On 2014-4-7 20:21, Rafael J. Wysocki wrote:
+>>> On Thursday, April 03, 2014 08:37:30 PM Hanjun Guo wrote:
+>>>> The UEFI Forum included the ACPI spec in its portfolio in October 2013
+>>>> and will host future spec iterations, following the ACPI v5.0a release.
+>>>>
+>>>> A UEFI Forum working group named ACPI Specification Working Group (ASWG)
+>>>> has been established to handle future ACPI developments, any UEFI member
+>>>> can join the group and contribute to ACPI specification.
+>>>>
+>>>> So update the ownership and developers for ACPI in Kconfig accordingly,
+>>>> and update the website link to ACPI specification too.
+>>>>
+>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>>>> ---
+>>>>  drivers/acpi/Kconfig |    5 +++--
+>>>>  1 file changed, 3 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+>>>> index c205653..831e541 100644
+>>>> --- a/drivers/acpi/Kconfig
+>>>> +++ b/drivers/acpi/Kconfig
+>>>> @@ -32,9 +32,10 @@ menuconfig ACPI
+>>>>  	  <http://acpica.org/>
+>>>>  
+>>>>  	  ACPI is an open industry specification co-developed by
+>>>> -	  Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.
+>>>> +	  ACPI Specification Working Group (ASWG) under UEFI Forum, any
+>>>> +	  UEFI member can join ASWG and contribute to ACPI specification.
+>>>>  	  The specification is available at:
+>>>> -	  <http://www.acpi.info>
+>>>
+>>> The spec is still available from here, so why are you removing this link?
+>>
+>> My bad, I thought the link below is the replacement for the above one.
+>>
+>>>
+>>>> +	  <http://www.uefi.org/acpi/specs>
+>>
+>> How about the replacement below?
+>>
+>> -	  <http://www.acpi.info>
+>> +	  <http://www.acpi.info>, or:
 > 
-> This wouldn't work..
-> 
-> > Thank you.
-> 
-> Can you please send it again for stable as well?
+> The "or" is redundant I think, just add the new link below the old one.
 
-I have labeled it for -stable and it doesn't work like that.  -stable won't
-take any patches you send them before the commits in question are in the
-Linus' tree anyway.  And you need to provide the original commit hashes then.
+Ok, I will update my patch and send it out soon.
 
-Thanks!
+Thanks
+Hanjun
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
