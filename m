@@ -1,373 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534AbaDHH5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 03:57:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33139 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756516AbaDHH5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 03:57:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,816,1389772800"; 
-   d="scan'208";a="516488323"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH 2/4] ACPICA: Add <asm/acenv.h> to remove mis-ordered inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
-Date: Tue,  8 Apr 2014 15:56:53 +0800
-Message-Id: <0b869411d48317228c8ba891951a0f7b71a73eb8.1396930406.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1396930406.git.lv.zheng@intel.com>
-References: <cover.1385110130.git.lv.zheng@intel.com> <cover.1396930406.git.lv.zheng@intel.com>
+	id S1756553AbaDHH6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 03:58:18 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:33833 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242AbaDHH6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 03:58:17 -0400
+Date: Tue, 8 Apr 2014 15:58:09 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, riel@redhat.com, hughd@google.com,
+        mgorman@suse.de, torvalds@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch] x86: clearing access bit don't flush tlb
+Message-ID: <20140408075809.GA1764@kernel.org>
+References: <20140403004250.GA14597@kernel.org>
+ <20140403113537.GA543@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140403113537.GA543@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a mis-order inclusion for <asm/acpi.h>.
+On Thu, Apr 03, 2014 at 01:35:37PM +0200, Ingo Molnar wrote:
+> 
+> * Shaohua Li <shli@kernel.org> wrote:
+> 
+> > Add a few acks and resend this patch.
+> > 
+> > We use access bit to age a page at page reclaim. When clearing pte access bit,
+> > we could skip tlb flush in X86. The side effect is if the pte is in tlb and pte
+> > access bit is unset in page table, when cpu access the page again, cpu will not
+> > set page table pte's access bit. Next time page reclaim will think this hot
+> > page is yong and reclaim it wrongly, but this doesn't corrupt data.
+> > 
+> > And according to intel manual, tlb has less than 1k entries, which covers < 4M
+> > memory. In today's system, several giga byte memory is normal. After page
+> > reclaim clears pte access bit and before cpu access the page again, it's quite
+> > unlikely this page's pte is still in TLB. And context swich will flush tlb too.
+> > The chance skiping tlb flush to impact page reclaim should be very rare.
+> > 
+> > Originally (in 2.5 kernel maybe), we didn't do tlb flush after clear access bit.
+> > Hugh added it to fix some ARM and sparc issues. Since I only change this for
+> > x86, there should be no risk.
+> > 
+> > And in some workloads, TLB flush overhead is very heavy. In my simple
+> > multithread app with a lot of swap to several pcie SSD, removing the tlb flush
+> > gives about 20% ~ 30% swapout speedup.
+> > 
+> > Signed-off-by: Shaohua Li <shli@fusionio.com>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Acked-by: Mel Gorman <mgorman@suse.de>
+> > Acked-by: Hugh Dickins <hughd@google.com>
+> > ---
+> >  arch/x86/mm/pgtable.c |   13 ++++++-------
+> >  1 file changed, 6 insertions(+), 7 deletions(-)
+> > 
+> > Index: linux/arch/x86/mm/pgtable.c
+> > ===================================================================
+> > --- linux.orig/arch/x86/mm/pgtable.c	2014-03-27 05:22:08.572100549 +0800
+> > +++ linux/arch/x86/mm/pgtable.c	2014-03-27 05:46:12.456131121 +0800
+> > @@ -399,13 +399,12 @@ int pmdp_test_and_clear_young(struct vm_
+> >  int ptep_clear_flush_young(struct vm_area_struct *vma,
+> >  			   unsigned long address, pte_t *ptep)
+> >  {
+> > -	int young;
+> > -
+> > -	young = ptep_test_and_clear_young(vma, address, ptep);
+> > -	if (young)
+> > -		flush_tlb_page(vma, address);
+> > -
+> > -	return young;
+> > +	/*
+> > +	 * In X86, clearing access bit without TLB flush doesn't cause data
+> > +	 * corruption. Doing this could cause wrong page aging and so hot pages
+> > +	 * are reclaimed, but the chance should be very rare.
+> 
+> So, beyond the spelling mistakes, I guess this explanation should also 
+> be a bit more explanatory - how about something like:
+> 
+> 	/*
+> 	 * On x86 CPUs, clearing the accessed bit without a TLB flush 
+> 	 * doesn't cause data corruption. [ It could cause incorrect
+> 	 * page aging and the (mistaken) reclaim of hot pages, but the
+> 	 * chance of that should be relatively low. ]
+> 	 *
+> 	 * So as a performance optimization don't flush the TLB when 
+> 	 * clearing the accessed bit, it will eventually be flushed by 
+> 	 * a context switch or a VM operation anyway. [ In the rare 
+> 	 * event of it not getting flushed for a long time the delay 
+> 	 * shouldn't really matter because there's no real memory 
+> 	 * pressure for swapout to react to. ]
+> 	 */
+> 
+> Agreed?
 
-As we will enforce including <linux/acpi.h> for all Linux ACPI users, we
-can find the inclusion order is as follows:
+Changed the comments and added ACK of Johannes, so you can pick up directly.
+ 
+Subject: x86: clearing access bit don't flush tlb
 
-<linux/acpi.h>
-  <acpi/acpi.h>
-   <acpi/platform/acenv.h>
-    (acenv.h before including aclinux.h)
-    <acpi/platform/aclinux.h>
-...........................................................................
-     (aclinux.h before including asm/acpi.h)
-     <asm/acpi.h>                             @Redundant@
-      (ACPICA specific stuff)
-...........................................................................
-...........................................................................
-      (Linux ACPI specific stuff) ? - - - - - - - - - - - - +
-     (aclinux.h after including asm/acpi.h)   @Invisible@   |
-    (acenv.h after including aclinux.h)       @Invisible@   |
-   other ACPICA headers                       @Invisible@   |
-............................................................|..............
-  <acpi/acpi_bus.h>                                         |
-  <acpi/acpi_drivers.h>                                     |
-  <asm/acpi.h> (Excluded)                                   |
-   (Linux ACPI specific stuff) ! <- - - - - - - - - - - - - +
+We use access bit to age a page at page reclaim. When clearing pte access bit,
+we could skip tlb flush in X86. The side effect is if the pte is in tlb and pte
+access bit is unset in page table, when cpu access the page again, cpu will not
+set page table pte's access bit. Next time page reclaim will think this hot
+page is yong and reclaim it wrongly, but this doesn't corrupt data.
 
-NOTE that, in ACPICA, <acpi/platform/acenv.h> is more like Kconfig
-generated <generated/autoconf.h> for Linux, it is meant to be included
-before including any ACPICA code.
+And according to intel manual, tlb has less than 1k entries, which covers < 4M
+memory. In today's system, several giga byte memory is normal. After page
+reclaim clears pte access bit and before cpu access the page again, it's quite
+unlikely this page's pte is still in TLB. And context swich will flush tlb too.
+The chance skiping tlb flush to impact page reclaim should be very rare.
 
-In the above figure, there is a question mark for "Linux ACPI specific
-stuff" in <asm/acpi.h> which should be included after including all other
-ACPICA header files.  Thus they really need to be moved to the position
-marked with exclaimation mark or the definitions in the blocks marked with
-"@Invisible@" will be invisible to such architecture specific "Linux ACPI
-specific stuff" header blocks.  This leaves 2 issues:
-1. All environmental definitions in these blocks should have a copy in the
-   area marked with "@Redundant@" if they are required by the "Linux ACPI
-   specific stuff".
-2. We cannot use any ACPICA defined types in <asm/acpi.h>.
+Originally (in 2.5 kernel maybe), we didn't do tlb flush after clear access bit.
+Hugh added it to fix some ARM and sparc issues. Since I only change this for
+x86, there should be no risk.
 
-This patch splits architecture specific ACPICA stuff from <asm/acpi.h> to
-fix this issue.
+And in some workloads, TLB flush overhead is very heavy. In my simple
+multithread app with a lot of swap to several pcie SSD, removing the tlb flush
+gives about 20% ~ 30% swapout speedup.
 
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
+Update comments by Ingo.
+
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- arch/ia64/include/asm/acenv.h   |   71 +++++++++++++++++++++++++++++++++++++++
- arch/ia64/include/asm/acpi.h    |   50 ---------------------------
- arch/x86/include/asm/acenv.h    |   65 +++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/acpi.h     |   45 -------------------------
- include/acpi/platform/aclinux.h |    2 +-
- 5 files changed, 137 insertions(+), 96 deletions(-)
- create mode 100644 arch/ia64/include/asm/acenv.h
- create mode 100644 arch/x86/include/asm/acenv.h
+ arch/x86/mm/pgtable.c |   21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/arch/ia64/include/asm/acenv.h b/arch/ia64/include/asm/acenv.h
-new file mode 100644
-index 0000000..e0896eb
---- /dev/null
-+++ b/arch/ia64/include/asm/acenv.h
-@@ -0,0 +1,71 @@
-+/*
-+ * IA64 specific ACPICA environments and implementation
-+ *
-+ * Copyright (C) 2014, Intel Corporation
-+ *   Author: Lv Zheng <lv.zheng@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_IA64_ACENV_H
-+#define _ASM_IA64_ACENV_H
-+
-+#include <asm/intrinsics.h>
-+
-+#define COMPILER_DEPENDENT_INT64	long
-+#define COMPILER_DEPENDENT_UINT64	unsigned long
-+
-+/*
-+ * Calling conventions:
-+ *
-+ * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
-+ * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
-+ * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
-+ * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
-+ */
-+#define ACPI_SYSTEM_XFACE
-+#define ACPI_EXTERNAL_XFACE
-+#define ACPI_INTERNAL_XFACE
-+#define ACPI_INTERNAL_VAR_XFACE
-+
-+/* Asm macros */
-+
-+#define ACPI_FLUSH_CPU_CACHE()
-+
-+#ifdef CONFIG_ACPI
-+
-+static inline int
-+ia64_acpi_acquire_global_lock(unsigned int *lock)
-+{
-+	unsigned int old, new, val;
-+	do {
-+		old = *lock;
-+		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
-+		val = ia64_cmpxchg4_acq(lock, new, old);
-+	} while (unlikely (val != old));
-+	return (new < 3) ? -1 : 0;
-+}
-+
-+static inline int
-+ia64_acpi_release_global_lock(unsigned int *lock)
-+{
-+	unsigned int old, new, val;
-+	do {
-+		old = *lock;
-+		new = old & ~0x3;
-+		val = ia64_cmpxchg4_acq(lock, new, old);
-+	} while (unlikely (val != old));
-+	return old & 0x1;
-+}
-+
-+#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)				\
-+	((Acq) = ia64_acpi_acquire_global_lock(&facs->global_lock))
-+
-+#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)				\
-+	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
-+
-+#endif
-+
-+#endif /* _ASM_IA64_ACENV_H */
-diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
-index d651102..b0ddcfd 100644
---- a/arch/ia64/include/asm/acpi.h
-+++ b/arch/ia64/include/asm/acpi.h
-@@ -34,56 +34,6 @@
- #include <linux/numa.h>
- #include <asm/numa.h>
+Index: linux/arch/x86/mm/pgtable.c
+===================================================================
+--- linux.orig/arch/x86/mm/pgtable.c	2014-04-07 08:36:02.843221074 +0800
++++ linux/arch/x86/mm/pgtable.c	2014-04-07 08:37:26.438170140 +0800
+@@ -399,13 +399,20 @@ int pmdp_test_and_clear_young(struct vm_
+ int ptep_clear_flush_young(struct vm_area_struct *vma,
+ 			   unsigned long address, pte_t *ptep)
+ {
+-	int young;
+-
+-	young = ptep_test_and_clear_young(vma, address, ptep);
+-	if (young)
+-		flush_tlb_page(vma, address);
+-
+-	return young;
++	/*
++         * On x86 CPUs, clearing the accessed bit without a TLB flush
++         * doesn't cause data corruption. [ It could cause incorrect
++         * page aging and the (mistaken) reclaim of hot pages, but the
++         * chance of that should be relatively low. ]
++         *
++         * So as a performance optimization don't flush the TLB when
++         * clearing the accessed bit, it will eventually be flushed by
++         * a context switch or a VM operation anyway. [ In the rare
++         * event of it not getting flushed for a long time the delay
++         * shouldn't really matter because there's no real memory
++         * pressure for swapout to react to. ]
++         */
++	return ptep_test_and_clear_young(vma, address, ptep);
+ }
  
--#define COMPILER_DEPENDENT_INT64	long
--#define COMPILER_DEPENDENT_UINT64	unsigned long
--
--/*
-- * Calling conventions:
-- *
-- * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
-- * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
-- * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
-- * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
-- */
--#define ACPI_SYSTEM_XFACE
--#define ACPI_EXTERNAL_XFACE
--#define ACPI_INTERNAL_XFACE
--#define ACPI_INTERNAL_VAR_XFACE
--
--/* Asm macros */
--
--#define ACPI_FLUSH_CPU_CACHE()
--
--static inline int
--ia64_acpi_acquire_global_lock (unsigned int *lock)
--{
--	unsigned int old, new, val;
--	do {
--		old = *lock;
--		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
--		val = ia64_cmpxchg4_acq(lock, new, old);
--	} while (unlikely (val != old));
--	return (new < 3) ? -1 : 0;
--}
--
--static inline int
--ia64_acpi_release_global_lock (unsigned int *lock)
--{
--	unsigned int old, new, val;
--	do {
--		old = *lock;
--		new = old & ~0x3;
--		val = ia64_cmpxchg4_acq(lock, new, old);
--	} while (unlikely (val != old));
--	return old & 0x1;
--}
--
--#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)				\
--	((Acq) = ia64_acpi_acquire_global_lock(&facs->global_lock))
--
--#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)				\
--	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
--
- #ifdef	CONFIG_ACPI
- #define acpi_disabled 0	/* ACPI always enabled on IA64 */
- #define acpi_noirq 0	/* ACPI always enabled on IA64 */
-diff --git a/arch/x86/include/asm/acenv.h b/arch/x86/include/asm/acenv.h
-new file mode 100644
-index 0000000..6978584
---- /dev/null
-+++ b/arch/x86/include/asm/acenv.h
-@@ -0,0 +1,65 @@
-+/*
-+ * X86 specific ACPICA environments and implementation
-+ *
-+ * Copyright (C) 2014, Intel Corporation
-+ *   Author: Lv Zheng <lv.zheng@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _ASM_X86_ACENV_H
-+#define _ASM_X86_ACENV_H
-+
-+#include <asm/special_insns.h>
-+
-+#define COMPILER_DEPENDENT_INT64   long long
-+#define COMPILER_DEPENDENT_UINT64  unsigned long long
-+
-+/*
-+ * Calling conventions:
-+ *
-+ * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
-+ * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
-+ * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
-+ * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
-+ */
-+#define ACPI_SYSTEM_XFACE
-+#define ACPI_EXTERNAL_XFACE
-+#define ACPI_INTERNAL_XFACE
-+#define ACPI_INTERNAL_VAR_XFACE
-+
-+/* Asm macros */
-+
-+#define ACPI_FLUSH_CPU_CACHE()	wbinvd()
-+
-+#ifdef CONFIG_ACPI
-+
-+int __acpi_acquire_global_lock(unsigned int *lock);
-+int __acpi_release_global_lock(unsigned int *lock);
-+
-+#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq) \
-+	((Acq) = __acpi_acquire_global_lock(&facs->global_lock))
-+
-+#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq) \
-+	((Acq) = __acpi_release_global_lock(&facs->global_lock))
-+
-+/*
-+ * Math helper asm macros
-+ */
-+#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
-+	asm("divl %2;"				     \
-+	    : "=a"(q32), "=d"(r32)		     \
-+	    : "r"(d32),				     \
-+	     "0"(n_lo), "1"(n_hi))
-+
-+#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
-+	asm("shrl   $1,%2	;"	\
-+	    "rcrl   $1,%3;"		\
-+	    : "=r"(n_hi), "=r"(n_lo)	\
-+	    : "0"(n_hi), "1"(n_lo))
-+
-+#endif
-+
-+#endif /* _ASM_X86_ACENV_H */
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index c8c1e70..e06225e 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -32,51 +32,6 @@
- #include <asm/mpspec.h>
- #include <asm/realmode.h>
- 
--#define COMPILER_DEPENDENT_INT64   long long
--#define COMPILER_DEPENDENT_UINT64  unsigned long long
--
--/*
-- * Calling conventions:
-- *
-- * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
-- * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
-- * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
-- * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
-- */
--#define ACPI_SYSTEM_XFACE
--#define ACPI_EXTERNAL_XFACE
--#define ACPI_INTERNAL_XFACE
--#define ACPI_INTERNAL_VAR_XFACE
--
--/* Asm macros */
--
--#define ACPI_FLUSH_CPU_CACHE()	wbinvd()
--
--int __acpi_acquire_global_lock(unsigned int *lock);
--int __acpi_release_global_lock(unsigned int *lock);
--
--#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq) \
--	((Acq) = __acpi_acquire_global_lock(&facs->global_lock))
--
--#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq) \
--	((Acq) = __acpi_release_global_lock(&facs->global_lock))
--
--/*
-- * Math helper asm macros
-- */
--#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
--	asm("divl %2;"				     \
--	    : "=a"(q32), "=d"(r32)		     \
--	    : "r"(d32),				     \
--	     "0"(n_lo), "1"(n_hi))
--
--
--#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
--	asm("shrl   $1,%2	;"	\
--	    "rcrl   $1,%3;"		\
--	    : "=r"(n_hi), "=r"(n_lo)	\
--	    : "0"(n_hi), "1"(n_lo))
--
- #ifdef CONFIG_ACPI
- extern int acpi_lapic;
- extern int acpi_ioapic;
-diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-index e3ac5a5..a12e9e0 100644
---- a/include/acpi/platform/aclinux.h
-+++ b/include/acpi/platform/aclinux.h
-@@ -71,7 +71,7 @@
- #ifdef EXPORT_ACPI_INTERFACES
- #include <linux/export.h>
- #endif
--#include <asm/acpi.h>
-+#include <asm/acenv.h>
- 
- /* Host-dependent types and defines for in-kernel ACPICA */
- 
--- 
-1.7.10
-
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
