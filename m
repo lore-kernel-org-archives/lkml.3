@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaDHQBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:01:42 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:39992 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757110AbaDHQBh (ORCPT
+	id S932322AbaDHQCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:02:20 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:56694 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757159AbaDHQCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:01:37 -0400
+	Tue, 8 Apr 2014 12:02:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <1396960898.3567.55.camel@linaro1.home>
-References: <1396577719-14786-1-git-send-email-keescook@chromium.org>
-	<1396577719-14786-3-git-send-email-keescook@chromium.org>
-	<20140404195818.GA21028@debian>
-	<CAGXu5jKPX2igsb2rQzdCZQZ8X3h4YZihCV9D+cDW3F+qii8H2A@mail.gmail.com>
-	<1396960898.3567.55.camel@linaro1.home>
-Date: Tue, 8 Apr 2014 09:01:36 -0700
-X-Google-Sender-Auth: a00ISww3nAz_IjY1foY5D_DZYzI
-Message-ID: <CAGXu5jJq24k4uQbBJmihJ4RScJ40o41oKFtm13hBO_YZOvHpkA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: mm: make text and rodata read-only
-From: Kees Cook <keescook@chromium.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Rabin Vincent <rabin@rab.in>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140408143327.GC16054@pengutronix.de>
+References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+	<1396907649-20212-2-git-send-email-tthayer@altera.com>
+	<20140408133818.GB16054@pengutronix.de>
+	<1396967390.23349.15.camel@dinh-ubuntu>
+	<20140408143327.GC16054@pengutronix.de>
+Date: Tue, 8 Apr 2014 11:02:15 -0500
+Message-ID: <CANk1AXR0bDENDV673M-AVXNWHmGuee5SGc+ZnPqdBdEBwJXQXQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
+        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 5:41 AM, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> On Fri, 2014-04-04 at 17:07 -0700, Kees Cook wrote:
->> On Fri, Apr 4, 2014 at 12:58 PM, Rabin Vincent <rabin@rab.in> wrote:
-> [...]
->> > You need a TLB flush.  I had a flush_tlb_all() in my example patch,
->> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/244335.html,
->> > but the following is probably nicer (on top of this patch):
+On Tue, Apr 8, 2014 at 9:33 AM, Steffen Trumtrar
+<s.trumtrar@pengutronix.de> wrote:
+> On Tue, Apr 08, 2014 at 09:29:50AM -0500, Thor Thayer wrote:
+>> On Tue, 2014-04-08 at 15:38 +0200, Steffen Trumtrar wrote:
+>> > Hi!
 >> >
->> > diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
->> > index 9bea524..a92c45a 100644
->> > --- a/arch/arm/mm/init.c
->> > +++ b/arch/arm/mm/init.c
->> > @@ -741,6 +741,8 @@ static inline bool arch_has_strict_perms(void)
->> >                      addr += SECTION_SIZE)                              \
->> >                         section_update(addr, perms[i].mask,             \
->> >                                        perms[i].field);                 \
->> > +                                                                       \
->> > +               flush_tlb_kernel_range(perms[i].start, perms[i].end);   \
->> >         }                                                               \
->> >  }
+>> > On Mon, Apr 07, 2014 at 04:54:07PM -0500, tthayer@altera.com wrote:
+>> > > From: Thor Thayer <tthayer@altera.com>
+>> > >
+>> > > Addition of the Altera SDRAM controller bindings and device
+>> > > tree changes to the Altera SoC project.
+>> > >
+>> [snip]
+>> > > +
+>> > > +Required properties:
+>> > > +- compatible : "altr,sdr-ctl", "syscon";
+>> > > +                Note that syscon is invoked for this device to support the FPGA
+>> > > +         bridge driver, EDAC driver and other devices that share the
+>> > > +         registers.
+>> > > +- reg : Should contain 1 register ranges(address and length)
 >> >
+>> > I haven't really thought this through, but why would the FPGA bridge driver
+>> > access the sdram controller? For releasing the resets in fpgaportrst ? Or is
+>> > there more?
 >>
->> When I do this, I hang the system, and get a WARN due to the tlb call
->> attempting to flush on all CPUs, I think:
+>> Hi Steffan. No, not for resets. We need to enable the FPGA to SDRAM
+>> path. Our SDRAM controller allows FPGA master access to the SDRAM.
 >>
->> [   34.246034] WARNING: at
->> /mnt/host/source/src/third_party/kernel-next/kernel/smp.c:466
->> smp_call_function_many+0xac/0x26c()
->> ...
->> [   34.246617] Backtrace:
->> [   34.246697] [<c010d3b8>] (unwind_backtrace+0x0/0x118) from
->> [<c060b9d8>] (dump_stack+0x28/0x30)
->> [   34.246765] [<c060b9d8>] (dump_stack+0x28/0x30) from [<c0123044>]
->> (warn_slowpath_null+0x44/0x5c)
->> [   34.246824] [<c0123044>] (warn_slowpath_null+0x44/0x5c) from
->> [<c017426c>] (smp_call_function_many+0xac/0x26c)
->> [   34.246881] [<c017426c>] (smp_call_function_many+0xac/0x26c) from
->> [<c0174468>] (smp_call_function+0x3c/0x48)
->> [   34.246937] [<c0174468>] (smp_call_function+0x3c/0x48) from
->> [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c)
->> [   34.246994] [<c010c0fc>] (broadcast_tlb_a15_erratum+0x40/0x4c) from
->> [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0)
->> [   34.247046] [<c010c590>] (flush_tlb_kernel_range+0x74/0xa0) from
->> [<c011403c>] (set_kernel_text_rw+0xd8/0xec)
->> [   34.247099] [<c011403c>] (set_kernel_text_rw+0xd8/0xec) from
->> [<c010c878>] (__ftrace_modify_code+0x14/0x28)
->> [   34.247156] [<c010c878>] (__ftrace_modify_code+0x14/0x28) from
->> [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114)
->> [   34.247212] [<c0184318>] (stop_machine_cpu_stop+0xc0/0x114) from
->> [<c01841cc>] (cpu_stopper_thread+0xd8/0x164)
->> [   34.247266] [<c01841cc>] (cpu_stopper_thread+0xd8/0x164) from
->> [<c0145c14>] (kthread+0xc8/0xd8)
->> [   34.247323] [<c0145c14>] (kthread+0xc8/0xd8) from [<c0106118>]
->> (ret_from_fork+0x14/0x20)
->>
->> Using local_flush_tlb_kernel_range() fixed it though.
 >
-> What about if another CPU had a TLB entry with the old permissions in?
-> Or do you consider that the likelihood and consequences of that aren't
-> significant?
+> Yes. But what you have to do to enable the path is let the FPGA port you use
+> out of reset. And that is it as far as I can see. The rest happens in the
+> bitstream. Or is there more to enable the path?
+> The FPGA2SDRAM bridge is the one I didn't use as of yet, so if I miss something
+> please elaborate.
 
-The purpose of the function is to temporarily make text writable, do
-the write, and then restore read-only. Since only the writer needs to
-care about TLB state, this works fine. It's actually nice that only
-the current CPU can make text writes.
+Hi Steffen,
 
--Kees
+The sdram controller is used by two drivers.  That's why we want to
+specify "syscon" here.  The other driver is the FPGA bridge driver.
+Its functionality is very separate from what this driver is doing (we
+are not enabling the bridge in this driver; we are enabling the
+monitoring and resetting the interrupt bit of the EDAC).  We wanted to
+specify "syscon" her so that we don't have to have to change it for
+the other driver.
 
--- 
-Kees Cook
-Chrome OS Security
+Alan Tull
