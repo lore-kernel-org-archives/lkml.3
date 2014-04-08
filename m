@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbaDHJTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 05:19:46 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59819 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaDHJTo (ORCPT
+	id S1756321AbaDHJVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 05:21:18 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:48569 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaDHJVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 05:19:44 -0400
-Date: Tue, 8 Apr 2014 11:19:43 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Laszlo Papp <lpapp@kde.org>, LKML <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] Tachometer speed returned rather than absolute
- fan speed?
-Message-ID: <20140408091943.GA14642@amd.pavel.ucw.cz>
-References: <CAOMwXhPXPN+21N11cHBENvw0QZ1qPvo9GTbM9V2SwDmgBQZssw@mail.gmail.com>
- <20140307162524.6abd34be@endymion.delvare>
- <CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>
- <20140307163717.336873f5@endymion.delvare>
- <CAOMwXhPpObWqd1vR3t+ifKd-_ZbnGTm1TNNUakmVAR3CB=pzTg@mail.gmail.com>
- <20140307181718.GA1027@roeck-us.net>
- <531BACD9.9050206@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531BACD9.9050206@roeck-us.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 8 Apr 2014 05:21:15 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>
+Cc: Jon Hunter <jon-hunter@ti.com>, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH] ARM: dts: OMAP2+: remove uses of obsolete gpmc,device-nand
+Date: Tue,  8 Apr 2014 11:20:17 +0200
+Message-Id: <1396948817-29362-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-03-08 15:50:49, Guenter Roeck wrote:
-> On 03/07/2014 10:17 AM, Guenter Roeck wrote:
-> >On Fri, Mar 07, 2014 at 03:47:08PM +0000, Laszlo Papp wrote:
-> >>On Fri, Mar 7, 2014 at 3:37 PM, Jean Delvare <jdelvare@suse.de> wrote:
-> >>>>>I'm quite confused. While I admit that the term "tachometer speed" is
-> >>>>>awkward, the max6650 driver is reporting fan speeds in RPM as every
-> >>>>>other hwmon driver. So I really have no idea what you think is wrong.
-> >>>>>What did you think "tachometer speed" was, if not the fan speed? Does
-> >>>>>the max6650 driver not return correct fan speeds for you?
-> >>
-> >>That is some strange behavior. If I do "echo 1 > pwm1_enable; echo 0 >
-> >>pwm1; cat fan1_input", I still see 30 for the connected fan, whereas I
-> >>can see it stopped. Is this an expected behavior? I would expect zero
-> >>as a user.
-> >>
-> >I seem to recall that I had seen that as well, with no fan connected.
-> >Maybe the tachometer registers always read at least '1'. I would think
-> >it is wrong, but we'll have to understand the chip a bit better
-> >to be able to provide a fix. Unless you already have a fix ready,
-> >of course. I'll try to re-test tonight if I find the time.
-> >
-> 
-> The reason is (most likely) that your fan input does not have a pull-up
-> resistor. Per datasheet, the fan inputs need a 10kOhm pull-up resistor.
-> I confirmed this with my test board - with the pull-up resistor,
-> inputs read 0, Without pull-up, the reported value is 1, which
-> translates to 30 RPM.
+Remove all remaining uses of gpmc,device-nand that have been added since
+the property was removed by commit f40739faba8e ("ARM: dts: OMAP2+:
+Simplify NAND support").
 
-While this is hardware problem, it might make sense for kernel to work
-around it -- return 0 in case 30 RPM observed.
-									Pavel
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ arch/arm/boot/dts/am335x-igep0033.dtsi  | 1 -
+ arch/arm/boot/dts/omap3-devkit8000.dts  | 1 -
+ arch/arm/boot/dts/omap3-lilly-a83x.dtsi | 1 -
+ 3 files changed, 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/am335x-igep0033.dtsi b/arch/arm/boot/dts/am335x-igep0033.dtsi
+index 7063311a58d9..06c822a48b71 100644
+--- a/arch/arm/boot/dts/am335x-igep0033.dtsi
++++ b/arch/arm/boot/dts/am335x-igep0033.dtsi
+@@ -118,7 +118,6 @@
+ 		reg = <0 0 0>; /* CS0, offset 0 */
+ 		nand-bus-width = <8>;
+ 		ti,nand-ecc-opt = "bch8";
+-		gpmc,device-nand = "true";
+ 		gpmc,device-width = <1>;
+ 		gpmc,sync-clk-ps = <0>;
+ 		gpmc,cs-on-ns = <0>;
+diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
+index bf5a515a3247..da402f0fdab4 100644
+--- a/arch/arm/boot/dts/omap3-devkit8000.dts
++++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+@@ -112,7 +112,6 @@
+ 		reg = <0 0 0>; /* CS0, offset 0 */
+ 		nand-bus-width = <16>;
+ 
+-		gpmc,device-nand;
+ 		gpmc,sync-clk-ps = <0>;
+ 		gpmc,cs-on-ns = <0>;
+ 		gpmc,cs-rd-off-ns = <44>;
+diff --git a/arch/arm/boot/dts/omap3-lilly-a83x.dtsi b/arch/arm/boot/dts/omap3-lilly-a83x.dtsi
+index 6369d9f43ca2..cc1dce6978f5 100644
+--- a/arch/arm/boot/dts/omap3-lilly-a83x.dtsi
++++ b/arch/arm/boot/dts/omap3-lilly-a83x.dtsi
+@@ -368,7 +368,6 @@
+ 		/* no elm on omap3 */
+ 
+ 		gpmc,mux-add-data = <0>;
+-		gpmc,device-nand;
+ 		gpmc,device-width = <2>;
+ 		gpmc,wait-pin = <0>;
+ 		gpmc,wait-monitoring-ns = <0>;
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.3.2
+
