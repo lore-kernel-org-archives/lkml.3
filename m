@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828AbaDHNmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 09:42:44 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:38703 "EHLO
+	id S1756915AbaDHNqV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 09:46:21 -0400
+Received: from smtprelay.synopsys.com ([198.182.44.111]:46909 "EHLO
 	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210AbaDHNml convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756385AbaDHNqT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 09:42:41 -0400
+	Tue, 8 Apr 2014 09:46:19 -0400
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: "stable@vger.kernel.org" <stable@vger.kernel.org>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH Resend 2/2] ARC: [nsimosci] Unbork console
-Thread-Topic: [PATCH Resend 2/2] ARC: [nsimosci] Unbork console
-Thread-Index: AQHPUNBUDZZ0uP7vl0WFdLkGWEYAMA==
-Date: Tue, 8 Apr 2014 13:42:37 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230751AC891@IN01WEMBXA.internal.synopsys.com>
+Subject: Re: [PATCH Resend 1/2] ARC: [nsimosci] Change .dts to use generic
+ 8250 UART
+Thread-Topic: [PATCH Resend 1/2] ARC: [nsimosci] Change .dts to use generic
+ 8250 UART
+Thread-Index: AQHPUNBPBzWtxoce0EamnRsBbLVA1A==
+Date: Tue, 8 Apr 2014 13:41:50 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751AC887@IN01WEMBXA.internal.synopsys.com>
 References: <1396703351-8423-1-git-send-email-vgupta@synopsys.com>
- <1396703351-8423-3-git-send-email-vgupta@synopsys.com>
+ <1396703351-8423-2-git-send-email-vgupta@synopsys.com>
 Accept-Language: en-US, en-IN
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -31,52 +33,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 For Stable 3.10, 3.12, 3.13, 3.14
 
-mainline commit 61fb4bfc010b0d2940f7fd87acbce6a0f03217cb
+mainline commit 6eda477b3c54b8236868c8784e5e042ff14244f0
 
 Thx,
 -Vineet
 
 On Saturday 05 April 2014 06:39 PM, Vineet Gupta wrote:
-> Despite the switch to right UART driver (prev patch), serial console
-> still doesn't work due to missing CONFIG_SERIAL_OF_PLATFORM
+> From: Mischa Jonker <mjonker@synopsys.com>
 >
-> Also fix the default cmdline in DT to not refer to out-of-tree
-> ARC framebuffer driver for console.
+> The Synopsys APB DW UART has a couple of special features that are not
+> in the System C model. In 3.8, the 8250_dw driver didn't really use these
+> features, but from 3.9 onwards, the 8250_dw driver has become incompatible
+> with our model.
 >
+> Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
 > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 > Cc: <stable@vger.kernel.org>   #3.10, 3.12, 3.13, 3.14
 > Cc: Francois Bedard <Francois.Bedard@synopsys.com>
 > ---
->  arch/arc/boot/dts/nsimosci.dts      | 5 ++++-
->  arch/arc/configs/nsimosci_defconfig | 1 +
->  2 files changed, 5 insertions(+), 1 deletion(-)
+>  arch/arc/boot/dts/nsimosci.dts | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
 >
 > diff --git a/arch/arc/boot/dts/nsimosci.dts b/arch/arc/boot/dts/nsimosci.dts
-> index 8bd238c34c7d..4f31b2eb5cdf 100644
+> index ea16d782af58..8bd238c34c7d 100644
 > --- a/arch/arc/boot/dts/nsimosci.dts
 > +++ b/arch/arc/boot/dts/nsimosci.dts
-> @@ -17,7 +17,10 @@
+> @@ -11,7 +11,7 @@
+>  
+>  / {
+>  	compatible = "snps,nsimosci";
+> -	clock-frequency = <80000000>;	/* 80 MHZ */
+> +	clock-frequency = <20000000>;	/* 20 MHZ */
+>  	#address-cells = <1>;
+>  	#size-cells = <1>;
 >  	interrupt-parent = <&intc>;
+> @@ -44,15 +44,14 @@
+>  		};
 >  
->  	chosen {
-> -		bootargs = "console=tty0 consoleblank=0";
-> +		/* this is for console on PGU */
-> +		/* bootargs = "console=tty0 consoleblank=0"; */
-> +		/* this is for console on serial */
-> +		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=ttyS0,115200n8 consoleblank=0 debug";
->  	};
+>  		uart0: serial@c0000000 {
+> -			compatible = "snps,dw-apb-uart";
+> +			compatible = "ns8250";
+>  			reg = <0xc0000000 0x2000>;
+>  			interrupts = <11>;
+> -			#clock-frequency = <80000000>;
+>  			clock-frequency = <3686400>;
+>  			baud = <115200>;
+>  			reg-shift = <2>;
+>  			reg-io-width = <4>;
+> -			status = "okay";
+> +			no-loopback-test = <1>;
+>  		};
 >  
->  	aliases {
-> diff --git a/arch/arc/configs/nsimosci_defconfig b/arch/arc/configs/nsimosci_defconfig
-> index 451af30914f6..c01ba35a4eff 100644
-> --- a/arch/arc/configs/nsimosci_defconfig
-> +++ b/arch/arc/configs/nsimosci_defconfig
-> @@ -54,6 +54,7 @@ CONFIG_SERIO_ARC_PS2=y
->  CONFIG_SERIAL_8250=y
->  CONFIG_SERIAL_8250_CONSOLE=y
->  CONFIG_SERIAL_8250_DW=y
-> +CONFIG_SERIAL_OF_PLATFORM=y
->  CONFIG_SERIAL_ARC=y
->  CONFIG_SERIAL_ARC_CONSOLE=y
->  # CONFIG_HW_RANDOM is not set
+>  		pgu0: pgu@c9000000 {
 
