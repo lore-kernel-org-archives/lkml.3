@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477AbaDHLnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 07:43:40 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33728 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755454AbaDHLni (ORCPT
+	id S1756622AbaDHLp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:45:59 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59094 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756131AbaDHLp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 07:43:38 -0400
-Message-ID: <5343E0E3.70808@hitachi.com>
-Date: Tue, 08 Apr 2014 20:43:31 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 8 Apr 2014 07:45:57 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-acpi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH V2] ACPI: Update the ownership and developers for ACPI in Kconfig
+Date: Tue, 08 Apr 2014 14:01:57 +0200
+Message-ID: <3442476.Y3PYFAt6A7@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1396956241-8337-1-git-send-email-hanjun.guo@linaro.org>
+References: <1396956241-8337-1-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/6] uprobes/x86: fix the reprel jmp/call handling
-References: <20140404185038.GA14679@redhat.com> <20140404193226.GA23092@redhat.com> <1396655065.4769.8.camel@oc7886638347.ibm.com.usor.ibm.com> <20140406201524.GA32694@redhat.com>
-In-Reply-To: <20140406201524.GA32694@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/07 5:15), Oleg Nesterov wrote:
-> On 04/04, Jim Keniston wrote:
->>
->> On Fri, 2014-04-04 at 21:32 +0200, Oleg Nesterov wrote:
->>>
->>> 	1. Why insn_get_displacement() doesn't work? See "HELP!!!"
->>> 	   below.
->>
->> insn->moffset1.value seems to be what you want.
+On Tuesday, April 08, 2014 07:24:01 PM Hanjun Guo wrote:
+> The UEFI Forum included the ACPI spec in its portfolio in October 2013
+> and will host future spec iterations, following the ACPI v5.0a release.
 > 
-> Works! Thanks a lot.
+> A UEFI Forum working group named ACPI Specification Working Group (ASWG)
+> has been established to handle future ACPI developments, any UEFI member
+> can join the group and contribute to ACPI specification.
 > 
-> Still I can't understand why displacement.nbytes == 0 in this case...
-> Nevermind.
-
-I guess that you misunderstanding what the displacement means.
-insn->displacement means what x86 instruction encoding as
-"displacement" bytes, which is an extension of addressing mode.
-
-The relative Jumps are JMP(near) which operand is Jz,
-and JMP(short) which operand is Jb, according to the Intel SDM 2b
-appendix A2.
-
-According to SDM2b A.2.1 and A.2.2, the J means
-  ----
-  The instruction contains a relative offset to be added to the instruction
-  pointer register (for example, JMP (0E9), LOOP).
-  ----
-
-and z and b means
-  ----
-  b	Byte, regardless of operand-size attribute.
-  z 	Word for 16-bit operand-size or doubleword for 32 or 64-bit operand-size.
-  ----
-Ok, so these are have one immediate operand which has 1,2(word),
-4(doubleword) bytes.
-In that case, you should use insn->immediate, instead of insn->moffset1 which
-is only for MOV(A0-A3) on x86-64. (please see Intel SDM2a 2.2.1.4)
-
-Thank you,
-
-> OK. Please see the RFC changes. Obviously not for inclusion yet. And
-> totally untested, except I verified that the test-case from 4/6 works.
+> So update the ownership and developers for ACPI in Kconfig accordingly,
+> and add another website link to ACPI specification too.
 > 
-> Please comment.
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  drivers/acpi/Kconfig |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> Oleg.
-> 
-> 
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index c205653..6bbf36e 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -32,9 +32,11 @@ menuconfig ACPI
+>  	  <http://acpica.org/>
+>  
+>  	  ACPI is an open industry specification co-developed by
+> -	  Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.
+> +	  ACPI Specification Working Group (ASWG) under UEFI Forum, any
+> +	  UEFI member can join ASWG and contribute to ACPI specification.
 
+Thinking a bit more about that, I'd prefer this wording:
+
+	ACPI is an open industry specification originally co-developed by
+	Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.  Currently,
+	it is developed by the ACPI Specification Working Group (ASWG) under
+	the UEFI Forum and any UEFI member can join the ASWG and contribute
+	to the ACPI specification.
+
+>  	  The specification is available at:
+>  	  <http://www.acpi.info>
+> +	  <http://www.uefi.org/acpi/specs>
+>  
+>  if ACPI
+
+Thanks!
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
