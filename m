@@ -1,46 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150AbaDHQey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 12:34:54 -0400
-Received: from mail1.start.ca ([64.140.120.57]:48680 "EHLO mail1.start.ca"
+	id S932301AbaDHQfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 12:35:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37762 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756757AbaDHQex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 12:34:53 -0400
-Message-ID: <5344251D.7040805@pobox.com>
-Date: Tue, 08 Apr 2014 12:34:37 -0400
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757209AbaDHQfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 12:35:01 -0400
+Date: Tue, 8 Apr 2014 18:34:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Subject: Re: [PATCH v7 02/22] Allow page fault handlers to perform the COW
+Message-ID: <20140408163457.GD2713@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <feee29988e167b019f5726cd497b1470b050a3ce.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, yinghai@kernel.org, tytso@mit.edu
-Subject: driver skip pci_set_master, fix it?  No.
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <feee29988e167b019f5726cd497b1470b050a3ce.1395591795.git.matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am working a couple of drivers for chips that perform extensive bus-mastering ops.
-These including full SRIOV support, and allow assigning virtual functions to virtual machines, etc.
+On Sun 23-03-14 15:08:28, Matthew Wilcox wrote:
+> Currently COW of an XIP file is done by first bringing in a read-only
+> mapping, then retrying the fault and copying the page.  It is much more
+> efficient to tell the fault handler that a COW is being attempted (by
+> passing in the pre-allocated page in the vm_fault structure), and allow
+> the handler to perform the COW operation itself.
+>
+> Where the filemap code protects against truncation of the file until
+> the PTE has been installed with the page lock, the XIP code use the
+> i_mmap_mutex instead.  We must therefore unlock the i_mmap_mutex after
+> inserting the PTE.
+  Eww, leaking of locking details about DAX into generic fault code is
+really ugly. It seems to me that once you pass the cow_page into the fault
+handler (which looks OK to me), you can just directly install it in PTE
+via vm_insert_page() and you don't have to rely on do_cow_fault() for that.
+Thus you can return VM_FAULT_NOPAGE and be done with it? Basically cow
+faults will then work the same way as other faults for DAX... Or am I
+missing something?
 
-One thing the driver (still in development) does for safety,
-is defer the call to pci_set_master() until *after* it has mapped
-the MMIO space of the chips, so it can reset/flush the DMA engines
-before giving them permission to scribble over host RAM.
+								Honza
 
-But a recent patch to the kernel has removed this from the driver's control.
-The core PCI now does pci_set_master() immediately on pci_enable_device().
-
-This could be catastrophic in some situations, depending upon the state
-of the DMA engines in the device.  If they have "leftovers" from a previous "life"
-(or a previous VM assignment), then they'll immediately resume accessing host RAM
-as soon as the driver calls pci_enable_device(), courtesy of the embedded call
-to pci_set_master().
-
-This isn't good, and these may not be the only devices affected in this way.
-
-Can we perhaps not do that, or provide some other way to return control of bus-mastering
-to the device driver ?
---
-mlord@pobox.com
-Mark Lord
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> ---
+>  include/linux/mm.h |  2 ++
+>  mm/memory.c        | 45 +++++++++++++++++++++++++++++++++------------
+>  2 files changed, 35 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index c1b7414..513b78a 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -205,6 +205,7 @@ struct vm_fault {
+>  	pgoff_t pgoff;			/* Logical page offset based on vma */
+>  	void __user *virtual_address;	/* Faulting virtual address */
+>  
+> +	struct page *cow_page;		/* Handler may choose to COW */
+>  	struct page *page;		/* ->fault handlers should return a
+>  					 * page here, unless VM_FAULT_NOPAGE
+>  					 * is set (which is also implied by
+> @@ -1010,6 +1011,7 @@ static inline int page_mapped(struct page *page)
+>  #define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned small page */
+>  #define VM_FAULT_HWPOISON_LARGE 0x0020  /* Hit poisoned large page. Index encoded in upper bits */
+>  
+> +#define VM_FAULT_COWED	0x0080	/* ->fault COWed the page instead */
+>  #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
+>  #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
+>  #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 07b4287..2a2ecac 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2602,6 +2602,7 @@ static int do_page_mkwrite(struct vm_area_struct *vma, struct page *page,
+>  	vmf.pgoff = page->index;
+>  	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
+>  	vmf.page = page;
+> +	vmf.cow_page = NULL;
+>  
+>  	ret = vma->vm_ops->page_mkwrite(vma, &vmf);
+>  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
+> @@ -3288,7 +3289,8 @@ oom:
+>  }
+>  
+>  static int __do_fault(struct vm_area_struct *vma, unsigned long address,
+> -		pgoff_t pgoff, unsigned int flags, struct page **page)
+> +			pgoff_t pgoff, unsigned int flags,
+> +			struct page *cow_page, struct page **page)
+>  {
+>  	struct vm_fault vmf;
+>  	int ret;
+> @@ -3297,10 +3299,13 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
+>  	vmf.pgoff = pgoff;
+>  	vmf.flags = flags;
+>  	vmf.page = NULL;
+> +	vmf.cow_page = cow_page;
+>  
+>  	ret = vma->vm_ops->fault(vma, &vmf);
+>  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
+>  		return ret;
+> +	if (unlikely(ret & VM_FAULT_COWED))
+> +		goto out;
+>  
+>  	if (unlikely(PageHWPoison(vmf.page))) {
+>  		if (ret & VM_FAULT_LOCKED)
+> @@ -3314,6 +3319,7 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
+>  	else
+>  		VM_BUG_ON_PAGE(!PageLocked(vmf.page), vmf.page);
+>  
+> + out:
+>  	*page = vmf.page;
+>  	return ret;
+>  }
+> @@ -3351,7 +3357,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	pte_t *pte;
+>  	int ret;
+>  
+> -	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
+> +	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
+>  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
+>  		return ret;
+>  
+> @@ -3368,6 +3374,12 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	return ret;
+>  }
+>  
+> +/*
+> + * If the fault handler performs the COW, it does not return a page,
+> + * so cannot use the page's lock to protect against a concurrent truncate
+> + * operation.  Instead it returns with the i_mmap_mutex held, which must
+> + * be released after the PTE has been inserted.
+> + */
+>  static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		unsigned long address, pmd_t *pmd,
+>  		pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
+> @@ -3389,25 +3401,34 @@ static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		return VM_FAULT_OOM;
+>  	}
+>  
+> -	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
+> +	ret = __do_fault(vma, address, pgoff, flags, new_page, &fault_page);
+>  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
+>  		goto uncharge_out;
+>  
+> -	copy_user_highpage(new_page, fault_page, address, vma);
+> +	if (!(ret & VM_FAULT_COWED))
+> +		copy_user_highpage(new_page, fault_page, address, vma);
+>  	__SetPageUptodate(new_page);
+>  
+>  	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+> -	if (unlikely(!pte_same(*pte, orig_pte))) {
+> -		pte_unmap_unlock(pte, ptl);
+> +	if (unlikely(!pte_same(*pte, orig_pte)))
+> +		goto unlock_out;
+> +	do_set_pte(vma, address, new_page, pte, true, true);
+> +	pte_unmap_unlock(pte, ptl);
+> +	if (ret & VM_FAULT_COWED) {
+> +		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> +	} else {
+>  		unlock_page(fault_page);
+>  		page_cache_release(fault_page);
+> -		goto uncharge_out;
+>  	}
+> -	do_set_pte(vma, address, new_page, pte, true, true);
+> -	pte_unmap_unlock(pte, ptl);
+> -	unlock_page(fault_page);
+> -	page_cache_release(fault_page);
+>  	return ret;
+> +unlock_out:
+> +	pte_unmap_unlock(pte, ptl);
+> +	if (ret & VM_FAULT_COWED) {
+> +		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> +	} else {
+> +		unlock_page(fault_page);
+> +		page_cache_release(fault_page);
+> +	}
+>  uncharge_out:
+>  	mem_cgroup_uncharge_page(new_page);
+>  	page_cache_release(new_page);
+> @@ -3424,7 +3445,7 @@ static int do_shared_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	int dirtied = 0;
+>  	int ret, tmp;
+>  
+> -	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
+> +	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
+>  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
+>  		return ret;
+>  
+> -- 
+> 1.9.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
