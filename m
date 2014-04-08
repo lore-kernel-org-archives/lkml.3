@@ -1,127 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180AbaDHOTd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:19:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756956AbaDHOTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:19:32 -0400
-Date: Tue, 8 Apr 2014 10:17:58 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com
-Subject: Re: [PATCH 07/15 V3] perf, c2c: Add in sort on physid
-Message-ID: <20140408141758.GU8488@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
- <1395689826-215033-8-git-send-email-dzickus@redhat.com>
- <87k3b0w8ye.fsf@sejong.aot.lge.com>
+	id S1757194AbaDHOUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:20:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52609 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756980AbaDHOUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:20:05 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: perex@perex.cz, iwai@suse.de
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH] sound: lx_core: Few misc cleanups
+Date: Tue,  8 Apr 2014 16:15:33 +0200
+Message-Id: <1396966533-505-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87k3b0w8ye.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 04:56:25PM +0900, Namhyung Kim wrote:
-> On Mon, 24 Mar 2014 15:36:58 -0400, Don Zickus wrote:
-> > Now that the infrastructure is set, add in the support to use
-> > hist_entry to sort on physid.
-> >
-> > V2: use new mmap2 sort
-> >
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > ---
-> >  tools/perf/builtin-c2c.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 51 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-> > index d7eaf81..b5742bd 100644
-> > --- a/tools/perf/builtin-c2c.c
-> > +++ b/tools/perf/builtin-c2c.c
-> > @@ -7,6 +7,7 @@
-> >  #include "util/tool.h"
-> >  #include "util/debug.h"
-> >  #include <api/fs/fs.h>
-> > +#include "util/annotate.h"
-> 
-> Why is this #include needed?
-> 
-> 
-> [SNIP]
-> > @@ -163,7 +169,33 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
-> >  		return 0;
-> >  	}
-> >  
-> > -	return 0;
-> > +	cost = sample->weight;
-> > +	if (!cost)
-> > +		cost = 1;
-> > +
-> > +	/*
-> > +	 * must pass period=weight in order to get the correct
-> > +	 * sorting from hists__collapse_resort() which is solely
-> > +	 * based on periods. We want sorting be done on nr_events * weight
-> > +	 * and this is indirectly achieved by passing period=weight here
-> > +	 * and the he_stat__add_period() function.
-> > +	 */
-> > +	he = __hists__add_entry(&c2c->hists, al, parent, NULL, mi,
-> > +				cost, cost, 0);
-> > +	if (!he) {
-> > +		err = -ENOMEM;
-> > +		goto out_mem;
-> > +	}
-> > +
-> > +	c2c->hists.stats.total_period += cost;
-> > +	hists__inc_nr_events(&c2c->hists, PERF_RECORD_SAMPLE);
-> > +	return err;
-> > +
-> > +out_mem:
-> > +	/* implicitly freed by __hists__add_entry */
-> > +	free(mi);
-> > +out:
-> 
-> It seems this 'out' lable is not used anywhere..
-> 
-> 
-> > +	return err;
-> >  }
-> >  
-> >  /* setup the basic events for most coverage, options added later */
-> > @@ -266,10 +298,28 @@ out:
-> >  	return err;
-> >  }
-> >  
-> > +static int perf_c2c__init(struct perf_c2c *c2c)
-> > +{
-> > +	sort__mode = SORT_MODE__PHYSID;
-> > +	sort__wants_unique = 1;
-> > +	sort_order = "daddr,iaddr,pid,tid";
-> 
-> Where are the SORT_MODE__PHYSID, sort__wants_unique and "daddr", "iaddr"
-> sort keys defined?
+This file had a few comments in french that are now in english, and took the
+opportunity to cleanup a bunch of #if 0 .. #endif and commented out code
 
-In a previous patchset that enables the mmap2 interface.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ sound/pci/lx6464es/lx_core.c | 70 +++++++++++++++++---------------------------
+ 1 file changed, 27 insertions(+), 43 deletions(-)
 
-> 
-> Also, more importantly, I think the sort order should contain at least
-> "mem" and "snoop" keys to group samples based on the exact hitm
-> information.
+diff --git a/sound/pci/lx6464es/lx_core.c b/sound/pci/lx6464es/lx_core.c
+index 626ecad4dae7..002049770ff7 100644
+--- a/sound/pci/lx6464es/lx_core.c
++++ b/sound/pci/lx6464es/lx_core.c
+@@ -22,8 +22,7 @@
+  *
+  */
+ 
+-/* #define RMH_DEBUG 1 */
+-
++#include <linux/bitops.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/delay.h>
+@@ -496,15 +495,17 @@ int lx_dsp_es_check_pipeline(struct lx6464es *chip)
+ 	int i;
+ 
+ 	for (i = 0; i != CSES_TIMEOUT; ++i) {
+-		/*
+-		 * le bit CSES_UPDATE_LDSV est Ã  1 dÃ©s que le macprog
+-		 * est pret. il re-passe Ã  0 lorsque le premier read a
+-		 * Ã©tÃ© fait. pour l'instant on retire le test car ce bit
+-		 * passe a 1 environ 200 Ã  400 ms aprÃ©s que le registre
+-		 * confES Ã  Ã©tÃ© Ã©crit (kick du xilinx ES).
++		/* 
++		 * The bit CSES_UPDATE_LDSV is set to 1 as soon as the
++		 * macprog is ready. He goes back to 0 whenever the
++		 * first read has been issued.
++		 *
++		 * For now, we don't bother testing this bit because
++		 * it's set to 1 between 200 to 400ms after the confES
++		 * register has been written to (xilinx ES kick).
+ 		 *
+-		 * On ne teste que le bit CE.
+-		 * */
++		 * We only test the CE bit.
++		 */
+ 
+ 		u32 cses = lx_dsp_reg_read(chip, eReg_CSES);
+ 
+@@ -602,8 +603,7 @@ int lx_buffer_ask(struct lx6464es *chip, u32 pipe, int is_capture,
+ 				/* free */
+ 				*r_needed += 1;
+ 		}
+-
+-#if 0
++#if DEBUG
+ 		snd_printdd(LXP "CMD_08_ASK_BUFFERS: needed %d, freed %d\n",
+ 			    *r_needed, *r_freed);
+ 		for (i = 0; i < MAX_STREAM_BUFFER; ++i) {
+@@ -1049,9 +1049,9 @@ int lx_level_peaks(struct lx6464es *chip, int is_capture, int channels,
+ 
+ /* interrupt handling */
+ #define PCX_IRQ_NONE 0
+-#define IRQCS_ACTIVE_PCIDB  0x00002000L         /* Bit nÃÂ¸ 13 */
+-#define IRQCS_ENABLE_PCIIRQ 0x00000100L         /* Bit nÃÂ¸ 08 */
+-#define IRQCS_ENABLE_PCIDB  0x00000200L         /* Bit nÃÂ¸ 09 */
++#define IRQCS_ACTIVE_PCIDB	BIT(13)
++#define IRQCS_ENABLE_PCIIRQ	BIT(8)
++#define IRQCS_ENABLE_PCIDB	BIT(9)
+ 
+ static u32 lx_interrupt_test_ack(struct lx6464es *chip)
+ {
+@@ -1108,25 +1108,21 @@ static int lx_interrupt_handle_async_events(struct lx6464es *chip, u32 irqsrc,
+ 	int err;
+ 	u32 stat[9];		/* answer from CMD_04_GET_EVENT */
+ 
+-	/* On peut optimiser pour ne pas lire les evenements vides
+-	 * les mots de rÃÂ©ponse sont dans l'ordre suivant :
+-	 * Stat[0]	mot de status gÃÂ©nÃÂ©ral
+-	 * Stat[1]	fin de buffer OUT pF
+-	 * Stat[2]	fin de buffer OUT pf
+-	 * Stat[3]	fin de buffer IN pF
+-	 * Stat[4]	fin de buffer IN pf
+-	 * Stat[5]	underrun poid fort
+-	 * Stat[6]	underrun poid faible
+-	 * Stat[7]	overrun poid fort
+-	 * Stat[8]	overrun poid faible
++	/* We can optimize this to not read dumb events.
++	 * Answer words are in the following order:
++	 * Stat[0]	general status
++	 * Stat[1]	end of buffer OUT pF
++	 * Stat[2]	end of buffer OUT pf
++	 * Stat[3]	end of buffer IN pF
++	 * Stat[4]	end of buffer IN pf
++	 * Stat[5]	MSB underrun
++	 * Stat[6]	LSB underrun
++	 * Stat[7]	MSB overrun
++	 * Stat[8]	LSB overrun
+ 	 * */
+ 
+ 	u64 orun_mask;
+ 	u64 urun_mask;
+-#if 0
+-	int has_underrun   = (irqsrc & MASK_SYS_STATUS_URUN) ? 1 : 0;
+-	int has_overrun    = (irqsrc & MASK_SYS_STATUS_ORUN) ? 1 : 0;
+-#endif
+ 	int eb_pending_out = (irqsrc & MASK_SYS_STATUS_EOBO) ? 1 : 0;
+ 	int eb_pending_in  = (irqsrc & MASK_SYS_STATUS_EOBI) ? 1 : 0;
+ 
+@@ -1272,7 +1268,7 @@ irqreturn_t lx_interrupt(int irq, void *dev_id)
+ 	if (irqsrc & MASK_SYS_STATUS_CMD_DONE)
+ 		goto exit;
+ 
+-#if 0
++#if DEBUG
+ 	if (irqsrc & MASK_SYS_STATUS_EOBI)
+ 		snd_printdd(LXP "interrupt: EOBI\n");
+ 
+@@ -1310,18 +1306,6 @@ irqreturn_t lx_interrupt(int irq, void *dev_id)
+ 				   "error during audio transfer\n");
+ 	}
+ 
+-	if (async_escmd) {
+-#if 0
+-		/* backdoor for ethersound commands
+-		 *
+-		 * for now, we do not need this
+-		 *
+-		 * */
+-
+-		snd_printdd("lx6464es: interrupt requests escmd handling\n");
+-#endif
+-	}
+-
+ exit:
+ 	spin_unlock(&chip->lock);
+ 	return IRQ_HANDLED;	/* this device caused the interrupt */
+-- 
+1.9.1
 
-I can look into it, but after iaddr, pid and tid, sorting on snoop doesn't
-really change anything if I recall.  The hitms are scattered across iaddr.
-
-> 
-> In my understanding, if two samples are captured at exactly same
-> position with a same data access but different hitm info, they cannot be
-> classified and just use the hitm info of first entry.
-
-Why?  If the first hitm access was local and the second one remote,
-doesn't that indicate the accessed data is being pulled onto different
-nodes?
-
-Cheers,
-Don
