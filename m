@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584AbaDHKai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:30:38 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:55481 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756311AbaDHKag (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:30:36 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlBYAIvOQ1N5LEcvPGdsb2JhbABRCIMGg0qFC7cBhV+BHxcDAQEBATg1giUBAQEDATocIwULCAMYCSUPBSUDBxoTh3EHyjYXFo1+VgeDJIEUBJhblgMr
-Date: Tue, 8 Apr 2014 20:30:27 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jan Kara <jack@suse.cz>, Daniel J Blueman <daniel@numascale.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Subject: Re: ext4 performance falloff
-Message-ID: <20140408103027.GC22917@dastard>
-References: <533EE547.3030504@numascale.com>
- <20140404205604.GC10275@thunk.org>
- <533F7851.30803@numascale.com>
- <20140407141935.GA22171@quack.suse.cz>
- <87bnwdjdoj.fsf@tassilo.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bnwdjdoj.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756509AbaDHKdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:33:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57010 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754579AbaDHKdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:33:33 -0400
+Message-ID: <1396953211.25633.16.camel@linux-fkkt.site>
+Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
+From: Oliver Neukum <oneukum@suse.de>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Xiao Jin <jin.xiao@intel.com>, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
+Date: Tue, 08 Apr 2014 12:33:31 +0200
+In-Reply-To: <20140408073306.GB25779@localhost>
+References: <53436770.9090008@intel.com> <20140408073306.GB25779@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 09:40:28AM -0700, Andi Kleen wrote:
-> Jan Kara <jack@suse.cz> writes:
+On Tue, 2014-04-08 at 09:33 +0200, Johan Hovold wrote:
+> On Tue, Apr 08, 2014 at 11:05:20AM +0800, Xiao Jin wrote:
+
+> > (2) acm tty port ASYNCB_INITIALIZED flag will be cleared when
+> > close. If acm resume callback run after ASYNCB_INITIALIZED flag
+> > cleared, there will have no chance for delayed write to start.
+> > That lead to acm_wb.use can't be cleared. If user space open
+> > acm tty again and try to setd, tty will be blocked in
+> > tty_wait_until_sent for ever.
 > >
-> > What we really need is a counter where we can better estimate counts
-> > accumulated in the percpu part of it. As the counter approaches zero, it's
-> > CPU overhead will have to become that of a single locked variable but when
-> > the value of counter is relatively high, we want it to be fast as the
-> > percpu one.  Possibly, each CPU could "reserve" part of the value in the
-> > counter (by just decrementing the total value; how large that part should
-> > be really needs to depend to the total value of the counter and number of
-> > CPUs - in this regard we really differ from classical percpu couters) and
-> > allocate/free using that part. If CPU cannot reserve what it is asked for
-> > anymore, it would go and steal from parts other CPUs have accumulated,
-> > returning them to global pool until it can satisfy the allocation.
+> > This patch have two modification.
+> > (1) use list_head to save the write acm_wb during acm suspend.
+> > It can ensure no acm write abandoned.
+> > (2) enable flush buffer callback when acm tty close. acm delayed
+> > wb will start before acm port shutdown callback, it make sure
+> > the delayed acm_wb.use to be cleared. The patch also clear
+> > acm_wb.use and acm.transmitting when port shutdown.
+> 
+> This is not the right way to do this. See below.
 
-Yup, that's pretty much what the slow path/fast path breakdown of
-the xfs_icsb_* (XFS In-Core Super Block) code in fs/xfs/xfs_mount.c
-does. :)
+If I see this correctly, then ASYNCB_INITIALIZED is cleared in
+tty_port_close() we is called from acm_tty_close(). Thus it should
+be enough to make sure that the device is resumed at the beginning
+of acm_tty_close() and acm_resume() will do the job automatically.
+What do you think?
 
-It distributes free space across all the CPUs and
-rebalances them when a per-CPu counter runs out. And to avoid lots
-of rebalances when ENOSPC approaches (512 blocks per CPU, IIRC),
-it disables the per-CPU counters completely and falls back to a
-global counter protected by a mutex to avoid wasting hundreds of
-CPUs spinning on a contended global lock. When the free space goes
-back above that threshold, it returns to per-cpu mode (the fast
-path code).
+	Regards
+		Oliver
 
-> That's a percpu_counter() isn't it? (or cookie jar)
 
-No. percpu_counters do not guarantee accuracy nor can the counters
-be externally serialised for things like concurrent ENOSPC detection
-that require a guarantee that the counter never, ever goes below
-zero.
-
-> The MM uses similar techniques.
-
-I haven't seen anything else that uses similar techniques to the XFS
-code - I wrote it back in 2005 before there was generic per-cpu
-counter infrastructure, and I've been keeping an eye out as
-to whether it could be replaced with generic code ever since....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
