@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166AbaDHO1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 10:27:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34701 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757275AbaDHO13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 10:27:29 -0400
-Date: Tue, 8 Apr 2014 16:27:26 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 0/8 v4] printk: Cleanups and softlockup avoidance
-Message-ID: <20140408142726.GB9551@quack.suse.cz>
-References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	id S1757251AbaDHO1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 10:27:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50455 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757197AbaDHO1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 10:27:10 -0400
+Message-ID: <53440730.3070507@oracle.com>
+Date: Tue, 08 Apr 2014 10:26:56 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395770101-24534-1-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>, fweisbec@gmail.com,
+        Ingo Molnar <mingo@kernel.org>
+CC: Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: ftrace: ftrace_bug, ftrace failed to modify nva3_ram_init
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25-03-14 18:54:53, Jan Kara wrote:
->   Hello,
-> 
->   this is another revision of the printk softlockup series.
-> 
-> Changes since v3:
-> Fixed bogus warning in console_try_lock_spin() in non-preemptible kernels.
-> Fixed infinite loop in console_flush() when console was suspended.
-> 
-> Changes since v2:
-> I have fixed up some small problems pointed out by Andrew, added possibility to
-> configure out the printk offloading logic (for small systems), and offload
-> kthreads are now started only once printk.offload_chars is set to value > 0.
-> 
-> Intro for the newcomers to the series below.
-  Ping Andrew?
+Hi all,
 
-								Honza
-> 
-> ---
-> 
-> Currently, console_unlock() prints messages from kernel printk buffer to
-> console while the buffer is non-empty. When serial console is attached,
-> printing is slow and thus other CPUs in the system have plenty of time
-> to append new messages to the buffer while one CPU is printing. Thus the
-> CPU can spend unbounded amount of time doing printing in console_unlock().
-> This is especially serious since vprintk_emit() calls console_unlock()
-> with interrupts disabled.
->     
-> In practice users have observed a CPU can spend tens of seconds printing
-> in console_unlock() (usually during boot when hundreds of SCSI devices
-> are discovered) resulting in RCU stalls (CPU doing printing doesn't
-> reach quiescent state for a long time), softlockup reports (IPIs for the
-> printing CPU don't get served and thus other CPUs are spinning waiting
-> for the printing CPU to process IPIs), and eventually a machine death
-> (as messages from stalls and lockups append to printk buffer faster than
-> we are able to print). So these machines are unable to boot with serial
-> console attached. Also during artificial stress testing SATA disk
-> disappears from the system because its interrupts aren't served for too
-> long.
-> 
-> This is a revised series using my new approach to the problem which doesn't
-> let CPU out of console_unlock() until there's someone else to take over the
-> printing. The main difference since the last version is that instead of
-> passing printing duty to different CPUs via IPIs we use dedicated kthreads.
-> This method is somewhat less reliable (in a sense that there are more
-> situations in which handover needn't work at all - e.g. when the currently
-> printing CPU holds a spinlock and the CPU where kthread is scheduled to run is
-> spinning on this spinlock) but the code is much simpler and in my practical
-> testing kthread approach was good enough to avoid any problems (with one
-> exception - see patch 8/8).
-> 
-> 								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel, I've stumbled on the following:
+
+[ 2983.109380] WARNING: CPU: 0 PID: 744 at kernel/trace/ftrace.c:1704 ftrace_bug+0xb0/0x280()
+[ 2983.110893] Modules linked in:
+[ 2983.111439] CPU: 0 PID: 744 Comm: trinity-main Tainted: G        W     3.14.0-next-20140407-sasha-00023-gd35b0d6 #382
+[ 2983.112845]  0000000000000009 ffff88002c4e3b88 ffffffffa252ee51 0000000000002420
+[ 2983.113993]  0000000000000000 ffff88002c4e3bc8 ffffffff9f15a2dc ffffffff9fffffc0
+[ 2983.115134]  ffff88018aaad530 ffffffffa0000000 000000000000ad53 ffffffffa6486e10
+[ 2983.116221] Call Trace:
+[ 2983.116603] dump_stack (lib/dump_stack.c:52)
+[ 2983.117306] warn_slowpath_common (kernel/panic.c:419)
+[ 2983.118252] ? nva3_ram_prog (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:318)
+[ 2983.119091] ? nva3_ram_tidy (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:326)
+[ 2983.119836] ? __fentry__ (arch/x86/kernel/entry_64.S:106)
+[ 2983.121379] warn_slowpath_null (kernel/panic.c:454)
+[ 2983.122635] ftrace_bug (kernel/trace/ftrace.c:1704 (discriminator 3))
+[ 2983.123688] ftrace_replace_code (arch/x86/kernel/ftrace.c:625 (discriminator 3))
+[ 2983.124938] ftrace_modify_all_code (kernel/trace/ftrace.c:2011)
+[ 2983.126208] arch_ftrace_update_code (arch/x86/include/asm/atomic.h:103 arch/x86/kernel/ftrace.c:680)
+[ 2983.127613] ftrace_run_update_code (kernel/trace/ftrace.c:2088)
+[ 2983.128540] ftrace_startup_enable (kernel/trace/ftrace.c:2114)
+[ 2983.129392] ftrace_startup (kernel/trace/ftrace.c:2146)
+[ 2983.130679] register_ftrace_function (kernel/trace/ftrace.c:4864)
+[ 2983.131667] perf_ftrace_event_register (kernel/trace/trace_event_perf.c:356)
+[ 2983.132590] perf_trace_init (kernel/trace/trace_event_perf.c:187 kernel/trace/trace_event_perf.c:206)
+[ 2983.133377] ? __lock_is_held (kernel/locking/lockdep.c:3516)
+[ 2983.134181] perf_tp_event_init (kernel/events/core.c:5937)
+[ 2983.135043] perf_init_event (kernel/events/core.c:6598)
+[ 2983.135882] ? perf_pmu_unregister (kernel/events/core.c:6577)
+[ 2983.136803] perf_event_alloc (kernel/events/core.c:6754)
+[ 2983.137831] SYSC_perf_event_open (kernel/events/core.c:7062)
+[ 2983.138798] ? preempt_count_sub (kernel/sched/core.c:2526)
+[ 2983.139643] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+[ 2983.140912] ? context_tracking_user_exit (arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+[ 2983.141941] SyS_perf_event_open (kernel/events/core.c:6990)
+[ 2983.142771] tracesys (arch/x86/kernel/entry_64.S:749)
+[ 2983.144740] ---[ end trace 6321065f5978f85b ]---
+[ 2983.145355] ftrace failed to modify nva3_ram_init (drivers/gpu/drm/nouveau/core/subdev/fb/ramnva3.c:326)
+[ 2983.146357]  actual: 90:66:66:66:90
+[ 2983.147116] Failed on adding breakpoints (44371):
+
+
+Thanks,
+Sasha
