@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504AbaDHLiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 07:38:00 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:46713 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216AbaDHLh6 (ORCPT
+	id S1756477AbaDHLnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:43:40 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:33728 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454AbaDHLni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 07:37:58 -0400
-Date: Tue, 8 Apr 2014 12:37:51 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger <rogerable@realtek.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
-Subject: Re: [PATCH v5 3/3] memstick: Add realtek USB memstick host driver
-Message-ID: <20140408113751.GG8888@lee--X1>
-References: <1395744293-24398-1-git-send-email-rogerable@realtek.com>
- <1395744293-24398-4-git-send-email-rogerable@realtek.com>
- <533A3080.2020008@realtek.com>
- <20140401150654.fe27636428a62fdf9e0d2dc1@linux-foundation.org>
- <20140402151654.GA24060@lee--X1>
- <5343ADFA.7010703@realtek.com>
+	Tue, 8 Apr 2014 07:43:38 -0400
+Message-ID: <5343E0E3.70808@hitachi.com>
+Date: Tue, 08 Apr 2014 20:43:31 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5343ADFA.7010703@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/6] uprobes/x86: fix the reprel jmp/call handling
+References: <20140404185038.GA14679@redhat.com> <20140404193226.GA23092@redhat.com> <1396655065.4769.8.camel@oc7886638347.ibm.com.usor.ibm.com> <20140406201524.GA32694@redhat.com>
+In-Reply-To: <20140406201524.GA32694@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>>From: Roger Tseng <rogerable@realtek.com>
-> >>>>
-> >>>>Realtek USB memstick host driver provides memstick host support based on the
-> >>>>Realtek USB card reader MFD driver.
-> >>>>
-> >>>>Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> >>>>---
-> >>>>   drivers/memstick/host/Kconfig       |  10 +
-> >>>>   drivers/memstick/host/Makefile      |   1 +
-> >>>>   drivers/memstick/host/rtsx_usb_ms.c | 839 ++++++++++++++++++++++++++++++++++++
-> >>>>   3 files changed, 850 insertions(+)
-> >>>>   create mode 100644 drivers/memstick/host/rtsx_usb_ms.c
-> >>>Hi Andrew,
-> >>>
-> >>>Since I'll have to send next revision(v6, to modify patch 1/3) and
-> >>>you've commented v4, would you also comment or Ack the 3/3 of this one?
-> >>>This should save one revision for me to make any necessary change.
-> >>
-> >>It looks OK to my inexpert eye.  It would be better if Maxim and/or Alex
-> >>could review the code.  If that doesn't happen then I guess the best we
-> >>can do is to go ahead and merge it.  Have you worked out via which tree
-> >>the patches will be merged?
-> >
-> >I'll be happy to take the set if one of the subsystem experts would be
-> >kind enough to cast an eye over it.
-> >
-> >Maxim, Alex?
-> >
-> Lee,
+(2014/04/07 5:15), Oleg Nesterov wrote:
+> On 04/04, Jim Keniston wrote:
+>>
+>> On Fri, 2014-04-04 at 21:32 +0200, Oleg Nesterov wrote:
+>>>
+>>> 	1. Why insn_get_displacement() doesn't work? See "HELP!!!"
+>>> 	   below.
+>>
+>> insn->moffset1.value seems to be what you want.
 > 
-> When I prepare my next submission, I found a previous version of
-> this patch set(and only the 1/3 'mfd' part)  seems to be merged in
-> the following commit:
+> Works! Thanks a lot.
 > 
-> commit e5744abb2fa3629aa5a94e21ca1eae32ff2fe00b
-> Merge: c29aa15 2d28ca7
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Mon Apr 7 10:24:18 2014 -0700
-> 
->     Merge tag 'mfd-for-linus-3.15' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd
-> 
-> Is there any chance to revert it? Or what can I do to help current
-> situation?
+> Still I can't understand why displacement.nbytes == 0 in this case...
+> Nevermind.
 
-What will happen if we don't revert it? Does it depend on something
-else?
+I guess that you misunderstanding what the displacement means.
+insn->displacement means what x86 instruction encoding as
+"displacement" bytes, which is an extension of addressing mode.
 
-> note: the merged commit:
-> commit 730876be256603b4ee7225a125467d97a7ce9060
-> Author: Roger Tseng <rogerable@realtek.com>
-> Date:   Wed Feb 12 18:00:36 2014 +0800
+The relative Jumps are JMP(near) which operand is Jz,
+and JMP(short) which operand is Jb, according to the Intel SDM 2b
+appendix A2.
+
+According to SDM2b A.2.1 and A.2.2, the J means
+  ----
+  The instruction contains a relative offset to be added to the instruction
+  pointer register (for example, JMP (0E9), LOOP).
+  ----
+
+and z and b means
+  ----
+  b	Byte, regardless of operand-size attribute.
+  z 	Word for 16-bit operand-size or doubleword for 32 or 64-bit operand-size.
+  ----
+Ok, so these are have one immediate operand which has 1,2(word),
+4(doubleword) bytes.
+In that case, you should use insn->immediate, instead of insn->moffset1 which
+is only for MOV(A0-A3) on x86-64. (please see Intel SDM2a 2.2.1.4)
+
+Thank you,
+
+> OK. Please see the RFC changes. Obviously not for inclusion yet. And
+> totally untested, except I verified that the test-case from 4/6 works.
 > 
->     mfd: Add realtek USB card reader driver
+> Please comment.
+> 
+> Oleg.
 > 
 > 
-> Best regards,
-> Roger Tseng
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
