@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757655AbaDHTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 15:02:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757448AbaDHTC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 15:02:57 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
-        mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
-        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, riel@redhat.com, n-horiguchi@ah.jp.nec.com
-Subject: [PATCH 1/5] hugetlb: prep_compound_gigantic_page(): drop __init marker
-Date: Tue,  8 Apr 2014 15:02:16 -0400
-Message-Id: <1396983740-26047-2-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1396983740-26047-1-git-send-email-lcapitulino@redhat.com>
-References: <1396983740-26047-1-git-send-email-lcapitulino@redhat.com>
+	id S1758015AbaDHTDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 15:03:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55557 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548AbaDHTC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 15:02:58 -0400
+Date: Tue, 8 Apr 2014 12:02:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 0/8 v4] printk: Cleanups and softlockup avoidance
+Message-Id: <20140408120256.d0e838a441cfcc8e9d65a62b@linux-foundation.org>
+In-Reply-To: <20140408142726.GB9551@quack.suse.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	<20140408142726.GB9551@quack.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is going to be used by non-init code in a future
-commit.
+On Tue, 8 Apr 2014 16:27:26 +0200 Jan Kara <jack@suse.cz> wrote:
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
----
- mm/hugetlb.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> On Tue 25-03-14 18:54:53, Jan Kara wrote:
+> >   Hello,
+> > 
+> >   this is another revision of the printk softlockup series.
+> > 
+> > Changes since v3:
+> > Fixed bogus warning in console_try_lock_spin() in non-preemptible kernels.
+> > Fixed infinite loop in console_flush() when console was suspended.
+> > 
+> > Changes since v2:
+> > I have fixed up some small problems pointed out by Andrew, added possibility to
+> > configure out the printk offloading logic (for small systems), and offload
+> > kthreads are now started only once printk.offload_chars is set to value > 0.
+> > 
+> > Intro for the newcomers to the series below.
+>   Ping Andrew?
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 7c02b9d..319db28 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -689,8 +689,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
- 	put_page(page); /* free it into the hugepage allocator */
- }
- 
--static void __init prep_compound_gigantic_page(struct page *page,
--					       unsigned long order)
-+static void prep_compound_gigantic_page(struct page *page, unsigned long order)
- {
- 	int i;
- 	int nr_pages = 1 << order;
--- 
-1.8.1.4
-
+I buffer up new material before and during the merge window.  Uncorkage
+will happen later this week.
