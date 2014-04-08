@@ -1,317 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191AbaDHCAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Apr 2014 22:00:24 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45394 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756103AbaDHB7u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Apr 2014 21:59:50 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <534357D7.1090402@jp.fujitsu.com>
-Date: Tue, 8 Apr 2014 10:58:47 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Luiz Capitulino <lcapitulino@redhat.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <mtosatti@redhat.com>, <aarcange@redhat.com>, <mgorman@suse.de>,
-        <akpm@linux-foundation.org>, <andi@firstfloor.org>, <davidlohr@hp.com>,
-        <rientjes@google.com>, <yinghai@kernel.org>, <riel@redhat.com>
-Subject: Re: [PATCH 4/4] hugetlb: add support for gigantic page allocation
- at runtime
-References: <1396462128-32626-1-git-send-email-lcapitulino@redhat.com> <1396462128-32626-5-git-send-email-lcapitulino@redhat.com> <533E216D.1050609@jp.fujitsu.com> <20140404093046.35c8d245@redhat.com>
-In-Reply-To: <20140404093046.35c8d245@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	id S1756175AbaDHCAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Apr 2014 22:00:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26282 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756096AbaDHB7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Apr 2014 21:59:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,814,1389772800"; 
+   d="scan'208";a="488940416"
+From: Jon Mason <jon.mason@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>
+Subject: [PATCH 8/9] ntb: Split ntb_setup_msix() into separate BWD/SNB routines
+Date: Mon,  7 Apr 2014 17:52:53 -0700
+Message-Id: <1396918374-5196-9-git-send-email-jon.mason@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
+References: <1396918374-5196-1-git-send-email-jon.mason@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/04 22:30), Luiz Capitulino wrote:
-> On Fri, 4 Apr 2014 12:05:17 +0900
-> Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
->
->> (2014/04/03 3:08), Luiz Capitulino wrote:
->>> HugeTLB is limited to allocating hugepages whose size are less than
->>> MAX_ORDER order. This is so because HugeTLB allocates hugepages via
->>> the buddy allocator. Gigantic pages (that is, pages whose size is
->>> greater than MAX_ORDER order) have to be allocated at boottime.
->>>
->>> However, boottime allocation has at least two serious problems. First,
->>> it doesn't support NUMA and second, gigantic pages allocated at
->>> boottime can't be freed.
->>>
->>> This commit solves both issues by adding support for allocating gigantic
->>> pages during runtime. It works just like regular sized hugepages,
->>> meaning that the interface in sysfs is the same, it supports NUMA,
->>> and gigantic pages can be freed.
->>>
->>> For example, on x86_64 gigantic pages are 1GB big. To allocate two 1G
->>> gigantic pages on node 1, one can do:
->>>
->>>    # echo 2 > \
->>>      /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
->>>
->>> And to free them later:
->>>
->>>    # echo 0 > \
->>>      /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
->>>
->>> The one problem with gigantic page allocation at runtime is that it
->>> can't be serviced by the buddy allocator. To overcome that problem, this
->>> series scans all zones from a node looking for a large enough contiguous
->>> region. When one is found, it's allocated by using CMA, that is, we call
->>> alloc_contig_range() to do the actual allocation. For example, on x86_64
->>> we scan all zones looking for a 1GB contiguous region. When one is found
->>> it's allocated by alloc_contig_range().
->>>
->>> One expected issue with that approach is that such gigantic contiguous
->>> regions tend to vanish as time goes by. The best way to avoid this for
->>> now is to make gigantic page allocations very early during boot, say
->>> from a init script. Other possible optimization include using compaction,
->>> which is supported by CMA but is not explicitly used by this commit.
->>>
->>> It's also important to note the following:
->>>
->>>    1. My target systems are x86_64 machines, so I have only tested 1GB
->>>       pages allocation/release. I did try to make this arch indepedent
->>>       and expect it to work on other archs but didn't try it myself
->>>
->>>    2. I didn't add support for hugepage overcommit, that is allocating
->>>       a gigantic page on demand when
->>>      /proc/sys/vm/nr_overcommit_hugepages > 0. The reason is that I don't
->>>      think it's reasonable to do the hard and long work required for
->>>      allocating a gigantic page at fault time. But it should be simple
->>>      to add this if wanted
->>>
->>> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
->>> ---
->>>    arch/x86/include/asm/hugetlb.h |  10 +++
->>>    mm/hugetlb.c                   | 177 ++++++++++++++++++++++++++++++++++++++---
->>>    2 files changed, 176 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
->>> index a809121..2b262f7 100644
->>> --- a/arch/x86/include/asm/hugetlb.h
->>> +++ b/arch/x86/include/asm/hugetlb.h
->>> @@ -91,6 +91,16 @@ static inline void arch_release_hugepage(struct page *page)
+From: Alexander Gordeev <agordeev@redhat.com>
 
-<snip>
+This is an cleanup effort to make ntb_setup_msix() more
+readable - use ntb_setup_bwd_msix() to init MSI-Xs on
+BWD hardware and ntb_setup_snb_msix() - on SNB hardware.
 
->>
->>> +		start_pfn = z->zone_start_pfn; /* to silence gcc */
->>> +		for (i = z->zone_start_pfn; i < zone_end_pfn(z); i++) {
->>
->> This loop is not smart. On our system, one node has serveral TBytes.
->> So the maximum loop count is "TBytes/Page size".
->
-> Interesting. Would you be willing to test this series on such a
-> machine?
->
->> First page of gigantic page must be aligned.
->> So how about it:
->>
->> 		start_pfn = zone_start_pfn aligned gigantic page
->> 		for (i = start_pfn; i < zone_end_pfn; i += size of gigantic page) {
->> 			if (!pfn_valid_gigantic(i)) {
->> 				count = 0;
->> 				continue;
->> 			}
->> 			
->> 			...
->> 		}
->
-> I'm not sure that very loop will work because pfn_valid_gigantic() checks
-> a single PFN today, but we do have to scan every single PFN on a gigantic
-> page range.
->
+Function ntb_setup_snb_msix() also initializes MSI-Xs the
+way it should has been done - looping pci_enable_msix()
+until success or failure.
 
-> On the other hand, I think got what you're suggesting. When an unsuitable
-> PFN is found, we should just skip to the next aligned PFN instead of
-> keep scanning for nothing (which is what my loop does today). Maybe you're
-> suggesting pfn_valid_gigantic() should do that?
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Signed-off-by: Jon Mason <jon.mason@intel.com>
+---
+ drivers/ntb/ntb_hw.c | 167 +++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 102 insertions(+), 65 deletions(-)
 
-That's right.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
-> Anyway, I'll make that change, thank you very much for you review!
->
->>
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>> +			if (!pfn_valid_gigantic(i)) {
->>> +				count = 0;
->>> +				continue;
->>> +			}
->>> +			if (!count) {
->>> +				if (!pfn_aligned_gigantic(i, order))
->>> +					continue;
->>> +				start_pfn = i;
->>> +			}
->>> +			if (++count == nr_pages) {
->>> +				/*
->>> +				 * We release the zone lock here because
->>> +				 * alloc_contig_range() will also lock the zone
->>> +				 * at some point. If there's an allocation
->>> +				 * spinning on this lock, it may win the race
->>> +				 * and cause alloc_contig_range() to fail...
->>> +				 */
->>> +				spin_unlock_irqrestore(&z->lock, flags);
->>> +				ret = __alloc_gigantic_page(start_pfn, count);
->>> +				if (!ret)
->>> +					return pfn_to_page(start_pfn);
->>> +				count = 0;
->>> +				spin_lock_irqsave(&z->lock, flags);
->>> +			}
->>> +		}
->>> +
->>> +		spin_unlock_irqrestore(&z->lock, flags);
->>> +	}
->>> +
->>> +	return NULL;
->>> +}
->>> +
->>> +static void prep_new_huge_page(struct hstate *h, struct page *page, int nid);
->>> +static void prep_compound_gigantic_page(struct page *page, unsigned long order);
->>> +
->>> +static struct page *alloc_fresh_gigantic_page_node(struct hstate *h, int nid)
->>> +{
->>> +	struct page *page;
->>> +
->>> +	page = alloc_gigantic_page(nid, huge_page_order(h));
->>> +	if (page) {
->>> +		if (arch_prepare_gigantic_page(page)) {
->>> +			free_gigantic_page(page, huge_page_order(h));
->>> +			return NULL;
->>> +		}
->>> +		prep_compound_gigantic_page(page, huge_page_order(h));
->>> +		prep_new_huge_page(h, page, nid);
->>> +	}
->>> +
->>> +	return page;
->>> +}
->>> +
->>> +static int alloc_fresh_gigantic_page(struct hstate *h,
->>> +				nodemask_t *nodes_allowed)
->>> +{
->>> +	struct page *page = NULL;
->>> +	int nr_nodes, node;
->>> +
->>> +	for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
->>> +		page = alloc_fresh_gigantic_page_node(h, node);
->>> +		if (page)
->>> +			return 1;
->>> +	}
->>> +
->>> +	return 0;
->>> +}
->>> +
->>> +static inline bool gigantic_page_supported(void) { return true; }
->>> +#else /* !CONFIG_CMA */
->>> +static inline bool gigantic_page_supported(void) { return false; }
->>> +static inline void free_gigantic_page(struct page *page, unsigned order) { }
->>> +static inline void destroy_compound_gigantic_page(struct page *page,
->>> +						unsigned long order) { }
->>> +static inline int alloc_fresh_gigantic_page(struct hstate *h,
->>> +					nodemask_t *nodes_allowed) { return 0; }
->>> +#endif /* CONFIG_CMA */
->>> +
->>>    static void update_and_free_page(struct hstate *h, struct page *page)
->>>    {
->>>    	int i;
->>>
->>> -	VM_BUG_ON(hstate_is_gigantic(h));
->>> +	if (hstate_is_gigantic(h) && !gigantic_page_supported())
->>> +		return;
->>>
->>>    	h->nr_huge_pages--;
->>>    	h->nr_huge_pages_node[page_to_nid(page)]--;
->>> @@ -661,8 +809,14 @@ static void update_and_free_page(struct hstate *h, struct page *page)
->>>    	VM_BUG_ON_PAGE(hugetlb_cgroup_from_page(page), page);
->>>    	set_compound_page_dtor(page, NULL);
->>>    	set_page_refcounted(page);
->>> -	arch_release_hugepage(page);
->>> -	__free_pages(page, huge_page_order(h));
->>> +	if (hstate_is_gigantic(h)) {
->>> +		arch_release_gigantic_page(page);
->>> +		destroy_compound_gigantic_page(page, huge_page_order(h));
->>> +		free_gigantic_page(page, huge_page_order(h));
->>> +	} else {
->>> +		arch_release_hugepage(page);
->>> +		__free_pages(page, huge_page_order(h));
->>> +	}
->>>    }
->>>
->>>    struct hstate *size_to_hstate(unsigned long size)
->>> @@ -701,7 +855,7 @@ static void free_huge_page(struct page *page)
->>>    	if (restore_reserve)
->>>    		h->resv_huge_pages++;
->>>
->>> -	if (h->surplus_huge_pages_node[nid] && !hstate_is_gigantic(h)) {
->>> +	if (h->surplus_huge_pages_node[nid]) {
->>>    		/* remove the page from active list */
->>>    		list_del(&page->lru);
->>>    		update_and_free_page(h, page);
->>> @@ -805,9 +959,6 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
->>>    {
->>>    	struct page *page;
->>>
->>> -	if (hstate_is_gigantic(h))
->>> -		return NULL;
->>> -
->>>    	page = alloc_pages_exact_node(nid,
->>>    		htlb_alloc_mask(h)|__GFP_COMP|__GFP_THISNODE|
->>>    						__GFP_REPEAT|__GFP_NOWARN,
->>> @@ -1452,7 +1603,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
->>>    {
->>>    	unsigned long min_count, ret;
->>>
->>> -	if (hstate_is_gigantic(h))
->>> +	if (hstate_is_gigantic(h) && !gigantic_page_supported())
->>>    		return h->max_huge_pages;
->>>
->>>    	/*
->>> @@ -1479,7 +1630,11 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
->>>    		 * and reducing the surplus.
->>>    		 */
->>>    		spin_unlock(&hugetlb_lock);
->>> -		ret = alloc_fresh_huge_page(h, nodes_allowed);
->>> +		if (hstate_is_gigantic(h)) {
->>> +			ret = alloc_fresh_gigantic_page(h, nodes_allowed);
->>> +		} else {
->>> +			ret = alloc_fresh_huge_page(h, nodes_allowed);
->>> +		}
->>>    		spin_lock(&hugetlb_lock);
->>>    		if (!ret)
->>>    			goto out;
->>> @@ -1578,7 +1733,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
->>>    		goto out;
->>>
->>>    	h = kobj_to_hstate(kobj, &nid);
->>> -	if (hstate_is_gigantic(h)) {
->>> +	if (hstate_is_gigantic(h) && !gigantic_page_supported()) {
->>>    		err = -EINVAL;
->>>    		goto out;
->>>    	}
->>> @@ -2072,7 +2227,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
->>>
->>>    	tmp = h->max_huge_pages;
->>>
->>> -	if (write && hstate_is_gigantic(h))
->>> +	if (write && hstate_is_gigantic(h) && !gigantic_page_supported())
->>>    		return -EINVAL;
->>>
->>>    	table->data = &tmp;
->>>
->>
->>
->
-
+diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+index 06d605c..22a7eb4 100644
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -1080,10 +1080,106 @@ static irqreturn_t ntb_interrupt(int irq, void *dev)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int ntb_setup_msix(struct ntb_device *ndev)
++static int ntb_setup_snb_msix(struct ntb_device *ndev, int msix_entries)
+ {
+ 	struct pci_dev *pdev = ndev->pdev;
+ 	struct msix_entry *msix;
++	int rc, i;
++
++	if (msix_entries < ndev->limits.msix_cnt)
++		return -ENOSPC;
++
++	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
++	if (rc < 0)
++		return rc;
++	else if (rc > 0)
++		return -ENOSPC;
++
++	for (i = 0; i < msix_entries; i++) {
++		msix = &ndev->msix_entries[i];
++		WARN_ON(!msix->vector);
++
++		if (i == msix_entries - 1) {
++			rc = request_irq(msix->vector,
++					 xeon_event_msix_irq, 0,
++					 "ntb-event-msix", ndev);
++			if (rc)
++				goto err;
++		} else {
++			rc = request_irq(msix->vector,
++					 xeon_callback_msix_irq, 0,
++					 "ntb-callback-msix",
++					 &ndev->db_cb[i]);
++			if (rc)
++				goto err;
++		}
++	}
++
++	ndev->num_msix = msix_entries;
++	ndev->max_cbs = msix_entries - 1;
++
++	return 0;
++
++err:
++	while (--i >= 0) {
++		/* Code never reaches here for entry nr 'ndev->num_msix - 1' */
++		msix = &ndev->msix_entries[i];
++		free_irq(msix->vector, &ndev->db_cb[i]);
++	}
++
++	pci_disable_msix(pdev);
++	ndev->num_msix = 0;
++
++	return rc;
++}
++
++static int ntb_setup_bwd_msix(struct ntb_device *ndev, int msix_entries)
++{
++	struct pci_dev *pdev = ndev->pdev;
++	struct msix_entry *msix;
++	int rc, i;
++
++retry:
++	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
++	if (rc < 0)
++		return rc;
++	else if (rc > 0) {
++		dev_warn(&pdev->dev,
++			 "Only %d MSI-X vectors. "
++			 "Limiting the number of queues to that number.\n",
++			 rc);
++		msix_entries = rc;
++		goto retry;
++	}
++
++	for (i = 0; i < msix_entries; i++) {
++		msix = &ndev->msix_entries[i];
++		WARN_ON(!msix->vector);
++
++		rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
++				 "ntb-callback-msix", &ndev->db_cb[i]);
++		if (rc)
++			goto err;
++	}
++
++	ndev->num_msix = msix_entries;
++	ndev->max_cbs = msix_entries;
++
++	return 0;
++
++err:
++	while (--i >= 0)
++		free_irq(msix->vector, &ndev->db_cb[i]);
++
++	pci_disable_msix(pdev);
++	ndev->num_msix = 0;
++
++	return rc;
++}
++
++static int ntb_setup_msix(struct ntb_device *ndev)
++{
++	struct pci_dev *pdev = ndev->pdev;
+ 	int msix_entries;
+ 	int rc, i;
+ 
+@@ -1106,78 +1202,19 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+ 	for (i = 0; i < msix_entries; i++)
+ 		ndev->msix_entries[i].entry = i;
+ 
+-	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+-	if (rc < 0)
+-		goto err1;
+-	if (rc > 0) {
+-		/* On SNB, the link interrupt is always tied to 4th vector.  If
+-		 * we can't get all 4, then we can't use MSI-X.
+-		 */
+-		if (ndev->hw_type != BWD_HW) {
+-			rc = -EIO;
+-			goto err1;
+-		}
+-
+-		dev_warn(&pdev->dev,
+-			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
+-			 rc);
+-		msix_entries = rc;
+-
+-		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+-		if (rc)
+-			goto err1;
+-	}
+-
+-	for (i = 0; i < msix_entries; i++) {
+-		msix = &ndev->msix_entries[i];
+-		WARN_ON(!msix->vector);
+-
+-		/* Use the last MSI-X vector for Link status */
+-		if (ndev->hw_type == BWD_HW) {
+-			rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
+-					 "ntb-callback-msix", &ndev->db_cb[i]);
+-			if (rc)
+-				goto err2;
+-		} else {
+-			if (i == msix_entries - 1) {
+-				rc = request_irq(msix->vector,
+-						 xeon_event_msix_irq, 0,
+-						 "ntb-event-msix", ndev);
+-				if (rc)
+-					goto err2;
+-			} else {
+-				rc = request_irq(msix->vector,
+-						 xeon_callback_msix_irq, 0,
+-						 "ntb-callback-msix",
+-						 &ndev->db_cb[i]);
+-				if (rc)
+-					goto err2;
+-			}
+-		}
+-	}
+-
+-	ndev->num_msix = msix_entries;
+ 	if (ndev->hw_type == BWD_HW)
+-		ndev->max_cbs = msix_entries;
++		rc = ntb_setup_bwd_msix(ndev, msix_entries);
+ 	else
+-		ndev->max_cbs = msix_entries - 1;
++		rc = ntb_setup_snb_msix(ndev, msix_entries);
++	if (rc)
++		goto err1;
+ 
+ 	return 0;
+ 
+-err2:
+-	while (--i >= 0) {
+-		msix = &ndev->msix_entries[i];
+-		if (ndev->hw_type != BWD_HW && i == ndev->num_msix - 1)
+-			free_irq(msix->vector, ndev);
+-		else
+-			free_irq(msix->vector, &ndev->db_cb[i]);
+-	}
+-	pci_disable_msix(pdev);
+ err1:
+ 	kfree(ndev->msix_entries);
+-	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
+ err:
+-	ndev->num_msix = 0;
++	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
+ 	return rc;
+ }
+ 
+-- 
+1.8.3.2
 
