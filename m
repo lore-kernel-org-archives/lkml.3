@@ -1,80 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678AbaDHMOD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 08:14:03 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62674 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756604AbaDHMN7 (ORCPT
+	id S1756719AbaDHMOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 08:14:15 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:52147 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756604AbaDHMOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 08:13:59 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Stephen Chandler Paul <thatslyude@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Rutledge <shawn.t.rutledge@gmail.com>
-Subject: Re: [PATCH] Favor native backlight interface for ThinkPad Helix
-Date: Tue, 08 Apr 2014 14:29:58 +0200
-Message-ID: <1774484.W0F2y2oSm2@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <534363AD.9070401@intel.com>
-References: <1396622686-6373-1-git-send-email-thatslyude@gmail.com> <534363AD.9070401@intel.com>
+	Tue, 8 Apr 2014 08:14:10 -0400
+Date: Tue, 8 Apr 2014 13:14:00 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: matt.fleming@intel.com, ak@linux.intel.com, thomas@archlinux.org,
+        viro@zeniv.linux.org.uk, geert@linux-m68k.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, tpowa@archlinux.org, hpa@zytor.com
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+Message-ID: <20140408121400.GI5222@console-pimps.org>
+References: <20140407173016.GU32556@tassilo.jf.intel.com>
+ <5342E46B.4080603@archlinux.org>
+ <53430646.40507@archlinux.org>
+ <20140407204221.GW32556@tassilo.jf.intel.com>
+ <CAL01qpvjZz-XnVT+S3E5E2XGcuFoetE5cwnArYfW-TwYZVKtKw@mail.gmail.com>
+ <201404080646.BID87018.SOOVJMFOLFtQHF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201404080646.BID87018.SOOVJMFOLFtQHF@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 08, 2014 10:49:17 AM Aaron Lu wrote:
-> On 04/04/2014 10:44 PM, Stephen Chandler Paul wrote:
-> > Like many other Windows 8 laptops the ThinkPad Helix's backlight has a
-> > broken ACPI interface and can only be properly adjusted by using the
-> > video card's native backlight control. This adds the ThinkPad Helix to
-> > the list of laptops affected with this issue so that
-> > video.use_native_backlight is enabled by default.
-> 
-> It would be good to attach your acpidump so that we know for sure and if
-> one day we need to remove this entry, we can verify its table.
-> 
-> Bug 51231 is tracking this problem and mostly are thinkpad laptops, so
-> please attach your acpidump and dmi there, thanks.
-> https://bugzilla.kernel.org/show_bug.cgi?id=51231
-
-I've queued this patch up for the next ACPI pull request.  We'll revert it
-if it turns out to be incorrect.
-
-> > Signed-off-by: Stephen Chandler Paul <thatslyude@gmail.com>
-> > ---
-> >  drivers/acpi/video.c | 8 ++++++++
-> >  1 file changed, 8 insertions(+)
+On Tue, 08 Apr, at 06:46:49AM, Tetsuo Handa wrote:
+> Fleming, Matt wrote:
+> > On 7 April 2014 21:42, Andi Kleen <ak@linux.intel.com> wrote:
+> > >
+> > > This sounds like the UEFI boot corrupts some memory?
 > > 
-> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> > index 48c7e8a..8b6990e 100644
-> > --- a/drivers/acpi/video.c
-> > +++ b/drivers/acpi/video.c
-> > @@ -488,6 +488,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
-> >  		},
-> >  	},
-> >  	{
-> > +	.callback = video_set_use_native_backlight,
-> > +	.ident = "Thinkpad Helix",
-> > +	.matches = {
-> > +		DMI_MATCH(DMI_SYS_Vhttps://bugzilla.kernel.org/show_bug.cgi?id=51231ENDOR, "LENOVO"),
-> > +		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
-> > +		},
-> > +	},
-> > +	{
-> >  	 .callback = video_set_use_native_backlight,
-> >  	 .ident = "Dell Inspiron 7520",
-> >  	 .matches = {
+> > Hmpf, yeah. I'll take a look in the morning.
+> > 
+> > Thomas, you mention you're running in a 32-bit vm earlier in this
+> > thread. Any chance you're using ovmf because that would make it much
+> > easier to track this down?
 > > 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I'm not familiar with UEFI boot, but it could happen because what
+> I experienced with BIOS boot was an address dependent behavior.
+> 
+> https://lkml.org/lkml/2013/9/4/188
+
+OK, that's a pretty good clue, thanks Tetsuo.
+
+Thomas, could you try this patch? It seems the use of code32_start in
+the EFI boot stub was totally wrong for the case where the boot stub
+relocates the kernel - you're likely to hit this path if using the EFI
+boot stub directly from the EFI shell or gummiboot.
+
+It was pointing at the start of the kernel image and not the protected
+mode code.
+
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 1e6146137f8e..65e7d7e0ef1b 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -1016,6 +1016,9 @@ void setup_graphics(struct boot_params *boot_params)
+  * Because the x86 boot code expects to be passed a boot_params we
+  * need to create one ourselves (usually the bootloader would create
+  * one for us).
++ *
++ * The caller is responsible for filling out ->code32_start in the
++ * returned boot_params.
+  */
+ struct boot_params *make_boot_params(struct efi_config *c)
+ {
+@@ -1081,8 +1084,6 @@ struct boot_params *make_boot_params(struct efi_config *c)
+ 	hdr->vid_mode = 0xffff;
+ 	hdr->boot_flag = 0xAA55;
+ 
+-	hdr->code32_start = (__u64)(unsigned long)image->image_base;
+-
+ 	hdr->type_of_loader = 0x21;
+ 
+ 	/* Convert unicode cmdline to ascii */
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index de9d4200d305..cbed1407a5cd 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -59,6 +59,7 @@ ENTRY(efi_pe_entry)
+ 	call	make_boot_params
+ 	cmpl	$0, %eax
+ 	je	fail
++	movl	%esi, BP_code32_start(%eax)
+ 	popl	%ecx
+ 	pushl	%eax
+ 	pushl	%ecx
+@@ -90,12 +91,7 @@ fail:
+ 	hlt
+ 	jmp	fail
+ 2:
+-	call	3f
+-3:
+-	popl	%eax
+-	subl	$3b, %eax
+-	subl	BP_pref_address(%esi), %eax
+-	add	BP_code32_start(%esi), %eax
++	movl	BP_code32_start(%esi), %eax
+ 	leal	preferred_addr(%eax), %eax
+ 	jmp	*%eax
+ 
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 57e58a5fa210..0d558ee899ae 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -261,6 +261,8 @@ ENTRY(efi_pe_entry)
+ 	cmpq	$0,%rax
+ 	je	fail
+ 	mov	%rax, %rsi
++	leaq	startup_32(%rip), %rax
++	movl	%eax, BP_code32_start(%rsi)
+ 	jmp	2f		/* Skip the relocation */
+ 
+ handover_entry:
+@@ -284,12 +286,7 @@ fail:
+ 	hlt
+ 	jmp	fail
+ 2:
+-	call	3f
+-3:
+-	popq	%rax
+-	subq	$3b, %rax
+-	subq	BP_pref_address(%rsi), %rax
+-	add	BP_code32_start(%esi), %eax
++	movl	BP_code32_start(%esi), %eax
+ 	leaq	preferred_addr(%rax), %rax
+ 	jmp	*%rax
+ 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Matt Fleming, Intel Open Source Technology Center
