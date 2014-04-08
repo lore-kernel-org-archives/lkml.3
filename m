@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756455AbaDHJyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 05:54:50 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:37720 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaDHJyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 05:54:49 -0400
-Message-ID: <1396950886.5936.12.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 1/4] cfg80211: Add attributes describing prohibited
- channel bandwidth
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Tue, 08 Apr 2014 11:54:46 +0200
-In-Reply-To: <1396445515-5808-2-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20140402_153205_125660_90C9D001)
-References: <1396445515-5808-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <1396445515-5808-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 (sfid-20140402_153205_125660_90C9D001)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756442AbaDHKI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:08:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35265 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754579AbaDHKIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:08:55 -0400
+Date: Tue, 8 Apr 2014 12:08:51 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: tthayer@altera.com
+Cc: robherring2@gmail.com, dougthompson@xmission.com, grant.likely@linaro.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, dinguyen@altera.com,
+        devicetree@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] edac: altera: Add SDRAM EDAC support for
+ CycloneV/ArriaV
+Message-ID: <20140408100851.GF30077@pd.tnic>
+References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
+ <1396907649-20212-4-git-send-email-tthayer@altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1396907649-20212-4-git-send-email-tthayer@altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 15:31 +0200, Rostislav Lisovy wrote:
-> Since there are frequency bands (e.g. 5.9GHz) allowing channels
-> with only 10 or 5 MHz bandwidth, this patch adds attributes that
-> allow keeping track about this information.
+On Mon, Apr 07, 2014 at 04:54:09PM -0500, tthayer@altera.com wrote:
+> From: Thor Thayer <tthayer@altera.com>
 > 
-> When channel attributes are reported to user-space, make sure to
-> not break old tools, i.e. if the 'split wiphy dump' is enabled,
-> report the extra attributes (if present) describing the bandwidth
-> restrictions.  If the 'split wiphy dump' is not enabled,
-> completely omit those channels that have flags set to either
-> IEEE80211_CHAN_NO_10MHZ or IEEE80211_CHAN_NO_20MHZ.
+> Added EDAC support for reporting ECC errors of CycloneV
+> and ArriaV SDRAM controller.
+> - The SDRAM Controller registers are used by the FPGA bridge so
+>   these are accessed through the syscon interface.
+> - The configuration of the SDRAM memory size for the EDAC framework
+>   is discovered from the memory node of the device tree.
+> - Documentation of the bindings in devicetree/bindings/arm/altera/
+>   socfpga-sdram-edac.txt
+> - Correction of single bit errors, detection of double bit errors.
 
-I think you should probably squash patches 1 and 2, since otherwise you
-could use the new channels?
+Before I go and take a look at this further, is anyone at Altera going
+to maintain this driver in case of bug reports and issues with it?
 
-Anyway, the patches don't seem to apply on mac80211-next, please rebase.
+Also, I see patch 3/3. Are the other two related? I see they are
+devicetree additions and, as such, all three should go together...
 
-johannes
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
