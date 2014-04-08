@@ -1,88 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076AbaDHPtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:49:49 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:36873 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326AbaDHPtp (ORCPT
+	id S932237AbaDHPvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:51:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35196 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232AbaDHPvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:49:45 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-21-53441a951e8c
-Message-id: <53441A92.7010108@samsung.com>
-Date: Tue, 08 Apr 2014 17:49:38 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Cc: mturquette@linaro.org, kgene.kim@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, kyungmin.park@samsung.com, airlied@linux.ie,
-        rob.herring@calxeda.com, sylvester.nawrocki@gmail.com,
-        a.hajda@samsung.com, kishon@ti.com
-Subject: Re: [PATCH 3/4] clk: exynos4: enable clk_set_parent() propagation for
- sclk_hdmi and sclk_mixer clocks
-References: <1396623201-26000-1-git-send-email-t.stanislaws@samsung.com>
- <1396623201-26000-4-git-send-email-t.stanislaws@samsung.com>
-In-reply-to: <1396623201-26000-4-git-send-email-t.stanislaws@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e/4Vd2pUi7BBpPfmlncWneO1aL33Ekm
-	i/lHgKwrX9+zWUy6P4HFonfBVTaLC0972CzONr1ht9j0+BqrxeVdc9gsZpzfx2TxdMJFNovD
-	Kw4wWcyY/JLNYt7nnUwW89pfsjoIeCz4fIXdY+esu+wed67tYfPY/u0Bq8f97uNMHpuX1Hv0
-	bVnF6HH8xnYmj8+b5AI4o7hsUlJzMstSi/TtErgyfnz5zVowi6+iu6GPpYHxFncXIyeHhICJ
-	xPJnk9khbDGJC/fWs3UxcnEICSxllFgy6RQjhPOZUeL+lWagDAcHr4CWRPNcdRCTRUBV4umh
-	IJBeNgE1ic8Nj9hAbH6gijVN11lAbFGBCIl7jYdZQWxeAUGJH5PvsYCMFBG4wyixtPET2DJm
-	gTeMEm9mf2QGqRIWKJC4eH4tWIeQQDujxKp7XiA2p4CnxOzzm8GmMgtYS6yctI0RwpaX2Lzm
-	LfMERsFZSJbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh8fd1B+PSY1aH
-	GAU4GJV4eCuPOAULsSaWFVfmHmKU4GBWEuH9y+cSLMSbklhZlVqUH19UmpNafIiRiYNTqoGx
-	hmcl015B3++ed9fNiZjz8V262MooeaOaOJ4LkqKbpzB4PI43XLrMYataofPaFLFXq79rs244
-	VnNd7vbnrjPG7LKmfSd+yoZovF5x/vuS+vZnF14Zfnxprh6WYSxUvdniSkrX97TDhbL/nlQc
-	trSQbhFaLfN2UkeX2opzk2Y95H6bd+RsDvN6JZbijERDLeai4kQAz1G6U50CAAA=
+	Tue, 8 Apr 2014 11:51:21 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH v2] ARM: qcom: Add initial IPQ8064 SoC and AP148 device trees
+Date: Tue,  8 Apr 2014 10:51:16 -0500
+Message-Id: <1396972276-11549-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.04.2014 16:53, Tomasz Stanislawski wrote:
-> This patch enables clk_set_parent() propagation for clocks used
-> by s5p-tv and exynos-drm drivers.
->
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> ---
->   drivers/clk/samsung/clk-exynos4.c |    6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
-> index 528f8eb..87b8264 100644
-> --- a/drivers/clk/samsung/clk-exynos4.c
-> +++ b/drivers/clk/samsung/clk-exynos4.c
-> @@ -680,7 +680,8 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
->   	 * the device name and clock alias names specified below for some
->   	 * of the clocks can be removed.
->   	 */
-> -	GATE(CLK_SCLK_HDMI, "sclk_hdmi", "mout_hdmi", SRC_MASK_TV, 0, 0, 0),
-> +	GATE(CLK_SCLK_HDMI, "sclk_hdmi", "mout_hdmi", SRC_MASK_TV, 0,
-> +		CLK_SET_PARENT_PARENT, 0),
->   	GATE(CLK_SCLK_SPDIF, "sclk_spdif", "mout_spdif", SRC_MASK_PERIL1, 8, 0,
->   		0),
->   	GATE(CLK_JPEG, "jpeg", "aclk160", GATE_IP_CAM, 6, 0, 0),
-> @@ -880,7 +881,8 @@ static struct samsung_gate_clock exynos4210_gate_clks[] __initdata = {
->   			E4210_SRC_MASK_LCD1, 12, CLK_SET_RATE_PARENT, 0),
->   	GATE(CLK_SCLK_SATA, "sclk_sata", "div_sata",
->   			SRC_MASK_FSYS, 24, CLK_SET_RATE_PARENT, 0),
-> -	GATE(CLK_SCLK_MIXER, "sclk_mixer", "mout_mixer", SRC_MASK_TV, 4, 0, 0),
-> +	GATE(CLK_SCLK_MIXER, "sclk_mixer", "mout_mixer", SRC_MASK_TV, 4,
-> +			CLK_SET_PARENT_PARENT, 0),
->   	GATE(CLK_SCLK_DAC, "sclk_dac", "mout_dac", SRC_MASK_TV, 8, 0, 0),
->   	GATE(CLK_TSADC, "tsadc", "aclk100", GATE_IP_PERIL, 15,
->   			0, 0),
->
+Add basic IPQ8064 SoC include device tree and support for basic booting on
+the AP148 Reference board.  Also, keep dtb build list and qcom_dt_match in
+sorted order.
 
-Looks fine, but since it depends on patch 1/4, which needs to be 
-discussed a bit, I'll hold on with applying it for now.
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+v2:
+* created a v1.0 ipq8064.dtsi to handle differences in Si rev in future
+* changed /include/ to #include
+* fixed timer freq to be 25Mhz instead of 27Mhz (copied from msm8960)
+* added PMU node
+* dropped interrupts from cpus node, not currently part of binding
 
-Best regards,
-Tomasz
+ arch/arm/boot/dts/Makefile               |   8 +-
+ arch/arm/boot/dts/qcom-ipq8064-ap148.dts |  12 +++
+ arch/arm/boot/dts/qcom-ipq8064-v1.0.dtsi |   1 +
+ arch/arm/boot/dts/qcom-ipq8064.dtsi      | 125 +++++++++++++++++++++++++++++++
+ arch/arm/mach-qcom/board.c               |   4 +-
+ 5 files changed, 146 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/boot/dts/qcom-ipq8064-ap148.dts
+ create mode 100644 arch/arm/boot/dts/qcom-ipq8064-v1.0.dtsi
+ create mode 100644 arch/arm/boot/dts/qcom-ipq8064.dtsi
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 4a89023..0591ed0 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -231,9 +231,11 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	dra7-evm.dtb
+ dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
+ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
+-dtb-$(CONFIG_ARCH_QCOM) += qcom-msm8660-surf.dtb \
+-	qcom-msm8960-cdp.dtb \
+-	qcom-apq8074-dragonboard.dtb
++dtb-$(CONFIG_ARCH_QCOM) += \
++	qcom-apq8074-dragonboard.dtb \
++	qcom-ipq8064-ap148.dtb \
++	qcom-msm8660-surf.dtb \
++	qcom-msm8960-cdp.dtb
+ dtb-$(CONFIG_ARCH_U8500) += ste-snowball.dtb \
+ 	ste-hrefprev60-stuib.dtb \
+ 	ste-hrefprev60-tvk.dtb \
+diff --git a/arch/arm/boot/dts/qcom-ipq8064-ap148.dts b/arch/arm/boot/dts/qcom-ipq8064-ap148.dts
+new file mode 100644
+index 0000000..5e6f456
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom-ipq8064-ap148.dts
+@@ -0,0 +1,12 @@
++#include "qcom-ipq8064-v1.0.dtsi"
++
++/ {
++	model = "Qualcomm IPQ8064/DB149";
++	compatible = "qcom,ipq8064-db149", "qcom,ipq8064";
++
++	soc {
++		serial@16340000 {
++			status = "ok";
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/qcom-ipq8064-v1.0.dtsi b/arch/arm/boot/dts/qcom-ipq8064-v1.0.dtsi
+new file mode 100644
+index 0000000..7093b07
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom-ipq8064-v1.0.dtsi
+@@ -0,0 +1 @@
++#include "qcom-ipq8064.dtsi"
+diff --git a/arch/arm/boot/dts/qcom-ipq8064.dtsi b/arch/arm/boot/dts/qcom-ipq8064.dtsi
+new file mode 100644
+index 0000000..8ca3b51
+--- /dev/null
++++ b/arch/arm/boot/dts/qcom-ipq8064.dtsi
+@@ -0,0 +1,125 @@
++/dts-v1/;
++
++#include "skeleton.dtsi"
++#include <dt-bindings/clock/qcom,gcc-ipq806x.h>
++
++/ {
++	model = "Qualcomm IPQ8064";
++	compatible = "qcom,ipq8064";
++	interrupt-parent = <&intc>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "qcom,krait";
++		enable-method = "qcom,kpss-acc-v1";
++
++		cpu@0 {
++			device_type = "cpu";
++			reg = <0>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc0>;
++			qcom,saw = <&saw0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			reg = <1>;
++			next-level-cache = <&L2>;
++			qcom,acc = <&acc1>;
++			qcom,saw = <&saw1>;
++		};
++
++		L2: l2-cache {
++			compatible = "cache";
++			cache-level = <2>;
++			interrupts = <0 2 0x4>;
++		};
++	};
++
++	cpu-pmu {
++		compatible = "qcom,krait-pmu";
++		interrupts = <1 10 0x304>;
++	};
++
++	soc: soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		compatible = "simple-bus";
++
++		intc: interrupt-controller@2000000 {
++			compatible = "qcom,msm-qgic2";
++			interrupt-controller;
++			#interrupt-cells = <3>;
++			reg = < 0x02000000 0x1000 >,
++			      < 0x02002000 0x1000 >;
++		};
++
++		timer@200a000 {
++			compatible = "qcom,kpss-timer", "qcom,msm-timer";
++			interrupts = <1 1 0x301>,
++				     <1 2 0x301>,
++				     <1 3 0x301>;
++			reg = <0x0200a000 0x100>;
++			clock-frequency = <25000000>,
++					  <32768>;
++			cpu-offset = <0x80000>;
++		};
++
++		acc0: clock-controller@2088000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		acc1: clock-controller@2098000 {
++			compatible = "qcom,kpss-acc-v1";
++			reg = <0x02098000 0x1000>, <0x02008000 0x1000>;
++		};
++
++		saw0: regulator@2089000 {
++			compatible = "qcom,saw2";
++			reg = <0x02089000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		saw1: regulator@2099000 {
++			compatible = "qcom,saw2";
++			reg = <0x02099000 0x1000>, <0x02009000 0x1000>;
++			regulator;
++		};
++
++		serial@12490000 {
++			compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
++			reg = <0x12490000 0x1000>,
++			      <0x12480000 0x1000>;
++			interrupts = <0 195 0x0>;
++			clocks = <&gcc GSBI2_UART_CLK>, <&gcc GSBI2_H_CLK>;
++			clock-names = "core", "iface";
++			status = "disabled";
++		};
++
++		serial@16340000 {
++			compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
++			reg = <0x16340000 0x1000>,
++			      <0x16300000 0x1000>;
++			interrupts = <0 152 0x0>;
++			clocks = <&gcc GSBI4_UART_CLK>, <&gcc GSBI4_H_CLK>;
++			clock-names = "core", "iface";
++			status = "disabled";
++		};
++
++		qcom,ssbi@500000 {
++			compatible = "qcom,ssbi";
++			reg = <0x00500000 0x1000>;
++			qcom,controller-type = "pmic-arbiter";
++		};
++
++		gcc: clock-controller@900000 {
++			compatible = "qcom,gcc-ipq8064";
++			reg = <0x00900000 0x4000>;
++			#clock-cells = <1>;
++			#reset-cells = <1>;
++		};
++	};
++};
+diff --git a/arch/arm/mach-qcom/board.c b/arch/arm/mach-qcom/board.c
+index bae617e..cb3c07c 100644
+--- a/arch/arm/mach-qcom/board.c
++++ b/arch/arm/mach-qcom/board.c
+@@ -15,9 +15,11 @@
+ #include <asm/mach/arch.h>
+ 
+ static const char * const qcom_dt_match[] __initconst = {
++	"qcom,apq8074-dragonboard",
++	"qcom,ipq8062",
++	"qcom,ipq8064",
+ 	"qcom,msm8660-surf",
+ 	"qcom,msm8960-cdp",
+-	"qcom,apq8074-dragonboard",
+ 	NULL
+ };
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
