@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269AbaDHUmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 16:42:39 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38784 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713AbaDHUmf (ORCPT
+	id S932265AbaDHUnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 16:43:24 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:57616 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757203AbaDHUnW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 16:42:35 -0400
-From: Matei Oprea <eu@opreamatei.ro>
-To: jbottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matei Oprea <eu@opreamatei.ro>,
-        ROSEdu Kernel Community <firefly@lists.rosedu.org>
-Subject: [PATCH] scsi: lpfc: lpfc_init: use kcalloc for allocating memory
-Date: Tue,  8 Apr 2014 23:42:26 +0300
-Message-Id: <1396989746-29647-1-git-send-email-eu@opreamatei.ro>
-X-Mailer: git-send-email 1.9.1
+	Tue, 8 Apr 2014 16:43:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140408070259.68923987@ipc1.ka-ro>
+References: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
+	<1395996540-10999-1-git-send-email-LW@KARO-electronics.de>
+	<1395996540-10999-2-git-send-email-LW@KARO-electronics.de>
+	<20140402055350.GX17250@pengutronix.de>
+	<20140407113652.GE26985@ulmo>
+	<20140408070259.68923987@ipc1.ka-ro>
+Date: Tue, 8 Apr 2014 13:43:22 -0700
+Message-ID: <CAAYSxhpqe1BVDigMKQ18qEpYNyHGFQ6n5cXWdnUO7HZKSCwzWQ@mail.gmail.com>
+Subject: Re: [PATCHv3 1/3] pwm: make the PWM_POLARITY flag in DTB optional
+From: Tim Kryger <tim.kryger@linaro.org>
+To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's easier to use kcalloc for allocating arrays. While at it
-also remove useless casting value.
+On Mon, Apr 7, 2014 at 10:02 PM, Lothar Waﬂmann <LW@karo-electronics.de> wrote:
+> Thierry Reding wrote:
 
-Signed-off-by: Matei Oprea <eu@opreamatei.ro>
-Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
----
- drivers/scsi/lpfc/lpfc_init.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+>> No. You cannot emulate polarity inversion in software.
+>>
+> Why not?
+>
+> duty_ns = period_ns - duty_ns;
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 635eeb3..1528f34 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -4742,12 +4742,14 @@ lpfc_sli_driver_resource_setup(struct lpfc_hba *phba)
- 			phba->cfg_sg_seg_cnt = LPFC_DEFAULT_MENLO_SG_SEG_CNT;
- 	}
- 
--	if (!phba->sli.ring)
--		phba->sli.ring = (struct lpfc_sli_ring *)
--			kzalloc(LPFC_SLI3_MAX_RING *
--			sizeof(struct lpfc_sli_ring), GFP_KERNEL);
--	if (!phba->sli.ring)
--		return -ENOMEM;
-+	if (unlikely(!phba->sli.ring)) {
-+		phba->sli.ring = kcalloc(LPFC_SLI3_MAX_RING,
-+				sizeof(struct lpfc_sli_ring),
-+				GFP_KERNEL);
-+
-+		if (!phba->sli.ring)
-+			return -ENOMEM;
-+	}
- 
- 	/*
- 	 * Since lpfc_sg_seg_cnt is module parameter, the sg_dma_buf_size
--- 
-1.9.1
+Since I made the same mistake, I will pass along the pointer Thierry gave me.
 
+In include/linux/pwm.h the second difference for an inverted signal is
+described.
+
+/**
+ * enum pwm_polarity - polarity of a PWM signal
+ * @PWM_POLARITY_NORMAL: a high signal for the duration of the duty-
+ * cycle, followed by a low signal for the remainder of the pulse
+ * period
+ * @PWM_POLARITY_INVERSED: a low signal for the duration of the duty-
+ * cycle, followed by a high signal for the remainder of the pulse
+ * period
+ */
+enum pwm_polarity {
+PWM_POLARITY_NORMAL,
+PWM_POLARITY_INVERSED,
+};
+
+Of course, I suspect not all PWM hardware respects this definition of
+inverted output.
+
+Either way, hacking the duty in software certainly would get the
+high/low order wrong.
+
+-Tim
