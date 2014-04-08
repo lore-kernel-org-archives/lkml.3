@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336AbaDHLYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 07:24:34 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35912 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935AbaDHLYb (ORCPT
+	id S1756615AbaDHLZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:25:42 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:51476 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756216AbaDHLZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 07:24:31 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH V2] ACPI: Update the ownership and developers for ACPI in Kconfig
-Date: Tue,  8 Apr 2014 19:24:01 +0800
-Message-Id: <1396956241-8337-1-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 8 Apr 2014 07:25:39 -0400
+Date: Tue, 8 Apr 2014 13:25:33 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Miklos Szeredi <miklos@szeredi.hu>,
+        Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+Message-ID: <20140408112533.GB4504@osiris>
+References: <20140403191558.GA8745@thunk.org>
+ <CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
+ <20140404035308.GC2525@thunk.org>
+ <20140404134429.GB26806@quack.suse.cz>
+ <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
+ <20140404234358.GE10275@thunk.org>
+ <CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
+ <20140407140745.GA8855@thunk.org>
+ <CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040811-8372-0000-0000-000009430AC8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The UEFI Forum included the ACPI spec in its portfolio in October 2013
-and will host future spec iterations, following the ACPI v5.0a release.
+On Mon, Apr 07, 2014 at 10:25:30PM +0200, Geert Uytterhoeven wrote:
+> On Mon, Apr 7, 2014 at 4:07 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> > On Mon, Apr 07, 2014 at 03:15:36PM +0200, Miklos Szeredi wrote:
+> >> >
+> >> > Is there anything obvious that I might be doing wrong?
+> >>
+> >> I only wired up the syscall for x86_64.   Who's responsible for adding
+> >> all the syscall tables for the various architectures?
+> >
+> > Ah, and I was testing with i386, not x86_64, so that it explains that.
+> >
+> > It's been quite a while since I've worked to add a new system call,
+> > but my impressure is that in general the person who creates the new
+> > system call needs to reach out to the architecture maintainers
+> > (preferably with a patch :-), since otherwise the architecture
+> 
+> Preferably the creator of the new system call emails linux-arch.
+> Patches are always nice to have, but they may cause conflicts w.r.t.
+> syscall numbering.
+> 
+> > maintainers would have no idea that a new syscall has been added.
+> 
+> If i386 has the new syscall, scripts/checksyscalls.sh will catch it and
+> inform us about it during our next kernel build.
+> 
+> If you add it to x86_64 only, bad luck for anyone else ;-)
 
-A UEFI Forum working group named ACPI Specification Working Group (ASWG)
-has been established to handle future ACPI developments, any UEFI member
-can join the group and contribute to ACPI specification.
+Also it would be nice if somebody would pick up the patch below as well :)
 
-So update the ownership and developers for ACPI in Kconfig accordingly,
-and add another website link to ACPI specification too.
+>From 97cdc756ca508f2200ae0cebf1cf1f1b8daa711b Mon Sep 17 00:00:00 2001
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Tue, 8 Apr 2014 12:55:46 +0200
+Subject: [PATCH] include/linux/syscalls.h: add sys_renameat2() prototype
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- drivers/acpi/Kconfig |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/syscalls.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index c205653..6bbf36e 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -32,9 +32,11 @@ menuconfig ACPI
- 	  <http://acpica.org/>
- 
- 	  ACPI is an open industry specification co-developed by
--	  Hewlett-Packard, Intel, Microsoft, Phoenix, and Toshiba.
-+	  ACPI Specification Working Group (ASWG) under UEFI Forum, any
-+	  UEFI member can join ASWG and contribute to ACPI specification.
- 	  The specification is available at:
- 	  <http://www.acpi.info>
-+	  <http://www.uefi.org/acpi/specs>
- 
- if ACPI
- 
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 2aa8b749f13d..697ceb70a9a9 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -748,6 +748,9 @@ asmlinkage long sys_linkat(int olddfd, const char __user *oldname,
+ 			   int newdfd, const char __user *newname, int flags);
+ asmlinkage long sys_renameat(int olddfd, const char __user * oldname,
+ 			     int newdfd, const char __user * newname);
++asmlinkage long sys_renameat2(int olddfd, const char __user *oldname,
++			      int newdfd, const char __user *newname,
++			      unsigned int flags);
+ asmlinkage long sys_futimesat(int dfd, const char __user *filename,
+ 			      struct timeval __user *utimes);
+ asmlinkage long sys_faccessat(int dfd, const char __user *filename, int mode);
 -- 
-1.7.9.5
+1.8.5.5
 
