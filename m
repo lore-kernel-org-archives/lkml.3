@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121AbaDHKWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 06:22:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56859 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756402AbaDHKWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 06:22:24 -0400
-Message-ID: <1396952542.25633.13.camel@linux-fkkt.site>
-Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
-From: Oliver Neukum <oneukum@suse.de>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Xiao Jin <jin.xiao@intel.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
-Date: Tue, 08 Apr 2014 12:22:22 +0200
-In-Reply-To: <20140408073306.GB25779@localhost>
-References: <53436770.9090008@intel.com> <20140408073306.GB25779@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932151AbaDHKWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 06:22:36 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:62465 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124AbaDHKWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 06:22:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 1/6] pci: Introduce pci_register_io_range() helper function.
+Date: Tue, 08 Apr 2014 12:22:13 +0200
+Message-ID: <4778371.oH3kIlbD0f@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140408095038.GT17163@e106497-lin.cambridge.arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com> <CAErSpo4iEV6khP63ZTF+YUTKi9WLFXzMv13nxw15y3qDg15Ztg@mail.gmail.com> <20140408095038.GT17163@e106497-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:W6AHNhBO0TPIYDCnYrEdkpLIdK49yhFkCN5Dg6I/VJu
+ FdSQchjQICyGbg3XxF2JWRE3y1ThuxK8TuC6Ft6wVIDQ9oQfs6
+ L+zxaN1I/Xraej1c0AU7n7h00sLfSN6qryA7JsxumWy3yaIwWD
+ cmgVvAkUzLIS8/8vgpXn3GxMK037O1TXBRDGqrsUq/nGKuk2o5
+ tPI8w4DxVDlaDjKghWRcgcaOzwxk44IJIFfzLAYR0P6jIy14rL
+ J2ZjlSH+61A5EKZmeafI7JETl8Qi4OyIjcAUSn2ERkxlBB8X3t
+ tzFTDETyAzPvLJOGkISIzLdVncI2f24IPqdJ3nSffYH8mMInBL
+ TgKnyNWbX3tCWiI04l+c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-08 at 09:33 +0200, Johan Hovold wrote:
-> On Tue, Apr 08, 2014 at 11:05:20AM +0800, Xiao Jin wrote:
-> > We find two problems on acm tty write delayed mechanism.
+On Tuesday 08 April 2014 10:50:39 Liviu Dudau wrote:
+> On Mon, Apr 07, 2014 at 06:58:24PM +0100, Bjorn Helgaas wrote:
+> > On Mon, Apr 7, 2014 at 5:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > 
+> > > I think migrating other architectures to use the same code should be
+> > > a separate effort from adding a generic implementation that can be
+> > > used by arm64. It's probably a good idea to have patches to convert
+> > > arm32 and/or microblaze.
+> > 
+> > Let me reiterate that I am 100% in favor of replacing arch-specific
+> > code with more generic implementations.
+> > 
+> > However, I am not 100% in favor of doing it as separate efforts
+> > (although maybe I could be convinced).  The reasons I hesitate are
+> > that (1) if only one architecture uses a new "generic" implementation,
+> > we really don't know whether it is generic enough, (2) until I see the
+> > patches to convert other architectures, I have to assume that I'm the
+> > one who will write them, and (3) as soon as we add the code to
+> > drivers/pci, it becomes partly my headache to maintain it, even if
+> > only one arch benefits from it.
+
+Fair enough.
+
+My approach to the asm-generic infrastruction has mostly been to ensure
+that whoever adds a new architecture has to make things easier for the
+next person. For the PCI code it's clearly your call to pick whatever
+works best for you.
+
+> > Please don't think I'm questioning anyone's intent or good will.  It's
+> > just that I understand the business pressures, and I know how hard it
+> > can be to justify this sort of work to one's management, especially
+> > after the immediate problem has been solved.
 > 
-> Then you should split this into two patches.
-> 
-> > (1) When acm resume, the delayed wb will be started. But now
-> > only one write can be saved during acm suspend. More acm write
-> > may be abandoned.
-> 
-> Why not simply return 0 in write and use the tty buffering rather than
-> implement another buffer in cdc_acm?
+> I understand your concern. I guess the only way to prove my good intentions
+> is to shut up and show the code.
 
-Yes. We need a single buffer because the tty layer is not happy
-when you accept no data. But we should be able to refuse subsequent
-writes. Could you test this patch?
+I'd suggest looking at architectures in this order then:
 
-	Regards
-		Oliver
+* microblaze (this one is easy and wants to share code with us)
+* arm32-multiplatform (obviously interesting, but not as easy as microblaze)
+* powerpc64 (they are keen on sharing, code is similar to what you have)
+* mips (this is really platform specific, some want to share drivers with
+  arm32, others should keep their current code. Note that platform selection
+  on mips is compile-time only, they don't have to do it all the same way)
+* powerpc32 (their code is currently different, might not be worth it)
 
->From 1d44c1f2a10b5617824a37c8ec51f5547e482259 Mon Sep 17 00:00:00 2001
-From: Oliver Neukum <oneukum@suse.de>
-Date: Tue, 8 Apr 2014 12:17:39 +0200
-Subject: [PATCH] cdc-acm: fix consecutive writes while device is suspended
+My preference would be to have only the first two done initially and leave
+the other ones up to architecture maintainers, but Bjorn should say
+how much he wants to see get done.
 
-CDC-ACM needs to handle one attempt to write to a suspended
-device because we told the tty layer that there is room.
-A second attempt may and must fail or we drop data.
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-CC: stable@vger.kernel.org
----
- drivers/usb/class/cdc-acm.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 900f7ff..7ad3105 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -646,10 +646,12 @@ static int acm_tty_write(struct tty_struct *tty,
- 
- 	usb_autopm_get_interface_async(acm->control);
- 	if (acm->susp_count) {
--		if (!acm->delayed_wb)
-+		if (!acm->delayed_wb) {
- 			acm->delayed_wb = wb;
--		else
-+		} else {
- 			usb_autopm_put_interface_async(acm->control);
-+			count = 0;
-+		}
- 		spin_unlock_irqrestore(&acm->write_lock, flags);
- 		return count;	/* A white lie */
- 	}
--- 
-1.8.4.5
-
-
-
+	Arnd
