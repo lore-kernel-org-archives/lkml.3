@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614AbaDHLvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 07:51:14 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45170 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141AbaDHLvM (ORCPT
+	id S1756550AbaDHL4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 07:56:02 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54171 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756131AbaDHL4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 07:51:12 -0400
-Date: Tue, 8 Apr 2014 12:50:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org
-Message-ID: <20140408115053.GF6518@sirena.org.uk>
-References: <1396595387-4371-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140404100532.GN14763@sirena.org.uk>
- <20140408110738.GA10745@MrMyself>
+	Tue, 8 Apr 2014 07:56:00 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lxoliva@fsfla.org
+Subject: Re: [PATCH] cpufreq: loongson2_cpufreq: don't declare local variable as static
+Date: Tue, 08 Apr 2014 14:11:59 +0200
+Message-ID: <14553349.srUCJdXInT@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <254471b8cee296f860d24368cc467c00b5a07336.1396413826.git.viresh.kumar@linaro.org>
+References: <254471b8cee296f860d24368cc467c00b5a07336.1396413826.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+jhVVhN62yS6hEJ8"
-Content-Disposition: inline
-In-Reply-To: <20140408110738.GA10745@MrMyself>
-X-Cookie: This report is filled with omissions.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: fsl_sai: Fix Bit Clock Polarity configurations
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, April 02, 2014 10:14:24 AM Viresh Kumar wrote:
+> Earlier commit:
+> 	commit 652ed95d5fa6074b3c4ea245deb0691f1acb6656
+> 	Author: Viresh Kumar <viresh.kumar@linaro.org>
+> 	Date:   Thu Jan 9 20:38:43 2014 +0530
+> 
+> 	    cpufreq: introduce cpufreq_generic_get() routine
+> 
+> did some changes to driver and by mistake made cpuclk as a 'static' local
+> variable, which wasn't actually required. Fix it.
+> 
+> Reported-by: Alexandre Oliva <lxoliva@fsfla.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
---+jhVVhN62yS6hEJ8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Queued up for the next pull request, thanks!
 
-On Tue, Apr 08, 2014 at 07:07:40PM +0800, Nicolin Chen wrote:
+> ---
+>  drivers/cpufreq/loongson2_cpufreq.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
+> index a3588d61..f0bc31f 100644
+> --- a/drivers/cpufreq/loongson2_cpufreq.c
+> +++ b/drivers/cpufreq/loongson2_cpufreq.c
+> @@ -69,7 +69,7 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
+>  
+>  static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
+>  {
+> -	static struct clk *cpuclk;
+> +	struct clk *cpuclk;
+>  	int i;
+>  	unsigned long rate;
+>  	int ret;
+> 
 
-> Sir, I can't find this patch on any of the remote branches: for-next,
-> topic/fsl-sai and fix/fsl-sai. Where could I find it?
-
-It's in the fix branch.
-
---+jhVVhN62yS6hEJ8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTQ+KaAAoJELSic+t+oim9X5wQAJPVUimekxxWvBuV+u9NUJ1Q
-oG9Wr3ezYxOM4Xm0pOb1X56iRmPrWcnF5/KHscsXQXSnvpACxnFFyT81QlAqUVhM
-T7/8BmwfT2jZ2l22ulzW395nMsuM174VXEh03uA443ZZULFyDTFMdmeFVdNyd+Hq
-MufO08sEXg3qaBXJp1iDmOjKHHFJTExvRWzYk2rKWEEhlv/qBlGe1og1lbhv0V1Q
-OYF/t75eFUvmsN2n2TrG44XBtSnQ/4GKiTX/3M5up1p6/rM1aghJicL3cxczpS15
-BSdlr/0l2CH9y+TEj9I8IXUsy/HdzjyYqzSjU/oiNZLC7J2UXU8Cff1qpHxm24s1
-93SSR9rSOmRJ9hpG9WKqv6dLg9TuGrj18xvwjVMXhwzBHDs1jpgAEMOU+knk9QLR
-7ROI8uf7euDnJZX/EsylRjQi+Y9hZfsEk8PlTKeJmZ/n+TwAMfdm64ZHTsAWXtgq
-CMK5HiwH18o5pZ4u1PCH/JMpD/TR2uzJSYwW3NTnQCJ62h+jB4o2f0t0kIHXZuD0
-Ot45gkwF7Y9ZEcj2Vk8y8rfi3XMtDEmmBdoyu/7WUPN8RI21Zj7tr/CLAhRw3EAz
-ZocptY1c9KB76nFRS1FfZfJJ/GoSdPSB5Ft+HJphRTxeRLgNWtpxAGqh3zFwu3kD
-VUsWL3SrEZkharrBPKJB
-=gSbs
------END PGP SIGNATURE-----
-
---+jhVVhN62yS6hEJ8--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
