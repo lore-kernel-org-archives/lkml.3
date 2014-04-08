@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911AbaDHP7V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 11:59:21 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:41345 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289AbaDHP7T (ORCPT
+	id S932209AbaDHP74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 11:59:56 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:37623 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756980AbaDHP7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 11:59:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1396968207.30750.17.camel@sauron.fi.intel.com>
-References: <20140408044407.GA13141@www.outflux.net>
-	<20140408135729.GC2429@arch.cereza>
-	<1396968207.30750.17.camel@sauron.fi.intel.com>
-Date: Tue, 8 Apr 2014 08:59:19 -0700
-X-Google-Sender-Auth: FBBqaCq6aCeKzRckFT6Akkbbwsg
-Message-ID: <CAGXu5j+-1o9TmqLrq2ZPhoRvOmiv4Do5wvGkasxHb+Frm7hutA@mail.gmail.com>
-Subject: Re: [PATCH] ubi: avoid workqueue format string leak
-From: Kees Cook <keescook@chromium.org>
-To: artem.bityutskiy@linux.intel.com
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Linux mtd <linux-mtd@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 8 Apr 2014 11:59:54 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-20-53441cf8297a
+Message-id: <53441CF5.80003@samsung.com>
+Date: Tue, 08 Apr 2014 17:59:49 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com
+Subject: Re: [PATCH 01/10] ARM: EXYNOS: Cleanup  "mach-exynos/common.h" file
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
+ <1396425058-4012-2-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1396425058-4012-2-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/xq7o/ZFyCDVrW81ksm3SXzaJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd2B3aOluYfNY/OSeo++LasYPT5vkgtgieKySUnN
+	ySxLLdK3S+DKuPZ3FlvBPM6KE59esDYw7mfvYuTkkBAwkfh1/hYrhC0mceHeerYuRi4OIYGl
+	jBKnz1xjgnA+M0pM2dENVsUroCHxfNMfIJuDg0VAVWLz0iqQMJuAmsTnhkdsIDa/gJbEmqbr
+	LCC2qECExL3Gw1CtghI/Jt9jAZkpIjCNUeL6jEZ2kDnMAu4Sd85JgdQIC/hI3O85yQKxt5VR
+	Yvet9WBDOQU8JCYvXMAMYjMLWEusnLSNEcKWl9i85i3zBEbBWUh2zEJSNgtJ2QJG5lWMoqml
+	yQXFSem5hnrFibnFpXnpesn5uZsYIQH/ZQfj4mNWhxgFOBiVeHgrjzgFC7EmlhVX5h5ilOBg
+	VhLhvSrlEizEm5JYWZValB9fVJqTWnyIkYmDU6qBUfO5+14evmMX/y1etEfzR3pV3nvbqUKM
+	XF2ZZ45EH10yfzbHkzi1p+z/su349iTdfXY8YM+P1L916+5Yycmeesuwx/TMr+vTcmL0V0nW
+	X9r/XyhqbUHH9pgrOQ/zlMLqPuy/Gb9/wdffzv72SvfF4iqXfv1u2pUYw5/383iSLaOoyNLy
+	WVcFTJRYijMSDbWYi4oTAZZrVkBWAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 7:43 AM, Artem Bityutskiy
-<artem.bityutskiy@linux.intel.com> wrote:
-> On Tue, 2014-04-08 at 10:57 -0300, Ezequiel Garcia wrote:
->> Hello Kees,
->>
->> Thanks for the patch.
->>
->> On Apr 07, Kees Cook wrote:
->> > When building the name for the workqueue thread, make sure a format
->> > string cannot leak in from the disk name.
->> >
->>
->> Could you enlighten me and explain why you want to avoid the name leak?
->> Is it a security concern?
->>
->> I'd like to understad this better, so I can avoid making such mistakes
->> in the future.
+Hi Pankaj,
+
+On 02.04.2014 09:50, Pankaj Dubey wrote:
+> Remove unused declarations from "mach-exynos/common.h"
 >
-> Well, the basics seem to be simple, attacker makes sure gd->disk_name
-> contains a bunch of "%s" and other placeholders, and this leads
-> "workqueue_alloc()" to read kernel memory and form the workqueue name.
-
-Right. I don't think there is an actual exploitable vulnerability
-here, but it's a best-practice to not pass variable strings in as a
-potential format string.
-
-> I did not think it through further, though, but that was enough for me
-> to apply the patch right away. But yeah, curios parts are:
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>   arch/arm/mach-exynos/common.h |    3 ---
+>   1 file changed, 3 deletions(-)
 >
-> 1. How attacker could end up with a crafted "gd->disk_name"
+> diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+> index 9ef3f83..277a83e 100644
+> --- a/arch/arm/mach-exynos/common.h
+> +++ b/arch/arm/mach-exynos/common.h
+> @@ -15,9 +15,6 @@
+>   #include <linux/reboot.h>
+>   #include <linux/of.h>
+>
+> -void mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1);
+> -
+> -struct map_desc;
+>   void exynos_init_io(void);
+>   void exynos_restart(enum reboot_mode mode, const char *cmd);
+>   void exynos_cpuidle_init(void);
+>
 
-At present, the only way I know how to set that is via some special
-controls in md, but I assume that would not work via ubi.
+You could also drop a bit more. From the context above I can see that at 
+least exynos_restart() and exynos_init_io() are never used outside of 
+files they are defined in, so they too could be dropped from this 
+header. Looking at rest of the header, there seems to be a lot of 
+similar definitions. If cleaning up the header anyway, could you take 
+care of them as well?
 
-> 2. How attacker gets the workqueue name then, I guess there is a sysfs
-> file or something, but I do not know off the top of my head.
-
-This I haven't checked, but if there isn't a way to do it now, we can
-at least avoid a nasty surprise in the future if one is created. :)
-
-> Yeah, I am interested to get educated on this a too.
-
-Thanks for pulling the fix!
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Best regards,
+Tomasz
