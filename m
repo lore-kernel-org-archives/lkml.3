@@ -1,104 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403AbaDHXqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 19:46:33 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:44190 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756995AbaDHXqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 19:46:31 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com
-Subject: Re: [PATCH 10/15 V3] perf, c2c: Display cacheline HITM analysis to stdout
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-	<1395689826-215033-11-git-send-email-dzickus@redhat.com>
-Date: Wed, 09 Apr 2014 08:46:29 +0900
-In-Reply-To: <1395689826-215033-11-git-send-email-dzickus@redhat.com> (Don
-	Zickus's message of "Mon, 24 Mar 2014 15:37:01 -0400")
-Message-ID: <87vbujv0yy.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756700AbaDHXyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 19:54:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63930 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756179AbaDHXyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 19:54:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,820,1389772800"; 
+   d="scan'208";a="517110455"
+From: Tony Luck <tony.luck@intel.com>
+Date: Tue, 8 Apr 2014 10:32:23 -0700
+Subject: [PATCH] time: Provide full featured jiffies_to_nsecs() function
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Mauro Chehab <m.chehab@samsung.com>
+In-Reply-To: <20140408153412.0648fb96@gandalf.local.home>
+Message-Id: <0286550@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Don,
+The "uptime" tracer added in:
+    commit 8aacf017b065a805d27467843490c976835eb4a5
+    tracing: Add "uptime" trace clock that uses jiffies
+has wraparound problems when the system has been up more
+than 1 hour 11 minutes and 34 seconds. It converts jiffies
+to nanoseconds using:
+	(u64)jiffies_to_usecs(jiffy) * 1000ULL
+but since jiffies_to_usecs() only returns a 32-bit value, it
+truncates at 2^32 microseconds.  An additional problem on 32-bit
+systems is that the argument is "unsigned long", so fixing the
+return value only helps until 2^32 jiffies (49.7 days on a HZ=1000
+system).
 
-On Mon, 24 Mar 2014 15:37:01 -0400, Don Zickus wrote:
-> +	sprintf(summary, "%4d %5.1f%% %5.1f%% %5.1f%% %5.1f%% %8d %8d %8d %8d %18s %6s\n",
-> +			record,
-> +			tot_dist * 100.,
-> +			tot_cumm * 100.,
-> +			ld_dist * 100.,
-> +			ld_cumm * 100.,
+So we provide a full featured jiffies_to_nsec() function that
+takes a "u64" argument and provides a "u64" result.  To avoid
+cries of rage from the other user of this: scheduler_tick_max_deferment()
+we check whether the argument is small enough that we can do
+the calculations in 32-bit operations.
 
-I think adding a 0 after decimal point helps readability little bit.
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ include/linux/jiffies.h    |  6 +-----
+ kernel/time.c              | 24 ++++++++++++++++++++++++
+ kernel/timeconst.bc        | 12 ++++++++++++
+ kernel/trace/trace_clock.c |  2 +-
+ 4 files changed, 38 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 1f44466c1e9d..3cf44401055f 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -294,11 +294,7 @@ extern unsigned long preset_lpj;
+  */
+ extern unsigned int jiffies_to_msecs(const unsigned long j);
+ extern unsigned int jiffies_to_usecs(const unsigned long j);
+-
+-static inline u64 jiffies_to_nsecs(const unsigned long j)
+-{
+-	return (u64)jiffies_to_usecs(j) * NSEC_PER_USEC;
+-}
++extern u64 jiffies_to_nsecs(const u64 j);
+ 
+ extern unsigned long msecs_to_jiffies(const unsigned int m);
+ extern unsigned long usecs_to_jiffies(const unsigned int u);
+diff --git a/kernel/time.c b/kernel/time.c
+index 7c7964c33ae7..bbd18b0e5698 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -273,6 +273,30 @@ unsigned int jiffies_to_usecs(const unsigned long j)
+ }
+ EXPORT_SYMBOL(jiffies_to_usecs);
+ 
++u64 jiffies_to_nsecs(const u64 jl)
++{
++	/* can we do this with 32-bit math? */
++	if (jl < 4*HZ) {
++		unsigned long j = jl;
++#if !(NSEC_PER_SEC % HZ)
++		return (NSEC_PER_SEC / HZ) * j;
++#else
++# if BITS_PER_LONG == 32
++		return (HZ_TO_NSEC_MUL32 * j) >> HZ_TO_NSEC_SHR32;
++# else
++		return (j * HZ_TO_NSEC_NUM) / HZ_TO_NSEC_DEN;
++# endif
++#endif
++	} else {
++#if !(NSEC_PER_SEC % HZ)
++		return (NSEC_PER_SEC / HZ) * jl;
++#else
++		return (jl * HZ_TO_NSEC_NUM) / HZ_TO_NSEC_DEN;
++#endif
++	}
++}
++EXPORT_SYMBOL(jiffies_to_nsecs);
++
+ /**
+  * timespec_trunc - Truncate timespec to a granularity
+  * @t: Timespec
+diff --git a/kernel/timeconst.bc b/kernel/timeconst.bc
+index 511bdf2cafda..6f6e8b285c2b 100644
+--- a/kernel/timeconst.bc
++++ b/kernel/timeconst.bc
+@@ -100,6 +100,18 @@ define timeconst(hz) {
+ 		print "#define USEC_TO_HZ_DEN\t\t", 1000000/cd, "\n"
+ 		print "\n"
+ 
++                s=fmuls(32,1000000000,hz)
++                obase=16
++                print "#define HZ_TO_NSEC_MUL32\tU64_C(0x", fmul(s,1000000000,hz), ")\n"
++                obase=10
++                print "#define HZ_TO_NSEC_SHR32\t", s, "\n"
++
++                obase=10
++                cd=gcd(hz,1000000000)
++                print "#define HZ_TO_NSEC_NUM\t\t", 1000000000/cd, "\n"
++                print "#define HZ_TO_NSEC_DEN\t\t", hz/cd, "\n"
++                print "\n"
++
+ 		print "#endif /* KERNEL_TIMECONST_H */\n"
+ 	}
+ 	halt
+diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+index 26dc348332b7..52470fba1d26 100644
+--- a/kernel/trace/trace_clock.c
++++ b/kernel/trace/trace_clock.c
+@@ -65,7 +65,7 @@ u64 notrace trace_clock_jiffies(void)
+ 	u64 jiffy = jiffies - INITIAL_JIFFIES;
+ 
+ 	/* Return nsecs */
+-	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
++	return jiffies_to_nsecs(jiffy);
+ }
+ 
+ /*
+-- 
+1.8.4.1
 
-> +			h->stats.t.rmt_hitm,
-> +			h->stats.t.lcl_hitm,
-> +			h->stats.t.st_l1hit,
-> +			h->stats.t.st_l1miss,
-> +			addrstr,
-> +			pidstr);
-> +
-> +	for (j = 0; j < (int)strlen(summary); j++) printf("-");
-> +	printf("\n");
-> +	printf("%s", summary);
-> +	for (j = 0; j < (int)strlen(summary); j++) printf("-");
-> +	printf("\n");
-> +}
-> +
-> +static void print_socket_stats_str(struct c2c_hit *clo,
-> +				   struct c2c_stats *node_stats)
-> +{
-> +	int i, j;
-> +
-> +	if (!node_stats)
-> +		return;
-> +
-> +	for (i = 0; i < max_node_num; i++) {
-> +		struct c2c_stats *stats = &node_stats[i];
-> +		int num = CPU_COUNT(&stats->cpuset);
-> +
-> +		if (!num) {
-> +			/* pad align socket info */
-> +			for (j = 0; j < 21; j++)
-> +				printf(" ");
-> +			continue;
-> +		}
-> +
-> +		printf("%2d{%2d ", i, num);
-> +
-> +		if (clo->stats.t.rmt_hitm > 0)
-> +			printf("%5.1f%% ", 100. * ((double)stats->t.rmt_hitm / (double) clo->stats.t.rmt_hitm));
-
-Just for your information, most perf tools show 2 digit after decimal
-point so it'd be "%5.2f%%" but it's not a strict rule.
-
-Anyway I think multiplying 100.0 first can remove the casts.  So code
-below will do the same thing..
-
-		100.0 * stats->t.rmt_hitm / clo->stats.t.rmt_hitm
-
-The same goes to other percentage calculations too.
-
-Thanks,
-Namhyung
-
-
-> +		else
-> +			printf("%6s ", "n/a");
-> +
-> +		if (clo->stats.t.store > 0)
-> +			printf("%5.1f%%} ", 100. * ((double)stats->t.store / (double)clo->stats.t.store));
-> +		else
-> +			printf("%6s} ", "n/a");
-> +	}
-> +}
