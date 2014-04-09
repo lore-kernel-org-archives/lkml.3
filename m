@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933301AbaDILaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:30:52 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:52637 "EHLO
-	devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932542AbaDILat convert rfc822-to-8bit (ORCPT
+	id S933207AbaDILbi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:31:38 -0400
+Received: from prifuk.cz ([31.31.77.140]:52641 "EHLO devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932542AbaDILbg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:30:49 -0400
+	Wed, 9 Apr 2014 07:31:36 -0400
 From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
 To: dmitry.torokhov@gmail.com, jkosina@suse.cz
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Elias Vanderstuyft <elias.vds@gmail.com>
-Subject: [PATCH 20/24] Port gamecon to ff-memless-next
-Date: Wed, 09 Apr 2014 13:30:45 +0200
-Message-ID: <2807349.5CLbAnYOXZ@sigyn>
+Subject: [PATCH 21/24] Port xpad to ff-memless-next
+Date: Wed, 09 Apr 2014 13:31:32 +0200
+Message-ID: <8572858.2DKqCynByL@sigyn>
 User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
 In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
 References: <1609685.QRL9N9sQvX@sigyn>
@@ -24,129 +24,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port gamecon to ff-memless-next
+Port xpad to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/input/joystick/Kconfig   |  2 +-
- drivers/input/joystick/gamecon.c | 57 ++++++++++++++++++++++------------------
- 2 files changed, 33 insertions(+), 26 deletions(-)
+ drivers/input/joystick/Kconfig |   2 +-
+ drivers/input/joystick/xpad.c  | 125 +++++++++++++++++++++++------------------
+ 2 files changed, 71 insertions(+), 56 deletions(-)
 
 diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
-index 56eb471..2dd3ba1 100644
+index 2dd3ba1..9f26e48 100644
 --- a/drivers/input/joystick/Kconfig
 +++ b/drivers/input/joystick/Kconfig
-@@ -221,7 +221,7 @@ config JOYSTICK_DB9
- config JOYSTICK_GAMECON
- 	tristate "Multisystem, NES, SNES, N64, PSX joysticks and gamepads"
- 	depends on PARPORT
+@@ -294,7 +294,7 @@ config JOYSTICK_XPAD
+ config JOYSTICK_XPAD_FF
+ 	bool "X-Box gamepad rumble support"
+ 	depends on JOYSTICK_XPAD && INPUT
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	  Say Y here if you have a Nintendo Entertainment System gamepad,
- 	  Super Nintendo Entertainment System gamepad, Nintendo 64 gamepad,
-diff --git a/drivers/input/joystick/gamecon.c b/drivers/input/joystick/gamecon.c
-index e68e497..209d0fb 100644
---- a/drivers/input/joystick/gamecon.c
-+++ b/drivers/input/joystick/gamecon.c
-@@ -40,6 +40,7 @@
- #include <linux/input.h>
- #include <linux/mutex.h>
- #include <linux/slab.h>
+ 	  Say Y here if you want to take advantage of xbox 360 rumble features.
+ 
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index 603fe0d..5d9c8a2 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -78,6 +78,7 @@
+ #include <linux/stat.h>
+ #include <linux/module.h>
+ #include <linux/usb/input.h>
 +#include <linux/input/ff-memless-next.h>
  
- MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
- MODULE_DESCRIPTION("NES, SNES, N64, MultiSystem, PSX gamepad driver");
-@@ -47,6 +48,7 @@ MODULE_LICENSE("GPL");
+ #define DRIVER_AUTHOR "Marko Friedemann <mfr@bmx-chemnitz.de>"
+ #define DRIVER_DESC "X-Box pad driver"
+@@ -97,6 +98,8 @@
+ #define XTYPE_XBOX360W    2
+ #define XTYPE_UNKNOWN     3
  
- #define GC_MAX_PORTS		3
- #define GC_MAX_DEVICES		5
 +#define FF_UPDATE_RATE 50
++
+ static bool dpad_to_buttons;
+ module_param(dpad_to_buttons, bool, S_IRUGO);
+ MODULE_PARM_DESC(dpad_to_buttons, "Map D-PAD to buttons rather than axes for unknown pads");
+@@ -628,63 +631,75 @@ static void xpad_stop_output(struct usb_xpad *xpad) {}
+ #endif
  
- struct gc_config {
- 	int args[GC_MAX_DEVICES + 1];
-@@ -263,43 +265,48 @@ static void gc_n64_process_packet(struct gc *gc)
- }
- 
- static int gc_n64_play_effect(struct input_dev *dev, void *data,
--			      struct ff_effect *effect)
-+			      const struct mlnx_effect_command *command)
+ #ifdef CONFIG_JOYSTICK_XPAD_FF
+-static int xpad_play_effect(struct input_dev *dev, void *data, struct ff_effect *effect)
++static int xpad_play_effect(struct input_dev *dev, void *data,
++			    const struct mlnx_effect_command *command)
  {
+ 	struct usb_xpad *xpad = input_get_drvdata(dev);
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int i;
- 	unsigned long flags;
- 	struct gc *gc = input_get_drvdata(dev);
- 	struct gc_subdev *sdev = data;
- 	unsigned char target = 1 << sdev->idx; /* select desired pin */
-+	unsigned int cmd;
++	__u16 strong, weak;
  
 -	if (effect->type == FF_RUMBLE) {
--		struct ff_rumble_effect *rumble = &effect->u.rumble;
--		unsigned int cmd =
--			rumble->strong_magnitude || rumble->weak_magnitude ?
--			GC_N64_CMD_01 : GC_N64_CMD_00;
+-		__u16 strong = effect->u.rumble.strong_magnitude;
+-		__u16 weak = effect->u.rumble.weak_magnitude;
+-
+-		switch (xpad->xtype) {
+-
+-		case XTYPE_XBOX:
+-			xpad->odata[0] = 0x00;
+-			xpad->odata[1] = 0x06;
+-			xpad->odata[2] = 0x00;
+-			xpad->odata[3] = strong / 256;	/* left actuator */
+-			xpad->odata[4] = 0x00;
+-			xpad->odata[5] = weak / 256;	/* right actuator */
+-			xpad->irq_out->transfer_buffer_length = 6;
+-
+-			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
+-
+-		case XTYPE_XBOX360:
+-			xpad->odata[0] = 0x00;
+-			xpad->odata[1] = 0x08;
+-			xpad->odata[2] = 0x00;
+-			xpad->odata[3] = strong / 256;  /* left actuator? */
+-			xpad->odata[4] = weak / 256;	/* right actuator? */
+-			xpad->odata[5] = 0x00;
+-			xpad->odata[6] = 0x00;
+-			xpad->odata[7] = 0x00;
+-			xpad->irq_out->transfer_buffer_length = 8;
+-
+-			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
+-
+-		case XTYPE_XBOX360W:
+-			xpad->odata[0] = 0x00;
+-			xpad->odata[1] = 0x01;
+-			xpad->odata[2] = 0x0F;
+-			xpad->odata[3] = 0xC0;
+-			xpad->odata[4] = 0x00;
+-			xpad->odata[5] = strong / 256;
+-			xpad->odata[6] = weak / 256;
+-			xpad->odata[7] = 0x00;
+-			xpad->odata[8] = 0x00;
+-			xpad->odata[9] = 0x00;
+-			xpad->odata[10] = 0x00;
+-			xpad->odata[11] = 0x00;
+-			xpad->irq_out->transfer_buffer_length = 12;
+-
+-			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
+-
+-		default:
+-			dev_dbg(&xpad->dev->dev,
+-				"%s - rumble command sent to unsupported xpad type: %d\n",
+-				__func__, xpad->xtype);
+-			return -1;
+-		}
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		cmd = (rumble_force->strong || rumble_force->weak) ? GC_N64_CMD_01 : GC_N64_CMD_00;
++		strong = rumble_force->strong;
++		weak = rumble_force->weak;
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		cmd = GC_N64_CMD_00;
++		strong = 0;
++		weak = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
- 
--		local_irq_save(flags);
-+	local_irq_save(flags);
- 
--		/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
--		gc_n64_send_command(gc, GC_N64_CMD_03, target);
-+	/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
-+	gc_n64_send_command(gc, GC_N64_CMD_03, target);
-+	gc_n64_send_command(gc, GC_N64_CMD_80, target);
-+	gc_n64_send_command(gc, GC_N64_CMD_01, target);
-+	for (i = 0; i < 32; i++)
- 		gc_n64_send_command(gc, GC_N64_CMD_80, target);
--		gc_n64_send_command(gc, GC_N64_CMD_01, target);
--		for (i = 0; i < 32; i++)
--			gc_n64_send_command(gc, GC_N64_CMD_80, target);
--		gc_n64_send_stop_bit(gc, target);
-+	gc_n64_send_stop_bit(gc, target);
- 
--		udelay(GC_N64_DELAY);
--
--		/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
--		gc_n64_send_command(gc, GC_N64_CMD_03, target);
--		gc_n64_send_command(gc, GC_N64_CMD_c0, target);
--		gc_n64_send_command(gc, GC_N64_CMD_1b, target);
--		for (i = 0; i < 32; i++)
--			gc_n64_send_command(gc, cmd, target);
--		gc_n64_send_stop_bit(gc, target);
-+	udelay(GC_N64_DELAY);
- 
--		local_irq_restore(flags);
-+	/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
-+	gc_n64_send_command(gc, GC_N64_CMD_03, target);
-+	gc_n64_send_command(gc, GC_N64_CMD_c0, target);
-+	gc_n64_send_command(gc, GC_N64_CMD_1b, target);
-+	for (i = 0; i < 32; i++)
-+		gc_n64_send_command(gc, cmd, target);
-+	gc_n64_send_stop_bit(gc, target);
- 
--	}
-+	local_irq_restore(flags);
++
++
++	switch (xpad->xtype) {
++
++	case XTYPE_XBOX:
++		xpad->odata[0] = 0x00;
++		xpad->odata[1] = 0x06;
++		xpad->odata[2] = 0x00;
++		xpad->odata[3] = strong / 256;	/* left actuator */
++		xpad->odata[4] = 0x00;
++		xpad->odata[5] = weak / 256;	/* right actuator */
++		xpad->irq_out->transfer_buffer_length = 6;
++
++		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
++
++	case XTYPE_XBOX360:
++		xpad->odata[0] = 0x00;
++		xpad->odata[1] = 0x08;
++		xpad->odata[2] = 0x00;
++		xpad->odata[3] = strong / 256;  /* left actuator? */
++		xpad->odata[4] = weak / 256;	/* right actuator? */
++		xpad->odata[5] = 0x00;
++		xpad->odata[6] = 0x00;
++		xpad->odata[7] = 0x00;
++		xpad->irq_out->transfer_buffer_length = 8;
++
++		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
++
++	case XTYPE_XBOX360W:
++		xpad->odata[0] = 0x00;
++		xpad->odata[1] = 0x01;
++		xpad->odata[2] = 0x0F;
++		xpad->odata[3] = 0xC0;
++		xpad->odata[4] = 0x00;
++		xpad->odata[5] = strong / 256;
++		xpad->odata[6] = weak / 256;
++		xpad->odata[7] = 0x00;
++		xpad->odata[8] = 0x00;
++		xpad->odata[9] = 0x00;
++		xpad->odata[10] = 0x00;
++		xpad->odata[11] = 0x00;
++		xpad->irq_out->transfer_buffer_length = 12;
++
++		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
++
++	default:
++		dev_dbg(&xpad->dev->dev,
++			"%s - rumble command sent to unsupported xpad type: %d\n",
++			__func__, xpad->xtype);
++		return -1;
+ 	}
  
  	return 0;
+@@ -697,7 +712,7 @@ static int xpad_init_ff(struct usb_xpad *xpad)
+ 
+ 	input_set_capability(xpad->dev, EV_FF, FF_RUMBLE);
+ 
+-	return input_ff_create_memless(xpad->dev, NULL, xpad_play_effect);
++	return input_ff_create_mlnx(xpad->dev, NULL, xpad_play_effect, FF_UPDATE_RATE);
  }
-@@ -317,7 +324,7 @@ static int __init gc_n64_init_ff(struct input_dev *dev, int i)
  
- 	input_set_capability(dev, EV_FF, FF_RUMBLE);
- 
--	err = input_ff_create_memless(dev, sdev, gc_n64_play_effect);
-+	err = input_ff_create_mlnx(dev, sdev, gc_n64_play_effect, FF_UPDATE_RATE);
- 	if (err) {
- 		kfree(sdev);
- 		return err;
+ #else
 -- 
 1.9.1
 
