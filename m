@@ -1,234 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934312AbaDITMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 15:12:24 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.200]:8949 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934158AbaDITMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 15:12:22 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 15:12:22 EDT
-X-Env-Sender: Benjamin.Romer@unisys.com
-X-Msg-Ref: server-5.tower-45.messagelabs.com!1397070340!33607030!4
-X-Originating-IP: [192.61.61.105]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-From: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
-To: *S-Par-Maintainer <SParMaintainer@unisys.com>,
-        "jkc@redhat.com" <jkc@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	id S933783AbaDITPE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 15:15:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34907 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933323AbaDITPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 15:15:01 -0400
+Date: Wed, 9 Apr 2014 21:14:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jason Baron <jbaron@akamai.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Aristeu Rozanski <aris@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 9 Apr 2014 14:04:50 -0500
-Subject: [PATCH] unisys: staging: Check for s-Par firmware before
- initializing s-Par modules
-Thread-Topic: [PATCH] unisys: staging: Check for s-Par firmware before
- initializing s-Par modules
-Thread-Index: Ac9UJpUAchwoIAQrTwSjwd0TsgpsJw==
-Message-ID: <C97001BC43954D438ACB059713BA5CDF92040F0F09@USEA-EXCH7.na.uis.unisys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+Message-ID: <20140409191454.GQ6529@pd.tnic>
+References: <cover.1396645124.git.jbaron@akamai.com>
+ <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
+ <20140409113552.GJ6529@pd.tnic>
+ <20140409133433.GJ29214@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com>
+ <20140409173633.GN6529@pd.tnic>
+ <5345980F.7070604@akamai.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5345980F.7070604@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s39JCYAB021504
 
-This patch adds a function, is_spar_system(), to check that s-Par
-firmware is present, and then uses this function at the beginning of
-each module to verify that the modules are being run on an s-Par system
-before beginning initialization. If the firmware is not detected, the
-module will return a failure code.
+On Wed, Apr 09, 2014 at 02:57:19PM -0400, Jason Baron wrote:
+> Right, so maybe the fact that its a desktop chipset means that it
+> behaves differently and doesn't raise MCEs on memory errors. We have a
+> bunch of these processors and we haven't yet seen an MCE raised on a
+> memory error.
 
-Checking for s-Par firmware uses the cpuid instruction to verify that
-the processor is running with virtualization turned on, and then uses a
-second cpuid instruction to check that the hypervisor ID is
-"UnisysSpar64".
+This can't be - an uncorrectable error will have to generate a machine
+check exception if consumed - there's no other option.
 
-Additionally, some minor clean-up was done on copyright tags and
-unnecessary messages were removed from the visorchipset_main() function.
+Can you do
 
-This patch was tested with KVM to ensure that the modules do not load
-when s-Par firmware is not present, and tested with s-Par 4.0.12 to
-verify that the modules load correctly when the firmware is present.
+rdmsr 0x179
+rdmsr 0x17b
 
-Signed-off-by: Benjamin Romer <benjamin.romer@unisys.com>
----
-diff --git a/drivers/staging/unisys/include/timskmodutils.h b/drivers/staging/unisys/include/timskmodutils.h
-index 2d81d46..cc439d3 100644
---- a/drivers/staging/unisys/include/timskmodutils.h
-+++ b/drivers/staging/unisys/include/timskmodutils.h
-@@ -1,6 +1,6 @@
- /* timskmodutils.h
-  *
-- * Copyright ï¿½ 2010 - 2013 UNISYS CORPORATION
-+ * Copyright Â© 2010 - 2013 UNISYS CORPORATION
-  * All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -71,5 +71,6 @@
- 				  u64 somethings, char *buf, size_t bufsize);
- struct seq_file *visor_seq_file_new_buffer(void *buf, size_t buf_size);
- void visor_seq_file_done_buffer(struct seq_file *m);
-+int is_spar_system( void );
- 
- #endif
-diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
-index 8ea9c46..aa60ccb 100644
---- a/drivers/staging/unisys/uislib/uislib.c
-+++ b/drivers/staging/unisys/uislib/uislib.c
-@@ -1,6 +1,6 @@
- /* uislib.c
-  *
-- * Copyright ï¿½ 2010 - 2013 UNISYS CORPORATION
-+ * Copyright Â© 2010 - 2013 UNISYS CORPORATION
-  * All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -2276,6 +2276,11 @@
- static int __init
- uislib_mod_init(void)
- {
-+	/* check for s-Par support */
-+	if( !is_spar_system() ) {
-+		printk( "s-Par not detected.\n" );
-+		return -EPERM;
-+	}
- 
- 	LOGINF("MONITORAPIS");
- 
-diff --git a/drivers/staging/unisys/virthba/virthba.c b/drivers/staging/unisys/virthba/virthba.c
-index 817b11d..862509d 100644
---- a/drivers/staging/unisys/virthba/virthba.c
-+++ b/drivers/staging/unisys/virthba/virthba.c
-@@ -1,6 +1,6 @@
- /* virthba.c
-  *
-- * Copyright ï¿½ 2010 - 2013 UNISYS CORPORATION
-+ * Copyright Â© 2010 - 2013 UNISYS CORPORATION
-  * All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -1691,6 +1691,12 @@
- 	int error;
- 	int i;
- 
-+	/* check for s-Par support */
-+	if( !is_spar_system() ) {
-+		printk( "s-Par not detected.\n" );
-+		return -EPERM;
-+	}
-+
- 	LOGINF("Entering virthba_mod_init...\n");
- 
- 	POSTCODE_LINUX_2(VHBA_CREATE_ENTRY_PC, POSTCODE_SEVERITY_INFO);
-diff --git a/drivers/staging/unisys/virtpci/virtpci.c b/drivers/staging/unisys/virtpci/virtpci.c
-index 8e34650..0d06f7e 100644
---- a/drivers/staging/unisys/virtpci/virtpci.c
-+++ b/drivers/staging/unisys/virtpci/virtpci.c
-@@ -1,6 +1,6 @@
- /* virtpci.c
-  *
-- * Copyright ï¿½ 2010 - 2013 UNISYS CORPORATION
-+ * Copyright Â© 2010 - 2013 UNISYS CORPORATION
-  * All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -21,6 +21,7 @@
- #ifdef CONFIG_MODVERSIONS
- #include <config/modversions.h>
- #endif
-+#include "timskmodutils.h"
- #include "uniklog.h"
- #include "diagnostics/appos_subsystems.h"
- #include "uisutils.h"
-@@ -1686,6 +1687,11 @@
- {
- 	int ret;
- 
-+	/* check for s-Par support */
-+	if( !is_spar_system() ) {
-+		printk( "s-Par not detected.\n" );
-+		return -EPERM;
-+	}
- 
- 	LOGINF("Module build: Date:%s Time:%s...\n", __DATE__, __TIME__);
- 
-diff --git a/drivers/staging/unisys/visorchipset/visorchipset_main.c b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-index 8252ca1..aa35aa2 100644
---- a/drivers/staging/unisys/visorchipset/visorchipset_main.c
-+++ b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-@@ -1,6 +1,6 @@
- /* visorchipset_main.c
-  *
-- * Copyright ï¿½ 2010 - 2013 UNISYS CORPORATION
-+ * Copyright Â© 2010 - 2013 UNISYS CORPORATION
-  * All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -2681,18 +2681,13 @@
- 	struct proc_dir_entry *toolaction_file;
- 	struct proc_dir_entry *bootToTool_file;
- 
--	LOGINF("chipset driver version %s loaded", VERSION);
--	/* process module options */
--	POSTCODE_LINUX_2(DRIVER_ENTRY_PC, POSTCODE_SEVERITY_INFO);
-+	/* check for s-Par support */
-+	if( !is_spar_system() ) {
-+		printk( "s-Par not detected.\n" );
-+		return -EPERM;
-+	}
- 
--	LOGINF("option - testvnic=%d", visorchipset_testvnic);
--	LOGINF("option - testvnicclient=%d", visorchipset_testvnicclient);
--	LOGINF("option - testmsg=%d", visorchipset_testmsg);
--	LOGINF("option - testteardown=%d", visorchipset_testteardown);
--	LOGINF("option - major=%d", visorchipset_major);
--	LOGINF("option - serverregwait=%d", visorchipset_serverregwait);
--	LOGINF("option - clientregwait=%d", visorchipset_clientregwait);
--	LOGINF("option - holdchipsetready=%d", visorchipset_holdchipsetready);
-+	POSTCODE_LINUX_2(DRIVER_ENTRY_PC, POSTCODE_SEVERITY_INFO);
- 
- 	memset(&BusDev_Server_Notifiers, 0, sizeof(BusDev_Server_Notifiers));
- 	memset(&BusDev_Client_Notifiers, 0, sizeof(BusDev_Client_Notifiers));
-diff --git a/drivers/staging/unisys/visorutil/visorkmodutils.c b/drivers/staging/unisys/visorutil/visorkmodutils.c
-index a7d1e94..764400f 100644
---- a/drivers/staging/unisys/visorutil/visorkmodutils.c
-+++ b/drivers/staging/unisys/visorutil/visorkmodutils.c
-@@ -1,6 +1,6 @@
- /* timskmodutils.c
-  *
-- * Copyright ï¿½ 2010 - 2013 UNISYS CORPORATION
-+ * Copyright Â© 2010 - 2013 UNISYS CORPORATION
-  * All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -20,6 +20,21 @@
- 
- #define MYDRVNAME "timskmodutils"
- 
-+/* the s-Par firmware uses the virtualization hardware in the CPU to split up
-+ * processors into partitions. The hypervisor ID can be found in the CPUID
-+ * hypervisor feature leaf, encoded as a string "UnisysSpar64" across the
-+ * returned ebx/ecx/edx registers.
-+ */
-+int is_spar_system() {
-+	unsigned int eax, ebx, ecx, edx;
-+
-+	cpuid( 0x00000001, &eax, &ebx, &ecx, &edx ); /* check for virtual processor */
-+	if( !(ecx & 0x80000000) ) return 0;
-+	cpuid( 0x40000000, &eax, &ebx, &ecx, &edx ); /* check for s-Par id */
-+	return (ebx == 0x73696e55) && (ecx == 0x70537379)
-+			&& (edx == 0x34367261);
-+}
-+
- /** Callers to interfaces that set __GFP_NORETRY flag below
-  *  must check for a NULL (error) result as we are telling the
-  *  kernel interface that it is okay to fail.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+and paste the results here?
+
+> The reason I went with ie31200 is that afaiu the memory controller hub
+> is integrated into the cpu. Another alternative might be ie312xx?
+
+Yeah, if Tony doesn't come up with something more official about that
+MCH.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
