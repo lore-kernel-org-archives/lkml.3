@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934165AbaDISFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 14:05:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34426 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933353AbaDISFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 14:05:52 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 1/2] pwm: add period and polarity to struct pwm_lookup
-Date: Wed,  9 Apr 2014 20:04:08 +0200
-Message-Id: <1397066649-3767-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397066649-3767-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1397066649-3767-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S934251AbaDISH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 14:07:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20342 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933458AbaDISHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 14:07:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,827,1389772800"; 
+   d="scan'208";a="517689423"
+Date: Wed, 9 Apr 2014 11:00:32 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: intel-mid: add watchdog platform code for
+ Merrifield
+Message-ID: <20140409180031.GA23460@psi-dev26.jf.intel.com>
+References: <1396990744-10695-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1396990744-10695-3-git-send-email-david.a.cohen@linux.intel.com>
+ <20140409134223.6444a598@alan.etchedpixels.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409134223.6444a598@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a period and a polarity member to struct pwm_lookup so that when performing
-a lookup using the lookup table instead of device tree, we are able to set the
-period and the polarity accordingly like what is done in
-of_pwm_xlate_with_flags.
+On Wed, Apr 09, 2014 at 01:42:23PM +0100, One Thousand Gnomes wrote:
+> On Tue,  8 Apr 2014 13:59:04 -0700
+> David Cohen <david.a.cohen@linux.intel.com> wrote:
+> 
+> > This patch adds platform code for Intel Merrifield.
+> > Since the watchdog is not part of SFI table, we have no other option but
+> > to manually register watchdog's platform device (argh!).
+> 
+> Before going too far down that path have you considered compiling in a
+> devicetree instead ?
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/pwm/core.c  | 5 +++++
- include/linux/pwm.h | 2 ++
- 2 files changed, 7 insertions(+)
+This is the only device missing from SFI table I am aware of.
+The original implementation is to register the watchdog without a
+device/driver match. i.e. directly from the init call. Then the init
+call has a conditional check if it's Merrifield with
+intel_mid_identify_cpu() to avoid it being registered in !Merrifield
+platforms. But I want to lock this intel_mid_identify_cpu() inside
+intel_mid platform code, since it's too ugly to stay inside drivers.
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index a80471399c20..206e5996359c 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -663,6 +663,11 @@ struct pwm_device *pwm_get(struct device *dev, const char *con_id)
- 
- 	if (chip)
- 		pwm = pwm_request_from_chip(chip, index, con_id ?: dev_id);
-+	if (IS_ERR(pwm))
-+		return pwm;
-+
-+	pwm_set_period(pwm, p->period);
-+	pwm_set_polarity(pwm, p->polarity);
- 
- 	mutex_unlock(&pwm_lookup_lock);
- 
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 4717f54051cb..2f45e2fe5b93 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -274,6 +274,8 @@ struct pwm_lookup {
- 	unsigned int index;
- 	const char *dev_id;
- 	const char *con_id;
-+	unsigned int period;
-+	enum pwm_polarity polarity;
- };
- 
- #define PWM_LOOKUP(_provider, _index, _dev_id, _con_id)	\
--- 
-1.8.3.2
+If we figure out there's more devices missing from SFI table, then we
+could revisit here and consider another approach.
 
+Br, David
+
+> 
+> Alan
