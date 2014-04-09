@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964903AbaDIRrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:47:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39666 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933411AbaDIRrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:47:08 -0400
-Date: Wed, 9 Apr 2014 19:47:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Punnaiah Choudary <kpc528@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-edac@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
-        punnaiah choudary kalluri <punnaia@xilinx.com>
-Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
-Message-ID: <20140409174701.GO6529@pd.tnic>
-References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com>
- <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
- <20140409113246.GA8778@pd.tnic>
- <CAL_Jsq+gszc+R_BrLtHKEBGYd=3T+sE1d+-HoF9aYZt6C2k5-g@mail.gmail.com>
- <20140409151932.GK6529@pd.tnic>
- <CAHLkNHJTA5bGD1zAfzE2JrDFAWvmgYyYjir+4vR-d9Fe2-E48g@mail.gmail.com>
+	id S934166AbaDIRsg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:48:36 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:34472 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758261AbaDIRsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 13:48:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAHLkNHJTA5bGD1zAfzE2JrDFAWvmgYyYjir+4vR-d9Fe2-E48g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53457B80.1080307@zytor.com>
+References: <20140403191558.GA8745@thunk.org>
+	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
+	<20140404035308.GC2525@thunk.org>
+	<20140404134429.GB26806@quack.suse.cz>
+	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
+	<20140404234358.GE10275@thunk.org>
+	<CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
+	<20140407140745.GA8855@thunk.org>
+	<CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
+	<20140408134740.GB28822@thunk.org>
+	<CAMuHMdW8xkBFJ5-E04rVhDk+CSubHut+kx3P6cYCn0dMhQdb-Q@mail.gmail.com>
+	<53457B80.1080307@zytor.com>
+Date: Wed, 9 Apr 2014 19:48:32 +0200
+X-Google-Sender-Auth: IWxO9PulwRpdmEqrZMV607zxscQ
+Message-ID: <CAMuHMdU9ZcCzRWk2NWfdx54Uox=C=MaR5t8sD2icUpE_xtr8cA@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 10:59:49PM +0530, Punnaiah Choudary wrote:
-> There is a driver file cache-l2x0.c under arch/arm/mm for pl310 cache
-> configuration and management. Russel king had suggested to use
-> single driver file for both pl310 edac implementation and cache-l2x0.c
-> Here is the thread
-> http://www.spinics.net/lists/arm-kernel/msg320407.html
-> 
-> please provide your inputs
+Hi Peter,
 
-Well, it is very simple - you don't really need an EDAC compilation unit
-just so that you can report errors - you can very well do that in your
-cache-l2x0.c and boom, problem solved.
+On Wed, Apr 9, 2014 at 6:55 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/09/2014 09:40 AM, Geert Uytterhoeven wrote:
+>> On Tue, Apr 8, 2014 at 3:47 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+>>> On Mon, Apr 07, 2014 at 10:25:30PM +0200, Geert Uytterhoeven wrote:
+>>>>> maintainers would have no idea that a new syscall has been added.
+>>>>
+>>>> If i386 has the new syscall, scripts/checksyscalls.sh will catch it and
+>>>> inform us about it during our next kernel build.
+>>>>
+>>>> If you add it to x86_64 only, bad luck for anyone else ;-)
+>>>
+>>> Maybe we should change scripts/checksyscalls.sh to check the x86_64
+>>> list of syscalls, and not i386?
+>>>
+>>> It's been a long time since "all the world's an i386" --- these days,
+>>> it's "all the world's an x86_64".  :-)
+>>
+>> Let the kbuild people (and their employers) fight over it...
+>>
+>
+> I'm missing context here, but as an x86 maintainer I have no intention
+> of allowing system calls that aren't x86-specific to be added to x86-64
+> only.
 
-Simply move the irq handler and the parity error checker to that file.
+commit 520c8b16505236fc82daa352e6c5e73cd9870cff
+Author: Miklos Szeredi <mszeredi@suse.cz>
+Date:   Tue Apr 1 17:08:42 2014 +0200
 
-:-)
+    vfs: add renameat2 syscall
 
--- 
-Regards/Gruss,
-    Boris.
+It was added to arch/x86/syscalls/syscall_64.tbl only.
 
-Sent from a fat crate under my desk. Formatting is fine.
+Gr{oetje,eeting}s,
+
+                        Geert
+
 --
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
