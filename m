@@ -1,151 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934191AbaDIUOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:14:50 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:55050 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342AbaDIUOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:14:49 -0400
+	id S934288AbaDIUQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:16:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41813 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933342AbaDIUQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 16:16:22 -0400
+Date: Wed, 9 Apr 2014 22:16:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jason Baron <jbaron@akamai.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Aristeu Rozanski <aris@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+Message-ID: <20140409201615.GS6529@pd.tnic>
+References: <cover.1396645124.git.jbaron@akamai.com>
+ <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
+ <20140409113552.GJ6529@pd.tnic>
+ <20140409133433.GJ29214@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com>
+ <20140409173633.GN6529@pd.tnic>
+ <5345980F.7070604@akamai.com>
+ <20140409191454.GQ6529@pd.tnic>
+ <5345A54D.2050808@akamai.com>
 MIME-Version: 1.0
-In-Reply-To: <5345A4FA.1090008@codeaurora.org>
-References: <1396926910-11227-1-git-send-email-keescook@chromium.org>
-	<1396926910-11227-3-git-send-email-keescook@chromium.org>
-	<20140409090204.GA6583@linaro.org>
-	<CAGXu5jL0Exz0TSYE1EaPVwxik5+0y3QXTWLkU6Ti+9+ahHM=ow@mail.gmail.com>
-	<5345A4FA.1090008@codeaurora.org>
-Date: Wed, 9 Apr 2014 13:14:48 -0700
-X-Google-Sender-Auth: 2kh-e-3ySCv2om6vOVFLmKGmh0c
-Message-ID: <CAGXu5jJdy4DVfvaG2smNhW+pHrLEZB+5fTABap3DGRdaKg80kw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] ARM: mm: allow text and rodata sections to be read-only
-From: Kees Cook <keescook@chromium.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Steve Capper <steve.capper@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5345A54D.2050808@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 9, 2014 at 12:52 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
-> On 4/9/2014 9:12 AM, Kees Cook wrote:
->> On Wed, Apr 9, 2014 at 2:02 AM, Steve Capper <steve.capper@linaro.org> wrote:
->>> Hi Kees,
->>>
->>> On Mon, Apr 07, 2014 at 08:15:10PM -0700, Kees Cook wrote:
->>>> This introduces CONFIG_DEBUG_RODATA, making kernel text and rodata
->>>> read-only. Additionally, this splits rodata from text so that rodata can
->>>> also be NX, which may lead to wasted memory when aligning to SECTION_SIZE.
->>>>
->>>> The read-only areas are made writable during ftrace updates. Additional
->>>> work is needed for kprobes and kexec, so the feature is temporarily
->>>> marked as unavailable in Kconfig when those options are selected.
->>>>
->>>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>>> ---
->>>>  arch/arm/include/asm/cacheflush.h |    9 ++++++++
->>>>  arch/arm/kernel/ftrace.c          |   17 ++++++++++++++
->>>>  arch/arm/kernel/vmlinux.lds.S     |    3 +++
->>>>  arch/arm/mm/Kconfig               |   12 ++++++++++
->>>>  arch/arm/mm/init.c                |   46 +++++++++++++++++++++++++++++++++++++
->>>>  5 files changed, 87 insertions(+)
->>>>
->>>> diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
->>>> index 8b8b61685a34..b6fea0a1a88b 100644
->>>> --- a/arch/arm/include/asm/cacheflush.h
->>>> +++ b/arch/arm/include/asm/cacheflush.h
->>>> @@ -487,4 +487,13 @@ int set_memory_rw(unsigned long addr, int numpages);
->>>>  int set_memory_x(unsigned long addr, int numpages);
->>>>  int set_memory_nx(unsigned long addr, int numpages);
->>>>
->>>> +#ifdef CONFIG_DEBUG_RODATA
->>>> +void mark_rodata_ro(void);
->>>> +void set_kernel_text_rw(void);
->>>> +void set_kernel_text_ro(void);
->>>> +#else
->>>> +static inline void set_kernel_text_rw(void) { }
->>>> +static inline void set_kernel_text_ro(void) { }
->>>> +#endif
->>>> +
->>>>  #endif
->>>> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
->>>> index af9a8a927a4e..ea446ae09c89 100644
->>>> --- a/arch/arm/kernel/ftrace.c
->>>> +++ b/arch/arm/kernel/ftrace.c
->>>> @@ -15,6 +15,7 @@
->>>>  #include <linux/ftrace.h>
->>>>  #include <linux/uaccess.h>
->>>>  #include <linux/module.h>
->>>> +#include <linux/stop_machine.h>
->>>>
->>>>  #include <asm/cacheflush.h>
->>>>  #include <asm/opcodes.h>
->>>> @@ -35,6 +36,22 @@
->>>>
->>>>  #define      OLD_NOP         0xe1a00000      /* mov r0, r0 */
->>>>
->>>> +static int __ftrace_modify_code(void *data)
->>>> +{
->>>> +     int *command = data;
->>>> +
->>>> +     set_kernel_text_rw();
->>>> +     ftrace_modify_all_code(*command);
->>>> +     set_kernel_text_ro();
->>>> +
->>>> +     return 0;
->>>> +}
->>>
->>> Would another approach be to keep all the kernel .text ro then override
->>> probe_kernel_write (which has a weak reference), to create a separate
->>> temporary rw mapping to the specific page that needs to be modified?
->>>
->>> That way you only worry about TLB and cache maintenance for a smaller
->>> area. Also, your kernel .text VAs never actually become writable, so
->>> you don't need to worry as much about unauthorised changes whilst your
->>> guard is temporarily down.
->>>
->>> (Though lots of small changes could probably make this more
->>> expensive, and you will need to double check aliasing in pre-ARMv7).
->>
->> As I understand it, early boot needs some of these areas RWX. Doing
->> the protection during init-free means we can avoid all that and still
->> allow the memory to get reclaimed. As to not doing section
->> re-mappings, I share the same concern about it being very expensive to
->> do lots of small changes. As such, I think this is the cleanest
->> approach that is still portable.
->>
->
-> FWIW, our out of tree patches set up the permissions at map_lowmem time
-> and we've never run into any issue with incorrect RWX permissions to
-> the best of my knowledge.
+On Wed, Apr 09, 2014 at 03:53:49PM -0400, Jason Baron wrote:
+> Unfortunately, the box reporting the ue errors just went into transit (so
+> that I can better examine this issue), so I will probably not be able to
+> run this experiment on that specific box until next week.
+> 
+> However, I was able to run it on a very similar box (same pci id for the
+> mch), and I get:
+>  
+> # ./rdmsr 0x179
+> c09
 
-I thought there were problems with not being able to free init mem in this case?
+1100_0000_1001
+11   7    3
 
-> Just for comparison, how many small changes would need to happen for an
-> ftrace use case? Would these changes be happening on a hot path?
+Hohumm, that's interesting: 9 MCE banks, there's *no* MCG_CTL register
+present (bit 8) (that's why the read below fails) so you cannot turn on
+or off the error reporting banks.
 
-I'm not familiar with the internals, but it seemed like it was fixing
-up a lot of entry points.
+bit 10 says you have CMCI so you don't need the polling, you probably
+don't even need the EDAC driver at all ... unless you want to report
+which DRAM channel had the error (this is probably the only additional
+information your drivers gives and which the info in mcelog won't give).
 
--Kees
+Which gives the next question: what exactly is this EDAC driver going
+to be used for if it reports (row, channel, syndrome) and how are you
+going to use that info? I'm looking at ie31200_process_error_info().
 
->
->> -Kees
->>
->
-> Thanks,
-> Laura
-> --
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
+> # ./rdmsr 0x17b
+> rdmsr: CPU 0 cannot read MSR 0x0000017b
 
+In any case, that's some strange machine. If it is a desktop MCH, I can
+understand it not raising MCEs but that would be pretty nasty, still.
 
+Thanks.
 
 -- 
-Kees Cook
-Chrome OS Security
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
