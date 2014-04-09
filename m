@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683AbaDIRop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:44:45 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46855 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908AbaDIRon (ORCPT
+	id S964801AbaDIRpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:45:09 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:44199 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933721AbaDIRpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:44:43 -0400
-Message-ID: <53458708.40702@codeaurora.org>
-Date: Wed, 09 Apr 2014 10:44:40 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 9 Apr 2014 13:45:02 -0400
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: msm: Make MSM_HAS_DEBUG_UART_HS option visible
- to multiplatform targets
-References: <53455268.4030003@codeaurora.org> <1397053585-26201-1-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1397053585-26201-1-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <20140409110339.GF6529@pd.tnic>
+References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local>
+	<20140408204047.GQ30077@pd.tnic>
+	<CAGnW=BYJxEkhAitCGi-i6+260-i-+GPrg0yPcY=M+7YmDF6ZRw@mail.gmail.com>
+	<20140409110339.GF6529@pd.tnic>
+Date: Wed, 9 Apr 2014 23:15:00 +0530
+X-Google-Sender-Auth: LpTo0UedWYpI4RIMlmPdnwSo8Vs
+Message-ID: <CAGnW=BYay7fDeqgUDM4L8WqjEm66f5HVjht+RtbL+SPGOR1Xag@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
+ ecc controller
+From: punnaiah choudary kalluri <punnaia@xilinx.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
+        dougthompson@xmission.com, linux-edac@vger.kernel.org,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        sorenb@xilinx.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punnaiah Choudary <kpc528@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/14 07:26, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Wed, Apr 9, 2014 at 4:33 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Apr 09, 2014 at 11:34:31AM +0530, punnaiah choudary kalluri wrote:
+>> Since it is recommended in Documentation/kernel-doc-nano-HOWTO.txt
+>> but also said it is low priority and at the discretion of the MAINTAINER of
+>> that kernel source file
+>>
+>> So, if you recommend not use kernel-doc annotation then i will take care
+>> in next version.
 >
-> High Speed UART is available also in new multiplatform QCOM targets.
->
-> This fixes:
->
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> warning: (DEBUG_MSM8660_UART && DEBUG_MSM8960_UART && DEBUG_MSM8974_UART) selects MSM_HAS_DEBUG_UART_HS which has unmet direct dependencies (ARCH_MSM)
-> warning: (DEBUG_MSM8660_UART && DEBUG_MSM8960_UART && DEBUG_MSM8974_UART) selects MSM_HAS_DEBUG_UART_HS which has unmet direct dependencies (ARCH_MSM)
->
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> I don't think there's need for documenting those functions for
+> kernel-doc - it is an EDAC driver and not some subsystem function with a
+> lot of users.
 
-It might be better to move the config out of mach-msm into
-arch/arm/Kconfig.debug. I think the eventual goal is to remove all these
-#defines for the physical/virtual address and have users enter the
-addresses in Kconfig similar to how Russell has done for the pl01X. If
-that happens then we end up with a DEBUG_MSM_UART (for 7201,8x50, 7x30)
-and DEBUG_QCOM_UARTDM for all others and the help text would indicate
-which addresses to use.
+OK. I just checked at highbank_mc_edac and other drivers found no documentation
+for static functions. So, is it ok if i remove documentation
+completely for these static
+functions ?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks,
+Punnaiah
+>
+>> devm_ioremap_resource function will check this condition, so not
+>> checking for the NULL explicitly
+>
+> And it would say
+>
+>         dev_err(dev, "invalid resource\n");
+>
+> so we'll know what fails, ok.
+>
+>> Since the probe returns error, it it that the devm_ framework will
+>> clean these resources automatically?
+>
+> Ah, that's the managed thing, ok.
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
