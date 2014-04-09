@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964962AbaDIThs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 15:37:48 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55940 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933342AbaDIThr (ORCPT
+	id S964980AbaDITjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 15:39:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53576 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933342AbaDITjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 15:37:47 -0400
-Date: Wed, 9 Apr 2014 20:37:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-sh@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] pwm: add period and polarity to struct pwm_lookup
-Message-ID: <20140409193705.GJ27282@n2100.arm.linux.org.uk>
-References: <1397066649-3767-1-git-send-email-alexandre.belloni@free-electrons.com> <1397066649-3767-2-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 9 Apr 2014 15:39:07 -0400
+Date: Wed, 9 Apr 2014 21:38:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Greg KH <greg@kroah.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        Michele Ballabio <barra_cuda@katamail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH -stable] x86,preempt: Fix preemption for i386
+Message-ID: <20140409193845.GB26782@laptop.programming.kicks-ass.net>
+References: <20140407150337.GO10526@twins.programming.kicks-ass.net>
+ <20140407150705.GB13658@twins.programming.kicks-ass.net>
+ <5342EB78.3060002@gmx.de>
+ <20140407185658.GK11096@twins.programming.kicks-ass.net>
+ <20140408122128.GC13658@twins.programming.kicks-ass.net>
+ <53450F7E.7040904@canonical.com>
+ <20140409094515.GR11096@twins.programming.kicks-ass.net>
+ <20140409142447.GD13658@twins.programming.kicks-ass.net>
+ <CA+55aFzBw0i2nmOGOKzjS_b_7M1Gha2OFEe9rXOO4c+s-2HTkg@mail.gmail.com>
+ <20140409191931.GB10748@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397066649-3767-2-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140409191931.GB10748@kroah.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 08:04:08PM +0200, Alexandre Belloni wrote:
-> Adds a period and a polarity member to struct pwm_lookup so that when performing
-> a lookup using the lookup table instead of device tree, we are able to set the
-> period and the polarity accordingly like what is done in
-> of_pwm_xlate_with_flags.
+On Wed, Apr 09, 2014 at 12:19:31PM -0700, Greg KH wrote:
+> On Wed, Apr 09, 2014 at 07:36:23AM -0700, Linus Torvalds wrote:
+> > On Wed, Apr 9, 2014 at 7:24 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > >
+> > > I'm not entirely clear on how acceptable it is to propose a different
+> > > patch for -stable than what we have upstream.
+> > 
+> > It's not all that common, but it certainly happens.
+> > 
+> > It's fine, as long as it mentions the commits that fix it upstream.
+> > And as long as it's well tested, of course.
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  drivers/pwm/core.c  | 5 +++++
->  include/linux/pwm.h | 2 ++
->  2 files changed, 7 insertions(+)
-> 
-> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> index a80471399c20..206e5996359c 100644
-> --- a/drivers/pwm/core.c
-> +++ b/drivers/pwm/core.c
-> @@ -663,6 +663,11 @@ struct pwm_device *pwm_get(struct device *dev, const char *con_id)
->  
->  	if (chip)
->  		pwm = pwm_request_from_chip(chip, index, con_id ?: dev_id);
-> +	if (IS_ERR(pwm))
-> +		return pwm;
-> +
-> +	pwm_set_period(pwm, p->period);
-> +	pwm_set_polarity(pwm, p->polarity);
->  
->  	mutex_unlock(&pwm_lookup_lock);
+> I agree, I can take this as long as you say it's correct and tested...
 
-Clearly, this is not right.  Returning while leaving the mutex locked?
-No.
+As far as I understand the issue the patch is indeed correct and I have
+3 independent people who confirm their previously reported issues are
+now cured (as testified by the Tested-by tags).
 
-The second issue is... with _just_ this patch applied, we end up with
-"period" and "polarity" presumably initialised to zero, which means we
-now end up with the above explicitly setting the period and polarity as
-such.  Isn't that going to change the behaviour of this?
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+There has also been confirmation that upstream does no longer suffer the
+problem.
