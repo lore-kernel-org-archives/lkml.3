@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964834AbaDIRab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:30:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6795 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933783AbaDIRaY convert rfc822-to-8bit (ORCPT
+	id S964892AbaDIRbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:31:53 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:44905 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932908AbaDIRbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:30:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,827,1389772800"; 
-   d="scan'208";a="510270005"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Aristeu Rozanski <aris@redhat.com>, Borislav Petkov <bp@alien8.de>
-CC: Jason Baron <jbaron@akamai.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] ie31200_edac: Add driver
-Thread-Topic: [PATCH 3/3] ie31200_edac: Add driver
-Thread-Index: AQHPUErabVWTFTq13UyiP3ii3SIN9psJpHwAgAAhKgD//8g+EA==
-Date: Wed, 9 Apr 2014 17:17:53 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com>
-References: <cover.1396645124.git.jbaron@akamai.com>
- <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
- <20140409113552.GJ6529@pd.tnic> <20140409133433.GJ29214@redhat.com>
-In-Reply-To: <20140409133433.GJ29214@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 9 Apr 2014 13:31:51 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnYGADeDRVNXQ67n/2dsb2JhbABZgwbFH4EhF3SCZhwjGIECJBOIAAHNRY5shD8BA45eiX8BkkKDMjs
+Date: Wed, 9 Apr 2014 19:31:48 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org
+Subject: [PATCH 1/1] NFSD: Remove NULL value assignments
+Message-Id: <20140409193148.548f7fc5f0356f61257b2f41@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Why not put it into sb_edac - it is small enough and if you're lucky,
->> you might even share functionality?
->
-> By quickly looking at the driver (sorry Jason, no proper review yet :( )
-> it's a very different beast. Tony, any insights on why?
+Static values are automatically initialized to NULL.
 
-The E3-12xx processors connect out to a different (desktop) chipset from
-the E5 (server parts).  Perhaps that means the memory controller are different
-too???
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/nfsd/nfs4state.c | 10 +++++-----
+ fs/nfsd/nfssvc.c    |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
--Tony
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 3ba6597..c80097e 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -83,11 +83,11 @@ static DEFINE_MUTEX(client_mutex);
+  */
+ static DEFINE_SPINLOCK(recall_lock);
+ 
+-static struct kmem_cache *openowner_slab = NULL;
+-static struct kmem_cache *lockowner_slab = NULL;
+-static struct kmem_cache *file_slab = NULL;
+-static struct kmem_cache *stateid_slab = NULL;
+-static struct kmem_cache *deleg_slab = NULL;
++static struct kmem_cache *openowner_slab;
++static struct kmem_cache *lockowner_slab;
++static struct kmem_cache *file_slab;
++static struct kmem_cache *stateid_slab;
++static struct kmem_cache *deleg_slab;
+ 
+ void
+ nfs4_lock_state(void)
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 9a4a5f9..04407a4 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -205,7 +205,7 @@ static int nfsd_init_socks(struct net *net)
+ 	return 0;
+ }
+ 
+-static int nfsd_users = 0;
++static int nfsd_users;
+ 
+ static int nfsd_startup_generic(int nrservs)
+ {
