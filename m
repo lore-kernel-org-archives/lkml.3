@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758404AbaDIKHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:07:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51404 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757481AbaDIKHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:07:11 -0400
-Date: Wed, 9 Apr 2014 12:07:09 +0200
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: [PATCH v7 22/22] brd: Rename XIP to DAX
-Message-ID: <20140409100709.GK32103@quack.suse.cz>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <7fd74703525f4077ed7c2b273ce6d082b03f0b61.1395591795.git.matthew.r.wilcox@intel.com>
+	id S932873AbaDIKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 06:07:25 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:49701 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932247AbaDIKHT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 06:07:19 -0400
+X-Auth-Info: pl+OQV9d+GQ6AJ+iUAMV35B96jJcIhgJQyUHLDHW1og=
+From: Marek Vasut <marex@denx.de>
+To: grmoore@altera.com
+Subject: Re: [PATCH] Add support for flag status register on Micron chips.
+Date: Wed, 9 Apr 2014 12:06:45 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: ggrahammoore@gmail.com, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+References: <1396973570-13995-1-git-send-email-grmoore@altera.com> <1396973570-13995-2-git-send-email-grmoore@altera.com>
+In-Reply-To: <1396973570-13995-2-git-send-email-grmoore@altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7fd74703525f4077ed7c2b273ce6d082b03f0b61.1395591795.git.matthew.r.wilcox@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404091206.45967.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 23-03-14 15:08:48, Matthew Wilcox wrote:
-> From: Matthew Wilcox <willy@linux.intel.com>
+On Tuesday, April 08, 2014 at 06:12:50 PM, grmoore@altera.com wrote:
+> From: Graham Moore <grmoore@altera.com>
 > 
-> Since this is relating to FS_XIP, not KERNEL_XIP, it should be called
-> DAX instead of XIP.
+> Some new Micron flash chips require reading the flag
+> status register to determine when operations have completed.
 > 
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> Furthermore, chips with multi-die stacks of the 65nm 256Mb QSPI also
+> require reading the status register before reading the flag status
+> register.
+> 
+> This patch adds support for the flag status register in the n25q512a1 and
+> n25q00 Micron QSPI flash chips.
 
-								Honza
-> ---
->  drivers/block/Kconfig | 13 +++++++------
->  drivers/block/brd.c   | 14 +++++++-------
->  fs/Kconfig            |  4 ++--
->  3 files changed, 16 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-> index 014a1cf..1b8094d 100644
-> --- a/drivers/block/Kconfig
-> +++ b/drivers/block/Kconfig
-> @@ -393,14 +393,15 @@ config BLK_DEV_RAM_SIZE
->  	  The default value is 4096 kilobytes. Only change this if you know
->  	  what you are doing.
->  
-> -config BLK_DEV_XIP
-> -	bool "Support XIP filesystems on RAM block device"
-> -	depends on BLK_DEV_RAM
-> +config BLK_DEV_RAM_DAX
-> +	bool "Support Direct Access (DAX) to RAM block devices"
-> +	depends on BLK_DEV_RAM && FS_DAX
->  	default n
->  	help
-> -	  Support XIP filesystems (such as ext2 with XIP support on) on
-> -	  top of block ram device. This will slightly enlarge the kernel, and
-> -	  will prevent RAM block device backing store memory from being
-> +	  Support filesystems using DAX to access RAM block devices.  This
-> +	  avoids double-buffering data in the page cache before copying it
-> +	  to the block device.  Answering Y will slightly enlarge the kernel,
-> +	  and will prevent RAM block device backing store memory from being
->  	  allocated from highmem (only a problem for highmem systems).
->  
->  config CDROM_PKTCDVD
-> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-> index 00da60d..619e0e0 100644
-> --- a/drivers/block/brd.c
-> +++ b/drivers/block/brd.c
-> @@ -97,13 +97,13 @@ static struct page *brd_insert_page(struct brd_device *brd, sector_t sector)
->  	 * Must use NOIO because we don't want to recurse back into the
->  	 * block or filesystem layers from page reclaim.
->  	 *
-> -	 * Cannot support XIP and highmem, because our ->direct_access
-> -	 * routine for XIP must return memory that is always addressable.
-> -	 * If XIP was reworked to use pfns and kmap throughout, this
-> +	 * Cannot support DAX and highmem, because our ->direct_access
-> +	 * routine for DAX must return memory that is always addressable.
-> +	 * If DAX was reworked to use pfns and kmap throughout, this
->  	 * restriction might be able to be lifted.
->  	 */
->  	gfp_flags = GFP_NOIO | __GFP_ZERO;
-> -#ifndef CONFIG_BLK_DEV_XIP
-> +#ifndef CONFIG_BLK_DEV_RAM_DAX
->  	gfp_flags |= __GFP_HIGHMEM;
->  #endif
->  	page = alloc_page(gfp_flags);
-> @@ -360,7 +360,7 @@ out:
->  	bio_endio(bio, err);
->  }
->  
-> -#ifdef CONFIG_BLK_DEV_XIP
-> +#ifdef CONFIG_BLK_DEV_RAM_DAX
->  static long brd_direct_access(struct block_device *bdev, sector_t sector,
->  			void **kaddr, unsigned long *pfn, long size)
->  {
-> @@ -383,6 +383,8 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
->  	 * file is mapped to the next page of physical RAM */
->  	return PAGE_SIZE;
->  }
-> +#else
-> +#define brd_direct_access NULL
->  #endif
->  
->  static int brd_ioctl(struct block_device *bdev, fmode_t mode,
-> @@ -422,9 +424,7 @@ static int brd_ioctl(struct block_device *bdev, fmode_t mode,
->  static const struct block_device_operations brd_fops = {
->  	.owner =		THIS_MODULE,
->  	.ioctl =		brd_ioctl,
-> -#ifdef CONFIG_BLK_DEV_XIP
->  	.direct_access =	brd_direct_access,
-> -#endif
->  };
->  
->  /*
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 620ab73..376bd0a 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -34,7 +34,7 @@ source "fs/btrfs/Kconfig"
->  source "fs/nilfs2/Kconfig"
->  
->  config FS_DAX
-> -	bool "Direct Access support"
-> +	bool "Direct Access (DAX) support"
->  	depends on MMU
->  	help
->  	  Direct Access (DAX) can be used on memory-backed block devices.
-> @@ -45,7 +45,7 @@ config FS_DAX
->  
->  	  If you do not have a block device that is capable of using this,
->  	  or if unsure, say N.  Saying Y will increase the size of the kernel
-> -	  by about 2kB.
-> +	  by about 5kB.
->  
->  endif # BLOCK
->  
-> -- 
-> 1.9.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+[...]
+
+> +static int read_fsr(struct m25p *flash)
+> +{
+> +	ssize_t retval;
+> +	u8 code = OPCODE_RDFSR;
+> +	u8 val;
+> +
+> +	retval = spi_write_then_read(flash->spi, &code, 1, &val, 1);
+> +
+> +	if (retval < 0) {
+> +		dev_err(&flash->spi->dev, "error %d reading FSR\n",
+> +				(int) retval);
+
+Is the type-cast really needed here? Why ?
+
+> +		return retval;
+> +	}
+> +
+> +	return val;
+> +}
+> +/*
+>   * Read configuration register, returning its value in the
+>   * location. Return the configuration register value.
+>   * Returns negative if error occured.
+> @@ -233,7 +259,7 @@ static inline int set_4byte(struct m25p *flash, u32
+> jedec_id, int enable) * Service routine to read status register until
+> ready, or timeout occurs. * Returns non-zero if error.
+>   */
+> -static int wait_till_ready(struct m25p *flash)
+> +static int _wait_till_ready(struct m25p *flash)
+
+Please avoid using function names that start with underscore .
+[...]
+
+Thanks!
+
+Best regards,
+Marek Vasut
