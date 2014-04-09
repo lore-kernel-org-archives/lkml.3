@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170AbaDINI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:08:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55474 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932674AbaDINIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:08:25 -0400
-Date: Wed, 9 Apr 2014 14:08:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Josh Berkus <josh@agliodbs.com>
-Cc: Robert Haas <robertmhaas@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andres Freund <andres@2ndquadrant.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, sivanich@sgi.com
-Subject: Re: [PATCH 0/2] Disable zone_reclaim_mode by default
-Message-ID: <20140409130819.GS7292@suse.de>
-References: <1396910068-11637-1-git-send-email-mgorman@suse.de>
- <5343A494.9070707@suse.cz>
- <alpine.DEB.2.10.1404080914280.8782@nuc>
- <CA+TgmoY=vUdtdnJUEK1h-UcaNoqqLUctt44S8vj2B7EVUXUOyA@mail.gmail.com>
- <WM!55d2a092da9f6180473043487a4eb612ae8195f78d2ffdd83f673ed5cb2cb9659cf61e0c8d5bae23f5c914057bcd2ee4!@asav-3.01.com>
- <53445481.3030202@agliodbs.com>
+	id S933294AbaDINIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:08:52 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:43440 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932674AbaDINIt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 09:08:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=p51goV
+	DEKBO+NeFf8uhymig7hUDqTDKjHrCAci09xrGV5cb2BHy0wiHWa25vN6LzvFZqlT
+	qobAeZeQ5lcRVTDG7uU1C/Rqsjo7YWSu5a3iK9e8Fxy5YIKHx5mTZ8dtUu0bYKeE
+	TPZXAQZG/y4vxIIo4x0Qn0jy8maBagoVYk7y8=
+Message-ID: <53454660.5090603@pobox.com>
+Date: Wed, 09 Apr 2014 09:08:48 -0400
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <53445481.3030202@agliodbs.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: driver skip pci_set_master, fix it? No.
+References: <5344251D.7040805@pobox.com>	 <CAErSpo6KuYLaoEsxR4jJQ98P23kNEMzMcu_-RyM3nWd6YRxgag@mail.gmail.com>	 <5344679E.1030008@pobox.com> <1397011868.3671.94.camel@pasglop>
+In-Reply-To: <1397011868.3671.94.camel@pasglop>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: 1669C51E-BFE8-11E3-A3C1-873F0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 03:56:49PM -0400, Josh Berkus wrote:
-> On 04/08/2014 03:53 PM, Robert Haas wrote:
-> > In an ideal world, the kernel would put the hottest pages on the local
-> > node and the less-hot pages on remote nodes, moving pages around as
-> > the workload shifts.  In practice, that's probably pretty hard.
-> > Fortunately, it's not nearly as important as making sure we don't
-> > unnecessarily hit the disk, which is infinitely slower than any memory
-> > bank.
+On 14-04-08 10:51 PM, Benjamin Herrenschmidt wrote:
+> On Tue, 2014-04-08 at 17:18 -0400, Mark Lord wrote:
+>>> I assume you're talking about the one added by cf3e1feba7f9 ("PCI:
+>>> Workaround missing pci_set_master in pci drivers"), but as far as I
+>>> can tell, it only calls pci_set_master() for *bridge* devices.  What
+>>> am I missing?  Is pci_set_master() being called for your endpoint?
+>>> What path is that?
+>>
+>> Yes, it is being called during execution of the _probe() function in my driver,
+>> as evidenced by the annoying (and wrong) message it produces.
+>>
+>> Next time I've got the hardware at hand, I'll put a "dump_stack()" into there
+>> to see the exact calling path.
 > 
-> Even if the kernel could do this, we would *still* have to disable it
-> for PostgreSQL, since our double-buffering makes our pages look "cold"
-> to the kernel ... as discussed.
-> 
+> Note that one of the reason we want to do it early on bridges is that without it,
+> we may also not get the PCIe error messages.
 
-If it's the shared mapping that is being used then automatic NUMA
-balancing should migrate those pages to a node local to the CPU
-accessing it but how well it works will partially depend on how much
-those accesses move around. It's independent of the zone_reclaim_mode
-issue.
+Sure, for bridges.
 
+I'll get a stack trace later today, but what I suspect is happening
+is that this multi-function card is being treated by the PCI layers
+as a "bridge" for purposes of the multiple virtual functions it implements.
+
+We will probably need to distinguish this kind of device from real bridges here.
 -- 
-Mel Gorman
-SUSE Labs
+Mark Lord
+Real-Time Remedies Inc.
+mlord@pobox.com
