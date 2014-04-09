@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933282AbaDIL3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:29:49 -0400
-Received: from prifuk.cz ([31.31.77.140]:52633 "EHLO devoid-pointer.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932777AbaDIL3p convert rfc822-to-8bit (ORCPT
+	id S933288AbaDILan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:30:43 -0400
+Received: from smtp-out-071.synserver.de ([212.40.185.71]:1043 "EHLO
+	smtp-out-115.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932542AbaDILam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:29:45 -0400
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
-To: dmitry.torokhov@gmail.com, jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>
-Subject: [PATCH 19/24] Port hid-zpff to ff-memless-next
-Date: Wed, 09 Apr 2014 13:29:42 +0200
-Message-ID: <1496205.vHVYf5XDMd@sigyn>
-User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
-In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
-References: <1609685.QRL9N9sQvX@sigyn>
+	Wed, 9 Apr 2014 07:30:42 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 19297
+Message-ID: <53452F67.3060400@metafoo.de>
+Date: Wed, 09 Apr 2014 13:30:47 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: core: Fix Sparse incompatible types warning
+References: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com> <5345279F.6070005@metafoo.de> <1397041934.11424.2.camel@AMDC1943>
+In-Reply-To: <1397041934.11424.2.camel@AMDC1943>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-zpff to ff-memless-next
+On 04/09/2014 01:12 PM, Krzysztof Kozlowski wrote:
+> On Å›ro, 2014-04-09 at 12:57 +0200, Lars-Peter Clausen wrote:
+>> On 04/09/2014 09:21 AM, Krzysztof Kozlowski wrote:
+>>> Fix following Sparse warning:
+>>> sound/soc/soc-core.c:252:20: error: incompatible types in comparison expression (different type sizes)
+>>>
+>>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>>> ---
+>>>    sound/soc/soc-core.c | 2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+>>> index 051c006281f5..41f6178249df 100644
+>>> --- a/sound/soc/soc-core.c
+>>> +++ b/sound/soc/soc-core.c
+>>> @@ -249,7 +249,7 @@ static ssize_t codec_reg_write_file(struct file *file,
+>>>    	struct snd_soc_codec *codec = file->private_data;
+>>>    	int ret;
+>>>
+>>> -	buf_size = min(count, (sizeof(buf)-1));
+>>> +	buf_size = min(count, (size_t)(sizeof(buf)-1));
+>>
+>> But shouldn't the type of sizeof already be size_t?
+>
+> Hmmm... yes it should. It looks like a false positive from Sparse so the
+> commit message should be rather "Suppress" than "Fix".
 
-Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
----
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-zpff.c | 30 ++++++++++++++++++++++--------
- 2 files changed, 23 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index d1cbad6..7d617a8 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -775,7 +775,7 @@ config HID_ZEROPLUS
- config ZEROPLUS_FF
- 	bool "Zeroplus based game controller force feedback support"
- 	depends on HID_ZEROPLUS
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	---help---
- 	  Say Y here if you have a Zeroplus based game controller and want
- 	  to have force feedback support for it.
-diff --git a/drivers/hid/hid-zpff.c b/drivers/hid/hid-zpff.c
-index a29756c..6912500 100644
---- a/drivers/hid/hid-zpff.c
-+++ b/drivers/hid/hid-zpff.c
-@@ -25,9 +25,12 @@
- #include <linux/input.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/input/ff-memless-next.h>
- 
- #include "hid-ids.h"
- 
-+#define FF_UPDATE_RATE 50
-+
- #ifdef CONFIG_ZEROPLUS_FF
- 
- struct zpff_device {
-@@ -35,10 +38,11 @@ struct zpff_device {
- };
- 
- static int zpff_play(struct input_dev *dev, void *data,
--			 struct ff_effect *effect)
-+			 const struct mlnx_effect_command *command)
- {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct zpff_device *zpff = data;
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int left, right;
- 
- 	/*
-@@ -47,12 +51,22 @@ static int zpff_play(struct input_dev *dev, void *data,
- 	 * however it is possible that the XFX Executioner is an exception
- 	 */
- 
--	left = effect->u.rumble.strong_magnitude;
--	right = effect->u.rumble.weak_magnitude;
--	dbg_hid("called with 0x%04x 0x%04x\n", left, right);
--
--	left = left * 0x7f / 0xffff;
--	right = right * 0x7f / 0xffff;
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		left = rumble_force->strong;
-+		right = rumble_force->weak;
-+		dbg_hid("called with 0x%04x 0x%04x\n", left, right);
-+
-+		left = left * 0x7f / 0xffff;
-+		right = right * 0x7f / 0xffff;
-+		break;
-+	case MLNX_STOP_RUMBLE:
-+		left = 0;
-+		right = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	zpff->report->field[2]->value[0] = left;
- 	zpff->report->field[3]->value[0] = right;
-@@ -83,7 +97,7 @@ static int zpff_init(struct hid_device *hid)
- 
- 	set_bit(FF_RUMBLE, dev->ffbit);
- 
--	error = input_ff_create_memless(dev, zpff, zpff_play);
-+	error = input_ff_create_mlnx(dev, zpff, zpff_play, FF_UPDATE_RATE);
- 	if (error) {
- 		kfree(zpff);
- 		return error;
--- 
-1.9.1
-
+I'm pretty sure it is a bug in sparse, we shouldn't suppress those, but 
+rather fix them in sparse itself.
 
