@@ -1,61 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934347AbaDIUou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:44:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37896 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933590AbaDIUot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:44:49 -0400
-Date: Wed, 9 Apr 2014 13:44:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wengang <wen.gang.wang@oracle.com>
-Cc: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [Ocfs2-devel] [PATCH 1/1] OCFS2: Remove NULL assignments on
- static
-Message-Id: <20140409134448.cb23b34622bf986d145f1eaa@linux-foundation.org>
-In-Reply-To: <534499FA.8010107@oracle.com>
-References: <20140408221342.9759bea1dd852f2787f82586@skynet.be>
-	<534499FA.8010107@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934379AbaDIUsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:48:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62088 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933590AbaDIUsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 16:48:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,828,1389772800"; 
+   d="scan'208";a="517923306"
+Date: Wed, 9 Apr 2014 16:48:06 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140409204806.GF5727@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140408220525.GC26019@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140408220525.GC26019@quack.suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Apr 2014 08:53:14 +0800 Wengang <wen.gang.wang@oracle.com> wrote:
+On Wed, Apr 09, 2014 at 12:05:25AM +0200, Jan Kara wrote:
+> > +	if (!page)
+> > +		return VM_FAULT_OOM;
+> > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> > +	if (vmf->pgoff >= size) {
+>   Maybe comment here that we have to recheck i_size so that we don't create
+> pages in the area truncate_pagecache() has already evicted.
 
-> ___ 2014___04___09___ 04:13, Fabian Frederick ______:
-> > static values are automatically initialized to NULL.
-> >
->
-> What's the badness if we do the assignments?
+Done.
 
-(top-posting repaired...)
+> > +	dax_get_addr(inode, bh, &vfrom);	/* XXX: error handling */
+>   The error handling here is missing as the comment suggests :)
 
-Back in the olden days,
+Added.
 
-	static int x = 0;
+> > +	if (buffer_unwritten(&bh) || buffer_new(&bh))
+> > +		dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
+>   Where is dax_clear_blocks() defined?
 
-would consume space in the .data segment and
+Er ... patch 11.  I'll reorder the patches ;-)
 
-	static int x;
+> > +
+> > +	error = dax_get_pfn(inode, &bh, &pfn);
+> > +	if (error > 0)
+> > +		error = vm_insert_mixed(vma, vaddr, pfn);
+>   When there's a hole (thus page != NULL) and we are called from
+> dax_mkwrite(), this will always return EBUSY, correct?
 
-would consume space in the .bss segment.
+Erm ... it will return -EBUSY if this was the task that previously
+faulted on it.  Drat.  See below.
+
+> > +	mutex_unlock(&mapping->i_mmap_mutex);
+> > +
+> > +	if (page) {
+> > +		delete_from_page_cache(page);
+> > +		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
+> > +							PAGE_CACHE_SIZE, 0);
+>   Here we unmap the PTE pointing to the hole page but then we'll have to
+> retry the fault again to fill in the pfn we've got? This seems wrong. I'd
+> say we want to remap the PTE from the hole page to a pfn we've got while
+> holding i_mmap_mutex. remap_pfn_range() almost does what you need, except
+> that you also need that to work for normal pages. So you might need to
+> create a new helper in mm layer for that.
+
+I think it's easier than that.  How does this look?
+
+@@ -390,9 +389,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
+                dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
+ 
+        error = dax_get_pfn(&bh, &pfn, blkbits);
+-       if (error > 0)
+-               error = vm_insert_mixed(vma, vaddr, pfn);
+-       mutex_unlock(&mapping->i_mmap_mutex);
++       if (error <= 0)
++               goto unlock;
+ 
+        if (page) {
+                delete_from_page_cache(page);
+@@ -402,6 +400,9 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
+                page_cache_release(page);
+        }
+ 
++       error = vm_insert_mixed(vma, vaddr, pfn);
++       mutex_unlock(&mapping->i_mmap_mutex);
++
+        if (error == -ENOMEM)
+                return VM_FAULT_OOM;
+        /* -EBUSY is fine, somebody else faulted on the same PTE */
+@@ -409,6 +410,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
+                BUG_ON(error);
+        return VM_FAULT_NOPAGE | major;
+ 
++ unlock:
++       mutex_unlock(&mapping->i_mmap_mutex);
+  sigbus:
+        if (page) {
+                unlock_page(page);
 
 
-The .data segment is a part of vmlinux (because it contains non-zero
-data) whereas .bss does not occupy space in vmlinux because .bss is
-all-zero and can be built at runtime
+> > +int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+> > +			get_block_t get_block)
+> > +{
+> > +	int result;
+> > +	struct super_block *sb = file_inode(vma->vm_file)->i_sb;
+> > +
+> > +	sb_start_pagefault(sb);
+>   You don't need any filesystem freeze protection for the fault handler
+> since that's not going to modify the filesystem.
 
-So the effect of this patch would be to reduce the size of the kernel
-image.  Less disk space, less ROM space, etc.
+Err ... we might allocate a block as a result of doing a write to a hole.
+Or does that not count as 'modifying the filesystem' in this context?
 
+> > +	file_update_time(vma->vm_file);
+>   Why do you update m/ctime? We are only reading the file...
 
-I think more recent gcc's and linkers got smarter about that and move
-initialized-to-zero .data into .bss anyway.
+... except that it might be a write fault.  I think we modify the file
+iff we return VM_FAULT_MAJOR from do_dax_fault().  So I'd be open to
+something like this:
+
+	sb_start_pagefault(sb);
+	result = do_dax_fault(vma, vmf, get_block);
+	if (result & VM_FAULT_MAJOR)
+		file_update_time(vma->vm_file);
+	sb_end_pagefault(sb);
+
+Would that work better for you?
+
+> > @@ -70,7 +101,7 @@ const struct file_operations ext2_file_operations = {
+> >  #ifdef CONFIG_COMPAT
+> >  	.compat_ioctl	= ext2_compat_ioctl,
+> >  #endif
+> > -	.mmap		= generic_file_mmap,
+> > +	.mmap		= ext2_file_mmap,
+>   So what's the point of ext2_file_operations ever handling IS_DAX()
+> inodes? Actually ext2_file_operations and ext2_xip_file_operations seem to
+> be the same after this patch so either you drop ext2_xip_file_operations
+> (I'm for this) or you can leave generic_file_mmap here and assume
+> ext2_file_mmap is always called for IS_DAX() inodes.
+
+The goal is to get them the same.  At this point, the only sticky point is:
+
+        .splice_read    = generic_file_splice_read,
+        .splice_write   = generic_file_splice_write,
+
+And splice is pretty damn sticky for DAX.
 
