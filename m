@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933934AbaDIQkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:40:46 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:51597 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933100AbaDIQkp (ORCPT
+	id S934080AbaDIQlE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:41:04 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:58977 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933100AbaDIQk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:40:45 -0400
-Date: Wed, 9 Apr 2014 18:40:41 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/5] tracepoint: Convert process iteration to use
- for_each_process_thread()
-Message-ID: <20140409164037.GC17782@localhost.localdomain>
-References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
- <1397059882-23063-3-git-send-email-fweisbec@gmail.com>
- <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
+	Wed, 9 Apr 2014 12:40:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140408134740.GB28822@thunk.org>
+References: <20140403191558.GA8745@thunk.org>
+	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>
+	<20140404035308.GC2525@thunk.org>
+	<20140404134429.GB26806@quack.suse.cz>
+	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
+	<20140404234358.GE10275@thunk.org>
+	<CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
+	<20140407140745.GA8855@thunk.org>
+	<CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
+	<20140408134740.GB28822@thunk.org>
+Date: Wed, 9 Apr 2014 18:40:57 +0200
+X-Google-Sender-Auth: MxqYsBS2zlCIRtwQrqCbujUemec
+Message-ID: <CAMuHMdW8xkBFJ5-E04rVhDk+CSubHut+kx3P6cYCn0dMhQdb-Q@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 changes for 3.15
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 04:28:35PM +0000, Mathieu Desnoyers wrote:
-> ----- Original Message -----
-> > From: "Frederic Weisbecker" <fweisbec@gmail.com>
-> > To: "LKML" <linux-kernel@vger.kernel.org>
-> > Cc: "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Ingo Molnar"
-> > <mingo@kernel.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Oleg Nesterov" <oleg@redhat.com>, "Steven
-> > Rostedt" <rostedt@goodmis.org>
-> > Sent: Wednesday, April 9, 2014 12:11:19 PM
-> > Subject: [PATCH 2/5] tracepoint: Convert process iteration to use for_each_process_thread()
-> > 
-> > do_each_thread/while_each_thread iterators are deprecated by
-> > for_each_thread/for_each_process_thread() APIs.
-> > 
-> > Lets convert the callers in the tracepoint code. The ultimate
-> > goal is to remove the struct task_struct::thread_group field and
-> > the corresponding do_each_thread/while_each_thread iterators that are
-> > RCU unsafe.
-> > 
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > ---
-> >  kernel/tracepoint.c | 12 ++++++------
-> >  1 file changed, 6 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> > index fb0a38a..00a7e8b 100644
-> > --- a/kernel/tracepoint.c
-> > +++ b/kernel/tracepoint.c
-> > @@ -561,15 +561,15 @@ static int sys_tracepoint_refcount;
-> >  void syscall_regfunc(void)
-> >  {
-> >  	unsigned long flags;
-> > -	struct task_struct *g, *t;
-> > +	struct task_struct *p, *t;
-> >  
-> >  	if (!sys_tracepoint_refcount) {
-> >  		read_lock_irqsave(&tasklist_lock, flags);
-> > -		do_each_thread(g, t) {
-> > +		for_each_process_thread(p, t) {
-> 
-> What are the locking rules for for_each_process_thread() ?
-> 
-> Is it required to hold RCU read-side lock ? (it's not the case here)
-> 
-> Is tasklist_lock read-side lock sufficient ?
+On Tue, Apr 8, 2014 at 3:47 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Mon, Apr 07, 2014 at 10:25:30PM +0200, Geert Uytterhoeven wrote:
+>> > maintainers would have no idea that a new syscall has been added.
+>>
+>> If i386 has the new syscall, scripts/checksyscalls.sh will catch it and
+>> inform us about it during our next kernel build.
+>>
+>> If you add it to x86_64 only, bad luck for anyone else ;-)
+>
+> Maybe we should change scripts/checksyscalls.sh to check the x86_64
+> list of syscalls, and not i386?
+>
+> It's been a long time since "all the world's an i386" --- these days,
+> it's "all the world's an x86_64".  :-)
 
-It's the same requirements than do_each_thread while_each_thread: tasklist_lock
-or RCU. Except that it's really RCU-safe. while_each_thread isn't really
-safe due to issues with concurrent exec/de_thread()
+Let the kbuild people (and their employers) fight over it...
 
-Then it depends on your requirement, if you can tolerate concurrent
-adds and removals or not. Here tasklist_lock seems required or we may miss
-some tasks' syscall traces.
+Gr{oetje,eeting}s,
 
-> 
-> A quick glance at those for_each iterator defines in sched.h was not
-> helpful in finding this information.
+                        Geert
 
-Agreed, I'm going to add comments to precise that.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
