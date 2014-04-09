@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310AbaDINeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:34:10 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:33183 "EHLO extserv.mm-sol.com"
+	id S933332AbaDINfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:35:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39875 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932761AbaDINeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:34:06 -0400
-Message-ID: <1397050384.22858.27.camel@iivanov-dev>
-Subject: Re: [PATCH 4/4] pinctrl: msm: Add definitions for the APQ8064
- platform
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Wed, 09 Apr 2014 16:33:04 +0300
-In-Reply-To: <1396302597-31801-4-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1396302597-31801-4-git-send-email-bjorn.andersson@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932748AbaDINfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 09:35:01 -0400
+Date: Wed, 9 Apr 2014 09:34:34 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jason Baron <jbaron@akamai.com>, tony.luck@intel.com, hpa@zytor.com,
+        mingo@kernel.org, dougthompson@xmission.com, m.chehab@samsung.com,
+        mitake@dcl.info.waseda.ac.jp, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+Message-ID: <20140409133433.GJ29214@redhat.com>
+References: <cover.1396645124.git.jbaron@akamai.com>
+ <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
+ <20140409113552.GJ6529@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409113552.GJ6529@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi,
-
-On Mon, 2014-03-31 at 14:49 -0700, Bjorn Andersson wrote:
-> This adds pinctrl definitions for the GPIO pins of the TLMM v2 block in the
-> Qualcomm APQ8064 platform.
+On Wed, Apr 09, 2014 at 01:35:52PM +0200, Borislav Petkov wrote:
+> Btw, remind me again why this isn't part of the sb_edac? AFAICT, the
+> e3-12xx thing is a Sandybridge, right?
 > 
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
->  drivers/pinctrl/Kconfig           |   8 +
->  drivers/pinctrl/Makefile          |   1 +
->  drivers/pinctrl/pinctrl-apq8064.c | 567 ++++++++++++++++++++++++++++++++++++++
->  3 files changed, 576 insertions(+)
->  create mode 100644 drivers/pinctrl/pinctrl-apq8064.c
-> 
-> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-> index 32b6b49..526f1c6 100644
-> --- a/drivers/pinctrl/Kconfig
-> +++ b/drivers/pinctrl/Kconfig
-> @@ -222,6 +222,14 @@ config PINCTRL_MSM
->  	select PINCONF
->  	select GENERIC_PINCONF
->  
-> +config PINCTRL_APQ8064
-> +	tristate "Qualcomm APQ8064 pin controller driver"
-> +	depends on GPIOLIB && OF
-> +	select PINCTRL_MSM
-> +	help
-> +	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-> +	  Qualcomm TLMM block found in the Qualcomm APQ8064 platform.
+> Why not put it into sb_edac - it is small enough and if you're lucky,
+> you might even share functionality?
 
-The comment is not directly related to this patch, but..
-Should we start adding select PINCTRL in Qualcomm arches 
-which support PINCTRL, otherwise there is no way to select 
-desired implementation.
+By quickly looking at the driver (sorry Jason, no proper review yet :( )
+it's a very different beast. Tony, any insights on why?
 
-Regards,
-Ivan
-
+-- 
+Aristeu
 
