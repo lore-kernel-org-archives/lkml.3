@@ -1,154 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964881AbaDIQOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:14:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33705 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933342AbaDIQOm (ORCPT
+	id S934096AbaDIQOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:14:46 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:33613 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933923AbaDIQLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:14:42 -0400
-Message-ID: <534571F0.10706@free-electrons.com>
-Date: Wed, 09 Apr 2014 18:14:40 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>
-CC: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 00/15] ARM: sunxi: add A31 PL pins support
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com> <CAGb2v66XCN2ar1wj+a1+ZwdcdJ3gzJ+nDiO9bu52OwK+mBB_Hg@mail.gmail.com>
-In-Reply-To: <CAGb2v66XCN2ar1wj+a1+ZwdcdJ3gzJ+nDiO9bu52OwK+mBB_Hg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Apr 2014 12:11:35 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 3/5] hung_task: Convert process iteration to use for_each_process_thread()
+Date: Wed,  9 Apr 2014 18:11:20 +0200
+Message-Id: <1397059882-23063-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+do_each_thread/while_each_thread iterators are deprecated by
+for_each_thread/for_each_process_thread() APIs.
 
-On 09/04/2014 16:53, Chen-Yu Tsai wrote:
-> Hi Boris,
->
-> On Wed, Apr 9, 2014 at 9:51 PM, Boris BREZILLON
-> <boris.brezillon@free-electrons.com> wrote:
->> Hello,
->>
->> This series rework the sunxi pinctrl driver to support the PLx pins
->> available on the A31 SoC.
-> Thanks for working on this. I mentioned to Maxime on IRC yesterday that
-> we have complete pinctrl drivers for both A31 and A23, based on our current
-> pinctrl-sunxi driver, in the A23 SDK. These have the complete pin mapping.
+Lets convert the callers in the hung task detector code. The ultimate
+goal is to remove the struct task_struct::thread_group field and
+the corresponding do_each_thread/while_each_thread iterators that are
+RCU unsafe.
 
-Thanks for pointing this out, I'll take a look.
+It also makes the hung task threads iteration eventually RCU safe.
 
->
->> It also add missing A31 reset controller DT bindings documentation.
->>
->> I need those PL pins (actually I only need PL0 and PL1) to support
->> the P2WI bus, which in turn is used to communicate with the AXP221
->> PMIC.
-> If you could, please add all the PL and PM pins.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/hung_task.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Sure, I'll add pin macros for L and M ports.
-
-> As I said, you can find complete definitions in the A23 SDK.
->
->> Let me know if these changes are too intrusive.
-> I wonder if we should do a separate driver for the new PIO controller.
-> Clearly it's a separate IP block, with it's own clock and reset controls.
-
-This is what I had in mind in the first place, but then I encountered
-several issues when doing so:
-
- 1) the gpio chip is not dynamically allocated but is declared as a
-static variable instead
- 2) we have to tweak the pinctrl base field, otherwise the pin numbers
-overlap
- 3) other things I haven't noticed yet :-)
-
-I'll try to rework the driver to be able to declare 2 separated pin
-controllers.
-
-> Allwinner sources list this block as "R_PIO". I suggest using this name.
-> Clearly "pioL" does not cover all the functionality.
-
-Fair enough. I'll modify it.
-
->
-> I have started to document the PRCM block: http://linux-sunxi.org/PRCM
->
-> Last, please send the patches to the linux-sunxi mailing list as well.
-> At the very least, Hans will see them and add them to sunxi-devel branch.
-
-Sure, this is an oversight, I'm using get_maintainer and just forgot to
-add Hans and the linux-sunxi ML. But I'll take care to add you, hans and
-the sunxi ML in Cc next time.
-
-Thanks for your review.
-
-Best Regards,
-
-Boris
-
->
->
-> Cheers,
-> ChenYu
->
->> Best Regards,
->>
->> Boris
->>
->> Boris BREZILLON (15):
->>   ARM: sunxi: dt: list all pinctrl compatible strings
->>   ARM: sunxi: dt: document pinctrl clock related properties
->>   ARM: sunxi: dt: add pinctrl clock-names properties
->>   pinctrl: sunxi: specify clk name when retrieving pinctrl pio clk
->>   clk: sunxi: add A31 APB0 clk gate defintions
->>   clk: sunxi: add A31 APB0 gates compatible string to the documentation
->>   ARM: sunxi: dt: define A31's APB0 clk gates node
->>   reset: sunxi: document sunxi's reset controllers bindings
->>   clk: sunxi: add A31 APB0 reset line defintions
->>   pinctrl: sunxi: add PL pin definitions
->>   pinctrl: sunxi: add support for A31 PL pins
->>   pinctrl: sunxi: retrieve and enable PL clk gate for A31 SoC
->>   pinctrl: sunxi: retrieve and enable PL reset line for A31 SoC
->>   pinctrl: sunxi: define A31 PL0/PL1 pins
->>   ARM: sunxi: dt: add support for A31's PL pins
->>
->>  Documentation/devicetree/bindings/clock/sunxi.txt  |   1 +
->>  .../bindings/pinctrl/allwinner,sunxi-pinctrl.txt   |  13 +-
->>  .../bindings/reset/allwinner,sunxi-clock-reset.txt |  21 +++
->>  arch/arm/boot/dts/sun4i-a10.dtsi                   |   1 +
->>  arch/arm/boot/dts/sun5i-a10s.dtsi                  |   1 +
->>  arch/arm/boot/dts/sun5i-a13.dtsi                   |   1 +
->>  arch/arm/boot/dts/sun6i-a31.dtsi                   |  25 ++-
->>  arch/arm/boot/dts/sun7i-a20.dtsi                   |   1 +
->>  drivers/clk/sunxi/clk-sunxi.c                      |   5 +
->>  drivers/pinctrl/pinctrl-sunxi-pins.h               |   8 +
->>  drivers/pinctrl/pinctrl-sunxi.c                    | 205 +++++++++++++++------
->>  drivers/pinctrl/pinctrl-sunxi.h                    |  39 +++-
->>  12 files changed, 264 insertions(+), 57 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/reset/allwinner,sunxi-clock-reset.txt
->>
->> --
->> 1.8.3.2
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index 06bb141..d19744b 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -157,7 +157,7 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
+ {
+ 	int max_count = sysctl_hung_task_check_count;
+ 	int batch_count = HUNG_TASK_BATCHING;
+-	struct task_struct *g, *t;
++	struct task_struct *p, *t;
+ 
+ 	/*
+ 	 * If the system crashed already then all bets are off,
+@@ -167,18 +167,18 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
+ 		return;
+ 
+ 	rcu_read_lock();
+-	do_each_thread(g, t) {
++	for_each_process_thread(p, t) {
+ 		if (!max_count--)
+ 			goto unlock;
+ 		if (!--batch_count) {
+ 			batch_count = HUNG_TASK_BATCHING;
+-			if (!rcu_lock_break(g, t))
++			if (!rcu_lock_break(p, t))
+ 				goto unlock;
+ 		}
+ 		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
+ 		if (t->state == TASK_UNINTERRUPTIBLE)
+ 			check_hung_task(t, timeout);
+-	} while_each_thread(g, t);
++	}
+  unlock:
+ 	rcu_read_unlock();
+ }
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.8.3.1
 
