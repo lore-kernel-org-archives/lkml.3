@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964772AbaDIPLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:11:22 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:45943 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933469AbaDIPLT (ORCPT
+	id S933848AbaDIPKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:10:13 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45671 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933514AbaDIPKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:11:19 -0400
-Date: Wed, 9 Apr 2014 17:11:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mwhitehe@redhat.com
-Subject: Re: nohz problem with idle time on old hardware
-Message-ID: <20140409151108.GA17782@localhost.localdomain>
-References: <20131113102153.5f10e6b5@gandalf.local.home>
- <20131113103134.5b8cf02f@gandalf.local.home>
- <20131113105737.3f7a0b1b@gandalf.local.home>
- <alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
- <20131113111257.482c2955@gandalf.local.home>
- <20131113161829.GE4138@linux.vnet.ibm.com>
- <20131113112338.7d303c0f@gandalf.local.home>
- <20131113163552.GF4138@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
- <CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
+	Wed, 9 Apr 2014 11:10:09 -0400
+Date: Wed, 9 Apr 2014 17:09:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Steven Noonan <steven@uplinklabs.net>,
+        Mel Gorman <mgorman@suse.de>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
+ bits PMD and PTE levels
+Message-ID: <20140409150935.GC10526@twins.programming.kicks-ass.net>
+References: <20140407182854.GH7292@suse.de>
+ <5342FC0E.9080701@zytor.com>
+ <20140407193646.GC23983@moon>
+ <5342FFB0.6010501@zytor.com>
+ <20140407212535.GJ7292@suse.de>
+ <CAKbGBLhsWKVYnBqR0ZJ2kfaF_h=XAYkjq=v3RLoRBDkF_w=6ag@mail.gmail.com>
+ <e9801da2-3aa4-4c23-9a64-90c890b9ebbc@email.android.com>
+ <CAKbGBLjO7pneg_5nXcRXK-9iToZvPkJVZ=AQBfaZkZjU9iN2BA@mail.gmail.com>
+ <5344631D.1050203@zytor.com>
+ <20140409150448.GE5860@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140409150448.GE5860@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 07:21:53PM +0530, Viresh Kumar wrote:
-> On Thu, Nov 14, 2013 at 1:31 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Subject: NOHZ: Check for nohz active instead of nohz enabled
-> >
-> > RCU and the fine grained idle time accounting functions check
-> > tick_nohz_enabled. But that variable is merily telling that NOHZ has
-> > been enabled in the config and not been disabled on the command line.
-> >
-> > But it does not tell anything about nohz being active. That's what all
-> > this should check for.
-> >
-> > Matthew reported, that the idle accounting on his old P1 machine
-> > showed bogus values, when he enabled NOHZ in the config and did not
-> > disable it on the kernel command line. The reason is that his machine
-> > uses (refined) jiffies as a clocksource which explains why the "fine"
-> > grained accounting went into lala land, because it depends on when the
-> > system goes and leaves idle relative to the jiffies increment.
-> >
-> > Provide a tick_nohz_active indicator and let RCU and the accounting
-> > code use this instead of tick_nohz_enable.
+On Wed, Apr 09, 2014 at 11:04:48AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Tue, Apr 08, 2014 at 01:59:09PM -0700, H. Peter Anvin wrote:
+> > On 04/08/2014 01:51 PM, Steven Noonan wrote:
+> > > On Tue, Apr 8, 2014 at 8:16 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > >> <snark>
+> > >>
+> > >> Of course, it would also be preferable if Amazon (or anything else) didn't need Xen PV :(
+> > > 
+> > > Well Amazon doesn't expose NUMA on PV, only on HVM guests.
+> > > 
+> > 
+> > Yes, but Amazon is one of the main things keeping Xen PV alive as far as
+> > I can tell, which means the support gets built in, and so on.
 > 
-> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> > @@ -973,7 +968,7 @@ static void tick_nohz_switch_to_nohz(void)
-> >         struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> >         ktime_t next;
-> >
-> > -       if (!tick_nohz_enabled)
-> > +       if (!tick_nohz_active)
-> >                 return;
+> Taking the snarkiness aside, the issue here is that even on guests
+> without NUMA exposed the problem shows up. That is the 'mknuma' are
+> still being called even if the guest topology is not NUMA!
 > 
-> Considering the impressive list of Reviewed-by and people involved
-> in this patch, I am not sure I am reading the code well here.
+> Which brings a question - why isn't the mknuma and its friends gatted by
+> an jump_label machinery or such?
 > 
-> The above change isn't required as per my understanding. Otherwise
-> we will never pass that check. tick_nohz_active is initialized as zero
-> and so we will keep on returning for ever and wouldn't be able to set
-> it to 1 ever.
-> 
-> I have a patch to fix it up, but wanted to know your opinion before
-> sending it.
+> Mel, any particular reasons why it couldn't be done this way?
 
-Ouch, bad thing.
-
-I'm also disovering this whole thread and patch only today, since nobody Cc'ed me :-(
- 
-> >         local_irq_disable();
-> > @@ -981,7 +976,7 @@ static void tick_nohz_switch_to_nohz(void)
-> >                 local_irq_enable();
-> >                 return;
-> >         }
-> > -
-> > +       tick_nohz_active = 1;
-> >         ts->nohz_mode = NOHZ_MODE_LOWRES;
-> >
-> >         /*
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hmm,. I thought we disabled all that when there was only the 1 node. All
+this should be driven from task_tick_numa() which only gets called when
+numabalancing_enabled, and that _should_ be false when nr_nodes == 1.
