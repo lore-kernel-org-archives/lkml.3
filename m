@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366AbaDIBWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 21:22:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18611 "EHLO mga09.intel.com"
+	id S1757645AbaDIBYC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 21:24:02 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23974 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756355AbaDIBWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 21:22:34 -0400
+	id S1756235AbaDIBYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 21:24:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,822,1389772800"; 
-   d="scan'208";a="489604834"
-Message-ID: <5344A0A3.9030909@intel.com>
-Date: Wed, 09 Apr 2014 09:21:39 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+   d="scan'208";a="517240761"
+Date: Tue, 8 Apr 2014 18:23:33 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Jan Hubicka <hubicka@ucw.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, mliska@suse.cz, vmakarov@redhat.com,
+        markus@trippelsdorf.de, tglek@mozilla.com
+Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
+Message-ID: <20140409012333.GZ32556@tassilo.jf.intel.com>
+References: <20140407201919.GA15838@sepie.suse.cz>
+ <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
+ <20140408224926.GY32556@tassilo.jf.intel.com>
+ <20140409001013.GB8795@kam.mff.cuni.cz>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        "abd38155f8293923de5953cc063f9e2d7ecb3f04.1396679170.git.viresh.kumar@linaro.org" 
-	<abd38155f8293923de5953cc063f9e2d7ecb3f04.1396679170.git.viresh.kumar@linaro.org>
-CC: "Wu, Fengguang" <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [clocksource] INFO: possible irq lock inversion dependency detected
-References: <5343740C.9010609@intel.com> <CAKohpomRb1pix3zQWeY0mKkfuikUtR6w+PUOTzQV_hngPrpHRw@mail.gmail.com>
-In-Reply-To: <CAKohpomRb1pix3zQWeY0mKkfuikUtR6w+PUOTzQV_hngPrpHRw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409001013.GB8795@kam.mff.cuni.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 01:21 PM, Viresh Kumar wrote:
-> On 8 April 2014 09:29, Jet Chen <jet.chen@intel.com> wrote:
->> (Sorry for previous bad format email)
->> Your patch on my testing branch in LKP system:
->> git://bee.sh.intel.com/git/tchen37/linux.git timer_debug3 got the below
->> dmesg.
->> FYI, I applied your patch on the top of commit
->> 6378cb51af5f4743db0dcb3cbcf862eac5908754 - timer: don't migrate pinned
->> timers.
->
-> Hi Jet,
->
-> Thanks for your efforts. It looks like we must use spin_lock_irqsave() here.
-> And that's all we need to fix this issue..
->
+Thanks Honza. Just one comment:
 
-spin_lock_irqsave() does fix this issue.
+>     The runtime benefits are more visible on bigger, bloated and less
+>     optimized projects than on hand tuned video encoder implementation.
+>     I believe Kernel largely falls into hand tuned category despite its size.
 
-Tested-by: Jet Chen <jet.chen@intel.com>
+In my experience there's a lot of badly tuned code in the kernel these days,
+especially when you go outside the core code (i.e. into drivers/*)
 
-> To get the right order in which patches must be applied (obviously with the
-> updates I have), please pick this branch:
->
-> git://git.linaro.org/people/viresh.kumar/linux.git isolate-cpusets
->
-> I hope this fixes the issues you were getting.
->
+Or code that used to be tuned, but isn't aftermore after several years
+of feature additions and bug fixes. The kernel code quality is also quite varying.
 
+So anything the compiler can do helps.
+
+>     I would be curious about the results on Kernel.
+
+We saw some upsides in performance with some standard tests, but nothing 
+too significant.
+
+-Andi
