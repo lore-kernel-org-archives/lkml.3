@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686AbaDIOWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:22:31 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:42083 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933489AbaDIOWR (ORCPT
+	id S933593AbaDIOW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:22:56 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:55086 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933429AbaDIOWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:22:17 -0400
+	Wed, 9 Apr 2014 10:22:16 -0400
 From: Christian Borntraeger <borntraeger@de.ibm.com>
 To: Ingo Molnar <mingo@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, KVM <kvm@vger.kernel.org>,
         Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PULL 2/2] perf-kvm: fix of 'Min time' counting in report command
-Date: Wed,  9 Apr 2014 16:21:59 +0200
-Message-Id: <1397053319-2130-3-git-send-email-borntraeger@de.ibm.com>
+Subject: [PULL 1/2] perf/tool: Fix usage of trace events with '-' in trace system name.
+Date: Wed,  9 Apr 2014 16:21:58 +0200
+Message-Id: <1397053319-2130-2-git-send-email-borntraeger@de.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1397053319-2130-1-git-send-email-borntraeger@de.ibm.com>
 References: <1397053319-2130-1-git-send-email-borntraeger@de.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040914-3548-0000-0000-000008ADFF85
+x-cbid: 14040914-0342-0000-0000-0000086231D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 
-Every event in the perf-kvm has a 'stats' structure, which contains
-max/min/average/etc times of handling this event.
-The problem is that the 'perf-kvm stat report' command always shows
-that 'min time' is 0us for every event. Example:
+Trace events potentially can have a '-' in their trace system name,
+e.g. kvm on s390 defines kvm-s390:* tracepoints.
+tools/perf could not parse them, because there was no rule for this:
+$ sudo ./perf top -e "kvm-s390:*"
+invalid or unsupported event: 'kvm-s390:*'
 
- # perf kvm stat report
-Analyze events for all VCPUs:
-
-    VM-EXIT    Samples  Samples%     Time%   Min Time   Max Time
-    Avg time
-[..]
-0xB2 MSCH         12     0.07%     0.00%        0us        8us
-    7.31us ( +-   2.11% )
-0xB2 CHSC         12     0.07%     0.00%        0us       18us
-    9.39us ( +-   9.49% )
-0xB2 STPX          8     0.05%     0.00%        0us        2us
-    1.88us ( +-   7.18% )
-0xB2 STSI          7     0.04%     0.00%        0us       44us
-    16.49us ( +-  38.20% )
-[..]
-
-This happens because 'stats' structure is not initialized and
-stats->min equals to 0. Lets initialize the structure for every
-event after it's allocation using init_stats() function. This initialize
-stats->min to -1 and makes 'Min time' statistics counting work:
-
- # perf kvm stat report
-
-Analyze events for all VCPUs:
-
-    VM-EXIT    Samples  Samples%     Time%   Min Time   Max Time
-    Avg time
-[..]
-0xB2 MSCH         12     0.07%     0.00%        6us        8us
-    7.31us ( +-   2.11% )
-0xB2 CHSC         12     0.07%     0.00%        7us       18us
-    9.39us ( +-   9.49% )
-0xB2 STPX          8     0.05%     0.00%        1us        2us
-    1.88us ( +-   7.18% )
-0xB2 STSI          7     0.04%     0.00%        1us       44us
-    16.49us ( +-  38.20% )
-[..]
+This patch allows '-' to be a part of PE_NAME token, so tracepoints
+with '-' can be parsed by the event_legacy_tracepoint rule.
+Without the patch, perf will not accept such tracepoints in the -e
+option.
 
 Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 ---
- tools/perf/builtin-kvm.c |    1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/util/parse-events.l |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 21c164b..0f1e5a2 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -404,6 +404,7 @@ static struct kvm_event *kvm_alloc_init_event(struct event_key *key)
- 	}
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..ca20da7 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -199,7 +199,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+ {num_hex}		{ return value(yyscanner, 16); }
  
- 	event->key = *key;
-+	init_stats(&event->total.stats);
- 	return event;
- }
- 
+ {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+-{name}			{ return str(yyscanner, PE_NAME); }
++{name_minus}			{ return str(yyscanner, PE_NAME); }
+ "/"			{ BEGIN(config); return '/'; }
+ -			{ return '-'; }
+ ,			{ BEGIN(event); return ','; }
 -- 
 1.7.9.5
 
