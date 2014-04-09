@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254AbaDIHHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 03:07:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46459 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758191AbaDIHH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 03:07:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,824,1389772800"; 
-   d="scan'208";a="517276532"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Dave Airlie <airlied@gmail.com>, Daniel J Blueman <daniel@quora.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] i915 DVI resolution regression (3.13.7+)
-In-Reply-To: <CAPM=9tz+xo7vktTZ=8QB6rMGPnTXd485wbwaq_4Ao9fGEnh4hQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <CAMVG2sti6EMQXw5xyNp-wkq0nGz4zVgz1p7AO48Kb1_zYk8K0w@mail.gmail.com> <878urg9ttv.fsf@intel.com> <CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com> <CAPM=9tyKKn5VrQkwGY2kEVBatSTN5VqJCVXWqFhn4oDe=oqsqA@mail.gmail.com> <CAMVG2stTR=qadOYTMaCnGwLv6pUF9R2VeNVdhnRTw6Gki=FNHA@mail.gmail.com> <CAPM=9tz+xo7vktTZ=8QB6rMGPnTXd485wbwaq_4Ao9fGEnh4hQ@mail.gmail.com>
-User-Agent: Notmuch/0.17+162~g34940eaa1d37 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 09 Apr 2014 10:08:04 +0300
-Message-ID: <87lhvf7zfv.fsf@intel.com>
+	id S1758284AbaDIHLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 03:11:13 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:65296 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaDIHLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 03:11:10 -0400
+Date: Wed, 9 Apr 2014 00:11:05 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-mtd@lists.infradead.org, angus.clark@st.com,
+        Christophe Kerello <christophe.kerello@st.com>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 14/15] mtd: st_spi_fsm: Provide mask to obtain correct
+ boot device pins
+Message-ID: <20140409071105.GE3131@norris-Latitude-E6410>
+References: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
+ <1395851969-13520-15-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395851969-13520-15-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Apr 2014, Dave Airlie <airlied@gmail.com> wrote:
-> On Wed, Apr 9, 2014 at 4:07 PM, Daniel J Blueman <daniel@quora.org> wrote:
->> On 9 April 2014 11:41, Dave Airlie <airlied@gmail.com> wrote:
->>> On Tue, Apr 8, 2014 at 5:32 PM, Daniel J Blueman <daniel@quora.org> wrote:
->>>> On 8 April 2014 15:14, Jani Nikula <jani.nikula@linux.intel.com> wrote:
->>>>> On Tue, 08 Apr 2014, Daniel J Blueman <daniel@quora.org> wrote:
->>>>>> Ville et al,
->>>>>>
->>>>>> It looks like commit e3ea8fa6beaf55fee64bf816f3b8a80ad733b2c2 (or
->>>>>> another commit in 3.13.7) broke modes which require DVI-D dual-link,
->>>>>> eg 2560x1440 with my panel.
->>>>>>
->>>>>> I don't see these modelines in 3.13.7 or later (eg 3.14):
->>>>>>
->>>>>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
->>>>>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
->>>>>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
->>>>>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
->>>>>> [     5.582] (II) intel(0): Modeline "1920x1200"x59.9  193.25  1920
->>>>>> 2056 2256 2592  1200 1203 1209 1245 -hsync +vsync (74.6 kHz e)
->>>>>>
->>>>>> My monitor is a Dell U2713HM; mobo uses an H87 chipset with i5-4670.
->>>>>
->>>>> By allowing those modes we regressed setups which were not capable of
->>>>> displaying them. So you've got an HDMI->DVI converter?
->>>>>
->>>>> https://bugzilla.kernel.org/show_bug.cgi?id=72961
->>>>
->>>> I am using a dual-link DVI-D to DVI-D cable to this monitor, since I
->>>> previously couldn't get 2560x1440 via HDMI.
->>>
->>> Intel hw has dual-link DVI-D? I'm not sure I've ever seen that, is
->>> this SDVO device or plain DVI-D?
->>
->> It's the DVI-D connector on: https://www.asus.com/Motherboards/H87IPLUS/
->
-> The link which says "
->
-> Integrated Graphics Processor
-> - Supports HDMI with max. resolution 4096 x 2304 @ 24 Hz
-> - Supports DVI with max. resolution 1920 x 1200 @ 60 Hz
-> - Supports RGB with max. resolution 1920 x 1200 @ 60 Hz
->
-> I'm even wondering electrically how a HDMI->dual-link DVI adapter works.
++ DT list
 
-The current assumption is that in the working case, they are really
-operated in single-link, with a frequency beyond the single-link DVI
-cable spec.
+On Wed, Mar 26, 2014 at 04:39:28PM +0000, Lee Jones wrote:
+> From: Christophe Kerello <christophe.kerello@st.com>
+> 
+> This patch adds a mask to be able to get the right boot device selection.
+> 
+> For example:
+>     for STiH415, value = SYSTEM_STATUS398[4:0]
+>     for STiH416, value = SYSTEM_STATUS2598[4:0]
+>     for STiH407, value = SYSTEM_STATUS5561[6:2]
+> 
+> Signed-off-by: Christophe Kerello <christophe.kerello@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mtd/devices/st_spi_fsm.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+> index 9e00173..3ab27c8 100644
+> --- a/drivers/mtd/devices/st_spi_fsm.c
+> +++ b/drivers/mtd/devices/st_spi_fsm.c
+> @@ -2159,6 +2159,7 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
+>  	struct regmap *regmap;
+>  	uint32_t boot_device_reg;
+>  	uint32_t boot_device_spi;
+> +	uint32_t boot_device_msk;
+>  	uint32_t boot_device;     /* Value we read from *boot_device_reg */
+>  	int ret;
+>  
+> @@ -2183,10 +2184,17 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
+>  	if (ret)
+>  		goto boot_device_fail;
+>  
+> +	/* Mask to apply on boot_device_reg */
+> +	ret = of_property_read_u32(np, "st,boot-device-msk", &boot_device_msk);
 
-BR,
-Jani.
+You need to document this binding in Documentation/devicetree/bindings/,
+and CC the devicetree list.
 
+> +	if (ret)
+> +		goto boot_device_fail;
+> +
+>  	ret = regmap_read(regmap, boot_device_reg, &boot_device);
+>  	if (ret)
+>  		goto boot_device_fail;
+>  
+> +	boot_device &= boot_device_msk;
+> +
+>  	if (boot_device != boot_device_spi)
+>  		fsm->booted_from_spi = false;
+>  
 
-
->
-> Dave.
-
--- 
-Jani Nikula, Intel Open Source Technology Center
+Brian
