@@ -1,60 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933574AbaDIPBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:01:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933291AbaDIPBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:01:40 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Andrew Duggan <aduggan@synaptics.com>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: rmi: do not stop the device at the end of probe
-Date: Wed,  9 Apr 2014 11:01:34 -0400
-Message-Id: <1397055694-6312-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S933708AbaDIPCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:02:41 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46503 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933114AbaDIPCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 11:02:38 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <glommer@gmail.com>,
+        <cl@linux-foundation.org>, <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: [PATCH -mm 2/4] memcg, slab: merge memcg_{bind,release}_pages to memcg_{un}charge_slab
+Date: Wed, 9 Apr 2014 19:02:31 +0400
+Message-ID: <8516c13fdeba06ba41abf98b2f2ff6db7c2d2c9d.1397054470.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1397054470.git.vdavydov@parallels.com>
+References: <cover.1397054470.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, this is embarrassing, if the device is stopped at the end of probe,
-we get into big troubles (it even oopses my kernel).
+Currently we have two pairs of kmemcg-related functions that are called
+on slab alloc/free. The first is memcg_{bind,release}_pages that count
+the total number of pages allocated on a kmem cache. The second is
+memcg_{un}charge_slab that {un}charge slab pages to kmemcg resource
+counter. Let's just merge them to keep the code clean.
 
-This was a leftover of an attempt to be smart when sending the patch,
-I deeply apologies.
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
+ include/linux/memcontrol.h |    4 ++--
+ mm/memcontrol.c            |   22 ++++++++++++++++++++--
+ mm/slab.c                  |    2 --
+ mm/slab.h                  |   25 ++-----------------------
+ mm/slub.c                  |    2 --
+ 5 files changed, 24 insertions(+), 31 deletions(-)
 
-Hi Jiri,
-
-well, first thanks for having integrating hid-rmi in your for 3.16 branch.
-
-While backporting it to 3.13 so Fedora can get it, I noticed a tiny difference
-(besides formatting) between the version I submitted and the one I asked people
-to test...
-
-...facepalm.
-
-Cheers,
-Benjamin
-
- drivers/hid/hid-rmi.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 699d631..7da9509 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -848,7 +848,6 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		return -EIO;
- 	}
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 41b381412367..da87fa2124cf 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -512,8 +512,8 @@ void memcg_update_array_size(int num_groups);
+ struct kmem_cache *
+ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
  
--	hid_hw_stop(hdev);
- 	return 0;
+-int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size);
+-void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size);
++int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order);
++void __memcg_uncharge_slab(struct kmem_cache *cachep, int order);
+ 
+ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 78431620d225..253d6a064d89 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2944,7 +2944,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
+ }
+ #endif
+ 
+-int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
++static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ {
+ 	struct res_counter *fail_res;
+ 	int ret = 0;
+@@ -2982,7 +2982,7 @@ int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ 	return ret;
  }
  
+-void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
++static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+ {
+ 	res_counter_uncharge(&memcg->res, size);
+ 	if (do_swap_account)
+@@ -3380,6 +3380,24 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 	__memcg_create_cache_enqueue(memcg, cachep);
+ 	memcg_resume_kmem_account();
+ }
++
++int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
++{
++	int res;
++
++	res = memcg_charge_kmem(cachep->memcg_params->memcg, gfp,
++				PAGE_SIZE << order);
++	if (!res)
++		atomic_add(1 << order, &cachep->memcg_params->nr_pages);
++	return res;
++}
++
++void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
++{
++	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
++	atomic_sub(1 << order, &cachep->memcg_params->nr_pages);
++}
++
+ /*
+  * Return the kmem_cache we're supposed to use for a slab allocation.
+  * We try to use the current memcg's version of the cache.
+diff --git a/mm/slab.c b/mm/slab.c
+index af126a37dafd..cd645dbaab0a 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1689,7 +1689,6 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
+ 	__SetPageSlab(page);
+ 	if (page->pfmemalloc)
+ 		SetPageSlabPfmemalloc(page);
+-	memcg_bind_pages(cachep, cachep->gfporder);
+ 
+ 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+ 		kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
+@@ -1725,7 +1724,6 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
+ 	page_mapcount_reset(page);
+ 	page->mapping = NULL;
+ 
+-	memcg_release_pages(cachep, cachep->gfporder);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += nr_freed;
+ 	__free_pages(page, cachep->gfporder);
+diff --git a/mm/slab.h b/mm/slab.h
+index efe14d420010..11eb623f0e61 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -119,18 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return !s->memcg_params || s->memcg_params->is_root_cache;
+ }
+ 
+-static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+-{
+-	if (!is_root_cache(s))
+-		atomic_add(1 << order, &s->memcg_params->nr_pages);
+-}
+-
+-static inline void memcg_release_pages(struct kmem_cache *s, int order)
+-{
+-	if (!is_root_cache(s))
+-		atomic_sub(1 << order, &s->memcg_params->nr_pages);
+-}
+-
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 					struct kmem_cache *p)
+ {
+@@ -196,8 +184,7 @@ static __always_inline int memcg_charge_slab(struct kmem_cache *s,
+ 		return 0;
+ 	if (is_root_cache(s))
+ 		return 0;
+-	return memcg_charge_kmem(s->memcg_params->memcg, gfp,
+-				 PAGE_SIZE << order);
++	return __memcg_charge_slab(s, gfp, order);
+ }
+ 
+ static __always_inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
+@@ -206,7 +193,7 @@ static __always_inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
+ 		return;
+ 	if (is_root_cache(s))
+ 		return;
+-	memcg_uncharge_kmem(s->memcg_params->memcg, PAGE_SIZE << order);
++	__memcg_uncharge_slab(s, order);
+ }
+ #else
+ static inline bool is_root_cache(struct kmem_cache *s)
+@@ -214,14 +201,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return true;
+ }
+ 
+-static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+-{
+-}
+-
+-static inline void memcg_release_pages(struct kmem_cache *s, int order)
+-{
+-}
+-
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 				      struct kmem_cache *p)
+ {
+diff --git a/mm/slub.c b/mm/slub.c
+index fa7a1817835e..c17d8b9975be 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1427,7 +1427,6 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 
+ 	order = compound_order(page);
+ 	inc_slabs_node(s, page_to_nid(page), page->objects);
+-	memcg_bind_pages(s, order);
+ 	page->slab_cache = s;
+ 	__SetPageSlab(page);
+ 	if (page->pfmemalloc)
+@@ -1478,7 +1477,6 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	__ClearPageSlabPfmemalloc(page);
+ 	__ClearPageSlab(page);
+ 
+-	memcg_release_pages(s, order);
+ 	page_mapcount_reset(page);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
 -- 
-1.9.0
+1.7.10.4
 
