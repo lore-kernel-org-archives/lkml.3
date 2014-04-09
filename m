@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933361AbaDINUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:20:36 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:18850 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933002AbaDINU1 (ORCPT
+	id S933345AbaDINUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:20:33 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:15738 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932978AbaDINU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Apr 2014 09:20:27 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-95-53454918b975
+X-AuditID: cbfec7f4-b7f796d000005a13-9b-53454918374e
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/4] extcon: max77693: Use power efficient workqueue for
- delayed cable detection
-Date: Wed, 09 Apr 2014 15:20:13 +0200
-Message-id: <1397049615-13130-2-git-send-email-k.kozlowski@samsung.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH 3/4] extcon: max8997: Fix NULL pointer exception on missing
+ pdata
+Date: Wed, 09 Apr 2014 15:20:14 +0200
+Message-id: <1397049615-13130-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.8.3.2
 In-reply-to: <1397049615-13130-1-git-send-email-k.kozlowski@samsung.com>
 References: <1397049615-13130-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOJMWRmVeSWpSXmKPExsVy+t/xy7oSnq7BBo13xSyuf3nOavH6haHF
-	5V1z2CxuN65gc2Dx6NuyitHj8ya5AKYoLpuU1JzMstQifbsErowzm9YwFRxkr/h1+htLA+M2
-	ti5GTg4JAROJmVdPs0DYYhIX7q0HinNxCAksZZTYcbGTEcLpY5LYNXUjO0gVm4CxxOblS8C6
-	RQQKJZ5suApmMwsYSvx89wesRlggSeLUpausIDaLgKrEubYnYDW8Au4SJw++YYbYpiCx7Mta
-	MJtTwENi8r+VYL1CQDXNC5qZJjDyLmBkWMUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREhhf
-	djAuPmZ1iFGAg1GJh1fB0iVYiDWxrLgy9xCjBAezkghvm4FrsBBvSmJlVWpRfnxRaU5q8SFG
-	Jg5OqQZGueuf3SeKJKjw2Rw7wZaWcES7xC9W7dgu1bxCEeYlj0LcfHm1Vn+1idX/udRx08xt
-	70RfR/4vjhX3Ft5293aFlHR44OUNTfVTZt2oWqXFdPdi7yzjHIYzDU2mKS4989R4wgvONGQI
-	tb44dUGoN8OzJzd29h8P7X3bM7nuzFyoXFdwW/aPU7MSS3FGoqEWc1FxIgDlq73v6gEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xy7oSnq7BBgfPmVpc//Kc1eL1C0OL
+	y7vmsFncblzBZrFg4yNGB1aPvi2rGD0+b5ILYIrisklJzcksSy3St0vgyvj19gJ7wWK2is0d
+	G1kaGBezdjFyckgImEjcvHKPBcIWk7hwbz1bFyMXh5DAUkaJsxf2MUM4fUwSu6ZuZAepYhMw
+	lti8fAkbiC0iUCjxZMNVMJtZwFPi3d+HYDXCAsESpyZ+BouzCKhKXH4/nxnE5hVwl1ixoxtq
+	m4LEsi9rweKcAh4Sk/+tBOsVAqppXtDMNIGRdwEjwypG0dTS5ILipPRcQ73ixNzi0rx0veT8
+	3E2MkBD5soNx8TGrQ4wCHIxKPLwKli7BQqyJZcWVuYcYJTiYlUR42wxcg4V4UxIrq1KL8uOL
+	SnNSiw8xMnFwSjUw1ntEeU4o2px4bc4ZSadgmUvMO7epztmd7nvT/QXbk3t+H9L+5dReW6ra
+	3FyYqxj3+7rFqQVRsz9EtSmsXbSioKJqhVXMXisFSbP5ky9ds9D4v+tn6e64zXX3Ym997bzD
+	sXiacc6z0w8mtP2pEp/e0zNhrtbklHUqOZl1vTo7FjPKVU78O/ucgBJLcUaioRZzUXEiAHrX
+	qgrvAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Schedule delayed cable detection work on power efficient workqueue
-so the scheduler won't wake up idle core for that work.
-This extends the idle time for CPU cores and conserves power.
+Fix NULL pointer exception when platform data is not supplied. The
+driver dereferenced pdata pointer where it could be NULL.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: <stable@vger.kernel.org>
+Fixes: 810d601f07c
 ---
- drivers/extcon/extcon-max77693.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/extcon/extcon-max8997.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 4657a91acf56..39cd095d103c 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -1283,7 +1283,8 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 	 * driver should notify cable state to upper layer.
- 	 */
- 	INIT_DELAYED_WORK(&info->wq_detcable, max77693_muic_detect_cable_wq);
--	schedule_delayed_work(&info->wq_detcable, delay_jiffies);
-+	queue_delayed_work(system_power_efficient_wq, &info->wq_detcable,
-+			delay_jiffies);
+diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+index 6a00464658c5..5e1b88cecb76 100644
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -715,7 +715,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
+ 		goto err_irq;
+ 	}
  
- 	return ret;
+-	if (pdata->muic_pdata) {
++	if (pdata && pdata->muic_pdata) {
+ 		struct max8997_muic_platform_data *muic_pdata
+ 			= pdata->muic_pdata;
  
 -- 
 1.8.3.2
