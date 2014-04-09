@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285AbaDICjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 22:39:52 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55683 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263AbaDICju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 22:39:50 -0400
-Date: Wed, 9 Apr 2014 03:39:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	id S932378AbaDICkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 22:40:07 -0400
+Received: from ozlabs.org ([203.10.76.45]:53892 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932187AbaDICkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 22:40:04 -0400
+Date: Wed, 9 Apr 2014 12:40:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15-rc1
-Message-ID: <20140409023947.GY18016@ZenIV.linux.org.uk>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
- <87a9kkax0j.fsf@xmission.com>
- <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
- <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
- <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
- <87li281wx6.fsf_-_@xmission.com>
- <87ob28kqks.fsf_-_@xmission.com>
- <874n3n7czm.fsf_-_@xmission.com>
- <87wqezl5df.fsf_-_@x220.int.ebiederm.org>
- <20140409023027.GX18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409023027.GX18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: linux-next: manual merge of the userns tree with Linus' tree
+Message-Id: <20140409124002.35ff7d69c75f7332d0feb57a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 03:30:27AM +0100, Al Viro wrote:
+--Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > When renaming or unlinking directory entries that are not mountpoints
-> > no additional locks are taken so no performance differences can result,
-> > and my benchmark reflected that.
-> 
-> It also means that d_invalidate() now might trigger fs shutdown.  Which
-> has bloody huge stack footprint, for obvious reasons.  And d_invalidate()
-> can be called with pretty deep stack - walk into wrong dentry while
-> resolving a deeply nested symlink and there you go...
+Hi Eric,
 
-PS: I thought I actually replied with that point back a month or so ago,
-but having checked sent-mail...  Looks like I had not.  My deep apologies.
+Today's linux-next merge of the userns tree got a conflict in fs/dcache.c
+between commit da1ce0670c14 ("vfs: add cross-rename") from Linus' tree
+and commit f43d102a391d ("vfs: Lazily remove mounts on unlinked files and
+directories") from the userns tree.
 
-FWIW, I think that overall this thing is a good idea, provided that we can
-live with semantics changes.  The implementation is too optimistic, though -
-at the very least, we want this work done upon namespace_unlock() held
-back until we are not too deep in stack.  task_work_add() fodder, perhaps?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).  This matches the conflict resolution you sent to Linus.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/dcache.c
+index 40707d88a945,5b78bd98649c..000000000000
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@@ -2701,10 -2631,8 +2663,8 @@@ static struct dentry *__d_unalias(struc
+  		goto out_err;
+  	m2 =3D &alias->d_parent->d_inode->i_mutex;
+  out_unalias:
+- 	if (likely(!d_mountpoint(alias))) {
+- 		__d_move(alias, dentry, false);
+- 		ret =3D alias;
+- 	}
+ -	__d_move(alias, dentry);
+++	__d_move(alias, dentry, false);
++ 	ret =3D alias;
+  out_err:
+  	spin_unlock(&inode->i_lock);
+  	if (m2)
+
+--Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTRLMCAAoJEMDTa8Ir7ZwVZIwP/jaXQ2Xb0pjqVQRbZopYxRgD
+XHQwN0SS/DG+ViXxM5D3PCk2aWsDtJofAVy3+xueqfwD49trRLuH33SwsUgAILKK
+pXYA4ym8gO/Nvqo5uCn8ruSvmGzMuKFD2kHd6sQ/6EfhUZ+r2N7lNdPtEiYn7kHo
+ab//fgw5CYahOd1YiKtBgwhC7GmTWtlg8ABhCsCuetbeduiiI8R/sVqPZzV/8dXv
+CRZ1q4DJZfXYTJIpK9AJY1coIIUldDAE6q0w0sKoS7kdanqtgTqHTt2s5MCPRVk+
+PaCL/5wJzcTz62b/oyuMRXPVnjkALim1payt/m72W/5mgubSaoT1xFi3AZBkgd32
+tDC8JUY8UxoVJ+oSN4LOhS5fmHNJR5gD9PBYl8Wrt5B9KjDMUJMXEK9PEkvoTbsF
+fuYumoY9rRxqU3iJSu1KqtYgw1gHdFB80CeMYExUFjX3YLQr/nc7SHTQLFw4K77W
+blgbVKo3Ta/D4w1/pupBu+UcIVjrn7wWuiSJJLFsHHoHJ5jSczJpnrAodbll8mrs
+Lz5hvS7BstN2wFaes1DFakRQa7YymhkFuJN5OmQ8NN25VepWtrT2WzafzjDFhjDE
+3gTPp+H6qdMYEf7XcAnIACZY/ak13m0Xqp9GZUeiVC8CGlvlP2tDEWTQLg5sVDfP
+07De3p11GLdRyuVBWk8D
+=peNH
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV--
