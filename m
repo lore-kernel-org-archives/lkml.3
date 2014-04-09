@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934324AbaDITYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 15:24:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37504 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933402AbaDITYe (ORCPT
+	id S934364AbaDIT0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 15:26:25 -0400
+Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:49161 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934330AbaDIT0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 15:24:34 -0400
-Date: Wed, 9 Apr 2014 12:27:05 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
-Cc: *S-Par-Maintainer <SParMaintainer@unisys.com>,
-        "jkc@redhat.com" <jkc@redhat.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] unisys: staging: Check for s-Par firmware before
- initializing s-Par modules
-Message-ID: <20140409192705.GB11506@kroah.com>
-References: <C97001BC43954D438ACB059713BA5CDF92040F0F09@USEA-EXCH7.na.uis.unisys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <C97001BC43954D438ACB059713BA5CDF92040F0F09@USEA-EXCH7.na.uis.unisys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 9 Apr 2014 15:26:22 -0400
+From: Joel Porquet <joel@porquet.org>
+To: jic23@kernel.org, gregkh@linuxfoundation.org, jg1.han@samsung.com
+Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Joel Porquet <joel@porquet.org>
+Subject: [PATCH] staging: iio: fix coding style
+Date: Wed,  9 Apr 2014 20:09:45 +0200
+Message-Id: <1397066985-2504-1-git-send-email-joel@porquet.org>
+X-Mailer: git-send-email 1.9.1
+X-Ovh-Tracer-Id: 10321687396542476371
+X-Ovh-Remote: 71.19.174.158 (71-19-174-158.dedicated.allstream.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 02:04:50PM -0500, Romer, Benjamin M wrote:
-> @@ -71,5 +71,6 @@
->  				  u64 somethings, char *buf, size_t bufsize);
->  struct seq_file *visor_seq_file_new_buffer(void *buf, size_t buf_size);
->  void visor_seq_file_done_buffer(struct seq_file *m);
-> +int is_spar_system( void );
+As suggested by checkpatch.pl, use dev_info() instead of
+printk(KERN_INFO ...) to print message.
 
-That's a horrid function name to polute the global namespace, please be
-more "unique".
+Signed-off-by: Joel Porquet <joel@porquet.org>
+---
+Only tested by compilation.
+ drivers/staging/iio/trigger/iio-trig-periodic-rtc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+index 48a6afa..38ecb4b 100644
+--- a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
++++ b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+@@ -33,7 +33,8 @@ static int iio_trig_periodic_rtc_set_state(struct iio_trigger *trig, bool state)
+ 	struct iio_prtc_trigger_info *trig_info = iio_trigger_get_drvdata(trig);
+ 	if (trig_info->frequency == 0)
+ 		return -EINVAL;
+-	printk(KERN_INFO "trigger frequency is %d\n", trig_info->frequency);
++	dev_info(&trig_info->rtc->dev, "trigger frequency is %d\n",
++			trig_info->frequency);
+ 	return rtc_irq_set_state(trig_info->rtc, &trig_info->task, state);
+ }
+ 
+-- 
+1.9.1
 
-
-
->  
->  #endif
-> diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
-> index 8ea9c46..aa60ccb 100644
-> --- a/drivers/staging/unisys/uislib/uislib.c
-> +++ b/drivers/staging/unisys/uislib/uislib.c
-> @@ -1,6 +1,6 @@
->  /* uislib.c
->   *
-> - * Copyright � 2010 - 2013 UNISYS CORPORATION
-> + * Copyright © 2010 - 2013 UNISYS CORPORATION
->   * All rights reserved.
->   *
->   * This program is free software; you can redistribute it and/or modify
-> @@ -2276,6 +2276,11 @@
->  static int __init
->  uislib_mod_init(void)
->  {
-> +	/* check for s-Par support */
-> +	if( !is_spar_system() ) {
-> +		printk( "s-Par not detected.\n" );
-> +		return -EPERM;
-> +	}
-
-Always run your patches through scripts/checkpatch.pl so I don't reject
-them for the things it points out...
-
-
-thanks,
-
-greg k-h
