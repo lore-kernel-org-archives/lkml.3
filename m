@@ -1,114 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933767AbaDIPzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:55:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30165 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908AbaDIPzW convert rfc822-to-8bit (ORCPT
+	id S933810AbaDIP4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:56:25 -0400
+Received: from col0-omc1-s4.col0.hotmail.com ([65.55.34.14]:42175 "EHLO
+	col0-omc1-s4.col0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932786AbaDIP4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:55:22 -0400
-Date: Wed, 9 Apr 2014 11:55:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
-        konrad@kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org, keir@xen.org,
-        jbeulich@suse.com
-Subject: Re: [Xen-devel] [XEN PATCH 1/2] hvm: Support more than 32 VCPUS when
- migrating.
-Message-ID: <20140409155506.GA6746@phenom.dumpdata.com>
-References: <1396859560.22845.4.camel@kazak.uk.xensource.com>
- <1396977950-8789-1-git-send-email-konrad@kernel.org>
- <1396977950-8789-2-git-send-email-konrad@kernel.org>
- <53443D88.6010202@citrix.com>
- <20140408185346.GA1678@phenom.dumpdata.com>
- <5344F89D.3020209@citrix.com>
- <20140409153444.GA6604@phenom.dumpdata.com>
- <5345697D.8000405@citrix.com>
+	Wed, 9 Apr 2014 11:56:23 -0400
+X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 11:56:23 EDT
+X-TMN: [ZZR1DBfHVMdDug3ztCypBnVH6UGO8N3WoSWNWr8Gje4=]
+X-Originating-Email: [yuchaochina@hotmail.com]
+Message-ID: <COL402-EAS13359D6EB23C18DA0BBE9DAAB6A0@phx.gbl>
+From: Chao Yu <yuchaochina@hotmail.com>
+To: "'Sasha Levin'" <sasha.levin@oracle.com>, <jaegeuk.kim@samsung.com>
+CC: "'Dave Jones'" <davej@redhat.com>, "'LKML'" <linux-kernel@vger.kernel.org>,
+        <linux-f2fs-devel@lists.sourceforge.net>
+References: <53401D4A.1020203@oracle.com>
+In-Reply-To: <53401D4A.1020203@oracle.com>
+Subject: RE: [f2fs-dev] f2fs: kernel BUG at fs/f2fs/segment.h:543
+Date: Wed, 9 Apr 2014 23:51:09 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <5345697D.8000405@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQABAgME/2WmIdA0hbuM60HuEiw12Z6mDcDA
+Content-Language: zh-cn
+X-OriginalArrivalTime: 09 Apr 2014 15:51:15.0012 (UTC) FILETIME=[89C9F040:01CF540B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 04:38:37PM +0100, David Vrabel wrote:
-> On 09/04/14 16:34, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Apr 09, 2014 at 09:37:01AM +0200, Roger Pau Monné wrote:
-> >> On 08/04/14 20:53, Konrad Rzeszutek Wilk wrote:
-> >>> On Tue, Apr 08, 2014 at 08:18:48PM +0200, Roger Pau Monné wrote:
-> >>>> On 08/04/14 19:25, konrad@kernel.org wrote:
-> >>>>> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >>>>>
-> >>>>> When we migrate an HVM guest, by default our shared_info can
-> >>>>> only hold up to 32 CPUs. As such the hypercall
-> >>>>> VCPUOP_register_vcpu_info was introduced which allowed us to
-> >>>>> setup per-page areas for VCPUs. This means we can boot PVHVM
-> >>>>> guest with more than 32 VCPUs. During migration the per-cpu
-> >>>>> structure is allocated fresh by the hypervisor (vcpu_info_mfn
-> >>>>> is set to INVALID_MFN) so that the newly migrated guest
-> >>>>> can do make the VCPUOP_register_vcpu_info hypercall.
-> >>>>>
-> >>>>> Unfortunatly we end up triggering this condition:
-> >>>>> /* Run this command on yourself or on other offline VCPUS. */
-> >>>>>  if ( (v != current) && !test_bit(_VPF_down, &v->pause_flags) )
-> >>>>>
-> >>>>> which means we are unable to setup the per-cpu VCPU structures
-> >>>>> for running vCPUS. The Linux PV code paths make this work by
-> >>>>> iterating over every vCPU with:
-> >>>>>
-> >>>>>  1) is target CPU up (VCPUOP_is_up hypercall?)
-> >>>>>  2) if yes, then VCPUOP_down to pause it.
-> >>>>>  3) VCPUOP_register_vcpu_info
-> >>>>>  4) if it was down, then VCPUOP_up to bring it back up
-> >>>>>
-> >>>>> But since VCPUOP_down, VCPUOP_is_up, and VCPUOP_up are
-> >>>>> not allowed on HVM guests we can't do this. This patch
-> >>>>> enables this.
-> >>>>
-> >>>> Hmmm, this looks like a very convoluted approach to something that could
-> >>>> be solved more easily IMHO. What we do on FreeBSD is put all vCPUs into
-> >>>> suspension, which means that all vCPUs except vCPU#0 will be in the
-> >>>> cpususpend_handler, see:
-> >>>>
-> >>>> http://svnweb.freebsd.org/base/head/sys/amd64/amd64/mp_machdep.c?revision=263878&view=markup#l1460
-> >>>
-> >>> How do you 'suspend' them? If I remember there is a disadvantage of doing
-> >>> this as you have to bring all the CPUs "offline". That in Linux means using
-> >>> the stop_machine which is pretty big hammer and increases the latency for migration.
-> >>
-> >> In order to suspend them an IPI_SUSPEND is sent to all vCPUs except vCPU#0:
-> >>
-> >> http://fxr.watson.org/fxr/source/kern/subr_smp.c#L289
-> >>
-> >> Which makes all APs call cpususpend_handler, so we know all APs are
-> >> stuck in a while loop with interrupts disabled:
-> >>
-> >> http://fxr.watson.org/fxr/source/amd64/amd64/mp_machdep.c#L1459
-> >>
-> >> Then on resume the APs are taken out of the while loop and the first
-> >> thing they do before returning from the IPI handler is registering the
-> >> new per-cpu vcpu_info area. But I'm not sure this is something that can
-> >> be accomplished easily on Linux.
-> > 
-> > That is a bit of what the 'stop_machine' would do. It puts all of the
-> > CPUs in whatever function you want. But I am not sure of the latency impact - as
-> > in what if the migration takes longer and all of the CPUs sit there spinning.
-> > Another variant of that is the 'smp_call_function'.
+Hi Levin,
+
+Could you share dump code info like following one which can be generated
+by 'objdump -Dl f2fs.ko > obj'.
+It may help us to get a clue for this problem.
+
+verify_block_addr()
+segment.h:543 (discriminator 3)
+    2f35:       39 55 ec                cmp    %edx,-0x14(%ebp)
+segment.h:542 (discriminator 3)
+    2f38:       8d 44 02 ff             lea    -0x1(%edx,%eax,1),%eax
+segment.h:543 (discriminator 3)
+    2f3c:       0f 82 dc 01 00 00       jb     311e <f2fs_submit_page_mbio+0x22e>
+segment.h:544
+    2f42:       39 45 ec                cmp    %eax,-0x14(%ebp)
+    2f45:       0f 87 d1 01 00 00       ja     311c <f2fs_submit_page_mbio+0x22c>
+
+Thank you
+
+> -----Original Message-----
+> From: Sasha Levin [mailto:sasha.levin@oracle.com]
+> Sent: Saturday, April 05, 2014 11:12 PM
+> To: jaegeuk.kim@samsung.com; jaegeuk.kim@samsung.com
+> Cc: Dave Jones; LKML; linux-f2fs-devel@lists.sourceforge.net; Dave Jones; LKML;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: [f2fs-dev] f2fs: kernel BUG at fs/f2fs/segment.h:543
 > 
-> I tested stop_machine() on all CPUs during suspend once and it was
-> awful:  100s of ms of additional downtime.
-
-Yikes.
+> Hi all,
 > 
-> Perhaps a hand-rolled IPI-and-park-in-handler would be quicker the full
-> stop_machine().
-
-But that is clearly a bigger patch than this little bug-fix.
-
-Do you want to just take this patch as is and then later on I can work on
-prototyping the 'IPI-and-park-in-handler'?
+> While fuzzing with trinity inside a KVM tools guest running the latest
+> -next kernel I've stumbled on the following:
+> 
+> [ 1789.220942] kernel BUG at fs/f2fs/segment.h:543!
+> [ 1789.220942] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 1789.220942] Dumping ftrace buffer:
+> [ 1789.220942]    (ftrace buffer empty)
+> [ 1789.220942] Modules linked in:
+> [ 1789.220942] CPU: 0 PID: 28161 Comm: trinity-c0 Not tainted
+> 3.14.0-next-20140403-sasha-00019-g7474aa9-dirty #376
+> [ 1789.220942] task: ffff88032a598000 ti: ffff880329c3e000 task.ti: ffff880329c3e000
+> [ 1789.220942] RIP: f2fs_submit_page_mbio (fs/f2fs/segment.h:543 fs/f2fs/data.c:181)
+> [ 1789.220942] RSP: 0018:ffff880329c3fc08  EFLAGS: 00010287
+> [ 1789.220942] RAX: 000000000000ffff RBX: ffff88012ac66a00 RCX: 0000000000000009
+> [ 1789.220942] RDX: 0000000000000200 RSI: ffffea0001dd92c0 RDI: ffff88012ac667b0
+> [ 1789.220942] RBP: ffff880329c3fc58 R08: 00000000000ba28e R09: ffff88032a598d98
+> [ 1789.220942] R10: 0000000000000000 R11: 0000000000000000 R12: ffffea0001dd92c0
+> [ 1789.220942] R13: ffff88012ac667b0 R14: 0000000000000000 R15: ffff880329c3fc70
+> [ 1789.220942] FS:  00007f3599003700(0000) GS:ffff88007dc00000(0000) knlGS:0000000000000000
+> [ 1789.220942] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1789.220942] CR2: 00007faf4246a018 CR3: 0000000329b6f000 CR4: 00000000000006b0
+> [ 1789.220942] DR0: 0000000000696000 DR1: 0000000000696000 DR2: 0000000000000000
+> [ 1789.261947] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [ 1789.261947] Stack:
+> [ 1789.261947]  ffff88032a598000 ffff880d2a478278 0000000000000006 0000000000000082
+> [ 1789.261947]  ffffffffaa289475 ffffea0001dd92c0 ffff88012ac667b0 ffff880329c3fd30
+> [ 1789.261947]  0000000000000000 ffffea0001dd92c0 ffff880329c3fc88 ffffffffaa9da033
+> [ 1789.278327] Call Trace:
+> [ 1789.278327] ? clear_page_dirty_for_io (arch/x86/include/asm/paravirt.h:809
+> include/linux/backing-dev.h:176 mm/page-writeback.c:2355)
+> [ 1789.278327] write_meta_page (fs/f2fs/segment.c:922)
+> [ 1789.278327] f2fs_write_meta_page (arch/x86/include/asm/atomic.h:103 fs/f2fs/f2fs.h:692
+> fs/f2fs/checkpoint.c:172)
+> [ 1789.288220] trinity-c32: vm86 mode not supported on 64 bit kernel
+> [ 1789.278327] sync_meta_pages (fs/f2fs/checkpoint.c:247)
+> [ 1789.278327] ? get_parent_ip (kernel/sched/core.c:2472)
+> [ 1789.278327] ? preempt_count_sub (kernel/sched/core.c:2527)
+> [ 1789.278327] ? _raw_spin_unlock_irqrestore (arch/x86/include/asm/preempt.h:98
+> include/linux/spinlock_api_smp.h:161 kernel/locking/spinlock.c:191)
+> [ 1789.278327] write_checkpoint (fs/f2fs/checkpoint.c:875 fs/f2fs/checkpoint.c:913)
+> [ 1789.310911] waiting module removal not supported: please upgrade
+> [ 1789.278327] ? SyS_tee (fs/sync.c:77)
+> [ 1789.278327] ? mutex_lock_nested (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:569
+> kernel/locking/mutex.c:587)
+> [ 1789.278327] ? get_parent_ip (kernel/sched/core.c:2472)
+> [ 1789.278327] ? bit_waitqueue (kernel/sched/wait.c:291)
+> [ 1789.278327] ? SyS_tee (fs/sync.c:77)
+> [ 1789.278327] f2fs_sync_fs (fs/f2fs/super.c:456)
+> [ 1789.278327] sync_fs_one_sb (fs/sync.c:80)
+> [ 1789.278327] iterate_supers (fs/super.c:512)
+> [ 1789.278327] sys_sync (fs/sync.c:110)
+> [ 1789.278327] tracesys (arch/x86/kernel/entry_64.S:749)
+> [ 1789.278327] Code: 48 c1 e0 04 48 8d 9c 07 f0 00 00 00 49 8b 45 38 41 8b 8d d0 06 00 00 8b 50 78 8b 80
+> 84 00 00 00 d3 e0 41 39 d6 8d 44 02 ff 73 09 <0f> 0b 0f 1f 80 00 00 00 00 41 39 c6 76 03 0f 0b 90 48 8d
+> 43 20
+> [ 1789.278327] RIP f2fs_submit_page_mbio (fs/f2fs/segment.h:543 fs/f2fs/data.c:181)
+> [ 1789.278327]  RSP <ffff880329c3fc08>
+> 
+> 
+> Thanks,
+> Sasha
+> 
+> ------------------------------------------------------------------------------
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
