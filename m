@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325AbaDINJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:09:07 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:16958 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932674AbaDINJB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:09:01 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-c9-5345466a7301
-Message-id: <53454668.8090300@samsung.com>
-Date: Wed, 09 Apr 2014 15:08:56 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: kishon <kishon@ti.com>, Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH] phy: exynos5-usbdrd: Add facility to toggle vbus gpio
- on/off
-References: <1397044485-26483-1-git-send-email-gautam.vivek@samsung.com>
- <534538F6.2010009@samsung.com>
- <CAFp+6iHf5Ndt3yNbdAaayXi08-A54Sk8LDTiASm4RTw09GuWvg@mail.gmail.com>
-In-reply-to: <CAFp+6iHf5Ndt3yNbdAaayXi08-A54Sk8LDTiASm4RTw09GuWvg@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t/xq7pZbq7BBjPeilgcvF9vMf/IOVaL
-	tisH2S2aF69ns7i88BKrxY/XF9gsehdcZbO48LSHzWLT42usFpd3zWGzmHF+H5PFomWtzBbr
-	Z7xmceD12D93DbvH5iX1Hn1bVjF6HL+xncnj8ya5ANYoLpuU1JzMstQifbsErozb728wFVxh
-	q/h6cCN7A+NC1i5GTg4JAROJxldPWSBsMYkL99azdTFycQgJLGWUOHBzBiOE84lRYub5JiaQ
-	Kl4BLYmzD+aAdbMIqErMe/KJGcRmEzCU6D3axwhiiwpESNxrPMwKUS8o8WPyPbANIgLaEtvn
-	TmIFGcossI9FondhO1hCWCBY4uehR1DbNjBKfHrznR0kwQmUOH3gOtgkZgEdif2t09ggbHmJ
-	zWveMk9gFJiFZMksJGWzkJQtYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESI193MC49
-	ZnWIUYCDUYmHV8HSJViINbGsuDL3EKMEB7OSCG+bgWuwEG9KYmVValF+fFFpTmrxIUYmDk6p
-	BsaU2A8q8q+dptl/zb0zP+TyjW8yeeeuqPFEK/HKf9iiXhsVN9dZKzF77ZFjYYYf1pXIzc4S
-	b5SaGXWHITnNrS71oWNw+FKmY3u97h4NrMp6etxrz6ZnV2dsFTgSXOBSeOkUS+Zs6Q2fevV2
-	1TlOnX337adT4mzT1uV8kNKJuzB/zuO85Qu3O6UrsRRnJBpqMRcVJwIAAG82228CAAA=
+	id S1758457AbaDINJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:09:39 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:59388 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758210AbaDINJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 09:09:36 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH] ARM: msm: Make MSM_HAS_DEBUG_UART_HS option visible to multiplatform targets
+Date: Wed,  9 Apr 2014 16:08:32 +0300
+Message-Id: <1397048912-6738-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/14 14:24, Vivek Gautam wrote:
-> On Wed, Apr 9, 2014 at 5:41 PM, Sylwester Nawrocki
-> <s.nawrocki@samsung.com> wrote:
->> > On 09/04/14 13:54, Vivek Gautam wrote:
->>> >> Adding support to enable/disable VBUS hooked to a gpio
->>> >> to enable vbus supply on the port.
->> >
->> > Does the GPIO control a fixed voltage regulator ? If so, shouldn't
->> > it be modelled by the regulator API instead ?
->
-> No, this GPIO controls a 'current limiting power distribution switch',
-> which gives the output vbus to usb controller.
-> Should i model this as a fixed regulator ?
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-OK, it's just a power switch then. I suspect using the regulator API
-would be more universal, as such a GPIO is somewhat a board design
-detail. I'm not going to object to your patch, just might be better
-to use the gpiod API instead.
+High Speed UART is available also in new multiplatform QCOM targets.
 
--- 
-Regards,
-Sylwester
+This fixes:
+
+scripts/kconfig/conf --silentoldconfig Kconfig
+warning: (DEBUG_MSM8660_UART && DEBUG_MSM8960_UART && DEBUG_MSM8974_UART) selects MSM_HAS_DEBUG_UART_HS which has unmet direct dependencies (ARCH_MSM)
+warning: (DEBUG_MSM8660_UART && DEBUG_MSM8960_UART && DEBUG_MSM8974_UART) selects MSM_HAS_DEBUG_UART_HS which has unmet direct dependencies (ARCH_MSM)
+
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ arch/arm/Kconfig.debug       | 5 +----
+ arch/arm/include/debug/msm.S | 7 +++++--
+ arch/arm/mach-msm/Kconfig    | 3 ---
+ 3 files changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 4a2fc0bf..a49caf6 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -376,7 +376,6 @@ choice
+ 	config DEBUG_MSM8660_UART
+ 		bool "Kernel low-level debugging messages via MSM 8660 UART"
+ 		depends on ARCH_MSM8X60
+-		select MSM_HAS_DEBUG_UART_HS
+ 		select DEBUG_MSM_UART
+ 		help
+ 		  Say Y here if you want the debug print routines to direct
+@@ -385,7 +384,6 @@ choice
+ 	config DEBUG_MSM8960_UART
+ 		bool "Kernel low-level debugging messages via MSM 8960 UART"
+ 		depends on ARCH_MSM8960
+-		select MSM_HAS_DEBUG_UART_HS
+ 		select DEBUG_MSM_UART
+ 		help
+ 		  Say Y here if you want the debug print routines to direct
+@@ -394,7 +392,6 @@ choice
+ 	config DEBUG_MSM8974_UART
+ 		bool "Kernel low-level debugging messages via MSM 8974 UART"
+ 		depends on ARCH_MSM8974
+-		select MSM_HAS_DEBUG_UART_HS
+ 		select DEBUG_MSM_UART
+ 		help
+ 		  Say Y here if you want the debug print routines to direct
+@@ -1153,7 +1150,7 @@ config DEBUG_UNCOMPRESS
+ 	  When this option is set, the selected DEBUG_LL output method
+ 	  will be re-used for normal decompressor output on multiplatform
+ 	  kernels.
+-
++
+
+ config UNCOMPRESS_INCLUDE
+ 	string
+diff --git a/arch/arm/include/debug/msm.S b/arch/arm/include/debug/msm.S
+index 9d653d4..09ff7b7 100644
+--- a/arch/arm/include/debug/msm.S
++++ b/arch/arm/include/debug/msm.S
+@@ -39,11 +39,14 @@
+ #ifdef CONFIG_DEBUG_MSM8660_UART
+ #define MSM_DEBUG_UART_BASE	0xF0040000
+ #define MSM_DEBUG_UART_PHYS	0x19C40000
++#define MSM_HAS_DEBUG_UART_HS
+ #endif
+
+ #ifdef CONFIG_DEBUG_MSM8960_UART
++#define MSM_HAS_DEBUG_UART_HS
+ #define MSM_DEBUG_UART_BASE	0xF0040000
+ #define MSM_DEBUG_UART_PHYS	0x16440000
++#define MSM_HAS_DEBUG_UART_HS
+ #endif
+
+ #ifdef CONFIG_DEBUG_MSM8974_UART
+@@ -59,7 +62,7 @@
+ 	.endm
+
+ 	.macro	senduart, rd, rx
+-#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
++#ifdef MSM_HAS_DEBUG_UART_HS
+ 	@ Write the 1 character to UARTDM_TF
+ 	str	\rd, [\rx, #0x70]
+ #else
+@@ -68,7 +71,7 @@
+ 	.endm
+
+ 	.macro	waituart, rd, rx
+-#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
++#ifdef MSM_HAS_DEBUG_UART_HS
+ 	@ check for TX_EMT in UARTDM_SR
+ 	ldr	\rd, [\rx, #0x08]
+ 	tst	\rd, #0x08
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index a7f959e..9b26976 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -42,9 +42,6 @@ config ARCH_QSD8X50
+
+ endchoice
+
+-config MSM_HAS_DEBUG_UART_HS
+-	bool
+-
+ config MSM_SOC_REV_A
+ 	bool
+
+--
+1.8.3.2
+
