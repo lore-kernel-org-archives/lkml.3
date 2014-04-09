@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960AbaDIK7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:59:48 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:39168 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758317AbaDIK7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:59:46 -0400
-X-IronPort-AV: E=Sophos;i="4.97,825,1389772800"; 
-   d="scan'208";a="23610046"
-Message-ID: <53452817.5060502@broadcom.com>
-Date: Wed, 9 Apr 2014 12:59:35 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932913AbaDILDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:03:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38446 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757645AbaDILDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 07:03:46 -0400
+Date: Wed, 9 Apr 2014 13:03:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: punnaiah choudary kalluri <punnaia@xilinx.com>
+Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
+        dougthompson@xmission.com, linux-edac@vger.kernel.org,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        sorenb@xilinx.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punnaiah Choudary <kpc528@gmail.com>
+Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
+ ecc controller
+Message-ID: <20140409110339.GF6529@pd.tnic>
+References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local>
+ <20140408204047.GQ30077@pd.tnic>
+ <CAGnW=BYJxEkhAitCGi-i6+260-i-+GPrg0yPcY=M+7YmDF6ZRw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Felix Fietkau <nbd@openwrt.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
-References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
-In-Reply-To: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAGnW=BYJxEkhAitCGi-i6+260-i-+GPrg0yPcY=M+7YmDF6ZRw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/14 03:03, Luis R. Rodriguez wrote:
-> Folks,
->
+On Wed, Apr 09, 2014 at 11:34:31AM +0530, punnaiah choudary kalluri wrote:
+> Since it is recommended in Documentation/kernel-doc-nano-HOWTO.txt
+> but also said it is low priority and at the discretion of the MAINTAINER of
+> that kernel source file
+> 
+> So, if you recommend not use kernel-doc annotation then i will take care
+> in next version.
 
-[...]
+I don't think there's need for documenting those functions for
+kernel-doc - it is an EDAC driver and not some subsystem function with a
+lot of users.
 
-> To start off -- what's the *last* kernel you realistically need for
-> your users to use backports right now? Is it really 2.6.25? Would
-> anyone kick and scream if for the backports-3.15 release try take
-> things up to support only down to least 3.0 *right now* ?
+> devm_ioremap_resource function will check this condition, so not
+> checking for the NULL explicitly
 
-A lot of test teams in broadcom wlan are still using Fedora 15 running a 
-2.6.38 kernel. We are pushing them to move to Fedora 19.
+And it would say
 
-Regards,
-Arend
+	dev_err(dev, "invalid resource\n");
 
-> [0] http://www.do-not-panic.com/2014/04/automatic-linux-kernel-backporting-with-coccinelle.html
->
->    Luis
-> --
-> To unsubscribe from this list: send the line "unsubscribe backports" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+so we'll know what fails, ok.
 
+> Since the probe returns error, it it that the devm_ framework will
+> clean these resources automatically?
+
+Ah, that's the managed thing, ok.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
