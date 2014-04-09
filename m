@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295AbaDIAqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:46:24 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:47213 "HELO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756235AbaDIAqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:46:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <158dbf4d.1b3c.145301dbf7a.Coremail.asuka.com@163.com>
-References: <1396398194-4163-1-git-send-email-asuka.com@163.com>
- <CAEP_g=9WRyaSmRKHDZmWXwzjDyex8NheyveGzfH4qmMbhgGHdQ@mail.gmail.com> <158dbf4d.1b3c.145301dbf7a.Coremail.asuka.com@163.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Tue, 8 Apr 2014 17:46:00 -0700
-Message-ID: <CAEP_g=8VE8KWu8CqTNeub8rTwiVZD-SWGDr9mZzgAZ-0-T2AMQ@mail.gmail.com>
-Subject: Re: [PATCH v2] openvswitch: supply a dummy err_handler of
- gre_cisco_protocol to prevent kernel crash
-To: wei zhang <asuka.com@163.com>
-Cc: David Miller <davem@davemloft.net>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756890AbaDIAu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:50:59 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:34152
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756232AbaDIAu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 20:50:58 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 0/2] Eliminate spin locks in the vmbus channel callback path 
+Date: Tue,  8 Apr 2014 18:45:28 -0700
+Message-Id: <1397007928-13555-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 9:20 PM, wei zhang <asuka.com@163.com> wrote:
-> At 2014-04-05 07:05:59,"Jesse Gross" <jesse@nicira.com> wrote:
->>On Tue, Apr 1, 2014 at 5:23 PM, Wei Zhang <asuka.com@163.com> wrote:
->>>
->>> v2 -> v1: use the same logic of the gre_rcv() to distinguish which packet is
->>> intended to us!
->>
->>As a tip on kernel process: if you put the version information after
->>three dashes below the signed-off-by line then git will automatically
->>remove it when the final patch is applied.
->
-> Thanks, should I modify it and send a v3 patch?
->
->>
->>> diff --git a/net/openvswitch/vport-gre.c b/net/openvswitch/vport-gre.c
->>> index a3d6951..f391df1 100644
->>> --- a/net/openvswitch/vport-gre.c
->>> +++ b/net/openvswitch/vport-gre.c
->>> @@ -110,6 +110,21 @@ static int gre_rcv(struct sk_buff *skb,
->>>         return PACKET_RCVD;
->>>  }
->>>
->>> +/* Called with rcu_read_lock and BH disabled. */
->>> +static int gre_err(struct sk_buff *skb, u32 info,
->>> +                  const struct tnl_ptk_info *tpi)
->>> +{
->>> +       struct ovs_net *ovs_net;
->>> +       struct vport *vport;
->>> +
->>> +       ovs_net = net_generic(dev_net(skb->dev), ovs_net_id);
->>> +       vport = rcu_dereference(ovs_net->vport_net.gre_vport);
->>> +       if (unlikely(!vport))
->>> +               return PACKET_REJECT;
->>> +       else
->>> +               return PACKET_RCVD;
->>
->>Sorry, I forgot to say this before - if we receive the packet then we
->>should also call consume_skb() on it.
->
-> Maybe there is no need to call consume_skb()? The icmp_rcv() would
-> call kfree_skb() for us. I also checked the ipgre_err(), it return
-> PACKET_RCVD without call consume_skb() too.
+Currently we map the channel handle to the channel under the protection of
+a spin lock. Additionally, we dispatch the channel callback function under the
+protection of the channel inbound lock (another spin lock). In some recent
+nework performance runs, the time spent acquiring and releasing these locks
+were identified as potential bottlenecks. This patch-set gets rid of these
+locks by leveraging the interrupt bindings that we support starting with win8.
 
-Thanks, you are right. I applied your patch as is.
+K. Y. Srinivasan (2):
+  Drivers: hv: Eliminate the channel spinlock in the callback path
+  Drivers: hv: vmbus: Implement per-CPU mapping of relid to channel
+
+ drivers/hv/channel.c      |   16 ++++++++++---
+ drivers/hv/channel_mgmt.c |   52 ++++++++++++++++++++++++++++++++++++++++----
+ drivers/hv/connection.c   |   35 +++++++++++++++++++++++-------
+ drivers/hv/hv.c           |    2 +
+ drivers/hv/hyperv_vmbus.h |    5 ++++
+ include/linux/hyperv.h    |    7 ++++++
+ 6 files changed, 100 insertions(+), 17 deletions(-)
+
+-- 
+1.7.4.1
+
