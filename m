@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162AbaDIBhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 21:37:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757285AbaDIBhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 21:37:33 -0400
-Date: Tue, 8 Apr 2014 21:36:58 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>, jmario@redhat.com,
-        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
-        andi.kleen@intel.com
-Subject: Re: [PATCH 05/15 V3] perf, c2c: Rework setup code to prepare for
- features
-Message-ID: <20140409013658.GA8488@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
- <1395689826-215033-6-git-send-email-dzickus@redhat.com>
- <20140329171018.GA2022@krava.redhat.com>
- <87ob0cw9na.fsf@sejong.aot.lge.com>
- <20140408141107.GT8488@redhat.com>
- <87eh17uwzj.fsf@sejong.aot.lge.com>
+	id S1757726AbaDIBpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 21:45:00 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39046 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756572AbaDIBo6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 21:44:58 -0400
+Message-ID: <5344A603.90305@linux.vnet.ibm.com>
+Date: Wed, 09 Apr 2014 07:14:35 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87eh17uwzj.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>, dave.hansen@intel.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
+Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com> <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com> <533EDB63.8090909@intel.com> <20140404.135056.2103520199689146670.davem@davemloft.net>
+In-Reply-To: <20140404.135056.2103520199689146670.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040901-1396-0000-0000-0000049A3819
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 10:12:32AM +0900, Namhyung Kim wrote:
-> On Tue, 8 Apr 2014 10:11:07 -0400, Don Zickus wrote:
-> > On Tue, Apr 08, 2014 at 04:41:29PM +0900, Namhyung Kim wrote:
-> >> On Sat, 29 Mar 2014 18:10:18 +0100, Jiri Olsa wrote:
-> >> > On Mon, Mar 24, 2014 at 03:36:56PM -0400, Don Zickus wrote:
-> >> >
-> >> > SNIP
-> >> >
-> >> >>  
-> >> >>  static int perf_c2c__process_load_store(struct perf_c2c *c2c,
-> >> >> +					struct addr_location *al,
-> >> >>  					struct perf_sample *sample,
-> >> >> -					struct addr_location *al)
-> >> >> +					struct perf_evsel *evsel)
-> >> >>  {
-> >> >> -	if (c2c->raw_records)
-> >> >> -		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
-> >> >> +	struct mem_info *mi;
-> >> >> +
-> >> >> +	mi = sample__resolve_mem(sample, al);
-> >> >> +	if (!mi)
-> >> >> +		return -ENOMEM;
-> >> >
-> >> > perhaps not directly related to this patchset, but I needed
-> >> > attached patch to get resolved data in .bss (static), which
-> >> > for some reason happened to be located in executable segment
-> >> 
-> >> Wasn't it a read-only/const data?
-> >
-> > I believe it had the 'x' bit set.  Or the kernel was not passing any
-> > protection bits, so it defaulted to MAP_FUNCTION?
+On Friday 04 April 2014 11:20 PM, David Miller wrote:
+> From: Dave Hansen <dave.hansen@intel.com>
+> Date: Fri, 04 Apr 2014 09:18:43 -0700
 > 
-> The perf treats a mapping as a data mapping (MAP_VARIABLE) by default if
-> the 'x' bit is not set.  As Jiri said its a static data, I guessed it's
-> a const data (set to 0?) and moved into .rodata section and then to the
-> text segment.
+>> On 04/03/2014 11:27 PM, Madhavan Srinivasan wrote:
+>>> This patch creates infrastructure to move the FAULT_AROUND_ORDER
+>>> to arch/ using Kconfig. This will enable architecture maintainers
+>>> to decide on suitable FAULT_AROUND_ORDER value based on
+>>> performance data for that architecture. Patch also adds
+>>> FAULT_AROUND_ORDER Kconfig element in arch/X86.
+>>
+>> Please don't do it this way.
+>>
+>> In mm/Kconfig, put
+>>
+>> 	config FAULT_AROUND_ORDER
+>> 		int
+>> 		default 1234 if POWERPC
+>> 		default 4
+>>
+>> The way you have it now, every single architecture that needs to enable
+>> this has to go put that in their Kconfig.  That's madness.  This way,
+>> you only put it in one place, and folks only have to care if they want
+>> to change the default to be something other than 4.
+> 
+> It looks more like it's necessary only to change the default, not
+> to enable it.  Unless I read his patch wrong...
+> 
+Yes. With current patch, you only need to change the default by which
+you enable it.
 
-Unfortunately, his patch will be needed eventually, if not for his reason,
-I had a java JAR file example that was pulling data addresses out of a
-shared memory region with the protection bits set to 'rwx' (in the
-/proc/<pid>/maps area).  I was losing lots of samples until I came up with
-a more complicated hack.
+With regards
+Maddy
+> 
 
-I will try to dig up my example, so you can see, so it doesn't sound like
-I am making this up. :-)
-
-Cheers,
-Don
