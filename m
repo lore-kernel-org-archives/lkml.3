@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964807AbaDIQMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:12:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42346 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933811AbaDIQMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:12:47 -0400
-Message-ID: <53457234.4090203@oracle.com>
-Date: Wed, 09 Apr 2014 12:15:48 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S964854AbaDIQNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:13:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60314 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964818AbaDIQNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 12:13:21 -0400
+Date: Wed, 9 Apr 2014 18:13:10 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Vladimir Nikulichev <nvs@tbricks.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-perf-users@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Correctly handle symbols in VDSO
+Message-ID: <20140409161310.GB19506@krava.brq.redhat.com>
+References: <D6A5CDD8-F8F1-4C9D-8BCF-83A739FD6A2F@tbricks.com>
+ <87eh19y8cm.fsf@sejong.aot.lge.com>
+ <3C60FB26-A78B-4E37-B4A6-E6F7283CEB4C@tbricks.com>
+ <20140408154101.GA21094@krava.brq.redhat.com>
+ <A7CC2084-4F71-436C-9AEC-394F66A4981E@tbricks.com>
+ <20140409153546.GA19506@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/xen: Fix 32-bit PV guests's usage of kernel_stack
-References: <1397052401-20220-1-git-send-email-boris.ostrovsky@oracle.com> <20140409112517.570b24e9@gandalf.local.home>
-In-Reply-To: <20140409112517.570b24e9@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409153546.GA19506@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 11:25 AM, Steven Rostedt wrote:
-> On Wed, 09 Apr 2014 11:12:33 -0400
-> Boris Ostrovsky <boris.ostrovsky@oracle.com> wrote:
->
->> Commit 198d208df4371734ac4728f69cb585c284d20a15 made 32-bit kernels use
->> kernel_stack to point to thread_info. That change missed a couple of
->> updates needed by Xen's PV guests:
->>
->> 1. kernel_stack needs to be initialized for secondary CPUs
->> 2. GET_THREAD_INFO() now uses %fs register which may not be the kernel's
->> version when executing xen_iret()
->>
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> ---
->>   arch/x86/xen/smp.c        |    3 ++-
->>   arch/x86/xen/xen-asm_32.S |    4 ++++
->>   2 files changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
->> index a18eadd..7005974 100644
->> --- a/arch/x86/xen/smp.c
->> +++ b/arch/x86/xen/smp.c
->> @@ -441,10 +441,11 @@ static int xen_cpu_up(unsigned int cpu, struct task_struct *idle)
->>   	irq_ctx_init(cpu);
->>   #else
->>   	clear_tsk_thread_flag(idle, TIF_FORK);
->> +#endif
->>   	per_cpu(kernel_stack, cpu) =
->>   		(unsigned long)task_stack_page(idle) -
->>   		KERNEL_STACK_OFFSET + THREAD_SIZE;
->> -#endif
->> +
->>   	xen_setup_runstate_info(cpu);
->>   	xen_setup_timer(cpu);
->>   	xen_init_lock_cpu(cpu);
->> diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
->> index 33ca6e4..d433637 100644
->> --- a/arch/x86/xen/xen-asm_32.S
->> +++ b/arch/x86/xen/xen-asm_32.S
->> @@ -88,7 +88,11 @@ ENTRY(xen_iret)
->>   	 * avoid having to reload %fs
-> Looks like this patch makes the above comment incorrect.
+On Wed, Apr 09, 2014 at 05:35:46PM +0200, Jiri Olsa wrote:
+> On Wed, Apr 09, 2014 at 10:46:13AM +0400, Vladimir Nikulichev wrote:
+> > Hi,
+> > 
+> > On Apr 8, 2014, at 7:41 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > 
+> > > hi,
+> > > could you please put explanation from first email
+> > > into the patch changelog?
+> > > 
+> > > cc-ing lkml
+> > > 
+> > > thanks,
+> > > jirka
+> > 
+> > 
+> > OK, pasting it together:
+> 
+> ook
+> 
+> hum, your email's encoding kills my 'git am' :-\
+> also 'perf tools: Adjust symbols in VDSO' should go into the
+> email subject
+> 
+> I processed this patch by hand this time
 
+actually I'll have to ask you to resend your patch
+with proper subject and coding, refer to:
+  https://www.kernel.org/doc/Documentation/email-clients.txt
 
-I didn't notice this (it was full 3 lines above the change), it will 
-obviously have to be updated.
+  "Emailed patches should be in ASCII or UTF-8 encoding only."
 
+Please CC lkml (linux-kernel@vger.kernel.org). Strangely enough,
+I don't see your patch there at the moment.. 
 
->>   	 */
->>   #ifdef CONFIG_SMP
->> +	pushw %fs
->> +	movl $(__KERNEL_PERCPU), %eax
->> +	movl %eax, %fs
->>   	GET_THREAD_INFO(%eax)
->> +	popw %fs
->>   	movl %ss:TI_cpu(%eax), %eax
-> Hmm, you're using GET_THREAD_INFO() to get the thread info to find the
-> current CPU for later use to avoid using %fs. ??
->
-> Is it possible to just push the cpu on the kernel irq stack and be able
-> to retrieve it manually? Looks like the only reason to use the
-> thread_info here is to get to the CPU index for below.
-
-Or vcpu_info, which is what we are really after.
-
-However, it looks like using %fs/GET_THREAD_INFO() should be OK as well, 
-provided I deal with a potential faulting.
-
--boris
-
->
->>   	movl %ss:__per_cpu_offset(,%eax,4), %eax
->>   	mov %ss:xen_vcpu(%eax), %eax
-> -- Steve
->
-
+thanks,
+jirka
