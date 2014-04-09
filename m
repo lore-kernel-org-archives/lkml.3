@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964972AbaDITx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 15:53:57 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:35652 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934006AbaDITxu (ORCPT
+	id S934406AbaDITz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 15:55:29 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58066 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933342AbaDITz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 15:53:50 -0400
-Message-ID: <5345A54D.2050808@akamai.com>
-Date: Wed, 09 Apr 2014 15:53:49 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 9 Apr 2014 15:55:26 -0400
+X-Sasl-enc: QB/Sw4CLxoX95d/R3VrIeVuPk6/NEfiucsxCXl0Xf2zj 1397073323
+Date: Wed, 9 Apr 2014 12:57:55 -0700
+From: Greg KH <greg@kroah.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        Michele Ballabio <barra_cuda@katamail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH -stable] x86,preempt: Fix preemption for i386
+Message-ID: <20140409195755.GA12513@kroah.com>
+References: <20140407150705.GB13658@twins.programming.kicks-ass.net>
+ <5342EB78.3060002@gmx.de>
+ <20140407185658.GK11096@twins.programming.kicks-ass.net>
+ <20140408122128.GC13658@twins.programming.kicks-ass.net>
+ <53450F7E.7040904@canonical.com>
+ <20140409094515.GR11096@twins.programming.kicks-ass.net>
+ <20140409142447.GD13658@twins.programming.kicks-ass.net>
+ <CA+55aFzBw0i2nmOGOKzjS_b_7M1Gha2OFEe9rXOO4c+s-2HTkg@mail.gmail.com>
+ <20140409191931.GB10748@kroah.com>
+ <20140409193845.GB26782@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: "Luck, Tony" <tony.luck@intel.com>, Aristeu Rozanski <aris@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
-References: <cover.1396645124.git.jbaron@akamai.com> <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com> <20140409113552.GJ6529@pd.tnic> <20140409133433.GJ29214@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com> <20140409173633.GN6529@pd.tnic> <5345980F.7070604@akamai.com> <20140409191454.GQ6529@pd.tnic>
-In-Reply-To: <20140409191454.GQ6529@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409193845.GB26782@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 03:14 PM, Borislav Petkov wrote:
-> On Wed, Apr 09, 2014 at 02:57:19PM -0400, Jason Baron wrote:
->> Right, so maybe the fact that its a desktop chipset means that it
->> behaves differently and doesn't raise MCEs on memory errors. We have a
->> bunch of these processors and we haven't yet seen an MCE raised on a
->> memory error.
+On Wed, Apr 09, 2014 at 09:38:45PM +0200, Peter Zijlstra wrote:
+> On Wed, Apr 09, 2014 at 12:19:31PM -0700, Greg KH wrote:
+> > On Wed, Apr 09, 2014 at 07:36:23AM -0700, Linus Torvalds wrote:
+> > > On Wed, Apr 9, 2014 at 7:24 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > >
+> > > > I'm not entirely clear on how acceptable it is to propose a different
+> > > > patch for -stable than what we have upstream.
+> > > 
+> > > It's not all that common, but it certainly happens.
+> > > 
+> > > It's fine, as long as it mentions the commits that fix it upstream.
+> > > And as long as it's well tested, of course.
+> > 
+> > I agree, I can take this as long as you say it's correct and tested...
 > 
-> This can't be - an uncorrectable error will have to generate a machine
-> check exception if consumed - there's no other option.
+> As far as I understand the issue the patch is indeed correct and I have
+> 3 independent people who confirm their previously reported issues are
+> now cured (as testified by the Tested-by tags).
 > 
-> Can you do
-> 
-> rdmsr 0x179
-> rdmsr 0x17b
-> 
-> and paste the results here?
->
+> There has also been confirmation that upstream does no longer suffer the
+> problem.
 
-Unfortunately, the box reporting the ue errors just went into transit (so
-that I can better examine this issue), so I will probably not be able to
-run this experiment on that specific box until next week.
+Thanks for that, I'll queue it up in a bit.
 
-However, I was able to run it on a very similar box (same pci id for the
-mch), and I get:
- 
-# ./rdmsr 0x179
-c09
-
-# ./rdmsr 0x17b
-rdmsr: CPU 0 cannot read MSR 0x0000017b
-
-Thanks,
-
--Jason
+greg k-h
