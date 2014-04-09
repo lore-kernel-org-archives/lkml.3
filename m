@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994AbaDIP44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:56:56 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:52763 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933869AbaDIP4w (ORCPT
+	id S964837AbaDIQBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:01:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46589 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933987AbaDIQBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:56:52 -0400
+	Wed, 9 Apr 2014 12:01:14 -0400
+Date: Wed, 9 Apr 2014 16:56:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arun Shamanna Lakshmi <aruns@nvidia.com>
+Cc: lars@metafoo.de, lgirdwood@gmail.com, swarren@wwwdotorg.org,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Songhee Baek <sbaek@nvidia.com>
+Message-ID: <20140409155631.GP6518@sirena.org.uk>
+References: <1396656730-30145-1-git-send-email-aruns@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20140409113923.7dcaf183@gandalf.local.home>
-References: <20131113113927.GA13875@mwhitehe.csb>
-	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
-	<20131113102153.5f10e6b5@gandalf.local.home>
-	<20131113103134.5b8cf02f@gandalf.local.home>
-	<20131113105737.3f7a0b1b@gandalf.local.home>
-	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
-	<20131113111257.482c2955@gandalf.local.home>
-	<20131113161829.GE4138@linux.vnet.ibm.com>
-	<20131113112338.7d303c0f@gandalf.local.home>
-	<20131113163552.GF4138@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
-	<CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
-	<20140409103138.29be16b9@gandalf.local.home>
-	<CAKohponY+4y8G875wy4GsO1hTqERc7-hYKY6uQvLn28+32VxVQ@mail.gmail.com>
-	<20140409112950.7be9f8ac@gandalf.local.home>
-	<20140409113143.6174143f@gandalf.local.home>
-	<20140409113923.7dcaf183@gandalf.local.home>
-Date: Wed, 9 Apr 2014 21:26:51 +0530
-Message-ID: <CAKohpok8e9MoWFeNquMreRR8dbBP-_9CDP7=xdOwAwWv87VZAQ@mail.gmail.com>
-Subject: Re: nohz problem with idle time on old hardware
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Matthew Whitehead <tedheadster@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mwhitehe@redhat.com, Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="v9g2r9e2kvGs7M7R"
+Content-Disposition: inline
+In-Reply-To: <1396656730-30145-1-git-send-email-aruns@nvidia.com>
+X-Cookie: This report is filled with omissions.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 April 2014 21:09, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Reading even more of the code, now I'm totally confused :-)
 
-:)
+--v9g2r9e2kvGs7M7R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> When tick_setup_sched_timer() is called, if tick_nohz_enabled is set,
-> then we set tick_nohz_active.
+On Fri, Apr 04, 2014 at 05:12:10PM -0700, Arun Shamanna Lakshmi wrote:
+> 1. Modify soc_enum struct to handle pointers for reg and mask
+> 2. Add dapm get and put APIs for multi register one hot encoded mux
+> 3. Update snd_soc_dapm_update struct to support multiple reg update
 
-correct.
+If you've got several changes like this it's probably a sign that the
+change ought to be split into a patch series.
 
-> This gets called by hrtimer_switch_to_hres(), and before that is
-> called, the tick_check_oneshot_changed() will never get to the
-> tick_nohz_switch_to_nohz() call.
+I'm still not seeing any handling of the issues with having invalid
+configurations written to the device during the process of carrying out
+multi register updates; I did raise this with one of the earlier
+versions but don't recall any response.
 
-If hrtimer_switch_to_hres() is called or HRES is enabled, we will
-never ever call tick_nohz_switch_to_nohz().
+I also think I agree with Takashi on this one - trying to implement this
+without adding an abstraction for the control values is making the code
+more complex than it needs to be, all the conditional paths for _ONEHOT
+aren't pretty (and don't use switches which is the usual idiom for this
+stuff if it's not indirected via functions).
 
-> Looks to me, the real answer is to nuke both the if statement *and* the
-> setting of the tick_nohz_active in that function. Both looks a bit
-> redundant to me.
+--v9g2r9e2kvGs7M7R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-When HRES isn't enabled and NOHZ isn't enabled as well, in that
-case we should stick to the periodic code from tick-common.c and
-the oneshot options of tick_nohz_switch_to_nohz() or
-hrtimer_switch_to_hres() shouldn't be used. And so, we still need
-those checks, as per my understanding. :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Lets see what others have for this discussion :)
+iQIcBAEBAgAGBQJTRW2rAAoJELSic+t+oim9ka8P/1+sW/wjVzqIBZeVtR2iAX+T
++1ZPAwXnaHyzimmvf0PImEJS+35hsTANy6kAaA7bE9qAKOV9RYQd8YK/OL3ZusxG
+skB9MmMIhUjJ85yg5eRJXSlvD4GhqnrOK2avjFtgVzGTZH/DjVQ9TUnpmhDYfvHu
+tDgKcg4MeGu9F+FmEsX3Fjn/7zr/BqTsMsjgh97vyJs5Li4qQ0HUO8/BDCeR5mox
+3ZQdy3Aqjh3SgXtDqlbdlUokfFFMQIW79Nfo4u/Jlr5ftuQrA3CR3BrEWm6ZqtAH
+HS972V+kQrTUMDdadOj9fFaP0WsIxMSCC5Wz5M/m3G76J2z5znXgphxoYvxFL3Y4
+02ATNK5Z++lWjZIfdxs1QN648F5CPMB9qDTbwV6ITSFJh/QY5sNv0D0MPjJx8pxW
+3aJcfY0NUc9fJrJtMZDHS7qm/9foAzYdhv5tYjS33chtQdT0dcrvZ8FSHjJ83DiR
+Ca9r3QHibi13E7WWOsE1JuIGMGaCkDBK0398ERW3wUFja7l3M6gVGHCuMmBbopOO
+ty2pgeBlHjFJyvSSUxB89vb/c+6oJ8tSBduD07nE20hKrskVFy0RnlARYF40OQZ6
+kXYsQnV9jpaTiTkuIMEkfhxWYOsLwSg6Im3uuoQ2msUhtQKXqbJEi3o3eDb1jOPg
+GkZPxk86eqDpISsP30Fk
+=bSny
+-----END PGP SIGNATURE-----
+
+--v9g2r9e2kvGs7M7R--
