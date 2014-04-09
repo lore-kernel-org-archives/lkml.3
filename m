@@ -1,224 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529AbaDIAv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:51:26 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:34152
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1757940AbaDIAxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:53:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27066 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757380AbaDIAvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:51:24 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/2] Drivers: hv: vmbus: Implement per-CPU mapping of relid to channel
-Date: Tue,  8 Apr 2014 18:45:54 -0700
-Message-Id: <1397007954-13596-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1397007954-13596-1-git-send-email-kys@microsoft.com>
-References: <1397007928-13555-1-git-send-email-kys@microsoft.com>
- <1397007954-13596-1-git-send-email-kys@microsoft.com>
+	id S1757713AbaDIAxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 20:53:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,821,1389772800"; 
+   d="scan'208";a="489591597"
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+To: jic23@kernel.org
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Subject: [Patch v3 2/6] IIO: core: Introduce read_raw_multi
+Date: Tue,  8 Apr 2014 17:56:24 -0700
+Message-Id: <1397004988-31550-2-git-send-email-srinivas.pandruvada@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+References: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the mapping of the relID to channel is done under the protection of a
-single spin lock. Starting with ws2012, each channel is bound to a specific VCPU
-in the guest. Use this binding to eliminate the spin lock by setting up
-per-cpu state for mapping relId to the channel.
+This callback is introduced to overcome some limitations of existing
+read_raw callback. The functionality of both existing read_raw and
+read_raw_multi is similar, both are used to request values from the
+device. The current read_raw callback allows only two return values.
+The new read_raw_multi allows returning multiple values. Instead of
+passing just address of val and val2, it passes length and pointer
+to values. Depending on the type and length of passed buffer, iio
+client drivers can return multiple values.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 ---
- drivers/hv/channel_mgmt.c |   41 ++++++++++++++++++++++++++++++++++++++++-
- drivers/hv/connection.c   |   24 +++++++++++++++++++++++-
- drivers/hv/hv.c           |    2 ++
- drivers/hv/hyperv_vmbus.h |    5 +++++
- include/linux/hyperv.h    |    5 +++++
- 5 files changed, 75 insertions(+), 2 deletions(-)
+ drivers/iio/iio_core.h           |  2 +-
+ drivers/iio/industrialio-core.c  | 65 ++++++++++++++++++++++++++--------------
+ drivers/iio/industrialio-event.c |  6 ++--
+ drivers/iio/inkern.c             | 16 ++++++++--
+ include/linux/iio/iio.h          | 17 +++++++++++
+ include/linux/iio/types.h        |  1 +
+ 6 files changed, 80 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index 6f7fdd9..6c8b032c 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -149,6 +149,7 @@ static struct vmbus_channel *alloc_channel(void)
- 	spin_lock_init(&channel->sc_lock);
+diff --git a/drivers/iio/iio_core.h b/drivers/iio/iio_core.h
+index f6db6af..30327ad 100644
+--- a/drivers/iio/iio_core.h
++++ b/drivers/iio/iio_core.h
+@@ -35,7 +35,7 @@ int __iio_add_chan_devattr(const char *postfix,
+ 			   struct list_head *attr_list);
+ void iio_free_chan_devattr_list(struct list_head *attr_list);
  
- 	INIT_LIST_HEAD(&channel->sc_list);
-+	INIT_LIST_HEAD(&channel->percpu_list);
+-ssize_t iio_format_value(char *buf, unsigned int type, int val, int val2);
++ssize_t iio_format_value(char *buf, unsigned int type, int size, int *val);
  
- 	channel->controlwq = create_workqueue("hv_vmbus_ctl");
- 	if (!channel->controlwq) {
-@@ -188,7 +189,20 @@ static void free_channel(struct vmbus_channel *channel)
- 	queue_work(vmbus_connection.work_queue, &channel->work);
- }
+ /* Event interface flags */
+ #define IIO_BUSY_BIT_POS 1
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index ede16aec..3bd565c 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -373,41 +373,53 @@ EXPORT_SYMBOL_GPL(iio_enum_write);
+  * @buf: The buffer to which the formated value gets written
+  * @type: One of the IIO_VAL_... constants. This decides how the val and val2
+  *        parameters are formatted.
+- * @val: First part of the value, exact meaning depends on the type parameter.
+- * @val2: Second part of the value, exact meaning depends on the type parameter.
++ * @vals: pointer to the values, exact meaning depends on the type parameter.
+  */
+-ssize_t iio_format_value(char *buf, unsigned int type, int val, int val2)
++ssize_t iio_format_value(char *buf, unsigned int type, int size, int *vals)
+ {
+ 	unsigned long long tmp;
+ 	bool scale_db = false;
  
-+static void percpu_channel_enq(void *arg)
-+{
-+	struct vmbus_channel *channel = arg;
-+	int cpu = smp_processor_id();
+ 	switch (type) {
+ 	case IIO_VAL_INT:
+-		return sprintf(buf, "%d\n", val);
++		return sprintf(buf, "%d\n", vals[0]);
+ 	case IIO_VAL_INT_PLUS_MICRO_DB:
+ 		scale_db = true;
+ 	case IIO_VAL_INT_PLUS_MICRO:
+-		if (val2 < 0)
+-			return sprintf(buf, "-%ld.%06u%s\n", abs(val), -val2,
++		if (vals[1] < 0)
++			return sprintf(buf, "-%ld.%06u%s\n", abs(vals[0]),
++					-vals[1],
+ 				scale_db ? " dB" : "");
+ 		else
+-			return sprintf(buf, "%d.%06u%s\n", val, val2,
++			return sprintf(buf, "%d.%06u%s\n", vals[0], vals[1],
+ 				scale_db ? " dB" : "");
+ 	case IIO_VAL_INT_PLUS_NANO:
+-		if (val2 < 0)
+-			return sprintf(buf, "-%ld.%09u\n", abs(val), -val2);
++		if (vals[1] < 0)
++			return sprintf(buf, "-%ld.%09u\n", abs(vals[0]),
++					-vals[1]);
+ 		else
+-			return sprintf(buf, "%d.%09u\n", val, val2);
++			return sprintf(buf, "%d.%09u\n", vals[0], vals[1]);
+ 	case IIO_VAL_FRACTIONAL:
+-		tmp = div_s64((s64)val * 1000000000LL, val2);
+-		val2 = do_div(tmp, 1000000000LL);
+-		val = tmp;
+-		return sprintf(buf, "%d.%09u\n", val, val2);
++		tmp = div_s64((s64)vals[0] * 1000000000LL, vals[1]);
++		vals[1] = do_div(tmp, 1000000000LL);
++		vals[0] = tmp;
++		return sprintf(buf, "%d.%09u\n", vals[0], vals[1]);
+ 	case IIO_VAL_FRACTIONAL_LOG2:
+-		tmp = (s64)val * 1000000000LL >> val2;
+-		val2 = do_div(tmp, 1000000000LL);
+-		val = tmp;
+-		return sprintf(buf, "%d.%09u\n", val, val2);
++		tmp = (s64)vals[0] * 1000000000LL >> vals[1];
++		vals[1] = do_div(tmp, 1000000000LL);
++		vals[0] = tmp;
++		return sprintf(buf, "%d.%09u\n", vals[0], vals[1]);
++	case IIO_VAL_INT_MULTIPLE:
++	{
++		int i;
++		int len = 0;
 +
-+	list_add_tail(&channel->percpu_list, &hv_context.percpu_list[cpu]);
-+}
- 
-+static void percpu_channel_deq(void *arg)
-+{
-+	struct vmbus_channel *channel = arg;
-+
-+	list_del(&channel->percpu_list);
-+}
- 
- /*
-  * vmbus_process_rescind_offer -
-@@ -210,6 +224,12 @@ static void vmbus_process_rescind_offer(struct work_struct *work)
- 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
- 	vmbus_post_msg(&msg, sizeof(struct vmbus_channel_relid_released));
- 
-+	if (channel->target_cpu != smp_processor_id())
-+		smp_call_function_single(channel->target_cpu,
-+					 percpu_channel_deq, channel, true);
-+	else
-+		percpu_channel_deq(channel);
-+
- 	if (channel->primary_channel == NULL) {
- 		spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
- 		list_del(&channel->listentry);
-@@ -245,6 +265,7 @@ static void vmbus_process_offer(struct work_struct *work)
- 							work);
- 	struct vmbus_channel *channel;
- 	bool fnew = true;
-+	bool enq = false;
- 	int ret;
- 	unsigned long flags;
- 
-@@ -264,12 +285,22 @@ static void vmbus_process_offer(struct work_struct *work)
- 		}
++		for (i = 0; i < size; ++i)
++			len += sprintf(&buf[len], "%d ", vals[i]);
++		buf[len++] = '\n';
++		buf[len++] = '\0';
++		return len;
++	}
+ 	default:
+ 		return 0;
  	}
- 
--	if (fnew)
-+	if (fnew) {
- 		list_add_tail(&newchannel->listentry,
- 			      &vmbus_connection.chn_list);
-+		enq = true;
-+	}
- 
- 	spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
- 
-+	if (enq) {
-+		if (newchannel->target_cpu != smp_processor_id())
-+			smp_call_function_single(newchannel->target_cpu,
-+						 percpu_channel_enq,
-+						 newchannel, true);
-+		else
-+			percpu_channel_enq(newchannel);
-+	}
- 	if (!fnew) {
- 		/*
- 		 * Check to see if this is a sub-channel.
-@@ -282,6 +313,14 @@ static void vmbus_process_offer(struct work_struct *work)
- 			spin_lock_irqsave(&channel->sc_lock, flags);
- 			list_add_tail(&newchannel->sc_list, &channel->sc_list);
- 			spin_unlock_irqrestore(&channel->sc_lock, flags);
+@@ -419,14 +431,23 @@ static ssize_t iio_read_channel_info(struct device *dev,
+ {
+ 	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+ 	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+-	int val, val2;
+-	int ret = indio_dev->info->read_raw(indio_dev, this_attr->c,
+-					    &val, &val2, this_attr->address);
++	int vals[INDIO_MAX_RAW_ELEMENTS];
++	int ret;
++	int val_len = 2;
 +
-+			if (newchannel->target_cpu != smp_processor_id())
-+				smp_call_function_single(newchannel->target_cpu,
-+							 percpu_channel_enq,
-+							 newchannel, true);
-+			else
-+				percpu_channel_enq(newchannel);
-+
- 			newchannel->state = CHANNEL_OPEN_STATE;
- 			if (channel->sc_creation_callback != NULL)
- 				channel->sc_creation_callback(newchannel);
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index d484bad..3589236 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -231,6 +231,28 @@ cleanup:
- 	return ret;
++	if (indio_dev->info->read_raw_multi)
++		ret = indio_dev->info->read_raw_multi(indio_dev, this_attr->c,
++							INDIO_MAX_RAW_ELEMENTS,
++							vals, &val_len,
++							this_attr->address);
++	else
++		ret = indio_dev->info->read_raw(indio_dev, this_attr->c,
++				    &vals[0], &vals[1], this_attr->address);
+ 
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	return iio_format_value(buf, ret, val, val2);
++	return iio_format_value(buf, ret, val_len, vals);
  }
  
-+/*
-+ * Map the given relid to the corresponding channel based on the
-+ * per-cpu list of channels that have been affinitized to this CPU.
-+ * This will be used in the channel callback path as we can do this
-+ * mapping in a lock-free fashion.
-+ */
-+static struct vmbus_channel *pcpu_relid2channel(u32 relid)
-+{
-+	struct vmbus_channel *channel;
-+	struct vmbus_channel *found_channel  = NULL;
-+	int cpu = smp_processor_id();
-+	struct list_head *pcpu_head = &hv_context.percpu_list[cpu];
-+
-+	list_for_each_entry(channel, pcpu_head, percpu_list) {
-+		if (channel->offermsg.child_relid == relid) {
-+			found_channel = channel;
-+			break;
-+		}
-+	}
-+
-+	return found_channel;
-+}
+ /**
+diff --git a/drivers/iio/industrialio-event.c b/drivers/iio/industrialio-event.c
+index ea6e06b..1b4f31b 100644
+--- a/drivers/iio/industrialio-event.c
++++ b/drivers/iio/industrialio-event.c
+@@ -270,7 +270,7 @@ static ssize_t iio_ev_value_show(struct device *dev,
+ {
+ 	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+ 	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+-	int val, val2;
++	int val, val2, val_arr[2];
+ 	int ret;
  
- /*
-  * relid2channel - Get the channel object given its
-@@ -282,7 +304,7 @@ static void process_chn_event(u32 relid)
- 	 * Find the channel based on this relid and invokes the
- 	 * channel callback to process the event
- 	 */
--	channel = relid2channel(relid);
-+	channel = pcpu_relid2channel(relid);
- 
- 	if (!channel) {
- 		pr_err("channel not found for relid - %u\n", relid);
-diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
-index bcb4950..edfc848 100644
---- a/drivers/hv/hv.c
-+++ b/drivers/hv/hv.c
-@@ -383,6 +383,8 @@ void hv_synic_init(void *arg)
- 	 */
- 	rdmsrl(HV_X64_MSR_VP_INDEX, vp_index);
- 	hv_context.vp_index[cpu] = (u32)vp_index;
-+
-+	INIT_LIST_HEAD(&hv_context.percpu_list[cpu]);
- 	return;
+ 	ret = indio_dev->info->read_event_value(indio_dev,
+@@ -279,7 +279,9 @@ static ssize_t iio_ev_value_show(struct device *dev,
+ 		&val, &val2);
+ 	if (ret < 0)
+ 		return ret;
+-	return iio_format_value(buf, ret, val, val2);
++	val_arr[0] = val;
++	val_arr[1] = val2;
++	return iio_format_value(buf, ret, 2, val_arr);
  }
  
-diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-index 860134d..18d1a84 100644
---- a/drivers/hv/hyperv_vmbus.h
-+++ b/drivers/hv/hyperv_vmbus.h
-@@ -510,6 +510,11 @@ struct hv_context {
- 	 * basis.
- 	 */
- 	struct tasklet_struct *event_dpc[NR_CPUS];
-+	/*
-+	 * To optimize the mapping of relid to channel, maintain
-+	 * per-cpu list of the channels based on their CPU affinity.
-+	 */
-+	struct list_head percpu_list[NR_CPUS];
- };
+ static ssize_t iio_ev_value_store(struct device *dev,
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+index 0cf5f8e..75e5386 100644
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -417,12 +417,24 @@ static int iio_channel_read(struct iio_channel *chan, int *val, int *val2,
+ 	enum iio_chan_info_enum info)
+ {
+ 	int unused;
++	int vals[INDIO_MAX_RAW_ELEMENTS];
++	int ret;
++	int val_len = 2;
  
- extern struct hv_context hv_context;
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 8b41570..ebd0441 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -732,6 +732,11 @@ struct vmbus_channel {
- 	 * Support per-channel state for use by vmbus drivers.
- 	 */
- 	void *per_channel_state;
-+	/*
-+	 * To support per-cpu lookup mapping of relid to channel,
-+	 * link up channels based on their CPU affinity.
-+	 */
-+	struct list_head percpu_list;
- };
+ 	if (val2 == NULL)
+ 		val2 = &unused;
  
- static inline void set_channel_read_state(struct vmbus_channel *c, bool state)
+-	return chan->indio_dev->info->read_raw(chan->indio_dev, chan->channel,
+-						val, val2, info);
++	if (chan->indio_dev->info->read_raw_multi) {
++		ret = chan->indio_dev->info->read_raw_multi(chan->indio_dev,
++					chan->channel, INDIO_MAX_RAW_ELEMENTS,
++					vals, &val_len, info);
++		*val = vals[0];
++		*val2 = vals[1];
++	} else
++		ret = chan->indio_dev->info->read_raw(chan->indio_dev,
++					chan->channel, val, val2, info);
++
++	return ret;
+ }
+ 
+ int iio_read_channel_raw(struct iio_channel *chan, int *val)
+diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+index 5f2d00e..5629c92 100644
+--- a/include/linux/iio/iio.h
++++ b/include/linux/iio/iio.h
+@@ -288,6 +288,8 @@ static inline s64 iio_get_time_ns(void)
+ #define INDIO_ALL_BUFFER_MODES					\
+ 	(INDIO_BUFFER_TRIGGERED | INDIO_BUFFER_HARDWARE)
+ 
++#define INDIO_MAX_RAW_ELEMENTS		4
++
+ struct iio_trigger; /* forward declaration */
+ struct iio_dev;
+ 
+@@ -302,6 +304,14 @@ struct iio_dev;
+  *			the channel in question.  Return value will specify the
+  *			type of value returned by the device. val and val2 will
+  *			contain the elements making up the returned value.
++ * @read_raw_multi:	function to return values from the device.
++ *			mask specifies which value. Note 0 means a reading of
++ *			the channel in question.  Return value will specify the
++ *			type of value returned by the device. vals pointer
++ *			contain the elements making up the returned value.
++ *			max_len specifies maximum number of elements
++ *			vals pointer can contain. val_len is used to return
++ *			length of valid elements in vals.
+  * @write_raw:		function to write a value to the device.
+  *			Parameters are the same as for read_raw.
+  * @write_raw_get_fmt:	callback function to query the expected
+@@ -328,6 +338,13 @@ struct iio_info {
+ 			int *val2,
+ 			long mask);
+ 
++	int (*read_raw_multi)(struct iio_dev *indio_dev,
++			struct iio_chan_spec const *chan,
++			int max_len,
++			int *vals,
++			int *val_len,
++			long mask);
++
+ 	int (*write_raw)(struct iio_dev *indio_dev,
+ 			 struct iio_chan_spec const *chan,
+ 			 int val,
+diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+index 084d882..a13c224 100644
+--- a/include/linux/iio/types.h
++++ b/include/linux/iio/types.h
+@@ -79,6 +79,7 @@ enum iio_event_direction {
+ #define IIO_VAL_INT_PLUS_MICRO 2
+ #define IIO_VAL_INT_PLUS_NANO 3
+ #define IIO_VAL_INT_PLUS_MICRO_DB 4
++#define IIO_VAL_INT_MULTIPLE 5
+ #define IIO_VAL_FRACTIONAL 10
+ #define IIO_VAL_FRACTIONAL_LOG2 11
+ 
 -- 
-1.7.4.1
+1.7.11.7
 
