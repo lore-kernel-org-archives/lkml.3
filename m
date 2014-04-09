@@ -1,59 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965007AbaDIUbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:31:13 -0400
-Received: from smtp-out-075.synserver.de ([212.40.185.75]:1059 "EHLO
-	smtp-out-115.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933776AbaDIUbL (ORCPT
+	id S964988AbaDIUkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:40:42 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:56252 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934020AbaDIUkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:31:11 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 1829
-Message-ID: <5345AD8B.5050306@metafoo.de>
-Date: Wed, 09 Apr 2014 22:28:59 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 9 Apr 2014 16:40:40 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: core: Fix Sparse incompatible types warning
-References: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com> <5345279F.6070005@metafoo.de> <1397041934.11424.2.camel@AMDC1943> <53452F67.3060400@metafoo.de> <20140409202520.GQ6518@sirena.org.uk>
-In-Reply-To: <20140409202520.GQ6518@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1396631173-11668-1-git-send-email-tolga@cevel.net>
+References: <1396631173-11668-1-git-send-email-tolga@cevel.net>
+Date: Wed, 9 Apr 2014 16:40:37 -0400
+Message-ID: <CAN+gG=FFnK7NwiGN1oLsBA6euyDHOxrY6s7-yRo553jcLbzuYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] HID: microsoft: moving quirks to struct
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Tolga Cakir <tolga@cevel.net>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Derya <derya.kiran@yahoo.de>, Jiri Kosina <jkosina@suse.cz>,
+        Reyad Attiyat <reyad.attiyat@gmail.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 10:25 PM, Mark Brown wrote:
-> On Wed, Apr 09, 2014 at 01:30:47PM +0200, Lars-Peter Clausen wrote:
->> On 04/09/2014 01:12 PM, Krzysztof Kozlowski wrote:
->>> On śro, 2014-04-09 at 12:57 +0200, Lars-Peter Clausen wrote:
->>>> On 04/09/2014 09:21 AM, Krzysztof Kozlowski wrote:
+On Fri, Apr 4, 2014 at 1:06 PM, Tolga Cakir <tolga@cevel.net> wrote:
+> This will give us the opportunity to easily implement extra features
+> for new devices.
 >
->>>>> -	buf_size = min(count, (sizeof(buf)-1));
->>>>> +	buf_size = min(count, (size_t)(sizeof(buf)-1));
+> Signed-off-by: Tolga Cakir <tolga@cevel.net>
+> ---
+>  drivers/hid/hid-microsoft.c | 44 ++++++++++++++++++++++++++++----------------
+>  1 file changed, 28 insertions(+), 16 deletions(-)
 >
->>>> But shouldn't the type of sizeof already be size_t?
+> diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+> index 6fd5817..0a61403 100644
+> --- a/drivers/hid/hid-microsoft.c
+> +++ b/drivers/hid/hid-microsoft.c
+> @@ -30,23 +30,28 @@
+>  #define MS_DUPLICATE_USAGES    0x20
+>  #define MS_RDESC_3K            0x40
 >
->>> Hmmm... yes it should. It looks like a false positive from Sparse so the
->>> commit message should be rather "Suppress" than "Fix".
->
->> I'm pretty sure it is a bug in sparse, we shouldn't suppress those, but
->> rather fix them in sparse itself.
->
-> Either that or there's something else going on that hasn't been properly
-> understood.  The above just looks completely bogus.
->
+> +struct ms_data {
+> +       unsigned long quirks;
+> +       void *extra;
 
-I had a look at the sparse code and the problem is that it sets the default 
-return type of sizeof according to the type of the host it was compiled on 
-(either unsigned int or unsigned long). It can be overwritten by switches like 
--m32, but of course wont work when cross compiling. So if your host system is 
-64bit, but your target system is 32bit you'll get that warning.
+I do not like having a void * pointer in this kind of struct,
+especially when it is not used in the current patch.
+Please remove it in v2
 
-- Lars
+> +};
+> +
+>  static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+>                 unsigned int *rsize)
+>  {
+> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>
+>         /*
+>          * Microsoft Wireless Desktop Receiver (Model 1028) has
+>          * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
+>          */
+> -       if ((quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
+> +       if ((sc->quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
+>                         rdesc[559] == 0x29) {
+>                 hid_info(hdev, "fixing up Microsoft Wireless Receiver Model 1028 report descriptor\n");
+>                 rdesc[557] = 0x35;
+>                 rdesc[559] = 0x45;
+>         }
+>         /* the same as above (s/usage/physical/) */
+> -       if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
+> +       if ((sc->quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
+>                         rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
+>                         rdesc[97] == 0xff) {
+>                 rdesc[94] = 0x35;
+> @@ -142,15 +147,15 @@ static int ms_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>                 struct hid_field *field, struct hid_usage *usage,
+>                 unsigned long **bit, int *max)
+>  {
+> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>
+> -       if (quirks & MS_ERGONOMY) {
+> +       if (sc->quirks & MS_ERGONOMY) {
+>                 int ret = ms_ergonomy_kb_quirk(hi, usage, bit, max);
+>                 if (ret)
+>                         return ret;
+>         }
+>
+> -       if ((quirks & MS_PRESENTER) &&
+> +       if ((sc->quirks & MS_PRESENTER) &&
+>                         ms_presenter_8k_quirk(hi, usage, bit, max))
+>                 return 1;
+>
+> @@ -161,9 +166,9 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>                 struct hid_field *field, struct hid_usage *usage,
+>                 unsigned long **bit, int *max)
+>  {
+> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>
+> -       if (quirks & MS_DUPLICATE_USAGES)
+> +       if (sc->quirks & MS_DUPLICATE_USAGES)
+>                 clear_bit(usage->code, *bit);
+>
+>         return 0;
+> @@ -172,7 +177,7 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>  static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>                 struct hid_usage *usage, __s32 value)
+>  {
+> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>         struct input_dev *input;
+>
+>         if (!(hdev->claimed & HID_CLAIMED_INPUT) || !field->hidinput ||
+> @@ -182,7 +187,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>         input = field->hidinput->input;
+>
+>         /* Handling MS keyboards special buttons */
+> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
+> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
+>                 /* Special keypad keys */
+>                 input_report_key(input, KEY_KPEQUAL, value & 0x01);
+>                 input_report_key(input, KEY_KPLEFTPAREN, value & 0x02);
+> @@ -190,7 +195,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>                 return 1;
+>         }
+>
+> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
+> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
+>                 /* Scroll wheel */
+>                 int step = ((value & 0x60) >> 5) + 1;
+>
+> @@ -205,7 +210,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>                 return 1;
+>         }
+>
+> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
+> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
+>                 static unsigned int last_key = 0;
+>                 unsigned int key = 0;
+>                 switch (value) {
+> @@ -229,12 +234,19 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>
+>  static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  {
+> -       unsigned long quirks = id->driver_data;
+> +       struct ms_data *sc;
+>         int ret;
+>
+> -       hid_set_drvdata(hdev, (void *)quirks);
+> +       sc = devm_kzalloc(&hdev->dev, sizeof(struct ms_data), GFP_KERNEL);
+> +       if (!sc) {
+> +               hid_err(hdev, "can't alloc microsoft descriptor\n");
+
+How about: "Can not allocate microsoft data"?
+
+I have no idea where this "descriptor" comes from.
+
+Besides these two nitpicks, the rest of the patch is:
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Cheers,
+Benjamin
+
+> +               return -ENOMEM;
+> +       }
+> +
+> +       sc->quirks = id->driver_data;
+> +       hid_set_drvdata(hdev, sc);
+>
+> -       if (quirks & MS_NOGET)
+> +       if (sc->quirks & MS_NOGET)
+>                 hdev->quirks |= HID_QUIRK_NOGET;
+>
+>         ret = hid_parse(hdev);
+> @@ -243,7 +255,7 @@ static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>                 goto err_free;
+>         }
+>
+> -       ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((quirks & MS_HIDINPUT) ?
+> +       ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((sc->quirks & MS_HIDINPUT) ?
+>                                 HID_CONNECT_HIDINPUT_FORCE : 0));
+>         if (ret) {
+>                 hid_err(hdev, "hw start failed\n");
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
