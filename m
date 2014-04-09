@@ -1,322 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933609AbaDIPWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:22:14 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:51749
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933829AbaDIPVb (ORCPT
+	id S933853AbaDIPWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:22:46 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:35842 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933494AbaDIPWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:21:31 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: gregkh@linuxfoundation.org, m.chehab@samsung.com, tj@kernel.org,
-        rafael.j.wysocki@intel.com, linux@roeck-us.net, toshi.kani@hp.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, shuahkhan@gmail.com
-Subject: [RFC PATCH 2/2] drivers/base: add managed token devres interfaces
-Date: Wed,  9 Apr 2014 09:21:08 -0600
-Message-Id: <5f21c7e53811aba63f86bcf3e3bfdfdd5aeedf59.1397050852.git.shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1397050852.git.shuah.kh@samsung.com>
-References: <cover.1397050852.git.shuah.kh@samsung.com>
-In-Reply-To: <cover.1397050852.git.shuah.kh@samsung.com>
-References: <cover.1397050852.git.shuah.kh@samsung.com>
+	Wed, 9 Apr 2014 11:22:39 -0400
+Date: Wed, 9 Apr 2014 17:19:11 +0200
+From: Henrik Austad <henrik@austad.us>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, Linux Kernel <linux-kernel@vger.kernel.org>,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        linux-man@vger.kernel.org
+Subject: Re: sched_{set,get}attr() manpage
+Message-ID: <20140409151911.GA4041@austad.us>
+References: <20131217122720.950475833@infradead.org>
+ <20131217123352.692059839@infradead.org>
+ <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com>
+ <20140121153851.GZ31570@twins.programming.kicks-ass.net>
+ <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com>
+ <20140214161929.GL27965@twins.programming.kicks-ass.net>
+ <53020C9D.1050208@gmail.com>
+ <20140409092510.GQ11096@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140409092510.GQ11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Media devices often have hardware resources that are shared
-across several functions. For instance, TV tuner cards often
-have MUXes, converters, radios, tuners, etc. that are shared
-across various functions. However, v4l2, alsa, DVB, usbfs, and
-all other drivers have no knowledge of what resources are
-shared. For example, users can't access DVB and alsa at the same
-time, or the DVB and V4L analog API at the same time, since many
-only have one converter that can be in either analog or digital
-mode. Accessing and/or changing mode of a converter while it is
-in use by another function results in video stream error.
+On Wed, Apr 09, 2014 at 11:25:10AM +0200, Peter Zijlstra wrote:
+> On Mon, Feb 17, 2014 at 02:20:29PM +0100, Michael Kerrisk (man-pages) wrote:
+> > If your could take another pass though your existing text, to incorporate the
+> > new flags stuff, and then send a page to me + linux-man@
+> > that would be great.
+> 
+> 
+> Sorry, this slipped my mind. An updated version below. Heavy borrowing
+> from SCHED_SETSCHEDULER(2) as before.
+> 
+> ---
+> 
+> NAME
+> 	sched_setattr, sched_getattr - set and get scheduling policy/attributes
+> 
+> SYNOPSIS
+> 	#include <sched.h>
+> 
+> 	struct sched_attr {
+> 		u32 size;
+> 		u32 sched_policy;
+> 		u64 sched_flags;
+> 
+> 		/* SCHED_NORMAL, SCHED_BATCH */
+> 		s32 sched_nice;
+> 		/* SCHED_FIFO, SCHED_RR */
+> 		u32 sched_priority;
+> 		/* SCHED_DEADLINE */
+> 		u64 sched_runtime;
+> 		u64 sched_deadline;
+> 		u64 sched_period;
+> 	};
+> 	int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);
+> 
+> 	int sched_getattr(pid_t pid, const struct sched_attr *attr, unsigned int size, unsigned int flags);
+> 
+> DESCRIPTION
+> 	sched_setattr() sets both the scheduling policy and the
+> 	associated attributes for the process whose ID is specified in
+> 	pid.  If pid equals zero, the scheduling policy and attributes
+> 	of the calling process will be set.  The interpretation of the
+> 	argument attr depends on the selected policy.  Currently, Linux
+> 	supports the following "normal" (i.e., non-real-time) scheduling
+> 	policies:
+> 
+> 	SCHED_OTHER	the standard "fair" time-sharing policy;
+> 
+> 	SCHED_BATCH	for "batch" style execution of processes; and
+> 
+> 	SCHED_IDLE	for running very low priority background jobs.
+> 
+> 	The following "real-time" policies are also supported, for
 
-A shared devres that can be locked and unlocked by various drivers
-that control media functions on a single media device is needed to
-address the above problems.
+why the "'s?
 
-A token devres that can be looked up by a token for locking, try
-locking, unlocking will help avoid adding data structure
-dependencies between various media drivers. This token is a unique
-string that can be constructed from a common data structure such as
-struct device, bus_name, and hardware address.
+> 	special time-critical applications that need precise control
+> 	over the way in which runnable processes are selected for
+> 	execution:
+> 
+> 	SCHED_FIFO	a first-in, first-out policy;
+> 
+> 	SCHED_RR	a round-robin policy; and
+> 
+> 	SCHED_DEADLINE	a deadline policy.
+> 
+> 	The semantics of each of these policies are detailed below.
+> 
+> 	sched_attr::size must be set to the size of the structure, as in
+> 	sizeof(struct sched_attr), if the provided structure is smaller
+> 	than the kernel structure, any additional fields are assumed
+> 	'0'. If the provided structure is larger than the kernel
+> 	structure, the kernel verifies all additional fields are '0' if
+> 	not the syscall will fail with -E2BIG.
+> 
+> 	sched_attr::sched_policy the desired scheduling policy.
+> 
+> 	sched_attr::sched_flags additional flags that can influence
+> 	scheduling behaviour. Currently as per Linux kernel 3.14:
+> 
+> 		SCHED_FLAG_RESET_ON_FORK - resets the scheduling policy
+> 		to: (struct sched_attr){ .sched_policy = SCHED_OTHER, }
+> 		on fork().
+> 
+> 	is the only supported flag.
+> 
+> 	sched_attr::sched_nice should only be set for SCHED_OTHER,
+> 	SCHED_BATCH, the desired nice value [-20,19], see NICE(2).
+> 
+> 	sched_attr::sched_priority should only be set for SCHED_FIFO,
+> 	SCHED_RR, the desired static priority [1,99].
+> 
+> 	sched_attr::sched_runtime
+> 	sched_attr::sched_deadline
+> 	sched_attr::sched_period should only be set for SCHED_DEADLINE
+> 	and are the traditional sporadic task model parameters.
+> 
+> 	The flags argument should be 0.
+> 
+> 	sched_getattr() queries the scheduling policy currently applied
+> 	to the process identified by pid.  If pid equals zero, the
+> 	policy of the calling process will be retrieved.
+> 
+> 	The size argument should reflect the size of struct sched_attr
+> 	as known to userspace. The kernel fills out sched_attr::size to
+> 	the size of its sched_attr structure. If the user provided
+> 	structure is larger, additional fields are not touched. If the
+> 	user provided structure is smaller, but the kernel needs to
+> 	return values outside the provided space, the syscall will fail
+> 	with -E2BIG.
+> 
+> 	The flags argument should be 0.
 
-The devm_token_* interfaces manage access to token resource.
+What about SCHED_FLAG_RESET_ON_FOR?
 
-Interfaces:
-    devm_token_create()
-    devm_token_destroy()
-    devm_token_lock()
-    devm_token_unlock()
-Usage:
-    Create token:
-        Call devm_token_create() with a token id which is a unique
-        string.
-    Lock token: Call devm_token_lock() to lock or try lock a token.
-    Unlock token: Call devm_token_unlock().
-    Destroy token: Call devm_token_destroy() to delete the token.
+> 	The other sched_attr fields are filled out as described in
+> 	sched_setattr().
+> 
+>    Scheduling Policies
+>        The  scheduler  is  the  kernel  component  that decides which runnable
+>        process will be executed by the CPU next.  Each process has an  associ‐
+>        ated  scheduling  policy and a static scheduling priority, sched_prior‐
+>        ity; these are the settings that are modified by  sched_setscheduler().
+>        The  scheduler  makes it decisions based on knowledge of the scheduling
+>        policy and static priority of all processes on the system.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/base/Makefile        |    2 +-
- drivers/base/token_devres.c  |  204 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/token_devres.h |   19 ++++
- 3 files changed, 224 insertions(+), 1 deletion(-)
- create mode 100644 drivers/base/token_devres.c
- create mode 100644 include/linux/token_devres.h
+Isn't this last sentence redundant/sliglhtly repetitive?
 
-diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-index 04b314e..924665b 100644
---- a/drivers/base/Makefile
-+++ b/drivers/base/Makefile
-@@ -4,7 +4,7 @@ obj-y			:= component.o core.o bus.o dd.o syscore.o \
- 			   driver.o class.o platform.o \
- 			   cpu.o firmware.o init.o map.o devres.o \
- 			   attribute_container.o transport_class.o \
--			   topology.o container.o
-+			   topology.o container.o token_devres.o
- obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
- obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
- obj-y			+= power/
-diff --git a/drivers/base/token_devres.c b/drivers/base/token_devres.c
-new file mode 100644
-index 0000000..e7436c5
---- /dev/null
-+++ b/drivers/base/token_devres.c
-@@ -0,0 +1,204 @@
-+/*
-+ * drivers/base/token_devres.c - managed token resource
-+ *
-+ * Copyright (c) 2014 Shuah Khan <shuah.kh@samsung.com>
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+/*
-+ * Media devices often have hardware resources that are shared
-+ * across several functions. For instance, TV tuner cards often
-+ * have MUXes, converters, radios, tuners, etc. that are shared
-+ * across various functions. However, v4l2, alsa, DVB, usbfs, and
-+ * all other drivers have no knowledge of what resources are
-+ * shared. For example, users can't access DVB and alsa at the same
-+ * time, or the DVB and V4L analog API at the same time, since many
-+ * only have one converter that can be in either analog or digital
-+ * mode. Accessing and/or changing mode of a converter while it is
-+ * in use by another function results in video stream error.
-+ *
-+ * A shared devres that can be locked and unlocked by various drivers
-+ * that control media functions on a single media device is needed to
-+ * address the above problems.
-+ *
-+ * A token devres that can be looked up by a token for locking, try
-+ * locking, unlocking will help avoid adding data structure
-+ * dependencies between various media drivers. This token is a unique
-+ * string that can be constructed from a common data structure such as
-+ * struct device, bus_name, and hardware address.
-+ *
-+ * The devm_token_* interfaces manage access to token resource.
-+ *
-+ * Interfaces:
-+ *	devm_token_create()
-+ *	devm_token_destroy()
-+ *	devm_token_lock()
-+ *	devm_token_unlock()
-+ * Usage:
-+ *	Create token:
-+ *		Call devm_token_create() with a token id which is
-+ *		a unique string.
-+ *	Lock token:
-+ *		Call devm_token_lock() to lock or try lock a token.
-+ *	Unlock token:
-+ *		Call devm_token_unlock().
-+ *	Destroy token:
-+ *		Call devm_token_destroy() to delete the token.
-+ *
-+*/
-+#include <linux/device.h>
-+#include <linux/token_devres.h>
-+
-+#define TOKEN_DEVRES_FREE	0
-+#define TOKEN_DEVRES_BUSY	1
-+
-+struct token_devres {
-+	int	status;
-+	char	id[];
-+};
-+
-+struct tkn_match {
-+	int	status;
-+	const	char *id;
-+};
-+
-+static void __devm_token_lock(struct device *dev, void *data)
-+{
-+	struct token_devres *tptr = data;
-+
-+	if (tptr && tptr->status == TOKEN_DEVRES_FREE)
-+		tptr->status = TOKEN_DEVRES_BUSY;
-+
-+	return;
-+}
-+
-+static void __devm_token_unlock(struct device *dev, void *data)
-+{
-+	struct token_devres *tptr = data;
-+
-+	if (tptr && tptr->status == TOKEN_DEVRES_BUSY)
-+		tptr->status = TOKEN_DEVRES_FREE;
-+
-+	return;
-+}
-+
-+static int devm_token_match(struct device *dev, void *res, void *data)
-+{
-+	struct token_devres *tkn = res;
-+	struct tkn_match *mptr = data;
-+	int rc;
-+
-+	if (!tkn || !data) {
-+		WARN_ON(!tkn || !data);
-+		return 0;
-+	}
-+
-+	/* compare the token data and return 1 if it matches */
-+	if (strcmp(tkn->id, mptr->id) == 0)
-+			rc = 1;
-+	else
-+		rc = 0;
-+
-+	return rc;
-+}
-+
-+static void devm_token_release(struct device *dev, void *res)
-+{
-+	dev_info(dev, "devm_token_release(): release token\n");
-+	return;
-+}
-+
-+/* creates a token devres and marks it free */
-+int devm_token_create(struct device *dev, const char *id)
-+{
-+	struct token_devres *tkn;
-+	size_t tkn_size;
-+
-+	if (!id)
-+		return -EFAULT;
-+
-+	tkn_size = sizeof(struct token_devres) + strlen(id) + 1;
-+	tkn = devres_alloc(devm_token_release, tkn_size, GFP_KERNEL);
-+	if (!tkn)
-+		return -ENOMEM;
-+
-+	strcpy(tkn->id, id);
-+	tkn->status = TOKEN_DEVRES_FREE;
-+
-+	devres_add(dev, tkn);
-+
-+	dev_info(dev, "devm_token_create(): created token: %s\n", id);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(devm_token_create);
-+
-+/* If token is available, lock it for the caller, If not return -EBUSY */
-+int devm_token_lock(struct device *dev, const char *id)
-+{
-+	struct token_devres *tkn_ptr;
-+	struct tkn_match tkn;
-+	int rc = 0;
-+
-+	if (!id)
-+		return -EFAULT;
-+
-+	tkn.id = id;
-+
-+	tkn_ptr = devres_find(dev, devm_token_release, devm_token_match, &tkn);
-+	if (tkn_ptr == NULL)
-+		return -ENODEV;
-+
-+	if (tkn_ptr->status == TOKEN_DEVRES_FREE) {
-+		devres_update(dev, devm_token_release, devm_token_match,
-+				&tkn, __devm_token_lock);
-+		rc = 0;
-+	} else
-+		rc = -EBUSY;
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(devm_token_lock);
-+
-+/* If token is locked, unlock */
-+int devm_token_unlock(struct device *dev, const char *id)
-+{
-+	struct token_devres *tkn_ptr;
-+	struct tkn_match tkn;
-+
-+	if (!id)
-+		return -EFAULT;
-+
-+	tkn.id = id;
-+
-+	tkn_ptr = devres_find(dev, devm_token_release, devm_token_match, &tkn);
-+	if (tkn_ptr == NULL)
-+		return -ENODEV;
-+
-+	if (tkn_ptr->status == TOKEN_DEVRES_BUSY) {
-+		devres_update(dev, devm_token_release, devm_token_match,
-+				&tkn, __devm_token_unlock);
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(devm_token_unlock);
-+
-+/* destroy an existing token */
-+int devm_token_destroy(struct device *dev, const char *id)
-+{
-+	struct tkn_match tkn;
-+	int rc;
-+
-+	if (!id)
-+		return -EFAULT;
-+
-+	tkn.id = id;
-+
-+	rc = devres_release(dev, devm_token_release, devm_token_match, &tkn);
-+	WARN_ON(rc);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(devm_token_destroy);
-diff --git a/include/linux/token_devres.h b/include/linux/token_devres.h
-new file mode 100644
-index 0000000..e411fd5
---- /dev/null
-+++ b/include/linux/token_devres.h
-@@ -0,0 +1,19 @@
-+/*
-+ * token_devres.h - managed token resource
-+ *
-+ * Copyright (c) 2014 Shuah Khan <shuah.kh@samsung.com>
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+#ifndef __LINUX_TOKEN_DEVRES_H
-+#define __LINUX_TOKEN_DEVRES_H
-+
-+struct device;
-+
-+extern int devm_token_create(struct device *dev, const char *id);
-+extern int devm_token_lock(struct device *dev, const char *id);
-+extern int devm_token_unlock(struct device *dev, const char *id);
-+extern int devm_token_destroy(struct device *dev, const char *id);
-+
-+#endif	/* __LINUX_TOKEN_DEVRES_H */
+>        For processes scheduled under one of  the  normal  scheduling  policies
+>        (SCHED_OTHER,  SCHED_IDLE,  SCHED_BATCH), sched_priority is not used in
+>        scheduling decisions (it must be specified as 0).
+> 
+>        Processes scheduled under one of the  real-time  policies  (SCHED_FIFO,
+>        SCHED_RR)  have  a  sched_priority  value  in  the  range 1 (low) to 99
+>        (high).  (As the numbers imply, real-time processes always have  higher
+>        priority than normal processes.)  Note well: POSIX.1-2001 only requires
+>        an implementation to support a minimum 32 distinct priority levels  for
+>        the  real-time  policies,  and  some  systems supply just this minimum.
+>        Portable   programs   should    use    sched_get_priority_min(2)    and
+>        sched_get_priority_max(2) to find the range of priorities supported for
+>        a particular policy.
+> 
+>        Conceptually, the scheduler maintains a list of runnable processes  for
+>        each  possible  sched_priority  value.   In  order  to  determine which
+>        process runs next, the scheduler looks for the nonempty list  with  the
+>        highest  static  priority  and  selects the process at the head of this
+>        list.
+> 
+>        A process's scheduling policy determines where it will be inserted into
+>        the  list  of processes with equal static priority and how it will move
+>        inside this list.
+> 
+>        All scheduling is preemptive: if a process with a higher static  prior‐
+>        ity  becomes  ready  to run, the currently running process will be pre‐
+>        empted and returned to the wait list for  its  static  priority  level.
+>        The  scheduling  policy only determines the ordering within the list of
+>        runnable processes with equal static priority.
+> 
+>     SCHED_DEADLINE: Sporadic task model deadline scheduling
+> 	SCHED_DEADLINE is an implementation of GEDF (Global Earliest
+> 	Deadline First) with additional CBS (Constant Bandwidth Server).
+> 	The CBS guarantees that tasks that over-run their specified
+> 	budget are throttled and do not affect the correct performance
+> 	of other SCHED_DEADLINE tasks.
+> 
+> 	SCHED_DEADLINE tasks will fail FORK(2) with -EAGAIN
+> 
+> 	Setting SCHED_DEADLINE can fail with -EINVAL when admission
+> 	control tests fail.
+
+Perhaps add a note about the deadline-class having higher priority than the 
+other classes; i.e. if a deadline-task is runnable, it will preempt any 
+other SCHED_(RR|FIFO) regardless of priority?
+
+>    SCHED_FIFO: First In-First Out scheduling
+>        SCHED_FIFO can only be used with static priorities higher than 0, which
+>        means that when a SCHED_FIFO processes becomes runnable, it will always
+>        immediately preempt any currently running SCHED_OTHER, SCHED_BATCH,  or
+>        SCHED_IDLE  process.  SCHED_FIFO is a simple scheduling algorithm with‐
+>        out time slicing.  For processes scheduled under the SCHED_FIFO policy,
+>        the following rules apply:
+> 
+>        *  A  SCHED_FIFO  process that has been preempted by another process of
+>           higher priority will stay at the head of the list for  its  priority
+>           and  will resume execution as soon as all processes of higher prior‐
+>           ity are blocked again.
+> 
+>        *  When a SCHED_FIFO process becomes runnable, it will be  inserted  at
+>           the end of the list for its priority.
+> 
+>        *  A  call  to  sched_setscheduler()  or sched_setparam(2) will put the
+>           SCHED_FIFO (or SCHED_RR) process identified by pid at the  start  of
+>           the  list  if it was runnable.  As a consequence, it may preempt the
+>           currently  running  process   if   it   has   the   same   priority.
+>           (POSIX.1-2001 specifies that the process should go to the end of the
+>           list.)
+> 
+>        *  A process calling sched_yield(2) will be put at the end of the list.
+
+How about the recent discussion regarding sched_yield(). Is this correct?
+
+lkml.kernel.org/r/alpine.DEB.2.02.1403312333100.14882@ionos.tec.linutronix.de
+
+Is this the correct place to add a note explaining te potentional pitfalls 
+using sched_yield?
+
+>        No other events will move a process scheduled under the SCHED_FIFO pol‐
+>        icy in the wait list of runnable processes with equal static priority.
+> 
+>        A SCHED_FIFO process runs until either it is blocked by an I/O request,
+>        it  is  preempted  by  a  higher  priority   process,   or   it   calls
+>        sched_yield(2).
+> 
+>    SCHED_RR: Round Robin scheduling
+>        SCHED_RR  is  a simple enhancement of SCHED_FIFO.  Everything described
+>        above for SCHED_FIFO also applies to SCHED_RR, except that each process
+>        is  only  allowed  to  run  for  a maximum time quantum.  If a SCHED_RR
+>        process has been running for a time period equal to or longer than  the
+>        time  quantum,  it will be put at the end of the list for its priority.
+>        A SCHED_RR process that has been preempted by a higher priority process
+>        and  subsequently  resumes execution as a running process will complete
+>        the unexpired portion of its round robin time quantum.  The  length  of
+>        the time quantum can be retrieved using sched_rr_get_interval(2).
+
+-> Default is 0.1HZ ms
+
+This is a question I get form time to time, having this in the manpage 
+would be helpful.
+
+>    SCHED_OTHER: Default Linux time-sharing scheduling
+>        SCHED_OTHER  can only be used at static priority 0.  SCHED_OTHER is the
+>        standard Linux time-sharing scheduler that is  intended  for  all  pro‐
+>        cesses  that  do  not  require  the  special real-time mechanisms.  The
+>        process to run is chosen from the static priority 0  list  based  on  a
+>        dynamic priority that is determined only inside this list.  The dynamic
+>        priority is based on the nice value (set by nice(2) or  setpriority(2))
+>        and  increased  for  each time quantum the process is ready to run, but
+>        denied to run by the scheduler.  This ensures fair progress  among  all
+>        SCHED_OTHER processes.
+> 
+>    SCHED_BATCH: Scheduling batch processes
+>        (Since  Linux 2.6.16.)  SCHED_BATCH can only be used at static priority
+>        0.  This policy is similar to SCHED_OTHER  in  that  it  schedules  the
+>        process  according  to  its dynamic priority (based on the nice value).
+>        The difference is that this policy will cause the scheduler  to  always
+>        assume  that the process is CPU-intensive.  Consequently, the scheduler
+>        will apply a small scheduling penalty with respect to wakeup behaviour,
+>        so that this process is mildly disfavored in scheduling decisions.
+> 
+>        This policy is useful for workloads that are noninteractive, but do not
+>        want to lower their nice value, and for workloads that want a determin‐
+>        istic scheduling policy without interactivity causing extra preemptions
+>        (between the workload's tasks).
+> 
+>    SCHED_IDLE: Scheduling very low priority jobs
+>        (Since Linux 2.6.23.)  SCHED_IDLE can only be used at  static  priority
+>        0; the process nice value has no influence for this policy.
+> 
+>        This  policy  is  intended  for  running jobs at extremely low priority
+>        (lower even than a +19 nice value with the SCHED_OTHER  or  SCHED_BATCH
+>        policies).
+> 
+> RETURN VALUE
+> 	On success, sched_setattr() and sched_getattr() return 0. On
+> 	error, -1 is returned, and errno is set appropriately.
+> 
+> ERRORS
+>        EINVAL The scheduling policy is not one  of  the  recognized  policies,
+>               param is NULL, or param does not make sense for the policy.
+> 
+>        EPERM  The calling process does not have appropriate privileges.
+> 
+>        ESRCH  The process whose ID is pid could not be found.
+> 
+>        E2BIG  The provided storage for struct sched_attr is either too
+>               big, see sched_setattr(), or too small, see sched_getattr().
+
+Where's the EBUSY? It can throw this from __sched_setscheduler() when it 
+checks if there's enough bandwidth to run the task.
+
+> 
+> NOTES
+> 	While the text above (and in SCHED_SETSCHEDULER(2)) talks about
+> 	processes, in actual fact these system calls are thread specific.
+
+
 -- 
-1.7.10.4
-
+Henrik Austad
