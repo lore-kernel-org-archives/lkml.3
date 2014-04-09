@@ -1,205 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147AbaDICkE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 22:40:04 -0400
-Received: from ozlabs.org ([203.10.76.45]:39818 "EHLO ozlabs.org"
+	id S932482AbaDICkz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 22:40:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33214 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756288AbaDICkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 22:40:01 -0400
-Date: Wed, 9 Apr 2014 12:39:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the userns tree with Linus' tree
-Message-Id: <20140409123952.d15c10c4684ac27ed19f6430@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym"
+	id S932187AbaDICkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 22:40:52 -0400
+Date: Wed, 9 Apr 2014 10:39:35 +0800
+From: Baoquan He <bhe@redhat.com>
+To: storagedev@hp.com
+Cc: linux-kernel@vger.kernel.org
+Subject: hpsa driver bug crack kernel down!
+Message-ID: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Eric,
+The kernel is 3.14.0+ which is pulled just now. 
 
-Today's linux-next merge of the userns tree got a conflict in fs/namei.c
-between commits from Linus' tree and commits 3dd905eaa258 ("vfs: Don't
-allow overwriting mounts in the current mount namespace") and
-f43d102a391d ("vfs: Lazily remove mounts on unlinked files and
-directories") from the userns tree.
 
-I fixed it up (I used the conflict resolution that you sent to Linus -
-see below) and can carry the fix as necessary (no action is required).
+[   18.402695] systemd[1]: Set hostname to
+<hp-sl4545g7-01.rhts.eng.bos.redhat.com>.
+[   18.408456] random: systemd urandom read with 70 bits of entropy
+available
+[   18md[1]: Expecting device
+dev-mapper-rhel_hp\x2d\x2dsl4545g7\x2d\x2d01\x2droot.device...
+         Expecting device
+dev-mapper-rhel_hp\x2d\x2dsl4545g7\...droot.device...
+[   18.860704] systemd[1]: Starting -.slice.
+[  OK  ] Created slice -.slice.
+[   18.866030] systemd[1]: Created slice -.slice.
+[   18.869466] systemd[1]: Starting System Slice.
+[  OK  ] Created slice System Sl       18.939116] systemd[1]: Created
+slice System Slice.
+[   18.976213] systemd[1]: Starting Slices.
+[  OK  ] Reached target Slices.
+[   18.981154] systemd[1]: Reached target Slices.
+[   18.984183] systemd[1]: Starting Timers.
+[  OK  ] Reached target Timers.
+[   18.989161] systemd[1]: Reached target Timers.
+[   18.992004] systemd[1]: Starting Journal Socket.
+[  OK  ] Listening on Journal Socket.
+[   18.997174] systemd[1]: Listening on Journal Socket.
+[   19.000702] systemd[1]: Starting dracut cmdline hook...
+         Starting dracut cmdline hook...
+[   19.006697] systemd[1]: Started Load KernModules.
+[   19.110408] systemd[1]: Starting Setup Virtual Console...
+         Starting Setup Virtual Console...
+[   19.116652] systemd[1]: Starting Journal Service...
+         Starting Journal Service...
+[  OK  ] Started Journal Service.
+[   19.127172] systemd[1]: Started Journal Service.
+[  OK  ] Listening on udev Kernel Socket.
+[   19.141504] systemd-journald[281]: Vac[  OK  ] Listening on udev
+Control Socket.
+[  OK  ] Reached target Sockets.
+         Starting Create list of required static device nodes...rrent
+kernel...
+         Starting Apply Kernel Variables...
+[  OK  ] Reached target Swap.
+[  OK  ] Reached target Local File Systems.
+[  OK  ] Started dracut cmdline hook.
+[  OK  ] Started Setup Virtual Console.
+[  OK  ] Started Apply Kernel Variables.
+[  OK  ] Started Create list of required static device nodes ...current
+kernel.
+         Starting Create static device nodes in /dev...
+         Starting dracut pre-udev hook...
+[  OK  ] Started Create static device nodes in /dev.
+[   20.247819] device-mapper: uevent: version 1.0.3
+[   20.251101] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30)
+initialised: dm-devel@redhat.com
+[  OK  ] Started dracut pre-udev hook.
+         Starting udev Kernel Device Manager...
+[   20.322923] systemd-udevd[335]: starting version 208
+[  OK  ] Started udev Kernel Device Manager.
+         Starting udev Coldplug all Devices...
+         Mounting Configuration File System...
+[  OK  ] Mounted Configuration File System.
+[  OK  ] Started udev Coldplug all Devices.
+         Starting dracut initqueue hook...
+[  OK  ][1] HP HPSA Driver (v 3.4.4-1)
+[   20.832850] hpsa 0000:05:00.0: can't disable ASPM; OS doesn't have
+ASPM control
+ Reached target System Initialization.
+[   20.875178] ACPI: PCI Interrupt Link [I0C0] enabled at IRQ 36
+[   20.909000] hpsa 0000:05:00.0: MSIX
+[   20.911586] hpsa 0000:05:00.0: Logical aborts not supported
+         [   20.916004] [drm] Initialized drm 1.1.0 20060810
+[   20.936139] hpsa 0000:05:00.0: hpsa0: <0x323b> at IRQ 73 using DAC
+[   20.956967] BUG: unable to handle kernel NULL pointer dereference at
+(null)
+[   20.956997] IP: [<ffffffffa004b97f>]
+hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
+[   20.957003] PGD 0 
+[   20.957012] Oops: 0002 [#1] SMP 
+[   20.957035] Modules linked in: drm(+) libata hpsa(+) i2c_core
+dm_mirror dm_region_hash dm_log dm_mod
+[   20.957046] CPU: 10 PID: 341 Comm: systemd-udevd Not tainted 3.14.0+
+#28
+[   20.957049] Hardware name: HP ProLiant SL4545 G7/, BIOS A31
+12/08/2012
+[   20.957055] task: ffff880824191b40 ti: ffff88082309c000 task.ti:
+ffff88082309c000
+[   20.957078] RIP: 0010:[<ffffffffa004b97f>]  [<ffffffffa004b97f>]
+hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
+[   20.957083] RSP: 0018:ffff88082309da18  EFLAGS: 00010297
+[   20.957088] RAX: 0000000000000000 RBX: 000000007c000167 RCX:
+0000000000000004
+[   20.957091] RDX: 000000000000
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/namei.c
-index 88339f59efb5,384fcc6a5606..000000000000
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@@ -4082,33 -4045,17 +4085,33 @@@ int vfs_rename(struct inode *old_dir, s
-  	if (error)
-  		return error;
- =20
- +	old_name =3D fsnotify_oldname_init(old_dentry->d_name.name);
-  	dget(new_dentry);
- -	lock_two_nondirectories(source, target);
- +	if (!is_dir || (flags & RENAME_EXCHANGE))
- +		lock_two_nondirectories(source, target);
- +	else if (target)
- +		mutex_lock(&target->i_mutex);
- =20
-  	error =3D -EBUSY;
-- 	if (d_mountpoint(old_dentry) || d_mountpoint(new_dentry))
-+ 	if (is_local_mountpoint(old_dentry) || is_local_mountpoint(new_dentry))
-  		goto out;
- =20
- -	error =3D try_break_deleg(source, delegated_inode);
- -	if (error)
- -		goto out;
- -	if (target) {
- +	if (max_links && new_dir !=3D old_dir) {
- +		error =3D -EMLINK;
- +		if (is_dir && !new_is_dir && new_dir->i_nlink >=3D max_links)
- +			goto out;
- +		if ((flags & RENAME_EXCHANGE) && !is_dir && new_is_dir &&
- +		    old_dir->i_nlink >=3D max_links)
- +			goto out;
- +	}
- +	if (is_dir && !(flags & RENAME_EXCHANGE) && target)
- +		shrink_dcache_parent(new_dentry);
- +	if (!is_dir) {
- +		error =3D try_break_deleg(source, delegated_inode);
- +		if (error)
- +			goto out;
- +	}
- +	if (target && !new_is_dir) {
-  		error =3D try_break_deleg(target, delegated_inode);
-  		if (error)
-  			goto out;
-@@@ -4123,31 -4064,73 +4126,32 @@@
-  	if (error)
-  		goto out;
- =20
- -	if (target) {
- +	if (!(flags & RENAME_EXCHANGE) && target) {
- +		if (is_dir)
- +			target->i_flags |=3D S_DEAD;
-  		dont_mount(new_dentry);
-+ 		detach_mounts(new_dentry);
-  	}
- -	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
- -		d_move(old_dentry, new_dentry);
- +	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE)) {
- +		if (!(flags & RENAME_EXCHANGE))
- +			d_move(old_dentry, new_dentry);
- +		else
- +			d_exchange(old_dentry, new_dentry);
- +	}
-  out:
- -	unlock_two_nondirectories(source, target);
- +	if (!is_dir || (flags & RENAME_EXCHANGE))
- +		unlock_two_nondirectories(source, target);
- +	else if (target)
- +		mutex_unlock(&target->i_mutex);
-  	dput(new_dentry);
- -	return error;
- -}
- -
- -/**
- - * vfs_rename - rename a filesystem object
- - * @old_dir:	parent of source
- - * @old_dentry:	source
- - * @new_dir:	parent of destination
- - * @new_dentry:	destination
- - * @delegated_inode: returns an inode needing a delegation break
- - *
- - * The caller must hold multiple mutexes--see lock_rename()).
- - *
- - * If vfs_rename discovers a delegation in need of breaking at either
- - * the source or destination, it will return -EWOULDBLOCK and return a
- - * reference to the inode in delegated_inode.  The caller should then
- - * break the delegation and retry.  Because breaking a delegation may
- - * take a long time, the caller should drop all locks before doing
- - * so.
- - *
- - * Alternatively, a caller may pass NULL for delegated_inode.  This may
- - * be appropriate for callers that expect the underlying filesystem not
- - * to be NFS exported.
- - */
- -int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- -	       struct inode *new_dir, struct dentry *new_dentry,
- -	       struct inode **delegated_inode)
- -{
- -	int error;
- -	int is_dir =3D d_is_directory(old_dentry) || d_is_autodir(old_dentry);
- -	const unsigned char *old_name;
- -
- -	if (old_dentry->d_inode =3D=3D new_dentry->d_inode)
- - 		return 0;
- -=20
- -	error =3D may_delete(old_dir, old_dentry, is_dir);
- -	if (error)
- -		return error;
- -
- -	if (!new_dentry->d_inode)
- -		error =3D may_create(new_dir, new_dentry);
- -	else
- -		error =3D may_delete(new_dir, new_dentry, is_dir);
- -	if (error)
- -		return error;
- -
- -	if (!old_dir->i_op->rename)
- -		return -EPERM;
- -
- -	old_name =3D fsnotify_oldname_init(old_dentry->d_name.name);
- -
- -	if (is_dir)
- -		error =3D vfs_rename_dir(old_dir,old_dentry,new_dir,new_dentry);
- -	else
- -		error =3D vfs_rename_other(old_dir,old_dentry,new_dir,new_dentry,delega=
-ted_inode);
- -	if (!error)
- +	if (!error) {
-  		fsnotify_move(old_dir, new_dir, old_name, is_dir,
- -			      new_dentry->d_inode, old_dentry);
- +			      !(flags & RENAME_EXCHANGE) ? target : NULL, old_dentry);
- +		if (flags & RENAME_EXCHANGE) {
- +			fsnotify_move(new_dir, old_dir, old_dentry->d_name.name,
- +				      new_is_dir, NULL, new_dentry);
- +		}
- +	}
-  	fsnotify_oldname_free(old_name);
- =20
-  	return error;
-
---Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTRLL+AAoJEMDTa8Ir7ZwVLAQQAIB0UwWke/2nNT8+CtvH4ayo
-FgEiF6RDd2TnmORuBMZk+OLco76KlMxiiLHyfptAaTylijsM6ZyN7e1mzfVsToPL
-Qfb3j+MUUmxFkwC1e0qFwSTmY5Wv2NWoeRhO6ZBhC+XMj27ZGwxUjd4/nOVnwHHz
-WAj1x1GOn9ujustxOlqJh6CopReMvrQ+W47pFNBWCslTHGMclxXAR+IT68eJZ4ml
-hIlyEkar3hTo+1ysjsPbPYcoFPXsGh5JwvPGJLulgFOP+LW+dAex9D+f/EwKHpBa
-K33l54PttJqDOGsAzo76GmBMOQHD1AD/KXcdOkz1758UadGP5c+hBJTLamNgEm6M
-swk8SO9wgbDJ/IjVWGEOPup9QWazce9HOVq7bkfljtMgle0Ayo/6SB2KryfMYQch
-/OxAT7XPoQkViILlJSR4eeWtexKExTlhY/aGoo8ohAP3qDU3xOIDI/SOnUtqBoL5
-Do3CARG6j6VANkGPA4VouwQUAjz+sGAT26sRCwNkU9eCTTX+MY8DecyG7Y9AhjGn
-pBpdtxXdD/1XiWKzVaXx2ulrqRYSBfBmlHEtcMWMpsM+2LD8pnrmtu5C99BtKQPz
-RK+mL+IrITWMPFusujBoDiu54iFTcLOqS0bi6iIPopJ8u3lZ+aqJZZJCpjH+hpP3
-7Ou3EG7cD0vSTYCmLi0z
-=cgLX
------END PGP SIGNATURE-----
-
---Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym--
