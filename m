@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503AbaDIARj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:17:39 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57960 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaDIARi (ORCPT
+	id S932193AbaDIARJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:17:09 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:36410 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643AbaDIARI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:17:38 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5344919E.9030708@roeck-us.net>
-Date: Tue, 08 Apr 2014 17:17:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 8 Apr 2014 20:17:08 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>, jmario@redhat.com,
+        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
+        andi.kleen@intel.com
+Subject: Re: [PATCH 06/15 V3] perf, c2c: Add in new options to configure latency and stores
+References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+	<1395689826-215033-7-git-send-email-dzickus@redhat.com>
+	<20140329171138.GF2022@krava.redhat.com>
+	<20140401025535.GT25953@redhat.com>
+	<20140406131422.GL1164@krava.brq.redhat.com>
+	<20140407181618.GD5328@redhat.com>
+Date: Wed, 09 Apr 2014 09:17:04 +0900
+In-Reply-To: <20140407181618.GD5328@redhat.com> (Don Zickus's message of "Mon,
+	7 Apr 2014 14:16:18 -0400")
+Message-ID: <87r457uzjz.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Cohen <david.a.cohen@linux.intel.com>, wim@iguana.be,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        gnomes@lxorguk.ukuu.org.uk, Eric Ernst <eric.ernst@intel.com>
-Subject: Re: [PATCH 1/2] watchdog: add Intel MID watchdog driver support
-References: <1396990744-10695-1-git-send-email-david.a.cohen@linux.intel.com> <1396990744-10695-2-git-send-email-david.a.cohen@linux.intel.com>
-In-Reply-To: <1396990744-10695-2-git-send-email-david.a.cohen@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 01:59 PM, David Cohen wrote:
-> Add initial Intel MID watchdog driver support.
+On Mon, 7 Apr 2014 14:16:18 -0400, Don Zickus wrote:
+> On Sun, Apr 06, 2014 at 03:14:22PM +0200, Jiri Olsa wrote:
+>> On Mon, Mar 31, 2014 at 10:55:35PM -0400, Don Zickus wrote:
+>> > On Sat, Mar 29, 2014 at 06:11:38PM +0100, Jiri Olsa wrote:
+>> > > > @@ -316,6 +369,12 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+>> > > >  	};
+>> > > >  	const struct option c2c_options[] = {
+>> > > >  	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
+>> > > > +	OPT_INTEGER('l', "latency-level", &lat_level,
+>> > > > +		 "specify the latency threshold for loads [default=30]"),
+>> > > > +	OPT_INTEGER('p', "precision-level", &prec_level,
+>> > > > +		 "specify the precision level of events (0,1,2,3) [default=1]"),
+>> > > 
+>> > > could we get also option for user space modifier?
+>> > 
+>> > You mean the 'u' modifier, ie cpu/mem-loads/u ?  If so, then I can do that
+>> > but will that work with the -a option (which is hardcoded in the c2c
+>> > tool [system-wide mode])?
+>> 
+>> right, forgot about that.. could the -a option be optional as well?
+>> probably the same way as for record would be the best:
+>> 
+>>   perf c2c record ./foo       # workload specific
+>>   perf c2c record -a sleep 3  # system wide
 >
-> This driver is an initial implementation of generic Intel MID watchdog
-> driver. Currently it supports Intel Merrifield platform.
+> I understand what you are saying, but our tool was written to find cache
+> contention across the system, so -a is usually implied.  Most of our
+> profiling is done system-wide.
 
-How does this compare with the existing SCU watchdog driver
-(intel_scu_watchdog) ? The watchdog IPC message (0xf8) seems
-to be the same, so there must be at least some overlap.
-Would it be possible to have just one watchdog driver
-serving the different SCU based devices ?
+Hmm.. any chance it can be used for non-system-wide analysis?  I think
+tool should provide a way to do it if it's a valid usecase.  And adding
+-a option when recording doesn't look too hard. :)
 
->
-> Signed-off-by: Eric Ernst <eric.ernst@intel.com>
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->   drivers/watchdog/Kconfig         |  12 +++
->   drivers/watchdog/Makefile        |   1 +
->   drivers/watchdog/intel-mid_wdt.c | 209 +++++++++++++++++++++++++++++++++++++++
->   3 files changed, 222 insertions(+)
->   create mode 100644 drivers/watchdog/intel-mid_wdt.c
->
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 79d25894343a..4da09b8b2f11 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -643,6 +643,18 @@ config INTEL_SCU_WATCHDOG
->
->   	  To compile this driver as a module, choose M here.
->
-> +config INTEL_MID_WATCHDOG
-> +	bool "Intel MID SCU Watchdog Mobile Platforms"
-> +	depends on X86_INTEL_MID && WATCHDOG_CORE
 
-All other watchdog drivers using the watchdog core use
-	select WATCHDOG_CORE
+> I would rather implement the opposite option --no-system-wide, if that
+> is ok.
 
-so this one should do the same.
+Please just add -a/--system-wide (maybe use can make it default if no
+argument/workload is given like perf top does) then tool will provide
+the --no-* option automatically.
 
-Guenter
+Thanks,
+Namhyung
