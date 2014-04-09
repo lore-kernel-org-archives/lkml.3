@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039AbaDIBci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 21:32:38 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:49597 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355AbaDIBch (ORCPT
+	id S1757900AbaDIBfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 21:35:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56027 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756800AbaDIBfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 21:32:37 -0400
-Message-ID: <5344A312.80802@linux.vnet.ibm.com>
-Date: Wed, 09 Apr 2014 07:02:02 +0530
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+	Tue, 8 Apr 2014 21:35:20 -0400
+Message-ID: <5344A209.7010507@wwwdotorg.org>
+Date: Tue, 08 Apr 2014 19:27:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, x86@kernel.org
-CC: benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
-References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com> <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com> <533EDB63.8090909@intel.com>
-In-Reply-To: <533EDB63.8090909@intel.com>
+To: Tim Kryger <tim.kryger@linaro.org>,
+        Bart Tanghe <bart.tanghe@thomasmore.be>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        linux-rpi-kernel@lists.infradead.org
+Subject: Re: [rfc]pwm: add BCM2835 PWM driver
+References: <1396532680-30352-1-git-send-email-bart.tanghe@thomasmore.be> <CAAYSxhpTV1-k7ROzJnnOhNcrZRUTzAfFc6YtLKLx6oZVUEHNxQ@mail.gmail.com>
+In-Reply-To: <CAAYSxhpTV1-k7ROzJnnOhNcrZRUTzAfFc6YtLKLx6oZVUEHNxQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040901-5140-0000-0000-000004DD8D83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 April 2014 09:48 PM, Dave Hansen wrote:
-> On 04/03/2014 11:27 PM, Madhavan Srinivasan wrote:
->> This patch creates infrastructure to move the FAULT_AROUND_ORDER
->> to arch/ using Kconfig. This will enable architecture maintainers
->> to decide on suitable FAULT_AROUND_ORDER value based on
->> performance data for that architecture. Patch also adds
->> FAULT_AROUND_ORDER Kconfig element in arch/X86.
+On 04/08/2014 05:02 PM, Tim Kryger wrote:
+> On Thu, Apr 3, 2014 at 6:44 AM, Bart Tanghe <bart.tanghe@thomasmore.be> wrote:
+>> need some recommendation
+>> the memory mapped io registers of the bcm2835 pwm hardware are spreaded
+>> over the memory mapped io
+>> gpio config 0x20200004 - clk config 0x201010A0 - pwm configuration 0x2020C000
+>> to handle this, I've used the base address of the memory mapped io
+>> so I can use positive offsets
 > 
-> Please don't do it this way.
+> So the registers for this PWM are located in three distinct memory regions?
+...
+>> +struct bcm2835_pwm_chip {
+>> +       struct pwm_chip chip;
+>> +       struct device *dev;
+>> +       int channel;
+>> +       void __iomem *mmio;
 > 
-> In mm/Kconfig, put
+> One pointer isn't going to be enough.  You need three.
 > 
-> 	config FAULT_AROUND_ORDER
-> 		int
-> 		default 1234 if POWERPC
-> 		default 4
+> I suggest renaming the first and adding two more:
 > 
-> The way you have it now, every single architecture that needs to enable
-> this has to go put that in their Kconfig.  That's madness.  This way,
+> void __iomem *base_pwm;
+> void __iomem *base_clk;
+> void __iomem *base_alt;
 
-I though about it and decided not to do this way because, in future,
-sub platforms of the architecture may decide to change the values. Also,
-adding an if line for each architecture with different sub platforms
-oring to it will look messy.
-
-With regards
-Maddy
-
-> you only put it in one place, and folks only have to care if they want
-> to change the default to be something other than 4.
-> 
-
+Sorry, I forgot about this patch. One comment here; the PWM driver can't
+touch the clock or alt registers; those should be owned by the clock
+driver, and the driver for whatever alt is (pinmux - don't recall what
+it's touching there).
