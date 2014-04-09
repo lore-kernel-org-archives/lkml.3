@@ -1,131 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965093AbaDIVGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 17:06:15 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:60202
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S965109AbaDIVGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 17:06:24 -0400
+Received: from mail.efficios.com ([78.47.125.74]:58784 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964967AbaDIVGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 17:06:13 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH net, V1 3/3] Drivers: net: hyperv: Address UDP checksum issues
-Date: Wed,  9 Apr 2014 15:00:47 -0700
-Message-Id: <1397080847-17994-3-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1397080847-17994-1-git-send-email-kys@microsoft.com>
-References: <1397080810-17953-1-git-send-email-kys@microsoft.com>
- <1397080847-17994-1-git-send-email-kys@microsoft.com>
+	id S964967AbaDIVGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 17:06:18 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [PATCH] Fix: anonymous unions in struct ftrace_event_call
+Date: Wed,  9 Apr 2014 17:06:08 -0400
+Message-Id: <1397077568-3156-1-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ws2008r2 does not support UDP checksum offload. Thus, we cannnot turn on
-UDP offload in the host. Also, on ws2012 and ws2012 r2, there appear to be
-an issue with UDP checksum offload.
-Fix this issue by computing the UDP checksum in the Hyper-V driver.
+gcc <= 4.5.x has significant limitations with respect to initialization
+of anonymous unions within structures. They need to be surrounded by
+brackets, _and_ they need to be initialized in the same order in which
+they appear in the structure declaration.
 
-Based on Dave Miller's comments, in this version, I have COWed the skb
-before modifying the UDP header (the checksum field).
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Link: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=10676
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/hyperv/hyperv_net.h   |    1 +
- drivers/net/hyperv/netvsc_drv.c   |   26 +++++++++++++++++++++++++-
- drivers/net/hyperv/rndis_filter.c |   12 +++++++++++-
- 3 files changed, 37 insertions(+), 2 deletions(-)
+ include/linux/syscalls.h    |    8 ++++++--
+ include/trace/ftrace.h      |   12 +++++++++---
+ kernel/trace/trace_export.c |    6 ++++--
+ 3 files changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 13010b4..d18f711d 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -747,6 +747,7 @@ struct ndis_oject_header {
- #define NDIS_TCP_LARGE_SEND_OFFLOAD_IPV4	0
- #define NDIS_TCP_LARGE_SEND_OFFLOAD_IPV6	1
- 
-+#define VERSION_4_OFFLOAD_SIZE			22
- /*
-  * New offload OIDs for NDIS 6
-  */
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 6f39baa..31e55fb 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -398,7 +398,30 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 		csum_info->transmit.tcp_checksum = 1;
- 		csum_info->transmit.tcp_header_offset = hdr_offset;
- 	} else if (net_trans_info & INFO_UDP) {
--		csum_info->transmit.udp_checksum = 1;
-+		/* UDP checksum offload is not supported on ws2008r2.
-+		 * Furthermore, on ws2012 and ws2012r2, there are some
-+		 * issues with udp checksum offload from Linux guests.
-+		 * (these are host issues).
-+		 * For now compute the checksum here.
-+		 */
-+		struct udphdr *uh;
-+		u16 udp_len;
-+
-+		ret = skb_cow_head(skb, 0);
-+		if (ret)
-+			goto drop;
-+
-+		uh = udp_hdr(skb);
-+		udp_len = ntohs(uh->len);
-+		uh->check = 0;
-+		uh->check = csum_tcpudp_magic(ip_hdr(skb)->saddr,
-+					      ip_hdr(skb)->daddr,
-+					      udp_len, IPPROTO_UDP,
-+					      csum_partial(uh, udp_len, 0));
-+		if (uh->check == 0)
-+			uh->check = CSUM_MANGLED_0;
-+
-+		csum_info->transmit.udp_checksum = 0;
- 	}
- 	goto do_send;
- 
-@@ -438,6 +461,7 @@ do_send:
- 
- 	ret = netvsc_send(net_device_ctx->device_ctx, packet);
- 
-+drop:
- 	if (ret == 0) {
- 		net->stats.tx_bytes += skb->len;
- 		net->stats.tx_packets++;
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 4a37e3d..143a98c 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -641,6 +641,16 @@ int rndis_filter_set_offload_params(struct hv_device *hdev,
- 	struct rndis_set_complete *set_complete;
- 	u32 extlen = sizeof(struct ndis_offload_params);
- 	int ret, t;
-+	u32 vsp_version = nvdev->nvsp_version;
-+
-+	if (vsp_version <= NVSP_PROTOCOL_VERSION_4) {
-+		extlen = VERSION_4_OFFLOAD_SIZE;
-+		/* On NVSP_PROTOCOL_VERSION_4 and below, we do not support
-+		 * UDP checksum offload.
-+		 */
-+		req_offloads->udp_ip_v4_csum = 0;
-+		req_offloads->udp_ip_v6_csum = 0;
-+	}
- 
- 	request = get_rndis_request(rdev, RNDIS_MSG_SET,
- 		RNDIS_MESSAGE_SIZE(struct rndis_set_request) + extlen);
-@@ -674,7 +684,7 @@ int rndis_filter_set_offload_params(struct hv_device *hdev,
- 	} else {
- 		set_complete = &request->response_msg.msg.set_complete;
- 		if (set_complete->status != RNDIS_STATUS_SUCCESS) {
--			netdev_err(ndev, "Fail to set MAC on host side:0x%x\n",
-+			netdev_err(ndev, "Fail to set offload on host side:0x%x\n",
- 				   set_complete->status);
- 			ret = -EINVAL;
- 		}
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index a747a77..57c2509 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -117,8 +117,10 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call __used				\
+ 	  event_enter_##sname = {					\
+-		.name                   = "sys_enter"#sname,		\
+ 		.class			= &event_class_syscall_enter,	\
++		{							\
++			.name                   = "sys_enter"#sname,	\
++		},							\
+ 		.event.funcs            = &enter_syscall_print_funcs,	\
+ 		.data			= (void *)&__syscall_meta_##sname,\
+ 		.flags                  = TRACE_EVENT_FL_CAP_ANY,	\
+@@ -131,8 +133,10 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call __used				\
+ 	  event_exit_##sname = {					\
+-		.name                   = "sys_exit"#sname,		\
+ 		.class			= &event_class_syscall_exit,	\
++		{							\
++			.name                   = "sys_exit"#sname,	\
++		},							\
+ 		.event.funcs		= &exit_syscall_print_funcs,	\
+ 		.data			= (void *)&__syscall_meta_##sname,\
+ 		.flags                  = TRACE_EVENT_FL_CAP_ANY,	\
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 9c44c11..0a1a4f7 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -470,8 +470,10 @@ static inline notrace int ftrace_get_offsets_##call(			\
+  * };
+  *
+  * static struct ftrace_event_call event_<call> = {
+- *	.tp			= &__tracepoint_<call>,
+  *	.class			= event_class_<template>,
++ *	{
++ *		.tp			= &__tracepoint_<call>,
++ *	},
+  *	.event			= &ftrace_event_type_<call>,
+  *	.print_fmt		= print_fmt_<call>,
+  *	.flags			= TRACE_EVENT_FL_TRACEPOINT,
+@@ -606,8 +608,10 @@ static struct ftrace_event_class __used __refdata event_class_##call = { \
+ #define DEFINE_EVENT(template, call, proto, args)			\
+ 									\
+ static struct ftrace_event_call __used event_##call = {			\
+-	.tp			= &__tracepoint_##call,			\
+ 	.class			= &event_class_##template,		\
++	{								\
++		.tp			= &__tracepoint_##call,		\
++	},								\
+ 	.event.funcs		= &ftrace_event_type_funcs_##template,	\
+ 	.print_fmt		= print_fmt_##template,			\
+ 	.flags			= TRACE_EVENT_FL_TRACEPOINT,		\
+@@ -621,8 +625,10 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ static const char print_fmt_##call[] = print;				\
+ 									\
+ static struct ftrace_event_call __used event_##call = {			\
+-	.tp			= &__tracepoint_##call,			\
+ 	.class			= &event_class_##template,		\
++	{								\
++		.tp			= &__tracepoint_##call,		\
++	},								\
+ 	.event.funcs		= &ftrace_event_type_funcs_##call,	\
+ 	.print_fmt		= print_fmt_##call,			\
+ 	.flags			= TRACE_EVENT_FL_TRACEPOINT,		\
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index ee0a509..d4ddde2 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -173,9 +173,11 @@ struct ftrace_event_class __refdata event_class_ftrace_##call = {	\
+ };									\
+ 									\
+ struct ftrace_event_call __used event_##call = {			\
+-	.name			= #call,				\
+-	.event.type		= etype,				\
+ 	.class			= &event_class_ftrace_##call,		\
++	{								\
++		.name			= #call,			\
++	},								\
++	.event.type		= etype,				\
+ 	.print_fmt		= print,				\
+ 	.flags			= TRACE_EVENT_FL_IGNORE_ENABLE | TRACE_EVENT_FL_USE_CALL_FILTER, \
+ };									\
 -- 
-1.7.4.1
+1.7.10.4
 
