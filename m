@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808AbaDIKHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:07:23 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:54603 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461AbaDIKHT (ORCPT
+	id S932936AbaDIKIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 06:08:38 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:46090 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932772AbaDIKIg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:07:19 -0400
-X-Auth-Info: pl+OQV9d+GQ6AJ+iUAMV35B96jJcIhgJQyUHLDHW1og=
-From: Marek Vasut <marex@denx.de>
-To: grmoore@altera.com
-Subject: Re: [PATCH] Add support for flag status register on Micron chips
-Date: Wed, 9 Apr 2014 12:03:24 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: ggrahammoore@gmail.com, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        Gerhard Sittig <gsi@denx.de>
-References: <1396973570-13995-1-git-send-email-grmoore@altera.com>
-In-Reply-To: <1396973570-13995-1-git-send-email-grmoore@altera.com>
+	Wed, 9 Apr 2014 06:08:36 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404091203.24956.marex@denx.de>
+Date: Wed, 9 Apr 2014 12:08:35 +0200
+Message-ID: <CADDKRnCakz_HE2P+vZat2QVEbpebv4zr2gN3+RbkQvw1rA_Bpg@mail.gmail.com>
+Subject: [ 3.14.0-12041-g75ff24f ] regression: drm warning
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 08, 2014 at 06:12:49 PM, grmoore@altera.com wrote:
-> From: Graham Moore <grmoore@altera.com>
-> 
-> This is a slightly different version of the patch that Insop Song
-> submitted
-> (http://marc.info/?i=201403012022.10111.marex%20()%20denx%20!%20de).
-> 
-> I talked to Insop, and he agreed I should submit this patch as a follow-on
-> to his.
-> 
-> This patch uses a flag in the m25p_ids[] array to determine which chips
-> need to use the FSR (Flag Status Register).
-> 
-> Rationale for using the FSR:
-> 
-> The Micron data sheets say we have to do this, at least for the multi-die
-> 512M and 1G parts (n25q512 and n25q00).  In practice, if we don't check
-> the FSR for program/erase status, and we rely solely on the status
-> register (SR), then we get corrupted data in the flash.
+Kernel 3.14.0-12041-g75ff24f from 9.4.2014 introduces the following
+on the console (driver is i915):
 
-I talked to Gerhard yesterday and he told me there is something like that on 
-ONFI NAND. I think I now understand why that new register is in-place. 
-Apparently, in the ONFI NAND case, there is a READY and TRUE-READY signal and 
-one of those reflects that _all_ the dies have finished their operation. This is 
-in my opinion seriously misdesigned as it breaks any kind of backward 
-compatibility.
+[drm:ivb_err_int_handler] *ERROR* Pipe B FIFO underrun
+[drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
+[drm:cpt_serr_int_handler] *ERROR* PCH transcoder B FIFO underrun
 
-> Micron told us (Altera) that for multi-die chips based on the 65nm 256MB
-> die, we need to check the SR first, then check the FSR, which is why the
-> wait_for_fsr_ready function does that.  Future chips based on 45 nm 512MB
-> die will use the FSR only.
+In syslog I find:
 
-Can these SPI flash makers screw the design even more? OT: Why don't we have a 
-single standard for all the SF chips which won't need all these crappy quirks 
-:-(
+------------[ cut here ]------------
+WARNING: CPU: 1 PID: 1 at
+/data/kernel/linux/drivers/gpu/drm/drm_mm.c:211 0xffffffffb22a70fa()
+no hole found for node 0x0 + 0x300000
+CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.14.0-12041-g75ff24f #45
+Hardware name: FUJITSU LIFEBOOK AH532/FJNBB1C, BIOS Version 1.09 05/22/2012
+ 0000000000000000 ffffffffb2967138 ffffffffb262ae5d ffff8802160d5a58
+ ffffffffb20391ad ffff880214994000 0000000000300000 0000000000000000
+ ffff880214952800 0000000000000000 ffffffffb2039255 ffffffffb2967190
+Call Trace:
+ [<ffffffffb262ae5d>] ? 0xffffffffb262ae5d
+ [<ffffffffb20391ad>] ? 0xffffffffb20391ad
+ [<ffffffffb2039255>] ? 0xffffffffb2039255
+ [<ffffffffb22a70fa>] ? 0xffffffffb22a70fa
+ [<ffffffffb22d4b11>] ? 0xffffffffb22d4b11
+ [<ffffffffb2300f92>] ? 0xffffffffb2300f92
+ [<ffffffffb232af7b>] ? 0xffffffffb232af7b
+ [<ffffffffb232f675>] ? 0xffffffffb232f675
+ [<ffffffffb21fa38c>] ? 0xffffffffb21fa38c
+ [<ffffffffb232ec04>] ? 0xffffffffb232ec04
+ [<ffffffffb2622997>] ? 0xffffffffb2622997
+ [<ffffffffb232ee62>] ? 0xffffffffb232ee62
+ [<ffffffffb22a6a5b>] ? 0xffffffffb22a6a5b
+ [<ffffffffb22a3994>] ? 0xffffffffb22a3994
+ [<ffffffffb22a5a38>] ? 0xffffffffb22a5a38
+ [<ffffffffb221a019>] ? 0xffffffffb221a019
+ [<ffffffffb23327b8>] ? 0xffffffffb23327b8
+ [<ffffffffb2332a03>] ? 0xffffffffb2332a03
+ [<ffffffffb2332970>] ? 0xffffffffb2332970
+ [<ffffffffb2330c45>] ? 0xffffffffb2330c45
+ [<ffffffffb2331534>] ? 0xffffffffb2331534
+ [<ffffffffb2332fce>] ? 0xffffffffb2332fce
+ [<ffffffffb2aa2cc5>] ? 0xffffffffb2aa2cc5
+ [<ffffffffb2a7fe45>] ? 0xffffffffb2a7fe45
+ [<ffffffffb2052100>] ? 0xffffffffb2052100
+ [<ffffffffb2a7ffe2>] ? 0xffffffffb2a7ffe2
+ [<ffffffffb2a7f79e>] ? 0xffffffffb2a7f79e
+ [<ffffffffb2624d20>] ? 0xffffffffb2624d20
+ [<ffffffffb2624d29>] ? 0xffffffffb2624d29
+ [<ffffffffb263223c>] ? 0xffffffffb263223c
+ [<ffffffffb2624d20>] ? 0xffffffffb2624d20
+---[ end trace 0d3f14b61bc31dab ]---
 
-Best regards,
-Marek Vasut
+This does not happen in 3.14.0-11030-ga7963eb from 8.4.2014 and never
+before.
+
+Suppose merge
+12024   e9f37d3 Merge branch 'drm-next' of
+git://people.freedesktop.org/~airlied/linux
+produces this problem.
+
+Jörg
