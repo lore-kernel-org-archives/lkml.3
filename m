@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaDIFlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 01:41:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60034 "EHLO
+	id S1756557AbaDIFpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 01:45:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60080 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaDIFly (ORCPT
+	with ESMTP id S1752546AbaDIFpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 01:41:54 -0400
-Date: Wed, 9 Apr 2014 07:41:39 +0200
+	Wed, 9 Apr 2014 01:45:17 -0400
+Date: Wed, 9 Apr 2014 07:45:03 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Stancek <jstancek@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] futex: avoid race between requeue and wake
-Message-ID: <20140409054139.GU10526@twins.programming.kicks-ass.net>
-References: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com>
- <CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com>
- <CA+55aFyfKOv59hptv9rEcf31X5O8s26z+S8f-MchM1C0WtXx3A@mail.gmail.com>
- <20140408181305.GT10526@twins.programming.kicks-ass.net>
- <CA+55aFz+yMdXfsb-t3JzDhj6=M=-ggjDDGAQSbtfEcNhgyoopA@mail.gmail.com>
- <1860555101.1890107.1396990941681.JavaMail.zimbra@redhat.com>
- <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com,
+        andi.kleen@intel.com
+Subject: Re: [PATCH 4/6 V2] perf, sort:  Add physid sorting based on mmap2
+ data
+Message-ID: <20140409054503.GW10526@twins.programming.kicks-ass.net>
+References: <1395689676-214799-5-git-send-email-dzickus@redhat.com>
+ <1395694638-220799-1-git-send-email-dzickus@redhat.com>
+ <87lhvft6vm.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
+In-Reply-To: <87lhvft6vm.fsf@sejong.aot.lge.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 03:30:07PM -0700, Linus Torvalds wrote:
-> So I'll have to leave this decision to the futex people. But the
-> attached slightly more complex patch *may* be the better one.
+On Wed, Apr 09, 2014 at 02:21:49PM +0900, Namhyung Kim wrote:
+> >     create a new 'physid mode' to group all the sorting rules together
+> >       (mimics the mem-mode)
+> 
+> What is 'physid' then?  I guess you meant physical id but it seems
+> unique id or unique map id looks like a better fit IMHO.
 
-Of course, tglx is the main futex 'people' and he's not on CC.. *sigh*.
+I suspect this is legacy naming; they used to do this using physical
+addresses.
