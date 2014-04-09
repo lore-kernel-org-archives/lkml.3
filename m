@@ -1,60 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288AbaDILan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:30:43 -0400
-Received: from smtp-out-071.synserver.de ([212.40.185.71]:1043 "EHLO
-	smtp-out-115.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932542AbaDILam (ORCPT
+	id S933301AbaDILaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:30:52 -0400
+Received: from transparentnimenzy.cz ([31.31.77.140]:52637 "EHLO
+	devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932542AbaDILat convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:30:42 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 19297
-Message-ID: <53452F67.3060400@metafoo.de>
-Date: Wed, 09 Apr 2014 13:30:47 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 9 Apr 2014 07:30:49 -0400
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: dmitry.torokhov@gmail.com, jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Elias Vanderstuyft <elias.vds@gmail.com>
+Subject: [PATCH 20/24] Port gamecon to ff-memless-next
+Date: Wed, 09 Apr 2014 13:30:45 +0200
+Message-ID: <2807349.5CLbAnYOXZ@sigyn>
+User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
+In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
+References: <1609685.QRL9N9sQvX@sigyn>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: core: Fix Sparse incompatible types warning
-References: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com> <5345279F.6070005@metafoo.de> <1397041934.11424.2.camel@AMDC1943>
-In-Reply-To: <1397041934.11424.2.camel@AMDC1943>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 01:12 PM, Krzysztof Kozlowski wrote:
-> On Å›ro, 2014-04-09 at 12:57 +0200, Lars-Peter Clausen wrote:
->> On 04/09/2014 09:21 AM, Krzysztof Kozlowski wrote:
->>> Fix following Sparse warning:
->>> sound/soc/soc-core.c:252:20: error: incompatible types in comparison expression (different type sizes)
->>>
->>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->>> ---
->>>    sound/soc/soc-core.c | 2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
->>> index 051c006281f5..41f6178249df 100644
->>> --- a/sound/soc/soc-core.c
->>> +++ b/sound/soc/soc-core.c
->>> @@ -249,7 +249,7 @@ static ssize_t codec_reg_write_file(struct file *file,
->>>    	struct snd_soc_codec *codec = file->private_data;
->>>    	int ret;
->>>
->>> -	buf_size = min(count, (sizeof(buf)-1));
->>> +	buf_size = min(count, (size_t)(sizeof(buf)-1));
->>
->> But shouldn't the type of sizeof already be size_t?
->
-> Hmmm... yes it should. It looks like a false positive from Sparse so the
-> commit message should be rather "Suppress" than "Fix".
+Port gamecon to ff-memless-next
 
-I'm pretty sure it is a bug in sparse, we shouldn't suppress those, but 
-rather fix them in sparse itself.
+Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+---
+ drivers/input/joystick/Kconfig   |  2 +-
+ drivers/input/joystick/gamecon.c | 57 ++++++++++++++++++++++------------------
+ 2 files changed, 33 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 56eb471..2dd3ba1 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -221,7 +221,7 @@ config JOYSTICK_DB9
+ config JOYSTICK_GAMECON
+ 	tristate "Multisystem, NES, SNES, N64, PSX joysticks and gamepads"
+ 	depends on PARPORT
+-	select INPUT_FF_MEMLESS
++	select INPUT_FF_MEMLESS_NEXT
+ 	---help---
+ 	  Say Y here if you have a Nintendo Entertainment System gamepad,
+ 	  Super Nintendo Entertainment System gamepad, Nintendo 64 gamepad,
+diff --git a/drivers/input/joystick/gamecon.c b/drivers/input/joystick/gamecon.c
+index e68e497..209d0fb 100644
+--- a/drivers/input/joystick/gamecon.c
++++ b/drivers/input/joystick/gamecon.c
+@@ -40,6 +40,7 @@
+ #include <linux/input.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/input/ff-memless-next.h>
+ 
+ MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+ MODULE_DESCRIPTION("NES, SNES, N64, MultiSystem, PSX gamepad driver");
+@@ -47,6 +48,7 @@ MODULE_LICENSE("GPL");
+ 
+ #define GC_MAX_PORTS		3
+ #define GC_MAX_DEVICES		5
++#define FF_UPDATE_RATE 50
+ 
+ struct gc_config {
+ 	int args[GC_MAX_DEVICES + 1];
+@@ -263,43 +265,48 @@ static void gc_n64_process_packet(struct gc *gc)
+ }
+ 
+ static int gc_n64_play_effect(struct input_dev *dev, void *data,
+-			      struct ff_effect *effect)
++			      const struct mlnx_effect_command *command)
+ {
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	int i;
+ 	unsigned long flags;
+ 	struct gc *gc = input_get_drvdata(dev);
+ 	struct gc_subdev *sdev = data;
+ 	unsigned char target = 1 << sdev->idx; /* select desired pin */
++	unsigned int cmd;
+ 
+-	if (effect->type == FF_RUMBLE) {
+-		struct ff_rumble_effect *rumble = &effect->u.rumble;
+-		unsigned int cmd =
+-			rumble->strong_magnitude || rumble->weak_magnitude ?
+-			GC_N64_CMD_01 : GC_N64_CMD_00;
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		cmd = (rumble_force->strong || rumble_force->weak) ? GC_N64_CMD_01 : GC_N64_CMD_00;
++		break;
++	case MLNX_STOP_RUMBLE:
++		cmd = GC_N64_CMD_00;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+-		local_irq_save(flags);
++	local_irq_save(flags);
+ 
+-		/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
+-		gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
++	gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	gc_n64_send_command(gc, GC_N64_CMD_80, target);
++	gc_n64_send_command(gc, GC_N64_CMD_01, target);
++	for (i = 0; i < 32; i++)
+ 		gc_n64_send_command(gc, GC_N64_CMD_80, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_01, target);
+-		for (i = 0; i < 32; i++)
+-			gc_n64_send_command(gc, GC_N64_CMD_80, target);
+-		gc_n64_send_stop_bit(gc, target);
++	gc_n64_send_stop_bit(gc, target);
+ 
+-		udelay(GC_N64_DELAY);
+-
+-		/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
+-		gc_n64_send_command(gc, GC_N64_CMD_03, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_c0, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_1b, target);
+-		for (i = 0; i < 32; i++)
+-			gc_n64_send_command(gc, cmd, target);
+-		gc_n64_send_stop_bit(gc, target);
++	udelay(GC_N64_DELAY);
+ 
+-		local_irq_restore(flags);
++	/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
++	gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	gc_n64_send_command(gc, GC_N64_CMD_c0, target);
++	gc_n64_send_command(gc, GC_N64_CMD_1b, target);
++	for (i = 0; i < 32; i++)
++		gc_n64_send_command(gc, cmd, target);
++	gc_n64_send_stop_bit(gc, target);
+ 
+-	}
++	local_irq_restore(flags);
+ 
+ 	return 0;
+ }
+@@ -317,7 +324,7 @@ static int __init gc_n64_init_ff(struct input_dev *dev, int i)
+ 
+ 	input_set_capability(dev, EV_FF, FF_RUMBLE);
+ 
+-	err = input_ff_create_memless(dev, sdev, gc_n64_play_effect);
++	err = input_ff_create_mlnx(dev, sdev, gc_n64_play_effect, FF_UPDATE_RATE);
+ 	if (err) {
+ 		kfree(sdev);
+ 		return err;
+-- 
+1.9.1
+
 
