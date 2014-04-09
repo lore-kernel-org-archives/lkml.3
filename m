@@ -1,115 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083AbaDILrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:47:09 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:48815 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560AbaDILrH (ORCPT
+	id S933110AbaDILtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:49:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39736 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482AbaDILtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:47:07 -0400
-Date: Wed, 9 Apr 2014 07:46:30 -0400 (EDT)
-From: Jan Stancek <jstancek@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>, tglx@linutronix.de,
-        umgwanakikbuti@gmail.com, dvhart@linux.intel.com
-Message-ID: <1096300004.2306764.1397043990013.JavaMail.zimbra@redhat.com>
-In-Reply-To: <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
-References: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com> <CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com> <CA+55aFyfKOv59hptv9rEcf31X5O8s26z+S8f-MchM1C0WtXx3A@mail.gmail.com> <20140408181305.GT10526@twins.programming.kicks-ass.net> <CA+55aFz+yMdXfsb-t3JzDhj6=M=-ggjDDGAQSbtfEcNhgyoopA@mail.gmail.com> <1860555101.1890107.1396990941681.JavaMail.zimbra@redhat.com> <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
-Subject: Re: [PATCH] futex: avoid race between requeue and wake
+	Wed, 9 Apr 2014 07:49:15 -0400
+Date: Wed, 9 Apr 2014 13:48:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+Message-ID: <20140409114857.GT11096@twins.programming.kicks-ass.net>
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
+ <530D53EF.9090706@amacapital.net>
+ <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+ <CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
+ <20140226185513.GL22728@two.firstfloor.org>
+ <CALCETrVQ8SBg+YLuPmDevL+f2dzBjLJucfMvVHaB04E8QJSGXw@mail.gmail.com>
+ <530E3E47.8010205@gmail.com>
+ <CALCETrUHiDqT+VRbdEnGsEkMFqQt+ZqX+RTenp1ets8XMhrQ2Q@mail.gmail.com>
+ <530E4B42.5090401@gmail.com>
+ <CALCETrUA_JSDepFnKYsrDD5CQX65k4z_XeSxc4RxmhB2RahBZA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF17 (Linux)/8.0.6_GA_5922)
-Thread-Topic: futex: avoid race between requeue and wake
-Thread-Index: eEnC8v6YzThmfHsqgP3LkZOpkXRf1g==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUA_JSDepFnKYsrDD5CQX65k4z_XeSxc4RxmhB2RahBZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 26, 2014 at 12:26:43PM -0800, Andy Lutomirski wrote:
+> Speed.  FPO saves one register (a big deal on x86_32; not so important
+> on x86_64) but also saves a few cycles on function entry and exit,
+> which is a bigger deal for small functions.
 
+So I though that LTO was supposed to get rid of a lot of the small
+function and inline them.
 
------ Original Message -----
-> From: "Linus Torvalds" <torvalds@linux-foundation.org>
-> To: "Jan Stancek" <jstancek@redhat.com>
-> Cc: "Peter Zijlstra" <peterz@infradead.org>, "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, "Srikar
-> Dronamraju" <srikar@linux.vnet.ibm.com>, "Davidlohr Bueso" <davidlohr@hp.com>, "Ingo Molnar" <mingo@kernel.org>,
-> "Larry Woodman" <lwoodman@redhat.com>
-> Sent: Wednesday, 9 April, 2014 12:30:07 AM
-> Subject: Re: [PATCH] futex: avoid race between requeue and wake
-> 
-> On Tue, Apr 8, 2014 at 2:02 PM, Jan Stancek <jstancek@redhat.com> wrote:
-> >
-> > I ran reproducer with following change on s390x system, where this
-> > can be reproduced usually within seconds:
-> >
-> > diff --git a/kernel/futex.c b/kernel/futex.c
-> > index 67dacaf..9150ffd 100644
-> > --- a/kernel/futex.c
-> > +++ b/kernel/futex.c
-> > @@ -1095,6 +1095,7 @@ static int unlock_futex_pi(u32 __user *uaddr, u32
-> > uval)
-> >  static inline void
-> >  double_lock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket
-> >  *hb2)
-> >  {
-> > +       hb_waiters_inc(hb2);
-> >         if (hb1 <= hb2) {
-> >                 spin_lock(&hb1->lock);
-> >                 if (hb1 < hb2)
-> > @@ -1111,6 +1112,7 @@ double_unlock_hb(struct futex_hash_bucket *hb1,
-> > struct futex_hash_bucket *hb2)
-> >         spin_unlock(&hb1->lock);
-> >         if (hb1 != hb2)
-> >                 spin_unlock(&hb2->lock);
-> > +       hb_waiters_dec(hb2);
-> >  }
-> >
-> >  /*
-> >
-> > Reproducer is running without failures over an hour now and
-> > made ~1.4 million iterations.
+I've also heard that in practise this is very 'hard', and thus we're
+still stuck with a gazillion small functions (mostly C++ people suffer
+from this).
 
-I let this version run over night on single s390x system,
-there were no failures.
-
-> 
-> Ok, that's encouraging. That is the smallest patch I could come up
-> with, but as mentioned, it's not optimal. We only need it for
-> futex_requeue(), but if we do it there we'd have to handle all the
-> different error cases (there's only one call to double_lock_hb(), but
-> due to the error cases there's four calls to double_unlock_hb().
-> 
-> I'm not sure how much we care. The simple patch basically adds two
-> (unnecessary) atomics to the futex_wake_op() path. I don't know how
-> critical that path is - not as critical as the regular "futex_wake()",
-> I'd expect, but I guess pthread_cond_signal() is the main user.
-> 
-> So I'll have to leave this decision to the futex people. But the
-> attached slightly more complex patch *may* be the better one.
-> 
-> May I bother you to test this one too? I really think that
-> futex_requeue() is the only user that should need this, so doing it
-> there rather than in double_[un]lock_hb() should be slightly more
-> optimal, but who knows what I've missed. We clearly *all* missed this
-> race back when the ordering rules were documented..
-
-I'm running reproducer with this patch applied on 3 systems:
-- two s390x systems where this can be reproduced within seconds
-- x86_64 Intel(R) Xeon(R) CPU E5240 @ 3.00GHz, where I could
-  reproduce it on average in ~3 minutes.
-
-It's running without failure over 4 hours now.
-
-Regards,
-Jan
-
-> 
-> Still hoping for comments from PeterZ and Davidlohr.
-> 
->                   Linus
-> 
+Can anybody give a concise explanation on why LTO doesn't rid us of
+these small functions or point to a web resource that describes the
+problem?
