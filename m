@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934022AbaDIQLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:11:42 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:40268 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933858AbaDIQLi (ORCPT
+	id S934040AbaDIQMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:12:12 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:44136 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933100AbaDIQLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:11:38 -0400
+	Wed, 9 Apr 2014 12:11:36 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 5/5] sched: Convert tasks iteration to use for_each_process_thread()
-Date: Wed,  9 Apr 2014 18:11:22 +0200
-Message-Id: <1397059882-23063-6-git-send-email-fweisbec@gmail.com>
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 4/5] procfs: Convert process iteration to use for_each_thread()
+Date: Wed,  9 Apr 2014 18:11:21 +0200
+Message-Id: <1397059882-23063-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
 References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
@@ -26,74 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 do_each_thread/while_each_thread iterators are deprecated by
 for_each_thread/for_each_process_thread() APIs.
 
-Lets convert the callers in the sched subsystem. The ultimate
-goal is to remove the struct task_struct::thread_group field and
-the corresponding do_each_thread/while_each_thread iterators that are
-RCU unsafe.
+Lets convert the callers in procfs. The ultimate goal is to remove the
+struct task_struct::thread_group field and the corresponding
+do_each_thread/while_each_thread iterators that are RCU unsafe.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/sched/core.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ fs/proc/array.c | 7 ++++---
+ fs/proc/base.c  | 4 ++--
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0ff3f34..82df639 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4389,7 +4389,7 @@ void show_state_filter(unsigned long state_filter)
- 		"  task                        PC stack   pid father\n");
- #endif
- 	rcu_read_lock();
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		/*
- 		 * reset the NMI-timeout, listing all files on a slow
- 		 * console might take a lot of time:
-@@ -4397,8 +4397,7 @@ void show_state_filter(unsigned long state_filter)
- 		touch_nmi_watchdog();
- 		if (!state_filter || (p->state & state_filter))
- 			sched_show_task(p);
--	} while_each_thread(g, p);
--
-+	}
- 	touch_all_softlockup_watchdogs();
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 656e401..b7df5d5 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -439,12 +439,13 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
  
- #ifdef CONFIG_SCHED_DEBUG
-@@ -6997,7 +6996,7 @@ void normalize_rt_tasks(void)
- 	struct rq *rq;
+ 		/* add up live thread stats at the group level */
+ 		if (whole) {
+-			struct task_struct *t = task;
+-			do {
++			struct task_struct *t;
++
++			for_each_thread(task, t) {
+ 				min_flt += t->min_flt;
+ 				maj_flt += t->maj_flt;
+ 				gtime += task_gtime(t);
+-			} while_each_thread(task, t);
++			}
  
- 	read_lock_irqsave(&tasklist_lock, flags);
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		/*
- 		 * Only normalize user tasks:
- 		 */
-@@ -7028,7 +7027,7 @@ void normalize_rt_tasks(void)
+ 			min_flt += sig->min_flt;
+ 			maj_flt += sig->maj_flt;
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index b976062..f595d8e 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2437,10 +2437,10 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+ 	}
  
- 		__task_rq_unlock(rq);
- 		raw_spin_unlock(&p->pi_lock);
--	} while_each_thread(g, p);
-+	}
+ 	if (whole && lock_task_sighand(task, &flags)) {
+-		struct task_struct *t = task;
++		struct task_struct *t;
  
- 	read_unlock_irqrestore(&tasklist_lock, flags);
- }
-@@ -7217,10 +7216,10 @@ static inline int tg_has_rt_tasks(struct task_group *tg)
- {
- 	struct task_struct *g, *p;
+ 		task_io_accounting_add(&acct, &task->signal->ioac);
+-		while_each_thread(task, t)
++		for_each_thread(task, t)
+ 			task_io_accounting_add(&acct, &t->ioac);
  
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		if (rt_task(p) && task_rq(p)->rt.tg == tg)
- 			return 1;
--	} while_each_thread(g, p);
-+	}
- 
- 	return 0;
- }
+ 		unlock_task_sighand(task, &flags);
 -- 
 1.8.3.1
 
