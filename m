@@ -1,92 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934294AbaDIXkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 19:40:22 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:48970 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847AbaDIXkU (ORCPT
+	id S934462AbaDIXmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 19:42:52 -0400
+Received: from fed1rmfepi208.cox.net ([68.230.241.153]:47480 "EHLO
+	fed1rmfepi208.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932804AbaDIXmu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 19:40:20 -0400
-Message-ID: <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: hpsa driver bug crack kernel down!
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
-        scameron@beardog.cce.hp.com, linux-scsi <linux-scsi@vger.kernel.org>
-Date: Wed, 09 Apr 2014 16:40:17 -0700
-In-Reply-To: <1397085044.9519.63.camel@dabdike>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Apr 2014 19:42:50 -0400
+X-Greylist: delayed 3767 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 19:42:50 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020204.5345CC43.0010,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=2.0 cv=Pb8hcFdd c=1 sm=1
+ a=GAl+JO6vQzP2JYZtItt5GA==:17 a=N6jxHw9CUKgA:10 a=G8Uczd0VNMoA:10
+ a=IkcTkHD0fZMA:10 a=kviXuzpPAAAA:8 a=fTkJtSSaAAAA:8 a=Pulmn6tu4ZbsIT4VaMYA:9
+ a=QEXdDO2ut3YA:10 a=9YC585TfOj4A:10 a=GAl+JO6vQzP2JYZtItt5GA==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN)
+ smtp.auth=allen.andrews@cox.net
+From: "Allen Andrews" <allen.andrews@cox.net>
+To: <trond.myklebust@primarydata.com>, <linux-nfs@vger.kernel.org>,
+        <linux-rdma@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+References: <nyc61n00p3VzoHe01yc7ug>
+In-Reply-To: <nyc61n00p3VzoHe01yc7ug>
+Subject: [PATCH] nfs-rdma: Fix for FMR leaks
+Date: Wed, 9 Apr 2014 15:40:02 -0700
+Message-ID: <002e01cf5444$a58c2c10$f0a48430$@cox.net>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQDG3p6jEBQ+YPbDJbNwO+sDEC4rjZ0ay3Kg
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
-> On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
-> > [+linux-scsi]
-> > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
-> > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
-> > > > Hi,
-> > > > 
-> > > > The kernel is 3.14.0+ which is pulled just now. 
-> > > 
-> > > Cc'ing more people.
-> > > 
-> > > While the hpsa driver appears to be involved in some way, I'm sure if
-> > > this is a related issue, but as of today's pull I'm getting another
-> > > problem that causes my DL980 not to come up.
-> > > 
-> > > *Massive* amounts of:
-> > > 
-> > > DMAR:[fault reason 02] Present bit in context entry is clear
-> > > dmar: DRHD: handling fault status reg 602
-> > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
-> > > 
-> > > Then:
-> > > 
-> > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
-> > > ...
-> > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
-> > > ...
-> > > 
-> > > Screenshot of the actual LOCKUP: 
-> > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
-> > > 
-> > > While I haven't bisected, things worked fine until at least until commit
-> > > 39de65aa2c3e (April 2nd).
-> > > 
-> > > Any ideas?
-> > 
-> > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
-> > that everything worked fine until 39de65aa2c3e would tend to vindicate
-> > hpsa, 
+Two memory region leaks iwere found during testing:
 
-Hmm here you mean DMA, right?
+1. rpcrdma_buffer_create: While allocating RPCRDMA_FRMR's ib_alloc_fast_reg_mr is called and then ib_alloc_fast_reg_page_list is called.  If ib_alloc_fast_reg_page_list returns an error it bails out of the routine dropping the last ib_alloc_fast_reg_mr frmr region creating a memory leak.  Added code to dereg the last frmr if ib_alloc_fast_reg_page_list fails.
 
-> because all the hpsa changes went in before that under
-> Missing crucial info:
-> 
-> commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
-> 
-> > Merge: 3e75c6d b2bff6c
-> > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > Date:   Tue Apr 1 18:49:04 2014 -0700
-> > 
-> >     Merge tag 'scsi-misc' of
-> > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
-> > 
-> > can you revalidate that this commit works OK just to make sure?
+2. rpcrdma_buffer_destroy: While cleaning up, the routine will only free the MR's on the rb_mws list if there are rb_send_bufs present.  However, in rpcrdma_buffer_create while the rb_mws list is being built if one of the MR allocation requests fail after some MR's have been allocated on the rb_mws list the routine never gets to create any rb_send_bufs but instead jumps to the rpcrdma_buffer_destroy routine which will never free the MR's on rb_mws
+list because the rb_send_bufs were never created.   This leaks all the MR's
+on the rb_mws list that were created prior to one of the MR allocations failing.
 
-Ok so I don't see those DMA messages and system starts just fine. I'm
-thinking perhaps something broke after the IO mmu stuff in commit 
-3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
-causing the CPU stalls and just blame hpsa in the path as a side effect?
+Issue(2) was seen during testing. Our adapter had a finite number of MR's available and we created enough connections to where we saw an MR allocation failure on our Nth NFS connection request. After the kernel cleaned up the resources it had allocated for the Nth connection we noticed that FMR's had been leaked due to the coding error described above.
 
-/me goes out to try the commit.
+Issue(1) was seen during a code review while debugging issue(2).
 
+Signed-off-by: Allen Andrews <allen.andrews@emulex.com>
+---
+
+ net/sunrpc/xprtrdma/verbs.c |   79 ++++++++++++++++++++++++-------------------
+ 1 files changed, 44 insertions(+), 35 deletions(-)
+
+diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c index 9372656..54f592d 100644
+--- a/net/sunrpc/xprtrdma/verbs.c
++++ b/net/sunrpc/xprtrdma/verbs.c
+@@ -1058,6 +1058,14 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
+ 				dprintk("RPC:       %s: "
+ 					"ib_alloc_fast_reg_page_list "
+ 					"failed %i\n", __func__, rc);
++
++				rc = ib_dereg_mr(r->r.frmr.fr_mr);
++				if (rc)
++					dprintk("RPC:       %s:"
++						" ib_dereg_mr"
++						" failed %i\n",
++						__func__, rc);
++
+ 				goto out;
+ 			}
+ 			list_add(&r->mw_list, &buf->rb_mws); @@ -1194,41 +1202,6 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
+ 			kfree(buf->rb_recv_bufs[i]);
+ 		}
+ 		if (buf->rb_send_bufs && buf->rb_send_bufs[i]) {
+-			while (!list_empty(&buf->rb_mws)) {
+-				r = list_entry(buf->rb_mws.next,
+-					struct rpcrdma_mw, mw_list);
+-				list_del(&r->mw_list);
+-				switch (ia->ri_memreg_strategy) {
+-				case RPCRDMA_FRMR:
+-					rc = ib_dereg_mr(r->r.frmr.fr_mr);
+-					if (rc)
+-						dprintk("RPC:       %s:"
+-							" ib_dereg_mr"
+-							" failed %i\n",
+-							__func__, rc);
+-					ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
+-					break;
+-				case RPCRDMA_MTHCAFMR:
+-					rc = ib_dealloc_fmr(r->r.fmr);
+-					if (rc)
+-						dprintk("RPC:       %s:"
+-							" ib_dealloc_fmr"
+-							" failed %i\n",
+-							__func__, rc);
+-					break;
+-				case RPCRDMA_MEMWINDOWS_ASYNC:
+-				case RPCRDMA_MEMWINDOWS:
+-					rc = ib_dealloc_mw(r->r.mw);
+-					if (rc)
+-						dprintk("RPC:       %s:"
+-							" ib_dealloc_mw"
+-							" failed %i\n",
+-							__func__, rc);
+-					break;
+-				default:
+-					break;
+-				}
+-			}
+ 			rpcrdma_deregister_internal(ia,
+ 					buf->rb_send_bufs[i]->rl_handle,
+ 					&buf->rb_send_bufs[i]->rl_iov);
+@@ -1236,6 +1209,42 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
+ 		}
+ 	}
+ 
++	while (!list_empty(&buf->rb_mws)) {
++		r = list_entry(buf->rb_mws.next,
++			struct rpcrdma_mw, mw_list);
++		list_del(&r->mw_list);
++		switch (ia->ri_memreg_strategy) {
++		case RPCRDMA_FRMR:
++			rc = ib_dereg_mr(r->r.frmr.fr_mr);
++			if (rc)
++				dprintk("RPC:       %s:"
++					" ib_dereg_mr"
++					" failed %i\n",
++					__func__, rc);
++			ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
++			break;
++		case RPCRDMA_MTHCAFMR:
++			rc = ib_dealloc_fmr(r->r.fmr);
++			if (rc)
++				dprintk("RPC:       %s:"
++					" ib_dealloc_fmr"
++					" failed %i\n",
++					__func__, rc);
++			break;
++		case RPCRDMA_MEMWINDOWS_ASYNC:
++		case RPCRDMA_MEMWINDOWS:
++			rc = ib_dealloc_mw(r->r.mw);
++			if (rc)
++				dprintk("RPC:       %s:"
++					" ib_dealloc_mw"
++					" failed %i\n",
++					__func__, rc);
++			break;
++		default:
++			break;
++		}
++	}
++
+ 	kfree(buf->rb_pool);
+ }
+ 
 
