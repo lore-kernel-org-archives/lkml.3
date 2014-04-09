@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964933AbaDIQ15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:27:57 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:39895 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933143AbaDIQ1y (ORCPT
+	id S934141AbaDIQ2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:28:19 -0400
+Received: from relay03.alfahosting-server.de ([109.237.142.239]:53931 "EHLO
+	relay03.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933143AbaDIQ2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:27:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140409151747.GH28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <CAGb2v66XCN2ar1wj+a1+ZwdcdJ3gzJ+nDiO9bu52OwK+mBB_Hg@mail.gmail.com> <20140409151747.GH28585@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Thu, 10 Apr 2014 00:27:32 +0800
-X-Google-Sender-Auth: 6JefdZxL_Qd5Z5hZvSRjK3HUmSs
-Message-ID: <CAGb2v67+YNhw2MXSu9DTKSUfXH=v+uD7KEaxyiPezyf9CYtmPw@mail.gmail.com>
-Subject: Re: [PATCH 00/15] ARM: sunxi: add A31 PL pins support
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Apr 2014 12:28:15 -0400
+X-Spam-DCC: : 
+From: Richard Leitner <me@g0hl1n.net>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Richard Leitner <me@g0hl1n.net>
+Subject: [PATCH] staging: comedi: adl_pci9118: fix whitespace issues
+Date: Wed,  9 Apr 2014 18:27:13 +0200
+Message-Id: <1397060833-17925-1-git-send-email-me@g0hl1n.net>
+X-Mailer: git-send-email 1.9.1
+X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/18764/Wed Apr  9 15:10:11 2014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Removed not needed spaces and fixed too long lines
 
-On Wed, Apr 9, 2014 at 11:17 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Wed, Apr 09, 2014 at 10:53:13PM +0800, Chen-Yu Tsai wrote:
->> Hi Boris,
->>
->> On Wed, Apr 9, 2014 at 9:51 PM, Boris BREZILLON
->> <boris.brezillon@free-electrons.com> wrote:
->> > Hello,
->> >
->> > This series rework the sunxi pinctrl driver to support the PLx pins
->> > available on the A31 SoC.
->>
->> Thanks for working on this. I mentioned to Maxime on IRC yesterday that
->> we have complete pinctrl drivers for both A31 and A23, based on our current
->> pinctrl-sunxi driver, in the A23 SDK. These have the complete pin mapping.
->>
->> > It also add missing A31 reset controller DT bindings documentation.
->> >
->> > I need those PL pins (actually I only need PL0 and PL1) to support
->> > the P2WI bus, which in turn is used to communicate with the AXP221
->> > PMIC.
->>
->> If you could, please add all the PL and PM pins.
->> As I said, you can find complete definitions in the A23 SDK.
->
-> We have no idea what these PM pins are for the A31. And this code only
-> is of interest for the A31 for the moment. Let's not take into account
-> the A23 for now as far as the pin definitions are concerned.
+Signed-off-by: Richard Leitner <me@g0hl1n.net>
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Yes I was referring to the A31. In the A23 SDK, sun8iw1 refers to A31.
-As for the PM pins, the A31 EVB fex file uses one PM pin for LCD backlight
-control. And don't take my word for it. A31 standard design schematics from
-Omilex clearly show PL/PM pins with the possible functions on the top left of
-page 7. See:
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index 3cfa175..b6abef6 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -96,7 +96,7 @@ Configuration options:
+ 				 * correct channel number on every 12 bit sample
+ 				 */
+ 
+-#define IORANGE_9118 	64	/* I hope */
++#define IORANGE_9118	64	/* I hope */
+ #define PCI9118_CHANLEN	255	/*
+ 				 * len of chanlist, some source say 256,
+ 				 * but reality looks like 255 :-(
+@@ -383,7 +383,7 @@ struct pci9118_private {
+ 						 * users(0-AI, 1-AO, 2-DI, 3-DO)
+ 						 */
+ 	unsigned int cnt0_divisor;		/* actual CNT0 divisor */
+-	void (*int_ai_func) (struct comedi_device *, struct comedi_subdevice *,
++	void (*int_ai_func)(struct comedi_device *, struct comedi_subdevice *,
+ 		unsigned short,
+ 		unsigned int,
+ 		unsigned short);	/*
+@@ -1045,7 +1045,7 @@ static void interrupt_pci9118_ai_dma(struct comedi_device *dev,
+ 		move_block_from_dma(dev, s,
+ 				    devpriv->dmabuf_virt[devpriv->dma_actbuf],
+ 				    samplesinbuf);
+-		m = m - sampls;		/* m= how many samples was transferred */
++		m = m - sampls;		/* m=how many samples was transferred */
+ 	}
+ 
+ 	if (!devpriv->ai_neverending) {
+-- 
+1.9.1
 
-https://github.com/OLIMEX/OLINUXINO/blob/master/HARDWARE/A31-PDFs/A31_PAD_STD_V1_90_130225.pdf
-
->> > Let me know if these changes are too intrusive.
->>
->> I wonder if we should do a separate driver for the new PIO controller.
->> Clearly it's a separate IP block, with it's own clock and reset controls.
->
-> It's been merged together in the A23, hence why we did it like that.
-
-I'm not sure I understand. The clock gate and reset control are still separate,
-are they not?
-
->> Allwinner sources list this block as "R_PIO". I suggest using this name.
->> Clearly "pioL" does not cover all the functionality.
->
-> I'd agree with that.
->
->
->> I have started to document the PRCM block: http://linux-sunxi.org/PRCM
->
-> It's quite different on the A31 and on the A23 actually :(
->
-> You don't have any of the audio thing for example, but you have the
-> CPUs power clamp controls, that have been removed in the A23.
-
-Thank you for bringing this up. I went through the code and updated
-these bits on the wiki. The CPU power clamps are interleaved throughout
-the PRCM registers :(
-
-
-Cheers,
-ChenYu
