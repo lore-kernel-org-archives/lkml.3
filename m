@@ -1,275 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934485AbaDITrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 15:47:31 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41863 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342AbaDITqJ (ORCPT
+	id S964978AbaDITsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 15:48:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53929 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933590AbaDITr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 15:46:09 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, matthias.bgg@gmail.com,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/4] arm: add basic support for Mediatek MT6589 boards
-Date: Wed,  9 Apr 2014 21:45:35 +0200
-Message-Id: <1397072736-10793-4-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com>
-References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com>
+	Wed, 9 Apr 2014 15:47:57 -0400
+Date: Wed, 9 Apr 2014 21:47:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <minggr@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: current->sched_class->yield_task is NULL, any hint?
+Message-ID: <20140409194742.GC26782@laptop.programming.kicks-ass.net>
+References: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic devicetree board file and a dtsi for boards
-based on the MT6589 SoCs from Mediatek.
+On Wed, Apr 09, 2014 at 10:43:32AM -0700, Lin Ming wrote:
+> [12890.586996] [<c007a364>] (sys_sched_yield+0x0/0x90) from [<c03cbf90>] (yield+0x2c/0x30)
+> [12890.594779]  r5:c18f4000 r4:00000000
+> [12890.598258] [<c03cbf64>] (yield+0x0/0x30) from [<c02eb650>] (netlink_broadcast_filtered+0x3ec/0x400)
+> [12890.607170] [<c02eb264>] (netlink_broadcast_filtered+0x0/0x400) from [<c02eb68c>] (netlink_broadcast+0x28/0x30)
+> [12890.616998] [<c02eb664>] (netlink_broadcast+0x0/0x30) from [<c02ed420>] (msg_netlink_broadcast+0xa8/0xb4)
+> [12890.626337] [<c02ed378>] (msg_netlink_broadcast+0x0/0xb4) from [<c039ad10>] (br_igmp_send_netlink_msg+0xb0/0xbc)
+> [12890.636256] [<c039ac60>] (br_igmp_send_netlink_msg+0x0/0xbc) from [<c039b4a0>] (br_igmp_mc_fdb_add+0x424/0x6c0)
+> [12890.646084] [<c039b07c>] (br_igmp_mc_fdb_add+0x0/0x6c0) from [<c039bd34>] (br_igmp_process_v3+0x4a8/0x518)
+> [12890.655515] [<c039b88c>] (br_igmp_process_v3+0x0/0x518) from [<c039c110>] (br_igmp_snooping+0x36c/0x3e4)
+> [12890.664762] [<c039bda4>] (br_igmp_snooping+0x0/0x3e4) from [<c039c204>] (br_igmp_mc_forward+0x7c/0x270)
+> [12890.673918] [<c039c188>] (br_igmp_mc_forward+0x0/0x270) from [<c0393120>] (br_handle_frame_finish+0x160/0x358)
+> [12890.683654] [<c0392fc0>] (br_handle_frame_finish+0x0/0x358) from [<c0398e7c>] (br_nf_pre_routing_finish+0x348/0x364)
+> [12890.693940] [<c0398b34>] (br_nf_pre_routing_finish+0x0/0x364) from [<c03994c4>] (br_nf_pre_routing+0x5e0/0x630)
+> [12890.703767]  r7:c2e5c000 r6:00000000 r5:d71899c0 r4:da6ed0d0
+> [12890.709291] [<c0398ee4>] (br_nf_pre_routing+0x0/0x630) from [<c02eebf8>] (nf_iterate+0x68/0xa4)
+> [12890.717746] [<c02eeb90>] (nf_iterate+0x0/0xa4) from [<c02eec9c>] (nf_hook_slow+0x68/0x124)
+> [12890.725803] [<c02eec34>] (nf_hook_slow+0x0/0x124) from [<c03935ac>] (br_handle_frame+0x294/0x2e4)
+> [12890.734471] [<c0393318>] (br_handle_frame+0x0/0x2e4) from [<c02c9eb0>] (__netif_receive_skb+0x3b0/0x514)
+> [12890.743718] [<c02c9b00>] (__netif_receive_skb+0x0/0x514) from [<c02cabf0>] (netif_receive_skb+0xa8/0xbc)
+> [12890.752966] [<c02cab48>] (netif_receive_skb+0x0/0xbc) from [<c02cd730>] (napi_skb_finish+0x34/0x50)
+> [12890.761756]  r5:d71899c0 r4:00000003
+> [12890.765235] [<c02cd6fc>] (napi_skb_finish+0x0/0x50) from [<c02cd848>] (napi_gro_receive+0xfc/0x100)
+> [12890.774056]  r4:00000000 r3:00000000
+> [12890.777566] [<c02cd74c>] (napi_gro_receive+0x0/0x100) from [<bf1a1618>] (nss_gmac_receive+0x48/0x4c [qca_nss_gmac])
+> [12890.787759] [<bf1a15d0>] (nss_gmac_receive+0x0/0x4c [qca_nss_gmac]) from [<bf186e40>] (nss_core_handle_napi+0x440/0xa78 [qca_nss_drv])
+> [12890.799510]  r5:d71899c0 r4:bf18e410
+> [12890.802989] [<bf186a00>] (nss_core_handle_napi+0x0/0xa78 [qca_nss_drv]) from [<c02cade4>] (net_rx_action+0x84/0x174)
+> [12890.813244] [<c02cad60>] (net_rx_action+0x0/0x174) from [<c005ad80>] (__do_softirq+0xbc/0x160)
+> [12890.821637] [<c005acc4>] (__do_softirq+0x0/0x160) from [<c005b250>] (irq_exit+0x58/0xa4)
+> [12890.829542] [<c005b1f8>] (irq_exit+0x0/0xa4) from [<c000ed60>] (handle_IRQ+0x8c/0xb8)
 
-Apart from the generic parts (gic, clocks) the only component
-currently supported are the timers.
+Look at that, its calling yield() from a non-preemptible context as
+well.
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
----
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- arch/arm/Kconfig                                   |    2 +
- arch/arm/Makefile                                  |    1 +
- arch/arm/boot/dts/mtk6589.dtsi                     |  105 ++++++++++++++++++++
- arch/arm/mach-mediatek/Kconfig                     |   14 +++
- arch/arm/mach-mediatek/Makefile                    |    1 +
- arch/arm/mach-mediatek/mediatek.c                  |   40 ++++++++
- 7 files changed, 164 insertions(+)
- create mode 100644 arch/arm/boot/dts/mtk6589.dtsi
- create mode 100644 arch/arm/mach-mediatek/Kconfig
- create mode 100644 arch/arm/mach-mediatek/Makefile
- create mode 100644 arch/arm/mach-mediatek/mediatek.c
-
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 0f01c9b..af48801 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -67,6 +67,7 @@ linux	Linux-specific binding
- lsi	LSI Corp. (LSI Logic)
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
-+mediatek	MediaTek Inc.
- microchip	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
- moxa	Moxa
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5db05f6a..04d46ec 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -995,6 +995,8 @@ source "arch/arm/mach-mv78xx0/Kconfig"
- 
- source "arch/arm/mach-imx/Kconfig"
- 
-+source "arch/arm/mach-mediatek/Kconfig"
-+
- source "arch/arm/mach-mxs/Kconfig"
- 
- source "arch/arm/mach-netx/Kconfig"
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 41c1931..8ce9774 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -170,6 +170,7 @@ machine-$(CONFIG_ARCH_MSM)		+= msm
- machine-$(CONFIG_ARCH_MV78XX0)		+= mv78xx0
- machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
- machine-$(CONFIG_ARCH_MXC)		+= imx
-+machine-$(CONFIG_ARCH_MEDIATEK)		+= mediatek
- machine-$(CONFIG_ARCH_MXS)		+= mxs
- machine-$(CONFIG_ARCH_NETX)		+= netx
- machine-$(CONFIG_ARCH_NOMADIK)		+= nomadik
-diff --git a/arch/arm/boot/dts/mtk6589.dtsi b/arch/arm/boot/dts/mtk6589.dtsi
-new file mode 100644
-index 0000000..6dbb74f
---- /dev/null
-+++ b/arch/arm/boot/dts/mtk6589.dtsi
-@@ -0,0 +1,105 @@
-+/*
-+ * Copyright (c) 2014 MundoReader S.L.
-+ * Author: Matthias Brugger <matthias.bgg@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <dt-bindings/interrupt-controller/irq.h>
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include "skeleton.dtsi"
-+
-+/ {
-+	compatible = "mediatek,mt6589";
-+	interrupt-parent = <&gic>;
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			next-level-cache = <&L2>;
-+			reg = <0x0>;
-+		};
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			next-level-cache = <&L2>;
-+			reg = <0x1>;
-+		};
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			next-level-cache = <&L2>;
-+			reg = <0x2>;
-+		};
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			next-level-cache = <&L2>;
-+			reg = <0x3>;
-+		};
-+
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		system_clk: system_clk {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+			clock-output-names = "system_clk";
-+		};
-+
-+		rtc_clk: rtc_clk {
-+			compatible = "fixed-clock";
-+			clock-frequency = <32000>;
-+			#clock-cells = <0>;
-+			clock-output-names = "rtc_clk";
-+		};
-+	};
-+
-+	soc {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "simple-bus";
-+		clock-ranges;
-+		ranges;
-+
-+		gic: interrupt-controller@10212000 {
-+			compatible = "arm,cortex-a9-gic";
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			reg = <0x10211000 0x1000>,
-+			      <0x10212000 0x1000>;
-+		};
-+
-+		L2: l2-cache-controller@1020e000 {
-+			compatible = "arm,pl310-cache";
-+			reg = <0x1020e000 0x1000>;
-+			cache-unified;
-+			cache-level = <2>;
-+		};
-+
-+		timer: timer@10008000 {
-+			compatible = "mediatek,mtk6589-timer";
-+			reg = <0x10008000 0x80>;
-+			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&system_clk>, <&rtc_clk>;
-+			clock-names = "sys_clk", "rtc_clk";
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-mediatek/Kconfig b/arch/arm/mach-mediatek/Kconfig
-new file mode 100644
-index 0000000..c0139ca
---- /dev/null
-+++ b/arch/arm/mach-mediatek/Kconfig
-@@ -0,0 +1,14 @@
-+config ARCH_MEDIATEK
-+	bool "Mediatek MT6589 SoC" if ARCH_MULTI_V7
-+	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_GIC
-+	select CACHE_L2X0
-+	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_SMP
-+	select LOCAL_TIMERS if SMP
-+	select COMMON_CLK
-+	select GENERIC_CLOCKEVENTS
-+	select MTK_TIMER
-+	select CLKSRC_MMIO
-+	help
-+	  Support for Mediatek Cortex-A7 Quad-Core-SoC MT6589.
-diff --git a/arch/arm/mach-mediatek/Makefile b/arch/arm/mach-mediatek/Makefile
-new file mode 100644
-index 0000000..43e619f
---- /dev/null
-+++ b/arch/arm/mach-mediatek/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_ARCH_MEDIATEK) += mediatek.o
-diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
-new file mode 100644
-index 0000000..f630403
---- /dev/null
-+++ b/arch/arm/mach-mediatek/mediatek.c
-@@ -0,0 +1,40 @@
-+/*
-+ * Device Tree support for Mediatek SoCs
-+ *
-+ * Copyright (c) 2014 MundoReader S.L.
-+ * Author: Matthias Brugger <matthias.bgg@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+#include <linux/irqchip.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+#include <asm/hardware/cache-l2x0.h>
-+
-+static void __init mediatek_dt_init(void)
-+{
-+	l2x0_of_init(0, ~0);
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char * const mediatek_board_dt_compat[] = {
-+	"mediatek,mt6589",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
-+	.init_machine	= mediatek_dt_init,
-+	.dt_compat	= mediatek_board_dt_compat,
-+MACHINE_END
--- 
-1.7.9.5
-
+That code is full of fail.
