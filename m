@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393AbaDIISh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 04:18:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34789 "EHLO
+	id S932715AbaDIIUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 04:20:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34858 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758366AbaDIISf (ORCPT
+	with ESMTP id S1758342AbaDIIUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 04:18:35 -0400
-Date: Wed, 9 Apr 2014 10:18:24 +0200
+	Wed, 9 Apr 2014 04:20:36 -0400
+Date: Wed, 9 Apr 2014 10:20:08 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Brown, Len" <len.brown@intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86 idle: Repair large-server 50-watt
- idle-power regression
-Message-ID: <20140409081824.GZ10526@twins.programming.kicks-ass.net>
-References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
- <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
- <tip-40e2d7f9b5dae048789c64672bf3027fbb663ffa@git.kernel.org>
- <1395102010.2474.21.camel@buesod1.americas.hpqcorp.net>
- <1A7043D5F58CCB44A599DFD55ED4C94845CA12EC@fmsmsx115.amr.corp.intel.com>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, x86@kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, kirill.shutemov@linux.intel.com,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, riel@redhat.com,
+        mgorman@suse.de, ak@linux.intel.com, mingo@kernel.org
+Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
+Message-ID: <20140409082008.GA10526@twins.programming.kicks-ass.net>
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com>
+ <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com>
+ <533EDB63.8090909@intel.com>
+ <5344A312.80802@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C94845CA12EC@fmsmsx115.amr.corp.intel.com>
+In-Reply-To: <5344A312.80802@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 09:43:54PM +0000, Brown, Len wrote:
-> #1: skip flush for C1
-> #2: skip flush for C1 and C1E
+On Wed, Apr 09, 2014 at 07:02:02AM +0530, Madhavan Srinivasan wrote:
+> On Friday 04 April 2014 09:48 PM, Dave Hansen wrote:
+> > On 04/03/2014 11:27 PM, Madhavan Srinivasan wrote:
+> >> This patch creates infrastructure to move the FAULT_AROUND_ORDER
+> >> to arch/ using Kconfig. This will enable architecture maintainers
+> >> to decide on suitable FAULT_AROUND_ORDER value based on
+> >> performance data for that architecture. Patch also adds
+> >> FAULT_AROUND_ORDER Kconfig element in arch/X86.
+> > 
+> > Please don't do it this way.
+> > 
+> > In mm/Kconfig, put
+> > 
+> > 	config FAULT_AROUND_ORDER
+> > 		int
+> > 		default 1234 if POWERPC
+> > 		default 4
+> > 
+> > The way you have it now, every single architecture that needs to enable
+> > this has to go put that in their Kconfig.  That's madness.  This way,
+> 
+> I though about it and decided not to do this way because, in future,
+> sub platforms of the architecture may decide to change the values. Also,
+> adding an if line for each architecture with different sub platforms
+> oring to it will look messy.
 
-One stray thought I had: IFF the erratum is due to the cache flushing of
-the higher C states, these two patches should still be correct while
-also (possibly) avoiding the performance penalty, since C1* doesn't
-flush caches yet.
+This still misses out on Ben's objection that its impossible to get this
+right at compile time for many kernels, since they can boot and run on
+many different subarchs.
 
-Of course, I've no clue if this is indeed the root cause of this
-particular erratum and I'm not sure you guys are allowed to say even if
-you would know :/
