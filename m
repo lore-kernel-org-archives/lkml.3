@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933605AbaDIPuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:50:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33593 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933129AbaDIPuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:50:06 -0400
-Date: Wed, 9 Apr 2014 17:45:09 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 00/15] ARM: sunxi: add A31 PL pins support
-Message-ID: <20140409154509.GL28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <CAGb2v66XCN2ar1wj+a1+ZwdcdJ3gzJ+nDiO9bu52OwK+mBB_Hg@mail.gmail.com>
- <20140409151747.GH28585@lukather>
+	id S933753AbaDIPvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:51:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62851 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933002AbaDIPvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 11:51:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,826,1389772800"; 
+   d="scan'208";a="490056826"
+Message-ID: <53456B61.1040901@intel.com>
+Date: Wed, 09 Apr 2014 08:46:41 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p7S+EREVcBHk3zUG"
-Content-Disposition: inline
-In-Reply-To: <20140409151747.GH28585@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org
+CC: benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
+Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com> <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com> <533EDB63.8090909@intel.com> <5344A312.80802@linux.vnet.ibm.com>
+In-Reply-To: <5344A312.80802@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/08/2014 06:32 PM, Madhavan Srinivasan wrote:
+>> > In mm/Kconfig, put
+>> > 
+>> > 	config FAULT_AROUND_ORDER
+>> > 		int
+>> > 		default 1234 if POWERPC
+>> > 		default 4
+>> > 
+>> > The way you have it now, every single architecture that needs to enable
+>> > this has to go put that in their Kconfig.  That's madness.  This way,
+> I though about it and decided not to do this way because, in future,
+> sub platforms of the architecture may decide to change the values. Also,
+> adding an if line for each architecture with different sub platforms
+> oring to it will look messy.
 
---p7S+EREVcBHk3zUG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm not sure why I'm trying here any more.  You do seem quite content to
+add as much cruft to ppc and every other architecture as possible.  If
+your theoretical scenario pops up, you simply do this in ppc:
 
-On Wed, Apr 09, 2014 at 05:17:47PM +0200, Maxime Ripard wrote:
-> > I have started to document the PRCM block: http://linux-sunxi.org/PRCM
->=20
-> It's quite different on the A31 and on the A23 actually :(
->=20
-> You don't have any of the audio thing for example, but you have the
-> CPUs power clamp controls, that have been moved to the=20
+config ARCH_FAULT_AROUND_ORDER
+	int
+	default 999
+	default 888 if OTHER_SILLY_POWERPC_SUBARCH
 
--that have been moved to the
-+that have been removed in the A23
+But *ONLY* in the architectures that care about doing that stuff.  You
+leave every other architecture on the planet alone.  Then, in mm/Kconfig:
 
-Sorry :)
+config FAULT_AROUND_ORDER
+	int
+	default ARCH_FAULT_AROUND_ORDER if ARCH_FAULT_AROUND_ORDER
+	default 4
 
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---p7S+EREVcBHk3zUG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRWsFAAoJEBx+YmzsjxAgdrAP/0UsAQQ/Fp4ncaFc5+UMuFzP
-BH36sSn+d6qmBUr1TQogbHiB6KW2oQkkf4m4/BDdsAGvsP1RtEWHNrokWZ8U1Aee
-fd8l5lMvRCzqzssMvovvbEM7dAl70EZkUsDcq9U39Y/jT0HxUYEKfG4FF0nQqhSj
-bibY5c/wlMZRLlQmgU5r2SDzRRAL0rjVGuKxO++0O49AtxwXq7eqh5t5UDv7OCgz
-z44xAt/x7Lg7gPWM5ZG66vDQYUNa7CugZQlA2hICdX1lsxtnF4pTvUePvt3u0xH+
-X13xMdseocpgSNe5N6ngURaJA2dn2+DLJQK8m0hKdJ+BBmFwKiHmpgPU+koeSlTd
-5Fgma5cLHaUbG13P+fjItU6NGyDQwrDGJD1l2gos1OoJdnWfoAtok4xRqzzjTTFy
-iV/Sr0pOVbcrC8ogWvcnrodatQ/RWqPvkVQMYcVzPg1Wh7O/QSlxTam8p1mYpJxS
-l0B8l2CdsFFkwnVFtre1uaki5kbnbA6g6O82/SVQtltoJ4nf+K19LaF3YoIsc9dq
-vKyaXyRwKxJNYQlICwCFCQnhwM9RFavjs8Nkl2A87+Q0z2a0K5KH6Jp8VGwAX8jP
-7HYVtzuyqyLnJ0+RAK14abhdr1vy1RqyaI91RcWGfr/R0H9vsi2sb6xSk2sGP2bw
-kEX8FPyQyKIoDxFoSSUt
-=6LGz
------END PGP SIGNATURE-----
-
---p7S+EREVcBHk3zUG--
+Your way still requires going and individually touching every single
+architecture's Kconfig that wants to enable fault around.  That's not an
+acceptable solution.
