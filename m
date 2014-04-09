@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964999AbaDIXub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 19:50:31 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53179 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934094AbaDIXu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 19:50:28 -0400
-Message-ID: <1397087425.9519.67.camel@dabdike>
-Subject: Re: hpsa driver bug crack kernel down!
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
-        scameron@beardog.cce.hp.com, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Date: Wed, 09 Apr 2014 16:50:25 -0700
-In-Reply-To: <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
+	id S934493AbaDIXu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 19:50:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44507 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933495AbaDIXu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 19:50:56 -0400
+Message-ID: <1397087391.3671.153.camel@pasglop>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
+ pci_host_bridge.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 10 Apr 2014 09:49:51 +1000
+In-Reply-To: <CAErSpo4BmoYzf6GxOPRni=q563zhON57s7=5Hz=2Cf-X2ft-1A@mail.gmail.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+	 <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
+	 <20140405000007.GD15806@google.com>
+	 <20140407084623.GG17163@e106497-lin.cambridge.arm.com>
+	 <1396862058.3671.40.camel@pasglop>
+	 <20140407100715.GI17163@e106497-lin.cambridge.arm.com>
+	 <CAErSpo7h+Yew2hBztzkOzcHU5r4OQebxFbcZGkNUwJwfTFsbfg@mail.gmail.com>
+	 <20140408102043.GV17163@e106497-lin.cambridge.arm.com>
+	 <CAErSpo4anYBmaRbJEFE9kAXSmnvfqud=w1QA=mSSsTUamM4kSw@mail.gmail.com>
+	 <20140409120750.GN985@e106497-lin.cambridge.arm.com>
+	 <CAErSpo4BmoYzf6GxOPRni=q563zhON57s7=5Hz=2Cf-X2ft-1A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
-> On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
-> > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
-> > > [+linux-scsi]
-> > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
-> > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > The kernel is 3.14.0+ which is pulled just now. 
-> > > > 
-> > > > Cc'ing more people.
-> > > > 
-> > > > While the hpsa driver appears to be involved in some way, I'm sure if
-> > > > this is a related issue, but as of today's pull I'm getting another
-> > > > problem that causes my DL980 not to come up.
-> > > > 
-> > > > *Massive* amounts of:
-> > > > 
-> > > > DMAR:[fault reason 02] Present bit in context entry is clear
-> > > > dmar: DRHD: handling fault status reg 602
-> > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
-> > > > 
-> > > > Then:
-> > > > 
-> > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
-> > > > ...
-> > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
-> > > > ...
-> > > > 
-> > > > Screenshot of the actual LOCKUP: 
-> > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
-> > > > 
-> > > > While I haven't bisected, things worked fine until at least until commit
-> > > > 39de65aa2c3e (April 2nd).
-> > > > 
-> > > > Any ideas?
-> > > 
-> > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
-> > > that everything worked fine until 39de65aa2c3e would tend to vindicate
-> > > hpsa, 
-> 
-> Hmm here you mean DMA, right?
+On Wed, 2014-04-09 at 08:02 -0600, Bjorn Helgaas wrote:
+> It's possible we could manage domain numbers in the core.  On ACPI
+> systems, we currently we use the ACPI _SEG value as the domain.  In
+> some cases, e.g., on ia64, config space access is done via firmware
+> interfaces, and those interfaces expect the _SEG values.  We could
+> conceivably maintain a mapping between _SEG and domain, but I'm not
+> sure there's an advantage there.
 
-No, it vindicates the hpsa changes ... they don't seem to be causing
-problems until something goes wrong with dma remapping.
+I'd rather keep the ability for the architecture to assign domain
+numbers.
 
-> > because all the hpsa changes went in before that under
-> > Missing crucial info:
-> > 
-> > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
-> > 
-> > > Merge: 3e75c6d b2bff6c
-> > > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > > Date:   Tue Apr 1 18:49:04 2014 -0700
-> > > 
-> > >     Merge tag 'scsi-misc' of
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
-> > > 
-> > > can you revalidate that this commit works OK just to make sure?
-> 
-> Ok so I don't see those DMA messages and system starts just fine. I'm
-> thinking perhaps something broke after the IO mmu stuff in commit 
-> 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
-> causing the CPU stalls and just blame hpsa in the path as a side effect?
-> 
-> /me goes out to try the commit.
+I'm working on making them relate to the physical slot numbers
+on our new systems so we get predictable PCI IDs which helps with
+some stuff like the new network device naming scheme etc...
 
-That's my guess.  The DMAR messages are DMA remapping issues caused in
-the IOMMU.  If I had to guess, I'd say the DMAR fault message is
-indicating the IOMMU is calling for a mapping address before it can
-satisfy the driver read request, which is causing the hang apparently in
-the hpsa driver.
+Predictability is a good thing :-)
 
-I've added linux-pci to the cc; I think they deal with iommu issues on
-x86.
+> I probably don't understand what you intend by reversing the order.
+> Are you suggesting something like new pcibios_*() interfaces the arch
+> can use to get the host bridge apertures and domain number?
 
-James
+Cheers,
+Ben.
 
 
