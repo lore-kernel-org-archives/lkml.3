@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934214AbaDIS3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 14:29:20 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:35176 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933323AbaDIS3R (ORCPT
+	id S934244AbaDIS33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 14:29:29 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44967 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933323AbaDIS3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 14:29:17 -0400
+	Wed, 9 Apr 2014 14:29:25 -0400
+Message-ID: <53459182.5090506@linaro.org>
+Date: Wed, 09 Apr 2014 11:29:22 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <53451077.2030102@openwrt.org>
-References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
- <53451077.2030102@openwrt.org>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Wed, 9 Apr 2014 11:28:55 -0700
-X-Google-Sender-Auth: fE6bRtJu3OOibBgZV8rzJQtDQ2Q
-Message-ID: <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com>
-Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
-To: Felix Fietkau <nbd@openwrt.org>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory
+ non-volatile
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <1395436655-21670-3-git-send-email-john.stultz@linaro.org> <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com> <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com> <CAHGf_=qC1aUdoUg1QJc8DukXzkHVoJA+5rH6SLmj0x+cibxtig@mail.gmail.com>
+In-Reply-To: <CAHGf_=qC1aUdoUg1QJc8DukXzkHVoJA+5rH6SLmj0x+cibxtig@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 9, 2014 at 2:18 AM, Felix Fietkau <nbd@openwrt.org> wrote:
-> The oldest kernel in OpenWrt that we're still supporting with updates of
-> the backports tree is 3.3, so raising the minimum requirement to 3.0 is
-> completely fine with me.
+On 03/23/2014 02:50 PM, KOSAKI Motohiro wrote:
+> On Sun, Mar 23, 2014 at 1:26 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> On Sun, Mar 23, 2014 at 10:50 AM, KOSAKI Motohiro
+>> <kosaki.motohiro@gmail.com> wrote:
+>>>> +/**
+>>>> + * vrange_check_purged_pte - Checks ptes for purged pages
+>>>> + *
+>>>> + * Iterates over the ptes in the pmd checking if they have
+>>>> + * purged swap entries.
+>>>> + *
+>>>> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
+>>>> + */
+>>>> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
+>>>> +                                       unsigned long end, struct mm_walk *walk)
+>>>> +{
+>>>> +       struct vrange_walker *vw = walk->private;
+>>>> +       pte_t *pte;
+>>>> +       spinlock_t *ptl;
+>>>> +
+>>>> +       if (pmd_trans_huge(*pmd))
+>>>> +               return 0;
+>>>> +       if (pmd_trans_unstable(pmd))
+>>>> +               return 0;
+>>>> +
+>>>> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+>>>> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
+>>>> +               if (!pte_present(*pte)) {
+>>>> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
+>>>> +
+>>>> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
+>>>> +                               vw->page_was_purged = 1;
+>>>> +                               break;
+>>> This function only detect there is vpurge entry or not. But
+>>> VRANGE_NONVOLATILE should remove all vpurge entries.
+>>> Otherwise, non-volatiled range still makes SIGBUS.
+>> So in the following patch (3/5), we only SIGBUS if the swap entry
+>> is_vpurged_entry()  && the vma is still marked volatile, so this
+>> shouldn't be an issue.
+> When VOLATILE -> NON-VOLATILE -> VOLATILE transition happen,
+> the page immediately marked "was purged"?
+>
+> I don't understand why vma check help.
 
-OK note that 3.3 is not listed on kernel.org as supported. I'm fine in
-carrying the stuff for those for now but ultimately it'd also be nice
-if we didn't even have to test the kernels in between which are not
-listed. This does however raise the question of how often a kernel in
-between a list of supported kernels gets picked up to be supported
-eventually. Greg, Jiri, do you happen to know what the likelyhood of
-that can be?
+Ok, you have a good point here. I've changed the code in my tree to
+traverse all the ptes being unmarked and zap any psudo swp entries. This
+is more expensive, but does provide simpler semantics for these corner
+cases.
 
-> I'm looking forward to getting rid of patches for older kernels that
-> often get in the way when using various wireless-testing versions ;)
+Thanks again for the great review!
+-john
 
-:D
 
-  Luis
+
