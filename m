@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934065AbaDIQBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:01:49 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55655 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933909AbaDIQBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:01:46 -0400
-Date: Wed, 9 Apr 2014 17:01:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ulli.kroll@googlemail.com, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] ARM: reinsert ARCH_MULTI_V4 Kconfig option
-Message-ID: <20140409160108.GU16119@n2100.arm.linux.org.uk>
-References: <1386922149-4561-1-git-send-email-jonas.jensen@gmail.com> <20140409151326.GY29751@pengutronix.de> <20140409152711.GT16119@n2100.arm.linux.org.uk> <5844640.QRALKyBQaa@wuerfel>
+	id S934088AbaDIQCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:02:07 -0400
+Received: from www.sr71.net ([198.145.64.142]:46362 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933079AbaDIQCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 12:02:03 -0400
+Message-ID: <53456EF8.8060805@sr71.net>
+Date: Wed, 09 Apr 2014 09:02:00 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5844640.QRALKyBQaa@wuerfel>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Hansen <dave.hansen@intel.com>
+CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
+        jslaby@suse.cz
+Subject: Re: post 3.14 serial regression
+References: <5343416F.8010201@sr71.net> <20140408122726.227f3da8@alan.etchedpixels.co.uk> <5344642A.2020703@sr71.net> <53446C57.5000504@intel.com> <20140409003648.GB32273@kroah.com>
+In-Reply-To: <20140409003648.GB32273@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 05:50:57PM +0200, Arnd Bergmann wrote:
-> On Wednesday 09 April 2014 16:27:11 Russell King - ARM Linux wrote:
-> > If it's called from ARM code, then \reg will contain a 4-byte aligned
-> > address.  If it's called from Thumb code, \reg will contain a 2-byte
-> > aligned address with bit 0 *always* set.
+On 04/08/2014 05:36 PM, Greg Kroah-Hartman wrote:
+>> > Looks like this just changed the detection order so my device went from
+>> > ttyS2 to ttyS4:
+>> > 
+>> > # cat /proc/tty/driver/serial
+>> > serinfo:1.0 driver revision:
+>> > 0: uart:16550A port:000003F8 irq:4 tx:0 rx:0 CTS|DSR|CD
+>> > 1: uart:16550A port:000002F8 irq:3 tx:0 rx:0
+>> > 2: uart:unknown port:000003E8 irq:4
+>> > 3: uart:unknown port:000002E8 irq:3
+>> > 4: uart:ST16650V2 port:00001008 irq:18 tx:0 rx:0
+>> > 5: uart:ST16650V2 port:00001000 irq:19 tx:0 rx:0
+> That's not good.
 > 
-> Right, that is the assumption.
-> 
-> > So, with the code originally quoted above, if the helper is called from
-> > thumb code, and CONFIG_CPU_32v4 is enabled, then we end up falling past
-> > the moveq to the "b ." and entering an infinite loop.
-> 
-> As Uwe said, that "b ." was not meant to be in the patch used for
-> submission, it was to check what goes wrong when running this code
-> on ARMv4 -- either crash user space or hang in an infinite loop.
-> I forgot what the result of that experiment was.
-> 
-> The trouble is that this code:
-> 
->        .macro  usr_ret, reg
-> #ifdef CONFIG_ARM_THUMB
-> #ifdef CONFIG_CPU_32v4
-> 	tst     \reg, #3
-> 	moveq   pc, \reg
-> #endif
->         bx      \reg
-> #else
-> 	mov	pc, \reg
-> #endif
-> 	.endm
-> 
-> for some reason does the wrong thing running on ARMv4 (fa526) with non-thumb
-> user space when both CONFIG_CPU_32v4 and CONFIG_ARM_THUMB are enabled:
-> it still tries to do the 'bx' and triggers an invalid opcode exception.
+> Geert, any idea how to fix this?  Or should I just revert your change to
+> get back to the "working" behavior?
 
-I assume this has been discussed in off-list (maybe on some irc channel
-somewhere), because there's nothing on-list apart from these emails...
+During some large bisects on previous kernels, I've noticed it make a
+switch from ttyS2->ttyS4 before.  In other words, this might have
+restored some *old* behavior inadvertently.
 
-So, let's repeat the debugging which probably has already occured, but
-this time on-list...
+The annoying thing is that these assignments *do* keep swapping around.
+ I don't really care whether or not we revert this, only that we pick
+one order and stick with it.
 
-It would be useful to see the register state from the undefined
-instruction exception.  That needs this patch, CONFIG_DEBUG_USER in the
-kernel config enabled, and user_debug=1 passed on the kernel command
-line.
-
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 172ee18ff124..abd2fc067736 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -445,6 +445,7 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
- 	if (user_debug & UDBG_UNDEFINED) {
- 		printk(KERN_INFO "%s (%d): undefined instruction: pc=%p\n",
- 			current->comm, task_pid_nr(current), pc);
-+		__show_regs(regs);
- 		dump_instr(KERN_INFO, regs);
- 	}
- #endif
-
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
