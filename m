@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964892AbaDIRbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:31:53 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:44905 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932908AbaDIRbv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:31:51 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnYGADeDRVNXQ67n/2dsb2JhbABZgwbFH4EhF3SCZhwjGIECJBOIAAHNRY5shD8BA45eiX8BkkKDMjs
-Date: Wed, 9 Apr 2014 19:31:48 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org
-Subject: [PATCH 1/1] NFSD: Remove NULL value assignments
-Message-Id: <20140409193148.548f7fc5f0356f61257b2f41@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S964909AbaDIRcv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:32:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933352AbaDIRcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 13:32:48 -0400
+Date: Wed, 9 Apr 2014 19:32:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/5] sched: Convert thread_group_cputime() to use
+	for_each_thread()
+Message-ID: <20140409173233.GA28615@redhat.com>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com> <1397059882-23063-2-git-send-email-fweisbec@gmail.com> <20140409171607.GA13498@dyad.arnhem.chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409171607.GA13498@dyad.arnhem.chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Static values are automatically initialized to NULL.
+On 04/09, Peter Zijlstra wrote:
+>
+> On Wed, Apr 09, 2014 at 06:11:18PM +0200, Frederic Weisbecker wrote:
+> > do_each_thread/while_each_thread iterators are deprecated by
+> > for_each_thread/for_each_process_thread() APIs.
+> >
+> > Lets convert the callers in the cputime code accounting. The ultimate
+> > goal is to remove the struct task_struct::thread_group field and
+> > the corresponding do_each_thread/while_each_thread iterators that are
+> > RCU unsafe.
+> >
+> > It also makes thread_group_cputime() eventually RCU-safe.
+>
+> this fails to explain how the current code is broken.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/nfsd/nfs4state.c | 10 +++++-----
- fs/nfsd/nfssvc.c    |  2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+while_each_thread(g, t) will loop forever if g exits and removes itself
+from ->thread_group. This can happen even if it is the group leader,
+de_thread() can do this.
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 3ba6597..c80097e 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -83,11 +83,11 @@ static DEFINE_MUTEX(client_mutex);
-  */
- static DEFINE_SPINLOCK(recall_lock);
- 
--static struct kmem_cache *openowner_slab = NULL;
--static struct kmem_cache *lockowner_slab = NULL;
--static struct kmem_cache *file_slab = NULL;
--static struct kmem_cache *stateid_slab = NULL;
--static struct kmem_cache *deleg_slab = NULL;
-+static struct kmem_cache *openowner_slab;
-+static struct kmem_cache *lockowner_slab;
-+static struct kmem_cache *file_slab;
-+static struct kmem_cache *stateid_slab;
-+static struct kmem_cache *deleg_slab;
- 
- void
- nfs4_lock_state(void)
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 9a4a5f9..04407a4 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -205,7 +205,7 @@ static int nfsd_init_socks(struct net *net)
- 	return 0;
- }
- 
--static int nfsd_users = 0;
-+static int nfsd_users;
- 
- static int nfsd_startup_generic(int nrservs)
- {
+Another problem is that it is used wrongly very often, even if
+while_each_thread() was fine people forget to check pid_alive() to ensure
+it didn't exit even before we take rcu_read_lock().
+
+for_each_thread(p, t) is always safe. Unless p's task_struct can't go away,
+of course.
+
+But there is a difference. Ignoring the bug above
+
+	p = g;
+	do {
+		printk("pid=%d\n", p->pid);
+	} while_each_thread(g, p);
+
+always prints at least one pid.
+
+	for_each_thread(g, p)
+		printk("pid=%d\n", p->pid);
+
+can print nothing if g has already exited.
+
+Oleg.
+
