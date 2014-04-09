@@ -1,118 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482AbaDICkz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 22:40:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33214 "EHLO mx1.redhat.com"
+	id S1757511AbaDICp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 22:45:29 -0400
+Received: from ozlabs.org ([203.10.76.45]:37934 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187AbaDICkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 22:40:52 -0400
-Date: Wed, 9 Apr 2014 10:39:35 +0800
-From: Baoquan He <bhe@redhat.com>
-To: storagedev@hp.com
-Cc: linux-kernel@vger.kernel.org
-Subject: hpsa driver bug crack kernel down!
-Message-ID: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756630AbaDICp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 22:45:27 -0400
+Date: Wed, 9 Apr 2014 12:45:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: linux-next: manual merge of the userns tree with Linus' tree
+Message-Id: <20140409124520.aa778b59b4e6f38bc5f2bef5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__9_Apr_2014_12_45_20_+1000_zQAUtxd8mIo0IBOa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Wed__9_Apr_2014_12_45_20_+1000_zQAUtxd8mIo0IBOa
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The kernel is 3.14.0+ which is pulled just now. 
+Hi Eric,
+
+Today's linux-next merge of the userns tree got a conflict in
+fs/namespace.c between commits  from Linus' tree and commits from the
+userns tree.
+
+I fixed it up (I used the conflict resolution that your sent to Linus -
+see below) and can carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/namespace.c
+index 2ffc5a2905d4,52f4174e294c..000000000000
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@@ -665,13 -632,47 +666,47 @@@ struct vfsmount *lookup_mnt(struct pat
+  	return m;
+  }
+ =20
+- static struct mountpoint *new_mountpoint(struct dentry *dentry)
++ /*
++  * __is_local_mountpoint - Test to see if dentry is a mountpoint in the
++  *                         current mount namespace.
++  *
++  * The common case is dentries are not mountpoints at all and that
++  * test is handled inline.  For the slow case when we are actually
++  * dealing with a mountpoint of some kind, walk through all of the
++  * mounts in the current mount namespace and test to see if the dentry
++  * is a mountpoint.
++  *
++  * The mount_hashtable is not usable in the context because we
++  * need to identify all mounts that may be in the current mount
++  * namespace not just a mount that happens to have some specified
++  * parent mount.
++  */
++ bool __is_local_mountpoint(struct dentry *dentry)
++ {
++ 	struct mnt_namespace *ns =3D current->nsproxy->mnt_ns;
++ 	struct mount *mnt;
++ 	bool is_covered =3D false;
++=20
++ 	if (!d_mountpoint(dentry))
++ 		goto out;
++=20
++ 	down_read(&namespace_sem);
++ 	list_for_each_entry(mnt, &ns->list, mnt_list) {
++ 		is_covered =3D (mnt->mnt_mountpoint =3D=3D dentry);
++ 		if (is_covered)
++ 			break;
++ 	}
++ 	up_read(&namespace_sem);
++ out:
++ 	return is_covered;
++ }
++=20
++ static struct mountpoint *lookup_mountpoint(struct dentry *dentry)
+  {
+ -	struct list_head *chain =3D mountpoint_hashtable + hash(NULL, dentry);
+ +	struct hlist_head *chain =3D mp_hash(dentry);
+  	struct mountpoint *mp;
+- 	int ret;
+ =20
+ -	list_for_each_entry(mp, chain, m_hash) {
+ +	hlist_for_each_entry(mp, chain, m_hash) {
+  		if (mp->m_dentry =3D=3D dentry) {
+  			/* might be worth a WARN_ON() */
+  			if (d_unlinked(dentry))
+@@@ -680,6 -681,14 +715,14 @@@
+  			return mp;
+  		}
+  	}
++ 	return NULL;
++ }
++=20
++ static struct mountpoint *new_mountpoint(struct dentry *dentry)
++ {
+ -	struct list_head *chain =3D mountpoint_hashtable + hash(NULL, dentry);
+++	struct hlist_head *chain =3D mp_hash(dentry);
++ 	struct mountpoint *mp;
++ 	int ret;
+ =20
+  	mp =3D kmalloc(sizeof(struct mountpoint), GFP_KERNEL);
+  	if (!mp)
+@@@ -693,7 -702,8 +736,8 @@@
+ =20
+  	mp->m_dentry =3D dentry;
+  	mp->m_count =3D 1;
+ -	list_add(&mp->m_hash, chain);
+ +	hlist_add_head(&mp->m_hash, chain);
++ 	INIT_LIST_HEAD(&mp->m_list);
+  	return mp;
+  }
+ =20
+@@@ -746,7 -757,8 +791,8 @@@ static void detach_mnt(struct mount *mn
+  	mnt->mnt_parent =3D mnt;
+  	mnt->mnt_mountpoint =3D mnt->mnt.mnt_root;
+  	list_del_init(&mnt->mnt_child);
+ -	list_del_init(&mnt->mnt_hash);
+ +	hlist_del_init_rcu(&mnt->mnt_hash);
++ 	list_del_init(&mnt->mnt_mp_list);
+  	put_mountpoint(mnt->mnt_mp);
+  	mnt->mnt_mp =3D NULL;
+  }
 
 
-[   18.402695] systemd[1]: Set hostname to
-<hp-sl4545g7-01.rhts.eng.bos.redhat.com>.
-[   18.408456] random: systemd urandom read with 70 bits of entropy
-available
-[   18md[1]: Expecting device
-dev-mapper-rhel_hp\x2d\x2dsl4545g7\x2d\x2d01\x2droot.device...
-         Expecting device
-dev-mapper-rhel_hp\x2d\x2dsl4545g7\...droot.device...
-[   18.860704] systemd[1]: Starting -.slice.
-[  OK  ] Created slice -.slice.
-[   18.866030] systemd[1]: Created slice -.slice.
-[   18.869466] systemd[1]: Starting System Slice.
-[  OK  ] Created slice System Sl       18.939116] systemd[1]: Created
-slice System Slice.
-[   18.976213] systemd[1]: Starting Slices.
-[  OK  ] Reached target Slices.
-[   18.981154] systemd[1]: Reached target Slices.
-[   18.984183] systemd[1]: Starting Timers.
-[  OK  ] Reached target Timers.
-[   18.989161] systemd[1]: Reached target Timers.
-[   18.992004] systemd[1]: Starting Journal Socket.
-[  OK  ] Listening on Journal Socket.
-[   18.997174] systemd[1]: Listening on Journal Socket.
-[   19.000702] systemd[1]: Starting dracut cmdline hook...
-         Starting dracut cmdline hook...
-[   19.006697] systemd[1]: Started Load KernModules.
-[   19.110408] systemd[1]: Starting Setup Virtual Console...
-         Starting Setup Virtual Console...
-[   19.116652] systemd[1]: Starting Journal Service...
-         Starting Journal Service...
-[  OK  ] Started Journal Service.
-[   19.127172] systemd[1]: Started Journal Service.
-[  OK  ] Listening on udev Kernel Socket.
-[   19.141504] systemd-journald[281]: Vac[  OK  ] Listening on udev
-Control Socket.
-[  OK  ] Reached target Sockets.
-         Starting Create list of required static device nodes...rrent
-kernel...
-         Starting Apply Kernel Variables...
-[  OK  ] Reached target Swap.
-[  OK  ] Reached target Local File Systems.
-[  OK  ] Started dracut cmdline hook.
-[  OK  ] Started Setup Virtual Console.
-[  OK  ] Started Apply Kernel Variables.
-[  OK  ] Started Create list of required static device nodes ...current
-kernel.
-         Starting Create static device nodes in /dev...
-         Starting dracut pre-udev hook...
-[  OK  ] Started Create static device nodes in /dev.
-[   20.247819] device-mapper: uevent: version 1.0.3
-[   20.251101] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30)
-initialised: dm-devel@redhat.com
-[  OK  ] Started dracut pre-udev hook.
-         Starting udev Kernel Device Manager...
-[   20.322923] systemd-udevd[335]: starting version 208
-[  OK  ] Started udev Kernel Device Manager.
-         Starting udev Coldplug all Devices...
-         Mounting Configuration File System...
-[  OK  ] Mounted Configuration File System.
-[  OK  ] Started udev Coldplug all Devices.
-         Starting dracut initqueue hook...
-[  OK  ][1] HP HPSA Driver (v 3.4.4-1)
-[   20.832850] hpsa 0000:05:00.0: can't disable ASPM; OS doesn't have
-ASPM control
- Reached target System Initialization.
-[   20.875178] ACPI: PCI Interrupt Link [I0C0] enabled at IRQ 36
-[   20.909000] hpsa 0000:05:00.0: MSIX
-[   20.911586] hpsa 0000:05:00.0: Logical aborts not supported
-         [   20.916004] [drm] Initialized drm 1.1.0 20060810
-[   20.936139] hpsa 0000:05:00.0: hpsa0: <0x323b> at IRQ 73 using DAC
-[   20.956967] BUG: unable to handle kernel NULL pointer dereference at
-(null)
-[   20.956997] IP: [<ffffffffa004b97f>]
-hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
-[   20.957003] PGD 0 
-[   20.957012] Oops: 0002 [#1] SMP 
-[   20.957035] Modules linked in: drm(+) libata hpsa(+) i2c_core
-dm_mirror dm_region_hash dm_log dm_mod
-[   20.957046] CPU: 10 PID: 341 Comm: systemd-udevd Not tainted 3.14.0+
-#28
-[   20.957049] Hardware name: HP ProLiant SL4545 G7/, BIOS A31
-12/08/2012
-[   20.957055] task: ffff880824191b40 ti: ffff88082309c000 task.ti:
-ffff88082309c000
-[   20.957078] RIP: 0010:[<ffffffffa004b97f>]  [<ffffffffa004b97f>]
-hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
-[   20.957083] RSP: 0018:ffff88082309da18  EFLAGS: 00010297
-[   20.957088] RAX: 0000000000000000 RBX: 000000007c000167 RCX:
-0000000000000004
-[   20.957091] RDX: 000000000000
+--Signature=_Wed__9_Apr_2014_12_45_20_+1000_zQAUtxd8mIo0IBOa
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTRLRFAAoJEMDTa8Ir7ZwV2AIP/2Uie4FPF9pXsXYb6N9xeqsa
+zGj45EL/dgJtNQtSEU2LVoJYujnE+A9/U//tX/7rLh5t5AUe0zBVXXnXXrgeYzxy
+nNVCdOaQ2PSFPksgAedHH/nRxiKTJi78uRNDbWWUuRsAdhd9VhZW96DigKAuV+a8
+Op+BY0u6ttdj/pqHNjhvROmukWzyB1+tUMsEWVyZkjeH+8QiqSllzz7tdXTAAWQi
+AvmV7T8RqBiGIataq6XL9X9nTFkORKhj+5VWockddZk6wrAhqWizRCTECPtTw2WP
+LVHp4eJ9riOBa520dM8wYM5GkiCa4wQB87yjAlD9Y1oQCnys4sb98PSkkLvj/CSM
+9APeBB8R1kOrZUXQn/V1v2v8irCI+0h1/xOQgFEZ08QqO1tqsljctIQOmwOcY5BX
+fwji3FHziqXrvtFv+QEepPiwRBIs7bUG+k2BhEEqU/4uszI45T1KfEyxewl7tFnx
+w6BQDXl0vuCKVrSh0hB8H48ziIVbzvfrDgD1n/t05RofMJl3wN66Eg/+9n7SOw/v
+RQOB5qC0ZfYSqEL3oMWIw8bdyRExmjfqBEJyQn9v/wyJG54NJVm4pIvAZX2YipWP
+SLxmpye3gnmbySBsDsuT3wtHCNryuSeCOJv6DV7/Ktqv1+mGtCectuDvnBcxILk8
+6LA3LoBKCBodfdFFIaeD
+=UBi5
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__9_Apr_2014_12_45_20_+1000_zQAUtxd8mIo0IBOa--
