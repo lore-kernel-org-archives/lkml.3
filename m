@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232AbaDIGxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 02:53:16 -0400
-Received: from rrcs-67-78-43-218.sw.biz.rr.com ([67.78.43.218]:64400 "EHLO
-	mail.ellenstonelaw.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaDIGxO (ORCPT
+	id S932187AbaDIGy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 02:54:57 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:42965 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaDIGyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 02:53:14 -0400
-X-Greylist: delayed 849 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 02:53:14 EDT
-Reply-To: <mkoija@aol.com>
-From: "Herr.James Menka" <mkoija@outlook.com>
-Subject: Zusammenarbeit!
-Date: Tue, 8 Apr 2014 23:38:57 -0700
+	Wed, 9 Apr 2014 02:54:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <SERVER1y134IpLcEcLs000010a7@mail.ellenstonelaw.com>
-X-OriginalArrivalTime: 09 Apr 2014 06:38:59.0585 (UTC) FILETIME=[63890710:01CF53BE]
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <CAMVG2stTR=qadOYTMaCnGwLv6pUF9R2VeNVdhnRTw6Gki=FNHA@mail.gmail.com>
+References: <CAMVG2sti6EMQXw5xyNp-wkq0nGz4zVgz1p7AO48Kb1_zYk8K0w@mail.gmail.com>
+	<878urg9ttv.fsf@intel.com>
+	<CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com>
+	<CAPM=9tyKKn5VrQkwGY2kEVBatSTN5VqJCVXWqFhn4oDe=oqsqA@mail.gmail.com>
+	<CAMVG2stTR=qadOYTMaCnGwLv6pUF9R2VeNVdhnRTw6Gki=FNHA@mail.gmail.com>
+Date: Wed, 9 Apr 2014 16:54:54 +1000
+Message-ID: <CAPM=9tz+xo7vktTZ=8QB6rMGPnTXd485wbwaq_4Ao9fGEnh4hQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] i915 DVI resolution regression (3.13.7+)
+From: Dave Airlie <airlied@gmail.com>
+To: Daniel J Blueman <daniel@quora.org>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guter Tag, 
+On Wed, Apr 9, 2014 at 4:07 PM, Daniel J Blueman <daniel@quora.org> wrote:
+> On 9 April 2014 11:41, Dave Airlie <airlied@gmail.com> wrote:
+>> On Tue, Apr 8, 2014 at 5:32 PM, Daniel J Blueman <daniel@quora.org> wrote:
+>>> On 8 April 2014 15:14, Jani Nikula <jani.nikula@linux.intel.com> wrote:
+>>>> On Tue, 08 Apr 2014, Daniel J Blueman <daniel@quora.org> wrote:
+>>>>> Ville et al,
+>>>>>
+>>>>> It looks like commit e3ea8fa6beaf55fee64bf816f3b8a80ad733b2c2 (or
+>>>>> another commit in 3.13.7) broke modes which require DVI-D dual-link,
+>>>>> eg 2560x1440 with my panel.
+>>>>>
+>>>>> I don't see these modelines in 3.13.7 or later (eg 3.14):
+>>>>>
+>>>>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
+>>>>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
+>>>>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
+>>>>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
+>>>>> [     5.582] (II) intel(0): Modeline "1920x1200"x59.9  193.25  1920
+>>>>> 2056 2256 2592  1200 1203 1209 1245 -hsync +vsync (74.6 kHz e)
+>>>>>
+>>>>> My monitor is a Dell U2713HM; mobo uses an H87 chipset with i5-4670.
+>>>>
+>>>> By allowing those modes we regressed setups which were not capable of
+>>>> displaying them. So you've got an HDMI->DVI converter?
+>>>>
+>>>> https://bugzilla.kernel.org/show_bug.cgi?id=72961
+>>>
+>>> I am using a dual-link DVI-D to DVI-D cable to this monitor, since I
+>>> previously couldn't get 2560x1440 via HDMI.
+>>
+>> Intel hw has dual-link DVI-D? I'm not sure I've ever seen that, is
+>> this SDVO device or plain DVI-D?
+>
+> It's the DVI-D connector on: https://www.asus.com/Motherboards/H87IPLUS/
 
-Ich vermute das diese E-Mail eine uberraschung fur Sie sein wird, aber es ist wahr.Ich bin bei einer routinen uberprufung in meiner Bank(Zambia National Commercial Bank) wo ich arbeite, auf einem Konto gestoben, was nicht in anspruch genommen worden ist, wo derzeit $14,200,000 (Vierzehn Millionen zweihunderttausend US Dollar) gutgeschrieben sind. Dieses Konto gehurte Herrn Johannes Horn, der einKunde in unsere Bank war, der leider verstorben ist. Herr Horn war eingeburtiger Deutscher.
+The link which says "
 
-Damit es mir moglich ist dieses Geld $14,200,000 inanspruch zunehmen, benotige ich die zusammenarbeit eines Auslandischen Partners wie Sie,den ich als Verwandter und Erbe des verstorbenen Herrn Horn vorstellen kann,damit wir das Geld inanspruch nehmen konnen.
+Integrated Graphics Processor
+- Supports HDMI with max. resolution 4096 x 2304 @ 24 Hz
+- Supports DVI with max. resolution 1920 x 1200 @ 60 Hz
+- Supports RGB with max. resolution 1920 x 1200 @ 60 Hz
 
-Fur diese Unterstutzung erhalten Sie 30% der Erbschaftsumme und die restlichen 70% teile ich mirmit meinen zwei Arbeitskollegen, die mich bei dieser Transaktion ebenfalls unterstutzen.Wenn Sie interessiert sind, konnen Sie mir bitte eine E-Mail schicken, damit ich Ihnen mehr Details zukommen lassen kann. Schicken Sie bitte Ihre Antwort auf diese E-Mail:
-mkoija@aol.com
-Mit freundlichen Grussen,
-Herr.James Menka.
-    Antwort E-Mail: mkoija@aol.com
+I'm even wondering electrically how a HDMI->dual-link DVI adapter works.
+
+Dave.
