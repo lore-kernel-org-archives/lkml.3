@@ -1,141 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731AbaDIJCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 05:02:52 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34056 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932187AbaDIJCr (ORCPT
+	id S1758284AbaDIJFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 05:05:08 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:41189 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaDIJFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 05:02:47 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
-	<874n3n7czm.fsf_-_@xmission.com>
-	<87wqezl5df.fsf_-_@x220.int.ebiederm.org>
-	<20140409023027.GX18016@ZenIV.linux.org.uk>
-	<20140409023947.GY18016@ZenIV.linux.org.uk>
-Date: Wed, 09 Apr 2014 02:02:22 -0700
-In-Reply-To: <20140409023947.GY18016@ZenIV.linux.org.uk> (Al Viro's message of
-	"Wed, 9 Apr 2014 03:39:47 +0100")
-Message-ID: <87mwfueuzl.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 9 Apr 2014 05:05:01 -0400
+X-IronPort-AV: E=Sophos;i="4.97,825,1389744000"; 
+   d="scan'208";a="118229489"
+Message-ID: <53450D3A.9090805@citrix.com>
+Date: Wed, 9 Apr 2014 11:04:58 +0200
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+WrAHJbyHwfdUZPwEkN6CtaKx/3tdmL6M=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4331]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  1.0 T_XMDrugObfuBody_04 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Al Viro <viro@ZenIV.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15-rc1
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <keir@xen.org>, <linux-kernel@vger.kernel.org>, <konrad@kernel.org>,
+        <david.vrabel@citrix.com>, <jbeulich@suse.com>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [XEN PATCH 1/2] hvm: Support more than 32 VCPUS when
+ migrating.
+References: <1396859560.22845.4.camel@kazak.uk.xensource.com>	 <1396977950-8789-1-git-send-email-konrad@kernel.org>	 <1396977950-8789-2-git-send-email-konrad@kernel.org>	 <53443D88.6010202@citrix.com> <20140408185346.GA1678@phenom.dumpdata.com> <1397032397.31448.13.camel@kazak.uk.xensource.com>
+In-Reply-To: <1397032397.31448.13.camel@kazak.uk.xensource.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
+On 09/04/14 10:33, Ian Campbell wrote:
+> On Tue, 2014-04-08 at 14:53 -0400, Konrad Rzeszutek Wilk wrote:
+>> On Tue, Apr 08, 2014 at 08:18:48PM +0200, Roger Pau Monné wrote:
+>>> On 08/04/14 19:25, konrad@kernel.org wrote:
+>>>> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>>
+>>>> When we migrate an HVM guest, by default our shared_info can
+>>>> only hold up to 32 CPUs. As such the hypercall
+>>>> VCPUOP_register_vcpu_info was introduced which allowed us to
+>>>> setup per-page areas for VCPUs. This means we can boot PVHVM
+>>>> guest with more than 32 VCPUs. During migration the per-cpu
+>>>> structure is allocated fresh by the hypervisor (vcpu_info_mfn
+>>>> is set to INVALID_MFN) so that the newly migrated guest
+>>>> can do make the VCPUOP_register_vcpu_info hypercall.
+>>>>
+>>>> Unfortunatly we end up triggering this condition:
+>>>> /* Run this command on yourself or on other offline VCPUS. */
+>>>>  if ( (v != current) && !test_bit(_VPF_down, &v->pause_flags) )
+>>>>
+>>>> which means we are unable to setup the per-cpu VCPU structures
+>>>> for running vCPUS. The Linux PV code paths make this work by
+>>>> iterating over every vCPU with:
+>>>>
+>>>>  1) is target CPU up (VCPUOP_is_up hypercall?)
+>>>>  2) if yes, then VCPUOP_down to pause it.
+>>>>  3) VCPUOP_register_vcpu_info
+>>>>  4) if it was down, then VCPUOP_up to bring it back up
+>>>>
+>>>> But since VCPUOP_down, VCPUOP_is_up, and VCPUOP_up are
+>>>> not allowed on HVM guests we can't do this. This patch
+>>>> enables this.
+>>>
+>>> Hmmm, this looks like a very convoluted approach to something that could
+>>> be solved more easily IMHO. What we do on FreeBSD is put all vCPUs into
+>>> suspension, which means that all vCPUs except vCPU#0 will be in the
+>>> cpususpend_handler, see:
+>>>
+>>> http://svnweb.freebsd.org/base/head/sys/amd64/amd64/mp_machdep.c?revision=263878&view=markup#l1460
+>>
+>> How do you 'suspend' them? If I remember there is a disadvantage of doing
+>> this as you have to bring all the CPUs "offline". That in Linux means using
+>> the stop_machine which is pretty big hammer and increases the latency for migration.
+> 
+> Yes, this is why the ability to have the toolstack save/restore the
+> secondary vcpu state was added. It's especially important for
+> checkpointing, but it's relevant to regular migrate as a performance
+> improvement too.
+> 
+> It's not just stop-machine, IIRC it's a tonne of udev events relating to
+> cpus off/onlinign etc too and all the userspace activity which that
+> implies.
 
-> On Wed, Apr 09, 2014 at 03:30:27AM +0100, Al Viro wrote:
->
->> > When renaming or unlinking directory entries that are not mountpoints
->> > no additional locks are taken so no performance differences can result,
->> > and my benchmark reflected that.
->> 
->> It also means that d_invalidate() now might trigger fs shutdown.  Which
->> has bloody huge stack footprint, for obvious reasons.  And d_invalidate()
->> can be called with pretty deep stack - walk into wrong dentry while
->> resolving a deeply nested symlink and there you go...
->
-> PS: I thought I actually replied with that point back a month or so ago,
-> but having checked sent-mail...  Looks like I had not.  My deep
-> apologies.
+Well, what it's done on FreeBSD is nothing like that, it's called the
+cpususpend handler, but it's not off-lining CPUs or anything like that,
+it just places the CPU in a while loop inside of an IPI handler, so we
+can do something like this will all APs:
 
-If I had been aware of the concern I would have addressed this a month
-ago.  Oh well that is water under the bridge now.
+while (suspended)
+ pause();
 
-> FWIW, I think that overall this thing is a good idea, provided that we can
-> live with semantics changes.  The implementation is too optimistic, though -
-> at the very least, we want this work done upon namespace_unlock() held
-> back until we are not too deep in stack.  task_work_add() fodder, perhaps?
+register_vcpu_info();
 
-Given where we are at in the merge window I need to make the argument
-that it makes sense to pull this code now and address the deep
-stack concerns before 3.15-final.
+So the registration of the vcpu_info area happens just after the CPU is
+waken from suspension and before it leaves the IPI handler, and it's the
+CPU itself the one that calls VCPUOP_register_vcpu_info (so we can avoid
+the gate in Xen that prevents registering the vcpu_info area for CPUs
+different that ourself).
 
-As I understand it your concern with d_invalidate is that there will be
-a remote filesystem like nfs, and on a directory of that filesystem we
-have mounted some other filesystem.  Someone on the nfs server deletes
-the directory that is our mountpint.  Sometime later we traverse the
-path that leads to the mountpoint in question and call d_invalidate.
-The d_invalidate call drops performs a lazy unmount drops the last
-filesystem reference and the filesystem umount potentially overflows
-the kernel stack.
-
-I would like to argue that because it is stupid to mount something on a
-directory that someone else can delete this is not a particularly
-likely scenario.  Unfortunately an evil user can mount filesystems
-tagged with FS_USERNS_MOUNT and with care can trigger this at will. :(
-So if we can overflow the stack this is problem that must be fixed.
-
-The good news is that because it stupid to have a setup where someone
-else can delete your mountpoint this won't really be a problem except in
-setups with evil users which means merging these changes now, and fixing
-this final issue in a few days when a tested patch is available should
-not cause any problems.
-
-Looking at the code there are two points where we could make this lazy,
-walking the unmounted list in namespace unlock, and simply calling
-detach_mount (As dropping a dentry and holid a reference is perfectly
-legitimate).   I don't see any fundamental difficulties just some
-painstaking detail work, to make certain the resulting implemention is
-correct.
-
-Linus would you please merge my branch.  In it's current state the code
-fixes a lot of semantic and implementation bugs.  With only the
-potential issue of overflowing that stack on a code path that most
-people should never trigger.   Having the code merged for 3.15 will free
-me to focus on the technical stack depth concerns and allow me to stop
-worry about all of the other potential issues the patchset touches on.
-
-Eric
-
-p.s. Now I am off to sleep before I propose a patch to deal with the
-potentail of very deep stacks.  I think I can reuse mnt_rcu in struct
-mount for the work struct to pass to task_work_add but I need to look
-closer at all of the details involved.
-
-
-
-
-
-
-
-
+Roger.
 
