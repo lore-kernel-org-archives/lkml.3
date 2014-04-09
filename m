@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394AbaDICUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 22:20:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14468 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932235AbaDICUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 22:20:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,822,1389772800"; 
-   d="scan'208";a="517154974"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: David Woodhouse <David.Woodhouse@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] iommu/vt-d: fix memory leakage caused by commit ea8ea46
-Date: Wed,  9 Apr 2014 10:20:39 +0800
-Message-Id: <1397010039-1295-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932482AbaDICUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 22:20:37 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:41650 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235AbaDICUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 22:20:33 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, peterz@infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com,
+        andi.kleen@intel.com
+Subject: Re: [PATCH 2/6] perf: Update mmap2 interface with protection and flag bits
+References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
+	<1395689676-214799-3-git-send-email-dzickus@redhat.com>
+	<871tx7utyv.fsf@sejong.aot.lge.com>
+Date: Wed, 09 Apr 2014 11:20:31 +0900
+In-Reply-To: <871tx7utyv.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Wed, 09 Apr 2014 11:17:44 +0900")
+Message-ID: <87txa3tf9s.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ea8ea46 "iommu/vt-d: Clean up and fix page table clear/free
-behaviour" introduces possible leakage of DMA page tables due to:
-        for (pte = page_address(pg); !first_pte_in_page(pte); pte++) {
-                if (dma_pte_present(pte) && !dma_pte_superpage(pte))
-                        freelist = dma_pte_list_pagetables(domain, level - 1,
-                                                           pte, freelist);
-        }
+On Wed, 09 Apr 2014 11:17:44 +0900, Namhyung Kim wrote:
+> So you need to synthesize a PERF_RECORD_MMAP2 event then.  The
+> mmap_event and mmap2_event shares same fields util ->pgoff only.  So
+> copying to mmap.filename will overwrite other bits in mmap2.
 
-For the first pte in a page, first_pte_in_page(pte) will always be true,
-thus dma_pte_list_pagetables() will never be called and leak DMA page
-tables if level is bigger than 1.
+Oops, missed patch 3/3 already does it.  Sorry for noise.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 69fa7da..13dc231 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1009,11 +1009,13 @@ static struct page *dma_pte_list_pagetables(struct dmar_domain *domain,
- 	if (level == 1)
- 		return freelist;
- 
--	for (pte = page_address(pg); !first_pte_in_page(pte); pte++) {
-+	pte = page_address(pg);
-+	do {
- 		if (dma_pte_present(pte) && !dma_pte_superpage(pte))
- 			freelist = dma_pte_list_pagetables(domain, level - 1,
- 							   pte, freelist);
--	}
-+		pte++;
-+	} while (!first_pte_in_page(pte));
- 
- 	return freelist;
- }
--- 
-1.7.10.4
-
+Thanks,
+Namhyung
