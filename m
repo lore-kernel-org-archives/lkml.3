@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483AbaDILjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:39:25 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47773 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758373AbaDILjY (ORCPT
+	id S933014AbaDILlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:41:49 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:46977 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758486AbaDILlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:39:24 -0400
-Date: Wed, 9 Apr 2014 14:39:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: gregkh@linuxfoundation.org, sachin.kamat@linaro.org,
-        devel@driverdev.osuosl.org, grygorii.strashko@ti.com,
-        lisa@xenapiadmin.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: speakup: fix misuse of kstrtol() in
- handle_goto()
-Message-ID: <20140409113904.GE4912@mwanda>
-References: <2039876.xlVvlD6iFL@daeseok-laptop.cloud.net>
+	Wed, 9 Apr 2014 07:41:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2039876.xlVvlD6iFL@daeseok-laptop.cloud.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <53452B59.8030901@samsung.com>
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
+	<1396967803-28868-6-git-send-email-gautam.vivek@samsung.com>
+	<53452B59.8030901@samsung.com>
+Date: Wed, 9 Apr 2014 17:04:46 +0530
+X-Google-Sender-Auth: UR8JIOvgxeA_Yr-KfpfOlekClDc
+Message-ID: <CAFp+6iGQMS5_YAimBRdV-P2h3LczQEHMq_cXGrOtHJSZqM7UfQ@mail.gmail.com>
+Subject: Re: [PATCH V4 5/5] usb-phy: samsung-usb3: Remove older
+ phy-samsung-usb3 driver
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, kishon <kishon@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 07:45:46PM +0900, Daeseok Youn wrote:
-> 
-> A string of goto_buf has a number followed by x or y.
-> e.g. "3x" means move 3 lines down.
-> The kstrtol() returns an error(-EINVAL) with this string so
-> go_pos has unsigned a value of that error.
-> And also "*cp" has not expected value.
-> 
+Hi Tomasz,
+'
 
-Good catch.  This was introduced when we changed the simple_strtoul() to
-kstrtol().
+On Wed, Apr 9, 2014 at 4:43 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi Vivek,
+>
+Thanks for reviewing the patch series.
 
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+>
+> On 08.04.2014 16:36, Vivek Gautam wrote:
+>>
+>> Removing this older USB 3.0 DRD controller PHY driver, since
+>> a new driver based on generic phy framework is now available.
+>>
+>> Also removing the dt node for older driver from Exynos5250
+>> device tree and updating the dt node for DWC3 controller.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>
+>> NOTE: This patch should be merged only when the new USB 3.0
+>> DRD phy controller driver is available in the tree from the
+>> patches:
+>>         phy: Add new Exynos5 USB 3.0 PHY driver; and
+>>         dt: exynos5250: Enable support for generic USB DRD phy
+>>
+>>   arch/arm/boot/dts/exynos5250.dtsi  |   17 +-
+>>   drivers/usb/phy/phy-samsung-usb.h  |   83 ---------
+>>   drivers/usb/phy/phy-samsung-usb3.c |  350
+>> ------------------------------------
+>>   3 files changed, 2 insertions(+), 448 deletions(-)
+>>   delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
+>>
+>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
+>> b/arch/arm/boot/dts/exynos5250.dtsi
+>> index 92c6fcd..1cb1e91 100644
+>> --- a/arch/arm/boot/dts/exynos5250.dtsi
+>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+>
+>
+> IMHO driver and dts changes should be separated into two patches, first
+> updating device tree to use the new driver and second removing the driver.
 
-Did you find this bug by testing or through reading the code?
+Sure will separate the patch into driver and dts change.
 
-regards,
-dan carpenter
-
+>
+> After fixing this issue,
+>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>
+> --
+> Best regards,
+> Tomasz
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
