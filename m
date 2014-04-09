@@ -1,96 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933910AbaDISYC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 14:24:02 -0400
-Received: from imap.thunk.org ([74.207.234.97]:52164 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933143AbaDISX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 14:23:59 -0400
-Date: Wed, 9 Apr 2014 14:23:24 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-Message-ID: <20140409182324.GA778@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Geert Uytterhoeven <geert@linux-m68k.org>,
-	"H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-	Sam Ravnborg <sam@ravnborg.org>,
-	linux-kbuild <linux-kbuild@vger.kernel.org>,
-	Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-References: <20140404134429.GB26806@quack.suse.cz>
- <CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>
- <20140404234358.GE10275@thunk.org>
- <CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>
- <20140407140745.GA8855@thunk.org>
- <CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>
- <20140408134740.GB28822@thunk.org>
- <CAMuHMdW8xkBFJ5-E04rVhDk+CSubHut+kx3P6cYCn0dMhQdb-Q@mail.gmail.com>
- <53457B80.1080307@zytor.com>
- <CAMuHMdU9ZcCzRWk2NWfdx54Uox=C=MaR5t8sD2icUpE_xtr8cA@mail.gmail.com>
+	id S964852AbaDISZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 14:25:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51837 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933143AbaDISZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 14:25:57 -0400
+Date: Wed, 9 Apr 2014 20:25:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <minggr@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: current->sched_class->yield_task is NULL, any hint?
+Message-ID: <20140409182553.GE10526@twins.programming.kicks-ass.net>
+References: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdU9ZcCzRWk2NWfdx54Uox=C=MaR5t8sD2icUpE_xtr8cA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 07:48:32PM +0200, Geert Uytterhoeven wrote:
-> >
-> > I'm missing context here, but as an x86 maintainer I have no intention
-> > of allowing system calls that aren't x86-specific to be added to x86-64
-> > only.
+On Wed, Apr 09, 2014 at 10:43:32AM -0700, Lin Ming wrote:
+> Hi Peter,
 > 
-> commit 520c8b16505236fc82daa352e6c5e73cd9870cff
-> Author: Miklos Szeredi <mszeredi@suse.cz>
-> Date:   Tue Apr 1 17:08:42 2014 +0200
+> I hit a panic in sys_sched_yield() because(for some unknown reason)
+> current->sched_class->yield_task is NULL.
+> It's an ARM embedded board with 3.4-rt kernel.
 > 
->     vfs: add renameat2 syscall
-> 
-> It was added to arch/x86/syscalls/syscall_64.tbl only.
+> Could you share any hint for the possible causes?
 
-To be fair, part of the problem is that we don't have good
-documentation about best practices in what people should do if adding
-new system calls.  (i.e., creating a man page and pulling in Michael
-Kerrisk, adding tests, wiring up both x86_64 and i386, sending mail to
-linux-arch, the scripts/checksyscalls.sh script, etc.)
-
-I'll confess to being ignorant about the checksyscalls.sh script, and
-while I had known about the existence of the linux-arch list, I had
-forgotten about it, so if I had tried to add a new system call, it's
-likely I would have missed at one or more of these steps.
-
-       	       	    	      	     - Ted
-
-
-
-
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+What class does current->sched_class point to?
