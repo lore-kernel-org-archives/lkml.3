@@ -1,190 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151AbaDILgD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:36:03 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:52647 "EHLO
-	devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932674AbaDILf6 convert rfc822-to-8bit (ORCPT
+	id S933218AbaDILg2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:36:28 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:64066 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932674AbaDILgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:35:58 -0400
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
-To: dmitry.torokhov@gmail.com, jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>
-Subject: [PATCH 23/24] Port hid-lg4ff to ff-memless-next
-Date: Wed, 09 Apr 2014 13:35:55 +0200
-Message-ID: <1545736.mMj2y7JqSb@sigyn>
-User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
-In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
-References: <1609685.QRL9N9sQvX@sigyn>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	Wed, 9 Apr 2014 07:36:23 -0400
+X-Nat-Received: from [202.181.97.72]:61577 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1397043372.32610
+To: iamjoonsoo.kim@lge.com, ak@linux.intel.com, penberg@iki.fi
+Cc: linux-kernel@vger.kernel.org
+Subject: [3.15-rc1 slab] Oops when reading /proc/slab_allocators
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201404092036.CEF21247.VFSQFFMLOJOOtH@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 9 Apr 2014 20:36:10 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 08042014 #7807656, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-lg4ff to ff-memless-next
+Hello.
 
-Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
----
- drivers/hid/Kconfig     |  2 +-
- drivers/hid/hid-lg4ff.c | 93 ++++++++++++++++++++++++++++++-------------------
- 2 files changed, 59 insertions(+), 36 deletions(-)
+I found that
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 8889b7a..5e6aa8e 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -390,7 +390,7 @@ config LOGIG940_FF
- config LOGIWHEELS_FF
- 	bool "Logitech wheels configuration and force feedback support"
- 	depends on HID_LOGITECH
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	default LOGITECH_FF
- 	help
- 	  Say Y here if you want to enable force feedback and range setting
-diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-index 24883b4..d629093 100644
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -25,6 +25,7 @@
- 
- 
- #include <linux/input.h>
-+#include <linux/input/ff-memless-next.h>
- #include <linux/usb.h>
- #include <linux/hid.h>
- 
-@@ -45,6 +46,8 @@
- #define G27_REV_MIN 0x38
- #define G27_2_REV_MIN 0x39
- 
-+#define FF_UPDATE_RATE 8
-+
- #define to_hid_device(pdev) container_of(pdev, struct hid_device, dev)
- 
- static void hid_lg4ff_set_range_dfp(struct hid_device *hid, u16 range);
-@@ -69,6 +72,13 @@ struct lg4ff_device_entry {
- 
- static const signed short lg4ff_wheel_effects[] = {
- 	FF_CONSTANT,
-+	FF_RAMP,
-+	FF_PERIODIC,
-+	FF_SQUARE,
-+	FF_TRIANGLE,
-+	FF_SINE,
-+	FF_SAW_UP,
-+	FF_SAW_DOWN,
- 	FF_AUTOCENTER,
- 	-1
- };
-@@ -184,47 +194,60 @@ int lg4ff_adjust_input_event(struct hid_device *hid, struct hid_field *field,
- 	}
- }
- 
--static int hid_lg4ff_play(struct input_dev *dev, void *data, struct ff_effect *effect)
-+static int hid_lg4ff_start_combined(struct hid_device *hid, struct hid_report *report,
-+				    const struct mlnx_simple_force *force)
-+{
-+	__s32 *value = report->field[0]->value;
-+	int scaled_x;
-+
-+	/* Scale down from MLNX range */
-+	scaled_x = 0x80 - (force->x * 0xff / 0xffff);
-+
-+	value[0] = 0x11;	/* Slot 1 */
-+	value[1] = 0x08;
-+	value[2] = scaled_x;
-+	value[3] = 0x80;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+	return 0;
-+}
-+
-+static int hid_lg4ff_stop_combined(struct hid_device *hid, struct hid_report *report)
-+{
-+	__s32 *value = report->field[0]->value;
-+
-+	value[0] = 0x13;	/* Slot 1 */
-+	value[1] = 0x00;
-+	value[2] = 0x00;
-+	value[3] = 0x00;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+	return 0;
-+}
-+
-+static int hid_lg4ff_control(struct input_dev *dev, void *data, const struct mlnx_effect_command *command)
- {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
--	__s32 *value = report->field[0]->value;
--	int x;
--
--#define CLAMP(x) do { if (x < 0) x = 0; else if (x > 0xff) x = 0xff; } while (0)
--
--	switch (effect->type) {
--	case FF_CONSTANT:
--		x = effect->u.ramp.start_level + 0x80;	/* 0x80 is no force */
--		CLAMP(x);
--
--		if (x == 0x80) {
--			/* De-activate force in slot-1*/
--			value[0] = 0x13;
--			value[1] = 0x00;
--			value[2] = 0x00;
--			value[3] = 0x00;
--			value[4] = 0x00;
--			value[5] = 0x00;
--			value[6] = 0x00;
--
--			hid_hw_request(hid, report, HID_REQ_SET_REPORT);
--			return 0;
--		}
--
--		value[0] = 0x11;	/* Slot 1 */
--		value[1] = 0x08;
--		value[2] = x;
--		value[3] = 0x80;
--		value[4] = 0x00;
--		value[5] = 0x00;
--		value[6] = 0x00;
- 
--		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+	switch (command->cmd) {
-+	case MLNX_START_COMBINED:
-+		return hid_lg4ff_start_combined(hid, report, &command->u.simple_force);
-+		break;
-+	case MLNX_STOP_COMBINED:
-+		return hid_lg4ff_stop_combined(hid, report);
- 		break;
-+	default:
-+		dbg_hid("Unsupported effect command");
-+		return -EINVAL;
- 	}
--	return 0;
- }
- 
- /* Sends default autocentering command compatible with
-@@ -610,7 +633,7 @@ int lg4ff_init(struct hid_device *hid)
- 	for (j = 0; lg4ff_devices[i].ff_effects[j] >= 0; j++)
- 		set_bit(lg4ff_devices[i].ff_effects[j], dev->ffbit);
- 
--	error = input_ff_create_memless(dev, NULL, hid_lg4ff_play);
-+	error = input_ff_create_mlnx(dev, (void *)NULL, hid_lg4ff_control, FF_UPDATE_RATE);
- 
- 	if (error)
- 		return error;
--- 
-1.9.1
+  $ cat /proc/slab_allocators
 
+causes an oops.
 
+---------- dmesg start ----------
+[   22.719620] BUG: unable to handle kernel paging request at ffff8800389b7ff8
+[   22.719742] IP: [<ffffffff811b751d>] handle_slab+0x8d/0x1a0
+[   22.719742] PGD 2d64067 PUD 2d65067 PMD 3fc20067 PTE 80000000389b7060
+[   22.719742] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[   22.719742] Modules linked in:
+[   22.719742] CPU: 0 PID: 1 Comm: init Not tainted 3.14.0-12041-g75ff24f #297
+[   22.719742] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+[   22.719742] task: ffff88003decc010 ti: ffff88003ded0000 task.ti: ffff88003ded0000
+[   22.719742] RIP: 0010:[<ffffffff811b751d>]  [<ffffffff811b751d>] handle_slab+0x8d/0x1a0
+[   22.719742] RSP: 0018:ffff88003ded1d88  EFLAGS: 00000002
+[   22.719742] RAX: 0000000000000001 RBX: 0000000000000001 RCX: ffff88003f625c80
+[   22.719742] RDX: ffffea0000e26dc0 RSI: 0000000000000000 RDI: ffff88001763f000
+[   22.719742] RBP: ffff88003ded1dd8 R08: ffff88001763f000 R09: ffff88001763f008
+[   22.719742] R10: ffff88001763f010 R11: 0000000000001000 R12: ffff880017616f00
+[   22.719742] R13: 0000000000000000 R14: ffff8800389b7000 R15: ffffea0000e26dc0
+[   22.719742] FS:  00000000015b7860(0063) GS:ffff88003fa00000(0000) knlGS:0000000000000000
+[   22.719742] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   22.719742] CR2: ffff8800389b7ff8 CR3: 0000000017619000 CR4: 00000000000006f0
+[   22.719742] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   22.719742] DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
+[   22.719742] Stack:
+[   22.719742]  ffff88001763f010 ffff88003f625c80 ffff88001763f000 ffff88001763f008
+[   22.719742]  ffff88003ded1dd8 ffff88001763f000 ffff880017616f00 ffff88003f625c80
+[   22.719742]  0000000000000400 ffffea0000e26dc0 ffff88003ded1e48 ffffffff811bcbd6
+[   22.719742] Call Trace:
+[   22.719742]  [<ffffffff811bcbd6>] leaks_show+0xf6/0x270
+[   22.719742]  [<ffffffff811f529f>] seq_read+0x2af/0x440
+[   22.719742]  [<ffffffff8123e213>] proc_reg_read+0x43/0x70
+[   22.719742]  [<ffffffff811ccdcd>] vfs_read+0xad/0x190
+[   22.719742]  [<ffffffff811ccf99>] SyS_read+0x59/0xd0
+[   22.719742]  [<ffffffff81658412>] system_call_fastpath+0x16/0x1b
+[   22.719742] Code: 75 18 e9 df 00 00 00 0f 1f 80 00 00 00 00 48 63 d0 3b 34 97 0f 84 cc 00 00 00 83 c0 01 39 c3 77 ed f6 41 1a 01 0f 84 02 01 00 00 <4f> 8b 64 1e f8 4d 85 e4 0f 84 ad 00 00 00 49 8b 39 4c 89 d3 89
+[   22.719742] RIP  [<ffffffff811b751d>] handle_slab+0x8d/0x1a0
+[   22.719742]  RSP <ffff88003ded1d88>
+[   22.719742] CR2: ffff8800389b7ff8
+[   22.719742] ---[ end trace b3602f55c39df20e ]---
+---------- dmesg end ----------
+
+Kernel config is at http://I-love.SAKURA.ne.jp/tmp/config-pre-3.15-rc1 .
+
+The location is
+
+  if (!add_caller(n, (unsigned long)*dbg_userword(c, p)))
+
+in handle_slab() in mm/slab.c , and dbg_userword(c, p) is returning
+an undereferencable value (0xffff8800389b7ff8) when
+n=ffff880017645000, c=ffff88003f625c80, p=ffff8800389b7000,
+c->flags=0x80010c00 and c->size=4096.
+
+  static void **dbg_userword(struct kmem_cache *cachep, void *objp)
+  {
+          BUG_ON(!(cachep->flags & SLAB_STORE_USER));
+          return (void **)(objp + cachep->size - BYTES_PER_WORD);
+  }
+
+Bisection reached commit b1cb0982 "slab: change the management method
+of free objects of the slab".
+
+  bad commit b1cb0982bdd6f57fed690f796659733350bb2cae
+  good commit a57a49887eb3398d31bfaa8009531f7121d6537d
+  untestable commit 56f295ef0dfa7e1d0be18deebe0c15fb6b2d9d5b
+  untestable commit 0c3aa83e00a9cd93f08e7aa42fba01924aa5f2fc
+  good commit 73293c2f900d0adbb6a415b312cd57976d5ae242
