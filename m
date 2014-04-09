@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231AbaDIMDZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 08:03:25 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:45337 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831AbaDIMDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 08:03:22 -0400
-Message-ID: <5345382B.3050400@linux.vnet.ibm.com>
-Date: Wed, 09 Apr 2014 17:38:11 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933245AbaDIMEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 08:04:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54351 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932592AbaDIMEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 08:04:43 -0400
+Date: Wed, 9 Apr 2014 14:04:37 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Subject: Re: [PATCH v7 06/22] Replace XIP read and write with DAX I/O
+Message-ID: <20140409120437.GA7715@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <3ebe329d8713f7db4c105021a845316a47a29797.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-To: Waiman Long <waiman.long@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v8 00/10] qspinlock: a 4-byte queue spinlock with PV support
-References: <1396445259-27670-1-git-send-email-Waiman.Long@hp.com> <5342425A.7040005@linux.vnet.ibm.com> <5342D475.7060503@hp.com> <5342E5B2.1070306@linux.vnet.ibm.com> <53444AEE.9050705@hp.com>
-In-Reply-To: <53444AEE.9050705@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040912-5816-0000-0000-00000D622D0D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3ebe329d8713f7db4c105021a845316a47a29797.1395591795.git.matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 12:45 AM, Waiman Long wrote:
-> Yes, I am able to reproduce the hang problem with ebizzy. BTW, could you
-> try to apply the attached patch file on top of the v8 patch series to
-> see if it can fix the hang problem?
+  I've noticed one more thing here:
 
-Ran the benchmarks with the fix and I am not seeing hang so far.
-ebizzy improvements.
+On Sun 23-03-14 15:08:32, Matthew Wilcox wrote:
+....
+> +ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
+> +		const struct iovec *iov, loff_t offset, unsigned nr_segs,
+> +		get_block_t get_block, dio_iodone_t end_io, int flags)
+> +{
+...
+> +	retval = dax_io(rw, inode, iov, offset, end, get_block, &bh);
+> +
+> +	if ((flags & DIO_LOCKING) && (rw == READ))
+> +		mutex_unlock(&inode->i_mutex);
+> +
+> +	inode_dio_done(inode);
+> +
+> +	if ((retval > 0) && end_io)
+> +		end_io(iocb, offset, retval, bh.b_private);
+  In direct IO code, we first call end_io() callback and do
+inode_dio_done() only after that. Since filesystems use i_dio_count for
+protecting against different races, calling end_io() after inode_dio_done()
+can open all sorts of subtle races.
 
-0.5x  2.7345
-1x   -10.6593
-1.5x  35.6962
-2x    88.0461
-
-dbench improvements
-0.5x   3.2428
-1x     1.1514
-1.5x   5.5071
-2x    23.8700
-( I will have to restest on ebizzy 1x reression but overall performance
-numbers look good).
-
->> Baseline was 3.14-rc8 without any of the qspin patch series.
->>
->
-> Does the baseline have PV ticketlock or without any PV support?
-
-baseline had PV ticketlock enabled.
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
