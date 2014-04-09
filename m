@@ -1,84 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378AbaDICkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 22:40:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:53892 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187AbaDICkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932147AbaDICkE (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 Apr 2014 22:40:04 -0400
-Date: Wed, 9 Apr 2014 12:40:02 +1000
+Received: from ozlabs.org ([203.10.76.45]:39818 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756288AbaDICkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 22:40:01 -0400
+Date: Wed, 9 Apr 2014 12:39:52 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: linux-next: manual merge of the userns tree with Linus' tree
-Message-Id: <20140409124002.35ff7d69c75f7332d0feb57a@canb.auug.org.au>
+Message-Id: <20140409123952.d15c10c4684ac27ed19f6430@canb.auug.org.au>
 X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV"
+ boundary="Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV
+--Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Eric,
 
-Today's linux-next merge of the userns tree got a conflict in fs/dcache.c
-between commit da1ce0670c14 ("vfs: add cross-rename") from Linus' tree
-and commit f43d102a391d ("vfs: Lazily remove mounts on unlinked files and
+Today's linux-next merge of the userns tree got a conflict in fs/namei.c
+between commits from Linus' tree and commits 3dd905eaa258 ("vfs: Don't
+allow overwriting mounts in the current mount namespace") and
+f43d102a391d ("vfs: Lazily remove mounts on unlinked files and
 directories") from the userns tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).  This matches the conflict resolution you sent to Linus.
+I fixed it up (I used the conflict resolution that you sent to Linus -
+see below) and can carry the fix as necessary (no action is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc fs/dcache.c
-index 40707d88a945,5b78bd98649c..000000000000
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@@ -2701,10 -2631,8 +2663,8 @@@ static struct dentry *__d_unalias(struc
-  		goto out_err;
-  	m2 =3D &alias->d_parent->d_inode->i_mutex;
-  out_unalias:
-- 	if (likely(!d_mountpoint(alias))) {
-- 		__d_move(alias, dentry, false);
-- 		ret =3D alias;
-- 	}
- -	__d_move(alias, dentry);
-++	__d_move(alias, dentry, false);
-+ 	ret =3D alias;
-  out_err:
-  	spin_unlock(&inode->i_lock);
-  	if (m2)
+diff --cc fs/namei.c
+index 88339f59efb5,384fcc6a5606..000000000000
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@@ -4082,33 -4045,17 +4085,33 @@@ int vfs_rename(struct inode *old_dir, s
+  	if (error)
+  		return error;
+ =20
+ +	old_name =3D fsnotify_oldname_init(old_dentry->d_name.name);
+  	dget(new_dentry);
+ -	lock_two_nondirectories(source, target);
+ +	if (!is_dir || (flags & RENAME_EXCHANGE))
+ +		lock_two_nondirectories(source, target);
+ +	else if (target)
+ +		mutex_lock(&target->i_mutex);
+ =20
+  	error =3D -EBUSY;
+- 	if (d_mountpoint(old_dentry) || d_mountpoint(new_dentry))
++ 	if (is_local_mountpoint(old_dentry) || is_local_mountpoint(new_dentry))
+  		goto out;
+ =20
+ -	error =3D try_break_deleg(source, delegated_inode);
+ -	if (error)
+ -		goto out;
+ -	if (target) {
+ +	if (max_links && new_dir !=3D old_dir) {
+ +		error =3D -EMLINK;
+ +		if (is_dir && !new_is_dir && new_dir->i_nlink >=3D max_links)
+ +			goto out;
+ +		if ((flags & RENAME_EXCHANGE) && !is_dir && new_is_dir &&
+ +		    old_dir->i_nlink >=3D max_links)
+ +			goto out;
+ +	}
+ +	if (is_dir && !(flags & RENAME_EXCHANGE) && target)
+ +		shrink_dcache_parent(new_dentry);
+ +	if (!is_dir) {
+ +		error =3D try_break_deleg(source, delegated_inode);
+ +		if (error)
+ +			goto out;
+ +	}
+ +	if (target && !new_is_dir) {
+  		error =3D try_break_deleg(target, delegated_inode);
+  		if (error)
+  			goto out;
+@@@ -4123,31 -4064,73 +4126,32 @@@
+  	if (error)
+  		goto out;
+ =20
+ -	if (target) {
+ +	if (!(flags & RENAME_EXCHANGE) && target) {
+ +		if (is_dir)
+ +			target->i_flags |=3D S_DEAD;
+  		dont_mount(new_dentry);
++ 		detach_mounts(new_dentry);
+  	}
+ -	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
+ -		d_move(old_dentry, new_dentry);
+ +	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE)) {
+ +		if (!(flags & RENAME_EXCHANGE))
+ +			d_move(old_dentry, new_dentry);
+ +		else
+ +			d_exchange(old_dentry, new_dentry);
+ +	}
+  out:
+ -	unlock_two_nondirectories(source, target);
+ +	if (!is_dir || (flags & RENAME_EXCHANGE))
+ +		unlock_two_nondirectories(source, target);
+ +	else if (target)
+ +		mutex_unlock(&target->i_mutex);
+  	dput(new_dentry);
+ -	return error;
+ -}
+ -
+ -/**
+ - * vfs_rename - rename a filesystem object
+ - * @old_dir:	parent of source
+ - * @old_dentry:	source
+ - * @new_dir:	parent of destination
+ - * @new_dentry:	destination
+ - * @delegated_inode: returns an inode needing a delegation break
+ - *
+ - * The caller must hold multiple mutexes--see lock_rename()).
+ - *
+ - * If vfs_rename discovers a delegation in need of breaking at either
+ - * the source or destination, it will return -EWOULDBLOCK and return a
+ - * reference to the inode in delegated_inode.  The caller should then
+ - * break the delegation and retry.  Because breaking a delegation may
+ - * take a long time, the caller should drop all locks before doing
+ - * so.
+ - *
+ - * Alternatively, a caller may pass NULL for delegated_inode.  This may
+ - * be appropriate for callers that expect the underlying filesystem not
+ - * to be NFS exported.
+ - */
+ -int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ -	       struct inode *new_dir, struct dentry *new_dentry,
+ -	       struct inode **delegated_inode)
+ -{
+ -	int error;
+ -	int is_dir =3D d_is_directory(old_dentry) || d_is_autodir(old_dentry);
+ -	const unsigned char *old_name;
+ -
+ -	if (old_dentry->d_inode =3D=3D new_dentry->d_inode)
+ - 		return 0;
+ -=20
+ -	error =3D may_delete(old_dir, old_dentry, is_dir);
+ -	if (error)
+ -		return error;
+ -
+ -	if (!new_dentry->d_inode)
+ -		error =3D may_create(new_dir, new_dentry);
+ -	else
+ -		error =3D may_delete(new_dir, new_dentry, is_dir);
+ -	if (error)
+ -		return error;
+ -
+ -	if (!old_dir->i_op->rename)
+ -		return -EPERM;
+ -
+ -	old_name =3D fsnotify_oldname_init(old_dentry->d_name.name);
+ -
+ -	if (is_dir)
+ -		error =3D vfs_rename_dir(old_dir,old_dentry,new_dir,new_dentry);
+ -	else
+ -		error =3D vfs_rename_other(old_dir,old_dentry,new_dir,new_dentry,delega=
+ted_inode);
+ -	if (!error)
+ +	if (!error) {
+  		fsnotify_move(old_dir, new_dir, old_name, is_dir,
+ -			      new_dentry->d_inode, old_dentry);
+ +			      !(flags & RENAME_EXCHANGE) ? target : NULL, old_dentry);
+ +		if (flags & RENAME_EXCHANGE) {
+ +			fsnotify_move(new_dir, old_dir, old_dentry->d_name.name,
+ +				      new_is_dir, NULL, new_dentry);
+ +		}
+ +	}
+  	fsnotify_oldname_free(old_name);
+ =20
+  	return error;
 
---Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV
+--Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJTRLMCAAoJEMDTa8Ir7ZwVZIwP/jaXQ2Xb0pjqVQRbZopYxRgD
-XHQwN0SS/DG+ViXxM5D3PCk2aWsDtJofAVy3+xueqfwD49trRLuH33SwsUgAILKK
-pXYA4ym8gO/Nvqo5uCn8ruSvmGzMuKFD2kHd6sQ/6EfhUZ+r2N7lNdPtEiYn7kHo
-ab//fgw5CYahOd1YiKtBgwhC7GmTWtlg8ABhCsCuetbeduiiI8R/sVqPZzV/8dXv
-CRZ1q4DJZfXYTJIpK9AJY1coIIUldDAE6q0w0sKoS7kdanqtgTqHTt2s5MCPRVk+
-PaCL/5wJzcTz62b/oyuMRXPVnjkALim1payt/m72W/5mgubSaoT1xFi3AZBkgd32
-tDC8JUY8UxoVJ+oSN4LOhS5fmHNJR5gD9PBYl8Wrt5B9KjDMUJMXEK9PEkvoTbsF
-fuYumoY9rRxqU3iJSu1KqtYgw1gHdFB80CeMYExUFjX3YLQr/nc7SHTQLFw4K77W
-blgbVKo3Ta/D4w1/pupBu+UcIVjrn7wWuiSJJLFsHHoHJ5jSczJpnrAodbll8mrs
-Lz5hvS7BstN2wFaes1DFakRQa7YymhkFuJN5OmQ8NN25VepWtrT2WzafzjDFhjDE
-3gTPp+H6qdMYEf7XcAnIACZY/ak13m0Xqp9GZUeiVC8CGlvlP2tDEWTQLg5sVDfP
-07De3p11GLdRyuVBWk8D
-=peNH
+iQIcBAEBCAAGBQJTRLL+AAoJEMDTa8Ir7ZwVLAQQAIB0UwWke/2nNT8+CtvH4ayo
+FgEiF6RDd2TnmORuBMZk+OLco76KlMxiiLHyfptAaTylijsM6ZyN7e1mzfVsToPL
+Qfb3j+MUUmxFkwC1e0qFwSTmY5Wv2NWoeRhO6ZBhC+XMj27ZGwxUjd4/nOVnwHHz
+WAj1x1GOn9ujustxOlqJh6CopReMvrQ+W47pFNBWCslTHGMclxXAR+IT68eJZ4ml
+hIlyEkar3hTo+1ysjsPbPYcoFPXsGh5JwvPGJLulgFOP+LW+dAex9D+f/EwKHpBa
+K33l54PttJqDOGsAzo76GmBMOQHD1AD/KXcdOkz1758UadGP5c+hBJTLamNgEm6M
+swk8SO9wgbDJ/IjVWGEOPup9QWazce9HOVq7bkfljtMgle0Ayo/6SB2KryfMYQch
+/OxAT7XPoQkViILlJSR4eeWtexKExTlhY/aGoo8ohAP3qDU3xOIDI/SOnUtqBoL5
+Do3CARG6j6VANkGPA4VouwQUAjz+sGAT26sRCwNkU9eCTTX+MY8DecyG7Y9AhjGn
+pBpdtxXdD/1XiWKzVaXx2ulrqRYSBfBmlHEtcMWMpsM+2LD8pnrmtu5C99BtKQPz
+RK+mL+IrITWMPFusujBoDiu54iFTcLOqS0bi6iIPopJ8u3lZ+aqJZZJCpjH+hpP3
+7Ou3EG7cD0vSTYCmLi0z
+=cgLX
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__9_Apr_2014_12_40_02_+1000_bvEDmizje7w9lspV--
+--Signature=_Wed__9_Apr_2014_12_39_52_+1000_DAsSmei.Ps_DULym--
