@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934105AbaDIP7a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:59:30 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:59607 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934005AbaDIP7W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:59:22 -0400
+	id S934121AbaDIP7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:59:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59408 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933683AbaDIP7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 11:59:36 -0400
+Date: Wed, 9 Apr 2014 17:59:34 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: fabf@skynet.be, jason@lakedaemon.net, peter.senna@gmail.com,
+        prarit@redhat.com, sachin.kamat@linaro.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild misc changes for v3.15-rc1
+Message-ID: <20140409155934.GA27116@sepie.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <5344A209.7010507@wwwdotorg.org>
-References: <1396532680-30352-1-git-send-email-bart.tanghe@thomasmore.be>
-	<CAAYSxhpTV1-k7ROzJnnOhNcrZRUTzAfFc6YtLKLx6oZVUEHNxQ@mail.gmail.com>
-	<5344A209.7010507@wwwdotorg.org>
-Date: Wed, 9 Apr 2014 08:59:21 -0700
-Message-ID: <CAAYSxhqv_RLfksBE-n8KMg33v6ZfB4B4E8NQUYf8JsPzVrLYzw@mail.gmail.com>
-Subject: Re: [rfc]pwm: add BCM2835 PWM driver
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Bart Tanghe <bart.tanghe@thomasmore.be>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        linux-rpi-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 6:27 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 04/08/2014 05:02 PM, Tim Kryger wrote:
->> On Thu, Apr 3, 2014 at 6:44 AM, Bart Tanghe <bart.tanghe@thomasmore.be> wrote:
->>> need some recommendation
->>> the memory mapped io registers of the bcm2835 pwm hardware are spreaded
->>> over the memory mapped io
->>> gpio config 0x20200004 - clk config 0x201010A0 - pwm configuration 0x2020C000
->>> to handle this, I've used the base address of the memory mapped io
->>> so I can use positive offsets
->>
->> So the registers for this PWM are located in three distinct memory regions?
-> ...
->>> +struct bcm2835_pwm_chip {
->>> +       struct pwm_chip chip;
->>> +       struct device *dev;
->>> +       int channel;
->>> +       void __iomem *mmio;
->>
->> One pointer isn't going to be enough.  You need three.
->>
->> I suggest renaming the first and adding two more:
->>
->> void __iomem *base_pwm;
->> void __iomem *base_clk;
->> void __iomem *base_alt;
->
-> Sorry, I forgot about this patch. One comment here; the PWM driver can't
-> touch the clock or alt registers; those should be owned by the clock
-> driver, and the driver for whatever alt is (pinmux - don't recall what
-> it's touching there).
+Hi Linus,
 
-Absolutely.  If these registers are owned by other drivers, go through them.
+here is the non-critical part of kbuild:
+- One bogus coccinelle check removed, one check fixed not to suggest
+  the obsolete PTR_RET macro
+- scripts/tags.sh does not index the generated *.mod.c files
+- new objdiff tool to list differences between two versions of an object
+  file
+- A fix for scripts/bootgraph.pl
+
+Thanks,
+Michal
+
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
+
+for you to fetch changes up to f23a9fa7e81f7df65e0bcf586e028a2db736b9e6:
+
+  scripts/coccinelle: Use PTR_ERR_OR_ZERO (2014-04-08 17:27:01 +0200)
+
+----------------------------------------------------------------
+Fabian Frederick (1):
+      scripts/bootgraph.pl: Add graphic header
+
+Jason Cooper (1):
+      scripts: objdiff: detect object code changes between two commits
+
+Peter Senna Tschudin (1):
+      Coccicheck: Remove memcpy to struct assignment test
+
+Prarit Bhargava (1):
+      scripts/tags.sh: Ignore *.mod.c
+
+Sachin Kamat (1):
+      scripts/coccinelle: Use PTR_ERR_OR_ZERO
+
+ Makefile                                    |   7 +-
+ scripts/bootgraph.pl                        |  42 ++++++++-
+ scripts/coccinelle/api/ptr_ret.cocci        |  14 +--
+ scripts/coccinelle/misc/memcpy-assign.cocci | 103 --------------------
+ scripts/objdiff                             | 141 ++++++++++++++++++++++++++++
+ scripts/tags.sh                             |   9 +-
+ 6 files changed, 196 insertions(+), 120 deletions(-)
+ delete mode 100644 scripts/coccinelle/misc/memcpy-assign.cocci
+ create mode 100755 scripts/objdiff
