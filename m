@@ -1,316 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758369AbaDIJMR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 05:12:17 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:37256 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaDIJMJ (ORCPT
+	id S932634AbaDIJOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 05:14:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35777 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758209AbaDIJOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 05:12:09 -0400
+	Wed, 9 Apr 2014 05:14:53 -0400
+Message-ID: <53450F7E.7040904@canonical.com>
+Date: Wed, 09 Apr 2014 11:14:38 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <534506B1.4040908@samsung.com>
-References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
-	<1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
-	<534506B1.4040908@samsung.com>
-Date: Wed, 9 Apr 2014 14:42:07 +0530
-Message-ID: <CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
-From: Rahul Sharma <r.sh.open@gmail.com>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        sunil joshi <joshi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>,
+        =?ISO-8859-1?Q?Toralf_F=F6rs?= =?ISO-8859-1?Q?ter?= 
+	<toralf.foerster@gmx.de>
+CC: Michele Ballabio <barra_cuda@katamail.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
+References: <5341707F.5000406@katamail.com> <20140407150337.GO10526@twins.programming.kicks-ass.net> <20140407150705.GB13658@twins.programming.kicks-ass.net> <5342EB78.3060002@gmx.de> <20140407185658.GK11096@twins.programming.kicks-ass.net> <20140408122128.GC13658@twins.programming.kicks-ass.net>
+In-Reply-To: <20140408122128.GC13658@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="CH6EAQKGd201lFPw9cbrVwdbgWfWJncqH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--CH6EAQKGd201lFPw9cbrVwdbgWfWJncqH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On 9 April 2014 14:07, Andrzej Hajda <a.hajda@samsung.com> wrote:
-> Hi Tomasz,
->
-> On 04/08/2014 04:37 PM, Tomasz Stanislawski wrote:
->> Add exynos-simple-phy driver to support a single register
->> PHY interfaces present on Exynos4 SoC.
+On 08.04.2014 14:21, Peter Zijlstra wrote:
+> On Mon, Apr 07, 2014 at 08:56:58PM +0200, Peter Zijlstra wrote:
+>> On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf F=F6rster wrote:
 >>
->> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
->> ---
->>  .../devicetree/bindings/phy/samsung-phy.txt        |   24 +++
->>  drivers/phy/Kconfig                                |    5 +
->>  drivers/phy/Makefile                               |    1 +
->>  drivers/phy/exynos-simple-phy.c                    |  154 ++++++++++++++++++++
->>  4 files changed, 184 insertions(+)
->>  create mode 100644 drivers/phy/exynos-simple-phy.c
+>>> v3.14-10353-g2b3a8fd works fine AFAICS
+>>> (BTW the fix is stable material, right ?)
 >>
->> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> index b422e38..f97c4c3 100644
->> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> @@ -114,3 +114,27 @@ Example:
->>               compatible = "samsung,exynos-sataphy-i2c";
->>               reg = <0x38>;
->>       };
->> +
->> +Samsung S5P/EXYNOS SoC series SIMPLE PHY
->> +-------------------------------------------------
->> +
->> +Required properties:
->> +- compatible : should be one of the listed compatibles:
->> +     - "samsung,exynos4210-simple-phy"
->> +     - "samsung,exynos4412-simple-phy"
->> +- reg : offset and length of the register set;
->> +- #phy-cells : from the generic phy bindings, must be 1;
->> +
->> +For "samsung,exynos4210-simple-phy" compatible PHYs the second cell in
->> +the PHY specifier identifies the PHY and its meaning is as follows:
->> +  0 - HDMI PHY,
->> +  1 - DAC PHY,
->> +  2 - ADC PHY,
->> +  3 - PCIE PHY.
->> +  4 - SATA PHY.
->> +
->> +For "samsung,exynos4412-simple-phy" compatible PHYs the second cell in
->> +the PHY specifier identifies the PHY and its meaning is as follows:
->> +  0 - HDMI PHY,
->> +  1 - ADC PHY,
->
-> What about using preprocessor macros?
->
->> +
->> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> index 3bb05f1..65ab783 100644
->> --- a/drivers/phy/Kconfig
->> +++ b/drivers/phy/Kconfig
->> @@ -166,4 +166,9 @@ config PHY_XGENE
->>       help
->>         This option enables support for APM X-Gene SoC multi-purpose PHY.
+>> I'm fairly sure its not; its a rather invasive series; see:
 >>
->> +config EXYNOS_SIMPLE_PHY
->> +     tristate "Exynos Simple PHY driver"
->> +     help
->> +       Support for 1-bit PHY controllers on SoCs from Exynos family.
->> +
->>  endmenu
->> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
->> index 2faf78e..88c5b60 100644
->> --- a/drivers/phy/Makefile
->> +++ b/drivers/phy/Makefile
->> @@ -18,3 +18,4 @@ obj-$(CONFIG_PHY_EXYNOS4210_USB2)   += phy-exynos4210-usb2.o
->>  obj-$(CONFIG_PHY_EXYNOS4X12_USB2)    += phy-exynos4x12-usb2.o
->>  obj-$(CONFIG_PHY_EXYNOS5250_USB2)    += phy-exynos5250-usb2.o
->>  obj-$(CONFIG_PHY_XGENE)                      += phy-xgene.o
->> +obj-$(CONFIG_EXYNOS_SIMPLE_PHY)              += exynos-simple-phy.o
->> diff --git a/drivers/phy/exynos-simple-phy.c b/drivers/phy/exynos-simple-phy.c
->> new file mode 100644
->> index 0000000..57ad338
->> --- /dev/null
->> +++ b/drivers/phy/exynos-simple-phy.c
->> @@ -0,0 +1,154 @@
->> +/*
->> + * Exynos Simple PHY driver
->> + *
->> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->> + * Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/io.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_address.h>
->> +#include <linux/of_device.h>
->> +#include <linux/phy/phy.h>
->> +
->> +#define EXYNOS_PHY_ENABLE    (1 << 0)
->> +
->> +static int exynos_phy_power_on(struct phy *phy)
->> +{
->> +     void __iomem *reg = phy_get_drvdata(phy);
->> +     u32 val;
->> +
->> +     val = readl(reg);
->> +     val |= EXYNOS_PHY_ENABLE;
->> +     writel(val, reg);
->> +
->> +     return 0;
->> +}
->> +
->> +static int exynos_phy_power_off(struct phy *phy)
->> +{
->> +     void __iomem *reg = phy_get_drvdata(phy);
->> +     u32 val;
->> +
->> +     val = readl(reg);
->> +     val &= ~EXYNOS_PHY_ENABLE;
->> +     writel(val, reg);
->> +
->> +     return 0;
->> +}
->> +
->> +static struct phy_ops exynos_phy_ops = {
->> +     .power_on       = exynos_phy_power_on,
->> +     .power_off      = exynos_phy_power_off,
->> +     .owner          = THIS_MODULE,
->> +};
->> +
->> +static const u32 exynos4210_offsets[] = {
->> +     0x0700, /* HDMI_PHY */
->> +     0x070C, /* DAC_PHY */
->> +     0x0718, /* ADC_PHY */
->> +     0x071C, /* PCIE_PHY */
->> +     0x0720, /* SATA_PHY */
->> +     ~0, /* end mark */
->> +};
->> +
->> +static const u32 exynos4412_offsets[] = {
->> +     0x0700, /* HDMI_PHY */
->> +     0x0718, /* ADC_PHY */
->> +     ~0, /* end mark */
->> +};
->
-> Why have you selected only these registers?
-> According to specs Exynos 4210 has 9 and 4412 has 7 control registers
-> with 'phy-enable' functionality.
-> I guess MIPI would require little more work as it has also reset bits,
-> but it will be still better than separate driver.
->
->> +
->> +static const struct of_device_id exynos_phy_of_match[] = {
->> +     { .compatible = "samsung,exynos4210-simple-phy",
->> +       .data = exynos4210_offsets},
->> +     { .compatible = "samsung,exynos4412-simple-phy",
->> +       .data = exynos4412_offsets},
->> +     { },
->> +};
->> +MODULE_DEVICE_TABLE(of, exynos_phy_of_match);
->> +
->> +static struct phy *exynos_phy_xlate(struct device *dev,
->> +                                     struct of_phandle_args *args)
->> +{
->> +     struct phy **phys = dev_get_drvdata(dev);
->> +     int index = args->args[0];
->> +     int i;
->> +
->> +     /* verify if index is valid */
->> +     for (i = 0; i <= index; ++i)
->> +             if (!phys[i])
->> +                     return ERR_PTR(-ENODEV);
->> +
->> +     return phys[index];
->> +}
->> +
->> +static int exynos_phy_probe(struct platform_device *pdev)
->> +{
->> +     const struct of_device_id *of_id = of_match_device(
->> +             of_match_ptr(exynos_phy_of_match), &pdev->dev);
->> +     const u32 *offsets = of_id->data;
->> +     int count;
->> +     struct device *dev = &pdev->dev;
->> +     struct phy **phys;
->> +     struct resource *res;
->> +     void __iomem *regs;
->> +     int i;
->> +     struct phy_provider *phy_provider;
->> +
->> +     /* count number of phys to create */
->> +     for (count = 0; offsets[count] != ~0; ++count)
->> +             ;
->
-> count = ARRAY_SIZE(offsets) - 1;
->
->> +
->> +     phys = devm_kzalloc(dev, (count + 1) * sizeof(phys[0]), GFP_KERNEL);
->> +     if (!phys)
->> +             return -ENOMEM;
->> +
->> +     dev_set_drvdata(dev, phys);
->> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +
->> +     regs = devm_ioremap(dev, res->start, res->end - res->start);
->> +     if (!regs) {
->> +             dev_err(dev, "failed to ioremap registers\n");
->> +             return -EFAULT;
->> +     }
->
-> Why not devm_ioremap_resource? If not, resource_size function calculates
-> length of resource correctly.
->
-> Anyway I like the idea of implementing multiple phys in one driver.
-> The only drawback I see is that some phys will be created even there are
-> no consumers for them. To avoid such situation you can try to use
-> lazy approach - create phy only if there is request for it,
-> exynos_phy_xlate callback should allow this.
->
-> Regards
-> Andrzej
->
-
-Idea looks good. How about keeping compatible which is independent
-of SoC, something like "samsung,exynos-simple-phy" and provide Reg
-and Bit through phy provider node. This way we can avoid SoC specific
-hardcoding in phy driver and don't need to look into dt bindings for
-each new SoC.
-
-We can use syscon interface to access PMU bits like USB phy.
-PMU is already registered as system controller
-
-Regards,
-Rahul Sharma.
-
->> +
->> +     /* NOTE: last entry in phys[] is NULL */
->> +     for (i = 0; i < count; ++i) {
->> +             phys[i] = devm_phy_create(dev, &exynos_phy_ops, NULL);
->> +             if (IS_ERR(phys[i])) {
->> +                     dev_err(dev, "failed to create PHY %d\n", i);
->> +                     return PTR_ERR(phys[i]);
->> +             }
->> +             phy_set_drvdata(phys[i], regs + offsets[i]);
->> +     }
->> +
->> +     phy_provider = devm_of_phy_provider_register(dev, exynos_phy_xlate);
->> +     if (IS_ERR(phy_provider)) {
->> +             dev_err(dev, "failed to register PHY provider\n");
->> +             return PTR_ERR(phy_provider);
->> +     }
->> +
->> +     dev_info(dev, "added %d phys\n", count);
->> +
->> +     return 0;
->> +}
->> +
->> +static struct platform_driver exynos_phy_driver = {
->> +     .probe  = exynos_phy_probe,
->> +     .driver = {
->> +             .of_match_table = exynos_phy_of_match,
->> +             .name  = "exynos-simple-phy",
->> +             .owner = THIS_MODULE,
->> +     }
->> +};
->> +module_platform_driver(exynos_phy_driver);
->> +
->> +MODULE_DESCRIPTION("Exynos Simple PHY driver");
->> +MODULE_AUTHOR("Tomasz Stanislawski <t.stanislaws@samsung.com>");
->> +MODULE_LICENSE("GPL v2");
+>> 2432e1364bbe x86: Nuke the supervisor_stack field in i386 thread_info
+>> b807902a88c4 x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
+>> 0788aa6a23cb x86: Prepare removal of previous_esp from i386 thread_inf=
+o structure
+>> 198d208df437 x86: Keep thread_info on thread stack in x86_32
 >>
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>> Let me see if there's anything 'simpler' we can stuff in .13+
+>=20
+> OK.. so could someone test the below patch to see if that makes things
+> work for .13 and .14?
+
+Hi Peter,
+
+sorry I only had time to try 3.13 but that looks good. I was able to get =
+kvm up
+and running for a longer than usual (without the patch) amount of time wi=
+thout
+seeing any softlockups.
+
+-Stefan
+>=20
+> ---
+>  arch/x86/include/asm/preempt.h | 11 +++++++++++
+>  include/linux/preempt.h        |  4 ++++
+>  include/linux/thread_info.h    |  2 --
+>  3 files changed, 15 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/pree=
+mpt.h
+> index c8b051933b1b..7ada46d8d4d8 100644
+> --- a/arch/x86/include/asm/preempt.h
+> +++ b/arch/x86/include/asm/preempt.h
+> @@ -5,6 +5,17 @@
+>  #include <asm/percpu.h>
+>  #include <linux/thread_info.h>
+> =20
+> +#ifdef CONFIG_X86_32
+> +/*
+> + * i386's current_thread_info() depends on ESP and for interrupt/excep=
+tion
+> + * stacks this doesn't yield the actual task thread_info.
+> + *
+> + * We hard rely on the fact that all the TIF_NEED_RESCHED bits are
+> + * the same, therefore use the slightly more expensive version below.
+> + */
+> +#define tif_need_resched() test_tsk_thread_flag(current, TIF_NEED_RESC=
+HED)
+> +#endif
+> +
+>  DECLARE_PER_CPU(int, __preempt_count);
+> =20
+>  /*
+> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+> index de83b4eb1642..891c8f8b52fe 100644
+> --- a/include/linux/preempt.h
+> +++ b/include/linux/preempt.h
+> @@ -17,6 +17,10 @@
+> =20
+>  #include <asm/preempt.h>
+> =20
+> +#ifndef tif_need_resched
+> +#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
+> +#endif
+> +
+>  #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
+>  extern void preempt_count_add(int val);
+>  extern void preempt_count_sub(int val);
+> diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+> index fddbe2023a5d..a629e4b23217 100644
+> --- a/include/linux/thread_info.h
+> +++ b/include/linux/thread_info.h
+> @@ -118,8 +118,6 @@ static inline __deprecated void set_need_resched(vo=
+id)
+>  	 */
+>  }
+> =20
+> -#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
+> -
+>  #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
+>  /*
+>   * An arch can define its own version of set_restore_sigmask() to get =
+the
+>=20
+
+
+
+--CH6EAQKGd201lFPw9cbrVwdbgWfWJncqH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBCgAGBQJTRQ+HAAoJEOhnXe7L7s6joaYQAMi8rCd15jwqC4tTboQ8oXfs
+ziIzoz6HFgwq8w5PqHR8mu+2owo4AGYSOlJk49q4VnFQ9IkaFQEdjlC07bBLG115
+GYJHaiDeY9ydDVNmud03pKw6kwsp/U6IrX7ln8T4PVD4m1DYJwPVhnrGgyxilRZC
+aJNt+MqwS1ad8oITaBvpg0wSIwDZv/lfKLuSdEQgcXZFk3AaIPkGHJ1qtiXP8l0c
+qW2HSsSLXTD9Rii51GcwFDlhOLgUhrAq0V2He7LcaQpHszQhxBhUZe7xp4qWhZ1I
+wWWN4Am7AccQqFi9DGFl2UErcXYDkhIJ38CF9wAfebJtPXEET4N2Va5a6Tc+3KTD
+fls4OWnClhl+V4Ipgr97L4jrjtHMZcrq69munUK4sIpoVOFNCxVX4wjmFPXW4MWM
+bqNNL/9qWkUoLQDhHRqCfzqNeNRNuy+tQbU2ZxIBkrLZHc/p0p5nGXZZvskiReRa
+BIz4OqXrvZqnYf/rsuemiAxjsrx0VBV45usF8wNIZVkzQXTjBXS8FEEyydZ9tO+V
+tavYsG9+2Fe6QgIMXFivKWDyE8CaVUBoKsD1bYf2iCIzQQDcEe/WKfzfEnXz2dCE
+nbEu9/cargx1X5DRH6/qeSE38m4Rt6NJmq9ONzoA43jl/ttyyPkJjspeqKfQcISX
+Lf+NB4XUbQ0ei/YdQeoT
+=odDp
+-----END PGP SIGNATURE-----
+
+--CH6EAQKGd201lFPw9cbrVwdbgWfWJncqH--
