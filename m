@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243AbaDIHTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 03:19:05 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:36001 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaDIHTC (ORCPT
+	id S1758210AbaDIHWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 03:22:32 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:53047 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161AbaDIHWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 03:19:02 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: nomadik: delete stray debug print
-Date: Wed,  9 Apr 2014 09:18:55 +0200
-Message-Id: <1397027935-14926-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.0
+	Wed, 9 Apr 2014 03:22:31 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-f7-5344f534bf4e
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] ASoC: core: Fix Sparse incompatible types warning
+Date: Wed, 09 Apr 2014 09:21:48 +0200
+Message-id: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t/xK7omX12CDSYvFLK4cvEQk8XUh0/Y
+	LF6/MLT4dqWDyeLyrjlsFp27+lktXm5+w+TA7rHhcxObx85Zd9k9Nq3qZPPY93YZm0ffllWM
+	HptPV3t83iQXwB7FZZOSmpNZllqkb5fAlTH/2h/mgn62ij9zzRoYp7F2MXJwSAiYSKz669DF
+	yAlkiklcuLeeDcQWEljKKNF7hreLkQvI7mOS+L9wCwtIgk3AWGLz8iVgRSICxxklPjzzALGZ
+	BQwlfr77ww5iCws4SXzqfM8MYrMIqEp0XusHs3kF3CUu/N3GBLFMQWLZl7XMExi5FzAyrGIU
+	TS1NLihOSs811CtOzC0uzUvXS87P3cQICZgvOxgXH7M6xCjAwajEw6tg6RIsxJpYVlyZe4hR
+	goNZSYT3eTZQiDclsbIqtSg/vqg0J7X4ECMTB6dUA2PqZ37xtil779bJxcx/EPAtU87eKKp8
+	z1q3d9ejDt2xsEz2NLv4Kif43XKvPyzSAor6yQt3bt105GbDiktPxb4c/6qtPWvV7jT3X62F
+	T7b/NS2yOC405/rnl3t3GMuJKygESbkXZNvma885479WPGQ/j9endpOpc8Qi1A9FF19jNNjP
+	9dOyPEOJpTgj0VCLuag4EQDh/t639gEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I left this in by mistake, get rid of it.
+Fix following Sparse warning:
+sound/soc/soc-core.c:252:20: error: incompatible types in comparison expression (different type sizes)
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/pinctrl/pinctrl-nomadik.c | 1 -
- 1 file changed, 1 deletion(-)
+ sound/soc/soc-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 208341fd57d2..8f6f16ef73f3 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -877,7 +877,6 @@ static void nmk_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	struct nmk_gpio_chip *nmk_chip = container_of(chip, struct nmk_gpio_chip, chip);
- 	u32 status;
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 051c006281f5..41f6178249df 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -249,7 +249,7 @@ static ssize_t codec_reg_write_file(struct file *file,
+ 	struct snd_soc_codec *codec = file->private_data;
+ 	int ret;
  
--	pr_err("PLONK IRQ %d\n", irq);
- 	clk_enable(nmk_chip->clk);
- 	status = readl(nmk_chip->addr + NMK_GPIO_IS);
- 	clk_disable(nmk_chip->clk);
+-	buf_size = min(count, (sizeof(buf)-1));
++	buf_size = min(count, (size_t)(sizeof(buf)-1));
+ 	if (copy_from_user(buf, user_buf, buf_size))
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
 -- 
-1.9.0
+1.8.3.2
 
