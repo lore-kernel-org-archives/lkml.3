@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964909AbaDIRcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:32:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933352AbaDIRcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934042AbaDIRcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:32:50 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:37889 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908AbaDIRcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Apr 2014 13:32:48 -0400
-Date: Wed, 9 Apr 2014 19:32:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/5] sched: Convert thread_group_cputime() to use
-	for_each_thread()
-Message-ID: <20140409173233.GA28615@redhat.com>
-References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com> <1397059882-23063-2-git-send-email-fweisbec@gmail.com> <20140409171607.GA13498@dyad.arnhem.chello.nl>
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
+	<874n3n7czm.fsf_-_@xmission.com>
+	<87wqezl5df.fsf_-_@x220.int.ebiederm.org>
+	<20140409023027.GX18016@ZenIV.linux.org.uk>
+	<20140409023947.GY18016@ZenIV.linux.org.uk>
+Date: Wed, 09 Apr 2014 10:32:14 -0700
+In-Reply-To: <20140409023947.GY18016@ZenIV.linux.org.uk> (Al Viro's message of
+	"Wed, 9 Apr 2014 03:39:47 +0100")
+Message-ID: <87sipmbe8x.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409171607.GA13498@dyad.arnhem.chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+Dx1RrGmXHeKRvO5U1M+Du/D8Vrsc/wJA=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1919]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+	*  1.0 T_XMDrugObfuBody_04 obfuscated drug references
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: 
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15-rc1
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09, Peter Zijlstra wrote:
+Al Viro <viro@ZenIV.linux.org.uk> writes:
+
+> On Wed, Apr 09, 2014 at 03:30:27AM +0100, Al Viro wrote:
 >
-> On Wed, Apr 09, 2014 at 06:11:18PM +0200, Frederic Weisbecker wrote:
-> > do_each_thread/while_each_thread iterators are deprecated by
-> > for_each_thread/for_each_process_thread() APIs.
-> >
-> > Lets convert the callers in the cputime code accounting. The ultimate
-> > goal is to remove the struct task_struct::thread_group field and
-> > the corresponding do_each_thread/while_each_thread iterators that are
-> > RCU unsafe.
-> >
-> > It also makes thread_group_cputime() eventually RCU-safe.
+>> > When renaming or unlinking directory entries that are not mountpoints
+>> > no additional locks are taken so no performance differences can result,
+>> > and my benchmark reflected that.
+>> 
+>> It also means that d_invalidate() now might trigger fs shutdown.  Which
+>> has bloody huge stack footprint, for obvious reasons.  And d_invalidate()
+>> can be called with pretty deep stack - walk into wrong dentry while
+>> resolving a deeply nested symlink and there you go...
 >
-> this fails to explain how the current code is broken.
+> PS: I thought I actually replied with that point back a month or so ago,
+> but having checked sent-mail...  Looks like I had not.  My deep apologies.
+>
+> FWIW, I think that overall this thing is a good idea, provided that we can
+> live with semantics changes.  The implementation is too optimistic, though -
+> at the very least, we want this work done upon namespace_unlock() held
+> back until we are not too deep in stack.  task_work_add() fodder,
+> perhaps?
 
-while_each_thread(g, t) will loop forever if g exits and removes itself
-from ->thread_group. This can happen even if it is the group leader,
-de_thread() can do this.
+Hmm.
 
-Another problem is that it is used wrongly very often, even if
-while_each_thread() was fine people forget to check pid_alive() to ensure
-it didn't exit even before we take rcu_read_lock().
+Just to confirm what I am dealing with I have proceeded to measure the
+amount of stack used by these operations.
 
-for_each_thread(p, t) is always safe. Unless p's task_struct can't go away,
-of course.
+For resolving a deeply nested symlink that hits the limit of 8 nested
+symlinks, I find 4688 bytes left on the stack.  Which means we use
+roughly 3504 bytes of stack when stating a deeply nested symlink.
 
-But there is a difference. Ignoring the bug above
+For umount I had a little trouble measuring as typically the work done
+by umount was not the largest stack consumer, but I found for a small
+ext4 filesystem after the umount operation was complete there were
+5152 bytes left on the stack, or umount used roughly 3040 bytes.
 
-	p = g;
-	do {
-		printk("pid=%d\n", p->pid);
-	} while_each_thread(g, p);
+3504 + 3040 = 6544 bytes of stack used or 1684 bytes of stack left
+unused.  Which certainly isn't a lot of margin but it is not overflowing
+the kernel stack either. 
 
-always prints at least one pid.
+Is there a case that see where umount uses a lot more kernel stack?  Is
+your concern an architecture other than x86_64 with different
+limitations?
 
-	for_each_thread(g, p)
-		printk("pid=%d\n", p->pid);
+I am quite happy to change my code to avoid stack overflow but I want to
+make certain I understand where the stack usage is coming from so that I
+actually fix them issue.
 
-can print nothing if g has already exited.
-
-Oleg.
+Eric
 
