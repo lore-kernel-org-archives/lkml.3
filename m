@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988AbaDIUkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:40:42 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:56252 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934020AbaDIUkk (ORCPT
+	id S965016AbaDIUlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:41:55 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64425 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934010AbaDIUlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:40:40 -0400
+	Wed, 9 Apr 2014 16:41:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <1396631173-11668-1-git-send-email-tolga@cevel.net>
-References: <1396631173-11668-1-git-send-email-tolga@cevel.net>
-Date: Wed, 9 Apr 2014 16:40:37 -0400
-Message-ID: <CAN+gG=FFnK7NwiGN1oLsBA6euyDHOxrY6s7-yRo553jcLbzuYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] HID: microsoft: moving quirks to struct
+In-Reply-To: <1396631216-11726-1-git-send-email-tolga@cevel.net>
+References: <1396631216-11726-1-git-send-email-tolga@cevel.net>
+Date: Wed, 9 Apr 2014 16:41:50 -0400
+Message-ID: <CAN+gG=HpAXhME5YiDoX=7R30QHTKQ3Xjf2DB0jAh49h5KGpwxA@mail.gmail.com>
+Subject: Re: [PATCH 2/4] HID: microsoft: initial support for Microsoft
+ Sidewinder X4 / X6 keyboards
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Tolga Cakir <tolga@cevel.net>
 Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
@@ -26,165 +27,257 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Apr 4, 2014 at 1:06 PM, Tolga Cakir <tolga@cevel.net> wrote:
-> This will give us the opportunity to easily implement extra features
-> for new devices.
+> This patch will let hid-microsoft handle the Microsoft Sidewinder X4 and X6 keyboards.
+
+I think this commit message should be a little bit more explicit,
+especially because the current patch:
+- supports 3 keys which were not supported before
+- prepares the support of the S1-S30 keys, but without actually
+delivering events (which is a little bit awkward way of splitting the
+series IMO)
+
 >
 > Signed-off-by: Tolga Cakir <tolga@cevel.net>
 > ---
->  drivers/hid/hid-microsoft.c | 44 ++++++++++++++++++++++++++++----------------
->  1 file changed, 28 insertions(+), 16 deletions(-)
+>  drivers/hid/hid-core.c      |   2 +
+>  drivers/hid/hid-ids.h       |   2 +
+>  drivers/hid/hid-microsoft.c | 114 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 118 insertions(+)
 >
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index dbe548b..5de5ba1 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1815,6 +1815,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICOLCD_BOOTLOADER) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_SIDEWINDER_GV) },
+> +       { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_SIDEWINDER_X6) },
+> +       { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_SIDEWINDER_X4) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_NE4K) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_NE4K_JP) },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_LK6K) },
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 548c1a5..21be65d 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -626,6 +626,8 @@
+>  #define USB_DEVICE_ID_MS_PRESENTER_8K_BT       0x0701
+>  #define USB_DEVICE_ID_MS_PRESENTER_8K_USB      0x0713
+>  #define USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K      0x0730
+> +#define USB_DEVICE_ID_SIDEWINDER_X6    0x074b
+> +#define USB_DEVICE_ID_SIDEWINDER_X4    0x0768
+>  #define USB_DEVICE_ID_MS_COMFORT_MOUSE_4500    0x076c
+>  #define USB_DEVICE_ID_MS_TOUCH_COVER_2 0x07a7
+>  #define USB_DEVICE_ID_MS_TYPE_COVER_2  0x07a9
 > diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-> index 6fd5817..0a61403 100644
+> index 0a61403..5b5d40f 100644
 > --- a/drivers/hid/hid-microsoft.c
 > +++ b/drivers/hid/hid-microsoft.c
-> @@ -30,23 +30,28 @@
+> @@ -29,12 +29,28 @@
+>  #define MS_NOGET               0x10
 >  #define MS_DUPLICATE_USAGES    0x20
 >  #define MS_RDESC_3K            0x40
+> +#define MS_SIDEWINDER  0x80
 >
-> +struct ms_data {
-> +       unsigned long quirks;
-> +       void *extra;
+>  struct ms_data {
+>         unsigned long quirks;
+>         void *extra;
 
-I do not like having a void * pointer in this kind of struct,
-especially when it is not used in the current patch.
-Please remove it in v2
+ok, so now extra is used, but with a struct ms_sidewinder_extra.
+I do not think having a void pointer is a right choice here given that
+there is only one possibility. So I'd rather have a direct struct
+ms_sidewinder_extra pointer and the future will tell us if we need to
+have a void pointer or not.
 
+In fact, I'd rather not having to allocate twice during probe, so I
+would even consider integrating struct ms_sidewinder_extra directly in
+struct ms_data.
+
+>  };
+>
+> +/*
+> + * For Sidewinder X4 / X6 devices.
+> + * @profile: for storing profile status.
+> + * @status: holds information about LED states and numpad mode (X6
+> + * only). The 1st bit is for numpad mode, bits 2 - 7 are reserved for
+> + * LED configuration and the last bit is currently unused.
+> + * @key_mask: holds information about pressed special keys. It's
+> + * readable via sysfs, so user-space tools can handle keys.
+> + */
+> +struct ms_sidewinder_extra {
+> +       unsigned profile;
+> +       __u8 status;
+
+Both profile and status are not used in this patch.
+
+Splitting a big patch into some smaller ones is good, but keep in mind
+that we want to have patches that are self consistent and that do only
+what they say.
+Let's assume we revert in the future 3/4, what will happens with those
+two fields which will not be used anymore?
+
+> +       unsigned long key_mask;
 > +};
 > +
 >  static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
 >                 unsigned int *rsize)
 >  {
-> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-> +       struct ms_data *sc = hid_get_drvdata(hdev);
+> @@ -143,6 +159,56 @@ static int ms_presenter_8k_quirk(struct hid_input *hi, struct hid_usage *usage,
+>         return 1;
+>  }
 >
->         /*
->          * Microsoft Wireless Desktop Receiver (Model 1028) has
->          * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
->          */
-> -       if ((quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
-> +       if ((sc->quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
->                         rdesc[559] == 0x29) {
->                 hid_info(hdev, "fixing up Microsoft Wireless Receiver Model 1028 report descriptor\n");
->                 rdesc[557] = 0x35;
->                 rdesc[559] = 0x45;
->         }
->         /* the same as above (s/usage/physical/) */
-> -       if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
-> +       if ((sc->quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
->                         rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
->                         rdesc[97] == 0xff) {
->                 rdesc[94] = 0x35;
-> @@ -142,15 +147,15 @@ static int ms_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+> +static int ms_sidewinder_kb_quirk(struct hid_input *hi, struct hid_usage *usage,
+> +               unsigned long **bit, int *max)
+> +{
+> +       set_bit(EV_REP, hi->input->evbit);
+
+I think you should also test against the usage page. It looks like the
+usages are specific enough, but we never know.
+
+> +       switch (usage->hid & HID_USAGE) {
+> +       /*
+> +        * Registering Sidewinder X4 / X6 special keys. S1 - S6 macro keys
+> +        * are shared between Sidewinder X4 & X6 and are programmable.
+> +        */
+> +       case 0xfb01: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S1 */
+> +       case 0xfb02: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S2 */
+> +       case 0xfb03: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S3 */
+> +       case 0xfb04: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S4 */
+> +       case 0xfb05: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S5 */
+> +       case 0xfb06: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S6 */
+> +       /* S7 - S30 macro keys are only present on the Sidewinder X6 */
+> +       case 0xfb07: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S7 */
+> +       case 0xfb08: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S8 */
+> +       case 0xfb09: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S9 */
+> +       case 0xfb0a: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S10 */
+> +       case 0xfb0b: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S11 */
+> +       case 0xfb0c: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S12 */
+> +       case 0xfb0d: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S13 */
+> +       case 0xfb0e: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S14 */
+> +       case 0xfb0f: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S15 */
+> +       case 0xfb10: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S16 */
+> +       case 0xfb11: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S17 */
+> +       case 0xfb12: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S18 */
+> +       case 0xfb13: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S19 */
+> +       case 0xfb14: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S20 */
+> +       case 0xfb15: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S21 */
+> +       case 0xfb16: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S22 */
+> +       case 0xfb17: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S23 */
+> +       case 0xfb18: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S24 */
+> +       case 0xfb19: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S25 */
+> +       case 0xfb1a: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S26 */
+> +       case 0xfb1b: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S27 */
+> +       case 0xfb1c: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S28 */
+> +       case 0xfb1d: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S29 */
+> +       case 0xfb1e: ms_map_key_clear(KEY_UNKNOWN);     break;  /* S30 */
+> +       /* Not programmable keys: Profile, Game Center (X6 only) and Macro */
+> +       case 0xfd11: ms_map_key_clear(KEY_GAMES);       break;  /* X6: Game Center*/
+> +       case 0xfd12: ms_map_key_clear(KEY_MACRO);       break;  /* Macro */
+> +       case 0xfd15: ms_map_key_clear(KEY_UNKNOWN);     break;  /* Profile */
+
+Arg, this is a little bit ugly.
+
+you should either consider using fall-through between the each case or
+a for loop like you did in ms_event.
+
+
+> +       default:
+> +               return 0;
+> +       }
+> +       return 1;
+> +}
+> +
+>  static int ms_input_mapping(struct hid_device *hdev, struct hid_input *hi,
 >                 struct hid_field *field, struct hid_usage *usage,
 >                 unsigned long **bit, int *max)
->  {
-> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-> +       struct ms_data *sc = hid_get_drvdata(hdev);
->
-> -       if (quirks & MS_ERGONOMY) {
-> +       if (sc->quirks & MS_ERGONOMY) {
->                 int ret = ms_ergonomy_kb_quirk(hi, usage, bit, max);
->                 if (ret)
->                         return ret;
->         }
->
-> -       if ((quirks & MS_PRESENTER) &&
-> +       if ((sc->quirks & MS_PRESENTER) &&
+> @@ -159,6 +225,10 @@ static int ms_input_mapping(struct hid_device *hdev, struct hid_input *hi,
 >                         ms_presenter_8k_quirk(hi, usage, bit, max))
 >                 return 1;
 >
-> @@ -161,9 +166,9 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
->                 struct hid_field *field, struct hid_usage *usage,
->                 unsigned long **bit, int *max)
->  {
-> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-> +       struct ms_data *sc = hid_get_drvdata(hdev);
->
-> -       if (quirks & MS_DUPLICATE_USAGES)
-> +       if (sc->quirks & MS_DUPLICATE_USAGES)
->                 clear_bit(usage->code, *bit);
->
+> +       if ((sc->quirks & MS_SIDEWINDER) &&
+> +                       ms_sidewinder_kb_quirk(hi, usage, bit, max))
+> +               return 1;
+> +
 >         return 0;
-> @@ -172,7 +177,7 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
->  static int ms_event(struct hid_device *hdev, struct hid_field *field,
->                 struct hid_usage *usage, __s32 value)
->  {
-> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
-> +       struct ms_data *sc = hid_get_drvdata(hdev);
->         struct input_dev *input;
+>  }
 >
->         if (!(hdev->claimed & HID_CLAIMED_INPUT) || !field->hidinput ||
-> @@ -182,7 +187,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
->         input = field->hidinput->input;
->
->         /* Handling MS keyboards special buttons */
-> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
-> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
->                 /* Special keypad keys */
->                 input_report_key(input, KEY_KPEQUAL, value & 0x01);
->                 input_report_key(input, KEY_KPLEFTPAREN, value & 0x02);
-> @@ -190,7 +195,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+> @@ -229,6 +299,34 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
 >                 return 1;
 >         }
 >
-> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
-> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
->                 /* Scroll wheel */
->                 int step = ((value & 0x60) >> 5) + 1;
->
-> @@ -205,7 +210,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
->                 return 1;
->         }
->
-> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
-> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
->                 static unsigned int last_key = 0;
->                 unsigned int key = 0;
->                 switch (value) {
-> @@ -229,12 +234,19 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
->
->  static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  {
-> -       unsigned long quirks = id->driver_data;
-> +       struct ms_data *sc;
->         int ret;
->
-> -       hid_set_drvdata(hdev, (void *)quirks);
-> +       sc = devm_kzalloc(&hdev->dev, sizeof(struct ms_data), GFP_KERNEL);
-> +       if (!sc) {
-> +               hid_err(hdev, "can't alloc microsoft descriptor\n");
+> +       /*
+> +        * Sidewinder special button handling & profile switching
+> +        *
+> +        * Pressing S1 - S30 macro keys will not send out any keycodes, but
+> +        * set bits on key_mask (readable via sysfs). It's possible to press
+> +        * multiple special keys at the same time.
+> +        */
+> +       if (sc->quirks & MS_SIDEWINDER) {
+> +               struct input_dev *input = field->hidinput->input;
+> +               struct ms_sidewinder_extra *sidewinder = sc->extra;
+> +               int i;
+> +
+> +               for (i = 0; i <= 29; i++) {     /* Run through S1 - S30 keys */
+> +                       if ((usage->hid & HID_USAGE) == (0xfb01 + i)) {
+> +                               value ? set_bit(i, &sidewinder->key_mask) : clear_bit(i, &sidewinder->key_mask);
+> +                               break;  /* Exit loop, when correct hid usage has been found */
+> +                       }
+> +               }
+> +
+> +               switch (usage->hid & HID_USAGE) {
+> +               case 0xfd11: input_event(input, usage->type, KEY_GAMES, value); break;
+> +               case 0xfd12: input_event(input, usage->type, KEY_MACRO, value); break;
+> +               case 0xfd15: value ? set_bit(30, &sidewinder->key_mask) : clear_bit(30, &sidewinder->key_mask); break;
 
-How about: "Can not allocate microsoft data"?
+I don't really like the "30" here. But I do not see an elegant way of
+getting it.
 
-I have no idea where this "descriptor" comes from.
+> +               }
+> +
+> +               return 1;
+> +       }
+> +
+>         return 0;
+>  }
+>
+> @@ -249,6 +347,18 @@ static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         if (sc->quirks & MS_NOGET)
+>                 hdev->quirks |= HID_QUIRK_NOGET;
+>
+> +       if (sc->quirks & MS_SIDEWINDER) {
+> +               struct ms_sidewinder_extra *sidewinder;
+> +
+> +               sidewinder = devm_kzalloc(&hdev->dev, sizeof(struct ms_sidewinder_extra),
+> +                                       GFP_KERNEL);
+> +               if (!sidewinder) {
+> +                       hid_err(hdev, "can't alloc microsoft descriptor\n");
 
-Besides these two nitpicks, the rest of the patch is:
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Hmm, this err message does not reflect the reality (it's the same as
+the one used in  1/4).
 
 Cheers,
 Benjamin
 
-> +               return -ENOMEM;
+> +                       return -ENOMEM;
+> +               }
+> +               sc->extra = sidewinder;
 > +       }
 > +
-> +       sc->quirks = id->driver_data;
-> +       hid_set_drvdata(hdev, sc);
->
-> -       if (quirks & MS_NOGET)
-> +       if (sc->quirks & MS_NOGET)
->                 hdev->quirks |= HID_QUIRK_NOGET;
->
 >         ret = hid_parse(hdev);
-> @@ -243,7 +255,7 @@ static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
->                 goto err_free;
->         }
->
-> -       ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((quirks & MS_HIDINPUT) ?
-> +       ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((sc->quirks & MS_HIDINPUT) ?
->                                 HID_CONNECT_HIDINPUT_FORCE : 0));
 >         if (ret) {
->                 hid_err(hdev, "hw start failed\n");
+>                 hid_err(hdev, "parse failed\n");
+> @@ -270,6 +380,10 @@ err_free:
+>  static const struct hid_device_id ms_devices[] = {
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_SIDEWINDER_GV),
+>                 .driver_data = MS_HIDINPUT },
+> +       { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_SIDEWINDER_X6),
+> +               .driver_data = MS_SIDEWINDER },
+> +       { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_SIDEWINDER_X4),
+> +               .driver_data = MS_SIDEWINDER },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_OFFICE_KB),
+>                 .driver_data = MS_ERGONOMY },
+>         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_NE4K),
 > --
 > 1.9.1
 >
