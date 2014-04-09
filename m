@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665AbaDIOzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:55:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33204 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932826AbaDIOzG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:55:06 -0400
-Date: Wed, 9 Apr 2014 16:51:33 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/15] clk: sunxi: add A31 APB0 gates compatible string
- to the documentation
-Message-ID: <20140409145133.GF28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397051478-4113-7-git-send-email-boris.brezillon@free-electrons.com>
+	id S933444AbaDIO57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:57:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62268 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932807AbaDIO55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 10:57:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,826,1389772800"; 
+   d="scan'208";a="517557317"
+Message-ID: <53455FC6.7080009@intel.com>
+Date: Wed, 09 Apr 2014 22:57:10 +0800
+From: Xiao Jin <jin.xiao@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mrJd9p1Ce66CJMxE"
-Content-Disposition: inline
-In-Reply-To: <1397051478-4113-7-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: oneukum@suse.de, jhovold@gmail.com, gnomes@lxorguk.ukuu.org.uk
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, david.a.cohen@linux.intel.com,
+        yanmin.zhang@intel.com, jin.xiao@intel.com
+Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
+References: <53436770.9090008@intel.com>
+In-Reply-To: <53436770.9090008@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks all for the review. We meet with the problems when developing 
+product. I would like to explain my understanding.
 
---mrJd9p1Ce66CJMxE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/08/2014 11:05 AM, Xiao Jin wrote:
+>
+> We find two problems on acm tty write delayed mechanism.
+> (1) When acm resume, the delayed wb will be started. But now
+> only one write can be saved during acm suspend. More acm write
+> may be abandoned.
 
-On Wed, Apr 09, 2014 at 03:51:09PM +0200, Boris BREZILLON wrote:
-> Add the new "allwinner,sun6i-a31-apb0-gates-clk" compatible string to the
-> sunxi clock documentation.
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+The scenario usually happened when user space write series AT after acm 
+suspend. If acm accept the first AT, what's the reason for acm to refuse 
+the second AT? If write return 0, user space will try repeatedly until 
+resume. It looks simpler that acm accept all the data and sent out urb 
+when resume.
 
-I'd probably merge this with the previous patch.
+> (2) acm tty port ASYNCB_INITIALIZED flag will be cleared when
+> close. If acm resume callback run after ASYNCB_INITIALIZED flag
+> cleared, there will have no chance for delayed write to start.
+> That lead to acm_wb.use can't be cleared. If user space open
+> acm tty again and try to setd, tty will be blocked in
+> tty_wait_until_sent for ever.
+>
 
-There's not really any new bindings introduced here, so I guess you
-don't really have to make it two commits.
+We see tty write and close concurrently after acm suspend in this case. 
+It looks no method to avoid it from tty layer. acm_tty_write and 
+acm_resume call after acm_port_shutdown. It looks any action in 
+acm_port_shutdown can't solve the problem. As acm has accepted the user 
+space data, we can only find a way to send out urb. I feel anyway to 
+discard the data looks like a lie to user space.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+In my understanding acm should accept data as much as possible, and send 
+out urb as soon as possible. What do you think of?
 
---mrJd9p1Ce66CJMxE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRV50AAoJEBx+YmzsjxAgrV0P/3IXGkl4mujmMyFea2GF7PfW
-6Jh0q5W9QrzfNxLV8H2Q8Ez07WB/rJTEm2YLMSzDkBMxtiBB0oG0iH8z6Va8aHdD
-AWurX6snwMZIWulZey76qF1tVRBSwqRYshtwmxACPp+4uMUe0tHDVc2S1eGcR0tE
-YGGPl7dCmjihvak5UwwMLUPW9Y/odAD8Hv3T/AFS0n6WBsxjS1Nl6HIcHoPxJ6hZ
-onBTmGumQXTkFGVwGfNRyAhPlPzc4S8dJS/Hwvn3IruwnPt6GBGNFZWyUZg+2VKN
-p90DolY3r0G4Nwe1/p2CQPatgY7o6K4pNw84F1LlDKOCmu23QkABOyy2J4d6yfdK
-UviXtN57rcv9oq5cXAJNtx+lL8TmCquRmAFHBUc/gC2Mbib8TuaE6XlBwQmlIKRE
-ZLqEGMiSH9BcMSEbGIhD8Em3xfTGX/hHHF7U6qV8UkGg1q3CnoPYq4iZ2JuVIcEN
-rbLchKPDe41LMSNDe9bz1qGItWBG17Re17CeJej/Ik0n++6Ji7RTVUVhmsu8mM8z
-uGikpnb0gg6tDWibr2LyIPoEi33lakRLgTkgpMXkK6zIVejPUm0DplZ/XbmIsJmR
-Wrj0BPRf0uw4t6y+gnzKbf5wY0T8fFDZN7UzVcAgUREqw6G12p42hNMeoh3kqlau
-uKpLQzgSzqGqTH9jmjoz
-=1dGf
------END PGP SIGNATURE-----
-
---mrJd9p1Ce66CJMxE--
+Br, Jin
