@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726AbaDICsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 22:48:37 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:43916 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756284AbaDICsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 22:48:35 -0400
-MIME-Version: 1.0
-X-Originating-IP: [115.42.131.38]
-In-Reply-To: <CAKMK7uE=F_T9M6L7U7t7xeJLdJXbhYF+MbvrsAeYeSqCC=hKKA@mail.gmail.com>
-References: <CAMVG2sti6EMQXw5xyNp-wkq0nGz4zVgz1p7AO48Kb1_zYk8K0w@mail.gmail.com>
-	<878urg9ttv.fsf@intel.com>
-	<CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com>
-	<CAKMK7uE=F_T9M6L7U7t7xeJLdJXbhYF+MbvrsAeYeSqCC=hKKA@mail.gmail.com>
-Date: Wed, 9 Apr 2014 10:48:34 +0800
-Message-ID: <CAMVG2ssELOqn8BHVwUMu1+X9LKNWQEA2Bpk+n+bVOvxOFGHktg@mail.gmail.com>
-Subject: Re: [Intel-gfx] i915 DVI resolution regression (3.13.7+)
-From: Daniel J Blueman <daniel@quora.org>
-To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932181AbaDICvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 22:51:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51205 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756659AbaDICvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 22:51:42 -0400
+Message-ID: <1397011868.3671.94.camel@pasglop>
+Subject: Re: driver skip pci_set_master, fix it? No.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Mark Lord <mlord@pobox.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Wed, 09 Apr 2014 12:51:08 +1000
+In-Reply-To: <5344679E.1030008@pobox.com>
+References: <5344251D.7040805@pobox.com>
+	 <CAErSpo6KuYLaoEsxR4jJQ98P23kNEMzMcu_-RyM3nWd6YRxgag@mail.gmail.com>
+	 <5344679E.1030008@pobox.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ville et al,
+On Tue, 2014-04-08 at 17:18 -0400, Mark Lord wrote:
+> > I assume you're talking about the one added by cf3e1feba7f9 ("PCI:
+> > Workaround missing pci_set_master in pci drivers"), but as far as I
+> > can tell, it only calls pci_set_master() for *bridge* devices.  What
+> > am I missing?  Is pci_set_master() being called for your endpoint?
+> > What path is that?
+> 
+> Yes, it is being called during execution of the _probe() function in my driver,
+> as evidenced by the annoying (and wrong) message it produces.
+> 
+> Next time I've got the hardware at hand, I'll put a "dump_stack()" into there
+> to see the exact calling path.
 
-On 8 April 2014 16:02, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> On Tue, Apr 8, 2014 at 9:32 AM, Daniel J Blueman <daniel@quora.org> wrote:
->> I am using a dual-link DVI-D to DVI-D cable to this monitor, since I
->> previously couldn't get 2560x1440 via HDMI.
->>
->> If it isn't this commit, then it may be another commit in 3.13.7,
->> albeit it feels less likely.
->
-> Before we go on a wild goose chase, can you please confirm your
-> suspicion with a revert?
+Note that one of the reason we want to do it early on bridges is that without it,
+we may also not get the PCIe error messages.
 
-I built stock 3.13.7 to reproduce the issue (Ubuntu mainline config);
-I reverted e3ea8fa6beaf55fee64bf816f3b8a80ad733b2c2 and rebuilt, and
-don't see the issue. It's probably an idea if you have a panel that
-requires dual-link DVI on the automated test matrix if not already.
+Cheers,
+Ben.
 
-Anyway, glad to have helped.
 
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
