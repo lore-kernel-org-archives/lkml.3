@@ -1,25 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668AbaDIEeZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 00:34:25 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63419 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779AbaDIEeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 00:34:22 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de, john.stultz@linaro.org
-Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        Arvind.Chauhan@arm.com, linux-kernel@vger.kernel.org,
-        fengguang.wu@intel.com, jet.chen@intel.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2] clocksource: register cpu notifier to remove timer from dying CPU
-Date: Wed,  9 Apr 2014 10:04:15 +0530
-Message-Id: <f13134fea7e7658ae3dab90faca1e6578b8f82e7.1397017662.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S932340AbaDIEfN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 00:35:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50231 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757AbaDIEfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 00:35:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,823,1389772800"; 
+   d="scan'208,223";a="517213941"
+Message-ID: <5344CDCB.20707@intel.com>
+Date: Wed, 09 Apr 2014 12:34:19 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Wu, Fengguang" <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [clocksource] INFO: possible irq lock inversion dependency detected
+References: <5343740C.9010609@intel.com>	<CAKohpomRb1pix3zQWeY0mKkfuikUtR6w+PUOTzQV_hngPrpHRw@mail.gmail.com>	<5344A0A3.9030909@intel.com> <CAKohpo=t2Bb7EO3J36i9iRn_nHbtPvwzBpswVSb8xQXT7kk03g@mail.gmail.com>
+In-Reply-To: <CAKohpo=t2Bb7EO3J36i9iRn_nHbtPvwzBpswVSb8xQXT7kk03g@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------040209090506030504020904"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+This is a multi-part message in MIME format.
+--------------040209090506030504020904
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 04/09/2014 12:25 PM, Viresh Kumar wrote:
+> On 9 April 2014 06:51, Jet Chen <jet.chen@intel.com> wrote:
+>> spin_lock_irqsave() does fix this issue.
+>>
+>> Tested-by: Jet Chen <jet.chen@intel.com>
+>
+> Thanks a lot :)
+>
+
+Welcome.
+
+> How did you got this in cc list ?
+>
+> "abd38155f8293923de5953cc063f9e2d7ecb3f04.1396679170.git.viresh.kumar@linaro.org"
+> <abd38155f8293923de5953cc063f9e2d7ecb3f04.1396679170.git.viresh.kumar@linaro.org>
+>
+
+I got it from the patch you sent to me before. attach it again.
+Apologizes if it's improper to cc this list.
+
+
+--------------040209090506030504020904
+Content-Type: text/x-patch;
+ name="0001-clocksource-register-cpu-notifier-to-remove-timer-fr.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-clocksource-register-cpu-notifier-to-remove-timer-fr.pa";
+ filename*1="tch"
+
+>From abd38155f8293923de5953cc063f9e2d7ecb3f04 Mon Sep 17 00:00:00 2001
+Message-Id: <abd38155f8293923de5953cc063f9e2d7ecb3f04.1396679170.git.viresh.kumar@linaro.org>
+From: Viresh Kumar <viresh.kumar@linaro.org>
+Date: Sat, 5 Apr 2014 11:43:25 +0530
+Subject: [PATCH] clocksource: register cpu notifier to remove timer from
+ dying CPU
 
 clocksource core is using add_timer_on() to run clocksource_watchdog() on all
 CPUs one by one. But when a core is brought down, clocksource core doesn't
@@ -61,24 +107,18 @@ only when we start clocksource-watchdog. And if on the CPU_DEAD notification it
 is found that dying CPU was the CPU on which this timer is queued on, then it is
 removed from that CPU and queued to next CPU.
 
-Reported-and-tested-by: Jet Chen <jet.chen@intel.com>
+Reported-by: Jet Chen <jet.chen@intel.com>
 Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-V1->V2:
-- Moved 'static int timer_cpu' within #ifdef CONFIG_CLOCKSOURCE_WATCHDOG/endif
-- replaced spin_lock with spin_lock_irqsave in clocksource_cpu_notify() as a bug
-  is reported by Jet Chen with that.
-- Tested again by Jet Chen (Thanks again :))
-
- kernel/time/clocksource.c | 65 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 54 insertions(+), 11 deletions(-)
+ kernel/time/clocksource.c | 64 +++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 53 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index ba3e502..d288f1f 100644
+index ba3e502..9e96853 100644
 --- a/kernel/time/clocksource.c
 +++ b/kernel/time/clocksource.c
-@@ -23,10 +23,12 @@
+@@ -23,16 +23,21 @@
   *   o Allow clocksource drivers to be unregistered
   */
  
@@ -91,21 +131,20 @@ index ba3e502..d288f1f 100644
  #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
  #include <linux/tick.h>
  #include <linux/kthread.h>
-@@ -180,6 +182,9 @@ static char override_name[CS_NAME_LEN];
- static int finished_booting;
  
- #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
-+/* Tracks current CPU to queue watchdog timer on */
+ #include "tick-internal.h"
+ 
++/* Tracks next CPU to queue watchdog timer on */
 +static int timer_cpu;
 +
- static void clocksource_watchdog_work(struct work_struct *work);
- static void clocksource_select(void);
- 
+ void timecounter_init(struct timecounter *tc,
+ 		      const struct cyclecounter *cc,
+ 		      u64 start_tstamp)
 @@ -246,12 +251,25 @@ void clocksource_mark_unstable(struct clocksource *cs)
  	spin_unlock_irqrestore(&watchdog_lock, flags);
  }
  
-+static void queue_timer_on_next_cpu(void)
++void queue_timer_on_next_cpu(void)
 +{
 +	/*
 +	 * Cycle through CPUs to check if the CPUs stay synchronized to each
@@ -128,7 +167,7 @@ index ba3e502..d288f1f 100644
  
  	spin_lock(&watchdog_lock);
  	if (!watchdog_running)
-@@ -336,27 +354,51 @@ static void clocksource_watchdog(unsigned long data)
+@@ -336,27 +354,50 @@ static void clocksource_watchdog(unsigned long data)
  	if (reset_pending)
  		atomic_dec(&watchdog_reset_pending);
  
@@ -150,9 +189,8 @@ index ba3e502..d288f1f 100644
 +				unsigned long action, void *hcpu)
 +{
 +	long cpu = (long)hcpu;
-+	unsigned long flags;
 +
-+	spin_lock_irqsave(&watchdog_lock, flags);
++	spin_lock(&watchdog_lock);
 +	if (!watchdog_running)
 +		goto notify_out;
 +
@@ -167,7 +205,7 @@ index ba3e502..d288f1f 100644
 +	}
 +
 +notify_out:
-+	spin_unlock_irqrestore(&watchdog_lock, flags);
++	spin_unlock(&watchdog_lock);
 +	return NOTIFY_OK;
 +}
 +
@@ -190,7 +228,7 @@ index ba3e502..d288f1f 100644
  	watchdog_running = 1;
  }
  
-@@ -365,6 +407,7 @@ static inline void clocksource_stop_watchdog(void)
+@@ -365,6 +406,7 @@ static inline void clocksource_stop_watchdog(void)
  	if (!watchdog_running || (watchdog && !list_empty(&watchdog_list)))
  		return;
  	del_timer(&watchdog_timer);
@@ -201,3 +239,5 @@ index ba3e502..d288f1f 100644
 -- 
 1.7.12.rc2.18.g61b472e
 
+
+--------------040209090506030504020904--
