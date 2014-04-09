@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778AbaDIQub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:50:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45335 "EHLO mga01.intel.com"
+	id S933997AbaDIQuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:50:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64953 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932898AbaDIQu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:50:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,827,1389772800"; 
-   d="scan'208";a="510247408"
-Message-ID: <5345794C.3040402@intel.com>
-Date: Thu, 10 Apr 2014 00:46:04 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932898AbaDIQux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 12:50:53 -0400
+Date: Wed, 9 Apr 2014 18:50:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 6/6] uprobes/x86: Emulate rip-relative conditional
+	"near" jmp's
+Message-ID: <20140409165042.GE18486@redhat.com>
+References: <20140406201524.GA32694@redhat.com> <20140406201636.GA521@redhat.com> <20140407142823.GB8881@redhat.com> <1396998435.5056.74.camel@oc7886638347.ibm.com.usor.ibm.com>
 MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: gregkh@linuxfoundation.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: Re: [FMC] BUG: scheduling while atomic: swapper/1/0x10000002
-References: <5344BF60.5050300@intel.com> <20140409050843.GA18949@mail.gnudd.com>
-In-Reply-To: <20140409050843.GA18949@mail.gnudd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396998435.5056.74.camel@oc7886638347.ibm.com.usor.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 01:08 PM, Alessandro Rubini wrote:
-> Hello.
-> Thank you for the report.
-> 
-> I'm at a conference and I fear I won't be able to test myself in the
-> next days, but I think this is already fixed (it is part of
-> the "misc_register" call path, so it's the same problem).
-> 
-> The fix is commit v3.11-rc2-11-g783c2fb
-> 
->    783c2fb FMC: fix locking in sample chardev driver
-> 
-> This commit, however, is not part of v3.11 and I think this is why you
-> are finding the problem in the v3.10..v3.11 interval.
-> 
-> thank you again
-> /alessandro
+On 04/08, Jim Keniston wrote:
+>
+> On Mon, 2014-04-07 at 16:28 +0200, Oleg Nesterov wrote:
+> >
+> > It seems that 16bit condi jmp is just 0x0f + short_jump_opc_plus_0x10.
+>
+> Yes, but the code could use a comment to that effect.  See below.
 
-Alessandro,  your commit 83c2fb FMC: fix locking in sample chardev driver fixes the issue.
+OK, will do.
 
-Tested-by: Jet Chen <jet.chen@intel.com>
+> Searching for "jump" in the AMD manual, I see that there are 3 other
+> instructions that are essentially conditional branches: loop,
+> loope/loopz, and loopne/loopnz.
 
-Thanks,
-Jet
+Yes, I know, Denys already informed me privately ;)
+
+> The offset is always 8 bits.
+
+And thus this series can ignore them. But as I already said, I'll try
+to support them later just for completeness.
+
+> BTW, patches 2 and 3 look fine to me.
+
+Great!
+
+Thanks again Jim for your helpful review.
+
+Oleg.
+
