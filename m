@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573AbaDIJpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 05:45:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36519 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758330AbaDIJpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 05:45:35 -0400
-Date: Wed, 9 Apr 2014 11:45:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        Michele Ballabio <barra_cuda@katamail.com>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: Bisected KVM hang on x86-32 between v3.12 and v3.13
-Message-ID: <20140409094515.GR11096@twins.programming.kicks-ass.net>
-References: <5341707F.5000406@katamail.com>
- <20140407150337.GO10526@twins.programming.kicks-ass.net>
- <20140407150705.GB13658@twins.programming.kicks-ass.net>
- <5342EB78.3060002@gmx.de>
- <20140407185658.GK11096@twins.programming.kicks-ass.net>
- <20140408122128.GC13658@twins.programming.kicks-ass.net>
- <53450F7E.7040904@canonical.com>
+	id S932733AbaDIJqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 05:46:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50843 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758209AbaDIJqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 05:46:48 -0400
+Date: Wed, 9 Apr 2014 11:46:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Subject: Re: [PATCH v7 11/22] Replace ext2_clear_xip_target with
+ dax_clear_blocks
+Message-ID: <20140409094644.GD32103@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <b94af75d7123feced8ea8ba42d1d0e7c740d5009.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53450F7E.7040904@canonical.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <b94af75d7123feced8ea8ba42d1d0e7c740d5009.1395591795.git.matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 11:14:38AM +0200, Stefan Bader wrote:
-> On 08.04.2014 14:21, Peter Zijlstra wrote:
-> > On Mon, Apr 07, 2014 at 08:56:58PM +0200, Peter Zijlstra wrote:
-> >> On Mon, Apr 07, 2014 at 08:16:24PM +0200, Toralf Förster wrote:
-> >>
-> >>> v3.14-10353-g2b3a8fd works fine AFAICS
-> >>> (BTW the fix is stable material, right ?)
-> >>
-> >> I'm fairly sure its not; its a rather invasive series; see:
-> >>
-> >> 2432e1364bbe x86: Nuke the supervisor_stack field in i386 thread_info
-> >> b807902a88c4 x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
-> >> 0788aa6a23cb x86: Prepare removal of previous_esp from i386 thread_info structure
-> >> 198d208df437 x86: Keep thread_info on thread stack in x86_32
-> >>
-> >> Let me see if there's anything 'simpler' we can stuff in .13+
-> > 
-> > OK.. so could someone test the below patch to see if that makes things
-> > work for .13 and .14?
+On Sun 23-03-14 15:08:37, Matthew Wilcox wrote:
+> This is practically generic code; other filesystems will want to call
+> it from other places, but there's nothing ext2-specific about it.
 > 
-> Hi Peter,
+> Make it a little more generic by allowing it to take a count of the number
+> of bytes to zero rather than fixing it to a single page.  Thanks to Dave
+> Hansen for suggesting that I need to call cond_resched() if zeroing more
+> than one page.
+  Another day, some more review ;) Comments below.
 > 
-> sorry I only had time to try 3.13 but that looks good. I was able to get kvm up
-> and running for a longer than usual (without the patch) amount of time without
-> seeing any softlockups.
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> ---
+>  fs/dax.c           | 34 ++++++++++++++++++++++++++++++++++
+>  fs/ext2/inode.c    |  8 +++++---
+>  fs/ext2/xip.c      | 23 -----------------------
+>  fs/ext2/xip.h      |  3 ---
+>  include/linux/fs.h |  6 ++++++
+>  5 files changed, 45 insertions(+), 29 deletions(-)
+> 
+> diff --git a/fs/dax.c b/fs/dax.c
+> index 7271be0..45a0a41 100644
+> --- a/fs/dax.c
+> +++ b/fs/dax.c
+> @@ -23,9 +23,43 @@
+>  #include <linux/memcontrol.h>
+>  #include <linux/mm.h>
+>  #include <linux/mutex.h>
+> +#include <linux/sched.h>
+>  #include <linux/uio.h>
+>  #include <linux/vmstat.h>
+>  
+> +int dax_clear_blocks(struct inode *inode, sector_t block, long size)
+> +{
+> +	struct block_device *bdev = inode->i_sb->s_bdev;
+> +	const struct block_device_operations *ops = bdev->bd_disk->fops;
+> +	sector_t sector = block << (inode->i_blkbits - 9);
+> +	unsigned long pfn;
+> +
+> +	might_sleep();
+> +	do {
+> +		void *addr;
+> +		long count = ops->direct_access(bdev, sector, &addr, &pfn,
+> +									size);
+  So do you assume blocksize == PAGE_SIZE here? If not, addr could be in
+the middle of the page AFAICT.
 
-Great, I suppose I should go write a changelog and talk to Greg about
-how to get this into .13 and .14 stable.
+> +		if (count < 0)
+> +			return count;
+> +		while (count >= PAGE_SIZE) {
+> +			clear_page(addr);
+> +			addr += PAGE_SIZE;
+> +			size -= PAGE_SIZE;
+> +			count -= PAGE_SIZE;
+> +			sector += PAGE_SIZE / 512;
+> +			cond_resched();
+> +		}
+> +		if (count > 0) {
+> +			memset(addr, 0, count);
+> +			sector += count / 512;
+> +			size -= count;
+> +		}
+> +	} while (size);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(dax_clear_blocks);
+> +
+>  static long dax_get_addr(struct inode *inode, struct buffer_head *bh,
+>  								void **addr)
+>  {
+> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+> index b156fe8..a9346a9 100644
+> --- a/fs/ext2/inode.c
+> +++ b/fs/ext2/inode.c
+> @@ -733,10 +733,12 @@ static int ext2_get_blocks(struct inode *inode,
+>  
+>  	if (IS_DAX(inode)) {
+>  		/*
+> -		 * we need to clear the block
+> +		 * block must be initialised before we put it in the tree
+> +		 * so that it's not found by another thread before it's
+> +		 * initialised
+>  		 */
+> -		err = ext2_clear_xip_target (inode,
+> -			le32_to_cpu(chain[depth-1].key));
+> +		err = dax_clear_blocks(inode, le32_to_cpu(chain[depth-1].key),
+> +						count << inode->i_blkbits);
+  Umm 'count' looks wrong here. You want to clear only one block, don't
+you?
+
+>  		if (err) {
+>  			mutex_unlock(&ei->truncate_mutex);
+>  			goto cleanup;
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
