@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933464AbaDINvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:51:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60835 "EHLO
+	id S964772AbaDIN5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:57:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60861 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933148AbaDINv3 (ORCPT
+	with ESMTP id S933114AbaDINve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:51:29 -0400
+	Wed, 9 Apr 2014 09:51:34 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Randy Dunlap <rdunlap@infradead.org>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
@@ -16,9 +16,9 @@ To: Randy Dunlap <rdunlap@infradead.org>,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 02/15] ARM: sunxi: dt: document pinctrl clock related properties
-Date: Wed,  9 Apr 2014 15:51:05 +0200
-Message-Id: <1397051478-4113-3-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH 09/15] clk: sunxi: add A31 APB0 reset line defintions
+Date: Wed,  9 Apr 2014 15:51:12 +0200
+Message-Id: <1397051478-4113-10-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -26,28 +26,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document clocks and clock-names properties for the pinctrl driver.
+Add APB0 reset line support for the A31 SoC.
+This reset lines are controlled by the PRCM (Power/Reset/Clock Management) block
+and thus will act on a different iomem range.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/boot/dts/sun6i-a31.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
-index 0e7e9a1..b3e5c30 100644
---- a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
-@@ -15,6 +15,10 @@ Required properties:
-   "allwinner,sun7i-a20-pinctrl"
- - reg: Should contain the register physical address and length for the
-   pin controller.
-+- clocks: Should contain a list of gate clk needed by the pin controller
-+- clock-names: Should at least contain "pio_clk" which is used by the
-+  base pin controller. In case of sun6i-a31 SoC, this property should
-+  also contain the "pioL_clk" string.
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index 61e8b34..ed9c2c1 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -237,6 +237,12 @@
+ 			reg = <0x01c202c0 0xc>;
+ 		};
  
- Please refer to pinctrl-bindings.txt in this directory for details of the
- common pinctrl bindings used by client devices.
++		apb0_rst: reset@01f014b0 {
++			#reset-cells = <1>;
++			compatible = "allwinner,sun6i-a31-clock-reset";
++			reg = <0x01f014b0 0x4>;
++		};
++
+ 		apb1_rst: reset@01c202d0 {
+ 			#reset-cells = <1>;
+ 			compatible = "allwinner,sun6i-a31-clock-reset";
 -- 
 1.8.3.2
 
