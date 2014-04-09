@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933821AbaDIRBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:01:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56494 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933100AbaDIRBN (ORCPT
+	id S964872AbaDIRBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:01:36 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:14264 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933100AbaDIRBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:01:13 -0400
-Date: Wed, 09 Apr 2014 13:01:11 -0400 (EDT)
-Message-Id: <20140409.130111.1002891296248446198.davem@davemloft.net>
-To: kys@microsoft.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Subject: Re: [PATCH net 3/3] Drivers: net: hyperv: Address UDP checksum
- issues
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1396986371-12137-4-git-send-email-kys@microsoft.com>
-References: <1396986332-12098-1-git-send-email-kys@microsoft.com>
-	<1396986371-12137-1-git-send-email-kys@microsoft.com>
-	<1396986371-12137-4-git-send-email-kys@microsoft.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 9 Apr 2014 13:01:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnYGAJx8RVNXQ67n/2dsb2JhbABZgwbFH4EhF3SCZhwjGIECJBOIAAHNPY4jSYQ/AQOOXol/AZJCgzI7gS0
+Date: Wed, 9 Apr 2014 19:01:28 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Anton <anton@tuxera.com>
+Subject: [PATCH v2] NTFS: Remove NULL value assignments
+Message-Id: <20140409190128.573f05f235cc227617bb76b2@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-Date: Tue,  8 Apr 2014 12:46:11 -0700
+Static values are automatically initialized to NULL.
 
->  	} else if (net_trans_info & INFO_UDP) {
-> -		csum_info->transmit.udp_checksum = 1;
-> +		/* UDP checksum offload is not supported on ws2008r2.
-> +		 * Furthermore, on ws2012 and ws2012r2, there are some
-> +		 * issues with udp checksum offload from Linux guests.
-> +		 * (these are host issues).
-> +		 * For now compute the checksum here.
-> +		 */
-> +		struct udphdr *uh = udp_hdr(skb);
-> +		u16 udp_len = ntohs(uh->len);
-> +
-> +		uh->check = 0;
-> +		uh->check = csum_tcpudp_magic(ip_hdr(skb)->saddr,
-> +					      ip_hdr(skb)->daddr,
-> +					      udp_len, IPPROTO_UDP,
-> +					      csum_partial(uh, udp_len, 0));
-> +		if (uh->check == 0)
-> +			uh->check = CSUM_MANGLED_0;
-> +
-> +		csum_info->transmit.udp_checksum = 0;
+Acked-by: Anton Altaparmakov <anton@tuxera.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Anton Altaparmakov <anton@tuxera.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ntfs/compress.c | 2 +-
+ fs/ntfs/super.c    | 4 ++--
+ fs/ntfs/sysctl.c   | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-You absolutely cannot mangle packet header contents without first
-COW'ing the SKB to make sure it's writable.
-
-Otherwise network taps like tcpdump, and any other entity with a reference
-to the packet, can see inconsistent state.
+diff --git a/fs/ntfs/compress.c b/fs/ntfs/compress.c
+index ee4144c..f82498c 100644
+--- a/fs/ntfs/compress.c
++++ b/fs/ntfs/compress.c
+@@ -58,7 +58,7 @@ typedef enum {
+ /**
+  * ntfs_compression_buffer - one buffer for the decompression engine
+  */
+-static u8 *ntfs_compression_buffer = NULL;
++static u8 *ntfs_compression_buffer;
+ 
+ /**
+  * ntfs_cb_lock - spinlock which protects ntfs_compression_buffer
+diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+index 9de2491..6c3296e 100644
+--- a/fs/ntfs/super.c
++++ b/fs/ntfs/super.c
+@@ -50,8 +50,8 @@
+ static unsigned long ntfs_nr_compression_users;
+ 
+ /* A global default upcase table and a corresponding reference count. */
+-static ntfschar *default_upcase = NULL;
+-static unsigned long ntfs_nr_upcase_users = 0;
++static ntfschar *default_upcase;
++static unsigned long ntfs_nr_upcase_users;
+ 
+ /* Error constants/strings used in inode.c::ntfs_show_options(). */
+ typedef enum {
+diff --git a/fs/ntfs/sysctl.c b/fs/ntfs/sysctl.c
+index 79a8918..1927170 100644
+--- a/fs/ntfs/sysctl.c
++++ b/fs/ntfs/sysctl.c
+@@ -56,7 +56,7 @@ static ctl_table sysctls_root[] = {
+ };
+ 
+ /* Storage for the sysctls header. */
+-static struct ctl_table_header *sysctls_root_table = NULL;
++static struct ctl_table_header *sysctls_root_table;
+ 
+ /**
+  * ntfs_sysctl - add or remove the debug sysctl
