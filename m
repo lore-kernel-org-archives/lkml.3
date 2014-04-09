@@ -1,75 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964785AbaDIPFn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:05:43 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31336 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933427AbaDIPFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:05:41 -0400
-Date: Wed, 9 Apr 2014 11:04:48 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Noonan <steven@uplinklabs.net>, Mel Gorman <mgorman@suse.de>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-X86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH 2/3] x86: Define _PAGE_NUMA with unused physical address
- bits PMD and PTE levels
-Message-ID: <20140409150448.GE5860@phenom.dumpdata.com>
-References: <20140407161910.GJ1444@moon>
- <20140407182854.GH7292@suse.de>
- <5342FC0E.9080701@zytor.com>
- <20140407193646.GC23983@moon>
- <5342FFB0.6010501@zytor.com>
- <20140407212535.GJ7292@suse.de>
- <CAKbGBLhsWKVYnBqR0ZJ2kfaF_h=XAYkjq=v3RLoRBDkF_w=6ag@mail.gmail.com>
- <e9801da2-3aa4-4c23-9a64-90c890b9ebbc@email.android.com>
- <CAKbGBLjO7pneg_5nXcRXK-9iToZvPkJVZ=AQBfaZkZjU9iN2BA@mail.gmail.com>
- <5344631D.1050203@zytor.com>
+	id S964802AbaDIPGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:06:43 -0400
+Received: from mail.pcs.de ([145.253.69.50]:63615 "EHLO exchange5.pcs.ditec.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933427AbaDIPGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 11:06:42 -0400
+Date: Wed, 9 Apr 2014 17:06:24 +0200
+From: Thomas Pfaff <tpfaff@pcs.com>
+X-X-Sender: tpfaff@lxtpfaff.pcs.ditec.de
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] serial_core: fix uart PORT_UNKNOWN handling
+In-Reply-To: <20140409133909.2073453a@alan.etchedpixels.co.uk>
+Message-ID: <alpine.LNX.2.00.1404091655140.29879@lxtpfaff.pcs.ditec.de>
+References: <alpine.LNX.2.00.1404091151430.6519@lxtpfaff.pcs.ditec.de> <20140409133909.2073453a@alan.etchedpixels.co.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5344631D.1050203@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset="US-ASCII"
+X-GFI-SMTP-Submission: 1
+X-GFI-SMTP-Submission: 1
+X-GFI-SMTP-HelloDomain: lxtpfaff.pcs.ditec.de
+X-GFI-SMTP-RemoteIP: 192.168.9.96
+X-KSE-AntiSpam-Interceptor-Info: white sender email list
+X-GFIME-MASPAM: SPAM
+X-KSE-Antivirus-Interceptor-Info: scan successful
+X-KSE-Antivirus-Info: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 01:59:09PM -0700, H. Peter Anvin wrote:
-> On 04/08/2014 01:51 PM, Steven Noonan wrote:
-> > On Tue, Apr 8, 2014 at 8:16 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> >> <snark>
-> >>
-> >> Of course, it would also be preferable if Amazon (or anything else) didn't need Xen PV :(
-> > 
-> > Well Amazon doesn't expose NUMA on PV, only on HVM guests.
-> > 
-> 
-> Yes, but Amazon is one of the main things keeping Xen PV alive as far as
-> I can tell, which means the support gets built in, and so on.
 
-Taking the snarkiness aside, the issue here is that even on guests
-without NUMA exposed the problem shows up. That is the 'mknuma' are
-still being called even if the guest topology is not NUMA!
+On Wed, 9 Apr 2014, One Thousand Gnomes wrote:
 
-Which brings a question - why isn't the mknuma and its friends gatted by
-an jump_label machinery or such?
+> On Wed, 9 Apr 2014 13:22:14 +0200
+> Thomas Pfaff <tpfaff@pcs.com> wrote:
+> 
+> > 1. uart_change_pm ist called during uart_open and calls the uart pm function
+> >    without checking for PORT_UNKNOWN.
+> 
+> Removing this breaks other parts of the code assume that the port will be
+> powered up (notably setserial paths). So it makes sense that
+> uart_change_pm for a "none" port is a no-op but needs logic in the
+> setserial path to power up a port when we move none->known and power it
+> down on known->none
+> 
 
-Mel, any particular reasons why it couldn't be done this way?
+Then why not move uart_change_pm into uart_port_startup, where it will be called 
+when needed ?
+A reworked patch is below.
+
+> > 2. uart_shutdown is called from uart_set_info and does not check it either.
 > 
-> 	-hpa
+> I don't see why this one matters. We would have done
 > 
+> 	uart_startup
+> 		uart_port_startup
+> 			uport->type == PORT_UNKNOWN
+> 			return 1;
+> 		ASYNCB_INITIALIZED is not set
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 	uart_shutdown
+> 		ASYNCB_INITIALISED is not set
+> 			Skip call to uart_port_shutdown
+> 
+> So that code looks correct to me.
+
+I agree, i have overlooked this.
+
+Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
+---
+diff -urp linux-3.14.org/drivers/tty/serial/serial_core.c linux-3.14/drivers/tty/serial/serial_core.c
+--- linux-3.14.org/drivers/tty/serial/serial_core.c	2014-03-31 05:40:15.000000000 +0200
++++ linux-3.14/drivers/tty/serial/serial_core.c	2014-04-09 16:41:03.940046814 +0200
+@@ -138,6 +138,11 @@ static int uart_port_startup(struct tty_
+ 		return 1;
+ 
+ 	/*
++	 * Make sure the device is in D0 state.
++	 */
++	uart_change_pm(state, UART_PM_STATE_ON);
++
++	/*
+ 	 * Initialise and allocate the transmit and temporary
+ 	 * buffer.
+ 	 */
+@@ -826,25 +831,29 @@ static int uart_set_info(struct tty_stru
+ 		 * If we fail to request resources for the
+ 		 * new port, try to restore the old settings.
+ 		 */
+-		if (retval && old_type != PORT_UNKNOWN) {
++		if (retval) {
+ 			uport->iobase = old_iobase;
+ 			uport->type = old_type;
+ 			uport->hub6 = old_hub6;
+ 			uport->iotype = old_iotype;
+ 			uport->regshift = old_shift;
+ 			uport->mapbase = old_mapbase;
+-			retval = uport->ops->request_port(uport);
+-			/*
+-			 * If we failed to restore the old settings,
+-			 * we fail like this.
+-			 */
+-			if (retval)
+-				uport->type = PORT_UNKNOWN;
+ 
+-			/*
+-			 * We failed anyway.
+-			 */
+-			retval = -EBUSY;
++			if (old_type != PORT_UNKNOWN) {
++				retval = uport->ops->request_port(uport);
++				/*
++				 * If we failed to restore the old settings,
++				 * we fail like this.
++				 */
++				if (retval)
++					uport->type = PORT_UNKNOWN;
++
++				/*
++				 * We failed anyway.
++				 */
++				retval = -EBUSY;
++			}
++
+ 			/* Added to return the correct error -Ram Gupta */
+ 			goto exit;
+ 		}
+@@ -1570,12 +1579,6 @@ static int uart_open(struct tty_struct *
+ 	}
+ 
+ 	/*
+-	 * Make sure the device is in D0 state.
+-	 */
+-	if (port->count == 1)
+-		uart_change_pm(state, UART_PM_STATE_ON);
+-
+-	/*
+ 	 * Start up the serial port.
+ 	 */
+ 	retval = uart_startup(tty, state, 0);
