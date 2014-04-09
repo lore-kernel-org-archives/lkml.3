@@ -1,112 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769AbaDII5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 04:57:31 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:18205
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752839AbaDII5Z (ORCPT
+	id S1758344AbaDIJCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 05:02:18 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:41893 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaDIJCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 04:57:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
-Date: Wed, 9 Apr 2014 16:39:26 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <timur@tabi.org>, <Li.Xiubo@freescale.com>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <rob@landley.net>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: Re: [PATCH v3 2/2] ARM: dts: Append clock bindings for sai2 on VF610
- platform
-Message-ID: <20140409083925.GB12559@MrMyself>
-References: <cover.1396605772.git.Guangyu.Chen@freescale.com>
- <08ba57a2fdce1a404a6bcb61e21e25509fcd6b30.1396605772.git.Guangyu.Chen@freescale.com>
- <20140409081137.GD28420@dragon>
+	Wed, 9 Apr 2014 05:02:15 -0400
+Date: Wed, 9 Apr 2014 10:02:06 +0100
+From: Steve Capper <steve.capper@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>
+Subject: Re: [PATCH v2 2/2] ARM: mm: allow text and rodata sections to be
+ read-only
+Message-ID: <20140409090204.GA6583@linaro.org>
+References: <1396926910-11227-1-git-send-email-keescook@chromium.org>
+ <1396926910-11227-3-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140409081137.GD28420@dragon>
+In-Reply-To: <1396926910-11227-3-git-send-email-keescook@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shawn,
+Hi Kees,
 
-On Wed, Apr 09, 2014 at 04:11:38PM +0800, Shawn Guo wrote:
-> On Fri, Apr 04, 2014 at 06:08:13PM +0800, Nicolin Chen wrote:
-> > Since we added fours clock to the DT binding, we should update the current
-> > SAI dts/dtsi so as not to break their functions.
+On Mon, Apr 07, 2014 at 08:15:10PM -0700, Kees Cook wrote:
+> This introduces CONFIG_DEBUG_RODATA, making kernel text and rodata
+> read-only. Additionally, this splits rodata from text so that rodata can
+> also be NX, which may lead to wasted memory when aligning to SECTION_SIZE.
 > 
-> For the record, you're asking my ACK to have the dts change go via sound
-> tree for not breaking vf610 function on the sound branch,  while
-> ignoring the fact that the existing DTB will break with the new kernel
-> anyway.
+> The read-only areas are made writable during ftrace updates. Additional
+> work is needed for kprobes and kexec, so the feature is temporarily
+> marked as unavailable in Kconfig when those options are selected.
 > 
-> I'm not completely happy with the approach, but considering that the
-> existing binding is incorrect, I'm fine with it as long as people agree
-> to go this way.
-
-Although I'm not a big fan of explaining, yet, I still want to say that
-actually I've balanced this way and your last suggestion against the v1.
-
-It'd be surely better to distinguish two platforms as you suggested if
-we are looking at this change alone since the change is nearly tiny and
-the code to specify them wouldn't be quite a lot. However, there's more
-work to do based on this patch, an auto-selecting clock source mechanism
-for SAI as a DAI master for example, which would need to drop the existing
-code and to add the new one. If vf610 is still using the old one, it would
-not benefit from the further feature and the code would be definitely ugly
-as we would have to add too many platform checks. So personally I prefer
-this reasonable change than the little sacrifice we're going to make here.
-
-Right now I feel grateful for what Sascha suggested to the DT bindings of
-fsl-spdif. It was a painstaking experience when getting it upstream last
-year but what's done at that moment makes the driver more flexible. So I
-think we should do the strict and comprehensive review for the clock part
-to every module from now on since an once-defined-DT-binding would be so
-painful to improved for us.
-
-Thank you,
-Nicolin
-
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/arm/include/asm/cacheflush.h |    9 ++++++++
+>  arch/arm/kernel/ftrace.c          |   17 ++++++++++++++
+>  arch/arm/kernel/vmlinux.lds.S     |    3 +++
+>  arch/arm/mm/Kconfig               |   12 ++++++++++
+>  arch/arm/mm/init.c                |   46 +++++++++++++++++++++++++++++++++++++
+>  5 files changed, 87 insertions(+)
 > 
-> Shawn
-> 
-> > 
-> > Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> > Tested-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > ---
-> >  arch/arm/boot/dts/vf610.dtsi | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-> > index d31ce1b..9fd0007 100644
-> > --- a/arch/arm/boot/dts/vf610.dtsi
-> > +++ b/arch/arm/boot/dts/vf610.dtsi
-> > @@ -139,8 +139,10 @@
-> >  				compatible = "fsl,vf610-sai";
-> >  				reg = <0x40031000 0x1000>;
-> >  				interrupts = <0 86 0x04>;
-> > -				clocks = <&clks VF610_CLK_SAI2>;
-> > -				clock-names = "sai";
-> > +				clocks = <&clks VF610_CLK_SAI2>,
-> > +				       <&clks VF610_CLK_SAI2>,
-> > +				       <&clks 0>, <&clks 0>;
-> > +				clock-names = "bus", "mclk1", "mclk2", "mclk3";
-> >  				status = "disabled";
-> >  			};
-> >  
-> > -- 
-> > 1.8.4
-> > 
-> > 
-> 
+> diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
+> index 8b8b61685a34..b6fea0a1a88b 100644
+> --- a/arch/arm/include/asm/cacheflush.h
+> +++ b/arch/arm/include/asm/cacheflush.h
+> @@ -487,4 +487,13 @@ int set_memory_rw(unsigned long addr, int numpages);
+>  int set_memory_x(unsigned long addr, int numpages);
+>  int set_memory_nx(unsigned long addr, int numpages);
+>  
+> +#ifdef CONFIG_DEBUG_RODATA
+> +void mark_rodata_ro(void);
+> +void set_kernel_text_rw(void);
+> +void set_kernel_text_ro(void);
+> +#else
+> +static inline void set_kernel_text_rw(void) { }
+> +static inline void set_kernel_text_ro(void) { }
+> +#endif
+> +
+>  #endif
+> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+> index af9a8a927a4e..ea446ae09c89 100644
+> --- a/arch/arm/kernel/ftrace.c
+> +++ b/arch/arm/kernel/ftrace.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/ftrace.h>
+>  #include <linux/uaccess.h>
+>  #include <linux/module.h>
+> +#include <linux/stop_machine.h>
+>  
+>  #include <asm/cacheflush.h>
+>  #include <asm/opcodes.h>
+> @@ -35,6 +36,22 @@
+>  
+>  #define	OLD_NOP		0xe1a00000	/* mov r0, r0 */
+>  
+> +static int __ftrace_modify_code(void *data)
+> +{
+> +	int *command = data;
+> +
+> +	set_kernel_text_rw();
+> +	ftrace_modify_all_code(*command);
+> +	set_kernel_text_ro();
+> +
+> +	return 0;
+> +}
 
+Would another approach be to keep all the kernel .text ro then override
+probe_kernel_write (which has a weak reference), to create a separate
+temporary rw mapping to the specific page that needs to be modified?
+
+That way you only worry about TLB and cache maintenance for a smaller
+area. Also, your kernel .text VAs never actually become writable, so
+you don't need to worry as much about unauthorised changes whilst your
+guard is temporarily down.
+
+(Though lots of small changes could probably make this more
+expensive, and you will need to double check aliasing in pre-ARMv7).
+
+Cheers,
+-- 
+Steve
