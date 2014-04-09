@@ -1,175 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138AbaDIHDp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 03:03:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35513 "EHLO comal.ext.ti.com"
+	id S1758254AbaDIHHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 03:07:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46459 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750841AbaDIHDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 03:03:43 -0400
-Message-ID: <5344F0C9.5000503@ti.com>
-Date: Wed, 9 Apr 2014 10:03:37 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1758191AbaDIHH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 03:07:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,824,1389772800"; 
+   d="scan'208";a="517276532"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Dave Airlie <airlied@gmail.com>, Daniel J Blueman <daniel@quora.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] i915 DVI resolution regression (3.13.7+)
+In-Reply-To: <CAPM=9tz+xo7vktTZ=8QB6rMGPnTXd485wbwaq_4Ao9fGEnh4hQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <CAMVG2sti6EMQXw5xyNp-wkq0nGz4zVgz1p7AO48Kb1_zYk8K0w@mail.gmail.com> <878urg9ttv.fsf@intel.com> <CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com> <CAPM=9tyKKn5VrQkwGY2kEVBatSTN5VqJCVXWqFhn4oDe=oqsqA@mail.gmail.com> <CAMVG2stTR=qadOYTMaCnGwLv6pUF9R2VeNVdhnRTw6Gki=FNHA@mail.gmail.com> <CAPM=9tz+xo7vktTZ=8QB6rMGPnTXd485wbwaq_4Ao9fGEnh4hQ@mail.gmail.com>
+User-Agent: Notmuch/0.17+162~g34940eaa1d37 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 09 Apr 2014 10:08:04 +0300
+Message-ID: <87lhvf7zfv.fsf@intel.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>, <gregkh@linuxfoundation.org>
-CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND] drivercore: deferral race condition fix
-References: <1396509127-23819-1-git-send-email-peter.ujfalusi@ti.com> <20140408124335.D7843C4092C@trevor.secretlab.ca> <5343FB23.8090309@ti.com>
-In-Reply-To: <5343FB23.8090309@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 04:35 PM, Peter Ujfalusi wrote:
-> On 04/08/2014 03:43 PM, Grant Likely wrote:
->>> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
->>> index 06051767393f..80703de6e6ad 100644
->>> --- a/drivers/base/dd.c
->>> +++ b/drivers/base/dd.c
->>> @@ -53,6 +53,10 @@ static LIST_HEAD(deferred_probe_pending_list);
->>>  static LIST_HEAD(deferred_probe_active_list);
->>>  static struct workqueue_struct *deferred_wq;
->>>  
->>> +static atomic_t probe_count = ATOMIC_INIT(0);
->>> +static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
->>> +static bool deferral_retry;
->>> +
->>>  /**
->>>   * deferred_probe_work_func() - Retry probing devices in the active list.
->>>   */
->>> @@ -141,6 +145,11 @@ static void driver_deferred_probe_trigger(void)
->>>  	if (!driver_deferred_probe_enable)
->>>  		return;
->>>  
->>> +	if (atomic_read(&probe_count) > 1)
->>> +		deferral_retry = true;
->>> +	else
->>> +		deferral_retry = false;
->>
->> A few comments:
->> - Really need to comment why these lines are being added.
->> - I think this hunk needs to be moved to realy_probe(). It
->>   doesn't make any sense when called via deferred_probe_initcall(), and
->>   it doesn't work in the device_bind_driver path because the probe_count
->>   is not incremented there. In fact, the device_bind_driver() path has
->>   the same race condition, but it is unlikely to be a problem in
->>   practice because device_bind_driver() is used very rarely and doesn't
->>   execute any driver code.
-> 
-> The reason why I have added the flagging to driver_deferred_probe_trigger()
-> because this is the place where the deferred drivers will be kicked.
-> When the drivers are loaded in order during the boot it is not really
-> interesting for this situation. When a driver has been moved to deferred queue
-> is the time we need to watch for the 'race' to handle.
-> I did have this flagging first in really_probe() but as far as I recall it
-> exhibited random misses.
-> The driver_deferred_probe_trigger() will be called every time when a driver
-> probed with success - from driver_bound(), right? So what we are doing is that
-> we set the deferral_retry flag if we have more than one driver's probe in
-> progress and see if when the last driver leaves it's probe we had another
-> loaded with success.
-> The probe_count will be decremented after the driver_bound() so if we had only
-> the two racy driver as last, we will have the flag set.
-> Hrm, probably it might be better for readability to move the deferral_retry
-> flag code just before the driver_bound() call in really_probe(). Inthis way we
-> will have these in one place.
-
-Now that I had time to think about this again I think the really_probe() is a
-wrong place for this failsafe mechanism.
-At the end we need to look and handle the following case:
-When a driver probed with success while other driver(s) still in their probe
-(thus not present in the deferred lists) we need to flag this event in the
-driver_deferred_probe_trigger() function, just before the
-list_splice_tail_init() call - when the deferred list is prepared.
-Basically we set a flag for later use, that we have prepared the deferred list
-but there were drivers in-fligth which we do not yet know if they are going to
-end up deferring.
-
-We need to check this flag in driver_deferred_probe_add() function which adds
-the driver to the deferred pending list in case it returned with -EPROBE_DEFER.
-Here we check the flag and also check if this is the last driver known to us
-probing (probe_count == 1).
-If these conditions met, we call driver_deferred_probe_trigger() from here as
-an automatic one shot try to see if the previously loaded driver had satisfied
-the deferred last driver.
-
-I need to move driver_deferred_probe_add() down a bit in the source file for
-this and rename the flag I had to 'deferred_auto_retry' or something.
-I think this is going to be more robust and also gives cleaner explanation
-what this 'recovery' code meant to do.
-
-> 
->> - The 'if' is unnecessary:
->> 	deferred_retry = (atomic_read(&probe_count) > 1);
->>
->>> +
->>>  	/*
->>>  	 * A successful probe means that all the devices in the pending list
->>>  	 * should be triggered to be reprobed.  Move all the deferred devices
->>> @@ -259,9 +268,6 @@ int device_bind_driver(struct device *dev)
->>>  }
->>>  EXPORT_SYMBOL_GPL(device_bind_driver);
->>>  
->>> -static atomic_t probe_count = ATOMIC_INIT(0);
->>> -static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
->>> -
->>>  static int really_probe(struct device *dev, struct device_driver *drv)
->>>  {
->>>  	int ret = 0;
->>> @@ -310,6 +316,16 @@ probe_failed:
->>>  		/* Driver requested deferred probing */
->>>  		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
->>>  		driver_deferred_probe_add(dev);
->>> +		/*
->>> +		 * This is the last driver to load and asking to be deferred.
->>> +		 * If other driver(s) loaded while this driver was loading, we
->>> +		 * should try the deferred modules again to avoid missing
->>> +		 * dependency for this driver.
->>> +		 */
->>> +		if (atomic_read(&probe_count) == 1 && deferral_retry) {
->>> +			deferral_retry = false;
->>> +			driver_deferred_probe_trigger();
->>> +		}
->>
->> Testing the probe count probably isn't necessary. Clearing the flag
->> though is probably racy if there are two deferred drivers in flight.
-> 
-> I think it is a good thing to have to avoid kicking the deferred list all the
-> time. If we still have 5 driver still probing we can just wait till the last
-> is gone and just check if we need to do an 'emergency' kick to the deferred list.
-> 
->> I would rather be happier if each probe could track on its own if there
->> had been any successful probes and then decide whether or not to trigger
->> again based on that, but when I played with it I found that it just
->> creates another race condition between calling really_probe() and
->> really_probe() grabbing a probe state footprint. Everything I tried made
->> things more complicated than less.
-> 
-> Yes, I also experimented with other ways but things got more fragile with even
-> more corner cases to handle and understand...
-> 
->> Go ahead and add my a-b when you
->> respin the patch.
->>
->> Acked-by: Grant Likely <grant.likely@linaro.org>
-> 
-> Thanks, I'll send the v2 tomorrow.
-> 
->>
->>
->>>  	} else if (ret != -ENODEV && ret != -ENXIO) {
->>>  		/* driver matched but the probe failed */
->>>  		printk(KERN_WARNING
->>> -- 
->>> 1.9.1
+On Wed, 09 Apr 2014, Dave Airlie <airlied@gmail.com> wrote:
+> On Wed, Apr 9, 2014 at 4:07 PM, Daniel J Blueman <daniel@quora.org> wrote:
+>> On 9 April 2014 11:41, Dave Airlie <airlied@gmail.com> wrote:
+>>> On Tue, Apr 8, 2014 at 5:32 PM, Daniel J Blueman <daniel@quora.org> wrote:
+>>>> On 8 April 2014 15:14, Jani Nikula <jani.nikula@linux.intel.com> wrote:
+>>>>> On Tue, 08 Apr 2014, Daniel J Blueman <daniel@quora.org> wrote:
+>>>>>> Ville et al,
+>>>>>>
+>>>>>> It looks like commit e3ea8fa6beaf55fee64bf816f3b8a80ad733b2c2 (or
+>>>>>> another commit in 3.13.7) broke modes which require DVI-D dual-link,
+>>>>>> eg 2560x1440 with my panel.
+>>>>>>
+>>>>>> I don't see these modelines in 3.13.7 or later (eg 3.14):
+>>>>>>
+>>>>>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
+>>>>>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
+>>>>>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
+>>>>>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
+>>>>>> [     5.582] (II) intel(0): Modeline "1920x1200"x59.9  193.25  1920
+>>>>>> 2056 2256 2592  1200 1203 1209 1245 -hsync +vsync (74.6 kHz e)
+>>>>>>
+>>>>>> My monitor is a Dell U2713HM; mobo uses an H87 chipset with i5-4670.
+>>>>>
+>>>>> By allowing those modes we regressed setups which were not capable of
+>>>>> displaying them. So you've got an HDMI->DVI converter?
+>>>>>
+>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=72961
+>>>>
+>>>> I am using a dual-link DVI-D to DVI-D cable to this monitor, since I
+>>>> previously couldn't get 2560x1440 via HDMI.
 >>>
+>>> Intel hw has dual-link DVI-D? I'm not sure I've ever seen that, is
+>>> this SDVO device or plain DVI-D?
 >>
-> 
-> 
+>> It's the DVI-D connector on: https://www.asus.com/Motherboards/H87IPLUS/
+>
+> The link which says "
+>
+> Integrated Graphics Processor
+> - Supports HDMI with max. resolution 4096 x 2304 @ 24 Hz
+> - Supports DVI with max. resolution 1920 x 1200 @ 60 Hz
+> - Supports RGB with max. resolution 1920 x 1200 @ 60 Hz
+>
+> I'm even wondering electrically how a HDMI->dual-link DVI adapter works.
 
+The current assumption is that in the working case, they are really
+operated in single-link, with a frequency beyond the single-link DVI
+cable spec.
+
+BR,
+Jani.
+
+
+
+>
+> Dave.
 
 -- 
-Péter
+Jani Nikula, Intel Open Source Technology Center
