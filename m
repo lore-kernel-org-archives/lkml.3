@@ -1,108 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012AbaDIStV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 14:49:21 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:45217 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933454AbaDIStT (ORCPT
+	id S964923AbaDISuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 14:50:06 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:54277 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933454AbaDISuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 14:49:19 -0400
+	Wed, 9 Apr 2014 14:50:03 -0400
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 14:50:03 EDT
+Message-ID: <53459481.9020908@akamai.com>
+Date: Wed, 09 Apr 2014 14:42:09 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CAF1ivSYeQcGf2d9kB-0R0TmCy=zaFg4WeJ2mgG_=K41hsoizyA@mail.gmail.com>
-References: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
-	<20140409182553.GE10526@twins.programming.kicks-ass.net>
-	<CAF1ivSYeQcGf2d9kB-0R0TmCy=zaFg4WeJ2mgG_=K41hsoizyA@mail.gmail.com>
-Date: Wed, 9 Apr 2014 11:49:17 -0700
-Message-ID: <CAF1ivSbVf0+PTzFdO+tNo33C6h6=HiBeKVF2jRvMQe=+RnPVxA@mail.gmail.com>
-Subject: Re: current->sched_class->yield_task is NULL, any hint?
-From: Lin Ming <minggr@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>
+CC: "tony.luck@intel.com" <tony.luck@intel.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+References: <cover.1396645124.git.jbaron@akamai.com> <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com> <20140409113552.GJ6529@pd.tnic>
+In-Reply-To: <20140409113552.GJ6529@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 9, 2014 at 11:32 AM, Lin Ming <minggr@gmail.com> wrote:
-> On Wed, Apr 9, 2014 at 11:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Wed, Apr 09, 2014 at 10:43:32AM -0700, Lin Ming wrote:
->>> Hi Peter,
->>>
->>> I hit a panic in sys_sched_yield() because(for some unknown reason)
->>> current->sched_class->yield_task is NULL.
->>> It's an ARM embedded board with 3.4-rt kernel.
->>>
->>> Could you share any hint for the possible causes?
+On 04/09/2014 07:35 AM, Borislav Petkov wrote:
+> On Fri, Apr 04, 2014 at 09:14:04PM +0000, Jason Baron wrote:
+>> Add 'ie31200_edac' driver for the E3-1200 series of Intel processors. Driver
+>> is based on the following E3-1200 specs:
 >>
->> What class does current->sched_class point to?
->
-> [12890.088232] Process swapper/0 (pid: 0, stack limit = 0xc07042f0)
->
-> It's idle task. I think it should be idle_sched_class.
-> But let me double check it.
+>> http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200-family-vol-2-datasheet.html
+>> http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200v3-vol-2-datasheet.html
+>>
+>> I've tested this on bad memory hardware, and observed correlating bad reads
+>> and uncorrected memory errors as reported by the driver.
+>>
+>> Signed-off-by: Jason Baron <jbaron@akamai.com>
+>> ---
+>>  drivers/edac/Kconfig        |   7 +
+>>  drivers/edac/Makefile       |   1 +
+>>  drivers/edac/ie31200_edac.c | 540 ++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 548 insertions(+)
+>>  create mode 100644 drivers/edac/ie31200_edac.c
+>>
+>> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+>> index 878f090..27f44a1 100644
+>> --- a/drivers/edac/Kconfig
+>> +++ b/drivers/edac/Kconfig
+>> @@ -186,6 +186,13 @@ config EDAC_I3200
+>>  	  Support for error detection and correction on the Intel
+>>  	  3200 and 3210 server chipsets.
+>>  
+>> +config EDAC_IE31200
+>> +	tristate "Intel e312xx"
+>> +	depends on EDAC_MM_EDAC && PCI && X86
+>> +	help
+>> +	  Support for error detection and correction on the Intel
+>> +	  E3-1200 processor.
+>> +
+>>  config EDAC_X38
+>>  	tristate "Intel X38"
+>>  	depends on EDAC_MM_EDAC && PCI && X86
+>> diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+>> index 4154ed6..c479a24 100644
+>> --- a/drivers/edac/Makefile
+>> +++ b/drivers/edac/Makefile
+>> @@ -37,6 +37,7 @@ obj-$(CONFIG_EDAC_I82875P)		+= i82875p_edac.o
+>>  obj-$(CONFIG_EDAC_I82975X)		+= i82975x_edac.o
+>>  obj-$(CONFIG_EDAC_I3000)		+= i3000_edac.o
+>>  obj-$(CONFIG_EDAC_I3200)		+= i3200_edac.o
+>> +obj-$(CONFIG_EDAC_IE31200)		+= ie31200_edac.o
+>>  obj-$(CONFIG_EDAC_X38)			+= x38_edac.o
+>>  obj-$(CONFIG_EDAC_I82860)		+= i82860_edac.o
+>>  obj-$(CONFIG_EDAC_R82600)		+= r82600_edac.o
+>> diff --git a/drivers/edac/ie31200_edac.c b/drivers/edac/ie31200_edac.c
+>> new file mode 100644
+>> index 0000000..ae03d21
+>> --- /dev/null
+>> +++ b/drivers/edac/ie31200_edac.c
+>> @@ -0,0 +1,540 @@
+>> +/*
+>> + * Intel E3-1200
+>> + * Copyright (C) 2014 Jason Baron <jbaron@akamai.com>
+>> + *
+>> + * Support for the E3-1200 processor family. Heavily based on previous
+>> + * Intel EDAC drivers.
+> 
+> Btw, remind me again why this isn't part of the sb_edac? AFAICT, the
+> e3-12xx thing is a Sandybridge, right?
+> 
 
-idle_sched_class has no "yield_task" defined.
-Does it mean that idle task should not call yield() at all?
+So, I *think* that the E3-12xx processors cross microarchitectures.
+So while E3-1270 is sandy bridge, the E3-1270 v3 is Haswell, and
+the E3-1270 v2 is Ivy Bridge.
 
-[12890.088232] Process swapper/0 (pid: 0, stack limit = 0xc07042f0)
-[12890.094092] Stack: (0xc0705860 to 0xc0706000)
-[12890.584616] Backtrace:
-[12890.586996] [<c007a364>] (sys_sched_yield+0x0/0x90) from
-[<c03cbf90>] (yield+0x2c/0x30)
-[12890.598258] [<c03cbf64>] (yield+0x0/0x30) from [<c02eb650>]
-(netlink_broadcast_filtered+0x3ec/0x400)
-[12890.607170] [<c02eb264>] (netlink_broadcast_filtered+0x0/0x400)
-from [<c02eb68c>] (netlink_broadcast+0x28/0x30)
-[12890.616998] [<c02eb664>] (netlink_broadcast+0x0/0x30) from
-[<c02ed420>] (msg_netlink_broadcast+0xa8/0xb4)
-[12890.626337] [<c02ed378>] (msg_netlink_broadcast+0x0/0xb4) from
-[<c039ad10>] (br_igmp_send_netlink_msg+0xb0/0xbc)
-[12890.636256] [<c039ac60>] (br_igmp_send_netlink_msg+0x0/0xbc) from
-[<c039b4a0>] (br_igmp_mc_fdb_add+0x424/0x6c0)
-[12890.646084] [<c039b07c>] (br_igmp_mc_fdb_add+0x0/0x6c0) from
-[<c039bd34>] (br_igmp_process_v3+0x4a8/0x518)
-[12890.655515] [<c039b88c>] (br_igmp_process_v3+0x0/0x518) from
-[<c039c110>] (br_igmp_snooping+0x36c/0x3e4)
-[12890.664762] [<c039bda4>] (br_igmp_snooping+0x0/0x3e4) from
-[<c039c204>] (br_igmp_mc_forward+0x7c/0x270)
-[12890.673918] [<c039c188>] (br_igmp_mc_forward+0x0/0x270) from
-[<c0393120>] (br_handle_frame_finish+0x160/0x358)
-[12890.683654] [<c0392fc0>] (br_handle_frame_finish+0x0/0x358) from
-[<c0398e7c>] (br_nf_pre_routing_finish+0x348/0x364)
-[12890.693940] [<c0398b34>] (br_nf_pre_routing_finish+0x0/0x364) from
-[<c03994c4>] (br_nf_pre_routing+0x5e0/0x630)
-[12890.709291] [<c0398ee4>] (br_nf_pre_routing+0x0/0x630) from
-[<c02eebf8>] (nf_iterate+0x68/0xa4)
-[12890.717746] [<c02eeb90>] (nf_iterate+0x0/0xa4) from [<c02eec9c>]
-(nf_hook_slow+0x68/0x124)
-[12890.725803] [<c02eec34>] (nf_hook_slow+0x0/0x124) from [<c03935ac>]
-(br_handle_frame+0x294/0x2e4)
-[12890.734471] [<c0393318>] (br_handle_frame+0x0/0x2e4) from
-[<c02c9eb0>] (__netif_receive_skb+0x3b0/0x514)
-[12890.743718] [<c02c9b00>] (__netif_receive_skb+0x0/0x514) from
-[<c02cabf0>] (netif_receive_skb+0xa8/0xbc)
-[12890.752966] [<c02cab48>] (netif_receive_skb+0x0/0xbc) from
-[<c02cd730>] (napi_skb_finish+0x34/0x50)
-[12890.765235] [<c02cd6fc>] (napi_skb_finish+0x0/0x50) from
-[<c02cd848>] (napi_gro_receive+0xfc/0x100)
-[12890.777566] [<c02cd74c>] (napi_gro_receive+0x0/0x100) from
-[<bf1a1618>] (nss_gmac_receive+0x48/0x4c [qca_nss_gmac])
-[12890.787759] [<bf1a15d0>] (nss_gmac_receive+0x0/0x4c [qca_nss_gmac])
-from [<bf186e40>] (nss_core_handle_napi+0x440/0xa78 [qca_nss_drv])
-[12890.802989] [<bf186a00>] (nss_core_handle_napi+0x0/0xa78
-[qca_nss_drv]) from [<c02cade4>] (net_rx_action+0x84/0x174)
-[12890.813244] [<c02cad60>] (net_rx_action+0x0/0x174) from
-[<c005ad80>] (__do_softirq+0xbc/0x160)
-[12890.821637] [<c005acc4>] (__do_softirq+0x0/0x160) from [<c005b250>]
-(irq_exit+0x58/0xa4)
-[12890.829542] [<c005b1f8>] (irq_exit+0x0/0xa4) from [<c000ed60>]
-(handle_IRQ+0x8c/0xb8)
-[12890.840651] [<c000ecd4>] (handle_IRQ+0x0/0xb8) from [<c0008608>]
-(gic_handle_irq+0x70/0xc4)
-[12890.857681] [<c0008598>] (gic_handle_irq+0x0/0xc4) from
-[<c000e080>] (__irq_svc+0x40/0x70)
+> Why not put it into sb_edac - it is small enough and if you're lucky,
+> you might even share functionality?
+> 
 
->
-> Thanks.
+As far as I understand the sb_edac driver is decoding MCEs via a registration
+function with the core MCE code.
+
+However, we have a number of E3-12xx boxes, and we have not seen a MCE
+generated on ue or ce errors.
+
+Thanks,
+
+-Jason
+
+
+
+
