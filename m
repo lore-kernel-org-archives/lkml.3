@@ -1,122 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933874AbaDIPKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:10:45 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33327 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933544AbaDIPKm (ORCPT
+	id S964772AbaDIPLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:11:22 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:45943 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933469AbaDIPLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:10:42 -0400
-Date: Wed, 9 Apr 2014 17:08:46 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/15] ARM: sunxi: dt: define A31's APB0 clk gates node
-Message-ID: <20140409150846.GG28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397051478-4113-8-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 9 Apr 2014 11:11:19 -0400
+Date: Wed, 9 Apr 2014 17:11:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mwhitehe@redhat.com
+Subject: Re: nohz problem with idle time on old hardware
+Message-ID: <20140409151108.GA17782@localhost.localdomain>
+References: <20131113102153.5f10e6b5@gandalf.local.home>
+ <20131113103134.5b8cf02f@gandalf.local.home>
+ <20131113105737.3f7a0b1b@gandalf.local.home>
+ <alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
+ <20131113111257.482c2955@gandalf.local.home>
+ <20131113161829.GE4138@linux.vnet.ibm.com>
+ <20131113112338.7d303c0f@gandalf.local.home>
+ <20131113163552.GF4138@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
+ <CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m0vRWufqUC70IDnR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397051478-4113-8-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 09, 2014 at 07:21:53PM +0530, Viresh Kumar wrote:
+> On Thu, Nov 14, 2013 at 1:31 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > Subject: NOHZ: Check for nohz active instead of nohz enabled
+> >
+> > RCU and the fine grained idle time accounting functions check
+> > tick_nohz_enabled. But that variable is merily telling that NOHZ has
+> > been enabled in the config and not been disabled on the command line.
+> >
+> > But it does not tell anything about nohz being active. That's what all
+> > this should check for.
+> >
+> > Matthew reported, that the idle accounting on his old P1 machine
+> > showed bogus values, when he enabled NOHZ in the config and did not
+> > disable it on the kernel command line. The reason is that his machine
+> > uses (refined) jiffies as a clocksource which explains why the "fine"
+> > grained accounting went into lala land, because it depends on when the
+> > system goes and leaves idle relative to the jiffies increment.
+> >
+> > Provide a tick_nohz_active indicator and let RCU and the accounting
+> > code use this instead of tick_nohz_enable.
+> 
+> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > @@ -973,7 +968,7 @@ static void tick_nohz_switch_to_nohz(void)
+> >         struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+> >         ktime_t next;
+> >
+> > -       if (!tick_nohz_enabled)
+> > +       if (!tick_nohz_active)
+> >                 return;
+> 
+> Considering the impressive list of Reviewed-by and people involved
+> in this patch, I am not sure I am reading the code well here.
+> 
+> The above change isn't required as per my understanding. Otherwise
+> we will never pass that check. tick_nohz_active is initialized as zero
+> and so we will keep on returning for ever and wouldn't be able to set
+> it to 1 ever.
+> 
+> I have a patch to fix it up, but wanted to know your opinion before
+> sending it.
 
---m0vRWufqUC70IDnR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ouch, bad thing.
 
-On Wed, Apr 09, 2014 at 03:51:10PM +0200, Boris BREZILLON wrote:
-> Define the APB0 clk gates controlled by the PRCM (Power/Reset/Clock
-> Management) block.
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  arch/arm/boot/dts/sun6i-a31.dtsi | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a=
-31.dtsi
-> index 3858424..61e8b34 100644
-> --- a/arch/arm/boot/dts/sun6i-a31.dtsi
-> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-> @@ -141,6 +141,16 @@
->  					"ahb1_drc0", "ahb1_drc1";
->  		};
-> =20
-> +		apb0_gates: apb0_gates@01f01428 {
-
-The node name should reflect the class of the device, so it should be
-clk@<address>.
-
-> +			#clock-cells =3D <1>;
-> +			compatible =3D "allwinner,sun6i-a31-apb0-gates-clk";
-> +			reg =3D <0x01f01428 0x4>;
-> +			clock-output-names =3D "apb0_pio", "apb0_ir",
-> +					"apb0_timer01", "apb0_p2wi",
-> +					"apb0_uart", "apb0_1wire",
-> +					"apb0_i2c";
-> +		};
-> +
-
-Hmmm, I'm not really fond of this.
-
-There's already a PRCM node in the DT, which is used for the SMP
-bringup.
-
-I really don't want any duplicate memory regions in the DT, so you'll
-have to fix the SMP code.
-
-That being said, I can understand that you did this to be consistent
-with the scheme we have for the clock controller where we chose to
-make every clock a single driver.
-
-That worked well for the CCU precisely because we only had clocks. It
-doesn't for the PRCM because it's not been very well documented, and
-it does clocks, resets, that fits pretty well in the existing
-frameworks we have, but the SMP related functions are actually not
-fitting that well.
-
-It's mostly a power clamp and a power gating bits, that could maybe
-fit in the regulator framework.
-
-I don't really have a solution for this. Maybe someone else will.
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---m0vRWufqUC70IDnR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRWJ9AAoJEBx+YmzsjxAg64gP/ioTdHhaimPXU5XYz4EYBfJw
-wVcxjK+dkd1aJ8tcQT9V8BbBcCOe5ctFehFglCZme1ZWNcyYOFTaoqOUuSKAI884
-bw+B9gFTglpymCXp0DmviiJCweJcZa+qWJ+0nduTbRaQUZO5N9/eg7hTcFG7ZWuR
-vWUnQEnEzABPcbaKEaNvMu3nL5dbYYHRnifAv0P2QkaJmUVVho2mKX79T+DnZCnt
-/5SQqcL4nRe7guqKCA046RgeBd2RpRswth8XxMViug9CG0cT0m0sfVX1Z1fwWq5r
-/bz9LYHfNZ/I6W6PEwYNQeeLqmxB8ru2VFiXAUlUU7/ADa4GojSyOo8Mw8rBDGrj
-h1M0QsgHer8gRT0to4P0IBbSAZg/8V3LndO/YLItNz5qRb/i2TTvFSMU+PmneKIb
-tMcTSG2m6xbDA4B8Sl2ORYLCswusmVAjr0KpT95H5kwTsuHlpTtZlE1Ln9WNDYAy
-aOfinPXkTgkrk494c54qBStNdN61uC0uApEI8hPxxy0Y1pRyOuuaaNVRI42Whg72
-3kWS6YRBMQVdT92F7dSBFNQJVqwH3Xz3yBhJanYaacmPYQ01Q/PKj1eGCjQkz2v/
-ud7BkEFOjteqrVdhzl2tBgyTsyAbhZa57eAu+UcuQCjlEwWEvh1up9/5EcRZe/bK
-AyuETFEtk4J/ushM4131
-=xBPG
------END PGP SIGNATURE-----
-
---m0vRWufqUC70IDnR--
+I'm also disovering this whole thread and patch only today, since nobody Cc'ed me :-(
+ 
+> >         local_irq_disable();
+> > @@ -981,7 +976,7 @@ static void tick_nohz_switch_to_nohz(void)
+> >                 local_irq_enable();
+> >                 return;
+> >         }
+> > -
+> > +       tick_nohz_active = 1;
+> >         ts->nohz_mode = NOHZ_MODE_LOWRES;
+> >
+> >         /*
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
