@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461AbaDIDlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 23:41:35 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:33930 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756795AbaDIDld (ORCPT
+	id S1757256AbaDIDuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 23:50:15 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:61014 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263AbaDIDuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 23:41:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com>
-References: <CAMVG2sti6EMQXw5xyNp-wkq0nGz4zVgz1p7AO48Kb1_zYk8K0w@mail.gmail.com>
-	<878urg9ttv.fsf@intel.com>
-	<CAMVG2suG7ysnci25Cy_+fzvQ8r_R9O2nCuVZf=Zw9t5ZvEOSLQ@mail.gmail.com>
-Date: Wed, 9 Apr 2014 13:41:31 +1000
-Message-ID: <CAPM=9tyKKn5VrQkwGY2kEVBatSTN5VqJCVXWqFhn4oDe=oqsqA@mail.gmail.com>
-Subject: Re: [Intel-gfx] i915 DVI resolution regression (3.13.7+)
-From: Dave Airlie <airlied@gmail.com>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Apr 2014 23:50:13 -0400
+Message-ID: <1397015410.5212.13.camel@marge.simpson.net>
+Subject: [PATCH] sched/cpupri: fix cpupri_find() for high priority tasks
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 09 Apr 2014 05:50:10 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 5:32 PM, Daniel J Blueman <daniel@quora.org> wrote:
-> On 8 April 2014 15:14, Jani Nikula <jani.nikula@linux.intel.com> wrote:
->> On Tue, 08 Apr 2014, Daniel J Blueman <daniel@quora.org> wrote:
->>> Ville et al,
->>>
->>> It looks like commit e3ea8fa6beaf55fee64bf816f3b8a80ad733b2c2 (or
->>> another commit in 3.13.7) broke modes which require DVI-D dual-link,
->>> eg 2560x1440 with my panel.
->>>
->>> I don't see these modelines in 3.13.7 or later (eg 3.14):
->>>
->>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
->>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
->>> [     5.582] (II) intel(0): Modeline "2560x1440"x60.0  312.25  2560
->>> 2752 3024 3488  1440 1443 1448 1493 -hsync +vsync (89.5 kHz eP)
->>> [     5.582] (II) intel(0): Modeline "1920x1200"x59.9  193.25  1920
->>> 2056 2256 2592  1200 1203 1209 1245 -hsync +vsync (74.6 kHz e)
->>>
->>> My monitor is a Dell U2713HM; mobo uses an H87 chipset with i5-4670.
->>
->> By allowing those modes we regressed setups which were not capable of
->> displaying them. So you've got an HDMI->DVI converter?
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=72961
->
-> I am using a dual-link DVI-D to DVI-D cable to this monitor, since I
-> previously couldn't get 2560x1440 via HDMI.
+Hi Steven,
 
-Intel hw has dual-link DVI-D? I'm not sure I've ever seen that, is
-this SDVO device or plain DVI-D?
+Seems c92211d9b7727 introduced a buglet.
 
-Dave.
+--snip--
+
+Bail on task_pri >= MAX_RT_PRIO excludes userspace prio 98 and 99 tasks,
+which map to 100 and 101 respectively.
+
+A user reported that given two SCHED_RR tasks, one hog, one light, the light
+task may be stacked on top of the hog iff prio >= 98, latency hit follows.
+
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: <stable@vger.kernel.org>
+Fixes: c92211d9b7727 sched/cpupri: Remove the vec->lock
+---
+ kernel/sched/cpupri.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -70,9 +70,6 @@ int cpupri_find(struct cpupri *cp, struc
+ 	int idx = 0;
+ 	int task_pri = convert_prio(p->prio);
+ 
+-	if (task_pri >= MAX_RT_PRIO)
+-		return 0;
+-
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
+ 		int skip = 0;
+
+
