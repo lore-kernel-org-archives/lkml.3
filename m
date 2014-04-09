@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427AbaDIJ0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 05:26:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50320 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758121AbaDIJ0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 05:26:40 -0400
-Date: Wed, 9 Apr 2014 11:26:35 +0200
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, willy@linux.intel.com
-Subject: Re: [PATCH v7 08/22] Replace xip_truncate_page with dax_truncate_page
-Message-ID: <20140409092635.GB32103@quack.suse.cz>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <fd328c564ddc79b41a3a8d754080e6e6e77bbf4f.1395591795.git.matthew.r.wilcox@intel.com>
- <20140408221759.GD26019@quack.suse.cz>
+	id S932791AbaDIJ0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 05:26:52 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35870 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932187AbaDIJ0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 05:26:47 -0400
+X-Originating-IP: 50.43.32.211
+Date: Wed, 9 Apr 2014 02:26:39 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Martin Kepplinger <martink@posteo.de>
+Cc: gregkh@linuxfoundation.org, teobaluta@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8187se: fix pointer and return statement's
+ syntax
+Message-ID: <20140409092639.GA6733@leaf>
+References: <1397028355-28063-1-git-send-email-martink@posteo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140408221759.GD26019@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397028355-28063-1-git-send-email-martink@posteo.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 09-04-14 00:17:59, Jan Kara wrote:
-> On Sun 23-03-14 15:08:34, Matthew Wilcox wrote:
-> > +/**
-> > + * dax_truncate_page - handle a partial page being truncated in a DAX file
-> > + * @inode: The file being truncated
-> > + * @from: The file offset that is being truncated to
-> > + * @get_block: The filesystem method used to translate file offsets to blocks
-> > + *
-> > + * Similar to block_truncate_page(), this function can be called by a
-> > + * filesystem when it is truncating an DAX file to handle the partial page.
-> > + *
-> > + * We work in terms of PAGE_CACHE_SIZE here for commonality with
-> > + * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-> > + * took care of disposing of the unnecessary blocks.  Even if the filesystem
-> > + * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-> > + * since the file might be mmaped.
->   Well, DAX mmap support pretty much relies on PAGE_CACHE_SIZE == block
-> size (we cannot really map only a part of a physical page directly...). So
-> the comment seems somewhat misleading.
-  I thought about this for a while and classical IO, truncation etc. could
-easily work for blocksize < pagesize. And for mmap() you could just use
-pagecache. Not sure if it's worth the complications though. Anyway we
-should decide whether we don't care about blocksize < PAGE_CACHE_SIZE at
-all, or whether we try to make things which can work reasonably easily
-functional. In that case dax_truncate_page() needs some tweaking because it
-currently assumes blocksize == PAGE_CACHE_SIZE.
+On Wed, Apr 09, 2014 at 09:25:55AM +0200, Martin Kepplinger wrote:
+> Use the common kernel coding style.
+> 
+> Signed-off-by: Martin Kepplinger <martink@posteo.de>
 
-								Honza
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+>  drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
+> index 0dc5ae4..e6257b3 100644
+> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
+> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
+> @@ -180,7 +180,7 @@ static inline int ieee80211_put_snap(u8 *data, u16 h_proto)
+>  int ieee80211_encrypt_fragment(struct ieee80211_device *ieee,
+>  			       struct sk_buff *frag, int hdr_len)
+>  {
+> -	struct ieee80211_crypt_data* crypt = ieee->crypt[ieee->tx_keyidx];
+> +	struct ieee80211_crypt_data *crypt = ieee->crypt[ieee->tx_keyidx];
+>  	int res;
+>  
+>  	/*
+> @@ -285,7 +285,7 @@ static int ieee80211_classify(struct sk_buff *skb,
+>  
+>  	if (!network->QoS_Enable) {
+>  		skb->priority = 0;
+> -		return(wme_UP);
+> +		return wme_UP;
+>  	}
+>  
+>  	if (eh->ether_type == __constant_htons(ETHERTYPE_IP)) {
+> @@ -304,7 +304,7 @@ static int ieee80211_classify(struct sk_buff *skb,
+>  	}
+>  
+>  	skb->priority = wme_UP;
+> -	return(wme_UP);
+> +	return wme_UP;
+>  }
+>  
+>  /* SKBs are added to the ieee->tx_queue. */
+> -- 
+> 1.7.10.4
+> 
