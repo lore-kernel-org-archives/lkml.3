@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735AbaDII4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 04:56:39 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:56336 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839AbaDII4g (ORCPT
+	id S932769AbaDII5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 04:57:31 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:18205
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752839AbaDII5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 04:56:36 -0400
+	Wed, 9 Apr 2014 04:57:25 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
+Date: Wed, 9 Apr 2014 16:39:26 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
+        <timur@tabi.org>, <Li.Xiubo@freescale.com>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <rob@landley.net>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>
+Subject: Re: [PATCH v3 2/2] ARM: dts: Append clock bindings for sai2 on VF610
+ platform
+Message-ID: <20140409083925.GB12559@MrMyself>
+References: <cover.1396605772.git.Guangyu.Chen@freescale.com>
+ <08ba57a2fdce1a404a6bcb61e21e25509fcd6b30.1396605772.git.Guangyu.Chen@freescale.com>
+ <20140409081137.GD28420@dragon>
 MIME-Version: 1.0
-In-Reply-To: <1396995583-5475-1-git-send-email-markus.mayer@linaro.org>
-References: <1396995583-5475-1-git-send-email-markus.mayer@linaro.org>
-Date: Wed, 9 Apr 2014 10:56:36 +0200
-Message-ID: <CAPDyKFpS3x902iQqEC69hkryHVGieeDykD=rBJX5OqYAD+afwA@mail.gmail.com>
-Subject: Re: [PATCH RESEND] mmc: Delay the card_event callback into the
- mmc_rescan worker
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Markus Mayer <markus.mayer@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Christian Daudt <bcm@fixthebug.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140409081137.GD28420@dragon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 April 2014 00:19, Markus Mayer <markus.mayer@linaro.org> wrote:
-> This change removes the callback from atomic context which it doesn't
-> need to be in, and puts it in line with the debounced rescan.
->
-> This code is based on these e-mail threads with Christian Daudt:
->
->   https://lkml.org/lkml/2013/8/19/539
->   https://lkml.org/lkml/2014/3/19/79
->
-> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  drivers/mmc/core/core.c      |    5 +++++
->  drivers/mmc/core/slot-gpio.c |    4 +---
->  include/linux/mmc/host.h     |    2 ++
->  3 files changed, 8 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 098374b..ff7fd2e 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -2421,6 +2421,11 @@ void mmc_rescan(struct work_struct *work)
->                 container_of(work, struct mmc_host, detect.work);
->         int i;
->
-> +       if (host->trigger_card_event && host->ops->card_event) {
-> +               host->ops->card_event(host);
-> +               host->trigger_card_event = false;
-> +       }
-> +
+Hi Shawn,
 
-So this might be a stupid question. :-)
+On Wed, Apr 09, 2014 at 04:11:38PM +0800, Shawn Guo wrote:
+> On Fri, Apr 04, 2014 at 06:08:13PM +0800, Nicolin Chen wrote:
+> > Since we added fours clock to the DT binding, we should update the current
+> > SAI dts/dtsi so as not to break their functions.
+> 
+> For the record, you're asking my ACK to have the dts change go via sound
+> tree for not breaking vf610 function on the sound branch,  while
+> ignoring the fact that the existing DTB will break with the new kernel
+> anyway.
+> 
+> I'm not completely happy with the approach, but considering that the
+> existing binding is incorrect, I'm fine with it as long as people agree
+> to go this way.
 
-Could you elaborate on why the host->ops->card_event then is needed at
-all. Why can't host drivers use host->ops->get_cd to perform the
-actions they need?
+Although I'm not a big fan of explaining, yet, I still want to say that
+actually I've balanced this way and your last suggestion against the v1.
 
-The reason for bringing this up, is because this patch moves the
-invokes of the these callbacks quite close to each other. Earlier they
-were more separated.
+It'd be surely better to distinguish two platforms as you suggested if
+we are looking at this change alone since the change is nearly tiny and
+the code to specify them wouldn't be quite a lot. However, there's more
+work to do based on this patch, an auto-selecting clock source mechanism
+for SAI as a DAI master for example, which would need to drop the existing
+code and to add the new one. If vf610 is still using the old one, it would
+not benefit from the further feature and the code would be definitely ugly
+as we would have to add too many platform checks. So personally I prefer
+this reasonable change than the little sacrifice we're going to make here.
 
-Kind regards
-Ulf Hansson
+Right now I feel grateful for what Sascha suggested to the DT bindings of
+fsl-spdif. It was a painstaking experience when getting it upstream last
+year but what's done at that moment makes the driver more flexible. So I
+think we should do the strict and comprehensive review for the clock part
+to every module from now on since an once-defined-DT-binding would be so
+painful to improved for us.
 
->         if (host->rescan_disable)
->                 return;
->
-> diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
-> index 46596b71..4029c85 100644
-> --- a/drivers/mmc/core/slot-gpio.c
-> +++ b/drivers/mmc/core/slot-gpio.c
-> @@ -29,9 +29,7 @@ static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
->         /* Schedule a card detection after a debounce timeout */
->         struct mmc_host *host = dev_id;
->
-> -       if (host->ops->card_event)
-> -               host->ops->card_event(host);
-> -
-> +       host->trigger_card_event = true;
->         mmc_detect_change(host, msecs_to_jiffies(200));
->
->         return IRQ_HANDLED;
-> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-> index 99f5709..63b983b 100644
-> --- a/include/linux/mmc/host.h
-> +++ b/include/linux/mmc/host.h
-> @@ -322,6 +322,8 @@ struct mmc_host {
->         int                     rescan_disable; /* disable card detection */
->         int                     rescan_entered; /* used with nonremovable devices */
->
-> +       bool                    trigger_card_event; /* card_event necessary */
-> +
->         struct mmc_card         *card;          /* device attached to this host */
->
->         wait_queue_head_t       wq;
-> --
-> 1.7.9.5
->
+Thank you,
+Nicolin
+
+> 
+> Shawn
+> 
+> > 
+> > Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> > Tested-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > ---
+> >  arch/arm/boot/dts/vf610.dtsi | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> > index d31ce1b..9fd0007 100644
+> > --- a/arch/arm/boot/dts/vf610.dtsi
+> > +++ b/arch/arm/boot/dts/vf610.dtsi
+> > @@ -139,8 +139,10 @@
+> >  				compatible = "fsl,vf610-sai";
+> >  				reg = <0x40031000 0x1000>;
+> >  				interrupts = <0 86 0x04>;
+> > -				clocks = <&clks VF610_CLK_SAI2>;
+> > -				clock-names = "sai";
+> > +				clocks = <&clks VF610_CLK_SAI2>,
+> > +				       <&clks VF610_CLK_SAI2>,
+> > +				       <&clks 0>, <&clks 0>;
+> > +				clock-names = "bus", "mclk1", "mclk2", "mclk3";
+> >  				status = "disabled";
+> >  			};
+> >  
+> > -- 
+> > 1.8.4
+> > 
+> > 
+> 
+
