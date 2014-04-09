@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933678AbaDIOE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:04:28 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:36524 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933100AbaDIOE1 (ORCPT
+	id S933424AbaDIOF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:05:57 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:50563 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932866AbaDIOFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:04:27 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: David Cohen <david.a.cohen@linux.intel.com>, wim@iguana.be,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: intel-mid: add watchdog platform code for Merrifield
-Date: Wed, 09 Apr 2014 16:03:14 +0200
-Message-ID: <2205089.MXSpGW1NLo@ws-stein>
-User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140409145848.4cabbb2f@alan.etchedpixels.co.uk>
-References: <1396990744-10695-1-git-send-email-david.a.cohen@linux.intel.com> <3412449.yg5NtfcPeg@ws-stein> <20140409145848.4cabbb2f@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 9 Apr 2014 10:05:55 -0400
+Message-ID: <1397052353.22767.31.camel@x220>
+Subject: [PATCH] NFS/RDMA: Document separate Kconfig symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Jeff Layton <jlayton@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 09 Apr 2014 16:05:53 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Apr 2014 14:05:53.0672 (UTC) FILETIME=[D1FA0080:01CF53FC]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 April 2014 14:58:48, One Thousand Gnomes wrote:
-> > I'm getting curious: How can I use device-tree on x86(_64)?
-> > Reading the dependencies from CONFIG_OF it can only be used on 32bit systems with some special hardware bases.
-> > So, how to use otherwise?
-> 
-> There isn't any fundamental thing tying device tree to a given
-> architecture or 32bitness, it's just that sane PC architectures use ACPI
-> to enumerate devices, and/or have a discoverable bus architecture.
-> 
-> Some of the phones don't so this now becoems a point of consideration. In
-> fact it's already also used on CE4100 (which is an embedded media SoC
-> found in some TV devices and set-top boxes) and on the OLPC (One laptop
-> per child). There is no intrinsic reason it couldn't be used in other x86
-> special cases.
-> 
-> If its PC shaped however it probably has ACPI and ACPI and DT are not a
-> 1:1 mapping. ACPI has method invocations, and various firmware provided
-> interfaces such as the EC, Device tree is better at some other bits.
+The NFS/RDMA Kconfig symbol was split into separate options for client
+and server in commit 2e8c12e1b765 ("xprtrdma: add separate Kconfig
+options for NFSoRDMA client and server support"). Update the
+documentation to reflect this split.
 
-Yep, like SPI devices on embedded x86 hardware.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Should Documentation/ describe the current release, or the current
+and previous releases? For these paragraphs I choose only the current
+release.
 
-> Converting the phones to embedded device tree rather than adding a
-> billion little platform files on the other hand seems to me like a
-> no-brainer.
+1) Another approach could be to not document the Kconfig setup at all,
+because the Kconfig system should, in theory, provide all help needed to
+correctly configure the build for (in this case) NFS/RDMA. But is that
+true?
 
-I found http://thread.gmane.org/gmane.linux.drivers.devicetree/4475. Why didn't that get into mainline?
+2) By the way: what's the purpose of INFINIBAND_ADDR_TRANS?
 
-Best regards,
-Alexander
--- 
-Dipl.-Inf. Alexander Stein
+ Documentation/filesystems/nfs/nfs-rdma.txt | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-SYS TEC electronic GmbH
-Am Windrad 2
-08468 Heinsdorfergrund
-Tel.: 03765 38600-1156
-Fax: 03765 38600-4100
-Email: alexander.stein@systec-electronic.com
-Website: www.systec-electronic.com
+diff --git a/Documentation/filesystems/nfs/nfs-rdma.txt b/Documentation/filesystems/nfs/nfs-rdma.txt
+index e386f7e4bcee..724043858b08 100644
+--- a/Documentation/filesystems/nfs/nfs-rdma.txt
++++ b/Documentation/filesystems/nfs/nfs-rdma.txt
+@@ -138,9 +138,9 @@ Installation
+   - Build, install, reboot
  
-Managing Director: Dipl.-Phys. Siegmar Schmidt
-Commercial registry: Amtsgericht Chemnitz, HRB 28082
+     The NFS/RDMA code will be enabled automatically if NFS and RDMA
+-    are turned on. The NFS/RDMA client and server are configured via the hidden
+-    SUNRPC_XPRT_RDMA config option that depends on SUNRPC and INFINIBAND. The
+-    value of SUNRPC_XPRT_RDMA will be:
++    are turned on. The NFS/RDMA client and server are configured via the
++    SUNRPC_XPRT_RDMA_CLIENT and SUNRPC_XPRT_RDMA_SERVER config options that both
++    depend on SUNRPC and INFINIBAND. The default value of both options will be:
+ 
+      - N if either SUNRPC or INFINIBAND are N, in this case the NFS/RDMA client
+        and server will not be built
+@@ -235,8 +235,9 @@ NFS/RDMA Setup
+ 
+   - Start the NFS server
+ 
+-    If the NFS/RDMA server was built as a module (CONFIG_SUNRPC_XPRT_RDMA=m in
+-    kernel config), load the RDMA transport module:
++    If the NFS/RDMA server was built as a module
++    (CONFIG_SUNRPC_XPRT_RDMA_SERVER=m in kernel config), load the RDMA
++    transport module:
+ 
+     $ modprobe svcrdma
+ 
+@@ -255,8 +256,9 @@ NFS/RDMA Setup
+ 
+   - On the client system
+ 
+-    If the NFS/RDMA client was built as a module (CONFIG_SUNRPC_XPRT_RDMA=m in
+-    kernel config), load the RDMA client module:
++    If the NFS/RDMA client was built as a module
++    (CONFIG_SUNRPC_XPRT_RDMA_CLIENT=m in kernel config), load the RDMA client
++    module:
+ 
+     $ modprobe xprtrdma.ko
+ 
+-- 
+1.9.0
 
