@@ -1,157 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934379AbaDIUsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:48:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62088 "EHLO mga09.intel.com"
+	id S934400AbaDIUus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:50:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50194 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933590AbaDIUsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:48:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,828,1389772800"; 
-   d="scan'208";a="517923306"
-Date: Wed, 9 Apr 2014 16:48:06 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140409204806.GF5727@linux.intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
- <20140408220525.GC26019@quack.suse.cz>
+	id S933590AbaDIUur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 16:50:47 -0400
+Message-ID: <5345B278.8060703@zytor.com>
+Date: Wed, 09 Apr 2014 13:50:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140408220525.GC26019@quack.suse.cz>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Adam Williamson <awilliam@redhat.com>
+CC: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
+ the PCI reboot method
+References: <20140404064120.GB11877@gmail.com>			<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>			<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>			<20140404151359.GB12370@srcf.ucam.org>		 <20140406184023.1e31412d@alan.etchedpixels.co.uk>		 <53419F84.2090204@zytor.com> <53425B2A.10001@linux.intel.com>		 <53431296.10502@zytor.com>	 <1396908292.4958.24.camel@adam.happyassassin.net>	 <5343220A.3060007@zytor.com> <1396912372.4958.41.camel@adam.happyassassin.net>
+In-Reply-To: <1396912372.4958.41.camel@adam.happyassassin.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 12:05:25AM +0200, Jan Kara wrote:
-> > +	if (!page)
-> > +		return VM_FAULT_OOM;
-> > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > +	if (vmf->pgoff >= size) {
->   Maybe comment here that we have to recheck i_size so that we don't create
-> pages in the area truncate_pagecache() has already evicted.
+On 04/07/2014 04:12 PM, Adam Williamson wrote:
+> 
+> basically, we know that we probably can't come up with a standard
+> fallback chain that will work for *every* system, and the goal instead
+> is to come up with the approach that requires the *fewest* quirks.
+> 
 
-Done.
+Not quite.
 
-> > +	dax_get_addr(inode, bh, &vfrom);	/* XXX: error handling */
->   The error handling here is missing as the comment suggests :)
+The problem is that we can't test everything, so part of it isn't just
+about the amount of quirks but also our confidence level in them.
 
-Added.
-
-> > +	if (buffer_unwritten(&bh) || buffer_new(&bh))
-> > +		dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
->   Where is dax_clear_blocks() defined?
-
-Er ... patch 11.  I'll reorder the patches ;-)
-
-> > +
-> > +	error = dax_get_pfn(inode, &bh, &pfn);
-> > +	if (error > 0)
-> > +		error = vm_insert_mixed(vma, vaddr, pfn);
->   When there's a hole (thus page != NULL) and we are called from
-> dax_mkwrite(), this will always return EBUSY, correct?
-
-Erm ... it will return -EBUSY if this was the task that previously
-faulted on it.  Drat.  See below.
-
-> > +	mutex_unlock(&mapping->i_mmap_mutex);
-> > +
-> > +	if (page) {
-> > +		delete_from_page_cache(page);
-> > +		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
-> > +							PAGE_CACHE_SIZE, 0);
->   Here we unmap the PTE pointing to the hole page but then we'll have to
-> retry the fault again to fill in the pfn we've got? This seems wrong. I'd
-> say we want to remap the PTE from the hole page to a pfn we've got while
-> holding i_mmap_mutex. remap_pfn_range() almost does what you need, except
-> that you also need that to work for normal pages. So you might need to
-> create a new helper in mm layer for that.
-
-I think it's easier than that.  How does this look?
-
-@@ -390,9 +389,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
-                dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
- 
-        error = dax_get_pfn(&bh, &pfn, blkbits);
--       if (error > 0)
--               error = vm_insert_mixed(vma, vaddr, pfn);
--       mutex_unlock(&mapping->i_mmap_mutex);
-+       if (error <= 0)
-+               goto unlock;
- 
-        if (page) {
-                delete_from_page_cache(page);
-@@ -402,6 +400,9 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
-                page_cache_release(page);
-        }
- 
-+       error = vm_insert_mixed(vma, vaddr, pfn);
-+       mutex_unlock(&mapping->i_mmap_mutex);
-+
-        if (error == -ENOMEM)
-                return VM_FAULT_OOM;
-        /* -EBUSY is fine, somebody else faulted on the same PTE */
-@@ -409,6 +410,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
-                BUG_ON(error);
-        return VM_FAULT_NOPAGE | major;
- 
-+ unlock:
-+       mutex_unlock(&mapping->i_mmap_mutex);
-  sigbus:
-        if (page) {
-                unlock_page(page);
-
-
-> > +int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> > +			get_block_t get_block)
-> > +{
-> > +	int result;
-> > +	struct super_block *sb = file_inode(vma->vm_file)->i_sb;
-> > +
-> > +	sb_start_pagefault(sb);
->   You don't need any filesystem freeze protection for the fault handler
-> since that's not going to modify the filesystem.
-
-Err ... we might allocate a block as a result of doing a write to a hole.
-Or does that not count as 'modifying the filesystem' in this context?
-
-> > +	file_update_time(vma->vm_file);
->   Why do you update m/ctime? We are only reading the file...
-
-... except that it might be a write fault.  I think we modify the file
-iff we return VM_FAULT_MAJOR from do_dax_fault().  So I'd be open to
-something like this:
-
-	sb_start_pagefault(sb);
-	result = do_dax_fault(vma, vmf, get_block);
-	if (result & VM_FAULT_MAJOR)
-		file_update_time(vma->vm_file);
-	sb_end_pagefault(sb);
-
-Would that work better for you?
-
-> > @@ -70,7 +101,7 @@ const struct file_operations ext2_file_operations = {
-> >  #ifdef CONFIG_COMPAT
-> >  	.compat_ioctl	= ext2_compat_ioctl,
-> >  #endif
-> > -	.mmap		= generic_file_mmap,
-> > +	.mmap		= ext2_file_mmap,
->   So what's the point of ext2_file_operations ever handling IS_DAX()
-> inodes? Actually ext2_file_operations and ext2_xip_file_operations seem to
-> be the same after this patch so either you drop ext2_xip_file_operations
-> (I'm for this) or you can leave generic_file_mmap here and assume
-> ext2_file_mmap is always called for IS_DAX() inodes.
-
-The goal is to get them the same.  At this point, the only sticky point is:
-
-        .splice_read    = generic_file_splice_read,
-        .splice_write   = generic_file_splice_write,
-
-And splice is pretty damn sticky for DAX.
+	-hpa
 
