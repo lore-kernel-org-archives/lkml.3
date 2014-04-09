@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933982AbaDIQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:33:58 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33894 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933143AbaDIQd4 (ORCPT
+	id S964808AbaDIQeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:34:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56297 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933143AbaDIQeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:33:56 -0400
-Date: Wed, 9 Apr 2014 13:33:26 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        haojian.zhuang@gmail.com,
-        David Heidelberger <david.heidelberger@ixit.cz>, eric.y.miao@gmail.com
-Subject: Re: [PATCH v2] ARM: pxa: Move iotable mapping inside vmalloc region
-Message-ID: <20140409163326.GA17544@arch.cereza>
-References: <1385683243-6688-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <2638213.3rVdlp7YXW@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2638213.3rVdlp7YXW@avalon>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 9 Apr 2014 12:34:02 -0400
+Date: Wed, 09 Apr 2014 12:33:58 -0400 (EDT)
+Message-Id: <20140409.123358.348743774307868735.davem@davemloft.net>
+To: linux@arm.linux.org.uk
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, rth@twiddle.net,
+        ink@jurassic.park.msu.ru, mattst88@gmail.com, starvik@axis.com,
+        jesper.nilsson@axis.com, dhowells@redhat.com, tony.luck@intel.com,
+        fenghua.yu@intel.com, takata@linux-m32r.org, gerg@uclinux.org,
+        geert@linux-m68k.org, monstr@monstr.eu,
+        yasutake.koichi@jp.panasonic.com, cmetcalf@tilera.com,
+        gxt@mprc.pku.edu.cn, arnd@arndb.de
+Subject: Re: [RFC PATCH] Remove flush_icache_user_range()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140409161554.GV16119@n2100.arm.linux.org.uk>
+References: <20140409100150.GO16119@n2100.arm.linux.org.uk>
+	<20140409.120926.1586922018370125781.davem@davemloft.net>
+	<20140409161554.GV16119@n2100.arm.linux.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 09, Laurent Pinchart wrote:
-> Hi Ezequiel,
-> 
-> On Thursday 28 November 2013 21:00:43 Ezequiel Garcia wrote:
-> > In order to remove the following ugly message:
-> > 
-> >   BUG: mapping for 0x00000000 at 0xff000000 out of vmalloc space
-> > 
-> > the iotable mappings should be re-located inside the vmalloc
-> > region. Such move was introduced at commit:
-> > 
-> > commit 0536bdf33faff4d940ac094c77998cfac368cfff
-> > Author: Nicolas Pitre <nicolas.pitre@linaro.org>
-> > Date:   Thu Aug 25 00:35:59 2011 -0400
-> > 
-> >     ARM: move iotable mappings within the vmalloc region
-> > 
-> > While at it, condition the mapping to PXA25x and PXA27x, which
-> > are the only platforms where it's used.
-> > 
-> > Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> > Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> > Cc: David Heidelberger <david.heidelberger@ixit.cz>
-> > Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> > ---
-> > David,
-> > 
-> > Is it possible for you to give this a try on your board?
-> 
-> I'm running into the same issue on a PXA270 system.
-> 
-> UNCACHED_PHYS_0 is used as an immediate operand to a mov instruction, and thus 
-> needs to be encoded as a shifted 8-bit value. One simple solution would be to 
-> hardcode it to 0xfd000000 (0xfe000000 is already used for the IMEMC mapping).
-> 
-> Another solution would be to keep the UNCACHED_PHYS_0 mapping at the end of 
-> the vmalloc area (with a fix for the UL problem due to VMALLOC_END) and modify 
-> pxa2[57]x_finish_suspend and pm_enter_standby_start to use an ldr instruction 
-> instead of a move instruction to load the address.
-> 
-> As a side note, the IMEMC mapping seems unused, maybe we could thus reclaim it 
-> and use 0xfe000000 for UNCACHED_PHYS_0.
-> 
-> Do you plan to submit a v3 of this patch ?
-> 
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Date: Wed, 9 Apr 2014 17:15:55 +0100
 
-Not really. I've been a bit busy and couldn't work any longer on this issue,
-so feel free to pick the task :-)
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+> On Wed, Apr 09, 2014 at 12:09:26PM -0400, David Miller wrote:
+>> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+>> Date: Wed, 9 Apr 2014 11:01:50 +0100
+>> 
+>> > What has been proposed for uprobes is a uprobe specific function -
+>> > flush_uprobe_xol_access() which is used after uprobes writes via the
+>> > kmap_atomic() mapping of the page:
+>> > 
+>> > +       xol_page_kaddr = kmap_atomic(area->page);
+>> > +
+>> > +       /* Initialize the slot */
+>> > +       memcpy(xol_page_kaddr + (xol_vaddr & ~PAGE_MASK),
+>> > +              &uprobe->arch.ixol,
+>> > +              sizeof(uprobe->arch.ixol));
+>> > +
+>> > +       arch_uprobe_flush_xol_access(area->page, xol_vaddr,
+>> > +                                    xol_page_kaddr + (xol_vaddr & ~PAGE_MASK),
+>> > +                                    sizeof(uprobe->arch.ixol));
+>> > +
+>> > +       kunmap_atomic(xol_page_kaddr);
+>> > 
+>> > Comments?
+>> 
+>> ptrace() accesses (via __access_remote_vm()) already use an existing
+>> helper function for these sorts of situations, in the form of
+>> copy_{to,from}_user_page().  I would suggest that uprobes uses that
+>> as well.
+> 
+> Yes, I agree with you.
+> 
+> I made that suggestion too (because it's really the same problem)
+> but uprobes people are concerned that it's too much of an overhead:
+
+They should use it at first, then if there is a problem we can identify
+exactly what can be optimized or needs to be, and expand the interface
+as needed.
+
+Let's not optimize first.
