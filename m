@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934464AbaDIVeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 17:34:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:53601 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933717AbaDIVeG (ORCPT
+	id S964967AbaDIVjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 17:39:48 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:57927 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933908AbaDIVjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 17:34:06 -0400
-Subject: Re: [RFC PATCH v2 0/6] uprobes/x86: fix the reprel jmp/call
- handling
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140409194401.GA5854@redhat.com>
-References: <20140404185038.GA14679@redhat.com>
-	 <20140404193226.GA23092@redhat.com>
-	 <1396655065.4769.8.camel@oc7886638347.ibm.com.usor.ibm.com>
-	 <20140406201524.GA32694@redhat.com>  <20140409194401.GA5854@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Apr 2014 14:34:00 -0700
-Message-ID: <1397079240.5261.27.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040921-9332-0000-0000-00000074909D
+	Wed, 9 Apr 2014 17:39:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1397072736-10793-5-git-send-email-matthias.bgg@gmail.com>
+References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com>
+	<1397072736-10793-5-git-send-email-matthias.bgg@gmail.com>
+Date: Wed, 9 Apr 2014 16:39:42 -0500
+Message-ID: <CAL_JsqKq+D+c-qznP5aE3uyXf_YXyYzvoKRONAY7eXBkWcvqsw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] arm: mediatek: Add earlyprintk support for MT6589
+From: Rob Herring <robherring2@gmail.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Silvio F <silvio.fricke@gmail.com>, heiko.stuebner@bq.com,
+        Olof Johansson <olof@lixom.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 21:44 +0200, Oleg Nesterov wrote:
-> On 04/06, Oleg Nesterov wrote:
-> >
-> > OK. Please see the RFC changes. Obviously not for inclusion yet. And
-> > totally untested, except I verified that the test-case from 4/6 works.
-> 
-> Still not really tested, but seems to work.
-> 
-> Please see v2. All changes are minor except the s/ENOSYS/-ENOSYS/ fix.
-> Please see the intediff below. I also move "Introduce sizeof_long() ..."
-> to the head of this series.
-> 
-> Jim, I am still thinking how I can improve the commenents in 4/6 as you
-> asked me, and I obviously need to write the changelogs and change "ttt"
-> prefix.
-> 
-> Will you agree with s/ttt/branch/ ?
+On Wed, Apr 9, 2014 at 2:45 PM, Matthias Brugger <matthias.bgg@gmail.com> wrote:
+> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> ---
+>  arch/arm/Kconfig.debug            |   49 +++++++++++++++++++++++++++++++++++--
+>  arch/arm/include/debug/mediatek.S |   38 ++++++++++++++++++++++++++++
+>  2 files changed, 85 insertions(+), 2 deletions(-)
+>  create mode 100644 arch/arm/include/debug/mediatek.S
+>
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index 4a2fc0b..dc51495 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -797,6 +797,38 @@ choice
+>                   Say Y here if you want kernel low-level debugging support
+>                   on Ux500 based platforms.
+>
+> +       config DEBUG_MTK6589_UART0
+> +               depends on ARCH_MEDIATEK
+> +               bool "Mediatek mt6589 UART0"
+> +               select DEBUG_UART_MEDIATEK
+> +               help
+> +                 Say Y here if you want kernel low-level debugging support
+> +                 on Mediatek mt6589 based platforms.
+> +
+> +       config DEBUG_MTK6589_UART1
+> +               depends on ARCH_MEDIATEK
+> +               bool "Mediatek mt6589 UART1"
+> +               select DEBUG_UART_MEDIATEK
+> +               help
+> +                 Say Y here if you want kernel low-level debugging support
+> +                 on Mediatek mt6589 based platforms.
+> +
+> +       config DEBUG_MTK6589_UART2
+> +               depends on ARCH_MEDIATEK
+> +               bool "Mediatek mt6589 UART2"
+> +               select DEBUG_UART_MEDIATEK
+> +               help
+> +                 Say Y here if you want kernel low-level debugging support
+> +                 on Mediatek mt6589 based platforms.
+> +
+> +       config DEBUG_MTK6589_UART3
+> +               depends on ARCH_MEDIATEK
+> +               bool "Mediatek mt6589 UART3"
+> +               select DEBUG_UART_MEDIATEK
+> +               help
+> +                 Say Y here if you want kernel low-level debugging support
+> +                 on Mediatek mt6589 based platforms.
+> +
 
-Yes.
+Do you really need all uarts defined? Only define what you have boards using.
 
-> 
-> Do you think the code is fine in v2 ?
-
-Yes, except for certain comments wrt call emulation.  See my reply about
-patch #4 from a few minutes ago.
-
-Once that's resolved, I consider all your patches so far
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
-and
-Acked-by: Jim Keniston <jkenisto@us.ibm.com>
-
-> 
-> Oleg.
-...
-
-Jim
-
+Also, you have no uarts defined in your dts. Please add them there
+(and any necessary serial driver) before adding debug functionality.
+Otherwise, you can't actually boot a multi-platform kernel with this
+series.
