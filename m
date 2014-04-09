@@ -1,83 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933189AbaDIMQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 08:16:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41221 "EHLO mx1.redhat.com"
+	id S933263AbaDIMRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 08:17:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54519 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932592AbaDIMQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 08:16:27 -0400
-Date: Wed, 9 Apr 2014 14:16:18 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/3] perf bench: Set more defaults in the 'numa' suite
-Message-ID: <20140409121618.GA2556@krava.brq.redhat.com>
-References: <1395964219-22173-1-git-send-email-artagnon@gmail.com>
- <1395964219-22173-2-git-send-email-artagnon@gmail.com>
+	id S932592AbaDIMRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 08:17:21 -0400
+Date: Wed, 9 Apr 2014 14:17:17 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>, willy@linux.intel.com
+Subject: Re: [PATCH v7 20/22] ext4: Add DAX functionality
+Message-ID: <20140409121717.GN32103@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <490bf3041f0e0633964ca84bf4fb0bb3dd999694.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395964219-22173-2-git-send-email-artagnon@gmail.com>
+In-Reply-To: <490bf3041f0e0633964ca84bf4fb0bb3dd999694.1395591795.git.matthew.r.wilcox@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 07:50:17PM -0400, Ramkumar Ramachandra wrote:
-> Currently,
+On Sun 23-03-14 15:08:46, Matthew Wilcox wrote:
+> From: Ross Zwisler <ross.zwisler@linux.intel.com>
 > 
->   $ perf bench numa mem
+> This is a port of the DAX functionality found in the current version of
+> ext2.
 > 
-> errors out with usage information. To make this more user-friendly, let
-> us provide a minimum set of default values required for a test
-> run. As an added bonus,
-> 
->   $ perf bench all
-> 
-> now goes all the way to completion.
-> 
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+> [heavily tweaked]
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 > ---
->  tools/perf/bench/numa.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
-> index d4c83c6..20697fb 100644
-> --- a/tools/perf/bench/numa.c
-> +++ b/tools/perf/bench/numa.c
-> @@ -1593,6 +1593,10 @@ static void init_params(struct params *p, const char *name, int argc, const char
->  	p->data_rand_walk		= true;
->  	p->nr_loops			= -1;
->  	p->init_random			= true;
-> +	p->mb_global_str		= "1";
-> +	p->nr_proc			= 1;
-> +	p->nr_threads			= 1;
-> +	p->nr_secs			= 5;
+  I have some comments below.
 
-hi,
-I dont claim to understand this benchmark, but I'm now getting this:
+> diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+> index 1a50739..42a8ccd 100644
+> --- a/fs/ext4/file.c
+> +++ b/fs/ext4/file.c
+> @@ -190,7 +190,7 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+>  		}
+>  	}
+>  
+> -	if (unlikely(iocb->ki_filp->f_flags & O_DIRECT))
+> +	if (io_is_direct(iocb->ki_filp))
+>  		ret = ext4_file_dio_write(iocb, iov, nr_segs, pos);
+>  	else
+>  		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
+> @@ -198,6 +198,27 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+>  	return ret;
+>  }
+>  
+> +#ifdef CONFIG_FS_DAX
+> +static int ext4_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+> +{
+> +	return dax_fault(vma, vmf, ext4_get_block);
+> +					/* Is this the right get_block? */
+  Yes, it is the right one.
 
-$ ./perf bench numa all
-# Running numa/mem benchmark...
+> +}
+> +
+> +static int ext4_dax_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> +{
+> +	return dax_mkwrite(vma, vmf, ext4_get_block);
+> +}
+  Umm, I'm afraid it won't be this easy here. So you rely on
+ext4_get_block() to start a transaction for you and do the block
+allocation. However if the system crashes after ext4_get_block() has
+allocated the block and finished the transaction but before dax_mkwrite()
+had a chance to zero out the page, the filesystem will be referencing block
+with uninitialized data when the system boots again (this is a security
+issue for multiuser systems). What you need to do is to start a transaction
+here in ext4_dax_mkwrite(), call dax_mkwrite() (ext4_get_block() will
+notice the transaction is already started and don't start it again so you
+don't have to care about that), and stop the transaction after
+dax_mkwrite() returns. Except it's not so easy because
+sb_start_pagefault() locking ranks above transaction start so ext4 will
+really need to call into something like do_dax_fault() - I'd suggest we
+create dax_mkwrite() and __dax_mkwrite() similarly to how
+block_page_mkwrite() and __block_page_mkwrite() from fs/buffer.c do.
 
-SNIP
+> +
+> +static const struct vm_operations_struct ext4_dax_vm_ops = {
+> +	.fault		= ext4_dax_fault,
+> +	.page_mkwrite	= ext4_dax_mkwrite,
+> +	.remap_pages	= generic_file_remap_pages,
+> +};
+> +#else
+> +#define ext4_dax_vm_ops	ext4_file_vm_ops
+> +#endif
+> +
+>  static const struct vm_operations_struct ext4_file_vm_ops = {
+>  	.fault		= filemap_fault,
+>  	.page_mkwrite   = ext4_page_mkwrite,
+> @@ -206,12 +227,13 @@ static const struct vm_operations_struct ext4_file_vm_ops = {
+>  
+>  static int ext4_file_mmap(struct file *file, struct vm_area_struct *vma)
+>  {
+> -	struct address_space *mapping = file->f_mapping;
+> -
+> -	if (!mapping->a_ops->readpage)
+> -		return -ENOEXEC;
+>  	file_accessed(file);
+> -	vma->vm_ops = &ext4_file_vm_ops;
+> +	if (IS_DAX(file_inode(file))) {
+> +		vma->vm_ops = &ext4_dax_vm_ops;
+> +		vma->vm_flags |= VM_MIXEDMAP;
+> +	} else {
+> +		vma->vm_ops = &ext4_file_vm_ops;
+> +	}
+>  	return 0;
+>  }
+>  
+> @@ -609,6 +631,25 @@ const struct file_operations ext4_file_operations = {
+>  	.fallocate	= ext4_fallocate,
+>  };
+>  
+> +#ifdef CONFIG_FS_DAX
+> +const struct file_operations ext4_dax_file_operations = {
+> +	.llseek		= ext4_llseek,
+> +	.read		= do_sync_read,
+> +	.write		= do_sync_write,
+> +	.aio_read	= generic_file_aio_read,
+> +	.aio_write	= ext4_file_write,
+> +	.unlocked_ioctl = ext4_ioctl,
+> +#ifdef CONFIG_COMPAT
+> +	.compat_ioctl	= ext4_compat_ioctl,
+> +#endif
+> +	.mmap		= ext4_file_mmap,
+> +	.open		= ext4_file_open,
+> +	.release	= ext4_release_file,
+> +	.fsync		= ext4_sync_file,
+> +	.fallocate	= ext4_fallocate,
+> +};
+> +#endif
+> +
+>  const struct inode_operations ext4_file_inode_operations = {
+>  	.setattr	= ext4_setattr,
+>  	.getattr	= ext4_getattr,
+> diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+> index 594009f..5fdb414 100644
+> --- a/fs/ext4/indirect.c
+> +++ b/fs/ext4/indirect.c
+> @@ -686,15 +686,22 @@ retry:
+>  			inode_dio_done(inode);
+>  			goto locked;
+>  		}
+> -		ret = __blockdev_direct_IO(rw, iocb, inode,
+> -				 inode->i_sb->s_bdev, iov,
+> -				 offset, nr_segs,
+> -				 ext4_get_block, NULL, NULL, 0);
+> +		if (IS_DAX(inode))
+> +			ret = dax_do_io(rw, iocb, inode, iov, offset, nr_segs,
+> +					ext4_get_block, NULL, 0);
+> +		else
+> +			ret = __blockdev_direct_IO(rw, iocb, inode,
+> +					inode->i_sb->s_bdev, iov, offset,
+> +					nr_segs, ext4_get_block, NULL, NULL, 0);
+>  		inode_dio_done(inode);
+>  	} else {
+>  locked:
+> -		ret = blockdev_direct_IO(rw, iocb, inode, iov,
+> -				 offset, nr_segs, ext4_get_block);
+> +		if (IS_DAX(inode))
+> +			ret = dax_do_io(rw, iocb, inode, iov, offset, nr_segs,
+> +					ext4_get_block, NULL, DIO_LOCKING);
+> +		else
+> +			ret = blockdev_direct_IO(rw, iocb, inode, iov,
+> +					offset, nr_segs, ext4_get_block);
+>  
+>  		if (unlikely((rw & WRITE) && ret < 0)) {
+>  			loff_t isize = i_size_read(inode);
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index ce7341c..9462730 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -3140,13 +3140,14 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
+>  		get_block_func = ext4_get_block_write;
+>  		dio_flags = DIO_LOCKING;
+>  	}
+> -	ret = __blockdev_direct_IO(rw, iocb, inode,
+> -				   inode->i_sb->s_bdev, iov,
+> -				   offset, nr_segs,
+> -				   get_block_func,
+> -				   ext4_end_io_dio,
+> -				   NULL,
+> -				   dio_flags);
+> +	if (IS_DAX(inode))
+> +		ret = dax_do_io(rw, iocb, inode, iov, offset, nr_segs,
+> +				get_block_func, ext4_end_io_dio, dio_flags);
+> +	else
+> +		ret = __blockdev_direct_IO(rw, iocb, inode,
+> +					   inode->i_sb->s_bdev, iov, offset,
+> +					   nr_segs, get_block_func,
+> +					   ext4_end_io_dio, NULL, dio_flags);
+>  
+  Since you don't do real AIO for DAX, you could handle async iocbs for DAX
+inodes the same way as normal sync iocbs (i.e., you don't need to allocate
+ioend and do completion from a workqueue but handle everything necessary in
+ext4_ext_direct_IO()). That will be noticeably faster and with smaller CPU
+load as well. I'm not saying you have to do that now (although it shouldn't
+be complicated) but at least note that in a comment please.
 
- ###
- # 1 task will execute (on 1 nodes, 4 CPUs):
- #         -1x     1MB global  shared mem operations
- #         -1x     0MB process shared mem operations
- #         -1x     0MB thread  local  mem operations
- ###
-...
-
-
-'-1x' does not seem right/intentional for default case
-
-thanks,
-jirka
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
