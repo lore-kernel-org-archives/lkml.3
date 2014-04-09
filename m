@@ -1,37 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932888AbaDIKwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:52:17 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42396 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932482AbaDIKwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:52:15 -0400
+	id S932985AbaDIKw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 06:52:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55874 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482AbaDIKwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 06:52:22 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <gregkh@linuxfoundation.org>, <grant.likely@secretlab.ca>
 CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 0/2] drivercore: deferral race condition fix
-Date: Wed, 9 Apr 2014 13:52:05 +0300
-Message-ID: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 2/2] drivercore: deferral race condition fix
+Date: Wed, 9 Apr 2014 13:52:07 +0300
+Message-ID: <1397040727-2447-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Changes since v1:
-- The deferral race detection and handling has been moved to
-  driver_deferred_probe_trigger() and driver_deferred_probe_add() functions with
-  comment section.
-- driver_deferred_probe_add/del function needed to be moved. Both of them placed
-  after driver_deferred_probe_trigger() so they remain together.
-- I have not added the Acked-by from Mark and Grant since the patch itself
-  changed from v1, but the functionality remained.
-
-Explanantion of the issue (from patch 2):
 When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
 when all modules loaded but some driver still stuck in the deferred list
 and there is a need for external event to kick the deferred queue to probe
@@ -81,17 +72,80 @@ driver was probing.
 
 This way we can avoid drivers stuck in the deferred queue.
 
-Regards,
-Peter
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
-Peter Ujfalusi (2):
-  drivercore: dd: Move driver_deferred_probe_add/del function down in
-    the code
-  drivercore: deferral race condition fix
+ drivers/base/dd.c | 31 ++++++++++++++++++++++++++++---
+ 1 file changed, 28 insertions(+), 3 deletions(-)
 
- drivers/base/dd.c | 71 +++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 48 insertions(+), 23 deletions(-)
-
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 43d573b960ba..22252aebbd3e 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -53,6 +53,10 @@ static LIST_HEAD(deferred_probe_pending_list);
+ static LIST_HEAD(deferred_probe_active_list);
+ static struct workqueue_struct *deferred_wq;
+ 
++static atomic_t probe_count = ATOMIC_INIT(0);
++static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
++static bool deferred_auto_retry;
++
+ /**
+  * deferred_probe_work_func() - Retry probing devices in the active list.
+  */
+@@ -127,6 +131,15 @@ static void driver_deferred_probe_trigger(void)
+ 	 * into the active list so they can be retried by the workqueue
+ 	 */
+ 	mutex_lock(&deferred_probe_mutex);
++	/*
++	 * In case we have more than one device probing at the same time we do
++	 * not yet know if the other driver going to be deferred or not.
++	 * The flag 'deferred_auto_retry' will be used when the last driver asks
++	 * for deferral to trigger again the deferred list to check if it's
++	 * dependencies have been satisfied already.
++	 */
++	deferred_auto_retry = (atomic_read(&probe_count) > 1);
++
+ 	list_splice_tail_init(&deferred_probe_pending_list,
+ 			      &deferred_probe_active_list);
+ 	mutex_unlock(&deferred_probe_mutex);
+@@ -140,12 +153,27 @@ static void driver_deferred_probe_trigger(void)
+ 
+ static void driver_deferred_probe_add(struct device *dev)
+ {
++	bool auto_trigger = false;
++
+ 	mutex_lock(&deferred_probe_mutex);
+ 	if (list_empty(&dev->p->deferred_probe)) {
+ 		dev_dbg(dev, "Added to deferred list\n");
+ 		list_add_tail(&dev->p->deferred_probe, &deferred_probe_pending_list);
+ 	}
++
++	/*
++	 * This is the last driver to load and asking to be deferred.
++	 * If other driver(s) loaded while this driver was loading, we
++	 * should try the deferred drivers (including this driver) again to
++	 * avoid missing dependency for this driver.
++	 */
++	if (atomic_read(&probe_count) == 1 && deferred_auto_retry)
++		auto_trigger = true;
++
+ 	mutex_unlock(&deferred_probe_mutex);
++
++	if (auto_trigger)
++		driver_deferred_probe_trigger();
+ }
+ 
+ void driver_deferred_probe_del(struct device *dev)
+@@ -259,9 +287,6 @@ int device_bind_driver(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(device_bind_driver);
+ 
+-static atomic_t probe_count = ATOMIC_INIT(0);
+-static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
+-
+ static int really_probe(struct device *dev, struct device_driver *drv)
+ {
+ 	int ret = 0;
 -- 
 1.9.1
 
