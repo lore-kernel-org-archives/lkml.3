@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934086AbaDIRGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:06:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28324 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933342AbaDIRGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:06:11 -0400
-Date: Wed, 9 Apr 2014 19:06:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
-	kernel threads
-Message-ID: <20140409170616.GC27638@redhat.com>
-References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com> <1397059882-23063-3-git-send-email-fweisbec@gmail.com> <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com> <20140409124249.4081e665@gandalf.local.home> <20140409170505.GA27638@redhat.com>
+	id S934103AbaDIRHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:07:53 -0400
+Received: from mailscanner02.zoner.fi ([84.34.166.11]:37824 "EHLO
+	mailscanner02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933100AbaDIRHw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 13:07:52 -0400
+Date: Wed, 9 Apr 2014 20:07:22 +0300
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dpc@ucore.info, linux-kernel@vger.kernel.org
+Subject: [PATCH] xz: Add comments for the intentionally missing break
+ statements
+Message-ID: <20140409200722.53ace0d4@tukaani.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409170505.GA27638@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-syscall_regfunc() ignores the kernel thread because "it has
-no effect", see cc3b13c1 "Don't trace kernel thread syscalls".
+From: Lasse Collin <lasse.collin@tukaani.org>
 
-However, this means that a user-space task spawned by
-call_usermodehelper() won't report the system calls if
-kernel_execve() is called when sys_tracepoint_refcount != 0.
-
-Remove this check. Hopefully the unnecessary report from
-ret_from_fork path mentioned by cc3b13c1 is fine. In fact
-"this is the only case" is not true. Say, kernel_execve()
-itself does "int 80" on X86_32. Hopefully fine too.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
 ---
- kernel/tracepoint.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index a16754b..4e1e4ca 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -737,9 +737,7 @@ void syscall_regfunc(void)
- 	if (!sys_tracepoint_refcount) {
- 		read_lock(&tasklist_lock);
- 		do_each_thread(g, t) {
--			/* Skip kernel threads. */
--			if (!(t->flags & PF_KTHREAD))
--				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-+			set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
- 		} while_each_thread(g, t);
- 		read_unlock(&tasklist_lock);
- 	}
--- 
-1.5.5.1
+ lib/xz/xz_dec_lzma2.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff -Narup linux-3.14.orig/lib/xz/xz_dec_lzma2.c linux-3.14/lib/xz/xz_dec_lzma2.c
+--- linux-3.14.orig/lib/xz/xz_dec_lzma2.c	2014-03-31 06:40:15.000000000 +0300
++++ linux-3.14/lib/xz/xz_dec_lzma2.c	2014-04-09 18:20:01.229614074 +0300
+@@ -1043,6 +1043,8 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(s
+ 
+ 			s->lzma2.sequence = SEQ_LZMA_PREPARE;
+ 
++		/* Fall through */
++
+ 		case SEQ_LZMA_PREPARE:
+ 			if (s->lzma2.compressed < RC_INIT_BYTES)
+ 				return XZ_DATA_ERROR;
+@@ -1053,6 +1055,8 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(s
+ 			s->lzma2.compressed -= RC_INIT_BYTES;
+ 			s->lzma2.sequence = SEQ_LZMA_RUN;
+ 
++		/* Fall through */
++
+ 		case SEQ_LZMA_RUN:
+ 			/*
+ 			 * Set dictionary limit to indicate how much we want
