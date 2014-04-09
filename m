@@ -1,220 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965067AbaDIUyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:54:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35177 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965020AbaDIUyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:54:16 -0400
-Message-ID: <5345B370.6060004@free-electrons.com>
-Date: Wed, 09 Apr 2014 20:54:08 +0000
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S934351AbaDIUzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:55:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36576 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965010AbaDIUzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 16:55:31 -0400
+Date: Wed, 9 Apr 2014 22:55:29 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 06/22] Replace XIP read and write with DAX I/O
+Message-ID: <20140409205529.GO32103@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <3ebe329d8713f7db4c105021a845316a47a29797.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140408175600.GE2713@quack.suse.cz>
+ <20140408202102.GB5727@linux.intel.com>
+ <20140409091450.GA32103@quack.suse.cz>
+ <20140409151908.GD5727@linux.intel.com>
 MIME-Version: 1.0
-To: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org
-CC: mark.rutland@arm.com, andrew@lunn.ch, linux-doc@vger.kernel.org,
-        thierry.reding@gmail.com, heiko.stuebner@bq.com,
-        linux@arm.linux.org.uk, daniel.lezcano@linaro.org,
-        florian.vaussard@epfl.ch, sebastian.hesselbarth@gmail.com,
-        devicetree@vger.kernel.org, jason@lakedaemon.net, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, robh+dt@kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, rdunlap@infradead.org,
-        silvio.fricke@gmail.com, galak@codeaurora.org, olof@lixom.net,
-        jic23@kernel.org
-Subject: Re: [PATCH 4/4] arm: mediatek: Add earlyprintk support for MT6589
-References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com> <1397072736-10793-5-git-send-email-matthias.bgg@gmail.com>
-In-Reply-To: <1397072736-10793-5-git-send-email-matthias.bgg@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409151908.GD5727@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthias,
-
-On 09/04/2014 19:45, Matthias Brugger wrote:
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-> ---
->  arch/arm/Kconfig.debug            |   49 +++++++++++++++++++++++++++++++++++--
->  arch/arm/include/debug/mediatek.S |   38 ++++++++++++++++++++++++++++
->  2 files changed, 85 insertions(+), 2 deletions(-)
->  create mode 100644 arch/arm/include/debug/mediatek.S
+On Wed 09-04-14 11:19:08, Matthew Wilcox wrote:
+> On Wed, Apr 09, 2014 at 11:14:50AM +0200, Jan Kara wrote:
+> > On Tue 08-04-14 16:21:02, Matthew Wilcox wrote:
+> > > On Tue, Apr 08, 2014 at 07:56:00PM +0200, Jan Kara wrote:
+> > > > > +static void dax_new_buf(void *addr, unsigned size, unsigned first,
+> > > > > +					loff_t offset, loff_t end, int rw)
+> > > > > +{
+> > > > > +	loff_t final = end - offset + first; /* The final byte of the buffer */
+> > > > > +	if (rw != WRITE) {
+> > > > > +		memset(addr, 0, size);
+> > > > > +		return;
+> > > > > +	}
+> > > >   It seems counterintuitive to zero out "on-disk" blocks (it seems you'd do
+> > > > this for unwritten blocks) when reading from them. Presumably it could also
+> > > > have undesired effects on endurance of persistent memory. Instead I'd expect
+> > > > that you simply zero out user provided buffer the same way as you do it for
+> > > > holes.
+> > > 
+> > > I think we have to zero it here, because the second time we call
+> > > get_block() for a given block, it won't be BH_New any more, so we won't
+> > > know that it's supposed to be zeroed.
+> >   But how can you have BH_New buffer when you didn't ask get_blocks() to
+> > create any block? That would be a bug in the get_blocks() implementation...
+> > Or am I missing something?
 > 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 4a2fc0b..dc51495 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -797,6 +797,38 @@ choice
->  		  Say Y here if you want kernel low-level debugging support
->  		  on Ux500 based platforms.
->  
-> +	config DEBUG_MTK6589_UART0
-> +		depends on ARCH_MEDIATEK
-> +		bool "Mediatek mt6589 UART0"
-> +		select DEBUG_UART_MEDIATEK
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on Mediatek mt6589 based platforms.
-> +
-> +	config DEBUG_MTK6589_UART1
-> +		depends on ARCH_MEDIATEK
-> +		bool "Mediatek mt6589 UART1"
-> +		select DEBUG_UART_MEDIATEK
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on Mediatek mt6589 based platforms.
-> +
-> +	config DEBUG_MTK6589_UART2
-> +		depends on ARCH_MEDIATEK
-> +		bool "Mediatek mt6589 UART2"
-> +		select DEBUG_UART_MEDIATEK
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on Mediatek mt6589 based platforms.
-> +
-> +	config DEBUG_MTK6589_UART3
-> +		depends on ARCH_MEDIATEK
-> +		bool "Mediatek mt6589 UART3"
-> +		select DEBUG_UART_MEDIATEK
-> +		help
-> +		  Say Y here if you want kernel low-level debugging support
-> +		  on Mediatek mt6589 based platforms.
-> +
->  	config DEBUG_VEXPRESS_UART0_DETECT
->  		bool "Autodetect UART0 on Versatile Express Cortex-A core tiles"
->  		depends on ARCH_VEXPRESS && CPU_CP15_MMU
-> @@ -954,6 +986,10 @@ config DEBUG_MSM_UART
->  	bool
->  	depends on ARCH_MSM || ARCH_QCOM
->  
-> +config DEBUG_UART_MEDIATEK
-> +	bool
-> +	depends on ARCH_MEDIATEK
-> +
->  config DEBUG_LL_INCLUDE
->  	string
->  	default "debug/8250.S" if DEBUG_LL_UART_8250 || DEBUG_UART_8250
-> @@ -971,6 +1007,7 @@ config DEBUG_LL_INCLUDE
->  				 DEBUG_IMX53_UART ||\
->  				 DEBUG_IMX6Q_UART || \
->  				 DEBUG_IMX6SL_UART
-> +	default "debug/mediatek.S" if DEBUG_UART_MEDIATEK
->  	default "debug/msm.S" if DEBUG_MSM_UART
->  	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
->  	default "debug/sirf.S" if DEBUG_SIRFPRIMA2_UART1 || DEBUG_SIRFMARCO_UART1
-> @@ -1043,6 +1080,10 @@ config DEBUG_UART_PHYS
->  	default 0xd0012000 if DEBUG_MVEBU_UART
->  	default 0xd4017000 if DEBUG_MMP_UART2
->  	default 0xd4018000 if DEBUG_MMP_UART3
-
-it seems that this symbol are sorted by address so your symbols
-should go just after the line
-default 0x101fb000 if DEBUG_NOMADIK_UART
-
-> +	default 0x11006000 if DEBUG_MTK6589_UART0
-> +	default 0x11007000 if DEBUG_MTK6589_UART1
-> +	default 0x11008000 if DEBUG_MTK6589_UART2
-> +	default 0x11009000 if DEBUG_MTK6589_UART3
->  	default 0xe0000000 if ARCH_SPEAR13XX
->  	default 0xf0000be0 if ARCH_EBSA110
->  	default 0xf1012000 if DEBUG_MVEBU_UART_ALTERNATE
-> @@ -1058,7 +1099,7 @@ config DEBUG_UART_PHYS
->  	default 0xfffff700 if ARCH_IOP33X
->  	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
->  		DEBUG_LL_UART_EFM32 || \
-> -		DEBUG_UART_8250 || DEBUG_UART_PL01X
-> +		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_UART_MEDIATEK
->  
->  config DEBUG_UART_VIRT
->  	hex "Virtual base address of debug UART"
-> @@ -1087,6 +1128,10 @@ config DEBUG_UART_VIRT
->  	default 0xfe012000 if ARCH_ORION5X
->  	default 0xfe017000 if DEBUG_MMP_UART2
->  	default 0xfe018000 if DEBUG_MMP_UART3
-> +	default 0xF1006000 if DEBUG_MTK6589_UART0
-> +	default 0xF1007000 if DEBUG_MTK6589_UART1
-> +	default 0xF1008000 if DEBUG_MTK6589_UART2
-> +	default 0xF1009000 if DEBUG_MTK6589_UART3
->  	default 0xfe100000 if DEBUG_IMX23_UART || DEBUG_IMX28_UART
->  	default 0xfe230000 if DEBUG_PICOXCELL_UART
->  	default 0xfe300000 if DEBUG_BCM_KONA_UART
-> @@ -1116,7 +1161,7 @@ config DEBUG_UART_VIRT
->  	default 0xff003000 if DEBUG_U300_UART
->  	default DEBUG_UART_PHYS if !MMU
->  	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
-> -		DEBUG_UART_8250 || DEBUG_UART_PL01X
-> +		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_UART_MEDIATEK
->  
->  config DEBUG_UART_8250_SHIFT
->  	int "Register offset shift for the 8250 debug UART"
-> diff --git a/arch/arm/include/debug/mediatek.S b/arch/arm/include/debug/mediatek.S
-> new file mode 100644
-> index 0000000..98e8414
-> --- /dev/null
-> +++ b/arch/arm/include/debug/mediatek.S
-> @@ -0,0 +1,38 @@
-> +/*
-> + * Low-level debug macro for Mediatek SoCs
-> + *
-> + * Copyright (c) 2014 MundoReader S.L.
-> + * Author: Matthias Brugger <matthias.bgg@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +#include <linux/serial_reg.h>
-> +
-> +	        .macro  addruart, rp, rv, tmp
-> +	        ldr	\rp, =CONFIG_DEBUG_UART_PHYS
-> +	        ldr	\rv, =CONFIG_DEBUG_UART_VIRT
-> +	        .endm
-> +
-> +	        .macro  senduart,rd,rx
-> +	        strb    \rd, [\rx, #0x0]
-What about using a #define instead of numerical value?
-
-> +	        .endm
-> +
-> +	        .macro  waituart,rd,rx
-> +1001:   	ldr \rd, [\rx, #0x14]
-ditto
-> +	        tst \rd, #0x40
-ditto
-> +	        beq 1001b
-> +	        .endm
-> +
-> +		.macro  busyuart,rd,rx
-> +1002:   	ldr \rd, [\rx, #0x14]
-ditto
-> +	        tst \rd, #0x40
-ditto
-> +	        beq 1002b
-> +	        .endm
+> Oh ... right.  So just to be clear, we're looking at the case where
+> we're doing a read of a filesystem block which is BH_Unwritten, but
+> isn't a hole ... so it's been allocated on storage and not yet written.
+> That's already treated as a hole:
 > 
+>                         if (rw == WRITE) {
+> ...
+>                         } else {
+>                                 hole = !buffer_written(bh);
+>                         }
+> 
+> and dax_new_buf is only called in the !hole case.
+  Ah, my bad. But then dax_new_buf() won't ever be called for rw != WRITE.
+get_blocks() cannot ever return BH_New buffer when 'create' argument was 0.
 
-This file looks very similar to arch/arm/include/debug/pl01x.S,
-the only difference is the value of some register offsets.
-Should it be possible to make it configurable and then use the
-same file?
+> > > > > +	if ((flags & DIO_LOCKING) && (rw == READ)) {
+> > > > > +		struct address_space *mapping = inode->i_mapping;
+> > > > > +		mutex_lock(&inode->i_mutex);
+> > > > > +		retval = filemap_write_and_wait_range(mapping, offset, end - 1);
+> > > > > +		if (retval) {
+> > > > > +			mutex_unlock(&inode->i_mutex);
+> > > > > +			goto out;
+> > > > > +		}
+> > > >   Is there a reason for this? I'd assume DAX has no pages in pagecache...
+> > > 
+> > > There will be pages in the page cache for holes that we page faulted on.
+> > > They must go!  :-)
+> >   Well, but this will only writeback dirty pages and if I read the code
+> > correctly those pages will never be dirty since dax_mkwrite() will replace
+> > them. Or am I missing something?
+> 
+> In addition to writing back dirty pages, filemap_write_and_wait_range()
+> will evict clean pages.  Unintuitive, I know, but it matches what the
+> direct I/O path does.  Plus, if we fall back to buffered I/O for holes
+> (see above), then this will do the right thing at that time.
+  Ugh, I'm pretty certain filemap_write_and_wait_range() doesn't evict
+anything ;). Direct IO path calls that function so that direct IO read
+after buffered write returns the written data. In that case we don't evict
+anything from page cache because direct IO read doesn't invalidate any
+information we have cached. Only direct IO write does that and for that we
+call invalidate_inode_pages2_range() after writing the pages. So I maintain
+that what you do doesn't make sense to me. You might need to do some
+invalidation of hole pages. But note that generic_file_direct_write() does
+that for you and even though that isn't serialized in any way with page
+faults which can instantiate the hole pages again, things should work out
+fine for you since that function also invalidates the range again after
+->direct_IO callback is done. So AFAICT you don't have to do anything
+except writing some nice comment about this ;).
 
-
-Thanks,
-
-Gregory
-
-
-
+								Honza
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
