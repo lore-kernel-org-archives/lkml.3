@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139AbaDILNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:13:39 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:10019 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560AbaDILNe (ORCPT
+	id S933159AbaDILOl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:14:41 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:18267 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932560AbaDILOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:13:34 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-8a-53452b5de0ea
-Message-id: <53452B59.8030901@samsung.com>
-Date: Wed, 09 Apr 2014 13:13:29 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
+	Wed, 9 Apr 2014 07:14:36 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-7c-53452b9ac913
+Message-id: <53452B97.8020700@samsung.com>
+Date: Wed, 09 Apr 2014 13:14:31 +0200
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
+ Thunderbird/24.3.0
 MIME-version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org, kishon@ti.com
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        k.debski@samsung.com, jg1.han@samsung.com,
-        sylvester.nawrocki@gmail.com
-Subject: Re: [PATCH V4 5/5] usb-phy: samsung-usb3: Remove older
- phy-samsung-usb3 driver
-References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
- <1396967803-28868-6-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1396967803-28868-6-git-send-email-gautam.vivek@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Newsgroups: gmane.comp.video.dri.devel,gmane.linux.drivers.devicetree,gmane.linux.kernel.samsung-soc,gmane.linux.kernel,gmane.linux.drivers.video-input-infrastructure
+To: Rahul Sharma <r.sh.open@gmail.com>, Andrzej Hajda <a.hajda@samsung.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        sunil joshi <joshi@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
+References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
+ <1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
+ <534506B1.4040908@samsung.com>
+ <CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
+In-reply-to: <CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t/xK7qx2q7BBg+Wc1scvF9vMf/IOVaL
-	tisH2S2aF69ns7i88BKrxY/XF9gsehdcZbO48LSHzWLT42usFgvblrBYXN41h81ixvl9TBaL
-	lrUyW8z7vJPJgc9j56y77B77565h99i8pN6jb8sqRo/jN7YzeXzeJBfAFsVlk5Kak1mWWqRv
-	l8CVsW7fXuaCX1wVu049Z2xg/MXRxcjJISFgIjF//iFWCFtM4sK99WxdjFwcQgJLGSV67l5m
-	h3A+M0pMPHCaHaSKV0BLonPvEjCbRUBV4lv7G2YQm01ATeJzwyM2EJsfqGZN03UWEFtUIELi
-	XuNhVoheQYkfk++xgAwVEfjJKPGusQcswSzQxyhx+oQtiC0sECnxtXkDI8TmdkaJCfN+AW3j
-	4OAU8JS4eN0Yot5aYuWkbYwQtrzE5jVvmScwCs5CsmMWkrJZSMoWMDKvYhRNLU0uKE5KzzXS
-	K07MLS7NS9dLzs/dxAiJpq87GJceszrEKMDBqMTDq2DpEizEmlhWXJl7iFGCg1lJhPc5m2uw
-	EG9KYmVValF+fFFpTmrxIUYmDk6pBsao23JN52eZzGUreH+1jMPlcdISiZcxrI33nzisz1yZ
-	7bIkfY3i/TCDAxzM9d+t46P7k/v9Lt740RtVp6QnHXZp/h6daydfyGTI8RcYauo5eh7frSNT
-	FbhZIOCD7KmpqTvk4gSkEo8fjjw3/bLO36TzC5a7Zi0JP5ES8kfHzIJFak7Nov9zziuxFGck
-	GmoxFxUnAgCd5fcdhAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xq7qztF2DDXo+qFrcWneO1WL+ESBx
+	5et7NosDf3YwWnzf9YXdonfBVTaLC0972CzONr1ht7i8aw6bRc+GrawWM87vY7JY+CLeYsqi
+	w6wWrXuPsFvM+7yTyYHfY+esu+wem1Z1snncubaHzeN+93Emj74tqxg9jt/YzuTxeZNcAHsU
+	l01Kak5mWWqRvl0CV8bdA0+YCvoFKnYdn8XSwHiCp4uRk0NCwETi3rYPLBC2mMSFe+vZuhi5
+	OIQEljJK7Fx+lAnC+cwosaTrIjNIFa+AlsSNx8vYQWwWAVWJy2/+g8XZgCYdW/KZEcQWFYiQ
+	mDtxMxtEvaDEj8n3WEAG8QmsYJQ487UVbJ2IgLfExrebwDYwC7SzSrx/9oYJJCEsYCOx7/Jp
+	FojV7xklVhz4A5bgFAiWOHxsI9hqZgEdif2t09ggbHmJzWveMk9gFJyFZOMsJGWzkJQtYGRe
+	xSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESZ193MC49ZnWIUYCDUYmHV8HSJViINbGsuDL3
+	EKMEB7OSCO9zNtdgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwrfqlGG14r3VM38+KpPwpONcsn
+	hK4Pr1HXsjttICryULb+6Ry/IxIfd0u1Lnnixf3JJX9R2cGCxAetZhaPS71vnro/eV2rF0N0
+	uSDfK07FW3ZCp55O2Cvan1Wwo1LP8OvbRJbY53wGp1ZbLLOY+XPXwd2f/U9K3b9z7mLGxrKF
+	hwu3FnBf2LhCiaU4I9FQi7moOBEA5Cbs65ECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
+Hi Rahul,
 
-On 08.04.2014 16:36, Vivek Gautam wrote:
-> Removing this older USB 3.0 DRD controller PHY driver, since
-> a new driver based on generic phy framework is now available.
->
-> Also removing the dt node for older driver from Exynos5250
-> device tree and updating the dt node for DWC3 controller.
->
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->
-> NOTE: This patch should be merged only when the new USB 3.0
-> DRD phy controller driver is available in the tree from the
-> patches:
-> 	phy: Add new Exynos5 USB 3.0 PHY driver; and
-> 	dt: exynos5250: Enable support for generic USB DRD phy
->
->   arch/arm/boot/dts/exynos5250.dtsi  |   17 +-
->   drivers/usb/phy/phy-samsung-usb.h  |   83 ---------
->   drivers/usb/phy/phy-samsung-usb3.c |  350 ------------------------------------
->   3 files changed, 2 insertions(+), 448 deletions(-)
->   delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
->
-> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-> index 92c6fcd..1cb1e91 100644
-> --- a/arch/arm/boot/dts/exynos5250.dtsi
-> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+On 04/09/2014 11:12 AM, Rahul Sharma wrote:
+> Hi Tomasz,
+> 
+> On 9 April 2014 14:07, Andrzej Hajda <a.hajda@samsung.com> wrote:
+>> Hi Tomasz,
+>>
+>> On 04/08/2014 04:37 PM, Tomasz Stanislawski wrote:
+>>> Add exynos-simple-phy driver to support a single register
+>>> PHY interfaces present on Exynos4 SoC.
+>>>
+>>> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 
-IMHO driver and dts changes should be separated into two patches, first 
-updating device tree to use the new driver and second removing the driver.
+[snip]
 
-After fixing this issue,
+>>> +
+>>> +     regs = devm_ioremap(dev, res->start, res->end - res->start);
+>>> +     if (!regs) {
+>>> +             dev_err(dev, "failed to ioremap registers\n");
+>>> +             return -EFAULT;
+>>> +     }
+>>
+>> Why not devm_ioremap_resource? If not, resource_size function calculates
+>> length of resource correctly.
+>>
+>> Anyway I like the idea of implementing multiple phys in one driver.
+>> The only drawback I see is that some phys will be created even there are
+>> no consumers for them. To avoid such situation you can try to use
+>> lazy approach - create phy only if there is request for it,
+>> exynos_phy_xlate callback should allow this.
+>>
+>> Regards
+>> Andrzej
+>>
+> 
+> Idea looks good. How about keeping compatible which is independent
+> of SoC, something like "samsung,exynos-simple-phy" and provide Reg
+> and Bit through phy provider node. This way we can avoid SoC specific
+> hardcoding in phy driver and don't need to look into dt bindings for
+> each new SoC.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+A very nice idea BUT there is a very strong pressure from DT guys
+to avoid adding any bit fields/offsets/masks in DT nodes.
 
---
-Best regards,
-Tomasz
+Hopefully, as long as driver name starts with "exynos-" prefix
+one can hide SoCs specific tricks deep inside driver code.
+
+The idea behind this driver was not to create a generic phy for 1-bit
+devices but rather to hide SoC-specific issues from client drivers
+like DRM-HDMI.
+
+> 
+> We can use syscon interface to access PMU bits like USB phy.
+> PMU is already registered as system controller
+> 
+
+Ok. I will try to use it in PATCHv3.
+
+> Regards,
+> Rahul Sharma.
+> 
+
+Regards,
+Tomasz Stanislawski
+
+
