@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123AbaDIL66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:58:58 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:57333 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560AbaDIL65 (ORCPT
+	id S933060AbaDIMB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 08:01:29 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22114 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932542AbaDIMB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:58:57 -0400
+	Wed, 9 Apr 2014 08:01:28 -0400
+Date: Wed, 9 Apr 2014 15:01:08 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Richard Leitner <me@g0hl1n.net>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: adl_pci9118: fix whitespace issues
+Message-ID: <20140409120108.GF4912@mwanda>
+References: <8d54353f462d3d5bf51ad68b32bd88bb@webmail-alfa3028.alfahosting-server.de>
 MIME-Version: 1.0
-Date: Wed, 9 Apr 2014 17:28:57 +0530
-Message-ID: <CAKohpon3vJzL51V9aOBcXKJC4nr3K-0q77HsxFi+=ACUqNqhcA@mail.gmail.com>
-Subject: [Query]: tick-sched: can idle_active be false in tick_nohz_idle_exit()?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8d54353f462d3d5bf51ad68b32bd88bb@webmail-alfa3028.alfahosting-server.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guys,
+On Wed, Apr 09, 2014 at 01:35:37PM +0200, Richard Leitner wrote:
+> Removed not needed spaces and fixed too long lines
+> 
+> PS: this is an exercise to get into the "patch submitting workflow"
 
-File: kernel/time/tick-sched.c
-function: tick_nohz_idle_exit()
+Put the "PS" after the --- cut off.  Otherwise it's not a PS but a part
+of the permanent changelog.
 
-We are checking here if idle_active is true or not and then
-do some stuff. But is it possible that idle_active be false
-here?
+> 
+> Signed-off-by: Richard Leitner <me@g0hl1n.net>
+> ---
+>  drivers/staging/comedi/drivers/adl_pci9118.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c
+> b/drivers/staging/comedi/drivers/adl_pci9118.c
+> index 3cfa175..d028d6b 100644
+> --- a/drivers/staging/comedi/drivers/adl_pci9118.c
+> +++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+> @@ -96,7 +96,7 @@ Configuration options:
+>  				 * correct channel number on every 12 bit sample
+>  				 */
+> 
+> -#define IORANGE_9118		64	/* I hope */
+> +#define IORANGE_9118	64	/* I hope */
+>  #define PCI9118_CHANLEN	255	/*
+>  				 * len of chanlist, some source say 256,
+>  				 * but reality looks like 255 :-(
+> @@ -356,7 +356,7 @@ struct pci9118_private {
+>  	unsigned int ai_data_len;
+>  	unsigned short ao_data[2];		/* data output buffer */
+>  	unsigned int ai_scans;			/* number of scans to do */
+> -	char dma_doublebuf;			/* we can use double buffering */
+> +	char dma_doublebuf;			/* we can use double buffering*/
 
-The sequence as far as I understood is:
-idle-loop:
+Just leave this one as-is.  The original was better for human beings.
+Human beings are more important than checkpatch.pl.
 
-tick_nohz_idle_enter(), i.e. idle_active = true;
-local_irq_disable()
+>  	unsigned int dma_actbuf;		/* which buffer is used now */
+>  	unsigned short *dmabuf_virt[2];		/*
+>  						 * pointers to begin of
+> @@ -383,7 +383,7 @@ struct pci9118_private {
+>  						 * users(0-AI, 1-AO, 2-DI, 3-DO)
+>  						 */
+>  	unsigned int cnt0_divisor;		/* actual CNT0 divisor */
+> -	void (*int_ai_func) (struct comedi_device *, struct
+> comedi_subdevice *,
+> +	void (*int_ai_func)(struct comedi_device *, struct comedi_subdevice *,
 
-IDLE
-.
-.
+You're email is line wrapping patches so they won't apply.  Read
+Documentation/email-clients.txt or use git send-email.
 
-wake up due to IPI ??
+regards,
+dan carpenter
 
-local_irq_enable()
-    tick_nohz_irq_enter(), i.e. idle_active = false;
-    tick_nohz_irq_exit(), i.e. idle_active = true;
-
-tick_nohz_idle_exit()
-
-How can idle_active be false here?
-
---
-viresh
