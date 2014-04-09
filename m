@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933717AbaDIOAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:00:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56540 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933470AbaDIOAM (ORCPT
+	id S933535AbaDIN6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:58:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60838 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933418AbaDINvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:00:12 -0400
-Message-ID: <53455268.4030003@codeaurora.org>
-Date: Wed, 09 Apr 2014 10:00:08 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] ARM: msm: Make MSM_HAS_DEBUG_UART_HS option visible to
- multiplatform targets
-References: <1397048912-6738-1-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1397048912-6738-1-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Apr 2014 09:51:33 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 08/15] reset: sunxi: document sunxi's reset controllers bindings
+Date: Wed,  9 Apr 2014 15:51:11 +0200
+Message-Id: <1397051478-4113-9-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
+Add DT bindings documentation for sunxi's reset controllers.
 
-On 04/09/2014 09:08 AM, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> High Speed UART is available also in new multiplatform QCOM targets.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ .../bindings/reset/allwinner,sunxi-clock-reset.txt  | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/reset/allwinner,sunxi-clock-reset.txt
 
-> diff --git a/arch/arm/include/debug/msm.S b/arch/arm/include/debug/msm.S
-> index 9d653d4..09ff7b7 100644
-> --- a/arch/arm/include/debug/msm.S
-> +++ b/arch/arm/include/debug/msm.S
-> @@ -39,11 +39,14 @@
->  #ifdef CONFIG_DEBUG_MSM8660_UART
->  #define MSM_DEBUG_UART_BASE	0xF0040000
->  #define MSM_DEBUG_UART_PHYS	0x19C40000
-> +#define MSM_HAS_DEBUG_UART_HS
->  #endif
-> 
->  #ifdef CONFIG_DEBUG_MSM8960_UART
-> +#define MSM_HAS_DEBUG_UART_HS
-
-This appears to be duplicated.
-
->  #define MSM_DEBUG_UART_BASE	0xF0040000
->  #define MSM_DEBUG_UART_PHYS	0x16440000
-> +#define MSM_HAS_DEBUG_UART_HS
->  #endif
-> 
->  #ifdef CONFIG_DEBUG_MSM8974_UART
-
-Regards,
-Christopher
-
+diff --git a/Documentation/devicetree/bindings/reset/allwinner,sunxi-clock-reset.txt b/Documentation/devicetree/bindings/reset/allwinner,sunxi-clock-reset.txt
+new file mode 100644
+index 0000000..a582804
+--- /dev/null
++++ b/Documentation/devicetree/bindings/reset/allwinner,sunxi-clock-reset.txt
+@@ -0,0 +1,21 @@
++Allwinner sunxi Peripheral Reset Controller
++===========================================
++
++Please also refer to reset.txt in this directory for common reset
++controller binding usage.
++
++Required properties:
++- compatible: Should be one of the following depending on your SoC:
++  "allwinner,sun6i-a31-ahb1-reset"
++  "allwinner,sun6i-a31-clock-reset"
++- reg: should be register base and length as documented in the
++  datasheet
++- #reset-cells: 1, see below
++
++example:
++
++ahb1_rst: reset@01c202c0 {
++	#reset-cells = <1>;
++	compatible = "allwinner,sun6i-a31-ahb1-reset";
++	reg = <0x01c202c0 0xc>;
++};
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+1.8.3.2
+
