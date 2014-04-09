@@ -1,126 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483AbaDIOrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:47:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6823 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932807AbaDIOrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:47:11 -0400
-Date: Wed, 9 Apr 2014 16:47:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	id S933519AbaDIOuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:50:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33152 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932807AbaDIOuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 10:50:07 -0400
+Date: Wed, 9 Apr 2014 16:49:40 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/6] uprobes/x86: Emulate unconditional
-	rip-relative jmp's
-Message-ID: <20140409144705.GA18486@redhat.com>
-References: <20140406201617.GA493@redhat.com> <1396989411.5056.16.camel@oc7886638347.ibm.com.usor.ibm.com>
+Subject: Re: [PATCH 05/15] clk: sunxi: add A31 APB0 clk gate defintions
+Message-ID: <20140409144940.GE28585@lukather>
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1397051478-4113-6-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jTMWTj4UTAEmbWeb"
 Content-Disposition: inline
-In-Reply-To: <1396989411.5056.16.camel@oc7886638347.ibm.com.usor.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1397051478-4113-6-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08, Jim Keniston wrote:
->
-> On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
-> > 0xeb and 0xe9. Anything else?
->
-> For unconditional rip-relative jumps, yes, I'm pretty sure that's it.
 
-Great, thanks.
+--jTMWTj4UTAEmbWeb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > --- a/arch/x86/include/asm/uprobes.h
-> > +++ b/arch/x86/include/asm/uprobes.h
-> > @@ -44,9 +44,15 @@ struct arch_uprobe {
-> >  	u16				fixups;
-> >  	const struct uprobe_xol_ops	*ops;
-> >
-> > +	union {
-> >  #ifdef CONFIG_X86_64
-> > -	unsigned long			rip_rela_target_address;
-> > +		unsigned long			rip_rela_target_address;
-> >  #endif
-> > +		struct {
-> > +			s32	disp;
-> > +			u8	ilen;
-> > +		}				ttt;
->
-> Are you planning to stick with ttt as the name/prefix for all this
-> jump-emulation code?  Seems like you could come up with something more
-> descriptive without adding a lot of characters.
+On Wed, Apr 09, 2014 at 03:51:08PM +0200, Boris BREZILLON wrote:
+> Add APB0 gates support for the A31 SoC.
+> This gates are controlled by the PRCM (Power/Reset/Clock Management) block
+> and thus will act on a different iomem range.
+>=20
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-Yes sure. How about s/ttt/branch/ ? I agree with any naming. I used
-"ttt" because it allows me to change the naming in one step.
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-> > +static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
-> > +{
-> > +
-> > +	switch (OPCODE1(insn)) {
-> > +	case 0xeb:	/* jmp 8 */
-> > +	case 0xe9:	/* jmp 32 */
-> > +		break;
-> > +	default:
-> > +		return -ENOSYS;
->
-> -ENOSYS looks like an error return, as opposed to what it is, the normal
-> return when the probed instruction is something other than a jump.  This
-> gets more bewildering as you add patches and this switch grows and gets
-> more complicated.  Add a comment here?
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-OK, I added a short comment above this function,
+--jTMWTj4UTAEmbWeb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	/* Returns -ENOSYS if ttt_xol_ops doesn't handle this insn */
-	static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
-	...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-> > +	/* has the side-effect of processing the entire instruction */
-> > +	insn_get_length(insn);
-> > +	if (WARN_ON_ONCE(!insn_complete(insn)))
-> > +		return -ENOEXEC;
-> > +
-> > +	auprobe->ttt.ilen = insn->length;
-> > +	auprobe->ttt.disp = insn->moffset1.value;
-> > +	/* so far we assume that it fits into ->moffset1 */
-> > +	if (WARN_ON_ONCE(insn->moffset2.nbytes))
-> > +		return -ENOEXEC;
->
-> s/moffset1/immediate/ -- which you've already addressed.
+iQIcBAEBAgAGBQJTRV4EAAoJEBx+YmzsjxAgOrgP/0Dkt1QLTn7ccNG0of2Pz/Wj
++TTRc+L10kuyQxWfv6QBxa6V806BCka2f/pwGVz3360DusFJcQwbyUeXJkMy5XRr
+22vJ4/19VXwAqNxBLj8J0cCfHRmbBseqPtn91rC+JrzKGlXCrxmYryMKYHc8cyu3
+/CzDt+TfrB7G/rwKjlPBegGM+kRO4bAwGo77B17TJV73WmB1xbrlSP4zjbnO3tb7
+K8MJtXKEoQ8iW8gMAzEXc3MYSVr4Dq+3Ub8/YC1HwxDTRTF6JCwbqZFj/PPFl97s
+dbuRPw66eJch9YHcD5FPRmdtpH4KfAQtF78y7YRjpLt+B+q0m0AOR1S/eyUgxT2U
+Thhj50W5g1cF69X8xNB2/WBPpRf4s8YUA8Xse6a9mH7NNqHenXl+OuYZix2Rgl5f
+BcYtkr2jcnGXJfx2TXjJhgBykTndNMAmo3llDlO9pRMVuNNsY/CIPVyf3XeWdmiG
+9L13h9gdIVxb9fpqRZmVxc2Ps0LVMnZd8+PImqciIUV2AyXcCadt9IczL3pZTRw7
+/5ea3hZisaHGtTLhZFN61aEwvjTLrRxh25+8hgfnuK5py8zpiudTJjrnCCqdzFO2
+bYyDj6noOThqdFEEKWQNZb7fu32FXgTfCAgF26A6Od63WBZREGj27cf6pPGockSs
+hc8CkESjuHBaGVJw8YrU
+=8PvA
+-----END PGP SIGNATURE-----
 
-Yes, dons, and I removed the ->moffset2 check.
-
-> > @@ -483,6 +519,10 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
-> >  	if (ret)
-> >  		return ret;
-> >
-> > +	ret = ttt_setup_xol_ops(auprobe, &insn);
-> > +	if (ret == 0 || ret != ENOSYS)
->
-> This looks wrong in a couple of ways:
-> a. I think you intend to compare against -ENOSYS, not ENOSYS.
-
-OOPS! fixed.
-
-> b. Given the (ret != [-]ENOSYS) test, the  (ret == 0) test is
-> superfluous.
-
-I thought that the additional "ret == 0" (removed by gcc anyway) could
-help the code reader... But yes, you are right, probably it only adds
-more confusion.
-
-	-       if (ret == 0 || ret != ENOSYS)
-	+       if (ret != -ENOSYS)
-
-Thanks!
-
-Oleg.
-
+--jTMWTj4UTAEmbWeb--
