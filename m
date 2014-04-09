@@ -1,119 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256AbaDIL12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:27:28 -0400
-Received: from prifuk.cz ([31.31.77.140]:52624 "EHLO devoid-pointer.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932996AbaDIL10 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:27:26 -0400
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
-To: dmitry.torokhov@gmail.com, jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>
-Subject: [PATCH 16/24] Port hid-sony to ff-memless-next
-Date: Wed, 09 Apr 2014 13:27:20 +0200
-Message-ID: <1533887.7OAvZ9zf9k@sigyn>
-User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
-In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
-References: <1609685.QRL9N9sQvX@sigyn>
+	id S933201AbaDIL2B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:28:01 -0400
+Received: from mail.pcs.de ([145.253.69.50]:51049 "EHLO exchange5.pcs.ditec.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932786AbaDIL16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 07:27:58 -0400
+X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 07:27:57 EDT
+Date: Wed, 9 Apr 2014 13:22:14 +0200
+From: Thomas Pfaff <tpfaff@pcs.com>
+X-X-Sender: tpfaff@lxtpfaff.pcs.ditec.de
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] serial_core: fix uart PORT_UNKNOWN handling
+Message-ID: <alpine.LNX.2.00.1404091151430.6519@lxtpfaff.pcs.ditec.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset="US-ASCII"
+X-GFI-SMTP-Submission: 1
+X-GFI-SMTP-Submission: 1
+X-GFI-SMTP-HelloDomain: lxtpfaff.pcs.ditec.de
+X-GFI-SMTP-RemoteIP: 192.168.9.96
+X-KSE-AntiSpam-Interceptor-Info: white sender email list
+X-GFIME-MASPAM: SPAM
+X-KSE-Antivirus-Interceptor-Info: scan successful
+X-KSE-Antivirus-Info: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-sony to ff-memless-next
+From: "Thomas Pfaff" <tpfaff@pcs.com>
 
-Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+While porting a RS485 driver from 2.6.29 to 3.14, i noticed that the serial tty 
+driver could break it by using uart ports that it does not own :
+
+1. uart_change_pm ist called during uart_open and calls the uart pm function
+   without checking for PORT_UNKNOWN.
+2. uart_shutdown is called from uart_set_info and does not check it either.
+3. The return code from the uart request_port call in uart_set_info is not
+   handled properly, leading to the situation that the serial driver also
+   thinks it owns the uart ports.
+   This can triggered by doing following actions :
+
+   setserial /dev/ttyS0 uart none    # release the uart ports
+   modprobe lirc-serial              # or any other device that uses the uart
+   setserial /dev/ttyS0 uart 16550   # gives no error and the uart tty driver
+                                     # can use the ports as well
+
+Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
 ---
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-sony.c | 24 ++++++++++++++++++------
- 2 files changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index e76c36a..fc22f72 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -623,7 +623,7 @@ config HID_SONY
- config SONY_FF
- 	bool "Sony PS2/3 accessories force feedback support"
- 	depends on HID_SONY
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	---help---
- 	Say Y here if you have a Sony PS2/3 accessory and want to enable force
- 	feedback support for it.
-diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index 2f19b15..70a9cc5 100644
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -30,6 +30,7 @@
- #include <linux/slab.h>
- #include <linux/usb.h>
- #include <linux/leds.h>
-+#include <linux/input/ff-memless-next.h>
+diff -urp linux-3.14.org/drivers/tty/serial/serial_core.c linux-3.14/drivers/tty/serial/serial_core.c
+--- linux-3.14.org/drivers/tty/serial/serial_core.c	2014-03-31 05:40:15.000000000 +0200
++++ linux-3.14/drivers/tty/serial/serial_core.c	2014-04-08 16:51:28.176459065 +0200
+@@ -225,6 +225,9 @@ static void uart_shutdown(struct tty_str
+ 	struct uart_port *uport = state->uart_port;
+ 	struct tty_port *port = &state->port;
  
- #include "hid-ids.h"
- 
-@@ -44,6 +45,7 @@
- #define SONY_LED_SUPPORT (SIXAXIS_CONTROLLER_USB | BUZZ_CONTROLLER | DUALSHOCK4_CONTROLLER_USB)
- #define SONY_FF_SUPPORT (SIXAXIS_CONTROLLER_USB | DUALSHOCK4_CONTROLLER_USB)
- 
-+#define FF_UPDATE_RATE 50
- #define MAX_LEDS 4
- 
- static const u8 sixaxis_rdesc_fixup[] = {
-@@ -970,16 +972,25 @@ static void dualshock4_state_worker(struct work_struct *work)
- 
- #ifdef CONFIG_SONY_FF
- static int sony_play_effect(struct input_dev *dev, void *data,
--			    struct ff_effect *effect)
-+			    const struct mlnx_effect_command *command)
- {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct sony_sc *sc = hid_get_drvdata(hid);
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 
--	if (effect->type != FF_RUMBLE)
--		return 0;
- 
--	sc->left = effect->u.rumble.strong_magnitude / 256;
--	sc->right = effect->u.rumble.weak_magnitude / 256;
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		sc->left = rumble_force->strong / 256;
-+		sc->right = rumble_force->weak / 256;
-+		break;
-+	case MLNX_STOP_RUMBLE:
-+		sc->left = 0;
-+		sc->right = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	schedule_work(&sc->state_worker);
- 	return 0;
-@@ -992,7 +1003,7 @@ static int sony_init_ff(struct hid_device *hdev)
- 	struct input_dev *input_dev = hidinput->input;
- 
- 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
--	return input_ff_create_memless(input_dev, NULL, sony_play_effect);
-+	return input_ff_create_mlnx(input_dev, NULL, sony_play_effect, FF_UPDATE_RATE);
- }
- 
- #else
-@@ -1150,6 +1161,7 @@ static const struct hid_device_id sony_devices[] = {
- 		.driver_data = DUALSHOCK4_CONTROLLER_USB },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS4_CONTROLLER),
- 		.driver_data = DUALSHOCK4_CONTROLLER_BT },
++	if (uport->type == PORT_UNKNOWN)
++		return;
 +
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, sony_devices);
--- 
-1.9.1
-
-
+ 	/*
+ 	 * Set the TTY IO error marker
+ 	 */
+@@ -826,25 +829,29 @@ static int uart_set_info(struct tty_stru
+ 		 * If we fail to request resources for the
+ 		 * new port, try to restore the old settings.
+ 		 */
+-		if (retval && old_type != PORT_UNKNOWN) {
++		if (retval) {
+ 			uport->iobase = old_iobase;
+ 			uport->type = old_type;
+ 			uport->hub6 = old_hub6;
+ 			uport->iotype = old_iotype;
+ 			uport->regshift = old_shift;
+ 			uport->mapbase = old_mapbase;
+-			retval = uport->ops->request_port(uport);
+-			/*
+-			 * If we failed to restore the old settings,
+-			 * we fail like this.
+-			 */
+-			if (retval)
+-				uport->type = PORT_UNKNOWN;
+ 
+-			/*
+-			 * We failed anyway.
+-			 */
+-			retval = -EBUSY;
++			if (old_type != PORT_UNKNOWN) {
++				retval = uport->ops->request_port(uport);
++				/*
++				 * If we failed to restore the old settings,
++				 * we fail like this.
++				 */
++				if (retval)
++					uport->type = PORT_UNKNOWN;
++
++				/*
++				 * We failed anyway.
++				 */
++				retval = -EBUSY;
++			}
++
+ 			/* Added to return the correct error -Ram Gupta */
+ 			goto exit;
+ 		}
+@@ -1900,6 +1907,9 @@ static void uart_change_pm(struct uart_s
+ {
+ 	struct uart_port *port = state->uart_port;
+ 
++	if (port->type == PORT_UNKNOWN)
++		return;
++
+ 	if (state->pm_state != pm_state) {
+ 		if (port->ops->pm)
+ 			port->ops->pm(port, pm_state, state->pm_state);
