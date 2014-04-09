@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933218AbaDILg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:36:28 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:64066 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932674AbaDILgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:36:23 -0400
-X-Nat-Received: from [202.181.97.72]:61577 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1397043372.32610
-To: iamjoonsoo.kim@lge.com, ak@linux.intel.com, penberg@iki.fi
-Cc: linux-kernel@vger.kernel.org
-Subject: [3.15-rc1 slab] Oops when reading /proc/slab_allocators
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201404092036.CEF21247.VFSQFFMLOJOOtH@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 9 Apr 2014 20:36:10 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 08042014 #7807656, status: clean
+	id S933044AbaDILgA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:36:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35763 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932542AbaDILf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 07:35:58 -0400
+Date: Wed, 9 Apr 2014 13:35:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jason Baron <jbaron@akamai.com>
+Cc: tony.luck@intel.com, hpa@zytor.com, mingo@kernel.org,
+        dougthompson@xmission.com, m.chehab@samsung.com,
+        mitake@dcl.info.waseda.ac.jp, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+Message-ID: <20140409113552.GJ6529@pd.tnic>
+References: <cover.1396645124.git.jbaron@akamai.com>
+ <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Apr 04, 2014 at 09:14:04PM +0000, Jason Baron wrote:
+> Add 'ie31200_edac' driver for the E3-1200 series of Intel processors. Driver
+> is based on the following E3-1200 specs:
+> 
+> http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200-family-vol-2-datasheet.html
+> http://www.intel.com/content/www/us/en/processors/xeon/xeon-e3-1200v3-vol-2-datasheet.html
+> 
+> I've tested this on bad memory hardware, and observed correlating bad reads
+> and uncorrected memory errors as reported by the driver.
+> 
+> Signed-off-by: Jason Baron <jbaron@akamai.com>
+> ---
+>  drivers/edac/Kconfig        |   7 +
+>  drivers/edac/Makefile       |   1 +
+>  drivers/edac/ie31200_edac.c | 540 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 548 insertions(+)
+>  create mode 100644 drivers/edac/ie31200_edac.c
+> 
+> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+> index 878f090..27f44a1 100644
+> --- a/drivers/edac/Kconfig
+> +++ b/drivers/edac/Kconfig
+> @@ -186,6 +186,13 @@ config EDAC_I3200
+>  	  Support for error detection and correction on the Intel
+>  	  3200 and 3210 server chipsets.
+>  
+> +config EDAC_IE31200
+> +	tristate "Intel e312xx"
+> +	depends on EDAC_MM_EDAC && PCI && X86
+> +	help
+> +	  Support for error detection and correction on the Intel
+> +	  E3-1200 processor.
+> +
+>  config EDAC_X38
+>  	tristate "Intel X38"
+>  	depends on EDAC_MM_EDAC && PCI && X86
+> diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+> index 4154ed6..c479a24 100644
+> --- a/drivers/edac/Makefile
+> +++ b/drivers/edac/Makefile
+> @@ -37,6 +37,7 @@ obj-$(CONFIG_EDAC_I82875P)		+= i82875p_edac.o
+>  obj-$(CONFIG_EDAC_I82975X)		+= i82975x_edac.o
+>  obj-$(CONFIG_EDAC_I3000)		+= i3000_edac.o
+>  obj-$(CONFIG_EDAC_I3200)		+= i3200_edac.o
+> +obj-$(CONFIG_EDAC_IE31200)		+= ie31200_edac.o
+>  obj-$(CONFIG_EDAC_X38)			+= x38_edac.o
+>  obj-$(CONFIG_EDAC_I82860)		+= i82860_edac.o
+>  obj-$(CONFIG_EDAC_R82600)		+= r82600_edac.o
+> diff --git a/drivers/edac/ie31200_edac.c b/drivers/edac/ie31200_edac.c
+> new file mode 100644
+> index 0000000..ae03d21
+> --- /dev/null
+> +++ b/drivers/edac/ie31200_edac.c
+> @@ -0,0 +1,540 @@
+> +/*
+> + * Intel E3-1200
+> + * Copyright (C) 2014 Jason Baron <jbaron@akamai.com>
+> + *
+> + * Support for the E3-1200 processor family. Heavily based on previous
+> + * Intel EDAC drivers.
 
-I found that
+Btw, remind me again why this isn't part of the sb_edac? AFAICT, the
+e3-12xx thing is a Sandybridge, right?
 
-  $ cat /proc/slab_allocators
+Why not put it into sb_edac - it is small enough and if you're lucky,
+you might even share functionality?
 
-causes an oops.
+-- 
+Regards/Gruss,
+    Boris.
 
----------- dmesg start ----------
-[   22.719620] BUG: unable to handle kernel paging request at ffff8800389b7ff8
-[   22.719742] IP: [<ffffffff811b751d>] handle_slab+0x8d/0x1a0
-[   22.719742] PGD 2d64067 PUD 2d65067 PMD 3fc20067 PTE 80000000389b7060
-[   22.719742] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[   22.719742] Modules linked in:
-[   22.719742] CPU: 0 PID: 1 Comm: init Not tainted 3.14.0-12041-g75ff24f #297
-[   22.719742] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
-[   22.719742] task: ffff88003decc010 ti: ffff88003ded0000 task.ti: ffff88003ded0000
-[   22.719742] RIP: 0010:[<ffffffff811b751d>]  [<ffffffff811b751d>] handle_slab+0x8d/0x1a0
-[   22.719742] RSP: 0018:ffff88003ded1d88  EFLAGS: 00000002
-[   22.719742] RAX: 0000000000000001 RBX: 0000000000000001 RCX: ffff88003f625c80
-[   22.719742] RDX: ffffea0000e26dc0 RSI: 0000000000000000 RDI: ffff88001763f000
-[   22.719742] RBP: ffff88003ded1dd8 R08: ffff88001763f000 R09: ffff88001763f008
-[   22.719742] R10: ffff88001763f010 R11: 0000000000001000 R12: ffff880017616f00
-[   22.719742] R13: 0000000000000000 R14: ffff8800389b7000 R15: ffffea0000e26dc0
-[   22.719742] FS:  00000000015b7860(0063) GS:ffff88003fa00000(0000) knlGS:0000000000000000
-[   22.719742] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   22.719742] CR2: ffff8800389b7ff8 CR3: 0000000017619000 CR4: 00000000000006f0
-[   22.719742] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   22.719742] DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
-[   22.719742] Stack:
-[   22.719742]  ffff88001763f010 ffff88003f625c80 ffff88001763f000 ffff88001763f008
-[   22.719742]  ffff88003ded1dd8 ffff88001763f000 ffff880017616f00 ffff88003f625c80
-[   22.719742]  0000000000000400 ffffea0000e26dc0 ffff88003ded1e48 ffffffff811bcbd6
-[   22.719742] Call Trace:
-[   22.719742]  [<ffffffff811bcbd6>] leaks_show+0xf6/0x270
-[   22.719742]  [<ffffffff811f529f>] seq_read+0x2af/0x440
-[   22.719742]  [<ffffffff8123e213>] proc_reg_read+0x43/0x70
-[   22.719742]  [<ffffffff811ccdcd>] vfs_read+0xad/0x190
-[   22.719742]  [<ffffffff811ccf99>] SyS_read+0x59/0xd0
-[   22.719742]  [<ffffffff81658412>] system_call_fastpath+0x16/0x1b
-[   22.719742] Code: 75 18 e9 df 00 00 00 0f 1f 80 00 00 00 00 48 63 d0 3b 34 97 0f 84 cc 00 00 00 83 c0 01 39 c3 77 ed f6 41 1a 01 0f 84 02 01 00 00 <4f> 8b 64 1e f8 4d 85 e4 0f 84 ad 00 00 00 49 8b 39 4c 89 d3 89
-[   22.719742] RIP  [<ffffffff811b751d>] handle_slab+0x8d/0x1a0
-[   22.719742]  RSP <ffff88003ded1d88>
-[   22.719742] CR2: ffff8800389b7ff8
-[   22.719742] ---[ end trace b3602f55c39df20e ]---
----------- dmesg end ----------
-
-Kernel config is at http://I-love.SAKURA.ne.jp/tmp/config-pre-3.15-rc1 .
-
-The location is
-
-  if (!add_caller(n, (unsigned long)*dbg_userword(c, p)))
-
-in handle_slab() in mm/slab.c , and dbg_userword(c, p) is returning
-an undereferencable value (0xffff8800389b7ff8) when
-n=ffff880017645000, c=ffff88003f625c80, p=ffff8800389b7000,
-c->flags=0x80010c00 and c->size=4096.
-
-  static void **dbg_userword(struct kmem_cache *cachep, void *objp)
-  {
-          BUG_ON(!(cachep->flags & SLAB_STORE_USER));
-          return (void **)(objp + cachep->size - BYTES_PER_WORD);
-  }
-
-Bisection reached commit b1cb0982 "slab: change the management method
-of free objects of the slab".
-
-  bad commit b1cb0982bdd6f57fed690f796659733350bb2cae
-  good commit a57a49887eb3398d31bfaa8009531f7121d6537d
-  untestable commit 56f295ef0dfa7e1d0be18deebe0c15fb6b2d9d5b
-  untestable commit 0c3aa83e00a9cd93f08e7aa42fba01924aa5f2fc
-  good commit 73293c2f900d0adbb6a415b312cd57976d5ae242
+Sent from a fat crate under my desk. Formatting is fine.
+--
