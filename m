@@ -1,158 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965089AbaDIVML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 17:12:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36909 "EHLO mx2.suse.de"
+	id S965003AbaDIVTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 17:19:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32207 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965023AbaDIVMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 17:12:06 -0400
-Date: Wed, 9 Apr 2014 23:12:03 +0200
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140409211203.GP32103@quack.suse.cz>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
- <20140408220525.GC26019@quack.suse.cz>
- <20140409204806.GF5727@linux.intel.com>
+	id S933568AbaDIVTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 17:19:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,828,1389772800"; 
+   d="scan'208";a="490256900"
+Message-ID: <5345B966.5070209@intel.com>
+Date: Wed, 09 Apr 2014 14:19:34 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409204806.GF5727@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Dave Hansen <dave@sr71.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: post 3.14 serial regression
+References: <5343416F.8010201@sr71.net>	<20140408122726.227f3da8@alan.etchedpixels.co.uk>	<5344642A.2020703@sr71.net>	<53446C57.5000504@intel.com>	<20140409003648.GB32273@kroah.com>	<CAMuHMdXSa0Ku2f1CR3j5pGOp_joQomc2Cnz=apGRR1K0Eb2qOQ@mail.gmail.com>	<5345A7B3.7020005@sr71.net> <CAMuHMdXtz_W7LCJeOG9--ZmmH4js40-urueCTbS98t8oBgnYCw@mail.gmail.com>
+In-Reply-To: <CAMuHMdXtz_W7LCJeOG9--ZmmH4js40-urueCTbS98t8oBgnYCw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 09-04-14 16:48:06, Matthew Wilcox wrote:
-> On Wed, Apr 09, 2014 at 12:05:25AM +0200, Jan Kara wrote:
-> > > +
-> > > +	error = dax_get_pfn(inode, &bh, &pfn);
-> > > +	if (error > 0)
-> > > +		error = vm_insert_mixed(vma, vaddr, pfn);
-> >   When there's a hole (thus page != NULL) and we are called from
-> > dax_mkwrite(), this will always return EBUSY, correct?
+On 04/09/2014 01:59 PM, Geert Uytterhoeven wrote:
+> On Wed, Apr 9, 2014 at 10:04 PM, Dave Hansen <dave@sr71.net> wrote:
+>> On 04/09/2014 12:41 PM, Geert Uytterhoeven wrote:
+>>> Dave: If I understand it correctly, you use console=ttyS2, while the kernel
+>>> suddenly changed the order of the serial devices, so your port is no
+>>> longer ttyS2, but ttyS4. Hence the serial port is not found, and
+>>> uart_remove_one_port() is called on it, taking away your /dev/console for
+>>> userspace?
+>>
+>> Right.
 > 
-> Erm ... it will return -EBUSY if this was the task that previously
-> faulted on it.  Drat.  See below.
-> 
-> > > +	mutex_unlock(&mapping->i_mmap_mutex);
-> > > +
-> > > +	if (page) {
-> > > +		delete_from_page_cache(page);
-> > > +		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
-> > > +							PAGE_CACHE_SIZE, 0);
-> >   Here we unmap the PTE pointing to the hole page but then we'll have to
-> > retry the fault again to fill in the pfn we've got? This seems wrong. I'd
-> > say we want to remap the PTE from the hole page to a pfn we've got while
-> > holding i_mmap_mutex. remap_pfn_range() almost does what you need, except
-> > that you also need that to work for normal pages. So you might need to
-> > create a new helper in mm layer for that.
-> 
-> I think it's easier than that.  How does this look?
-> 
-> @@ -390,9 +389,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
->                 dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
->  
->         error = dax_get_pfn(&bh, &pfn, blkbits);
-> -       if (error > 0)
-> -               error = vm_insert_mixed(vma, vaddr, pfn);
-> -       mutex_unlock(&mapping->i_mmap_mutex);
-> +       if (error <= 0)
-> +               goto unlock;
->  
->         if (page) {
->                 delete_from_page_cache(page);
-> @@ -402,6 +400,9 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
->                 page_cache_release(page);
->         }
->  
-> +       error = vm_insert_mixed(vma, vaddr, pfn);
-> +       mutex_unlock(&mapping->i_mmap_mutex);
-> +
-  This would be fine except that unmap_mapping_range() grabs i_mmap_mutex
-again :-|. But it might be easier to provide a version of that function
-which assumes i_mmap_mutex is already locked than what I was suggesting.
+> Does it work with console=ttyS4?
 
->         if (error == -ENOMEM)
->                 return VM_FAULT_OOM;
->         /* -EBUSY is fine, somebody else faulted on the same PTE */
-> @@ -409,6 +410,8 @@ static int do_dax_fault(struct vm_area_struct *vma, struct v
->                 BUG_ON(error);
->         return VM_FAULT_NOPAGE | major;
->  
-> + unlock:
-> +       mutex_unlock(&mapping->i_mmap_mutex);
->   sigbus:
->         if (page) {
->                 unlock_page(page);
-> 
-> 
-> > > +int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> > > +			get_block_t get_block)
-> > > +{
-> > > +	int result;
-> > > +	struct super_block *sb = file_inode(vma->vm_file)->i_sb;
-> > > +
-> > > +	sb_start_pagefault(sb);
-> >   You don't need any filesystem freeze protection for the fault handler
-> > since that's not going to modify the filesystem.
-> 
-> Err ... we might allocate a block as a result of doing a write to a hole.
-> Or does that not count as 'modifying the filesystem' in this context?
-  Ah, it does. But it would be nice to avoid doing sb_start_pagefault() if
-it's not a write fault - because you don't want to block reading from a
-frozen filesystem (imagine what would happen when you freeze your root
-filesystem to do a snapshot...).
+Yes, after raising SERIAL_8250_NR_UARTS to >=6.  It had been set to 4
+(the Kconfig default).
 
-I have somewhat a mindset of standard pagecache mmap where filemap_fault()
-only reads in data regardless of FAULT_FLAG_WRITE setting so I was confused
-by your difference :).
-
-> > > +	file_update_time(vma->vm_file);
-> >   Why do you update m/ctime? We are only reading the file...
-> 
-> ... except that it might be a write fault.  I think we modify the file
-> iff we return VM_FAULT_MAJOR from do_dax_fault().  So I'd be open to
-> something like this:
-> 
-> 	sb_start_pagefault(sb);
-> 	result = do_dax_fault(vma, vmf, get_block);
-> 	if (result & VM_FAULT_MAJOR)
-> 		file_update_time(vma->vm_file);
-> 	sb_end_pagefault(sb);
-> 
-> Would that work better for you?
-  Definitely. It's also a performance thing BTW - updating time stamps is
-relatively expensive for journalling filesystems - you have to start a
-transaction, add block with inode to the journal, stop a transaction - not
-something you want to do unless you have to.
-
-> > > @@ -70,7 +101,7 @@ const struct file_operations ext2_file_operations = {
-> > >  #ifdef CONFIG_COMPAT
-> > >  	.compat_ioctl	= ext2_compat_ioctl,
-> > >  #endif
-> > > -	.mmap		= generic_file_mmap,
-> > > +	.mmap		= ext2_file_mmap,
-> >   So what's the point of ext2_file_operations ever handling IS_DAX()
-> > inodes? Actually ext2_file_operations and ext2_xip_file_operations seem to
-> > be the same after this patch so either you drop ext2_xip_file_operations
-> > (I'm for this) or you can leave generic_file_mmap here and assume
-> > ext2_file_mmap is always called for IS_DAX() inodes.
-> 
-> The goal is to get them the same.  At this point, the only sticky point is:
-> 
->         .splice_read    = generic_file_splice_read,
->         .splice_write   = generic_file_splice_write,
-> 
-> And splice is pretty damn sticky for DAX.
-  Yes, I have figured that out later.
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
