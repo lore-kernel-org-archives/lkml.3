@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952AbaDIR3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:29:54 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:39579 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847AbaDIR3t (ORCPT
+	id S964834AbaDIRab (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:30:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6795 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933783AbaDIRaY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:29:49 -0400
+	Wed, 9 Apr 2014 13:30:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,827,1389772800"; 
+   d="scan'208";a="510270005"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Aristeu Rozanski <aris@redhat.com>, Borislav Petkov <bp@alien8.de>
+CC: Jason Baron <jbaron@akamai.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] ie31200_edac: Add driver
+Thread-Topic: [PATCH 3/3] ie31200_edac: Add driver
+Thread-Index: AQHPUErabVWTFTq13UyiP3ii3SIN9psJpHwAgAAhKgD//8g+EA==
+Date: Wed, 9 Apr 2014 17:17:53 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com>
+References: <cover.1396645124.git.jbaron@akamai.com>
+ <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com>
+ <20140409113552.GJ6529@pd.tnic> <20140409133433.GJ29214@redhat.com>
+In-Reply-To: <20140409133433.GJ29214@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140409151932.GK6529@pd.tnic>
-References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com>
-	<a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
-	<20140409113246.GA8778@pd.tnic>
-	<CAL_Jsq+gszc+R_BrLtHKEBGYd=3T+sE1d+-HoF9aYZt6C2k5-g@mail.gmail.com>
-	<20140409151932.GK6529@pd.tnic>
-Date: Wed, 9 Apr 2014 22:59:49 +0530
-Message-ID: <CAHLkNHJTA5bGD1zAfzE2JrDFAWvmgYyYjir+4vR-d9Fe2-E48g@mail.gmail.com>
-Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
-From: Punnaiah Choudary <kpc528@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-edac@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
-        punnaiah choudary kalluri <punnaia@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a driver file cache-l2x0.c under arch/arm/mm for pl310 cache
-configuration and management. Russel king had suggested to use
-single driver file for both pl310 edac implementation and cache-l2x0.c
-Here is the thread
-http://www.spinics.net/lists/arm-kernel/msg320407.html
+>> Why not put it into sb_edac - it is small enough and if you're lucky,
+>> you might even share functionality?
+>
+> By quickly looking at the driver (sorry Jason, no proper review yet :( )
+> it's a very different beast. Tony, any insights on why?
 
-please provide your inputs
+The E3-12xx processors connect out to a different (desktop) chipset from
+the E5 (server parts).  Perhaps that means the memory controller are different
+too???
 
-Thanks,
-Punnaiah
-
-On Wed, Apr 9, 2014 at 8:49 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, Apr 09, 2014 at 08:18:28AM -0500, Rob Herring wrote:
->> I don't think so, the PL310 is present on lots of ARM chips besides
->> Xilinx. I don't know how many support parity as that is optional. In
->> fact the highbank_l2_edac.c is for the PL310 as well, but the
->> registers it uses is all custom logic added for ECC and there is no
->> part of the PL310 h/w used by the driver.
->
-> Oh ok, so highbank_l2 and PL310 could theoretically be merged together
-> in one compilation unit, even if they don't really share code at all...
->
->> If there is lots duplication, then that's a sign the framework needs
->> to handle more of the boilerplate pieces. There could be a "simple"
->> driver/library for devices which are no more than some registers, an
->> interrupt handler and static information about the type of EDAC
->> device.
->
-> Yeah, it's not that - I'm just getting worried that I'm receiving an
-> EDAC driver for each piece of silicon out there and would like to still
-> keep drivers/edac/ sane and be able to control that wild growth.
->
-> I'm just thinking out loud here, bear with me pls:
->
-> Frankly, having a single compilation unit contain similar silicon
-> functionality could be a good way to put a hold on the growth but the
-> disadvantage of this is fatter drivers. Which wouldn't matter all too
-> much but after a certain level of fat, they might need splitting.
->
-> And the highbank version is nothing but the big probe routine and a
-> small irq handler.
->
-> And the PL310 is similar but also with a poller.
->
-> I guess, if they don't share functionality at all, putting them together
-> might not be worth it. Hohummm.
->
-> Thanks.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+-Tony
