@@ -1,97 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414AbaDIWoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 18:44:30 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:41791 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804AbaDIWo1 (ORCPT
+	id S933721AbaDIWtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 18:49:45 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:58964 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932719AbaDIWtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 18:44:27 -0400
-X-AuditID: cbfec37c-b7f536d0000059f2-a1-5345cd475796
-Message-id: <5345CD32.8010305@samsung.com>
-Date: Wed, 09 Apr 2014 16:44:02 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: m.chehab@samsung.com, tj@kernel.org, rafael.j.wysocki@intel.com,
-        linux@roeck-us.net, toshi.kani@hp.com, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, shuahkhan@gmail.com,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [RFC PATCH 0/2] managed token devres interfaces
-References: <cover.1397050852.git.shuah.kh@samsung.com>
- <20140409191740.GA10748@kroah.com>
-In-reply-to: <20140409191740.GA10748@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.11]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t9hP133s67BBldfGFs0L17PZnF51xw2
-	i54NW1ktniw8w2TxeMVbdouvPx0sfi0/ymix7dZCFgcOj52z7rJ77Nq2k8lj8Z6XTB6bVnWy
-	eeyfu4bdY+f3BnaPz5vkAtijuGxSUnMyy1KL9O0SuDIW77rMVrBUoOLJtD1MDYzbeboYOTkk
-	BEwkFj65zgJhi0lcuLeerYuRi0NIYBmjxPQjV5kgnF4miVNbOxkhnE2MEpN3r2QCaeEV0JL4
-	8+oYM4jNIqAqce73QkYQm01AXeLz6x3sILaQgJxE05LVYDWiAhESr85OZIHoFZT4MfkemC0i
-	oCHx8ugtFpAFzAKPGSU6rz5hA0kIC9hI7L92hQViUIxEY9svVhCbU0Bf4n7DVLAaZgFriZWT
-	tjFC2PISm9e8ZYaoV5b4c/kU0KEcQL8pSvz67z6BUWQWktWzkHTPQtK9gJF5FaNYaXFyQXFS
-	emqFsV5xYm5xaV66XnJ+7iZGSJzV7GC899XmEKMAB6MSD++BZa7BQqyJZcWVuYcYJTiYlUR4
-	p5wGCvGmJFZWpRblxxeV5qQWH2Jk4uCUamBkN9zW9FTXbaKGT4Xizzr247/DQoUmr646pRk1
-	37gl/0ro5LLcx727d7a82tFmPUur8dGprccdq12r/SNu3A7si77RZJHSuaTrgPuMMq0da28o
-	ybP4v9pWfsE8R6Vwa42MtDaH+8fn5evunlhlaMAcE9b7Oo1xQ6z9fbeGTW6THd5dX716s68S
-	S3FGoqEWc1FxIgA9dCfTkQIAAA==
+	Wed, 9 Apr 2014 18:49:42 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+References: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
+	<874n3n7czm.fsf_-_@xmission.com>
+	<87wqezl5df.fsf_-_@x220.int.ebiederm.org>
+	<20140409023027.GX18016@ZenIV.linux.org.uk>
+	<20140409023947.GY18016@ZenIV.linux.org.uk>
+	<87sipmbe8x.fsf@x220.int.ebiederm.org>
+	<20140409175322.GZ18016@ZenIV.linux.org.uk>
+	<20140409182830.GA18016@ZenIV.linux.org.uk>
+Date: Wed, 09 Apr 2014 15:49:09 -0700
+In-Reply-To: <20140409182830.GA18016@ZenIV.linux.org.uk> (Al Viro's message of
+	"Wed, 9 Apr 2014 19:28:32 +0100")
+Message-ID: <87txa286fu.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+ch6em2WMkHgAFR8Ee++iQmueklBXRBEc=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4273]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      []
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+	*  1.0 XMSexyCombo_01 Sexy words in both body/subject
+X-Spam-DCC: ; 
+X-Spam-Combo: ***;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: 
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15-rc1
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 01:17 PM, Greg KH wrote:
-> On Wed, Apr 09, 2014 at 09:21:06AM -0600, Shuah Khan wrote:
+Al Viro <viro@ZenIV.linux.org.uk> writes:
 
->>
->> Test Cases for token devres interfaces: (passed)
->>   - Create, lock, unlock, and destroy sequence.
->>   - Try lock while it is locked. Returns -EBUSY as expected.
->>   - Try lock after destroy. Returns -ENODEV as expected.
->>   - Unlock while it is unlocked. Returns 0 as expected. This is a no-op.
->>   - Try unlock after destroy. Returns -ENODEV as expected.
+> On Wed, Apr 09, 2014 at 06:53:23PM +0100, Al Viro wrote:
 >
-> Any chance you can add these "test cases" as part of the kernel code so
-> it lives here for any future changes?
-
-Yes. I am planning to add these test cases to the kernel to serve as 
-regression tests when these interfaces change. I have to add these in a 
-driver framework, i.e I might need to create dummy driver perhaps. I 
-haven't given it much thought on how, but I do plan to add tests.
-
+>> For starters, put that ext4 on top of dm-raid or dm-multipath.  That alone
+>> will very likely push you over the top.
+>> 
+>> Keep in mind, BTW, that you do not have full 8K to play with - there's
+>> struct thread_info that should not be stepped upon.  Not particulary large
+>> (IIRC, restart_block is the largest piece in amd64 one), but it eats about
+>> 100 bytes.
+>> 
+>> I'd probably use renameat(2) in testing - i.e. trigger the shite when
+>> resolving a deeply nested symlink in renameat() arguments.  That brings
+>> extra struct nameidata into the game, i.e. extra 152 bytes chewed off the
+>> stack.
 >
->> Special notes for Mauro Chehab:
->>   - Please evaluate if these token devres interfaces cover all media driver
->>     use-cases. If not what is needed to cover them.
->>   - For use-case testing, I generated a string from em28xx device, as this
->>     is common for all em28xx extensions: (hope this holds true when em28xx
->>     uses snd-usb-audio
->>   - Construct string with (dev is struct em28xx *dev)
->> 		format: "tuner:%s-%s-%d"
->> 		with the following:
->>     	            dev_name(&dev->udev->dev)
->>                  dev->udev->bus->bus_name
->>                  dev->tuner_addr
->>   - I added test code to em28xx_card_setup() to test the interfaces:
->>     example token from this test code generated with the format above:
+> Come to think of that, some extra nastiness could be had by mixing it with
+> execve().  You can have up to 4 levels of #! resolution there, each eating
+> up at least 128 bytes (more, actually).  Compiler _might_ turn that
+> tail call of search_binary_handler() into a jump, but it's not guaranteed
+> at all.
 >
-> What would the driver changes look like to take advantage of these new
-> functions?
+> FWIW, it probably makes sense to turn load_script() into
+> static int load_script(struct linux_binprm *bprm)
+> {
+> 	int err = __load_script(bprm);
+> 	if (err)
+> 		return err;
+> 	return search_binary_handler(bprm);
+> }
 >
+> regardless of that issue; we don't need interp[] after the call of
+> open_exec(), so it makes sense to reduce the footprint in mutual
+> recursion loop.
+>
+> For extra pain, consider s/ext4/xfs/, possibly with iscsi thrown under the
+> bus^Wdm-multipath.
+>
+> The thing is, we are already too close to stack overflow limit.  Adding
+> several kilobytes more is not survivable, and since you are taking
+> somebody in a userns DoSing the system into consideration, you can't
+> say "it takes malicious root to set up, so it's not serious" - the
+> DoS you mentioned requires the same thing...
 
-I am working on changes to em28xx driver to create and lock/unlock tuner 
-token when it starts analog/digital video streaming. I should have a 
-patch ready in a day or two.
+Thank you for the comments this makes it clear that the problem is with
+mntput (and the filesystem I/O that can be triggered) not particularly
+with detach_mounts.  As I read the code all of these nasty cases we are
+concern with today can be triggered with pathput/mntput already with an
+appropriate race against umount, which means my detach_mounts code
+doesn't introduce a stack space usage regression, but seems to be the
+messenger that we have such problems in the VFS.
 
-thanks,
--- Shuah
+There is a also a big difference between what can be triggered using
+filesystems we allow unprivileged users to mount, devpts, proc, ramfs,
+sysfs, mqueue, shmem (none of which have backing store) and filesystems
+with a long I/O path. 
 
+So it looks like it still requires global root to trigger this, although
+I still think it is serious. 
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+One of the more interesting aspects of this userns work is running into
+code that semantically should be safe for unprivileged users to use but
+as we haven't historically allowed unprivileged users to use the code
+there are silly assumptions and untested code paths.
+
+> BTW, another thing to test would be this:
+> 	mount nfs on /mnt
+> 	mount a filesystem on /mnt/path that can be invalidated
+> 	cd to /mnt/path/foo
+> 	bind /mnt on /mnt/path/foo/bar
+> 	shoot /mnt/path (on server)
+> 	stat bar/path/foo
+> That should rip the fs you are in out of the tree; it should work, but
+> it's definitely a case worth testing.
+
+Agreed that is a case worth test.  I wasn't looking at that case in
+particular as that is not the worst case stack usage or even an
+approximation of it.
+
+Eric
+
