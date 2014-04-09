@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933553AbaDINwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:52:04 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:62648 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933477AbaDINvx (ORCPT
+	id S933514AbaDINvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:51:43 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60878 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933469AbaDINvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:51:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
-References: <20131113113927.GA13875@mwhitehe.csb>
-	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
-	<20131113102153.5f10e6b5@gandalf.local.home>
-	<20131113103134.5b8cf02f@gandalf.local.home>
-	<20131113105737.3f7a0b1b@gandalf.local.home>
-	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
-	<20131113111257.482c2955@gandalf.local.home>
-	<20131113161829.GE4138@linux.vnet.ibm.com>
-	<20131113112338.7d303c0f@gandalf.local.home>
-	<20131113163552.GF4138@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
-Date: Wed, 9 Apr 2014 19:21:53 +0530
-X-Google-Sender-Auth: -GSCf9lMUZHFmLE1nfULFWlwJkg
-Message-ID: <CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
-Subject: Re: nohz problem with idle time on old hardware
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mwhitehe@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Apr 2014 09:51:36 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 12/15] pinctrl: sunxi: retrieve and enable PL clk gate for A31 SoC
+Date: Wed,  9 Apr 2014 15:51:15 +0200
+Message-Id: <1397051478-4113-13-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 1:31 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Subject: NOHZ: Check for nohz active instead of nohz enabled
->
-> RCU and the fine grained idle time accounting functions check
-> tick_nohz_enabled. But that variable is merily telling that NOHZ has
-> been enabled in the config and not been disabled on the command line.
->
-> But it does not tell anything about nohz being active. That's what all
-> this should check for.
->
-> Matthew reported, that the idle accounting on his old P1 machine
-> showed bogus values, when he enabled NOHZ in the config and did not
-> disable it on the kernel command line. The reason is that his machine
-> uses (refined) jiffies as a clocksource which explains why the "fine"
-> grained accounting went into lala land, because it depends on when the
-> system goes and leaves idle relative to the jiffies increment.
->
-> Provide a tick_nohz_active indicator and let RCU and the accounting
-> code use this instead of tick_nohz_enable.
+Retrieve and enable the clock gate related to PL pins.
 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> @@ -973,7 +968,7 @@ static void tick_nohz_switch_to_nohz(void)
->         struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
->         ktime_t next;
->
-> -       if (!tick_nohz_enabled)
-> +       if (!tick_nohz_active)
->                 return;
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/pinctrl/pinctrl-sunxi.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Considering the impressive list of Reviewed-by and people involved
-in this patch, I am not sure I am reading the code well here.
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 64dffc8..da76ceb 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -898,6 +898,13 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 			return -ENOMEM;
+ 
+ 		pctl->get_membase = sun6i_a31_pinctrl_get_membase;
++		clk = devm_clk_get(&pdev->dev, "pioL_clk");
++		if (IS_ERR(clk))
++			return PTR_ERR(clk);
++
++		ret = clk_prepare_enable(clk);
++		if (ret)
++			return ret;
+ 	} else {
+ 		pctl->get_membase = sunxi_pinctrl_get_membase;
+ 	}
+-- 
+1.8.3.2
 
-The above change isn't required as per my understanding. Otherwise
-we will never pass that check. tick_nohz_active is initialized as zero
-and so we will keep on returning for ever and wouldn't be able to set
-it to 1 ever.
-
-I have a patch to fix it up, but wanted to know your opinion before
-sending it.
-
->         local_irq_disable();
-> @@ -981,7 +976,7 @@ static void tick_nohz_switch_to_nohz(void)
->                 local_irq_enable();
->                 return;
->         }
-> -
-> +       tick_nohz_active = 1;
->         ts->nohz_mode = NOHZ_MODE_LOWRES;
->
->         /*
