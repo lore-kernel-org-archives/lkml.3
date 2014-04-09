@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014AbaDILlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:41:49 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:46977 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758486AbaDILlp (ORCPT
+	id S933043AbaDILqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:46:07 -0400
+Received: from relay02.alfahosting-server.de ([109.237.142.238]:38949 "EHLO
+	relay02.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932694AbaDILqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:41:45 -0400
+	Wed, 9 Apr 2014 07:46:04 -0400
+X-Greylist: delayed 618 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 07:46:04 EDT
+X-Spam-DCC: : 
 MIME-Version: 1.0
-In-Reply-To: <53452B59.8030901@samsung.com>
-References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
-	<1396967803-28868-6-git-send-email-gautam.vivek@samsung.com>
-	<53452B59.8030901@samsung.com>
-Date: Wed, 9 Apr 2014 17:04:46 +0530
-X-Google-Sender-Auth: UR8JIOvgxeA_Yr-KfpfOlekClDc
-Message-ID: <CAFp+6iGQMS5_YAimBRdV-P2h3LczQEHMq_cXGrOtHJSZqM7UfQ@mail.gmail.com>
-Subject: Re: [PATCH V4 5/5] usb-phy: samsung-usb3: Remove older
- phy-samsung-usb3 driver
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, kishon <kishon@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 09 Apr 2014 13:35:37 +0200
+From: Richard Leitner <me@g0hl1n.net>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: comedi: =?UTF-8?Q?adl=5Fpci=39=31=31=38=3A=20fix?=
+ =?UTF-8?Q?=20whitespace=20issues?=
+Message-ID: <8d54353f462d3d5bf51ad68b32bd88bb@webmail-alfa3028.alfahosting-server.de>
+User-Agent: Alfahosting Webmail/1.0
+X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/18762/Wed Apr  9 07:41:01 2014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
-'
+Removed not needed spaces and fixed too long lines
 
-On Wed, Apr 9, 2014 at 4:43 PM, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Vivek,
->
-Thanks for reviewing the patch series.
+PS: this is an exercise to get into the "patch submitting workflow"
 
->
-> On 08.04.2014 16:36, Vivek Gautam wrote:
->>
->> Removing this older USB 3.0 DRD controller PHY driver, since
->> a new driver based on generic phy framework is now available.
->>
->> Also removing the dt node for older driver from Exynos5250
->> device tree and updating the dt node for DWC3 controller.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>
->> NOTE: This patch should be merged only when the new USB 3.0
->> DRD phy controller driver is available in the tree from the
->> patches:
->>         phy: Add new Exynos5 USB 3.0 PHY driver; and
->>         dt: exynos5250: Enable support for generic USB DRD phy
->>
->>   arch/arm/boot/dts/exynos5250.dtsi  |   17 +-
->>   drivers/usb/phy/phy-samsung-usb.h  |   83 ---------
->>   drivers/usb/phy/phy-samsung-usb3.c |  350
->> ------------------------------------
->>   3 files changed, 2 insertions(+), 448 deletions(-)
->>   delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
->>
->> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
->> b/arch/arm/boot/dts/exynos5250.dtsi
->> index 92c6fcd..1cb1e91 100644
->> --- a/arch/arm/boot/dts/exynos5250.dtsi
->> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->
->
-> IMHO driver and dts changes should be separated into two patches, first
-> updating device tree to use the new driver and second removing the driver.
+Signed-off-by: Richard Leitner <me@g0hl1n.net>
+---
+  drivers/staging/comedi/drivers/adl_pci9118.c |    8 ++++----
+  1 file changed, 4 insertions(+), 4 deletions(-)
 
-Sure will separate the patch into driver and dts change.
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c 
+b/drivers/staging/comedi/drivers/adl_pci9118.c
+index 3cfa175..d028d6b 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -96,7 +96,7 @@ Configuration options:
+  				 * correct channel number on every 12 bit sample
+  				 */
 
->
-> After fixing this issue,
->
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
->
-> --
-> Best regards,
-> Tomasz
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-#define IORANGE_9118 	64	/* I hope */
++#define IORANGE_9118	64	/* I hope */
+  #define PCI9118_CHANLEN	255	/*
+  				 * len of chanlist, some source say 256,
+  				 * but reality looks like 255 :-(
+@@ -356,7 +356,7 @@ struct pci9118_private {
+  	unsigned int ai_data_len;
+  	unsigned short ao_data[2];		/* data output buffer */
+  	unsigned int ai_scans;			/* number of scans to do */
+-	char dma_doublebuf;			/* we can use double buffering */
++	char dma_doublebuf;			/* we can use double buffering*/
+  	unsigned int dma_actbuf;		/* which buffer is used now */
+  	unsigned short *dmabuf_virt[2];		/*
+  						 * pointers to begin of
+@@ -383,7 +383,7 @@ struct pci9118_private {
+  						 * users(0-AI, 1-AO, 2-DI, 3-DO)
+  						 */
+  	unsigned int cnt0_divisor;		/* actual CNT0 divisor */
+-	void (*int_ai_func) (struct comedi_device *, struct comedi_subdevice 
+*,
++	void (*int_ai_func)(struct comedi_device *, struct comedi_subdevice *,
+  		unsigned short,
+  		unsigned int,
+  		unsigned short);	/*
+@@ -1045,7 +1045,7 @@ static void interrupt_pci9118_ai_dma(struct 
+comedi_device *dev,
+  		move_block_from_dma(dev, s,
+  				    devpriv->dmabuf_virt[devpriv->dma_actbuf],
+  				    samplesinbuf);
+-		m = m - sampls;		/* m= how many samples was transferred */
++		m = m - sampls;		/* m=how many samples was transferred */
+  	}
+
+  	if (!devpriv->ai_neverending) {
+-- 
+1.7.10.4
+
