@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964848AbaDIQ40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:56:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48098 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932898AbaDIQ4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:56:22 -0400
-Message-ID: <53457B80.1080307@zytor.com>
-Date: Wed, 09 Apr 2014 09:55:28 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Arnd Bergmann <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [GIT PULL] ext4 changes for 3.15
-References: <20140403191558.GA8745@thunk.org>	<CA+55aFxoA-iDdmbbgmJiYVvskrtca5aGgUAW=3CR47rM9NEMLA@mail.gmail.com>	<20140404035308.GC2525@thunk.org>	<20140404134429.GB26806@quack.suse.cz>	<CAJfpegsJd9d8NTmwozJ+u_ZS-SnUwAQFwAne6P1KqG=VZeZSTA@mail.gmail.com>	<20140404234358.GE10275@thunk.org>	<CAJfpegv_Ng1cXbpCqicG4e3UdGK3uiDtVB4KzfRQOhDq_uhZOw@mail.gmail.com>	<20140407140745.GA8855@thunk.org>	<CAMuHMdVHyAJwJv5nh+nQUOQJk6=2+Rr+pEqAZPgJUsA7A9A3hQ@mail.gmail.com>	<20140408134740.GB28822@thunk.org> <CAMuHMdW8xkBFJ5-E04rVhDk+CSubHut+kx3P6cYCn0dMhQdb-Q@mail.gmail.com>
-In-Reply-To: <CAMuHMdW8xkBFJ5-E04rVhDk+CSubHut+kx3P6cYCn0dMhQdb-Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S933821AbaDIRBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:01:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56494 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933100AbaDIRBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 13:01:13 -0400
+Date: Wed, 09 Apr 2014 13:01:11 -0400 (EDT)
+Message-Id: <20140409.130111.1002891296248446198.davem@davemloft.net>
+To: kys@microsoft.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Subject: Re: [PATCH net 3/3] Drivers: net: hyperv: Address UDP checksum
+ issues
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1396986371-12137-4-git-send-email-kys@microsoft.com>
+References: <1396986332-12098-1-git-send-email-kys@microsoft.com>
+	<1396986371-12137-1-git-send-email-kys@microsoft.com>
+	<1396986371-12137-4-git-send-email-kys@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 09:40 AM, Geert Uytterhoeven wrote:
-> On Tue, Apr 8, 2014 at 3:47 PM, Theodore Ts'o <tytso@mit.edu> wrote:
->> On Mon, Apr 07, 2014 at 10:25:30PM +0200, Geert Uytterhoeven wrote:
->>>> maintainers would have no idea that a new syscall has been added.
->>>
->>> If i386 has the new syscall, scripts/checksyscalls.sh will catch it and
->>> inform us about it during our next kernel build.
->>>
->>> If you add it to x86_64 only, bad luck for anyone else ;-)
->>
->> Maybe we should change scripts/checksyscalls.sh to check the x86_64
->> list of syscalls, and not i386?
->>
->> It's been a long time since "all the world's an i386" --- these days,
->> it's "all the world's an x86_64".  :-)
-> 
-> Let the kbuild people (and their employers) fight over it...
-> 
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Tue,  8 Apr 2014 12:46:11 -0700
 
-I'm missing context here, but as an x86 maintainer I have no intention
-of allowing system calls that aren't x86-specific to be added to x86-64
-only.
+>  	} else if (net_trans_info & INFO_UDP) {
+> -		csum_info->transmit.udp_checksum = 1;
+> +		/* UDP checksum offload is not supported on ws2008r2.
+> +		 * Furthermore, on ws2012 and ws2012r2, there are some
+> +		 * issues with udp checksum offload from Linux guests.
+> +		 * (these are host issues).
+> +		 * For now compute the checksum here.
+> +		 */
+> +		struct udphdr *uh = udp_hdr(skb);
+> +		u16 udp_len = ntohs(uh->len);
+> +
+> +		uh->check = 0;
+> +		uh->check = csum_tcpudp_magic(ip_hdr(skb)->saddr,
+> +					      ip_hdr(skb)->daddr,
+> +					      udp_len, IPPROTO_UDP,
+> +					      csum_partial(uh, udp_len, 0));
+> +		if (uh->check == 0)
+> +			uh->check = CSUM_MANGLED_0;
+> +
+> +		csum_info->transmit.udp_checksum = 0;
 
-	-hpa
+You absolutely cannot mangle packet header contents without first
+COW'ing the SKB to make sure it's writable.
 
+Otherwise network taps like tcpdump, and any other entity with a reference
+to the packet, can see inconsistent state.
