@@ -1,96 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426AbaDIOuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:50:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33145 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932786AbaDIOuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:50:05 -0400
-Date: Wed, 9 Apr 2014 16:45:03 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/15] ARM: sunxi: dt: document pinctrl clock related
- properties
-Message-ID: <20140409144502.GD28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397051478-4113-3-git-send-email-boris.brezillon@free-electrons.com>
+	id S933549AbaDIOw3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:52:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932807AbaDIOw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 10:52:27 -0400
+Date: Wed, 9 Apr 2014 11:51:37 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@kernel.org, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 5/5] KVM: MMU: flush tlb out of mmu lock when
+ write-protect the sptes
+Message-ID: <20140409145137.GA23449@amt.cnet>
+References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1394460109-3150-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0IvGJv3f9h+YhkrH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397051478-4113-3-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1394460109-3150-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---0IvGJv3f9h+YhkrH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Apr 09, 2014 at 03:51:05PM +0200, Boris BREZILLON wrote:
-> Document clocks and clock-names properties for the pinctrl driver.
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+On Mon, Mar 10, 2014 at 10:01:49PM +0800, Xiao Guangrong wrote:
+> Now we can flush all the TLBs out of the mmu lock without TLB corruption when
+> write-proect the sptes, it is because:
+> - we have marked large sptes readonly instead of dropping them that means we
+>   just change the spte from writable to readonly so that we only need to care
+>   the case of changing spte from present to present (changing the spte from
+>   present to nonpresent will flush all the TLBs immediately), in other words,
+>   the only case we need to care is mmu_spte_update()
+> 
+> - in mmu_spte_update(), we haved checked
+>   SPTE_HOST_WRITEABLE | PTE_MMU_WRITEABLE instead of PT_WRITABLE_MASK, that
+>   means it does not depend on PT_WRITABLE_MASK anymore
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 > ---
->  Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt | =
-4 ++++
->  1 file changed, 4 insertions(+)
->=20
-> diff --git a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pi=
-nctrl.txt b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinct=
-rl.txt
-> index 0e7e9a1..b3e5c30 100644
-> --- a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.t=
-xt
-> +++ b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.t=
-xt
-> @@ -15,6 +15,10 @@ Required properties:
->    "allwinner,sun7i-a20-pinctrl"
->  - reg: Should contain the register physical address and length for the
->    pin controller.
-> +- clocks: Should contain a list of gate clk needed by the pin controller
-> +- clock-names: Should at least contain "pio_clk" which is used by the
-> +  base pin controller. In case of sun6i-a31 SoC, this property should
-> +  also contain the "pioL_clk" string.
+>  arch/x86/kvm/mmu.c | 25 +++++++++++++++++++++----
+>  arch/x86/kvm/mmu.h | 14 ++++++++++++++
+>  arch/x86/kvm/x86.c | 12 ++++++++++--
+>  3 files changed, 45 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 17bb136..01a8c35 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -4281,15 +4281,32 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+>  			if (*rmapp)
+>  				__rmap_write_protect(kvm, rmapp, false);
+>  
+> -			if (need_resched() || spin_needbreak(&kvm->mmu_lock)) {
+> -				kvm_flush_remote_tlbs(kvm);
+> +			if (need_resched() || spin_needbreak(&kvm->mmu_lock))
+>  				cond_resched_lock(&kvm->mmu_lock);
+> -			}
+>  		}
+>  	}
+>  
+> -	kvm_flush_remote_tlbs(kvm);
+>  	spin_unlock(&kvm->mmu_lock);
+> +
+> +	/*
+> +	 * kvm_mmu_slot_remove_write_access() and kvm_vm_ioctl_get_dirty_log()
+> +	 * which do tlb flush out of mmu-lock should be serialized by
+> +	 * kvm->slots_lock otherwise tlb flush would be missed.
+> +	 */
+> +	lockdep_assert_held(&kvm->slots_lock);
+> +
+> +	/*
+> +	 * We can flush all the TLBs out of the mmu lock without TLB
+> +	 * corruption since we just change the spte from writable to
+> +	 * readonly so that we only need to care the case of changing
+> +	 * spte from present to present (changing the spte from present
+> +	 * to nonpresent will flush all the TLBs immediately), in other
+> +	 * words, the only case we care is mmu_spte_update() where we
+> +	 * haved checked SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE
+> +	 * instead of PT_WRITABLE_MASK, that means it does not depend
+> +	 * on PT_WRITABLE_MASK anymore.
+> +	 */
+> +	kvm_flush_remote_tlbs(kvm);
+>  }
+>  
+>  #define BATCH_ZAP_PAGES	10
+> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+> index 2926152..585d6b1 100644
+> --- a/arch/x86/kvm/mmu.h
+> +++ b/arch/x86/kvm/mmu.h
+> @@ -96,6 +96,20 @@ static inline int is_present_gpte(unsigned long pte)
+>  	return pte & PT_PRESENT_MASK;
+>  }
+>  
+> +/*
+> + * Please note PT_WRITABLE_MASK is not stable since
+> + * 1) fast_page_fault() sets spte from readonly to writable out of mmu-lock or
+> + * 2) kvm_mmu_slot_remove_write_access() and kvm_vm_ioctl_get_dirty_log()
+> + *    can write protect sptes but flush tlb out mmu-lock that means we may use
+> + *    the corrupt tlb entries which depend on this bit.
+> + *
+> + * Both cases do not modify the status of  spte_is_locklessly_modifiable() so
+> + * if you want to check whether the spte is writable on MMU you can check
+> + * SPTE_MMU_WRITEABLE instead. If you want to update spte without losing
+> + * A/D bits and tlb flush, you can check spte_is_locklessly_modifiable()
+> + * instead. See the comments in spte_has_volatile_bits() and
+> + * mmu_spte_update().
+> + */
+>  static inline int is_writable_pte(unsigned long pte)
+>  {
 
-You should probably mention that these two should be in the same
-order.
+Xiao,
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Can't get the SPTE_MMU_WRITEABLE part.
 
---0IvGJv3f9h+YhkrH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So assume you are writing code to perform some action after guest memory
+has been write protected. You would
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+spin_lock(mmu_lock);
 
-iQIcBAEBAgAGBQJTRVzuAAoJEBx+YmzsjxAgfuoP/RKmFGjXuFFVas7B0vV2vaRD
-JHfPJV3s3FmzozHtCkHc7BGcwwqPfcsbYmPjMH7p7Iwin7BepQwt/ITXN3h5XwaT
-aJFvzVP/ATz5MFqzjHw7dBaNRQihUIWVBAmkzNkci8vIQhqJzopDabQSUS08jQ1v
-4vpuaSRAlC/p69XoSjSG1NO6avakD3vXVqmpNZznLOzxyXKXYB4HUcKgjrGBTld6
-OP5jalg0zQUewQ8ZIFumvULjwsHMP6paVHTPG2TyQKngU4MPrr3rH0EDwfBRZYVS
-F05q1hM19yzuKEKegKRs7OZF8NWX2JlFAsKWNqYx5NwVexBxqzBYXANG7uT8OdXE
-yNFKuEKbQJZ8axnnhGPpVPe5cRYe+MWaws3bJr33iFmQ0EnVX6m/T5REqbX0uccd
-ndlLvEqsdskba++xML76QDGrEZ3W9sFQ0SCdkljrEPAVq/gEWsjo9L4MnNyvUAEf
-n+ER6mpsM+aP2CesqjYuM4oNWO5ZSvbZjgYqe20iNwNVBRZMTFpmQMtrxjk5m60C
-4ryx8WtVetYZW9QNHDdqAxNFqeRE7l1CBBtszJ8miXeb76cWC1OUEf3d29br8tFr
-ZeQ+woKgpBJWJq+XCKkd91vIgOrAPUSbYqAOcWXt7VWxJZrnB9W6PcDhkDQa6ktv
-ApzKyz4u/gAhJSCts9fg
-=feGF
------END PGP SIGNATURE-----
+if (writeable spte bit is set)
+    remove writeable spte bit from spte
+remote TLB flush            (*)
+action
 
---0IvGJv3f9h+YhkrH--
+spin_unlock(mmu_lock);
+
+(*) is necessary because reading the writeable spte bit as zero
+does not guarantee remote TLBs have been flushed.
+
+Now what SPTE_MMU_WRITEABLE has to do with it ?
+
+Perhaps a recipe like that (or just the rules) would be useful.
+
+The remaining patches look good.
+
