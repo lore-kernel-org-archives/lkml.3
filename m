@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934264AbaDIUnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:43:25 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49104 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933590AbaDIUnY (ORCPT
+	id S934347AbaDIUou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:44:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37896 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933590AbaDIUot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:43:24 -0400
-Date: Wed, 9 Apr 2014 21:43:12 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, matt.fleming@intel.com,
-        ak@linux.intel.com, viro@zeniv.linux.org.uk, geert@linux-m68k.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, tpowa@archlinux.org, hpa@zytor.com
-Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
-Message-ID: <20140409204312.GK5222@console-pimps.org>
-References: <53430646.40507@archlinux.org>
- <20140407204221.GW32556@tassilo.jf.intel.com>
- <CAL01qpvjZz-XnVT+S3E5E2XGcuFoetE5cwnArYfW-TwYZVKtKw@mail.gmail.com>
- <201404080646.BID87018.SOOVJMFOLFtQHF@I-love.SAKURA.ne.jp>
- <20140408121400.GI5222@console-pimps.org>
- <53444681.1070902@archlinux.org>
- <53445660.1010908@archlinux.org>
- <20140409082536.GJ5222@console-pimps.org>
- <5345051C.2060104@archlinux.org>
- <53458ADE.70000@archlinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53458ADE.70000@archlinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Apr 2014 16:44:49 -0400
+Date: Wed, 9 Apr 2014 13:44:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wengang <wen.gang.wang@oracle.com>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [Ocfs2-devel] [PATCH 1/1] OCFS2: Remove NULL assignments on
+ static
+Message-Id: <20140409134448.cb23b34622bf986d145f1eaa@linux-foundation.org>
+In-Reply-To: <534499FA.8010107@oracle.com>
+References: <20140408221342.9759bea1dd852f2787f82586@skynet.be>
+	<534499FA.8010107@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Apr, at 08:01:02PM, Thomas Bächler wrote:
-> 
-> Hello again Matt,
-> 
-> that patch seems to help. Thank you so much.
-> 
-> (I am going to apply this patch and backport dc53324060, too, so
-> everything should be in order then.)
+On Wed, 09 Apr 2014 08:53:14 +0800 Wengang <wen.gang.wang@oracle.com> wrote:
 
-That's great to hear, thanks for testing. I'll get this applied.
+> ___ 2014___04___09___ 04:13, Fabian Frederick ______:
+> > static values are automatically initialized to NULL.
+> >
+>
+> What's the badness if we do the assignments?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+(top-posting repaired...)
+
+Back in the olden days,
+
+	static int x = 0;
+
+would consume space in the .data segment and
+
+	static int x;
+
+would consume space in the .bss segment.
+
+
+The .data segment is a part of vmlinux (because it contains non-zero
+data) whereas .bss does not occupy space in vmlinux because .bss is
+all-zero and can be built at runtime
+
+So the effect of this patch would be to reduce the size of the kernel
+image.  Less disk space, less ROM space, etc.
+
+
+I think more recent gcc's and linkers got smarter about that and move
+initialized-to-zero .data into .bss anyway.
+
