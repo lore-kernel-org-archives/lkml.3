@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933646AbaDIN5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:57:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932786AbaDIN5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:57:36 -0400
-Date: Wed, 9 Apr 2014 09:57:06 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: acme@kernel.org, peterz@infradead.org, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        eranian@google.com, andi.kleen@intel.com
-Subject: Re: [PATCH 6/6] perf, sort:  Allow unique sorting instead of
- combining hist_entries
-Message-ID: <20140409135706.GD8488@redhat.com>
-References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
- <1395689676-214799-7-git-send-email-dzickus@redhat.com>
- <87ha63t6gb.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ha63t6gb.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933440AbaDINve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:51:34 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60831 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933114AbaDINv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 09:51:29 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 01/15] ARM: sunxi: dt: list all pinctrl compatible strings
+Date: Wed,  9 Apr 2014 15:51:04 +0200
+Message-Id: <1397051478-4113-2-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 02:31:00PM +0900, Namhyung Kim wrote:
-> On Mon, 24 Mar 2014 15:34:36 -0400, Don Zickus wrote:
-> > The cache contention tools needs to keep all the perf records unique in order
-> > to properly parse all the data.  Currently add_hist_entry() will combine
-> > the duplicate record and add the weight/period to the existing record.
-> >
-> > This throws away the unique data the cache contention tool needs (mainly
-> > the data source).  Create a flag to force the records to stay unique.
-> 
-> No.  This is why I said you need to add 'mem' and 'snoop' sort keys into
-> the c2c tool.  This is not how sort works IMHO - if you need to make
-> samples unique let the sort key(s) distinguish them somehow, or you can
-> combine same samples (in terms of sort kes) and use the combined entry's
-> stat.nr_events and stat.period or weight.
+List all sunxi pinctrl compatible strings in order to be able to grep for
+those values.
 
-Ok.  I understand your point.  Perhaps this was my lack of fully
-understanding the sorting algorithm when I did this.  I can look into
-adding the 'mem' and 'snoop'.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ .../devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt      | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-One concern I do have is we were caculating statistics based on the weight
-(mean, median, stddev).  I was afraid that combining the entries would
-throw off our calculations as we could no longer accurately determine them
-any more.  Is that true?
+diff --git a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
+index dff0e5f..0e7e9a1 100644
+--- a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
+@@ -6,8 +6,13 @@ the first two functions being GPIO in and out. The configuration on
+ the pins includes drive strength and pull-up.
+ 
+ Required properties:
+-- compatible: "allwinner,<soc>-pinctrl". Supported SoCs for now are:
+-  sun5i-a13.
++- compatible: Should be one of the followings (depending on you SoC):
++  "allwinner,sun4i-a10-pinctrl"
++  "allwinner,sun5i-a10s-pinctrl"
++  "allwinner,sun5i-a13-pinctrl"
++  "allwinner,sun6i-a31-pinctrl"
++  "allwinner,sun6i-a31-pinctrl"
++  "allwinner,sun7i-a20-pinctrl"
+ - reg: Should contain the register physical address and length for the
+   pin controller.
+ 
+-- 
+1.8.3.2
 
-Cheers,
-Don
