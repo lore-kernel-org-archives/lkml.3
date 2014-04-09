@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645AbaDIFrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 01:47:09 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:38692 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaDIFrG (ORCPT
+	id S1758138AbaDIFv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 01:51:29 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:50701 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaDIFv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 01:47:06 -0400
-Date: Tue, 8 Apr 2014 22:47:00 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel@stlinux.com, MTD Maling List <linux-mtd@lists.infradead.org>,
-        angus.clark@st.com
-Subject: Re: [PATCH 01/15] mtd: st_spi_fsm: Add Macronix MX25L25655E device
-Message-ID: <20140409054700.GC3131@norris-Latitude-E6410>
-References: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
- <1395851969-13520-2-git-send-email-lee.jones@linaro.org>
- <CAMuHMdXgPiJSrA4Txp_OxrGx7osNsprm5a+w3Qag=Yd-_nFVBw@mail.gmail.com>
- <20140327082047.GB26627@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140327082047.GB26627@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Apr 2014 01:51:26 -0400
+Message-ID: <1397022682.4928.30.camel@marge.simpson.net>
+Subject: Re: [PATCH] futex: avoid race between requeue and wake
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Stancek <jstancek@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>
+Date: Wed, 09 Apr 2014 07:51:22 +0200
+In-Reply-To: <20140409054139.GU10526@twins.programming.kicks-ass.net>
+References: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com>
+	 <CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com>
+	 <CA+55aFyfKOv59hptv9rEcf31X5O8s26z+S8f-MchM1C0WtXx3A@mail.gmail.com>
+	 <20140408181305.GT10526@twins.programming.kicks-ass.net>
+	 <CA+55aFz+yMdXfsb-t3JzDhj6=M=-ggjDDGAQSbtfEcNhgyoopA@mail.gmail.com>
+	 <1860555101.1890107.1396990941681.JavaMail.zimbra@redhat.com>
+	 <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
+	 <20140409054139.GU10526@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 08:20:47AM +0000, Lee Jones wrote:
-> > > From: Angus Clark <angus.clark@st.com>
-> > >
-> > > Add Macronix MX25L25655E to the list of known devices.
-> > >
-> > > Signed-off-by: Angus Clark <angus.clark@st.com>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > ---
-> > >  drivers/mtd/devices/st_spi_fsm.c | 3 +++
-> > >  1 file changed, 3 insertions(+)
-> > >
-> > > diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-> > > index bea1416..2471061 100644
-> > > --- a/drivers/mtd/devices/st_spi_fsm.c
-> > > +++ b/drivers/mtd/devices/st_spi_fsm.c
-> > > @@ -380,6 +380,9 @@ static struct flash_info flash_types[] = {
-> > >         { "mx25l25635e", 0xc22019, 0, 64*1024, 512,
-> > >           (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
-> > >           stfsm_mx25_config },
-> > > +       { "mx25l25655e", 0xc22619, 0, 64*1024, 512,
-> > > +         (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
-> > > +         stfsm_mx25_config},
-> > >
-> > >  #define N25Q_FLAG (FLASH_FLAG_READ_WRITE       |       \
-> > >                    FLASH_FLAG_READ_FAST         |       \
-> > 
-> > How much of this table can be shared with the one in m25p80.c?
+On Wed, 2014-04-09 at 07:41 +0200, Peter Zijlstra wrote: 
+> On Tue, Apr 08, 2014 at 03:30:07PM -0700, Linus Torvalds wrote:
+> > So I'll have to leave this decision to the futex people. But the
+> > attached slightly more complex patch *may* be the better one.
 > 
-> I have a long term plan to merge the two. Just waiting for the SPI NOR
-> Framework to land before I do so.
+> Of course, tglx is the main futex 'people' and he's not on CC.. *sigh*.
 
-Huang's work landed in the spinor branch at l2-mtd.git a bit ago. I will
-take a look at this series and probably take this as-is, but long-term I
-will not be taking many more additions to this custom table.
+(Darren is a futex people _and_ a futextest people)
 
-Regards,
-Brian
