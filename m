@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964802AbaDIPGn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:06:43 -0400
-Received: from mail.pcs.de ([145.253.69.50]:63615 "EHLO exchange5.pcs.ditec.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933427AbaDIPGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:06:42 -0400
-Date: Wed, 9 Apr 2014 17:06:24 +0200
-From: Thomas Pfaff <tpfaff@pcs.com>
-X-X-Sender: tpfaff@lxtpfaff.pcs.ditec.de
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] serial_core: fix uart PORT_UNKNOWN handling
-In-Reply-To: <20140409133909.2073453a@alan.etchedpixels.co.uk>
-Message-ID: <alpine.LNX.2.00.1404091655140.29879@lxtpfaff.pcs.ditec.de>
-References: <alpine.LNX.2.00.1404091151430.6519@lxtpfaff.pcs.ditec.de> <20140409133909.2073453a@alan.etchedpixels.co.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S964810AbaDIPHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:07:18 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55558 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933372AbaDIPHQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 11:07:16 -0400
+Date: Wed, 9 Apr 2014 16:06:40 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ulli.kroll@googlemail.com, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, u.kleine-koenig@pengutronix.de
+Subject: Re: [PATCH] ARM: reinsert ARCH_MULTI_V4 Kconfig option
+Message-ID: <20140409150640.GQ16119@n2100.arm.linux.org.uk>
+References: <1386922149-4561-1-git-send-email-jonas.jensen@gmail.com> <20131213095655.GB4360@n2100.arm.linux.org.uk> <CACmBeS1d-EX5oPD8f7P-ufmF=MutdTO+LgG23Cb0=biR8yQPCg@mail.gmail.com> <20131213113903.GE4360@n2100.arm.linux.org.uk> <CACmBeS3kC4dsdOrfANifgu8oQhLauFKcXhEu=iz8xbUxdhMq_A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-GFI-SMTP-Submission: 1
-X-GFI-SMTP-Submission: 1
-X-GFI-SMTP-HelloDomain: lxtpfaff.pcs.ditec.de
-X-GFI-SMTP-RemoteIP: 192.168.9.96
-X-KSE-AntiSpam-Interceptor-Info: white sender email list
-X-GFIME-MASPAM: SPAM
-X-KSE-Antivirus-Interceptor-Info: scan successful
-X-KSE-Antivirus-Info: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACmBeS3kC4dsdOrfANifgu8oQhLauFKcXhEu=iz8xbUxdhMq_A@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 09, 2014 at 04:54:16PM +0200, Jonas Jensen wrote:
+> On 13 December 2013 12:39, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > I see what's causing this: the kuser helpers are using "bx lr" to return
+> > which will be undefined on non-Thumb CPUs.  We generally cope fine with
+> > non-Thumb CPUs, conditionalising where necessary on HWCAP_THUMB or the
+> > T bit in the PSR being set.
+> >
+> > However, it looks like the kuser helpers got missed.  As a check, please
+> > look at arch/arm/kernel/entry-armv.S, find the line with:
+> >
+> >         .macro  usr_ret, reg
+> >
+> > and ensure that the mov pc, \reg case always gets used.  Please report
+> > back.
+> 
+> Uwe and Arnd came up with a solution except it doesn't work when I test it.
+> 
+> The suggested patch is:
+> 
+> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> index 1879e8d..de15bfd 100644
+> --- a/arch/arm/kernel/entry-armv.S
+> +++ b/arch/arm/kernel/entry-armv.S
+> @@ -739,6 +739,18 @@ ENDPROC(__switch_to)
+> 
+>         .macro  usr_ret, reg
+>  #ifdef CONFIG_ARM_THUMB
+> +       /*
+> +        * Having CONFIG_ARM_THUMB isn't a guarantee that the cpu has support
+> +        * for Thumb and so the bx instruction. Use a mov if the address to
+> +        * jump to is 32 bit aligned. (Note that this code is compiled in ARM
+> +        * mode, so this is the right test.)
+> +        */
+> +#if defined(CONFIG_CPU_32v4)
+> +       tst     \reg, #3
+> +       moveq   pc, \reg
+> +       b       .
+> +#endif
+> +
+>         bx      \reg
 
-On Wed, 9 Apr 2014, One Thousand Gnomes wrote:
+What's wrong with:
+	tst	\reg, #3
+	moveq	pc, \reg
+	bx	\reg
 
-> On Wed, 9 Apr 2014 13:22:14 +0200
-> Thomas Pfaff <tpfaff@pcs.com> wrote:
-> 
-> > 1. uart_change_pm ist called during uart_open and calls the uart pm function
-> >    without checking for PORT_UNKNOWN.
-> 
-> Removing this breaks other parts of the code assume that the port will be
-> powered up (notably setserial paths). So it makes sense that
-> uart_change_pm for a "none" port is a no-op but needs logic in the
-> setserial path to power up a port when we move none->known and power it
-> down on known->none
-> 
+rather than ending in an infinite loop?
 
-Then why not move uart_change_pm into uart_port_startup, where it will be called 
-when needed ?
-A reworked patch is below.
-
-> > 2. uart_shutdown is called from uart_set_info and does not check it either.
-> 
-> I don't see why this one matters. We would have done
-> 
-> 	uart_startup
-> 		uart_port_startup
-> 			uport->type == PORT_UNKNOWN
-> 			return 1;
-> 		ASYNCB_INITIALIZED is not set
-> 
-> 	uart_shutdown
-> 		ASYNCB_INITIALISED is not set
-> 			Skip call to uart_port_shutdown
-> 
-> So that code looks correct to me.
-
-I agree, i have overlooked this.
-
-Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
----
-diff -urp linux-3.14.org/drivers/tty/serial/serial_core.c linux-3.14/drivers/tty/serial/serial_core.c
---- linux-3.14.org/drivers/tty/serial/serial_core.c	2014-03-31 05:40:15.000000000 +0200
-+++ linux-3.14/drivers/tty/serial/serial_core.c	2014-04-09 16:41:03.940046814 +0200
-@@ -138,6 +138,11 @@ static int uart_port_startup(struct tty_
- 		return 1;
- 
- 	/*
-+	 * Make sure the device is in D0 state.
-+	 */
-+	uart_change_pm(state, UART_PM_STATE_ON);
-+
-+	/*
- 	 * Initialise and allocate the transmit and temporary
- 	 * buffer.
- 	 */
-@@ -826,25 +831,29 @@ static int uart_set_info(struct tty_stru
- 		 * If we fail to request resources for the
- 		 * new port, try to restore the old settings.
- 		 */
--		if (retval && old_type != PORT_UNKNOWN) {
-+		if (retval) {
- 			uport->iobase = old_iobase;
- 			uport->type = old_type;
- 			uport->hub6 = old_hub6;
- 			uport->iotype = old_iotype;
- 			uport->regshift = old_shift;
- 			uport->mapbase = old_mapbase;
--			retval = uport->ops->request_port(uport);
--			/*
--			 * If we failed to restore the old settings,
--			 * we fail like this.
--			 */
--			if (retval)
--				uport->type = PORT_UNKNOWN;
- 
--			/*
--			 * We failed anyway.
--			 */
--			retval = -EBUSY;
-+			if (old_type != PORT_UNKNOWN) {
-+				retval = uport->ops->request_port(uport);
-+				/*
-+				 * If we failed to restore the old settings,
-+				 * we fail like this.
-+				 */
-+				if (retval)
-+					uport->type = PORT_UNKNOWN;
-+
-+				/*
-+				 * We failed anyway.
-+				 */
-+				retval = -EBUSY;
-+			}
-+
- 			/* Added to return the correct error -Ram Gupta */
- 			goto exit;
- 		}
-@@ -1570,12 +1579,6 @@ static int uart_open(struct tty_struct *
- 	}
- 
- 	/*
--	 * Make sure the device is in D0 state.
--	 */
--	if (port->count == 1)
--		uart_change_pm(state, UART_PM_STATE_ON);
--
--	/*
- 	 * Start up the serial port.
- 	 */
- 	retval = uart_startup(tty, state, 0);
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
