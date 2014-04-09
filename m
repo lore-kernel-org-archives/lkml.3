@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934278AbaDITJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 15:09:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37459 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933354AbaDITJy (ORCPT
+	id S934290AbaDITKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 15:10:45 -0400
+Received: from sender1.zohomail.com ([72.5.230.103]:52963 "EHLO
+	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933143AbaDITKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 15:09:54 -0400
-Date: Wed, 9 Apr 2014 12:12:25 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
-Message-ID: <20140409191225.GA10560@kroah.com>
-References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
- <53451077.2030102@openwrt.org>
- <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com>
+	Wed, 9 Apr 2014 15:10:44 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; 
+  s=zapps768; d=zoho.com; 
+  h=date:from:to:subject:message-id:mime-version:content-type; 
+  b=gDuQBeSOiB/Elwm/YYoPjL9Qtn1d110Tdv4JPqaWBvOaARVt5LKbzK8ezokIitQu3xKAgv7Cob2Q
+    awzyzHAW3csfVAVtAOtKEVH4cu9/Be2TL43iIi7VCw6AyglSrL0h  
+Date: Wed, 9 Apr 2014 18:52:01 +0000
+From: mancha <mancha1@zoho.com>
+To: linux-kernel@vger.kernel.org
+Subject: Cauterizing the heartbleed[ing] (CVE-2014-0160)
+Message-ID: <20140409185201.GB7439@zoho.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
 Content-Disposition: inline
-In-Reply-To: <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-PGP-Key: http://hkps.pool.sks-keyservers.net/pks/lookup?op=vindex&search=0x25168eb24f0b22ac
+X-PGP-FP: 56B7 100E F4D5 811C 8FEF  ADD1 2516 8EB2 4F0B 22AC
+X-Zoho-Virus-Status: 1
+X-ZohoMailClient: External
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 11:28:55AM -0700, Luis R. Rodriguez wrote:
-> On Wed, Apr 9, 2014 at 2:18 AM, Felix Fietkau <nbd@openwrt.org> wrote:
-> > The oldest kernel in OpenWrt that we're still supporting with updates of
-> > the backports tree is 3.3, so raising the minimum requirement to 3.0 is
-> > completely fine with me.
-> 
-> OK note that 3.3 is not listed on kernel.org as supported. I'm fine in
-> carrying the stuff for those for now but ultimately it'd also be nice
-> if we didn't even have to test the kernels in between which are not
-> listed. This does however raise the question of how often a kernel in
-> between a list of supported kernels gets picked up to be supported
-> eventually. Greg, Jiri, do you happen to know what the likelyhood of
-> that can be?
 
-I don't know of anything ever getting picked up after I have said it
-would not be supported anymore.
+--IrhDeMKUP4DT/M7F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-thanks,
+Kudos on getting new certificates up quickly for *.kernel.org.
 
-greg k-h
+--mancha
+
+===
+ Subject: description=rrvtwKeba4B2rWjx, C=US, ST=California, L=San
+ Francisco, O=The Linux Foundation,
+ CN=*.kernel.org/emailAddress=webmaster@kernel.org
+ Issuer: C=IL, O=StartCom Ltd., OU=Secure Digital Certificate Signing,
+ CN=StartCom Class 2 Primary Intermediate Server CA
+ Validity
+     Not Before: Apr  9 00:03:46 2014 GMT
+     Not After : Apr  8 19:49:11 2016 GMT
+===
+
+--IrhDeMKUP4DT/M7F
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTRZbRAAoJEFdS1BJ1Sb0bAD8P/RAEOv7eH6YPjHghXAIL8e6f
+G3Azpd39cJXeEE2KGRb4z91rgrUPa0zS5FggqpbnOStEVIrleoxPCppqkd0fs8sR
+CW18Gb2GkWWGxoy4pmVqi5+0K+YCrFISgcTxA+9/5D/MA9HHk4Mqa1hKpETqU/6X
+CUOOeoMLw6DDHe1w296yxwbnOAsQdeQG+u3TgV3E1F83o3MxIZPMbbLdFw4zExg0
+BPtLmZc7s9vbmTwbCXIcDNk/xhX8hKv0zXZdYtveJHRW9dGWJiu0EUBufV+fzChM
+7j8LQ5a/2zVpnPPLwTc1NLcqDmvyMOMu3j0fbDbfvyTjsDZEnqSWrXOy2IBlX0q3
+q3fT1yYHtpQjNgjoOpdlYyzBXRgxteiwUGI/0++wR4x2l331rjQsOvUDUhsmpRk2
+/MR3A7+SVNvDZ6Ruz5OAtMOJIpuwFtKCu+QDqLWl2nAtuyeT9nvN6RheoFsKGFAO
+oS0jUpRmCLXJGKmQoOwBT5J/S0jS53UQ/XbYylhPBn82F924HDtUA8Fs8Zoz1bNA
+6rlgePiEeJ36rdZq22G0zW9PwpSZSizbnm2A6VKhHlt8TkiPTXJaBGgsZLsZmmfy
+vQRFHFaOOQznJG+tTy4GP9HM/jh4soHtecQi+2i42PHBquKoTozlKoNU15mc44Pg
+3si9DavtMrc4jDsY0lSJ
+=9y+X
+-----END PGP SIGNATURE-----
+
+--IrhDeMKUP4DT/M7F--
+
