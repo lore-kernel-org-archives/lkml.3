@@ -1,111 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934432AbaDIWBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 18:01:39 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:9703 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933705AbaDIWBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 18:01:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnhVADTCRVN5LEcvPGdsb2JhbABZgwaDS4ULtnCFXYEkFwMBAQEBODWCJQEBAQMBOhwjBQsIAxIGCSUPBSUDBwYUE4d0B80LFxaNfwYBAU8HgySBFASYXZYFK4EtCBc
-Date: Thu, 10 Apr 2014 08:01:30 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15-rc1
-Message-ID: <20140409220130.GB27519@dastard>
-References: <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
- <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
- <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
- <87li281wx6.fsf_-_@xmission.com>
- <87ob28kqks.fsf_-_@xmission.com>
- <874n3n7czm.fsf_-_@xmission.com>
- <87wqezl5df.fsf_-_@x220.int.ebiederm.org>
- <20140409023027.GX18016@ZenIV.linux.org.uk>
- <20140409023947.GY18016@ZenIV.linux.org.uk>
- <87sipmbe8x.fsf@x220.int.ebiederm.org>
+	id S965038AbaDIWHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 18:07:17 -0400
+Received: from smtp04.udag.de ([62.146.106.30]:36798 "EHLO smtp04.udag.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933776AbaDIWHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 18:07:13 -0400
+Message-ID: <5345C48B.9060600@cevel.net>
+Date: Thu, 10 Apr 2014 00:07:07 +0200
+From: Tolga Cakir <tolga@cevel.net>
+Reply-To: tolga@cevel.net
+Organization: Cevel Network
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sipmbe8x.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+CC: Derya <derya.kiran@yahoo.de>, Jiri Kosina <jkosina@suse.cz>,
+        Reyad Attiyat <reyad.attiyat@gmail.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] HID: microsoft: moving quirks to struct
+References: <1396631173-11668-1-git-send-email-tolga@cevel.net> <CAN+gG=FFnK7NwiGN1oLsBA6euyDHOxrY6s7-yRo553jcLbzuYQ@mail.gmail.com>
+In-Reply-To: <CAN+gG=FFnK7NwiGN1oLsBA6euyDHOxrY6s7-yRo553jcLbzuYQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 10:32:14AM -0700, Eric W. Biederman wrote:
-> Al Viro <viro@ZenIV.linux.org.uk> writes:
-> 
-> > On Wed, Apr 09, 2014 at 03:30:27AM +0100, Al Viro wrote:
-> >
-> >> > When renaming or unlinking directory entries that are not mountpoints
-> >> > no additional locks are taken so no performance differences can result,
-> >> > and my benchmark reflected that.
-> >> 
-> >> It also means that d_invalidate() now might trigger fs shutdown.  Which
-> >> has bloody huge stack footprint, for obvious reasons.  And d_invalidate()
-> >> can be called with pretty deep stack - walk into wrong dentry while
-> >> resolving a deeply nested symlink and there you go...
-> >
-> > PS: I thought I actually replied with that point back a month or so ago,
-> > but having checked sent-mail...  Looks like I had not.  My deep apologies.
-> >
-> > FWIW, I think that overall this thing is a good idea, provided that we can
-> > live with semantics changes.  The implementation is too optimistic, though -
-> > at the very least, we want this work done upon namespace_unlock() held
-> > back until we are not too deep in stack.  task_work_add() fodder,
-> > perhaps?
-> 
-> Hmm.
-> 
-> Just to confirm what I am dealing with I have proceeded to measure the
-> amount of stack used by these operations.
-> 
-> For resolving a deeply nested symlink that hits the limit of 8 nested
-> symlinks, I find 4688 bytes left on the stack.  Which means we use
-> roughly 3504 bytes of stack when stating a deeply nested symlink.
-> 
-> For umount I had a little trouble measuring as typically the work done
-> by umount was not the largest stack consumer, but I found for a small
-> ext4 filesystem after the umount operation was complete there were
-> 5152 bytes left on the stack, or umount used roughly 3040 bytes.
+Am 09.04.2014 22:40, schrieb Benjamin Tissoires:
+> On Fri, Apr 4, 2014 at 1:06 PM, Tolga Cakir <tolga@cevel.net> wrote:
+>> This will give us the opportunity to easily implement extra features
+>> for new devices.
+>>
+>> Signed-off-by: Tolga Cakir <tolga@cevel.net>
+>> ---
+>>   drivers/hid/hid-microsoft.c | 44 ++++++++++++++++++++++++++++----------------
+>>   1 file changed, 28 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
+>> index 6fd5817..0a61403 100644
+>> --- a/drivers/hid/hid-microsoft.c
+>> +++ b/drivers/hid/hid-microsoft.c
+>> @@ -30,23 +30,28 @@
+>>   #define MS_DUPLICATE_USAGES    0x20
+>>   #define MS_RDESC_3K            0x40
+>>
+>> +struct ms_data {
+>> +       unsigned long quirks;
+>> +       void *extra;
+> I do not like having a void * pointer in this kind of struct,
+> especially when it is not used in the current patch.
+> Please remove it in v2
+Hi Benjamin, thank you for the review!
 
-Try XFS, or make sure that the unmount path that you measure does
-something that requires memory allocation and triggers memory
-reclaim.
+Yes you're right, I will change that in v2.
+>> +};
+>> +
+>>   static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+>>                  unsigned int *rsize)
+>>   {
+>> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+>> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>>
+>>          /*
+>>           * Microsoft Wireless Desktop Receiver (Model 1028) has
+>>           * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
+>>           */
+>> -       if ((quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
+>> +       if ((sc->quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
+>>                          rdesc[559] == 0x29) {
+>>                  hid_info(hdev, "fixing up Microsoft Wireless Receiver Model 1028 report descriptor\n");
+>>                  rdesc[557] = 0x35;
+>>                  rdesc[559] = 0x45;
+>>          }
+>>          /* the same as above (s/usage/physical/) */
+>> -       if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
+>> +       if ((sc->quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
+>>                          rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
+>>                          rdesc[97] == 0xff) {
+>>                  rdesc[94] = 0x35;
+>> @@ -142,15 +147,15 @@ static int ms_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>                  struct hid_field *field, struct hid_usage *usage,
+>>                  unsigned long **bit, int *max)
+>>   {
+>> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+>> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>>
+>> -       if (quirks & MS_ERGONOMY) {
+>> +       if (sc->quirks & MS_ERGONOMY) {
+>>                  int ret = ms_ergonomy_kb_quirk(hi, usage, bit, max);
+>>                  if (ret)
+>>                          return ret;
+>>          }
+>>
+>> -       if ((quirks & MS_PRESENTER) &&
+>> +       if ((sc->quirks & MS_PRESENTER) &&
+>>                          ms_presenter_8k_quirk(hi, usage, bit, max))
+>>                  return 1;
+>>
+>> @@ -161,9 +166,9 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>>                  struct hid_field *field, struct hid_usage *usage,
+>>                  unsigned long **bit, int *max)
+>>   {
+>> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+>> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>>
+>> -       if (quirks & MS_DUPLICATE_USAGES)
+>> +       if (sc->quirks & MS_DUPLICATE_USAGES)
+>>                  clear_bit(usage->code, *bit);
+>>
+>>          return 0;
+>> @@ -172,7 +177,7 @@ static int ms_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>>   static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>>                  struct hid_usage *usage, __s32 value)
+>>   {
+>> -       unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+>> +       struct ms_data *sc = hid_get_drvdata(hdev);
+>>          struct input_dev *input;
+>>
+>>          if (!(hdev->claimed & HID_CLAIMED_INPUT) || !field->hidinput ||
+>> @@ -182,7 +187,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>>          input = field->hidinput->input;
+>>
+>>          /* Handling MS keyboards special buttons */
+>> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
+>> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff00)) {
+>>                  /* Special keypad keys */
+>>                  input_report_key(input, KEY_KPEQUAL, value & 0x01);
+>>                  input_report_key(input, KEY_KPLEFTPAREN, value & 0x02);
+>> @@ -190,7 +195,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>>                  return 1;
+>>          }
+>>
+>> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
+>> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff01)) {
+>>                  /* Scroll wheel */
+>>                  int step = ((value & 0x60) >> 5) + 1;
+>>
+>> @@ -205,7 +210,7 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>>                  return 1;
+>>          }
+>>
+>> -       if (quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
+>> +       if (sc->quirks & MS_ERGONOMY && usage->hid == (HID_UP_MSVENDOR | 0xff05)) {
+>>                  static unsigned int last_key = 0;
+>>                  unsigned int key = 0;
+>>                  switch (value) {
+>> @@ -229,12 +234,19 @@ static int ms_event(struct hid_device *hdev, struct hid_field *field,
+>>
+>>   static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>   {
+>> -       unsigned long quirks = id->driver_data;
+>> +       struct ms_data *sc;
+>>          int ret;
+>>
+>> -       hid_set_drvdata(hdev, (void *)quirks);
+>> +       sc = devm_kzalloc(&hdev->dev, sizeof(struct ms_data), GFP_KERNEL);
+>> +       if (!sc) {
+>> +               hid_err(hdev, "can't alloc microsoft descriptor\n");
+> How about: "Can not allocate microsoft data"?
+>
+> I have no idea where this "descriptor" comes from.
+>
+> Besides these two nitpicks, the rest of the patch is:
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>
+> Cheers,
+> Benjamin
+That sounds better, yeah :)! It was quite some time ago, when I came up 
+with "descriptor".
 
-> 3504 + 3040 = 6544 bytes of stack used or 1684 bytes of stack left
-> unused.  Which certainly isn't a lot of margin but it is not overflowing
-> the kernel stack either. 
-> 
-> Is there a case that see where umount uses a lot more kernel stack?  Is
-> your concern an architecture other than x86_64 with different
-> limitations?
+I remember, that it was due to the "sc" I chose for ms_data. 
+Unfortunately, I don't remember what "sc" is standing for, but it's also 
+used in hid-sony. But I'm fine using your suggestion ;)!
+>> +               return -ENOMEM;
+>> +       }
+>> +
+>> +       sc->quirks = id->driver_data;
+>> +       hid_set_drvdata(hdev, sc);
+>>
+>> -       if (quirks & MS_NOGET)
+>> +       if (sc->quirks & MS_NOGET)
+>>                  hdev->quirks |= HID_QUIRK_NOGET;
+>>
+>>          ret = hid_parse(hdev);
+>> @@ -243,7 +255,7 @@ static int ms_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>                  goto err_free;
+>>          }
+>>
+>> -       ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((quirks & MS_HIDINPUT) ?
+>> +       ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT | ((sc->quirks & MS_HIDINPUT) ?
+>>                                  HID_CONNECT_HIDINPUT_FORCE : 0));
+>>          if (ret) {
+>>                  hid_err(hdev, "hw start failed\n");
+>> --
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Anything that enters the block layer IO path can consume upwards of
-4-5K of stack because memory allocation occurs right at the bottom
-of the IO stack and memory allocation is extremely stack heavy
-(think 2.5-3k of stack for a typical GFP_NOIO context allocation
-when there is no memory available).
-
-Even scheduling requires you have around 1.5k of stack space
-available for the scheduler to do it's stuff so at 1684 bytes of
-stack left you're borderline for triggering stack overflow issues if
-there's a sleeping lock at that deep leaf function...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
