@@ -1,489 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821AbaDIJ4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 05:56:32 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:55981 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247AbaDIJ40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 05:56:26 -0400
-From: Luis Ortega <luiorpe1@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, daeseok.youn@gmail.com, rashika.kheria@gmail.com,
-        dan.carpenter@oracle.com, veeableful@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Luis Ortega <luiorpe1@gmail.com>
-Subject: [PATCH v2] Staging: bcm: Qos: fixed braces' coding style
-Date: Wed,  9 Apr 2014 13:56:09 +0200
-Message-Id: <1397044569-1126-1-git-send-email-luiorpe1@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S932855AbaDIJ7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 05:59:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51199 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758243AbaDIJ7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 05:59:21 -0400
+Date: Wed, 9 Apr 2014 11:59:18 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Subject: Re: [PATCH v7 15/22] Remove CONFIG_EXT2_FS_XIP and rename
+ CONFIG_FS_XIP to CONFIG_FS_DAX
+Message-ID: <20140409095918.GG32103@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <ff35fb6b662af013eddeb295a01258b42ccaa5ae.1395591795.git.matthew.r.wilcox@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ff35fb6b662af013eddeb295a01258b42ccaa5ae.1395591795.git.matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed badly placed and unnecessary braces.
+On Sun 23-03-14 15:08:41, Matthew Wilcox wrote:
+> The fewer Kconfig options we have the better.  Use the generic
+> CONFIG_FS_DAX to enable XIP support in ext2 as well as in the core.
+> 
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-PS: Performed as task 10 of the Eudyptula Challenge.
+BTW: Its really only 2KB of code?
 
-Signed-off-by: Luis Ortega <luiorpe1@gmail.com>
----
-Changes for v2:
-- Removed accidental <TAB>
----
- drivers/staging/bcm/Qos.c | 174 +++++++++++++---------------------------------
- 1 file changed, 48 insertions(+), 126 deletions(-)
-
-diff --git a/drivers/staging/bcm/Qos.c b/drivers/staging/bcm/Qos.c
-index 4f31583..4b9ce26 100644
---- a/drivers/staging/bcm/Qos.c
-+++ b/drivers/staging/bcm/Qos.c
-@@ -33,14 +33,11 @@ static bool MatchSrcIpAddress(struct bcm_classifier_rule *pstClassifierRule, ULO
- 	ulSrcIP = ntohl(ulSrcIP);
- 	if (0 == pstClassifierRule->ucIPSourceAddressLength)
- 		return TRUE;
--	for (ucLoopIndex = 0; ucLoopIndex < (pstClassifierRule->ucIPSourceAddressLength); ucLoopIndex++)
--	{
-+	for (ucLoopIndex = 0; ucLoopIndex < (pstClassifierRule->ucIPSourceAddressLength); ucLoopIndex++) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Src Ip Address Mask:0x%x PacketIp:0x%x and Classification:0x%x", (UINT)pstClassifierRule->stSrcIpAddress.ulIpv4Mask[ucLoopIndex], (UINT)ulSrcIP, (UINT)pstClassifierRule->stSrcIpAddress.ulIpv6Addr[ucLoopIndex]);
- 		if ((pstClassifierRule->stSrcIpAddress.ulIpv4Mask[ucLoopIndex] & ulSrcIP) ==
- 				(pstClassifierRule->stSrcIpAddress.ulIpv4Addr[ucLoopIndex] & pstClassifierRule->stSrcIpAddress.ulIpv4Mask[ucLoopIndex]))
--		{
- 			return TRUE;
--		}
- 	}
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Src Ip Address Not Matched");
- 	return false;
-@@ -68,13 +65,10 @@ static bool MatchDestIpAddress(struct bcm_classifier_rule *pstClassifierRule, UL
- 		return TRUE;
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Destination Ip Address 0x%x 0x%x 0x%x  ", (UINT)ulDestIP, (UINT)pstClassifierRule->stDestIpAddress.ulIpv4Mask[ucLoopIndex], (UINT)pstClassifierRule->stDestIpAddress.ulIpv4Addr[ucLoopIndex]);
-
--	for (ucLoopIndex = 0; ucLoopIndex < (pstClassifierRule->ucIPDestinationAddressLength); ucLoopIndex++)
--	{
-+	for (ucLoopIndex = 0; ucLoopIndex < (pstClassifierRule->ucIPDestinationAddressLength); ucLoopIndex++) {
- 		if ((pstClassifierRule->stDestIpAddress.ulIpv4Mask[ucLoopIndex] & ulDestIP) ==
- 				(pstClassifierRule->stDestIpAddress.ulIpv4Addr[ucLoopIndex] & pstClassifierRule->stDestIpAddress.ulIpv4Mask[ucLoopIndex]))
--		{
- 			return TRUE;
--		}
- 	}
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Destination Ip Address Not Matched");
- 	return false;
-@@ -99,9 +93,8 @@ static bool MatchTos(struct bcm_classifier_rule *pstClassifierRule, UCHAR ucType
- 		return TRUE;
-
- 	if (((pstClassifierRule->ucTosMask & ucTypeOfService) <= pstClassifierRule->ucTosHigh) && ((pstClassifierRule->ucTosMask & ucTypeOfService) >= pstClassifierRule->ucTosLow))
--	{
- 		return TRUE;
--	}
-+
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Type Of Service Not Matched");
- 	return false;
- }
-@@ -123,13 +116,10 @@ bool MatchProtocol(struct bcm_classifier_rule *pstClassifierRule, UCHAR ucProtoc
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
- 	if (0 == pstClassifierRule->ucProtocolLength)
- 		return TRUE;
--	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucProtocolLength; ucLoopIndex++)
--	{
-+	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucProtocolLength; ucLoopIndex++) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Protocol:0x%X Classification Protocol:0x%X", ucProtocol, pstClassifierRule->ucProtocol[ucLoopIndex]);
- 		if (pstClassifierRule->ucProtocol[ucLoopIndex] == ucProtocol)
--		{
- 			return TRUE;
--		}
- 	}
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Protocol Not Matched");
- 	return false;
-@@ -155,13 +145,10 @@ bool MatchSrcPort(struct bcm_classifier_rule *pstClassifierRule, USHORT ushSrcPo
-
- 	if (0 == pstClassifierRule->ucSrcPortRangeLength)
- 		return TRUE;
--	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucSrcPortRangeLength; ucLoopIndex++)
--	{
-+	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucSrcPortRangeLength; ucLoopIndex++) {
- 		if (ushSrcPort <= pstClassifierRule->usSrcPortRangeHi[ucLoopIndex] &&
- 			ushSrcPort >= pstClassifierRule->usSrcPortRangeLo[ucLoopIndex])
--		{
- 			return TRUE;
--		}
- 	}
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Src Port: %x Not Matched ", ushSrcPort);
- 	return false;
-@@ -186,15 +173,12 @@ bool MatchDestPort(struct bcm_classifier_rule *pstClassifierRule, USHORT ushDest
- 	if (0 == pstClassifierRule->ucDestPortRangeLength)
- 		return TRUE;
-
--	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucDestPortRangeLength; ucLoopIndex++)
--	{
-+	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucDestPortRangeLength; ucLoopIndex++) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Matching Port:0x%X   0x%X  0x%X", ushDestPort, pstClassifierRule->usDestPortRangeLo[ucLoopIndex], pstClassifierRule->usDestPortRangeHi[ucLoopIndex]);
-
- 		if (ushDestPort <= pstClassifierRule->usDestPortRangeHi[ucLoopIndex] &&
- 			ushDestPort >= pstClassifierRule->usDestPortRangeLo[ucLoopIndex])
--		{
- 			return TRUE;
--		}
- 	}
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Dest Port: %x Not Matched", ushDestPort);
- 	return false;
-@@ -273,21 +257,13 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
- 		bClassificationSucceed = TRUE;
- 	} while (0);
-
--	if (TRUE == bClassificationSucceed)
--	{
-+	if (TRUE == bClassificationSucceed) {
- 		INT iMatchedSFQueueIndex = 0;
- 		iMatchedSFQueueIndex = SearchSfid(Adapter, pstClassifierRule->ulSFID);
- 		if (iMatchedSFQueueIndex >= NO_OF_QUEUES)
--		{
- 			bClassificationSucceed = false;
--		}
--		else
--		{
--			if (false == Adapter->PackInfo[iMatchedSFQueueIndex].bActive)
--			{
--				bClassificationSucceed = false;
--			}
--		}
-+		else if (false == Adapter->PackInfo[iMatchedSFQueueIndex].bActive)
-+			bClassificationSucceed = false;
- 	}
-
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "IpVersion4 <==========");
-@@ -299,8 +275,7 @@ VOID PruneQueueAllSF(struct bcm_mini_adapter *Adapter)
- {
- 	UINT iIndex = 0;
-
--	for (iIndex = 0; iIndex < HiPriority; iIndex++)
--	{
-+	for (iIndex = 0; iIndex < HiPriority; iIndex++) {
- 		if (!Adapter->PackInfo[iIndex].bValid)
- 			continue;
-
-@@ -334,10 +309,10 @@ static VOID PruneQueue(struct bcm_mini_adapter *Adapter, INT iIndex)
-
- 	spin_lock_bh(&Adapter->PackInfo[iIndex].SFQueueLock);
-
--	while (1)
-+	while (1) {
- //	while((UINT)Adapter->PackInfo[iIndex].uiCurrentPacketsOnHost >
--//		SF_MAX_ALLOWED_PACKETS_TO_BACKUP)
--	{
-+//		SF_MAX_ALLOWED_PACKETS_TO_BACKUP) {
-+
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, PRUNE_QUEUE, DBG_LVL_ALL, "uiCurrentBytesOnHost:%x uiMaxBucketSize :%x",
- 		Adapter->PackInfo[iIndex].uiCurrentBytesOnHost,
- 		Adapter->PackInfo[iIndex].uiMaxBucketSize);
-@@ -350,8 +325,7 @@ static VOID PruneQueue(struct bcm_mini_adapter *Adapter, INT iIndex)
- 			((1000*(jiffies - *((B_UINT32 *)(PacketToDrop->cb)+SKB_CB_LATENCY_OFFSET))/HZ) <= Adapter->PackInfo[iIndex].uiMaxLatency))
- 			break;
-
--		if (PacketToDrop)
--		{
-+		if (PacketToDrop) {
- 			if (netif_msg_tx_err(Adapter))
- 				pr_info(PFX "%s: tx queue %d overlimit\n",
- 					Adapter->dev->name, iIndex);
-@@ -394,20 +368,16 @@ VOID flush_all_queues(struct bcm_mini_adapter *Adapter)
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, DUMP_INFO, DBG_LVL_ALL, "=====>");
-
- //	down(&Adapter->data_packet_queue_lock);
--	for (iQIndex = LowPriority; iQIndex < HiPriority; iQIndex++)
--	{
-+	for (iQIndex = LowPriority; iQIndex < HiPriority; iQIndex++) {
- 		struct net_device_stats *netstats = &Adapter->dev->stats;
-
- 		spin_lock_bh(&Adapter->PackInfo[iQIndex].SFQueueLock);
--		while (Adapter->PackInfo[iQIndex].FirstTxQueue)
--		{
-+		while (Adapter->PackInfo[iQIndex].FirstTxQueue) {
- 			PacketToDrop = Adapter->PackInfo[iQIndex].FirstTxQueue;
--			if (PacketToDrop)
--			{
-+			if (PacketToDrop) {
- 				uiTotalPacketLength = PacketToDrop->len;
- 				netstats->tx_dropped++;
--			}
--			else
-+			} else
- 				uiTotalPacketLength = 0;
-
- 			DEQUEUEPACKET(Adapter->PackInfo[iQIndex].FirstTxQueue,
-@@ -455,58 +425,42 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 	*((UINT32*) (skb->cb) +SKB_CB_TCPACK_OFFSET) = 0;
- 	EThCSGetPktInfo(Adapter, pvEThPayload, &stEthCsPktInfo);
-
--	switch (stEthCsPktInfo.eNwpktEthFrameType)
--	{
-+	switch (stEthCsPktInfo.eNwpktEthFrameType) {
- 		case eEth802LLCFrame:
--		{
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "ClassifyPacket : 802LLCFrame\n");
- 			pIpHeader = pvEThPayload + sizeof(struct bcm_eth_llc_frame);
- 			break;
--		}
--
- 		case eEth802LLCSNAPFrame:
--		{
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "ClassifyPacket : 802LLC SNAP Frame\n");
- 			pIpHeader = pvEThPayload + sizeof(struct bcm_eth_llc_snap_frame);
- 			break;
--		}
- 		case eEth802QVLANFrame:
--		{
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "ClassifyPacket : 802.1Q VLANFrame\n");
- 			pIpHeader = pvEThPayload + sizeof(struct bcm_eth_q_frame);
- 			break;
--		}
- 		case eEthOtherFrame:
--		{
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "ClassifyPacket : ETH Other Frame\n");
- 			pIpHeader = pvEThPayload + sizeof(struct bcm_ethernet2_frame);
- 			break;
--		}
- 		default:
--		{
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "ClassifyPacket : Unrecognized ETH Frame\n");
- 			pIpHeader = pvEThPayload + sizeof(struct bcm_ethernet2_frame);
- 			break;
--		}
- 	}
-
--	if (stEthCsPktInfo.eNwpktIPFrameType == eIPv4Packet)
--	{
-+	if (stEthCsPktInfo.eNwpktIPFrameType == eIPv4Packet) {
- 		usCurrFragment = (ntohs(pIpHeader->frag_off) & IP_OFFSET);
- 		if ((ntohs(pIpHeader->frag_off) & IP_MF) || usCurrFragment)
- 			bFragmentedPkt = TRUE;
-
--		if (bFragmentedPkt)
--		{
-+		if (bFragmentedPkt) {
- 				//Fragmented  Packet. Get Frag Classifier Entry.
- 			pstClassifierRule = GetFragIPClsEntry(Adapter, pIpHeader->id, pIpHeader->saddr);
--			if (pstClassifierRule)
--			{
-+			if (pstClassifierRule) {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "It is next Fragmented pkt");
- 					bClassificationSucceed = TRUE;
- 			}
--			if (!(ntohs(pIpHeader->frag_off) & IP_MF))
--			{
-+			if (!(ntohs(pIpHeader->frag_off) & IP_MF)) {
- 				//Fragmented Last packet . Remove Frag Classifier Entry
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "This is the last fragmented Pkt");
- 				DelFragIPClsEntry(Adapter, pIpHeader->id, pIpHeader->saddr);
-@@ -514,23 +468,19 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 		}
- 	}
-
--	for (uiLoopIndex = MAX_CLASSIFIERS - 1; uiLoopIndex >= 0; uiLoopIndex--)
--	{
-+	for (uiLoopIndex = MAX_CLASSIFIERS - 1; uiLoopIndex >= 0; uiLoopIndex--) {
- 		if (bClassificationSucceed)
- 			break;
- 		//Iterate through all classifiers which are already in order of priority
- 		//to classify the packet until match found
--		do
--		{
--			if (false == Adapter->astClassifierTable[uiLoopIndex].bUsed)
--			{
-+		do {
-+			if (false == Adapter->astClassifierTable[uiLoopIndex].bUsed) {
- 				bClassificationSucceed = false;
- 				break;
- 			}
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "Adapter->PackInfo[%d].bvalid=True\n", uiLoopIndex);
-
--			if (0 == Adapter->astClassifierTable[uiLoopIndex].ucDirection)
--			{
-+			if (0 == Adapter->astClassifierTable[uiLoopIndex].ucDirection) {
- 				bClassificationSucceed = false;//cannot be processed for classification.
- 				break;						// it is a down link connection
- 			}
-@@ -543,11 +493,9 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 				break;
- 			}
-
--			if (Adapter->PackInfo[uiSfIndex].bEthCSSupport)
--			{
-+			if (Adapter->PackInfo[uiSfIndex].bEthCSSupport) {
-
--				if (eEthUnsupportedFrame == stEthCsPktInfo.eNwpktEthFrameType)
--				{
-+				if (eEthUnsupportedFrame == stEthCsPktInfo.eNwpktEthFrameType) {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, " ClassifyPacket : Packet Not a Valid Supported Ethernet Frame\n");
- 					bClassificationSucceed = false;
- 					break;
-@@ -558,17 +506,12 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "Performing ETH CS Classification on Classifier Rule ID : %x Service Flow ID : %lx\n", pstClassifierRule->uiClassifierRuleIndex, Adapter->PackInfo[uiSfIndex].ulSFID);
- 				bClassificationSucceed = EThCSClassifyPkt(Adapter, skb, &stEthCsPktInfo, pstClassifierRule, Adapter->PackInfo[uiSfIndex].bEthCSSupport);
-
--				if (!bClassificationSucceed)
--				{
-+				if (!bClassificationSucceed) {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "ClassifyPacket : Ethernet CS Classification Failed\n");
- 					break;
- 				}
--			}
--
--			else // No ETH Supported on this SF
--			{
--				if (eEthOtherFrame != stEthCsPktInfo.eNwpktEthFrameType)
--				{
-+			} else {	// No ETH Supported on this SF
-+				if (eEthOtherFrame != stEthCsPktInfo.eNwpktEthFrameType) {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, " ClassifyPacket : Packet Not a 802.3 Ethernet Frame... hence not allowed over non-ETH CS SF\n");
- 					bClassificationSucceed = false;
- 					break;
-@@ -577,11 +520,9 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
-
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "Proceeding to IP CS Clasification");
-
--			if (Adapter->PackInfo[uiSfIndex].bIPCSSupport)
--			{
-+			if (Adapter->PackInfo[uiSfIndex].bIPCSSupport) {
-
--				if (stEthCsPktInfo.eNwpktIPFrameType == eNonIPPacket)
--				{
-+				if (stEthCsPktInfo.eNwpktIPFrameType == eNonIPPacket) {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, " ClassifyPacket : Packet is Not an IP Packet\n");
- 					bClassificationSucceed = false;
- 					break;
-@@ -598,31 +539,26 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 		} while (0);
- 	}
-
--	if (bClassificationSucceed == TRUE)
--	{
-+	if (bClassificationSucceed == TRUE) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "CF id : %d, SF ID is =%lu", pstClassifierRule->uiClassifierRuleIndex, pstClassifierRule->ulSFID);
-
- 		//Store The matched Classifier in SKB
- 		*((UINT32*)(skb->cb)+SKB_CB_CLASSIFICATION_OFFSET) = pstClassifierRule->uiClassifierRuleIndex;
--		if ((TCP == pIpHeader->protocol) && !bFragmentedPkt && (ETH_AND_IP_HEADER_LEN + TCP_HEADER_LEN <= skb->len))
--		{
-+		if ((TCP == pIpHeader->protocol) && !bFragmentedPkt && (ETH_AND_IP_HEADER_LEN + TCP_HEADER_LEN <= skb->len)) {
- 			 IpHeaderLength   = pIpHeader->ihl;
- 			 pTcpHeader = (struct bcm_tcp_header *)(((PUCHAR)pIpHeader)+(IpHeaderLength*4));
- 			 TcpHeaderLength  = GET_TCP_HEADER_LEN(pTcpHeader->HeaderLength);
-
- 			if ((pTcpHeader->ucFlags & TCP_ACK) &&
- 			   (ntohs(pIpHeader->tot_len) == (IpHeaderLength*4)+(TcpHeaderLength*4)))
--			{
- 				*((UINT32*) (skb->cb) + SKB_CB_TCPACK_OFFSET) = TCP_ACK;
--			}
- 		}
-
- 		usIndex = SearchSfid(Adapter, pstClassifierRule->ulSFID);
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "index is	=%d", usIndex);
-
- 		//If this is the first fragment of a Fragmented pkt, add this CF. Only This CF should be used for all other fragment of this Pkt.
--		if (bFragmentedPkt && (usCurrFragment == 0))
--		{
-+		if (bFragmentedPkt && (usCurrFragment == 0)) {
- 			//First Fragment of Fragmented Packet. Create Frag CLS Entry
- 			struct bcm_fragmented_packet_info stFragPktInfo;
- 			stFragPktInfo.bUsed = TRUE;
-@@ -649,8 +585,7 @@ static bool EthCSMatchSrcMACAddress(struct bcm_classifier_rule *pstClassifierRul
- 	if (pstClassifierRule->ucEthCSSrcMACLen == 0)
- 		return TRUE;
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s\n", __FUNCTION__);
--	for (i = 0; i < MAC_ADDRESS_SIZE; i++)
--	{
-+	for (i = 0; i < MAC_ADDRESS_SIZE; i++) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "SRC MAC[%x] = %x ClassifierRuleSrcMAC = %x Mask : %x\n", i, Mac[i], pstClassifierRule->au8EThCSSrcMAC[i], pstClassifierRule->au8EThCSSrcMACMask[i]);
- 		if ((pstClassifierRule->au8EThCSSrcMAC[i] & pstClassifierRule->au8EThCSSrcMACMask[i]) !=
- 			(Mac[i] & pstClassifierRule->au8EThCSSrcMACMask[i]))
-@@ -666,8 +601,7 @@ static bool EthCSMatchDestMACAddress(struct bcm_classifier_rule *pstClassifierRu
- 	if (pstClassifierRule->ucEthCSDestMACLen == 0)
- 		return TRUE;
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "%s\n", __FUNCTION__);
--	for (i = 0; i < MAC_ADDRESS_SIZE; i++)
--	{
-+	for (i = 0; i < MAC_ADDRESS_SIZE; i++) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "SRC MAC[%x] = %x ClassifierRuleSrcMAC = %x Mask : %x\n", i, Mac[i], pstClassifierRule->au8EThCSDestMAC[i], pstClassifierRule->au8EThCSDestMACMask[i]);
- 		if ((pstClassifierRule->au8EThCSDestMAC[i] & pstClassifierRule->au8EThCSDestMACMask[i]) !=
- 			(Mac[i] & pstClassifierRule->au8EThCSDestMACMask[i]))
-@@ -684,8 +618,7 @@ static bool EthCSMatchEThTypeSAP(struct bcm_classifier_rule *pstClassifierRule,
- 		return TRUE;
-
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s SrcEtherType:%x CLS EtherType[0]:%x\n", __FUNCTION__, pstEthCsPktInfo->usEtherType, pstClassifierRule->au8EthCSEtherType[0]);
--	if (pstClassifierRule->au8EthCSEtherType[0] == 1)
--	{
-+	if (pstClassifierRule->au8EthCSEtherType[0] == 1) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s  CLS EtherType[1]:%x EtherType[2]:%x\n", __FUNCTION__, pstClassifierRule->au8EthCSEtherType[1], pstClassifierRule->au8EthCSEtherType[2]);
-
- 		if (memcmp(&pstEthCsPktInfo->usEtherType, &pstClassifierRule->au8EthCSEtherType[1], 2) == 0)
-@@ -694,8 +627,7 @@ static bool EthCSMatchEThTypeSAP(struct bcm_classifier_rule *pstClassifierRule,
- 			return false;
- 	}
-
--	if (pstClassifierRule->au8EthCSEtherType[0] == 2)
--	{
-+	if (pstClassifierRule->au8EthCSEtherType[0] == 2) {
- 		if (eEth802LLCFrame != pstEthCsPktInfo->eNwpktEthFrameType)
- 			return false;
-
-@@ -721,8 +653,7 @@ static bool EthCSMatchVLANRules(struct bcm_classifier_rule *pstClassifierRule, s
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s  CLS UserPrio:%x CLS VLANID:%x\n", __FUNCTION__, ntohs(*((USHORT *)pstClassifierRule->usUserPriority)), pstClassifierRule->usVLANID);
-
- 	/* In case FW didn't receive the TLV, the priority field should be ignored */
--	if (pstClassifierRule->usValidityBitMap & (1<<PKT_CLASSIFICATION_USER_PRIORITY_VALID))
--	{
-+	if (pstClassifierRule->usValidityBitMap & (1<<PKT_CLASSIFICATION_USER_PRIORITY_VALID)) {
- 		if (pstEthCsPktInfo->eNwpktEthFrameType != eEth802QVLANFrame)
- 				return false;
-
-@@ -739,8 +670,7 @@ static bool EthCSMatchVLANRules(struct bcm_classifier_rule *pstClassifierRule, s
-
- 	bClassificationSucceed = false;
-
--	if (pstClassifierRule->usValidityBitMap & (1<<PKT_CLASSIFICATION_VLANID_VALID))
--	{
-+	if (pstClassifierRule->usValidityBitMap & (1<<PKT_CLASSIFICATION_VLANID_VALID)) {
- 		if (pstEthCsPktInfo->eNwpktEthFrameType != eEth802QVLANFrame)
- 				return false;
-
-@@ -800,32 +730,24 @@ static void EThCSGetPktInfo(struct bcm_mini_adapter *Adapter, PVOID pvEthPayload
- 	USHORT u16Etype = ntohs(((struct bcm_eth_header *)pvEthPayload)->u16Etype);
-
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "EthCSGetPktInfo : Eth Hdr Type : %X\n", u16Etype);
--	if (u16Etype > 0x5dc)
--	{
-+	if (u16Etype > 0x5dc) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "EthCSGetPktInfo : ETH2 Frame\n");
- 		//ETH2 Frame
--		if (u16Etype == ETHERNET_FRAMETYPE_802QVLAN)
--		{
-+		if (u16Etype == ETHERNET_FRAMETYPE_802QVLAN) {
- 			//802.1Q VLAN Header
- 			pstEthCsPktInfo->eNwpktEthFrameType = eEth802QVLANFrame;
- 			u16Etype = ((struct bcm_eth_q_frame *)pvEthPayload)->EthType;
- 			//((ETH_CS_802_Q_FRAME*)pvEthPayload)->UserPriority
--		}
--		else
--		{
-+		} else {
- 			pstEthCsPktInfo->eNwpktEthFrameType = eEthOtherFrame;
- 			u16Etype = ntohs(u16Etype);
- 		}
--
--	}
--	else
--	{
-+	} else {
- 		//802.2 LLC
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "802.2 LLC Frame\n");
- 		pstEthCsPktInfo->eNwpktEthFrameType = eEth802LLCFrame;
- 		pstEthCsPktInfo->ucDSAP = ((struct bcm_eth_llc_frame *)pvEthPayload)->DSAP;
--		if (pstEthCsPktInfo->ucDSAP == 0xAA && ((struct bcm_eth_llc_frame *)pvEthPayload)->SSAP == 0xAA)
--		{
-+		if (pstEthCsPktInfo->ucDSAP == 0xAA && ((struct bcm_eth_llc_frame *)pvEthPayload)->SSAP == 0xAA) {
- 			//SNAP Frame
- 			pstEthCsPktInfo->eNwpktEthFrameType = eEth802LLCSNAPFrame;
- 			u16Etype = ((struct bcm_eth_llc_snap_frame *)pvEthPayload)->usEtherType;
---
-1.9.1
-
+								Honza
+> ---
+>  fs/Kconfig         | 21 ++++++++++++++-------
+>  fs/Makefile        |  2 +-
+>  fs/ext2/Kconfig    | 11 -----------
+>  fs/ext2/ext2.h     |  2 +-
+>  fs/ext2/file.c     |  4 ++--
+>  fs/ext2/super.c    |  4 ++--
+>  include/linux/fs.h |  4 ++--
+>  7 files changed, 22 insertions(+), 26 deletions(-)
+> 
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index 7385e54..620ab73 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -13,13 +13,6 @@ if BLOCK
+>  source "fs/ext2/Kconfig"
+>  source "fs/ext3/Kconfig"
+>  source "fs/ext4/Kconfig"
+> -
+> -config FS_XIP
+> -# execute in place
+> -	bool
+> -	depends on EXT2_FS_XIP
+> -	default y
+> -
+>  source "fs/jbd/Kconfig"
+>  source "fs/jbd2/Kconfig"
+>  
+> @@ -40,6 +33,20 @@ source "fs/ocfs2/Kconfig"
+>  source "fs/btrfs/Kconfig"
+>  source "fs/nilfs2/Kconfig"
+>  
+> +config FS_DAX
+> +	bool "Direct Access support"
+> +	depends on MMU
+> +	help
+> +	  Direct Access (DAX) can be used on memory-backed block devices.
+> +	  If the block device supports DAX and the filesystem supports DAX,
+> +	  then you can avoid using the pagecache to buffer I/Os.  Turning
+> +	  on this option will compile in support for DAX; you will need to
+> +	  mount the filesystem using the -o xip option.
+> +
+> +	  If you do not have a block device that is capable of using this,
+> +	  or if unsure, say N.  Saying Y will increase the size of the kernel
+> +	  by about 2kB.
+> +
+>  endif # BLOCK
+>  
+>  # Posix ACL utility routines
+> diff --git a/fs/Makefile b/fs/Makefile
+> index 2f194cd..b7e0a13 100644
+> --- a/fs/Makefile
+> +++ b/fs/Makefile
+> @@ -29,7 +29,7 @@ obj-$(CONFIG_SIGNALFD)		+= signalfd.o
+>  obj-$(CONFIG_TIMERFD)		+= timerfd.o
+>  obj-$(CONFIG_EVENTFD)		+= eventfd.o
+>  obj-$(CONFIG_AIO)               += aio.o
+> -obj-$(CONFIG_FS_XIP)		+= dax.o
+> +obj-$(CONFIG_FS_DAX)		+= dax.o
+>  obj-$(CONFIG_FILE_LOCKING)      += locks.o
+>  obj-$(CONFIG_COMPAT)		+= compat.o compat_ioctl.o
+>  obj-$(CONFIG_BINFMT_AOUT)	+= binfmt_aout.o
+> diff --git a/fs/ext2/Kconfig b/fs/ext2/Kconfig
+> index 14a6780..c634874e 100644
+> --- a/fs/ext2/Kconfig
+> +++ b/fs/ext2/Kconfig
+> @@ -42,14 +42,3 @@ config EXT2_FS_SECURITY
+>  
+>  	  If you are not using a security module that requires using
+>  	  extended attributes for file security labels, say N.
+> -
+> -config EXT2_FS_XIP
+> -	bool "Ext2 execute in place support"
+> -	depends on EXT2_FS && MMU
+> -	help
+> -	  Execute in place can be used on memory-backed block devices. If you
+> -	  enable this option, you can select to mount block devices which are
+> -	  capable of this feature without using the page cache.
+> -
+> -	  If you do not use a block device that is capable of using this,
+> -	  or if unsure, say N.
+> diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+> index 5ecf570..b30c3bd 100644
+> --- a/fs/ext2/ext2.h
+> +++ b/fs/ext2/ext2.h
+> @@ -380,7 +380,7 @@ struct ext2_inode {
+>  #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
+>  #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
+>  #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
+> -#ifdef CONFIG_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  #define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
+>  #else
+>  #define EXT2_MOUNT_XIP			0
+> diff --git a/fs/ext2/file.c b/fs/ext2/file.c
+> index e3ce10d..ae7f000 100644
+> --- a/fs/ext2/file.c
+> +++ b/fs/ext2/file.c
+> @@ -25,7 +25,7 @@
+>  #include "xattr.h"
+>  #include "acl.h"
+>  
+> -#ifdef CONFIG_EXT2_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  static int ext2_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  {
+>  	return dax_fault(vma, vmf, ext2_get_block);
+> @@ -109,7 +109,7 @@ const struct file_operations ext2_file_operations = {
+>  	.splice_write	= generic_file_splice_write,
+>  };
+>  
+> -#ifdef CONFIG_EXT2_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  const struct file_operations ext2_xip_file_operations = {
+>  	.llseek		= generic_file_llseek,
+>  	.read		= do_sync_read,
+> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+> index 752ccb4..fdcacf7 100644
+> --- a/fs/ext2/super.c
+> +++ b/fs/ext2/super.c
+> @@ -287,7 +287,7 @@ static int ext2_show_options(struct seq_file *seq, struct dentry *root)
+>  		seq_puts(seq, ",grpquota");
+>  #endif
+>  
+> -#if defined(CONFIG_EXT2_FS_XIP)
+> +#ifdef CONFIG_FS_DAX
+>  	if (sbi->s_mount_opt & EXT2_MOUNT_XIP)
+>  		seq_puts(seq, ",xip");
+>  #endif
+> @@ -549,7 +549,7 @@ static int parse_options(char *options, struct super_block *sb)
+>  			break;
+>  #endif
+>  		case Opt_xip:
+> -#ifdef CONFIG_EXT2_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  			set_opt (sbi->s_mount_opt, XIP);
+>  #else
+>  			ext2_msg(sb, KERN_INFO, "xip option not supported");
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index aeab3fda..bff394d 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1681,7 +1681,7 @@ struct super_operations {
+>  #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
+>  #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
+>  #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
+> -#ifdef CONFIG_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  #define IS_DAX(inode)		((inode)->i_flags & S_DAX)
+>  #else
+>  #define IS_DAX(inode)		0
+> @@ -2519,7 +2519,7 @@ extern loff_t fixed_size_llseek(struct file *file, loff_t offset,
+>  extern int generic_file_open(struct inode * inode, struct file * filp);
+>  extern int nonseekable_open(struct inode * inode, struct file * filp);
+>  
+> -#ifdef CONFIG_FS_XIP
+> +#ifdef CONFIG_FS_DAX
+>  int dax_clear_blocks(struct inode *, sector_t block, long size);
+>  int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+>  ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, const struct iovec *,
+> -- 
+> 1.9.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
