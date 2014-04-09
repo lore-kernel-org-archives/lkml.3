@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964912AbaDIQQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:16:44 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55680 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933344AbaDIQQm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:16:42 -0400
-Date: Wed, 9 Apr 2014 17:15:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, rth@twiddle.net,
-        ink@jurassic.park.msu.ru, mattst88@gmail.com, starvik@axis.com,
-        jesper.nilsson@axis.com, dhowells@redhat.com, tony.luck@intel.com,
-        fenghua.yu@intel.com, takata@linux-m32r.org, gerg@uclinux.org,
-        geert@linux-m68k.org, monstr@monstr.eu,
-        yasutake.koichi@jp.panasonic.com, cmetcalf@tilera.com,
-        gxt@mprc.pku.edu.cn, arnd@arndb.de
-Subject: Re: [RFC PATCH] Remove flush_icache_user_range()
-Message-ID: <20140409161554.GV16119@n2100.arm.linux.org.uk>
-References: <20140409100150.GO16119@n2100.arm.linux.org.uk> <20140409.120926.1586922018370125781.davem@davemloft.net>
+	id S934050AbaDIQUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:20:37 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46702 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933354AbaDIQUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 12:20:35 -0400
+Message-ID: <5345734C.1020905@linux.vnet.ibm.com>
+Date: Wed, 09 Apr 2014 11:20:28 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409.120926.1586922018370125781.davem@davemloft.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Dave Hansen <dave.hansen@intel.com>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index reflect
+ the start/end section number
+References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com> <533E0B0E.9020909@jp.fujitsu.com> <1396945659.3162.6.camel@ThinkPad-T5421.cn.ibm.com> <53442021.2060608@intel.com> <53443E8C.4070906@linux.vnet.ibm.com> <53445245.3020400@intel.com>
+In-Reply-To: <53445245.3020400@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040916-7182-0000-0000-00000A497C6A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 12:09:26PM -0400, David Miller wrote:
-> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Date: Wed, 9 Apr 2014 11:01:50 +0100
+On 04/08/2014 02:47 PM, Dave Hansen wrote:
+> On 04/08/2014 11:23 AM, Nathan Fontenot wrote:
+>> On 04/08/2014 11:13 AM, Dave Hansen wrote:
+>>> On 04/08/2014 01:27 AM, Li Zhong wrote:
+>>>> If Dave and others don't have further objections, it seems this small
+>>>> userspace incompatibility could be accepted by most of us, and I don't
+>>>> need to make a version 2. 
+>>>
+>>> Let me ask another question then.  What are the units of
+>>> phys_index/end_phys_index?  How do we expose those units to userspace?
+>>>
+>>
+>> The documentation for these files just states that the files contain
+>> the first and last section id of memory in the memory block for
+>> phys_index and end_phys_index respectively.
+>>
+>> I'm not sure the values have ever been units of anything, at least not
+>> that I remember.
 > 
-> > What has been proposed for uprobes is a uprobe specific function -
-> > flush_uprobe_xol_access() which is used after uprobes writes via the
-> > kmap_atomic() mapping of the page:
-> > 
-> > +       xol_page_kaddr = kmap_atomic(area->page);
-> > +
-> > +       /* Initialize the slot */
-> > +       memcpy(xol_page_kaddr + (xol_vaddr & ~PAGE_MASK),
-> > +              &uprobe->arch.ixol,
-> > +              sizeof(uprobe->arch.ixol));
-> > +
-> > +       arch_uprobe_flush_xol_access(area->page, xol_vaddr,
-> > +                                    xol_page_kaddr + (xol_vaddr & ~PAGE_MASK),
-> > +                                    sizeof(uprobe->arch.ixol));
-> > +
-> > +       kunmap_atomic(xol_page_kaddr);
-> > 
-> > Comments?
+> <sigh>
 > 
-> ptrace() accesses (via __access_remote_vm()) already use an existing
-> helper function for these sorts of situations, in the form of
-> copy_{to,from}_user_page().  I would suggest that uprobes uses that
-> as well.
+> There are two units.  SECTION_SIZE, which is completely internal to the
+> kernel, and block_size_bytes which used to be the same as SECTION_SIZE,
+> but is not now.  Which one of those two is phys_index/end_phys_index in,
+> and if it is in terms of SECTION_SIZE like this patch proposes, how do
+> we tell userspace how large SECTION_SIZE is?
+> 
+> block_size_bytes is supposed to tell you how large the sections are.  In
+> the case where we lumped a bunch of sections together, we also bumped up
+> block_size_bytes.  That's why we currently divide the *ACTUAL* section
+> number in phys_index/end_phys_index by block_size_bytes.
+> 
+> That document really needs to be updated to stop referring to sections
+> (at least in the descriptions of the user interface).  We can not change
+> the units of phys_index/end_phys_index without also changing
+> block_size_bytes.
+> 
 
-Yes, I agree with you.
+Re-reading the documentation. You're correct, it needs help.
 
-I made that suggestion too (because it's really the same problem)
-but uprobes people are concerned that it's too much of an overhead:
+-Nathan
 
-From: Oleg Nesterov <oleg@redhat.com>
-> On 04/08, Russell King - ARM Linux wrote:
-> > Well, isn't this code doing the same thing as ptrace?  It seems to want
-> > to modify a page in userspace of another process to change instructions
-> > that are going to be executed. That's what ptrace does, and ptrace
-> > already copes with all the issues there.
-> 
-> Yes, but it does get_user_pages(&vma) and thus it knows vma.
-> 
-> > Given that we've already solved that problem, wouldn't it be a good idea
-> > if the tracing code would stop trying to reinvent broken solutions to
-> > problems we have already solved?
-> 
-> But uprobes can't do this. Of course, I am not saying this is impossible,
-> but it would be nice to avoid mmap_sem/find_vma/etc.
-> 
-> Almost nobody (iirc only sparc?) actually uses this "vma" arguments. And  
-> at least the supported architectures do not (at least this is what I think
-> after the quick grep).
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
