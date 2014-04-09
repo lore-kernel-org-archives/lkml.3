@@ -1,138 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549AbaDIOw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:52:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932807AbaDIOw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:52:27 -0400
-Date: Wed, 9 Apr 2014 11:51:37 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@kernel.org, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 5/5] KVM: MMU: flush tlb out of mmu lock when
- write-protect the sptes
-Message-ID: <20140409145137.GA23449@amt.cnet>
-References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1394460109-3150-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S933593AbaDIOxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:53:37 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:49078 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908AbaDIOxf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 10:53:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394460109-3150-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Wed, 9 Apr 2014 22:53:13 +0800
+X-Google-Sender-Auth: 1hJ6hzkGHu7uxIvm32hzEUl7j30
+Message-ID: <CAGb2v66XCN2ar1wj+a1+ZwdcdJ3gzJ+nDiO9bu52OwK+mBB_Hg@mail.gmail.com>
+Subject: Re: [PATCH 00/15] ARM: sunxi: add A31 PL pins support
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 10:01:49PM +0800, Xiao Guangrong wrote:
-> Now we can flush all the TLBs out of the mmu lock without TLB corruption when
-> write-proect the sptes, it is because:
-> - we have marked large sptes readonly instead of dropping them that means we
->   just change the spte from writable to readonly so that we only need to care
->   the case of changing spte from present to present (changing the spte from
->   present to nonpresent will flush all the TLBs immediately), in other words,
->   the only case we need to care is mmu_spte_update()
-> 
-> - in mmu_spte_update(), we haved checked
->   SPTE_HOST_WRITEABLE | PTE_MMU_WRITEABLE instead of PT_WRITABLE_MASK, that
->   means it does not depend on PT_WRITABLE_MASK anymore
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c | 25 +++++++++++++++++++++----
->  arch/x86/kvm/mmu.h | 14 ++++++++++++++
->  arch/x86/kvm/x86.c | 12 ++++++++++--
->  3 files changed, 45 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 17bb136..01a8c35 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -4281,15 +4281,32 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
->  			if (*rmapp)
->  				__rmap_write_protect(kvm, rmapp, false);
->  
-> -			if (need_resched() || spin_needbreak(&kvm->mmu_lock)) {
-> -				kvm_flush_remote_tlbs(kvm);
-> +			if (need_resched() || spin_needbreak(&kvm->mmu_lock))
->  				cond_resched_lock(&kvm->mmu_lock);
-> -			}
->  		}
->  	}
->  
-> -	kvm_flush_remote_tlbs(kvm);
->  	spin_unlock(&kvm->mmu_lock);
-> +
-> +	/*
-> +	 * kvm_mmu_slot_remove_write_access() and kvm_vm_ioctl_get_dirty_log()
-> +	 * which do tlb flush out of mmu-lock should be serialized by
-> +	 * kvm->slots_lock otherwise tlb flush would be missed.
-> +	 */
-> +	lockdep_assert_held(&kvm->slots_lock);
-> +
-> +	/*
-> +	 * We can flush all the TLBs out of the mmu lock without TLB
-> +	 * corruption since we just change the spte from writable to
-> +	 * readonly so that we only need to care the case of changing
-> +	 * spte from present to present (changing the spte from present
-> +	 * to nonpresent will flush all the TLBs immediately), in other
-> +	 * words, the only case we care is mmu_spte_update() where we
-> +	 * haved checked SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE
-> +	 * instead of PT_WRITABLE_MASK, that means it does not depend
-> +	 * on PT_WRITABLE_MASK anymore.
-> +	 */
-> +	kvm_flush_remote_tlbs(kvm);
->  }
->  
->  #define BATCH_ZAP_PAGES	10
-> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-> index 2926152..585d6b1 100644
-> --- a/arch/x86/kvm/mmu.h
-> +++ b/arch/x86/kvm/mmu.h
-> @@ -96,6 +96,20 @@ static inline int is_present_gpte(unsigned long pte)
->  	return pte & PT_PRESENT_MASK;
->  }
->  
-> +/*
-> + * Please note PT_WRITABLE_MASK is not stable since
-> + * 1) fast_page_fault() sets spte from readonly to writable out of mmu-lock or
-> + * 2) kvm_mmu_slot_remove_write_access() and kvm_vm_ioctl_get_dirty_log()
-> + *    can write protect sptes but flush tlb out mmu-lock that means we may use
-> + *    the corrupt tlb entries which depend on this bit.
-> + *
-> + * Both cases do not modify the status of  spte_is_locklessly_modifiable() so
-> + * if you want to check whether the spte is writable on MMU you can check
-> + * SPTE_MMU_WRITEABLE instead. If you want to update spte without losing
-> + * A/D bits and tlb flush, you can check spte_is_locklessly_modifiable()
-> + * instead. See the comments in spte_has_volatile_bits() and
-> + * mmu_spte_update().
-> + */
->  static inline int is_writable_pte(unsigned long pte)
->  {
+Hi Boris,
 
-Xiao,
+On Wed, Apr 9, 2014 at 9:51 PM, Boris BREZILLON
+<boris.brezillon@free-electrons.com> wrote:
+> Hello,
+>
+> This series rework the sunxi pinctrl driver to support the PLx pins
+> available on the A31 SoC.
 
-Can't get the SPTE_MMU_WRITEABLE part.
+Thanks for working on this. I mentioned to Maxime on IRC yesterday that
+we have complete pinctrl drivers for both A31 and A23, based on our current
+pinctrl-sunxi driver, in the A23 SDK. These have the complete pin mapping.
 
-So assume you are writing code to perform some action after guest memory
-has been write protected. You would
+> It also add missing A31 reset controller DT bindings documentation.
+>
+> I need those PL pins (actually I only need PL0 and PL1) to support
+> the P2WI bus, which in turn is used to communicate with the AXP221
+> PMIC.
 
-spin_lock(mmu_lock);
+If you could, please add all the PL and PM pins.
+As I said, you can find complete definitions in the A23 SDK.
 
-if (writeable spte bit is set)
-    remove writeable spte bit from spte
-remote TLB flush            (*)
-action
+> Let me know if these changes are too intrusive.
 
-spin_unlock(mmu_lock);
+I wonder if we should do a separate driver for the new PIO controller.
+Clearly it's a separate IP block, with it's own clock and reset controls.
 
-(*) is necessary because reading the writeable spte bit as zero
-does not guarantee remote TLBs have been flushed.
+Allwinner sources list this block as "R_PIO". I suggest using this name.
+Clearly "pioL" does not cover all the functionality.
 
-Now what SPTE_MMU_WRITEABLE has to do with it ?
+I have started to document the PRCM block: http://linux-sunxi.org/PRCM
 
-Perhaps a recipe like that (or just the rules) would be useful.
+Last, please send the patches to the linux-sunxi mailing list as well.
+At the very least, Hans will see them and add them to sunxi-devel branch.
 
-The remaining patches look good.
 
+Cheers,
+ChenYu
+
+> Best Regards,
+>
+> Boris
+>
+> Boris BREZILLON (15):
+>   ARM: sunxi: dt: list all pinctrl compatible strings
+>   ARM: sunxi: dt: document pinctrl clock related properties
+>   ARM: sunxi: dt: add pinctrl clock-names properties
+>   pinctrl: sunxi: specify clk name when retrieving pinctrl pio clk
+>   clk: sunxi: add A31 APB0 clk gate defintions
+>   clk: sunxi: add A31 APB0 gates compatible string to the documentation
+>   ARM: sunxi: dt: define A31's APB0 clk gates node
+>   reset: sunxi: document sunxi's reset controllers bindings
+>   clk: sunxi: add A31 APB0 reset line defintions
+>   pinctrl: sunxi: add PL pin definitions
+>   pinctrl: sunxi: add support for A31 PL pins
+>   pinctrl: sunxi: retrieve and enable PL clk gate for A31 SoC
+>   pinctrl: sunxi: retrieve and enable PL reset line for A31 SoC
+>   pinctrl: sunxi: define A31 PL0/PL1 pins
+>   ARM: sunxi: dt: add support for A31's PL pins
+>
+>  Documentation/devicetree/bindings/clock/sunxi.txt  |   1 +
+>  .../bindings/pinctrl/allwinner,sunxi-pinctrl.txt   |  13 +-
+>  .../bindings/reset/allwinner,sunxi-clock-reset.txt |  21 +++
+>  arch/arm/boot/dts/sun4i-a10.dtsi                   |   1 +
+>  arch/arm/boot/dts/sun5i-a10s.dtsi                  |   1 +
+>  arch/arm/boot/dts/sun5i-a13.dtsi                   |   1 +
+>  arch/arm/boot/dts/sun6i-a31.dtsi                   |  25 ++-
+>  arch/arm/boot/dts/sun7i-a20.dtsi                   |   1 +
+>  drivers/clk/sunxi/clk-sunxi.c                      |   5 +
+>  drivers/pinctrl/pinctrl-sunxi-pins.h               |   8 +
+>  drivers/pinctrl/pinctrl-sunxi.c                    | 205 +++++++++++++++------
+>  drivers/pinctrl/pinctrl-sunxi.h                    |  39 +++-
+>  12 files changed, 264 insertions(+), 57 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/reset/allwinner,sunxi-clock-reset.txt
+>
+> --
+> 1.8.3.2
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
