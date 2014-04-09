@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985AbaDIKw0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:52:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55874 "EHLO
+	id S933045AbaDIKwr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 06:52:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55866 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482AbaDIKwW (ORCPT
+	with ESMTP id S932694AbaDIKwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:52:22 -0400
+	Wed, 9 Apr 2014 06:52:17 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <gregkh@linuxfoundation.org>, <grant.likely@secretlab.ca>
 CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/2] drivercore: deferral race condition fix
-Date: Wed, 9 Apr 2014 13:52:07 +0300
-Message-ID: <1397040727-2447-3-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 1/2] drivercore: dd: Move driver_deferred_probe_add/del function down in the code
+Date: Wed, 9 Apr 2014 13:52:06 +0300
+Message-ID: <1397040727-2447-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
@@ -23,129 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-when all modules loaded but some driver still stuck in the deferred list
-and there is a need for external event to kick the deferred queue to probe
-these drivers.
-
-The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-audio support built as modules and using nfsroot for root filesystem.
-
-The following log fragment shows such sequence when all audio modules
-were loaded but the sound card is not present since the machine driver has
-failed to probe due to missing dependency during it's probe.
-The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-machine driver:
-
-...
-[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-[   13.346755] davinci_mcasp_driver_init: LEAVE
-[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-[   13.592527] platform sound.3: really_probe: probe_count = 0
-
-In the log the machine driver enters it's probe at 12.719969 (this point it
-has been removed from the deferred lists). McASP driver already executing
-it's probing (since 12.615118).
-The machine driver tries to construct the sound card (12.950839) but did
-not found one of the components so it fails. After this McASP driver
-registers all the ASoC components (the machine driver still in it's probe
-function after it failed to construct the card) and the deferred work is
-prepared at 13.099026 (note that this time the machine driver is not in the
-lists so it is not going to be handled when the work is executing).
-Lastly the machine driver exit from it's probe and the core places it to
-the deferred list but there will be no other driver going to load and the
-deferred queue is not going to be kicked again - till we have external event
-like connecting USB stick, etc.
-
-The proposed solution is to try the deferred queue once more when the last
-driver is asking for deferring and we had drivers loaded while this last
-driver was probing.
-
-This way we can avoid drivers stuck in the deferred queue.
+Move both functions after driver_deferred_probe_trigger() in the source file
+since upcoming patch will need to call the _trigger from _add.
+Move also the _del so the functions will be kept together.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/base/dd.c | 31 ++++++++++++++++++++++++++++---
- 1 file changed, 28 insertions(+), 3 deletions(-)
+ drivers/base/dd.c | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 43d573b960ba..22252aebbd3e 100644
+index 06051767393f..43d573b960ba 100644
 --- a/drivers/base/dd.c
 +++ b/drivers/base/dd.c
-@@ -53,6 +53,10 @@ static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
+@@ -108,26 +108,6 @@ static void deferred_probe_work_func(struct work_struct *work)
+ }
+ static DECLARE_WORK(deferred_probe_work, deferred_probe_work_func);
  
-+static atomic_t probe_count = ATOMIC_INIT(0);
-+static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
-+static bool deferred_auto_retry;
+-static void driver_deferred_probe_add(struct device *dev)
+-{
+-	mutex_lock(&deferred_probe_mutex);
+-	if (list_empty(&dev->p->deferred_probe)) {
+-		dev_dbg(dev, "Added to deferred list\n");
+-		list_add_tail(&dev->p->deferred_probe, &deferred_probe_pending_list);
+-	}
+-	mutex_unlock(&deferred_probe_mutex);
+-}
+-
+-void driver_deferred_probe_del(struct device *dev)
+-{
+-	mutex_lock(&deferred_probe_mutex);
+-	if (!list_empty(&dev->p->deferred_probe)) {
+-		dev_dbg(dev, "Removed from deferred list\n");
+-		list_del_init(&dev->p->deferred_probe);
+-	}
+-	mutex_unlock(&deferred_probe_mutex);
+-}
+-
+ static bool driver_deferred_probe_enable = false;
+ /**
+  * driver_deferred_probe_trigger() - Kick off re-probing deferred devices
+@@ -158,6 +138,26 @@ static void driver_deferred_probe_trigger(void)
+ 	queue_work(deferred_wq, &deferred_probe_work);
+ }
+ 
++static void driver_deferred_probe_add(struct device *dev)
++{
++	mutex_lock(&deferred_probe_mutex);
++	if (list_empty(&dev->p->deferred_probe)) {
++		dev_dbg(dev, "Added to deferred list\n");
++		list_add_tail(&dev->p->deferred_probe, &deferred_probe_pending_list);
++	}
++	mutex_unlock(&deferred_probe_mutex);
++}
++
++void driver_deferred_probe_del(struct device *dev)
++{
++	mutex_lock(&deferred_probe_mutex);
++	if (!list_empty(&dev->p->deferred_probe)) {
++		dev_dbg(dev, "Removed from deferred list\n");
++		list_del_init(&dev->p->deferred_probe);
++	}
++	mutex_unlock(&deferred_probe_mutex);
++}
 +
  /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-  */
-@@ -127,6 +131,15 @@ static void driver_deferred_probe_trigger(void)
- 	 * into the active list so they can be retried by the workqueue
- 	 */
- 	mutex_lock(&deferred_probe_mutex);
-+	/*
-+	 * In case we have more than one device probing at the same time we do
-+	 * not yet know if the other driver going to be deferred or not.
-+	 * The flag 'deferred_auto_retry' will be used when the last driver asks
-+	 * for deferral to trigger again the deferred list to check if it's
-+	 * dependencies have been satisfied already.
-+	 */
-+	deferred_auto_retry = (atomic_read(&probe_count) > 1);
-+
- 	list_splice_tail_init(&deferred_probe_pending_list,
- 			      &deferred_probe_active_list);
- 	mutex_unlock(&deferred_probe_mutex);
-@@ -140,12 +153,27 @@ static void driver_deferred_probe_trigger(void)
- 
- static void driver_deferred_probe_add(struct device *dev)
- {
-+	bool auto_trigger = false;
-+
- 	mutex_lock(&deferred_probe_mutex);
- 	if (list_empty(&dev->p->deferred_probe)) {
- 		dev_dbg(dev, "Added to deferred list\n");
- 		list_add_tail(&dev->p->deferred_probe, &deferred_probe_pending_list);
- 	}
-+
-+	/*
-+	 * This is the last driver to load and asking to be deferred.
-+	 * If other driver(s) loaded while this driver was loading, we
-+	 * should try the deferred drivers (including this driver) again to
-+	 * avoid missing dependency for this driver.
-+	 */
-+	if (atomic_read(&probe_count) == 1 && deferred_auto_retry)
-+		auto_trigger = true;
-+
- 	mutex_unlock(&deferred_probe_mutex);
-+
-+	if (auto_trigger)
-+		driver_deferred_probe_trigger();
- }
- 
- void driver_deferred_probe_del(struct device *dev)
-@@ -259,9 +287,6 @@ int device_bind_driver(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(device_bind_driver);
- 
--static atomic_t probe_count = ATOMIC_INIT(0);
--static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
--
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
+  * deferred_probe_initcall() - Enable probing of deferred devices
+  *
 -- 
 1.9.1
 
