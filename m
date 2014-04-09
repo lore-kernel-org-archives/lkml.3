@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933992AbaDIQLh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:11:37 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:33204 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933858AbaDIQLc (ORCPT
+	id S934022AbaDIQLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:11:42 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:40268 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933858AbaDIQLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:11:32 -0400
+	Wed, 9 Apr 2014 12:11:38 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/5] sched: Convert thread_group_cputime() to use for_each_thread()
-Date: Wed,  9 Apr 2014 18:11:18 +0200
-Message-Id: <1397059882-23063-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/5] sched: Convert tasks iteration to use for_each_process_thread()
+Date: Wed,  9 Apr 2014 18:11:22 +0200
+Message-Id: <1397059882-23063-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
 References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
@@ -26,12 +26,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 do_each_thread/while_each_thread iterators are deprecated by
 for_each_thread/for_each_process_thread() APIs.
 
-Lets convert the callers in the cputime code accounting. The ultimate
+Lets convert the callers in the sched subsystem. The ultimate
 goal is to remove the struct task_struct::thread_group field and
 the corresponding do_each_thread/while_each_thread iterators that are
 RCU unsafe.
-
-It also makes thread_group_cputime() eventually RCU-safe.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -39,47 +37,62 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/sched/cputime.c | 13 ++++++-------
+ kernel/sched/core.c | 13 ++++++-------
  1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index a95097c..5d27848 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -281,11 +281,11 @@ static __always_inline bool steal_account_process_tick(void)
- 
- /*
-  * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
-- * tasks (sum on group iteration) belonging to @tsk's group.
-+ * tasks (sum on group iteration) belonging to @p's group.
-  */
--void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-+void thread_group_cputime(struct task_struct *p, struct task_cputime *times)
- {
--	struct signal_struct *sig = tsk->signal;
-+	struct signal_struct *sig = p->signal;
- 	cputime_t utime, stime;
- 	struct task_struct *t;
- 
-@@ -295,16 +295,15 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
- 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0ff3f34..82df639 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4389,7 +4389,7 @@ void show_state_filter(unsigned long state_filter)
+ 		"  task                        PC stack   pid father\n");
+ #endif
  	rcu_read_lock();
- 	/* make sure we can trust tsk->thread_group list */
--	if (!likely(pid_alive(tsk)))
-+	if (!likely(pid_alive(p)))
- 		goto out;
- 
--	t = tsk;
--	do {
-+	for_each_thread(p, t) {
- 		task_cputime(t, &utime, &stime);
- 		times->utime += utime;
- 		times->stime += stime;
- 		times->sum_exec_runtime += task_sched_runtime(t);
--	} while_each_thread(tsk, t);
+-	do_each_thread(g, p) {
++	for_each_process_thread(g, p) {
+ 		/*
+ 		 * reset the NMI-timeout, listing all files on a slow
+ 		 * console might take a lot of time:
+@@ -4397,8 +4397,7 @@ void show_state_filter(unsigned long state_filter)
+ 		touch_nmi_watchdog();
+ 		if (!state_filter || (p->state & state_filter))
+ 			sched_show_task(p);
+-	} while_each_thread(g, p);
+-
 +	}
- out:
- 	rcu_read_unlock();
+ 	touch_all_softlockup_watchdogs();
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+@@ -6997,7 +6996,7 @@ void normalize_rt_tasks(void)
+ 	struct rq *rq;
+ 
+ 	read_lock_irqsave(&tasklist_lock, flags);
+-	do_each_thread(g, p) {
++	for_each_process_thread(g, p) {
+ 		/*
+ 		 * Only normalize user tasks:
+ 		 */
+@@ -7028,7 +7027,7 @@ void normalize_rt_tasks(void)
+ 
+ 		__task_rq_unlock(rq);
+ 		raw_spin_unlock(&p->pi_lock);
+-	} while_each_thread(g, p);
++	}
+ 
+ 	read_unlock_irqrestore(&tasklist_lock, flags);
+ }
+@@ -7217,10 +7216,10 @@ static inline int tg_has_rt_tasks(struct task_group *tg)
+ {
+ 	struct task_struct *g, *p;
+ 
+-	do_each_thread(g, p) {
++	for_each_process_thread(g, p) {
+ 		if (rt_task(p) && task_rq(p)->rt.tg == tg)
+ 			return 1;
+-	} while_each_thread(g, p);
++	}
+ 
+ 	return 0;
  }
 -- 
 1.8.3.1
