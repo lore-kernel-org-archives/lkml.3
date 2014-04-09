@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167AbaDILQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:16:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39032 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801AbaDILQu (ORCPT
+	id S933174AbaDILRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:17:15 -0400
+Received: from prifuk.cz ([31.31.77.140]:52586 "EHLO devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932482AbaDILRO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:16:50 -0400
-Date: Wed, 9 Apr 2014 13:16:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Regression with wait_event_timeout in next-20140226
-Message-ID: <20140409111638.GS11096@twins.programming.kicks-ass.net>
-References: <530E17C7.1030504@free-electrons.com>
- <20140226165043.GA22802@laptop.programming.kicks-ass.net>
- <20140226142534.3b8c6eb1652d000206948ae0@linux-foundation.org>
+	Wed, 9 Apr 2014 07:17:14 -0400
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: dmitry.torokhov@gmail.com, jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Elias Vanderstuyft <elias.vds@gmail.com>
+Subject: [PATCH 05/24] Port max8997_haptic to ff-memless-next
+Date: Wed, 09 Apr 2014 13:17:10 +0200
+Message-ID: <3882714.y6Chz3cmQm@sigyn>
+User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
+In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
+References: <1609685.QRL9N9sQvX@sigyn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226142534.3b8c6eb1652d000206948ae0@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 02:25:34PM -0800, Andrew Morton wrote:
-> Is there anything we can do to make all this clearer?  Simply using a
-> distinctive variable name ("__wait_var__"?) in place of __ret (and
-> documenting it) would help a lot.
-> 
-> Some __ret's are long and some are int.  Maybe that's a glitch, maybe
-> it's because some __ret's are used for inter-macro communications and
-> some are not, which just makes things worse.
-> 
-> I started to do a patch, got all confused and gave up.  We've made
-> quite a tangly mess in there, alas.
+Port max8997_haptic to ff-memless-next
 
-Something like so?
-
+Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
-Subject: wait: Explain the shadowing and type inconsistencies
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed Apr  9 12:50:34 CEST 2014
+ drivers/input/misc/Kconfig          |  2 +-
+ drivers/input/misc/max8997_haptic.c | 25 +++++++++++++++++++------
+ 2 files changed, 20 insertions(+), 7 deletions(-)
 
-Stick in a comment before someone else tries to fix the sparse warning
-this generates.
-
-Requested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-o2ro6f3vkxklni0bc8f7m68s@git.kernel.org
----
- include/linux/wait.h |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
-
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -191,11 +191,23 @@ wait_queue_head_t *bit_waitqueue(void *,
- 	(!__builtin_constant_p(state) ||				\
- 		state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)	\
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 91dcae8..6ba327f 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -157,7 +157,7 @@ config INPUT_MAX8925_ONKEY
+ config INPUT_MAX8997_HAPTIC
+ 	tristate "MAXIM MAX8997 haptic controller support"
+ 	depends on PWM && HAVE_PWM && MFD_MAX8997
+-	select INPUT_FF_MEMLESS
++	select INPUT_FF_MEMLESS_NEXT
+ 	help
+ 	  This option enables device driver support for the haptic controller
+ 	  on MAXIM MAX8997 chip. This driver supports ff-memless interface
+diff --git a/drivers/input/misc/max8997_haptic.c b/drivers/input/misc/max8997_haptic.c
+index 1fea548..029ac8b 100644
+--- a/drivers/input/misc/max8997_haptic.c
++++ b/drivers/input/misc/max8997_haptic.c
+@@ -31,6 +31,7 @@
+ #include <linux/mfd/max8997-private.h>
+ #include <linux/mfd/max8997.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/input/ff-memless-next.h>
  
-+/*
-+ * The below macro ___wait_event() has an explicit shadow of the __ret
-+ * variable when used from the wait_event_*() macros.
-+ *
-+ * This is so that both can use the ___wait_cond_timeout() construct
-+ * to wrap the condition.
-+ *
-+ * The type inconsistency of the wait_event_*() __ret variable is also
-+ * on purpose; we use long where we can return timeout values and int
-+ * otherwise.
-+ */
+ /* Haptic configuration 2 register */
+ #define MAX8997_MOTOR_TYPE_SHIFT	7
+@@ -43,6 +44,8 @@
+ #define MAX8997_SIG_DUTY_SHIFT		2
+ #define MAX8997_PWM_DUTY_SHIFT		0
+ 
++#define FF_UPDATE_RATE 50
 +
- #define ___wait_event(wq, condition, state, exclusive, ret, cmd)	\
- ({									\
- 	__label__ __out;						\
- 	wait_queue_t __wait;						\
--	long __ret = ret;						\
-+	long __ret = ret;	/* explicit shadow */			\
- 									\
- 	INIT_LIST_HEAD(&__wait.task_list);				\
- 	if (exclusive)							\
+ struct max8997_haptic {
+ 	struct device *dev;
+ 	struct i2c_client *client;
+@@ -219,13 +222,23 @@ static void max8997_haptic_play_effect_work(struct work_struct *work)
+ }
+ 
+ static int max8997_haptic_play_effect(struct input_dev *dev, void *data,
+-				  struct ff_effect *effect)
++				  const struct mlnx_effect_command *command)
+ {
+ 	struct max8997_haptic *chip = input_get_drvdata(dev);
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 
+-	chip->level = effect->u.rumble.strong_magnitude;
+-	if (!chip->level)
+-		chip->level = effect->u.rumble.weak_magnitude;
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		chip->level = rumble_force->strong;
++		if (!chip->level)
++			chip->level = rumble_force->weak;
++		break;
++	case MLNX_STOP_RUMBLE:
++		chip->level = 0;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	schedule_work(&chip->work);
+ 
+@@ -319,8 +332,8 @@ static int max8997_haptic_probe(struct platform_device *pdev)
+ 	input_set_drvdata(input_dev, chip);
+ 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
+ 
+-	error = input_ff_create_memless(input_dev, NULL,
+-				max8997_haptic_play_effect);
++	error = input_ff_create_mlnx(input_dev, NULL,
++				max8997_haptic_play_effect, FF_UPDATE_RATE);
+ 	if (error) {
+ 		dev_err(&pdev->dev,
+ 			"unable to create FF device, error: %d\n",
+-- 
+1.9.1
+
+
