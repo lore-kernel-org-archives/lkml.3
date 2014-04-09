@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934332AbaDIUHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:07:42 -0400
-Received: from sam.nabble.com ([216.139.236.26]:38435 "EHLO sam.nabble.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933342AbaDIUHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:07:41 -0400
-Date: Wed, 9 Apr 2014 13:07:40 -0700 (PDT)
-From: Arun S L <aruns@nvidia.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1397074060904-837198.post@n7.nabble.com>
-In-Reply-To: <20140409155631.GP6518@sirena.org.uk>
-References: <1396656730-30145-1-git-send-email-aruns@nvidia.com> <20140409155631.GP6518@sirena.org.uk>
-Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
+	id S964940AbaDIUIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:08:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54382 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933342AbaDIUIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 16:08:38 -0400
+Date: Wed, 9 Apr 2014 22:08:36 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <minggr@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: current->sched_class->yield_task is NULL, any hint?
+Message-ID: <20140409200836.GE26782@laptop.programming.kicks-ass.net>
+References: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
+ <20140409194742.GC26782@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20140409194742.GC26782@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 09, 2014 at 09:47:42PM +0200, Peter Zijlstra wrote:
+> On Wed, Apr 09, 2014 at 10:43:32AM -0700, Lin Ming wrote:
+> > [12890.586996] [<c007a364>] (sys_sched_yield+0x0/0x90) from [<c03cbf90>] (yield+0x2c/0x30)
+> > [12890.594779]  r5:c18f4000 r4:00000000
+> > [12890.598258] [<c03cbf64>] (yield+0x0/0x30) from [<c02eb650>] (netlink_broadcast_filtered+0x3ec/0x400)
+> > [12890.607170] [<c02eb264>] (netlink_broadcast_filtered+0x0/0x400) from [<c02eb68c>] (netlink_broadcast+0x28/0x30)
+> > [12890.616998] [<c02eb664>] (netlink_broadcast+0x0/0x30) from [<c02ed420>] (msg_netlink_broadcast+0xa8/0xb4)
+> > [12890.626337] [<c02ed378>] (msg_netlink_broadcast+0x0/0xb4) from [<c039ad10>] (br_igmp_send_netlink_msg+0xb0/0xbc)
+> > [12890.636256] [<c039ac60>] (br_igmp_send_netlink_msg+0x0/0xbc) from [<c039b4a0>] (br_igmp_mc_fdb_add+0x424/0x6c0)
+> > [12890.646084] [<c039b07c>] (br_igmp_mc_fdb_add+0x0/0x6c0) from [<c039bd34>] (br_igmp_process_v3+0x4a8/0x518)
+> > [12890.655515] [<c039b88c>] (br_igmp_process_v3+0x0/0x518) from [<c039c110>] (br_igmp_snooping+0x36c/0x3e4)
+> > [12890.664762] [<c039bda4>] (br_igmp_snooping+0x0/0x3e4) from [<c039c204>] (br_igmp_mc_forward+0x7c/0x270)
+> > [12890.673918] [<c039c188>] (br_igmp_mc_forward+0x0/0x270) from [<c0393120>] (br_handle_frame_finish+0x160/0x358)
+> > [12890.683654] [<c0392fc0>] (br_handle_frame_finish+0x0/0x358) from [<c0398e7c>] (br_nf_pre_routing_finish+0x348/0x364)
+> > [12890.693940] [<c0398b34>] (br_nf_pre_routing_finish+0x0/0x364) from [<c03994c4>] (br_nf_pre_routing+0x5e0/0x630)
+> > [12890.703767]  r7:c2e5c000 r6:00000000 r5:d71899c0 r4:da6ed0d0
+> > [12890.709291] [<c0398ee4>] (br_nf_pre_routing+0x0/0x630) from [<c02eebf8>] (nf_iterate+0x68/0xa4)
+> > [12890.717746] [<c02eeb90>] (nf_iterate+0x0/0xa4) from [<c02eec9c>] (nf_hook_slow+0x68/0x124)
+> > [12890.725803] [<c02eec34>] (nf_hook_slow+0x0/0x124) from [<c03935ac>] (br_handle_frame+0x294/0x2e4)
+> > [12890.734471] [<c0393318>] (br_handle_frame+0x0/0x2e4) from [<c02c9eb0>] (__netif_receive_skb+0x3b0/0x514)
+> > [12890.743718] [<c02c9b00>] (__netif_receive_skb+0x0/0x514) from [<c02cabf0>] (netif_receive_skb+0xa8/0xbc)
+> > [12890.752966] [<c02cab48>] (netif_receive_skb+0x0/0xbc) from [<c02cd730>] (napi_skb_finish+0x34/0x50)
+> > [12890.761756]  r5:d71899c0 r4:00000003
+> > [12890.765235] [<c02cd6fc>] (napi_skb_finish+0x0/0x50) from [<c02cd848>] (napi_gro_receive+0xfc/0x100)
+> > [12890.774056]  r4:00000000 r3:00000000
+> > [12890.777566] [<c02cd74c>] (napi_gro_receive+0x0/0x100) from [<bf1a1618>] (nss_gmac_receive+0x48/0x4c [qca_nss_gmac])
+> > [12890.787759] [<bf1a15d0>] (nss_gmac_receive+0x0/0x4c [qca_nss_gmac]) from [<bf186e40>] (nss_core_handle_napi+0x440/0xa78 [qca_nss_drv])
+> > [12890.799510]  r5:d71899c0 r4:bf18e410
+> > [12890.802989] [<bf186a00>] (nss_core_handle_napi+0x0/0xa78 [qca_nss_drv]) from [<c02cade4>] (net_rx_action+0x84/0x174)
+> > [12890.813244] [<c02cad60>] (net_rx_action+0x0/0x174) from [<c005ad80>] (__do_softirq+0xbc/0x160)
+> > [12890.821637] [<c005acc4>] (__do_softirq+0x0/0x160) from [<c005b250>] (irq_exit+0x58/0xa4)
+> > [12890.829542] [<c005b1f8>] (irq_exit+0x0/0xa4) from [<c000ed60>] (handle_IRQ+0x8c/0xb8)
+> 
+> Look at that, its calling yield() from a non-preemptible context as
+> well.
+> 
+> That code is full of fail.
 
-On Fri, Apr 04, 2014 at 05:12:10PM -0700, Arun Shamanna Lakshmi wrote:
-> 1. Modify soc_enum struct to handle pointers for reg and mask
-> 2. Add dapm get and put APIs for multi register one hot encoded mux
-> 3. Update snd_soc_dapm_update struct to support multiple reg update
+*phew* none of that br_igmp_* muck lives in any kernel tree near me so I
+can stop worrying :-)
 
-> If you've got several changes like this it's probably a sign that the
-> change ought to be split into a patch series.
-
-> I'm still not seeing any handling of the issues with having invalid
-> configurations written to the device during the process of carrying out
-> multi register updates; I did raise this with one of the earlier
-> versions but don't recall any response.
-
-To handle the invalid configurations in case of a multi register update,
-the 'not selected registers' are cleared first and only then 'selected
-register'
-is set. This is ensured by initializing the snd_soc_dapm_update structure
-in the right order inside put_value_enum_onehot API.
-
-> I also think I agree with Takashi on this one - trying to implement this
-> without adding an abstraction for the control values is making the code
-> more complex than it needs to be, all the conditional paths for _ONEHOT
-> aren't pretty (and don't use switches which is the usual idiom for this
-> stuff if it's not indirected via functions).
-
-To summarize, I need to add get and put function pointers inside kcontrol
-structure and use them during dapm_connect_mux and
-dapm_set_mixer_path_status. Then, a separate soc_enum_onehot structure
-can be used along with the above patch.
-
-I can probably first submit a patch for adding abstraction to control values
-and then submit the change for soc_enum_onehot.
-
-Please correct me if my understanding is wrong. 
-
-
-
---
-View this message in context: http://linux-kernel.2935.n7.nabble.com/PATCH-ASoC-dapm-Add-support-for-multi-register-mux-tp835209p837198.html
-Sent from the Linux Kernel mailing list archive at Nabble.com.
+In any case, it wrongly passes a GFP_WAIT along to netlink_broadcast.
