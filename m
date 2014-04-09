@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934457AbaDIXK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 19:10:58 -0400
+	id S934389AbaDIXK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 19:10:56 -0400
 Received: from mga02.intel.com ([134.134.136.20]:32380 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932996AbaDIXK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 19:10:57 -0400
+	id S932996AbaDIXKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 19:10:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,829,1389772800"; 
-   d="scan'208";a="490329574"
-Message-ID: <5345D366.3040605@linux.intel.com>
-Date: Wed, 09 Apr 2014 16:10:30 -0700
+   d="scan'208";a="490329543"
+Message-ID: <5345D360.5000506@linux.intel.com>
+Date: Wed, 09 Apr 2014 16:10:24 -0700
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
@@ -32,53 +32,19 @@ On 04/09/2014 04:01 PM, Fengguang Wu wrote:
 > 
 >         qemu-system-x86_64 -cpu Haswell,+smep,+smap
 
-Is it a KVM problem or a Qemu bug?  It sounds more like a Qemu JIT bug.
+I'm really confused.  First of all, is this a KVM problem or is it a
+Qemu JIT problem?
+
+Either seems really wonky.  It is questionable at best whether or not
+Qemu in JIT mode should set the hypervisor bit IMO.  However, even so,
+you *better* not call VMCALL *just* because the hypervisor bit is set.
+
+The reason for it is that you have absolutely no idea what VMCALL is
+going to do on any one hypervisor... different hypervisors even use
+completely different conventions for VMCALL, and some might not accept
+VMCALL at all and might just terminate your guest with extreme prejudice.
+
+So what is actually going on here?
 
 	-hpa
-
-
-> On Thu, Apr 10, 2014 at 01:58:18AM +0800, Jet Chen wrote:
->> On 04/09/2014 10:44 PM, Romer, Benjamin M wrote:
->>> On Wed, 2014-04-09 at 02:38 +0800, Jet Chen wrote:
->>>
->>>> Hi Ben,
->>>>
->>>> I checked my <Intel 64 and IA-32 Architectures Software Developer's Manual> which published in Feb 2014.
->>>> Volume 2: Instruction Set Reference, A-Z: CPUID--CPU Identification
->>>>
->>>
->>> I agree completely, which is why I'm confused about KVM's behavior. If
->>> bit 31 was off, the code in our drivers that uses the vmcall instruction
->>> would not have been run, the kernel would not have tried to perform a
->>> vmcall, and not crashed with invalid op.
->>>
->>> If you look in the definition for the VMCALL instruction (Intel 64 and
->>> IA32 Architectures Software Developer's Manual, volume 3C pg.30-9)
->>> You'll see that a processor in VMX non-root operation should perform a
->>> vmexit.
->>>
->>>> Why this document not match what you said ? I am not experienced with VM, please correct me if I went for wrong document
->>>>
->>>
->>> According to VMWare's documentation (there is a page at
->>> http://kb.vmware.com./selfservice/microsites/search.do?cmd=displayKC&externalId=1009458 ) , as well as Microsoft's hypervisor spec (at http://www.microsoft.com/en-us/download/details.aspx?id=39289 ), this bit is used to indicate the CPU is running under virtualization. KVM is also setting this bit to indicate virtualization. I believe Xen uses it as well.
->>>
->>>
->>> My contention is, if KVM is going to set the ISVM bit, it needs to do a
->>> vmexit, and if it's not going to set the bit, then doing an invalid op
->>> is okay, but the current behavior is inconsistent.
->>>
->>> -- Ben
->>>
->>
->> Ben,
->>
->> Really thanks for your explanation.
->> Let me summary it up, please correct me where i am wrong. If it is really a KVM bug, we report it to KVM guys.
->> On a real CPU, ECX 31bit always be 0 as Intel documentation filed.
->> However, KVM, as a hypervisor, should emulate this bit of the virtual ECX register to 1 for guest OS to indicate it is running in a virtualization environment.
->> Problem is, KVM does set this bit to 1, but does an invalid op instead of emit a VMCALL. As a result, we get this dmesg error messages.
->>
->> Thanks,
->> -Jet
 
