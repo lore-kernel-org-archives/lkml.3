@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933574AbaDIOJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:09:16 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:57771 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932866AbaDIOJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:09:11 -0400
-X-IronPort-AV: E=Sophos;i="4.97,826,1389744000"; 
-   d="scan'208";a="119503109"
-Message-ID: <53455468.5040201@citrix.com>
-Date: Wed, 9 Apr 2014 15:08:40 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S933590AbaDIOKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:10:24 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:41898 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933279AbaDIOKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 10:10:20 -0400
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: <konrad.wilk@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <srostedt@redhat.com>
-Subject: Re: [PATCH] x86/xen: Fix 32-bit PV guests's usage of kernel_stack
-References: <1397052401-20220-1-git-send-email-boris.ostrovsky@oracle.com>
-In-Reply-To: <1397052401-20220-1-git-send-email-boris.ostrovsky@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+X-Originating-IP: [129.2.129.27]
+In-Reply-To: <1397027753-15444-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1397027753-15444-1-git-send-email-yamada.m@jp.panasonic.com>
+From: Peter Foley <pefoley2@pefoley.com>
+Date: Wed, 9 Apr 2014 10:09:59 -0400
+Message-ID: <CAOFdcFOSfx28OvPq_9k_GqAbrPNujdUFC7Tg4hpDY68twqUt1Q@mail.gmail.com>
+Subject: Re: [PATCH] x86: suppress "Nothing to be done for ..." messages
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/14 15:06, Boris Ostrovsky wrote:
-> Commit 198d208df4371734ac4728f69cb585c284d20a15 made 32-bit kernels use
-> kernel_stack to point to thread_info. That change missed a couple of
-> updates needed by Xen's PV guests:
+On Wed, Apr 9, 2014 at 3:15 AM, Masahiro Yamada
+<yamada.m@jp.panasonic.com> wrote:
+> When we compiled again, arch/x86/syscalls/Makefile and
+> arch/x86/tools/Makefile emitted "Nothing to be done for ..." messages.
+>
+> Here is the command log:
+>
+>   $ make defconfig
+>      [ snip ]
+>   $ make
+>      [ snip ]
+>   $ make
+>   make[1]: Nothing to be done for `all'.            <-----
+>   make[1]: Nothing to be done for `relocs'.         <-----
+>     CHK     include/config/kernel.release
+>     CHK     include/generated/uapi/linux/version.h
+>
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+> ---
+>  arch/x86/syscalls/Makefile | 1 +
+>  arch/x86/tools/Makefile    | 1 +
+>  2 files changed, 2 insertions(+)
+>
+> diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
+> index f325af2..b6c923a 100644
+> --- a/arch/x86/syscalls/Makefile
+> +++ b/arch/x86/syscalls/Makefile
+> @@ -56,3 +56,4 @@ targets       += $(uapisyshdr-y) $(syshdr-y)
+>
+>  all: $(addprefix $(uapi)/,$(uapisyshdr-y))
+>  all: $(addprefix $(out)/,$(syshdr-y))
+> +       @:
+> diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
+> index e812034..95e3ed7 100644
+> --- a/arch/x86/tools/Makefile
+> +++ b/arch/x86/tools/Makefile
+> @@ -41,3 +41,4 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+>  hostprogs-y    += relocs
+>  relocs-objs     := relocs_32.o relocs_64.o relocs_common.o
+>  relocs: $(obj)/relocs
+> +       @:
+> --
+> 1.8.3.2
+>
+> --
 
-Can you put the commit subject in addition to the hash?
+Acked-by: Peter Foley <pefoley2@pefoley.com>
 
-> 1. kernel_stack needs to be initialized for secondary CPUs
-> 2. GET_THREAD_INFO() now uses %fs register which may not be the kernel's
-> version when executing xen_iret()
-
-Otherwise,
-
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-
-David
+I've an identical patch lying around that I haven't gotten around to
+submitting yet.
