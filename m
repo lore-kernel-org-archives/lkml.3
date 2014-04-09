@@ -1,76 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933471AbaDIOpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 10:45:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33117 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932781AbaDIOpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 10:45:53 -0400
-Message-ID: <53455D20.1090804@free-electrons.com>
-Date: Wed, 09 Apr 2014 16:45:52 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S933483AbaDIOrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 10:47:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6823 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932807AbaDIOrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 10:47:11 -0400
+Date: Wed, 9 Apr 2014 16:47:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/6] uprobes/x86: Emulate unconditional
+	rip-relative jmp's
+Message-ID: <20140409144705.GA18486@redhat.com>
+References: <20140406201617.GA493@redhat.com> <1396989411.5056.16.camel@oc7886638347.ibm.com.usor.ibm.com>
 MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>
-CC: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 06/15] clk: sunxi: add A31 APB0 gates compatible string
- to the documentation
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com> <1397051478-4113-7-git-send-email-boris.brezillon@free-electrons.com> <CAGb2v645Yu_1ODQhVcQjjFf1M0uf3aHBfRw4F_uhoYk9RozcOA@mail.gmail.com>
-In-Reply-To: <CAGb2v645Yu_1ODQhVcQjjFf1M0uf3aHBfRw4F_uhoYk9RozcOA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396989411.5056.16.camel@oc7886638347.ibm.com.usor.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 09/04/2014 15:59, Chen-Yu Tsai wrote:
-> Hi,
+On 04/08, Jim Keniston wrote:
 >
-> On Wed, Apr 9, 2014 at 9:51 PM, Boris BREZILLON
-> <boris.brezillon@free-electrons.com> wrote:
->> Add the new "allwinner,sun6i-a31-apb0-gates-clk" compatible string to the
->> sunxi clock documentation.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> ---
->>  Documentation/devicetree/bindings/clock/sunxi.txt | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
->> index c2cb762..bc30387 100644
->> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
->> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
->> @@ -25,6 +25,7 @@ Required properties:
->>         "allwinner,sun4i-apb0-gates-clk" - for the APB0 gates on A10
->>         "allwinner,sun5i-a13-apb0-gates-clk" - for the APB0 gates on A13
->>         "allwinner,sun5i-a10s-apb0-gates-clk" - for the APB0 gates on A10s
->> +       "allwinner,sun6i-a31-apb0-gates-clk" - for the APB0 gates on A10s
->                                                                        ^^^^
-> Copy paste error here.
-
-Oops, it'll be fixed in the next version.
-
+> On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
+> > 0xeb and 0xe9. Anything else?
 >
->
-> ChenYu
->
->>         "allwinner,sun7i-a20-apb0-gates-clk" - for the APB0 gates on A20
->>         "allwinner,sun4i-apb1-clk" - for the APB1 clock
->>         "allwinner,sun4i-apb1-mux-clk" - for the APB1 clock muxing
+> For unconditional rip-relative jumps, yes, I'm pretty sure that's it.
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Great, thanks.
+
+> > --- a/arch/x86/include/asm/uprobes.h
+> > +++ b/arch/x86/include/asm/uprobes.h
+> > @@ -44,9 +44,15 @@ struct arch_uprobe {
+> >  	u16				fixups;
+> >  	const struct uprobe_xol_ops	*ops;
+> >
+> > +	union {
+> >  #ifdef CONFIG_X86_64
+> > -	unsigned long			rip_rela_target_address;
+> > +		unsigned long			rip_rela_target_address;
+> >  #endif
+> > +		struct {
+> > +			s32	disp;
+> > +			u8	ilen;
+> > +		}				ttt;
+>
+> Are you planning to stick with ttt as the name/prefix for all this
+> jump-emulation code?  Seems like you could come up with something more
+> descriptive without adding a lot of characters.
+
+Yes sure. How about s/ttt/branch/ ? I agree with any naming. I used
+"ttt" because it allows me to change the naming in one step.
+
+> > +static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+> > +{
+> > +
+> > +	switch (OPCODE1(insn)) {
+> > +	case 0xeb:	/* jmp 8 */
+> > +	case 0xe9:	/* jmp 32 */
+> > +		break;
+> > +	default:
+> > +		return -ENOSYS;
+>
+> -ENOSYS looks like an error return, as opposed to what it is, the normal
+> return when the probed instruction is something other than a jump.  This
+> gets more bewildering as you add patches and this switch grows and gets
+> more complicated.  Add a comment here?
+
+OK, I added a short comment above this function,
+
+	/* Returns -ENOSYS if ttt_xol_ops doesn't handle this insn */
+	static int ttt_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+	...
+
+> > +	/* has the side-effect of processing the entire instruction */
+> > +	insn_get_length(insn);
+> > +	if (WARN_ON_ONCE(!insn_complete(insn)))
+> > +		return -ENOEXEC;
+> > +
+> > +	auprobe->ttt.ilen = insn->length;
+> > +	auprobe->ttt.disp = insn->moffset1.value;
+> > +	/* so far we assume that it fits into ->moffset1 */
+> > +	if (WARN_ON_ONCE(insn->moffset2.nbytes))
+> > +		return -ENOEXEC;
+>
+> s/moffset1/immediate/ -- which you've already addressed.
+
+Yes, dons, and I removed the ->moffset2 check.
+
+> > @@ -483,6 +519,10 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+> >  	if (ret)
+> >  		return ret;
+> >
+> > +	ret = ttt_setup_xol_ops(auprobe, &insn);
+> > +	if (ret == 0 || ret != ENOSYS)
+>
+> This looks wrong in a couple of ways:
+> a. I think you intend to compare against -ENOSYS, not ENOSYS.
+
+OOPS! fixed.
+
+> b. Given the (ret != [-]ENOSYS) test, the  (ret == 0) test is
+> superfluous.
+
+I thought that the additional "ret == 0" (removed by gcc anyway) could
+help the code reader... But yes, you are right, probably it only adds
+more confusion.
+
+	-       if (ret == 0 || ret != ENOSYS)
+	+       if (ret != -ENOSYS)
+
+Thanks!
+
+Oleg.
 
