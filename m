@@ -1,136 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933822AbaDIPJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:09:00 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:45633 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933657AbaDIPHk (ORCPT
+	id S933831AbaDIPKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:10:00 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55578 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933538AbaDIPJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:07:40 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, john@johnmccutchan.com, rlove@rlove.org,
-        eparis@parisplace.org, serge.hallyn@ubuntu.com, lennart@poettering.net,
-        kay@vrfy.org, lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/3] kernfs: implement kernfs_root->supers list
-Date: Wed,  9 Apr 2014 11:07:30 -0400
-Message-Id: <1397056052-2829-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1397056052-2829-1-git-send-email-tj@kernel.org>
-References: <1397056052-2829-1-git-send-email-tj@kernel.org>
+	Wed, 9 Apr 2014 11:09:58 -0400
+Date: Wed, 9 Apr 2014 16:09:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Jonas Jensen <jonas.jensen@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ulli.kroll@googlemail.com, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH] ARM: reinsert ARCH_MULTI_V4 Kconfig option
+Message-ID: <20140409150923.GS16119@n2100.arm.linux.org.uk>
+References: <1386922149-4561-1-git-send-email-jonas.jensen@gmail.com> <20131213095655.GB4360@n2100.arm.linux.org.uk> <CACmBeS1d-EX5oPD8f7P-ufmF=MutdTO+LgG23Cb0=biR8yQPCg@mail.gmail.com> <20131213113903.GE4360@n2100.arm.linux.org.uk> <CACmBeS3kC4dsdOrfANifgu8oQhLauFKcXhEu=iz8xbUxdhMq_A@mail.gmail.com> <20140409150448.GX29751@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140409150448.GX29751@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there's no way to find out which super_blocks are
-associated with a given kernfs_root.  Let's implement it - the planned
-inotify extension to kernfs_notify() needs it.
+On Wed, Apr 09, 2014 at 05:04:48PM +0200, Uwe Kleine-König wrote:
+> On Wed, Apr 09, 2014 at 04:54:16PM +0200, Jonas Jensen wrote:
+> > On 13 December 2013 12:39, Russell King - ARM Linux
+> > <linux@arm.linux.org.uk> wrote:
+> > > I see what's causing this: the kuser helpers are using "bx lr" to return
+> > > which will be undefined on non-Thumb CPUs.  We generally cope fine with
+> > > non-Thumb CPUs, conditionalising where necessary on HWCAP_THUMB or the
+> > > T bit in the PSR being set.
+> > >
+> > > However, it looks like the kuser helpers got missed.  As a check, please
+> > > look at arch/arm/kernel/entry-armv.S, find the line with:
+> > >
+> > >         .macro  usr_ret, reg
+> > >
+> > > and ensure that the mov pc, \reg case always gets used.  Please report
+> > > back.
+> > 
+> > Uwe and Arnd came up with a solution except it doesn't work when I test it.
+> > 
+> > The suggested patch is:
+> > 
+> > diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> > index 1879e8d..de15bfd 100644
+> > --- a/arch/arm/kernel/entry-armv.S
+> > +++ b/arch/arm/kernel/entry-armv.S
+> > @@ -739,6 +739,18 @@ ENDPROC(__switch_to)
+> > 
+> >         .macro  usr_ret, reg
+> >  #ifdef CONFIG_ARM_THUMB
+> > +       /*
+> > +        * Having CONFIG_ARM_THUMB isn't a guarantee that the cpu has support
+> > +        * for Thumb and so the bx instruction. Use a mov if the address to
+> > +        * jump to is 32 bit aligned. (Note that this code is compiled in ARM
+> > +        * mode, so this is the right test.)
+> > +        */
+> > +#if defined(CONFIG_CPU_32v4)
+> > +       tst     \reg, #3
+> > +       moveq   pc, \reg
+> > +       b       .
+> > +#endif
+> > +
+> >         bx      \reg
+> >  #else
+> >         mov     pc, \reg
+> > 
+> > 
+> > With this applied, and the following two possibilities in next-20140403:
+> > 
+> > [1] ARCH_MULTI_V4 only (no CONFIG_ARM_THUMB)
+> >      CONFIG_CPU_32v4=y
+> > 
+> > [2] ARCH_MULTI_V4 and ARCH_MULTI_V4T
+> >      CONFIG_ARM_THUMB=y
+> >      CONFIG_CPU_32v4=y
+> >      CONFIG_CPU_32v4T=y
+> > 
+> > 
+> > Booting a kernel with either option [1] or [2] yield the following results:
+> > 
+> > [1] works
+> > [2] hangs after "[    2.730000] Freeing unused kernel memory: 104K
+> > (c02f5000 - c030f000)"
+> > 
+> > 
+> > Any help why the moveq doesn't work would be much appreciated.
+> doing s/moveq/mov/ does the trick on the machine in question, but this
+> is obviously not an option for mainline. But it means that even on this
+> non-Thumb capable machine \reg contains an address that is not aligned.
+> 
+> Where does \reg come from? Is it provided by userspace? If so, is it a
+> userspace bug?
 
-Make kernfs_super_info point back to the super_block and chain it at
-kernfs_root->supers.
+Well, in case (2), if usr_ret is returning to a caller running thumb code,
+it will lock up - because the register will not be aligned, so moveq will
+fail, and the next instruction is a branch which only ever branches to
+itself.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/kernfs/dir.c             |  1 +
- fs/kernfs/kernfs-internal.h |  5 +++++
- fs/kernfs/mount.c           | 11 +++++++++++
- include/linux/kernfs.h      |  4 ++++
- 4 files changed, 21 insertions(+)
-
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 939684e..a8bf7ac 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -711,6 +711,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
- 		return ERR_PTR(-ENOMEM);
- 
- 	ida_init(&root->ino_ida);
-+	INIT_LIST_HEAD(&root->supers);
- 
- 	kn = __kernfs_new_node(root, "", S_IFDIR | S_IRUGO | S_IXUGO,
- 			       KERNFS_DIR);
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index a91d7a1..61e0920 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -49,6 +49,8 @@ static inline struct kernfs_root *kernfs_root(struct kernfs_node *kn)
-  * mount.c
-  */
- struct kernfs_super_info {
-+	struct super_block	*sb;
-+
- 	/*
- 	 * The root associated with this super_block.  Each super_block is
- 	 * identified by the root and ns it's associated with.
-@@ -62,6 +64,9 @@ struct kernfs_super_info {
- 	 * an array and compare kernfs_node tag against every entry.
- 	 */
- 	const void		*ns;
-+
-+	/* anchored at kernfs_root->supers, protected by kernfs_mutex */
-+	struct list_head	node;
- };
- #define kernfs_info(SB) ((struct kernfs_super_info *)(SB->s_fs_info))
- 
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-index e5b28b0..1f80295 100644
---- a/fs/kernfs/mount.c
-+++ b/fs/kernfs/mount.c
-@@ -68,6 +68,7 @@ static int kernfs_fill_super(struct super_block *sb)
- 	struct inode *inode;
- 	struct dentry *root;
- 
-+	info->sb = sb;
- 	sb->s_blocksize = PAGE_CACHE_SIZE;
- 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
- 	sb->s_magic = SYSFS_MAGIC;
-@@ -160,12 +161,18 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
- 	if (IS_ERR(sb))
- 		return ERR_CAST(sb);
- 	if (!sb->s_root) {
-+		struct kernfs_super_info *info = kernfs_info(sb);
-+
- 		error = kernfs_fill_super(sb);
- 		if (error) {
- 			deactivate_locked_super(sb);
- 			return ERR_PTR(error);
- 		}
- 		sb->s_flags |= MS_ACTIVE;
-+
-+		mutex_lock(&kernfs_mutex);
-+		list_add(&info->node, &root->supers);
-+		mutex_unlock(&kernfs_mutex);
- 	}
- 
- 	return dget(sb->s_root);
-@@ -184,6 +191,10 @@ void kernfs_kill_sb(struct super_block *sb)
- 	struct kernfs_super_info *info = kernfs_info(sb);
- 	struct kernfs_node *root_kn = sb->s_root->d_fsdata;
- 
-+	mutex_lock(&kernfs_mutex);
-+	list_del(&info->node);
-+	mutex_unlock(&kernfs_mutex);
-+
- 	/*
- 	 * Remove the superblock from fs_supers/s_instances
- 	 * so we can't find it, before freeing kernfs_super_info.
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 649497a..d8ec4f2 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -144,6 +144,10 @@ struct kernfs_root {
- 	/* private fields, do not use outside kernfs proper */
- 	struct ida		ino_ida;
- 	struct kernfs_syscall_ops *syscall_ops;
-+
-+	/* list of kernfs_super_info of this root, protected by kernfs_mutex */
-+	struct list_head	supers;
-+
- 	wait_queue_head_t	deactivate_waitq;
- };
- 
 -- 
-1.9.0
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
