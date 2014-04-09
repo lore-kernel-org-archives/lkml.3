@@ -1,67 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933753AbaDIPvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:51:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62851 "EHLO mga02.intel.com"
+	id S933826AbaDIPv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:51:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18102 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933002AbaDIPvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:51:02 -0400
+	id S932898AbaDIPv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 11:51:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,826,1389772800"; 
-   d="scan'208";a="490056826"
-Message-ID: <53456B61.1040901@intel.com>
-Date: Wed, 09 Apr 2014 08:46:41 -0700
+   d="scan'208";a="490058601"
+Message-ID: <53456C12.7000905@intel.com>
+Date: Wed, 09 Apr 2014 08:49:38 -0700
 From: Dave Hansen <dave.hansen@intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org
-CC: benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
-References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com> <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com> <533EDB63.8090909@intel.com> <5344A312.80802@linux.vnet.ibm.com>
-In-Reply-To: <5344A312.80802@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+CC: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index reflect
+ the start/end section number
+References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>	 <533E0B0E.9020909@jp.fujitsu.com>	 <1396945659.3162.6.camel@ThinkPad-T5421.cn.ibm.com>	 <53442021.2060608@intel.com> <53443E8C.4070906@linux.vnet.ibm.com>	 <53445245.3020400@intel.com> <1397035220.25199.39.camel@ThinkPad-T5421.cn.ibm.com>
+In-Reply-To: <1397035220.25199.39.camel@ThinkPad-T5421.cn.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 06:32 PM, Madhavan Srinivasan wrote:
->> > In mm/Kconfig, put
->> > 
->> > 	config FAULT_AROUND_ORDER
->> > 		int
->> > 		default 1234 if POWERPC
->> > 		default 4
->> > 
->> > The way you have it now, every single architecture that needs to enable
->> > this has to go put that in their Kconfig.  That's madness.  This way,
-> I though about it and decided not to do this way because, in future,
-> sub platforms of the architecture may decide to change the values. Also,
-> adding an if line for each architecture with different sub platforms
-> oring to it will look messy.
+On 04/09/2014 02:20 AM, Li Zhong wrote:
+> Or do you mean we don't need to expose any information related to
+> SECTION to userspace? 
 
-I'm not sure why I'm trying here any more.  You do seem quite content to
-add as much cruft to ppc and every other architecture as possible.  If
-your theoretical scenario pops up, you simply do this in ppc:
-
-config ARCH_FAULT_AROUND_ORDER
-	int
-	default 999
-	default 888 if OTHER_SILLY_POWERPC_SUBARCH
-
-But *ONLY* in the architectures that care about doing that stuff.  You
-leave every other architecture on the planet alone.  Then, in mm/Kconfig:
-
-config FAULT_AROUND_ORDER
-	int
-	default ARCH_FAULT_AROUND_ORDER if ARCH_FAULT_AROUND_ORDER
-	default 4
-
-Your way still requires going and individually touching every single
-architecture's Kconfig that wants to enable fault around.  That's not an
-acceptable solution.
+Right, we don't need to expose sections themselves to userspace.  Do we?
