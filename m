@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964772AbaDIN5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:57:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60861 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933114AbaDINve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:51:34 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 09/15] clk: sunxi: add A31 APB0 reset line defintions
-Date: Wed,  9 Apr 2014 15:51:12 +0200
-Message-Id: <1397051478-4113-10-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S933646AbaDIN5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:57:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932786AbaDIN5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 09:57:36 -0400
+Date: Wed, 9 Apr 2014 09:57:06 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: acme@kernel.org, peterz@infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        eranian@google.com, andi.kleen@intel.com
+Subject: Re: [PATCH 6/6] perf, sort:  Allow unique sorting instead of
+ combining hist_entries
+Message-ID: <20140409135706.GD8488@redhat.com>
+References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
+ <1395689676-214799-7-git-send-email-dzickus@redhat.com>
+ <87ha63t6gb.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ha63t6gb.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add APB0 reset line support for the A31 SoC.
-This reset lines are controlled by the PRCM (Power/Reset/Clock Management) block
-and thus will act on a different iomem range.
+On Wed, Apr 09, 2014 at 02:31:00PM +0900, Namhyung Kim wrote:
+> On Mon, 24 Mar 2014 15:34:36 -0400, Don Zickus wrote:
+> > The cache contention tools needs to keep all the perf records unique in order
+> > to properly parse all the data.  Currently add_hist_entry() will combine
+> > the duplicate record and add the weight/period to the existing record.
+> >
+> > This throws away the unique data the cache contention tool needs (mainly
+> > the data source).  Create a flag to force the records to stay unique.
+> 
+> No.  This is why I said you need to add 'mem' and 'snoop' sort keys into
+> the c2c tool.  This is not how sort works IMHO - if you need to make
+> samples unique let the sort key(s) distinguish them somehow, or you can
+> combine same samples (in terms of sort kes) and use the combined entry's
+> stat.nr_events and stat.period or weight.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- arch/arm/boot/dts/sun6i-a31.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+Ok.  I understand your point.  Perhaps this was my lack of fully
+understanding the sorting algorithm when I did this.  I can look into
+adding the 'mem' and 'snoop'.
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index 61e8b34..ed9c2c1 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -237,6 +237,12 @@
- 			reg = <0x01c202c0 0xc>;
- 		};
- 
-+		apb0_rst: reset@01f014b0 {
-+			#reset-cells = <1>;
-+			compatible = "allwinner,sun6i-a31-clock-reset";
-+			reg = <0x01f014b0 0x4>;
-+		};
-+
- 		apb1_rst: reset@01c202d0 {
- 			#reset-cells = <1>;
- 			compatible = "allwinner,sun6i-a31-clock-reset";
--- 
-1.8.3.2
+One concern I do have is we were caculating statistics based on the weight
+(mean, median, stddev).  I was afraid that combining the entries would
+throw off our calculations as we could no longer accurately determine them
+any more.  Is that true?
 
+Cheers,
+Don
