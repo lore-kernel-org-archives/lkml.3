@@ -1,83 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434AbaDIAdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:33:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55661 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757294AbaDIAdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:33:22 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] sched_clock: Remove deprecated setup_sched_clock() API
-Date: Tue,  8 Apr 2014 17:33:19 -0700
-Message-Id: <1397003599-22386-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	id S1757562AbaDIAdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:33:50 -0400
+Received: from mail.efficios.com ([78.47.125.74]:54772 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757294AbaDIAds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 20:33:48 -0400
+Date: Wed, 9 Apr 2014 00:33:44 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Message-ID: <1472224719.1062.1397003624317.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140408201705.4dad2c4a@gandalf.local.home>
+References: <1396992381-23785-1-git-send-email-mathieu.desnoyers@efficios.com> <1396992381-23785-2-git-send-email-mathieu.desnoyers@efficios.com> <20140408201705.4dad2c4a@gandalf.local.home>
+Subject: Re: [PATCH 1/1 v11] Tracepoint: register/unregister struct
+ tracepoint
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Linux)/8.0.5_GA_5839)
+Thread-Topic: Tracepoint: register/unregister struct tracepoint
+Thread-Index: qINPm3uFTFqAh730xW6zsdn2qW1r+g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the 32-bit only setup_sched_clock() API now that all users
-have been converted to the 64-bit friendly sched_clock_register().
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
+> "Andrew Morton" <akpm@linux-foundation.org>, "Frank Ch. Eigler" <fche@redhat.com>, "Johannes Berg"
+> <johannes.berg@intel.com>
+> Sent: Tuesday, April 8, 2014 8:17:05 PM
+> Subject: Re: [PATCH 1/1 v11] Tracepoint: register/unregister struct tracepoint
+> 
+> OK, I kicked off my tests to test this patch. If all goes well, I'll
+> push it to linux-next and then off to Linus.
+> 
+> But I also added a patch on top. This shouldn't cause any issues for
+> you, does it?
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+It allright by me. You can add my
 
-This is based on Linus' tree at a7963eb7f4c4 (Merge branch 'for_linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs, 2014-04-07)
-but technically this only needs to be based on 2d1eb87ae1e6 (Merge branch
-'for-linus' of git://ftp.arm.linux.org.uk/~rmk/linux-arm, 2014-04-05) because
-the last user of setup_sched_clock() was in rmk's tree.
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
- include/linux/sched_clock.h |  1 -
- kernel/time/sched_clock.c   | 13 -------------
- 2 files changed, 14 deletions(-)
+Thanks!
 
-diff --git a/include/linux/sched_clock.h b/include/linux/sched_clock.h
-index cddf0c2940b6..efa931c5cef1 100644
---- a/include/linux/sched_clock.h
-+++ b/include/linux/sched_clock.h
-@@ -14,7 +14,6 @@ extern void sched_clock_postinit(void);
- static inline void sched_clock_postinit(void) { }
- #endif
- 
--extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
- extern void sched_clock_register(u64 (*read)(void), int bits,
- 				 unsigned long rate);
- 
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 4d23dc4d8139..445106d2c729 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -49,13 +49,6 @@ static u64 notrace jiffy_sched_clock_read(void)
- 	return (u64)(jiffies - INITIAL_JIFFIES);
- }
- 
--static u32 __read_mostly (*read_sched_clock_32)(void);
--
--static u64 notrace read_sched_clock_32_wrapper(void)
--{
--	return read_sched_clock_32();
--}
--
- static u64 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
- 
- static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
-@@ -176,12 +169,6 @@ void __init sched_clock_register(u64 (*read)(void), int bits,
- 	pr_debug("Registered %pF as sched_clock source\n", read);
- }
- 
--void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
--{
--	read_sched_clock_32 = read;
--	sched_clock_register(read_sched_clock_32_wrapper, bits, rate);
--}
--
- void __init sched_clock_postinit(void)
- {
- 	/*
+Mathieu
+
+> 
+> -- Steve
+> 
+> From a22720af7d7d2e06284fbed68bd93827f75381b1 Mon Sep 17 00:00:00 2001
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> Date: Tue, 8 Apr 2014 20:09:40 -0400
+> Subject: [PATCH] tracepoint: Simplify tracepoint module search
+> 
+> Instead of copying the num_tracepoints and tracepoints_ptrs from
+> the module structure to the tp_mod structure, which only uses it to
+> find the module associated to tracepoints of modules that are coming
+> and going, simply copy the pointer to the module struct to the tracepoint
+> tp_module structure.
+> 
+> Also removed un-needed brackets around an if statement.
+> 
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/tracepoint.h | 3 +--
+>  kernel/tracepoint.c        | 9 ++++-----
+>  2 files changed, 5 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> index 08150e2..69a298b 100644
+> --- a/include/linux/tracepoint.h
+> +++ b/include/linux/tracepoint.h
+> @@ -47,8 +47,7 @@ for_each_kernel_tracepoint(void (*fct)(struct tracepoint
+> *tp, void *priv),
+>  #ifdef CONFIG_MODULES
+>  struct tp_module {
+>  	struct list_head list;
+> -	unsigned int num_tracepoints;
+> -	struct tracepoint * const *tracepoints_ptrs;
+> +	struct module *mod;
+>  };
+>  
+>  bool trace_module_has_bad_taint(struct module *mod);
+> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> index 8c4f2f4..c115ec4 100644
+> --- a/kernel/tracepoint.c
+> +++ b/kernel/tracepoint.c
+> @@ -374,8 +374,7 @@ static int tracepoint_module_coming(struct module *mod)
+>  		ret = -ENOMEM;
+>  		goto end;
+>  	}
+> -	tp_mod->num_tracepoints = mod->num_tracepoints;
+> -	tp_mod->tracepoints_ptrs = mod->tracepoints_ptrs;
+> +	tp_mod->mod = mod;
+>  	list_add_tail(&tp_mod->list, &tracepoint_module_list);
+>  	blocking_notifier_call_chain(&tracepoint_notify_list,
+>  			MODULE_STATE_COMING, tp_mod);
+> @@ -393,7 +392,7 @@ static void tracepoint_module_going(struct module *mod)
+>  
+>  	mutex_lock(&tracepoint_module_list_mutex);
+>  	list_for_each_entry(tp_mod, &tracepoint_module_list, list) {
+> -		if (tp_mod->tracepoints_ptrs == mod->tracepoints_ptrs) {
+> +		if (tp_mod->mod == mod) {
+>  			blocking_notifier_call_chain(&tracepoint_notify_list,
+>  					MODULE_STATE_GOING, tp_mod);
+>  			list_del(&tp_mod->list);
+> @@ -447,9 +446,9 @@ static __init int init_tracepoints(void)
+>  	int ret;
+>  
+>  	ret = register_module_notifier(&tracepoint_module_nb);
+> -	if (ret) {
+> +	if (ret)
+>  		pr_warning("Failed to register tracepoint module enter notifier\n");
+> -	}
+> +
+>  	return ret;
+>  }
+>  __initcall(init_tracepoints);
+> --
+> 1.8.5.3
+> 
+> 
+> 
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
