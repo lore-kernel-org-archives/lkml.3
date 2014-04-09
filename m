@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868AbaDHX5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 19:57:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55499 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756286AbaDHX5N (ORCPT
+	id S1756743AbaDIAEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:04:31 -0400
+Received: from smtprelay0076.hostedemail.com ([216.40.44.76]:56630 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756179AbaDIAE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 19:57:13 -0400
-Message-ID: <53448CB4.6050705@infradead.org>
-Date: Tue, 08 Apr 2014 16:56:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: David Cohen <david.a.cohen@linux.intel.com>, wim@iguana.be,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        gnomes@lxorguk.ukuu.org.uk, Eric Ernst <eric.ernst@intel.com>
-Subject: Re: [PATCH 1/2] watchdog: add Intel MID watchdog driver support
-References: <1396990744-10695-1-git-send-email-david.a.cohen@linux.intel.com> <1396990744-10695-2-git-send-email-david.a.cohen@linux.intel.com>
-In-Reply-To: <1396990744-10695-2-git-send-email-david.a.cohen@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Apr 2014 20:04:29 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3867:3872:3874:4321:5007:6119:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: seat97_7e3e5ac35f559
+X-Filterd-Recvd-Size: 1656
+Message-ID: <1397001866.14321.13.camel@joe-AO722>
+Subject: Re: [PATCH] scsi: lpfc: lpfc_init: use kcalloc for allocating memory
+From: Joe Perches <joe@perches.com>
+To: Matei Oprea <eu@opreamatei.ro>
+Cc: jbottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        ROSEdu Kernel Community <firefly@lists.rosedu.org>
+Date: Tue, 08 Apr 2014 17:04:26 -0700
+In-Reply-To: <1396989746-29647-1-git-send-email-eu@opreamatei.ro>
+References: <1396989746-29647-1-git-send-email-eu@opreamatei.ro>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 01:59 PM, David Cohen wrote:
-> Add initial Intel MID watchdog driver support.
-> 
-> This driver is an initial implementation of generic Intel MID watchdog
-> driver. Currently it supports Intel Merrifield platform.
-> 
-> Signed-off-by: Eric Ernst <eric.ernst@intel.com>
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->  drivers/watchdog/Kconfig         |  12 +++
->  drivers/watchdog/Makefile        |   1 +
->  drivers/watchdog/intel-mid_wdt.c | 209 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 222 insertions(+)
->  create mode 100644 drivers/watchdog/intel-mid_wdt.c
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 79d25894343a..4da09b8b2f11 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -643,6 +643,18 @@ config INTEL_SCU_WATCHDOG
->  
->  	  To compile this driver as a module, choose M here.
->  
-> +config INTEL_MID_WATCHDOG
-> +	bool "Intel MID SCU Watchdog Mobile Platforms"
-> +	depends on X86_INTEL_MID && WATCHDOG_CORE
-> +	---help---
-> +	  Watchdog timer driver built into the Intel SCU for Intel MID
-> +	  Platforms.
-> +
-> +	  This driver currently supports only the watchdog evolution
-> +	  implementation in SCU, available for Merrifield generation.
-> +
-> +	  To compile this driver as a module, choose M here.
+On Tue, 2014-04-08 at 23:42 +0300, Matei Oprea wrote:
+> It's easier to use kcalloc for allocating arrays. While at it
+> also remove useless casting value.
+[]
+> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+[]
+> @@ -4742,12 +4742,14 @@ lpfc_sli_driver_resource_setup(struct lpfc_hba *phba)
+[]
+> -	if (!phba->sli.ring)
+[]
+> +	if (unlikely(!phba->sli.ring)) {
 
-Does choosing M work when INTEL_MID_WATCHDOG is a bool?
-and why is INTEL_MID_WATCHDOG a bool?
+Why add the unlikely?
 
-> +
->  config ITCO_WDT
->  	tristate "Intel TCO Timer/Watchdog"
->  	depends on (X86 || IA64) && PCI
+Glancing at the code it seems more like that this
+should be likely than unlikely.
+
+> +		phba->sli.ring = kcalloc(LPFC_SLI3_MAX_RING,
+> +				sizeof(struct lpfc_sli_ring),
+> +				GFP_KERNEL);
+
+It'd be nicer looking if aligned better
+
+		phba->sli.ring = kcalloc(LPFC_SLI3_MAX_RING,
+					 sizeof(struct lpfc_sli_ring),
+					 GFP_KERNEL);
 
 
--- 
-~Randy
