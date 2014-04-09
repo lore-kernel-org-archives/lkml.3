@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010AbaDIBbB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 21:31:01 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:58641 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756634AbaDIBa7 (ORCPT
+	id S1758039AbaDIBci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 21:32:38 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:49597 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756355AbaDIBch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 21:30:59 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com
-Subject: Re: [PATCH 07/15 V3] perf, c2c: Add in sort on physid
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-	<1395689826-215033-8-git-send-email-dzickus@redhat.com>
-	<87k3b0w8ye.fsf@sejong.aot.lge.com> <20140408141758.GU8488@redhat.com>
-Date: Wed, 09 Apr 2014 10:30:56 +0900
-In-Reply-To: <20140408141758.GU8488@redhat.com> (Don Zickus's message of "Tue,
-	8 Apr 2014 10:17:58 -0400")
-Message-ID: <87a9bvuw4v.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 8 Apr 2014 21:32:37 -0400
+Message-ID: <5344A312.80802@linux.vnet.ibm.com>
+Date: Wed, 09 Apr 2014 07:02:02 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, x86@kernel.org
+CC: benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
+Subject: Re: [PATCH V2 1/2] mm: move FAULT_AROUND_ORDER to arch/
+References: <1396592835-24767-1-git-send-email-maddy@linux.vnet.ibm.com> <1396592835-24767-2-git-send-email-maddy@linux.vnet.ibm.com> <533EDB63.8090909@intel.com>
+In-Reply-To: <533EDB63.8090909@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040901-5140-0000-0000-000004DD8D83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Apr 2014 10:17:58 -0400, Don Zickus wrote:
-> On Tue, Apr 08, 2014 at 04:56:25PM +0900, Namhyung Kim wrote:
->> On Mon, 24 Mar 2014 15:36:58 -0400, Don Zickus wrote:
->> > +static int perf_c2c__init(struct perf_c2c *c2c)
->> > +{
->> > +	sort__mode = SORT_MODE__PHYSID;
->> > +	sort__wants_unique = 1;
->> > +	sort_order = "daddr,iaddr,pid,tid";
->> 
->> Where are the SORT_MODE__PHYSID, sort__wants_unique and "daddr", "iaddr"
->> sort keys defined?
->
-> In a previous patchset that enables the mmap2 interface.
+On Friday 04 April 2014 09:48 PM, Dave Hansen wrote:
+> On 04/03/2014 11:27 PM, Madhavan Srinivasan wrote:
+>> This patch creates infrastructure to move the FAULT_AROUND_ORDER
+>> to arch/ using Kconfig. This will enable architecture maintainers
+>> to decide on suitable FAULT_AROUND_ORDER value based on
+>> performance data for that architecture. Patch also adds
+>> FAULT_AROUND_ORDER Kconfig element in arch/X86.
+> 
+> Please don't do it this way.
+> 
+> In mm/Kconfig, put
+> 
+> 	config FAULT_AROUND_ORDER
+> 		int
+> 		default 1234 if POWERPC
+> 		default 4
+> 
+> The way you have it now, every single architecture that needs to enable
+> this has to go put that in their Kconfig.  That's madness.  This way,
 
-Ah, missed that.. will look at it soon.
+I though about it and decided not to do this way because, in future,
+sub platforms of the architecture may decide to change the values. Also,
+adding an if line for each architecture with different sub platforms
+oring to it will look messy.
 
->
->> 
->> Also, more importantly, I think the sort order should contain at least
->> "mem" and "snoop" keys to group samples based on the exact hitm
->> information.
->
-> I can look into it, but after iaddr, pid and tid, sorting on snoop doesn't
-> really change anything if I recall.  The hitms are scattered across iaddr.
+With regards
+Maddy
 
-But it doesn't guarantee that all hitms are scattered, right?  Also if
-it's the case I guess adding more sort keys are not harmful since they
-don't even have a chance to test.
+> you only put it in one place, and folks only have to care if they want
+> to change the default to be something other than 4.
+> 
 
-I think you can check hist_entry->stat.nr_events always being 1.
-
->
->> 
->> In my understanding, if two samples are captured at exactly same
->> position with a same data access but different hitm info, they cannot be
->> classified and just use the hitm info of first entry.
->
-> Why?  If the first hitm access was local and the second one remote,
-> doesn't that indicate the accessed data is being pulled onto different
-> nodes?
-
-But "hist_entry" won't have the information after calling
-__hists__add__entry() called unless it has 'mem' and 'snoop' sort keys.
-Since two samples have same daddr, iaddr, pid and tid, it'd think those
-two samples are same and then add stats of second one to the first and
-finally discard the second.  So first one will have a double weight for
-the local hitm case only.
-
-This is the case what I worry about.  Am I missing something?
-
-Thanks,
-Namhyung
