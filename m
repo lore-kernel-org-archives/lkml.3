@@ -1,75 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934050AbaDIQUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:20:37 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46702 "EHLO e9.ny.us.ibm.com"
+	id S933944AbaDIQVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:21:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27785 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933354AbaDIQUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:20:35 -0400
-Message-ID: <5345734C.1020905@linux.vnet.ibm.com>
-Date: Wed, 09 Apr 2014 11:20:28 -0500
-From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S933354AbaDIQU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 12:20:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,827,1389772800"; 
+   d="asc'?scan'208";a="510229047"
+Date: Wed, 9 Apr 2014 21:42:02 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, dma <dmaengine@vger.kernel.org>
+Subject: [GIT PULL] slave-dmaengine updates
+Message-ID: <20140409161202.GB9846@intel.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [RFC PATCH] memory driver: make phys_index/end_phys_index reflect
- the start/end section number
-References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com> <533E0B0E.9020909@jp.fujitsu.com> <1396945659.3162.6.camel@ThinkPad-T5421.cn.ibm.com> <53442021.2060608@intel.com> <53443E8C.4070906@linux.vnet.ibm.com> <53445245.3020400@intel.com>
-In-Reply-To: <53445245.3020400@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14040916-7182-0000-0000-00000A497C6A
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2014 02:47 PM, Dave Hansen wrote:
-> On 04/08/2014 11:23 AM, Nathan Fontenot wrote:
->> On 04/08/2014 11:13 AM, Dave Hansen wrote:
->>> On 04/08/2014 01:27 AM, Li Zhong wrote:
->>>> If Dave and others don't have further objections, it seems this small
->>>> userspace incompatibility could be accepted by most of us, and I don't
->>>> need to make a version 2. 
->>>
->>> Let me ask another question then.  What are the units of
->>> phys_index/end_phys_index?  How do we expose those units to userspace?
->>>
->>
->> The documentation for these files just states that the files contain
->> the first and last section id of memory in the memory block for
->> phys_index and end_phys_index respectively.
->>
->> I'm not sure the values have ever been units of anything, at least not
->> that I remember.
-> 
-> <sigh>
-> 
-> There are two units.  SECTION_SIZE, which is completely internal to the
-> kernel, and block_size_bytes which used to be the same as SECTION_SIZE,
-> but is not now.  Which one of those two is phys_index/end_phys_index in,
-> and if it is in terms of SECTION_SIZE like this patch proposes, how do
-> we tell userspace how large SECTION_SIZE is?
-> 
-> block_size_bytes is supposed to tell you how large the sections are.  In
-> the case where we lumped a bunch of sections together, we also bumped up
-> block_size_bytes.  That's why we currently divide the *ACTUAL* section
-> number in phys_index/end_phys_index by block_size_bytes.
-> 
-> That document really needs to be updated to stop referring to sections
-> (at least in the descriptions of the user interface).  We can not change
-> the units of phys_index/end_phys_index without also changing
-> block_size_bytes.
-> 
 
-Re-reading the documentation. You're correct, it needs help.
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--Nathan
+Hey Linus,
 
+Here is the pull request for this merge window. Please pull to receive:
+- New driver for Qcom bam dma
+- New driver for RCAR peri-peri
+- New driver for FSL eDMA
+- Various odd fixes and updates thru the subsystem
+
+
+The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+  Linus Torvalds (1):
+        Linux 3.14-rc2
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/vkoul/slave-dma.git for-linus
+
+Alexander Shiyan (2):
+      dma: imx-dma: Replace printk with dev_*
+      dma: imx-dma: Add missing module owner field
+
+Andy Gross (2):
+      dmaengine: qcom_bam_dma: Add device tree binding
+      dmaengine: add Qualcomm BAM dma driver
+
+Andy Shevchenko (5):
+      acpi-dma: use devm_release() instead of devm_destroy()
+      acpi-dma: convert to return error code when asked for channel
+      dma: dw: add a PCI ID for Intel Haswell SoC
+      dma: dw: remove leftovers in the comment blocks
+      dma: dw: allocate memory in two stages in probe
+
+Barry Song (1):
+      dmaengine: sirf: enable generic dt binding for dma channels
+
+Chao Xie (1):
+      dma: mmp_pdma: add IRQF_SHARED when request irq
+
+Chew, Chiau Ee (1):
+      dma: dw: Add suspend and resume handling for PCI mode DW_DMAC.
+
+Christian Engelmayer (1):
+      dma: edma: Fix memory leak in edma_prep_dma_cyclic()
+
+Dan Carpenter (1):
+      dmaengine: s3c24xx-dma: make phy->irq signed for error handling
+
+George Cherian (2):
+      usb: musb: musb_cppi41: Dont reprogram DMA if tear down is initiated
+      dma: cppi41: start tear down only if channel is busy
+
+Jerome Blin (1):
+      Add new line to test result strings produced in verbose mode
+
+Jingchang Lu (2):
+      dma: Add Freescale eDMA engine driver support
+      dma: fsl-edma: fix static checker warning of NULL dereference
+
+Kuninori Morimoto (1):
+      shdma: add R-Car Audio DMAC peri peri driver
+
+Lars-Peter Clausen (1):
+      dma: Remove comment about embedding dma_slave_config into custom stru=
+cts
+
+Laurent Pinchart (3):
+      DMA: shdma: Fix warnings due to improper casts and printk formats
+      DMA: shdma: Fix warnings due to declared but unused symbols
+      DMA: shdma: Make sh_dmae_pm static
+
+Nenghua Cao (1):
+      dma: mmp_tdma: move to generic device tree binding
+
+Paul Bolle (1):
+      dmaengine: Remove dependency on MACH_BCM2708
+
+Peter Ujfalusi (1):
+      dma: omap-dma: Implement device_slave_caps callback
+
+Vinod Koul (4):
+      dmaengine: at_hdmac: use tasklet_kill in teardown
+      dmaengine: pch_dma: use tasklet_kill in teardown
+      Merge branch 'topic/tasklet_fix' into for-linus
+      Merge branch 'topic/bam' into for-linus
+
+ Documentation/devicetree/bindings/dma/fsl-edma.txt |   76 ++
+ .../devicetree/bindings/dma/qcom_bam_dma.txt       |   41 +
+ .../devicetree/bindings/dma/sirfsoc-dma.txt        |   43 +
+ arch/arm/boot/dts/atlas6.dtsi                      |    2 +
+ arch/arm/boot/dts/prima2.dtsi                      |    2 +
+ drivers/dma/Kconfig                                |   21 +-
+ drivers/dma/Makefile                               |    2 +
+ drivers/dma/acpi-dma.c                             |   17 +-
+ drivers/dma/at_hdmac.c                             |    1 -
+ drivers/dma/cppi41.c                               |    7 +-
+ drivers/dma/dmaengine.c                            |    9 +-
+ drivers/dma/dmatest.c                              |    4 +-
+ drivers/dma/dw/core.c                              |   21 +-
+ drivers/dma/dw/pci.c                               |   36 +
+ drivers/dma/dw/regs.h                              |    4 +-
+ drivers/dma/edma.c                                 |    5 +-
+ drivers/dma/fsl-edma.c                             |  975 +++++++++++++++++
+ drivers/dma/imx-dma.c                              |   13 +-
+ drivers/dma/mmp_pdma.c                             |    8 +-
+ drivers/dma/mmp_tdma.c                             |   50 +
+ drivers/dma/omap-dma.c                             |   18 +
+ drivers/dma/pch_dma.c                              |    4 +-
+ drivers/dma/qcom_bam_dma.c                         | 1111 ++++++++++++++++=
+++++
+ drivers/dma/s3c24xx-dma.c                          |    2 +-
+ drivers/dma/sh/Kconfig                             |    6 +
+ drivers/dma/sh/Makefile                            |    1 +
+ drivers/dma/sh/rcar-audmapp.c                      |  320 ++++++
+ drivers/dma/sh/shdma-base.c                        |   10 +-
+ drivers/dma/sh/shdma-of.c                          |    3 +-
+ drivers/dma/sh/shdmac.c                            |   13 +-
+ drivers/dma/sh/sudmac.c                            |    4 +-
+ drivers/dma/sirf-dma.c                             |   23 +
+ drivers/usb/musb/musb_cppi41.c                     |    3 +-
+ include/linux/acpi_dma.h                           |    5 +-
+ include/linux/dmaengine.h                          |   14 +-
+ include/linux/dw_dmac.h                            |    5 +-
+ include/linux/platform_data/dma-rcar-audmapp.h     |   34 +
+ 37 files changed, 2839 insertions(+), 74 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/fsl-edma.txt
+ create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+ create mode 100644 Documentation/devicetree/bindings/dma/sirfsoc-dma.txt
+ create mode 100644 drivers/dma/fsl-edma.c
+ create mode 100644 drivers/dma/qcom_bam_dma.c
+ create mode 100644 drivers/dma/sh/rcar-audmapp.c
+ create mode 100644 include/linux/platform_data/dma-rcar-audmapp.h
+
+Thanks
+--=20
+~Vinod
+
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTRXFSAAoJEHwUBw8lI4NHqdYP/RVCiLdj5tKj0gDtOumekfTu
+7s8ETvOKYrkzrn5YY/Lfj+1Tc+/Ym+JJok3cIuS30Ex7zGVj1W3bRHPzj7SmG8Zt
+P+mMS+o5kF7CU0k37UbxQGzKEghmG9qPByOlxJddtcjriAOiDCkS3q2zxQfTu586
+68drAaTAqHGs0kPVj1GGjNgSRY9L4PohweliRObQ4XYJO37M8Ys7eS9Y7YmGq6Wk
++lqulJyWd8O7dogg5qK2GWhIgKnFWIxfGvsq2lx16f1u9aAx5IbUcGhfz3yVUNQd
+F9wC1iLeBPS8opEikgEHbtV3bQ758s/fKwQAAwHFkdObSuKIK4aBPvIBSegBOyYi
+AUkxujrvmJgAqvZ96rWv7SnLlwh7JDRPD3369aS/g0fGZfjcGFJaqYYegM/DiAfS
+qK8IZ+xuYieJcAa1QKf/BWapXRp9OglHTN7S64vLnOiwP6Y5JvuVu37cKocF9eix
+W3btrDuNIGROMoCmayjazopSUhQmK+2ezpg7b5lMjdGndkemjM07LA08UpKsQL/J
+WtL+wuH4LcwGfrld/bqyUdKH+805h/JJHGWrrHb75N5OLaTKyrLVgtecrWjVIUS0
+pZgsrfFu78rLb1NunBSj+u59+W+QO6kUK08n4ciLkGKli28PBCGSXCij0n9wqQkY
+294m4rZjq872HVW6ALpP
+=LfBT
+-----END PGP SIGNATURE-----
+
+--KsGdsel6WgEHnImy--
