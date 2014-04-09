@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043AbaDILqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:46:07 -0400
-Received: from relay02.alfahosting-server.de ([109.237.142.238]:38949 "EHLO
-	relay02.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932694AbaDILqE (ORCPT
+	id S933083AbaDILrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:47:09 -0400
+Received: from mx6-phx2.redhat.com ([209.132.183.39]:48815 "EHLO
+	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932560AbaDILrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:46:04 -0400
-X-Greylist: delayed 618 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 07:46:04 EDT
-X-Spam-DCC: : 
+	Wed, 9 Apr 2014 07:47:07 -0400
+Date: Wed, 9 Apr 2014 07:46:30 -0400 (EDT)
+From: Jan Stancek <jstancek@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>, tglx@linutronix.de,
+        umgwanakikbuti@gmail.com, dvhart@linux.intel.com
+Message-ID: <1096300004.2306764.1397043990013.JavaMail.zimbra@redhat.com>
+In-Reply-To: <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
+References: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com> <CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com> <CA+55aFyfKOv59hptv9rEcf31X5O8s26z+S8f-MchM1C0WtXx3A@mail.gmail.com> <20140408181305.GT10526@twins.programming.kicks-ass.net> <CA+55aFz+yMdXfsb-t3JzDhj6=M=-ggjDDGAQSbtfEcNhgyoopA@mail.gmail.com> <1860555101.1890107.1396990941681.JavaMail.zimbra@redhat.com> <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
+Subject: Re: [PATCH] futex: avoid race between requeue and wake
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Date: Wed, 09 Apr 2014 13:35:37 +0200
-From: Richard Leitner <me@g0hl1n.net>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: comedi: =?UTF-8?Q?adl=5Fpci=39=31=31=38=3A=20fix?=
- =?UTF-8?Q?=20whitespace=20issues?=
-Message-ID: <8d54353f462d3d5bf51ad68b32bd88bb@webmail-alfa3028.alfahosting-server.de>
-User-Agent: Alfahosting Webmail/1.0
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/18762/Wed Apr  9 07:41:01 2014
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF17 (Linux)/8.0.6_GA_5922)
+Thread-Topic: futex: avoid race between requeue and wake
+Thread-Index: eEnC8v6YzThmfHsqgP3LkZOpkXRf1g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed not needed spaces and fixed too long lines
 
-PS: this is an exercise to get into the "patch submitting workflow"
 
-Signed-off-by: Richard Leitner <me@g0hl1n.net>
----
-  drivers/staging/comedi/drivers/adl_pci9118.c |    8 ++++----
-  1 file changed, 4 insertions(+), 4 deletions(-)
+----- Original Message -----
+> From: "Linus Torvalds" <torvalds@linux-foundation.org>
+> To: "Jan Stancek" <jstancek@redhat.com>
+> Cc: "Peter Zijlstra" <peterz@infradead.org>, "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, "Srikar
+> Dronamraju" <srikar@linux.vnet.ibm.com>, "Davidlohr Bueso" <davidlohr@hp.com>, "Ingo Molnar" <mingo@kernel.org>,
+> "Larry Woodman" <lwoodman@redhat.com>
+> Sent: Wednesday, 9 April, 2014 12:30:07 AM
+> Subject: Re: [PATCH] futex: avoid race between requeue and wake
+> 
+> On Tue, Apr 8, 2014 at 2:02 PM, Jan Stancek <jstancek@redhat.com> wrote:
+> >
+> > I ran reproducer with following change on s390x system, where this
+> > can be reproduced usually within seconds:
+> >
+> > diff --git a/kernel/futex.c b/kernel/futex.c
+> > index 67dacaf..9150ffd 100644
+> > --- a/kernel/futex.c
+> > +++ b/kernel/futex.c
+> > @@ -1095,6 +1095,7 @@ static int unlock_futex_pi(u32 __user *uaddr, u32
+> > uval)
+> >  static inline void
+> >  double_lock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket
+> >  *hb2)
+> >  {
+> > +       hb_waiters_inc(hb2);
+> >         if (hb1 <= hb2) {
+> >                 spin_lock(&hb1->lock);
+> >                 if (hb1 < hb2)
+> > @@ -1111,6 +1112,7 @@ double_unlock_hb(struct futex_hash_bucket *hb1,
+> > struct futex_hash_bucket *hb2)
+> >         spin_unlock(&hb1->lock);
+> >         if (hb1 != hb2)
+> >                 spin_unlock(&hb2->lock);
+> > +       hb_waiters_dec(hb2);
+> >  }
+> >
+> >  /*
+> >
+> > Reproducer is running without failures over an hour now and
+> > made ~1.4 million iterations.
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c 
-b/drivers/staging/comedi/drivers/adl_pci9118.c
-index 3cfa175..d028d6b 100644
---- a/drivers/staging/comedi/drivers/adl_pci9118.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9118.c
-@@ -96,7 +96,7 @@ Configuration options:
-  				 * correct channel number on every 12 bit sample
-  				 */
+I let this version run over night on single s390x system,
+there were no failures.
 
--#define IORANGE_9118 	64	/* I hope */
-+#define IORANGE_9118	64	/* I hope */
-  #define PCI9118_CHANLEN	255	/*
-  				 * len of chanlist, some source say 256,
-  				 * but reality looks like 255 :-(
-@@ -356,7 +356,7 @@ struct pci9118_private {
-  	unsigned int ai_data_len;
-  	unsigned short ao_data[2];		/* data output buffer */
-  	unsigned int ai_scans;			/* number of scans to do */
--	char dma_doublebuf;			/* we can use double buffering */
-+	char dma_doublebuf;			/* we can use double buffering*/
-  	unsigned int dma_actbuf;		/* which buffer is used now */
-  	unsigned short *dmabuf_virt[2];		/*
-  						 * pointers to begin of
-@@ -383,7 +383,7 @@ struct pci9118_private {
-  						 * users(0-AI, 1-AO, 2-DI, 3-DO)
-  						 */
-  	unsigned int cnt0_divisor;		/* actual CNT0 divisor */
--	void (*int_ai_func) (struct comedi_device *, struct comedi_subdevice 
-*,
-+	void (*int_ai_func)(struct comedi_device *, struct comedi_subdevice *,
-  		unsigned short,
-  		unsigned int,
-  		unsigned short);	/*
-@@ -1045,7 +1045,7 @@ static void interrupt_pci9118_ai_dma(struct 
-comedi_device *dev,
-  		move_block_from_dma(dev, s,
-  				    devpriv->dmabuf_virt[devpriv->dma_actbuf],
-  				    samplesinbuf);
--		m = m - sampls;		/* m= how many samples was transferred */
-+		m = m - sampls;		/* m=how many samples was transferred */
-  	}
+> 
+> Ok, that's encouraging. That is the smallest patch I could come up
+> with, but as mentioned, it's not optimal. We only need it for
+> futex_requeue(), but if we do it there we'd have to handle all the
+> different error cases (there's only one call to double_lock_hb(), but
+> due to the error cases there's four calls to double_unlock_hb().
+> 
+> I'm not sure how much we care. The simple patch basically adds two
+> (unnecessary) atomics to the futex_wake_op() path. I don't know how
+> critical that path is - not as critical as the regular "futex_wake()",
+> I'd expect, but I guess pthread_cond_signal() is the main user.
+> 
+> So I'll have to leave this decision to the futex people. But the
+> attached slightly more complex patch *may* be the better one.
+> 
+> May I bother you to test this one too? I really think that
+> futex_requeue() is the only user that should need this, so doing it
+> there rather than in double_[un]lock_hb() should be slightly more
+> optimal, but who knows what I've missed. We clearly *all* missed this
+> race back when the ordering rules were documented..
 
-  	if (!devpriv->ai_neverending) {
--- 
-1.7.10.4
+I'm running reproducer with this patch applied on 3 systems:
+- two s390x systems where this can be reproduced within seconds
+- x86_64 Intel(R) Xeon(R) CPU E5240 @ 3.00GHz, where I could
+  reproduce it on average in ~3 minutes.
 
+It's running without failure over 4 hours now.
+
+Regards,
+Jan
+
+> 
+> Still hoping for comments from PeterZ and Davidlohr.
+> 
+>                   Linus
+> 
