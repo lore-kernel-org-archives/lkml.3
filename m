@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934162AbaDIQnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:43:25 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:5996 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933100AbaDIQnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:43:23 -0400
-Date: Wed, 9 Apr 2014 12:42:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 2/5] tracepoint: Convert process iteration to use
- for_each_process_thread()
-Message-ID: <20140409124249.4081e665@gandalf.local.home>
-In-Reply-To: <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
-References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
-	<1397059882-23063-3-git-send-email-fweisbec@gmail.com>
-	<360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S933909AbaDIQrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:47:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41401 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932898AbaDIQrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 12:47:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,827,1389772800"; 
+   d="scan'208";a="510245988"
+Message-ID: <534578FB.8010807@intel.com>
+Date: Thu, 10 Apr 2014 00:44:43 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Alessandro Rubini <rubini@gnudd.com>
+CC: gregkh@linuxfoundation.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [FMC] BUG: scheduling while atomic: swapper/1/0x10000002
+References: <5344BF60.5050300@intel.com> <20140409050843.GA18949@mail.gnudd.com> <20140409052816.GA29432@localhost>
+In-Reply-To: <20140409052816.GA29432@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Apr 2014 16:28:35 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-
-> ----- Original Message -----
-> > From: "Frederic Weisbecker" <fweisbec@gmail.com>
-> > To: "LKML" <linux-kernel@vger.kernel.org>
-> > Cc: "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Ingo Molnar"
-> > <mingo@kernel.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Oleg Nesterov" <oleg@redhat.com>, "Steven
-> > Rostedt" <rostedt@goodmis.org>
-> > Sent: Wednesday, April 9, 2014 12:11:19 PM
-> > Subject: [PATCH 2/5] tracepoint: Convert process iteration to use for_each_process_thread()
-> > 
-> > do_each_thread/while_each_thread iterators are deprecated by
-> > for_each_thread/for_each_process_thread() APIs.
-> > 
-> > Lets convert the callers in the tracepoint code. The ultimate
-> > goal is to remove the struct task_struct::thread_group field and
-> > the corresponding do_each_thread/while_each_thread iterators that are
-> > RCU unsafe.
-> > 
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > ---
-> >  kernel/tracepoint.c | 12 ++++++------
-> >  1 file changed, 6 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> > index fb0a38a..00a7e8b 100644
-> > --- a/kernel/tracepoint.c
-> > +++ b/kernel/tracepoint.c
-> > @@ -561,15 +561,15 @@ static int sys_tracepoint_refcount;
-> >  void syscall_regfunc(void)
-> >  {
-> >  	unsigned long flags;
-> > -	struct task_struct *g, *t;
-> > +	struct task_struct *p, *t;
-> >  
-> >  	if (!sys_tracepoint_refcount) {
-> >  		read_lock_irqsave(&tasklist_lock, flags);
-> > -		do_each_thread(g, t) {
-> > +		for_each_process_thread(p, t) {
+On 04/09/2014 01:28 PM, Fengguang Wu wrote:
+> On Wed, Apr 09, 2014 at 07:08:43AM +0200, Alessandro Rubini wrote:
+>> Hello.
+>> Thank you for the report.
+>>
+>> I'm at a conference and I fear I won't be able to test myself in the
+>> next days, but I think this is already fixed (it is part of
+>> the "misc_register" call path, so it's the same problem).
+>>
+>> The fix is commit v3.11-rc2-11-g783c2fb
+>>
+>>    783c2fb FMC: fix locking in sample chardev driver
+>>
+>> This commit, however, is not part of v3.11 and I think this is why you
+>> are finding the problem in the v3.10..v3.11 interval.
 > 
-> What are the locking rules for for_each_process_thread() ?
+> Alessandro, you are right. There are no more "scheduling while 
+> atomic" bugs in v3.12 and v3.13.
 > 
-> Is it required to hold RCU read-side lock ? (it's not the case here)
+> Our bisect log shows
 > 
-> Is tasklist_lock read-side lock sufficient ?
+> git bisect  bad 38dbfb59d1175ef458d006556061adeaa8751b72  # 10:03      0-    345  Linus 3.14-rc1
+> 
+> However that happen to be caused by an independent "scheduling while
+> atomic" bug:
 
-The tasklist_lock is all that is needed. Nothing about the list will
-change when that's held. Ideally we would like to start converting
-things to rcu, where it's OK if the list actually changes while you are
-iterating.
-
-But if you require the list to stay the same while you read all the
-tasks, then you need the bigger hammer (tasklist_lock).
-
-Also, this is just about iterating the tasklist list. If something
-within the loop requires rcu, then that's a different story.
-
--- Steve
+Alessandro, Fengguang & I confirmed that this below dmesg is also caused by over locking in fc_probe(). Not a new introduced bug.
 
 > 
-> A quick glance at those for_each iterator defines in sched.h was not
-> helpful in finding this information.
+> [   20.038125] Fixing recursive fault but reboot is needed!
+> [   20.038125] BUG: scheduling while atomic: kworker/0:1H/77/0x00000005
+> [   20.038125] INFO: lockdep is turned off.
+> [   20.038125] irq event stamp: 758
+> [   20.038125] hardirqs last  enabled at (757): [<c1c31683>] _raw_spin_unlock_irq+0x22/0x30
+> [   20.038125] hardirqs last disabled at (758): [<c1c31523>] _raw_spin_lock_irq+0x14/0x73
+> [   20.038125] softirqs last  enabled at (302): [<c1032d4d>] __do_softirq+0x186/0x1d2
+> [   20.038125] softirqs last disabled at (295): [<c1002f99>] do_softirq_own_stack+0x2f/0x35
+> [   20.038125] CPU: 0 PID: 77 Comm: kworker/0:1H Tainted: G      D W    3.14.0-rc1 #1
+> [   20.038125] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [   20.038125]  c0420610 c0420610 c0449a38 c1c1f562 c0449a54 c1c1b59c c1f91661 c0420938
+> [   20.038125]  0000004d 00000005 c0420610 c0449acc c1c2e4e2 c105fff8 01449a7c 000004af
+> [   20.038125]  c0420610 0000002c 00000001 c0449a7c c0420610 c0449ab4 c106001c 00000000
+> [   20.038125] Call Trace:
+> [   20.038125]  [<c1c1f562>] dump_stack+0x16/0x18
+> [   20.038125]  [<c1c1b59c>] __schedule_bug+0x5d/0x6f
+> [   20.038125]  [<c1c2e4e2>] __schedule+0x45/0x55f
+> [   20.038125]  [<c105fff8>] ? vprintk_emit+0x367/0x3a4
+> [   20.038125]  [<c106001c>] ? vprintk_emit+0x38b/0x3a4
+> [   20.038125]  [<c105876b>] ? trace_hardirqs_off+0xb/0xd
+> [   20.038125]  [<c1c1c185>] ? printk+0x38/0x3a
+> [   20.038125]  [<c1c2ea59>] schedule+0x5d/0x5f
+> [   20.038125]  [<c10314b8>] do_exit+0xcc/0x75d
+> [   20.038125]  [<c1060e7b>] ? kmsg_dump+0x184/0x191
+> [   20.038125]  [<c1060d13>] ? kmsg_dump+0x1c/0x191
+> [   20.038125]  [<c1003d54>] oops_end+0x7e/0x83
+> [   20.038125]  [<c1c1ae82>] no_context+0x1ba/0x1c2
+> [   20.038125]  [<c1c1afc1>] __bad_area_nosemaphore+0x137/0x13f
+> [   20.038125]  [<c1c1a82d>] ? pte_offset_kernel+0x13/0x2a
+> [   20.038125]  [<c1c1aa5f>] ? spurious_fault+0x75/0xd5
+> [   20.038125]  [<c1c1afdb>] bad_area_nosemaphore+0x12/0x14
+> 
+> Thanks,
+> Fengguang
 > 
