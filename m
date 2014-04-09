@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964891AbaDIXqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 19:46:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20777 "EHLO mga01.intel.com"
+	id S934176AbaDIXsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 19:48:17 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44483 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933182AbaDIXqL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 19:46:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,829,1389772800"; 
-   d="scan'208";a="510497123"
-From: "Du, Wenkai" <wenkai.du@intel.com>
-To: "Westerberg, Mika" <mika.westerberg@intel.com>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] i2c-designware: Mask interrupts during i2c controller
- enable
-Thread-Topic: [PATCH] i2c-designware: Mask interrupts during i2c controller
- enable
-Thread-Index: Ac9QJwrpXJhe4Vv7Q76dkBKVgbE+4AARZeWAAA7Jh9D//5EOAIAATf0QgABzAACAAldQAIAA/RGAgABeqgCAAAfmAIAAXh4QgADlsQD//ghNMA==
-Date: Wed, 9 Apr 2014 23:45:54 +0000
-Message-ID: <7286EAF50D3F4E4AADE7FEECEBF8B5A537A73919@ORSMSX109.amr.corp.intel.com>
-References: <20140404181613.GB19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A70F8B@ORSMSX109.amr.corp.intel.com>
- <20140404184232.GC19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A71351@ORSMSX109.amr.corp.intel.com>
- <20140405061316.GF19349@intel.com>
- <20140406185818.3aaca03d@alan.etchedpixels.co.uk>
- <20140407090403.GG19349@intel.com>
- <20140407154252.6b8f0f7e@alan.etchedpixels.co.uk>
- <20140407151107.GL19349@intel.com>
- <7286EAF50D3F4E4AADE7FEECEBF8B5A537A72207@ORSMSX109.amr.corp.intel.com>
- <20140408103006.GQ19349@intel.com>
-In-Reply-To: <20140408103006.GQ19349@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932977AbaDIXsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 19:48:16 -0400
+Message-ID: <1397087273.3671.150.camel@pasglop>
+Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jens Axboe <axboe@fb.com>
+Cc: Jan Kara <jack@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Brian J King <bjking1@us.ibm.com>
+Date: Thu, 10 Apr 2014 09:47:53 +1000
+In-Reply-To: <53454CBC.9060905@fb.com>
+References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Westerberg, Mika
-> Sent: Tuesday, April 08, 2014 3:30 AM
-> To: Du, Wenkai
-> Cc: One Thousand Gnomes; linux-i2c@vger.kernel.org; Wolfram Sang; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] i2c-designware: Mask interrupts during i2c controller enable
+On Wed, 2014-04-09 at 07:35 -0600, Jens Axboe wrote:
+> On 04/08/2014 10:44 PM, Benjamin Herrenschmidt wrote:
+> > Hi folks !
+> >
+> > While testing a branch of fixes before I send it to Linus, which
+> > happens to be based on 18a1a7a1d862ae0794a0179473d08a414dd49234,
+> > I hit this:
+> >
+> > kernel BUG at /home/benh/linux-powerpc-test/block/cfq-iosched.c:3145!
+> > cpu 0x3c: Vector: 700 (Program Check) at [c000003ca69bb190]
+> >      pc: c00000000033b05c: .cfq_dispatch_requests+0x90/0x99c
+> >      lr: c00000000033b038: .cfq_dispatch_requests+0x6c/0x99c
+> >      sp: c000003ca69bb410
+> >     msr: 9000000000029032
+> >    current = 0xc000003ca63d32a0
+> >    paca    = 0xc00000000ffef000	 softe: 0	 irq_happened: 0x01
+> >      pid   = 3487, comm = smartd
+> > kernel BUG at /home/benh/linux-powerpc-test/block/cfq-iosched.c:3145!
+> > enter ? for help
+> > [c000003ca69bb4c0] c00000000032000c .elv_drain_elevator+0x70/0xc8
+> > [c000003ca69bb540] c000000000320140 .__elv_add_request+0xdc/0x27c
+> > [c000003ca69bb5e0] c0000000003286f8 .blk_execute_rq_nowait+0xc0/0xf8
+> > [c000003ca69bb670] c0000000003287ec .blk_execute_rq+0xbc/0xe8
+> > [c000003ca69bb810] c000000000332350 .sg_io+0x218/0x39c
+> > [c000003ca69bb930] c000000000332c3c .scsi_cmd_ioctl+0x270/0x4ac
+> > [c000003ca69bba70] c0000000005d559c .sd_ioctl+0xa4/0xd8
+> > [c000003ca69bbb20] c00000000032eb1c .__blkdev_driver_ioctl+0x34/0x54
+> > [c000003ca69bbb90] c00000000032f83c .blkdev_ioctl+0x7b8/0x850
+> > [c000003ca69bbc40] c00000000018d6e0 .block_ioctl+0x4c/0x60
+> > [c000003ca69bbcb0] c0000000001691cc .do_vfs_ioctl+0x5cc/0x670
+> > [c000003ca69bbd90] c0000000001692b4 .SyS_ioctl+0x44/0x70
+> > [c000003ca69bbe30] c00000000000a024 syscall_exit+0x0/0x98
+> > --- Exception: c00 (System Call) at 00003fffb5240ee0
+> >
+> > The storage driver is our usual IBM "IPR".
+> >
+> > Is that a known issue ?
+> 
+> Nope, that's not a known issue. This must be related to the FIFO 
+> changes... How reproducible is this?
 
-> Yes, but only after resume. In normal cases the driver re-programs DW_IC_INTR_TX_EMPTY to
-> the mask (the other 3 flags are already set but they should be harmless as long as the TX fifo is
-> still empty).
-I have sent you failure traces in normal path. None of 4 interrupt sources was masked.  
+Dunno yet, haven't had a chance to dig. I'll try to grab that machine
+later today and reproduce &| bisect.
 
-> Where did you get this 25us required delay? My spec doesn't say anything about that. It does
-> however say that if the state bit is not yet changed, wait 25us (@400kHz) and re-read the bit.
-> So it can be that we don't wait at all once we toggle that bit.
-I believe the delay patch ("i2c-designware: enable/disable the controller properly") was from you? I would be happy to see the patch reverted if these delay are really not needed. 25us-250us delay 3 times (2 disable, 1 enable) at every transfer slow down the bus too much.
- 
-> All in all, I think we can solve this resume path timeout issue, by moving
-> __i2c_dw_enable() to be last in i2c_dw_xfer_init().
-This will invalidate 2 previous patches from you: " i2c-designware: enable/disable the controller properly" , and "i2c-designware: always clear interrupts before enabling them". Are you sure they can be all reverted?
+Cheers,
+Ben.
 
-> In addition we should fix the potential posted-write problem Alan pointed out (as a separate
-> patch). That could actually explain the issue you have seen where timeout occurs during normal
-> operation. Maybe fix here is to mask all interrupts at the end of the ISR and make sure that
-> possible posted writes gets flushed to the hardware before returning?
-But these patches attempt to fix "leaking" as we know of today. In my view, masking interrupts right before enable HW is still the best, which is common practice to most drivers. It is the spirit of the original driver as well: the original driver enables interrupts _after_ core enable. I think the author must have thought the interrupt have been disabled, otherwise why enable them again? Masking interrupts fixes all the known and unknown leaks and is future proof.
+
