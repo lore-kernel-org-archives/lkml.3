@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162AbaDIFbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 01:31:18 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:59759 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaDIFbO (ORCPT
+	id S1751529AbaDIFlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 01:41:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60034 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766AbaDIFly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 01:31:14 -0400
-Date: Wed, 9 Apr 2014 07:31:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL 00/10] perf/core improvements and fixes
-Message-ID: <20140409053109.GA26139@gmail.com>
-References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
- <8738hnk3dg.fsf@tassilo.jf.intel.com>
- <CAM9d7ciP4tLUmR-soEKH3nf6=XC5evKGfuQW1fUGA8Z42U3xCg@mail.gmail.com>
+	Wed, 9 Apr 2014 01:41:54 -0400
+Date: Wed, 9 Apr 2014 07:41:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Stancek <jstancek@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] futex: avoid race between requeue and wake
+Message-ID: <20140409054139.GU10526@twins.programming.kicks-ass.net>
+References: <b60ab13f8ae8fea64591670b017f1fe697cce7c9.1396945474.git.jstancek@redhat.com>
+ <CA+55aFxCc2SON-aEz-nex=1yOi9HMCV5ued1G=Otwkw8jyHZ4A@mail.gmail.com>
+ <CA+55aFyfKOv59hptv9rEcf31X5O8s26z+S8f-MchM1C0WtXx3A@mail.gmail.com>
+ <20140408181305.GT10526@twins.programming.kicks-ass.net>
+ <CA+55aFz+yMdXfsb-t3JzDhj6=M=-ggjDDGAQSbtfEcNhgyoopA@mail.gmail.com>
+ <1860555101.1890107.1396990941681.JavaMail.zimbra@redhat.com>
+ <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAM9d7ciP4tLUmR-soEKH3nf6=XC5evKGfuQW1fUGA8Z42U3xCg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzYwNde4ZyKgy_raRx9nz4+8he1-Fk9+_DDhWs-7fBbjw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 08, 2014 at 03:30:07PM -0700, Linus Torvalds wrote:
+> So I'll have to leave this decision to the futex people. But the
+> attached slightly more complex patch *may* be the better one.
 
-* Namhyung Kim <namhyung@kernel.org> wrote:
-
-> Hi Andi,
-> 
-> On Wed, Apr 9, 2014 at 4:50 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> > Jiri Olsa <jolsa@redhat.com> writes:
-> >
-> >> hi Ingo,
-> >> please consider pulling
-> >
-> > So who actually maintains perf user space now?
-> >
-> > I have at least 4 perf user patchkits/bug fixes pending, but 
-> > Arnaldo hasn't answered any email for weeks.
-
-So a bit of background: sloppy, abusive contributors not willing to 
-change get ignored after some time. For example Andi got such a bad 
-track record in the x86 and perf space with me that all your mails go 
-to /dev/null currently. (I only saw this one because Namhyung replied 
-to it.)
-
-Andi, as I explained it to you previously, if you want me to merge 
-patches from you then you need to 1) improve the way you work 2) send 
-it to someone who is willing to deal with you and sign off on it and 
-forward it to me.
-
-Seems like you managed to burn up your goodwill with Arnaldo as well. 
-You need to find someone else willing to pay the expense of dealing 
-with your passive-aggressive style.
-
-Just a quick example of your abuse: for example you know it perfectly 
-well that perf is well maintained, a simple 'git log tools/perf/' will 
-tell you that there's a steady stream of patches going in and that 
-perf contributors are busy.
-
-Yet in this mail you actually lie about that: you pretend that you 
-don't know that most Linux maintainers have trouble working with you, 
-you pretend that perf is "unmaintained", you pretend that you don't 
-know who is maintaining it, just to create unfair pressure on Arnaldo 
-...
-
-That kind of approach really sucks, and if you run out of people's 
-patience with petty office tactics like that then you should not fault 
-them, you should fault yourself.
-
-Thanks,
-
-	Ingo
+Of course, tglx is the main futex 'people' and he's not on CC.. *sigh*.
