@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965025AbaDIUww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:52:52 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35155 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933590AbaDIUws (ORCPT
+	id S965045AbaDIUxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:53:15 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:39613 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965000AbaDIUwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:52:48 -0400
-Date: Wed, 9 Apr 2014 22:52:46 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-sh@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] pwm: add period and polarity to struct pwm_lookup
-Message-ID: <20140409205246.GA2879@piout.net>
-References: <1397066649-3767-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1397066649-3767-2-git-send-email-alexandre.belloni@free-electrons.com>
- <20140409193705.GJ27282@n2100.arm.linux.org.uk>
+	Wed, 9 Apr 2014 16:52:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409193705.GJ27282@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140409202224.GA12953@kroah.com>
+References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+ <53451077.2030102@openwrt.org> <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com>
+ <20140409191225.GA10560@kroah.com> <CAB=NE6VqY8yXoYuE0o01vq86imY8EtqLdkPa4bGMvR3bTaj5KQ@mail.gmail.com>
+ <20140409202224.GA12953@kroah.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 9 Apr 2014 13:52:29 -0700
+X-Google-Sender-Auth: KiTU1NrXtWcY6CX6smd1HfbaavI
+Message-ID: <CAB=NE6XY5++p7hJQpQdwrFNUcGbUsKpC+oJiZQciXNduo+8j8A@mail.gmail.com>
+Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 at 20:37:06 +0100, Russell King - ARM Linux wrote :
-> On Wed, Apr 09, 2014 at 08:04:08PM +0200, Alexandre Belloni wrote:
-> > Adds a period and a polarity member to struct pwm_lookup so that when performing
-> > a lookup using the lookup table instead of device tree, we are able to set the
-> > period and the polarity accordingly like what is done in
-> > of_pwm_xlate_with_flags.
-> > 
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > ---
-> >  drivers/pwm/core.c  | 5 +++++
-> >  include/linux/pwm.h | 2 ++
-> >  2 files changed, 7 insertions(+)
-> > 
-> > diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> > index a80471399c20..206e5996359c 100644
-> > --- a/drivers/pwm/core.c
-> > +++ b/drivers/pwm/core.c
-> > @@ -663,6 +663,11 @@ struct pwm_device *pwm_get(struct device *dev, const char *con_id)
-> >  
-> >  	if (chip)
-> >  		pwm = pwm_request_from_chip(chip, index, con_id ?: dev_id);
-> > +	if (IS_ERR(pwm))
-> > +		return pwm;
-> > +
-> > +	pwm_set_period(pwm, p->period);
-> > +	pwm_set_polarity(pwm, p->polarity);
-> >  
-> >  	mutex_unlock(&pwm_lookup_lock);
-> 
-> Clearly, this is not right.  Returning while leaving the mutex locked?
-> No.
-> 
+On Wed, Apr 9, 2014 at 1:22 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Apr 09, 2014 at 01:01:23PM -0700, Luis R. Rodriguez wrote:
+>> On Wed, Apr 9, 2014 at 12:12 PM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> > On Wed, Apr 09, 2014 at 11:28:55AM -0700, Luis R. Rodriguez wrote:
+>> >> On Wed, Apr 9, 2014 at 2:18 AM, Felix Fietkau <nbd@openwrt.org> wrote:
+>> >> > The oldest kernel in OpenWrt that we're still supporting with updates of
+>> >> > the backports tree is 3.3, so raising the minimum requirement to 3.0 is
+>> >> > completely fine with me.
+>> >>
+>> >> OK note that 3.3 is not listed on kernel.org as supported. I'm fine in
+>> >> carrying the stuff for those for now but ultimately it'd also be nice
+>> >> if we didn't even have to test the kernels in between which are not
+>> >> listed. This does however raise the question of how often a kernel in
+>> >> between a list of supported kernels gets picked up to be supported
+>> >> eventually. Greg, Jiri, do you happen to know what the likelyhood of
+>> >> that can be?
+>> >
+>> > I don't know of anything ever getting picked up after I have said it
+>> > would not be supported anymore.
+>>
+>> Great! How soon after a release do you mention whether or not it will
+>> be supported? Like say, 3.14, which was just released.
+>
+> I only mention it around the time that it would normally go end-of-life.
+>
+> For example, if 3.13 were to be a release that was going to be "long
+> term", I would only say something around the normal time I would be no
+> longer supporting it.  Like in 2-3 weeks from now.
+>
+> So for 3.14, I'll not say anything about that until 3.16-rc1 is out,
+> give or take a week or two.
+>
+>> Also, as of late are you aware any distribution picking an unsupported
+>> kernel for their next choice of kernel?
+>
+> Sure, lots do, as they don't line up with my release cycles (I only pick
+> 1 long term kernel to maintain each year).  Look at the Ubuntu releases
+> for examples of that.  Also openSUSE and Fedora (although Fedora does
+> rev their kernel pretty regularly) don't usually line up.  The
+> "enterprise" distros are different, but even then, they don't always
+> line up either (which is why Jiri is maintaining 3.12...)
+>
+> Hope this helps,
 
-Sure, I will fix that crap, sorry about that and thanks for pointing it
-out.
+It does! Unless I don't hear any complaints then given that some
+distributions might choose a kernel in between and given also your
+great documented story behind the gains on trying to steer folks
+together on the 'ol 2.6.32 [0] and this now being faded, I'll be
+bumping backports to only support >= 3.0 soon, but we'll include all
+the series from 3.0 up to the latest. That should shrink compile /
+test time / support time on backports to 1/2.
 
-> The second issue is... with _just_ this patch applied, we end up with
-> "period" and "polarity" presumably initialised to zero, which means we
-> now end up with the above explicitly setting the period and polarity as
-> such.  Isn't that going to change the behaviour of this?
-> 
+[0] http://www.kroah.com/log/linux/2.6.32-stable.html
 
-I actually checked that.
-
-For the polarity, for now, it is assumed that it is normal unless
-specified otherwise.
-The only driver that was supporting inverting it using platform_data is
-pwm-renesas-tpu. It is used by board-armadillo800eva.c that I am
-modifying now (and I just now realise that I forgot to invert it).
-
-The only PWM controller that I know of that by default has its polarity
-inversed is the allwinner one and in the driver I submitted, I actually
-switch it to normal polarity in the probe instead of e.g. doing
-pwm->polarity = PWM_POLARITY_INVERSED;
-
-For the period, all the driver are assuming 0 after initialization.
-
-I think this is not specified. If you think that may be a concern then I
-suggest creating another macro and using a bitfield to know which value
-is set.
-
-I would also argue that when using device tree,
-of_pwm_xlate_with_flags() will set the period and the polarity
-unconditionally, this is replicating that behaviour.
-
-However, I could agree that we may need to test for
-pwm->chip->ops->set_polarity before calling pwm_set_polarity as we will
-get an error if it is NULL (but we actually discard that return value).
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+  Luis
