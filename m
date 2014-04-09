@@ -1,200 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbaDIF4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 01:56:08 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:39852 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831AbaDIF4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 01:56:05 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org, Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH v2] kbuild: move extra gcc checks to scripts/Makefile.extrawarn
-Date: Wed,  9 Apr 2014 14:55:30 +0900
-Message-Id: <1397022930-13098-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1757594AbaDIGBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 02:01:05 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:47221 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbaDIGBE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 02:01:04 -0400
+Date: Tue, 8 Apr 2014 23:00:59 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-mtd@lists.infradead.org, angus.clark@st.com
+Subject: Re: [PATCH 07/15] mtd: st_spi_fsm: Extend fsm_clear_fifo to handle
+ unwanted bytes
+Message-ID: <20140409060059.GD3131@norris-Latitude-E6410>
+References: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
+ <1395851969-13520-8-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395851969-13520-8-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W=... provides extra gcc checks.
+On Wed, Mar 26, 2014 at 04:39:21PM +0000, Lee Jones wrote:
+> From: Angus Clark <angus.clark@st.com>
+...
+> diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+> index 8c56b94..9df59e7 100644
+> --- a/drivers/mtd/devices/st_spi_fsm.c
+> +++ b/drivers/mtd/devices/st_spi_fsm.c
+...
+> +	dev_dbg(fsm->dev, "cleared %d byte(s) from the data FIFO\n", 4 - i);
+> +}
+> +
+>  static int stfsm_write_fifo(struct stfsm *fsm, uint32_t *buf, uint32_t size)
 
-Having such code in scripts/Makefile.build results in the same flags
-being added to KBUILD_CFLAGS multiple times becuase
-scripts/Makefile.build is invoked every time Kbuild descends into
-the subdirectories.
+This patch does not apply to l2-mtd.git, and neither do several of the
+following patches. You probably didn't rebase onto the patches regarding
+the above line (adding 'const').
 
-Since the top Makefile is already too cluttered, this commit moves
-all of extra gcc check stuff to a new file scripts/Makefile.extrawarn,
-which is included from the top Makefile.
+>  {
+>  	uint32_t words = size >> 2;
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Cc: Michal Marek <mmarek@suse.cz>
-CC: Sam Ravnborg <sam@ravnborg.org>
----
-
-Changes in v2:
-  - Move the code to a new file scripts/Makefile.extrawarn
-  - Move also "KBUILD_ENABLE_EXTRA_GCC_CHECKS" definition
-
-
-
- Makefile                   |  6 ++---
- scripts/Makefile.build     | 51 -----------------------------------------
- scripts/Makefile.extrawarn | 57 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 59 insertions(+), 55 deletions(-)
- create mode 100644 scripts/Makefile.extrawarn
-
-diff --git a/Makefile b/Makefile
-index cf3e075..4eadf2d 100644
---- a/Makefile
-+++ b/Makefile
-@@ -105,10 +105,6 @@ ifeq ("$(origin O)", "command line")
-   KBUILD_OUTPUT := $(O)
- endif
- 
--ifeq ("$(origin W)", "command line")
--  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
--endif
--
- # That's our default target when none is given on the command line
- PHONY := _all
- _all:
-@@ -702,6 +698,8 @@ ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
- 	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
- endif
- 
-+include $(srctree)/scripts/Makefile.extrawarn
-+
- # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
- KBUILD_CPPFLAGS += $(KCPPFLAGS)
- KBUILD_AFLAGS += $(KAFLAGS)
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index 9f0ee22..b5e02b6 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -50,57 +50,6 @@ ifeq ($(KBUILD_NOPEDANTIC),)
-         endif
- endif
- 
--#
--# make W=... settings
--#
--# W=1 - warnings that may be relevant and does not occur too often
--# W=2 - warnings that occur quite often but may still be relevant
--# W=3 - the more obscure warnings, can most likely be ignored
--#
--# $(call cc-option, -W...) handles gcc -W.. options which
--# are not supported by all versions of the compiler
--ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
--warning-  := $(empty)
--
--warning-1 := -Wextra -Wunused -Wno-unused-parameter
--warning-1 += -Wmissing-declarations
--warning-1 += -Wmissing-format-attribute
--warning-1 += -Wmissing-prototypes
--warning-1 += -Wold-style-definition
--warning-1 += $(call cc-option, -Wmissing-include-dirs)
--warning-1 += $(call cc-option, -Wunused-but-set-variable)
--warning-1 += $(call cc-disable-warning, missing-field-initializers)
--
--warning-2 := -Waggregate-return
--warning-2 += -Wcast-align
--warning-2 += -Wdisabled-optimization
--warning-2 += -Wnested-externs
--warning-2 += -Wshadow
--warning-2 += $(call cc-option, -Wlogical-op)
--warning-2 += $(call cc-option, -Wmissing-field-initializers)
--
--warning-3 := -Wbad-function-cast
--warning-3 += -Wcast-qual
--warning-3 += -Wconversion
--warning-3 += -Wpacked
--warning-3 += -Wpadded
--warning-3 += -Wpointer-arith
--warning-3 += -Wredundant-decls
--warning-3 += -Wswitch-default
--warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
--warning-3 += $(call cc-option, -Wvla)
--
--warning := $(warning-$(findstring 1, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
--warning += $(warning-$(findstring 2, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
--warning += $(warning-$(findstring 3, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
--
--ifeq ("$(strip $(warning))","")
--        $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
--endif
--
--KBUILD_CFLAGS += $(warning)
--endif
--
- include scripts/Makefile.lib
- 
- ifdef host-progs
-diff --git a/scripts/Makefile.extrawarn b/scripts/Makefile.extrawarn
-new file mode 100644
-index 0000000..54aaddb
---- /dev/null
-+++ b/scripts/Makefile.extrawarn
-@@ -0,0 +1,57 @@
-+# ==========================================================================
-+#
-+# make W=... settings
-+#
-+# W=1 - warnings that may be relevant and does not occur too often
-+# W=2 - warnings that occur quite often but may still be relevant
-+# W=3 - the more obscure warnings, can most likely be ignored
-+#
-+# $(call cc-option, -W...) handles gcc -W.. options which
-+# are not supported by all versions of the compiler
-+# ==========================================================================
-+
-+ifeq ("$(origin W)", "command line")
-+  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
-+endif
-+
-+ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
-+warning-  := $(empty)
-+
-+warning-1 := -Wextra -Wunused -Wno-unused-parameter
-+warning-1 += -Wmissing-declarations
-+warning-1 += -Wmissing-format-attribute
-+warning-1 += -Wmissing-prototypes
-+warning-1 += -Wold-style-definition
-+warning-1 += $(call cc-option, -Wmissing-include-dirs)
-+warning-1 += $(call cc-option, -Wunused-but-set-variable)
-+warning-1 += $(call cc-disable-warning, missing-field-initializers)
-+
-+warning-2 := -Waggregate-return
-+warning-2 += -Wcast-align
-+warning-2 += -Wdisabled-optimization
-+warning-2 += -Wnested-externs
-+warning-2 += -Wshadow
-+warning-2 += $(call cc-option, -Wlogical-op)
-+warning-2 += $(call cc-option, -Wmissing-field-initializers)
-+
-+warning-3 := -Wbad-function-cast
-+warning-3 += -Wcast-qual
-+warning-3 += -Wconversion
-+warning-3 += -Wpacked
-+warning-3 += -Wpadded
-+warning-3 += -Wpointer-arith
-+warning-3 += -Wredundant-decls
-+warning-3 += -Wswitch-default
-+warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
-+warning-3 += $(call cc-option, -Wvla)
-+
-+warning := $(warning-$(findstring 1, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
-+warning += $(warning-$(findstring 2, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
-+warning += $(warning-$(findstring 3, $(KBUILD_ENABLE_EXTRA_GCC_CHECKS)))
-+
-+ifeq ("$(strip $(warning))","")
-+        $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
-+endif
-+
-+KBUILD_CFLAGS += $(warning)
-+endif
--- 
-1.8.3.2
-
+Brian
