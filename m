@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933527AbaDINvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:51:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60867 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933449AbaDINvf (ORCPT
+	id S933553AbaDINwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:52:04 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:62648 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933477AbaDINvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:51:35 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 10/15] pinctrl: sunxi: add PL pin definitions
-Date: Wed,  9 Apr 2014 15:51:13 +0200
-Message-Id: <1397051478-4113-11-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 9 Apr 2014 09:51:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
+References: <20131113113927.GA13875@mwhitehe.csb>
+	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
+	<20131113102153.5f10e6b5@gandalf.local.home>
+	<20131113103134.5b8cf02f@gandalf.local.home>
+	<20131113105737.3f7a0b1b@gandalf.local.home>
+	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
+	<20131113111257.482c2955@gandalf.local.home>
+	<20131113161829.GE4138@linux.vnet.ibm.com>
+	<20131113112338.7d303c0f@gandalf.local.home>
+	<20131113163552.GF4138@linux.vnet.ibm.com>
+	<alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
+Date: Wed, 9 Apr 2014 19:21:53 +0530
+X-Google-Sender-Auth: -GSCf9lMUZHFmLE1nfULFWlwJkg
+Message-ID: <CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
+Subject: Re: nohz problem with idle time on old hardware
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mwhitehe@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define PL pin macros.
+On Thu, Nov 14, 2013 at 1:31 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Subject: NOHZ: Check for nohz active instead of nohz enabled
+>
+> RCU and the fine grained idle time accounting functions check
+> tick_nohz_enabled. But that variable is merily telling that NOHZ has
+> been enabled in the config and not been disabled on the command line.
+>
+> But it does not tell anything about nohz being active. That's what all
+> this should check for.
+>
+> Matthew reported, that the idle accounting on his old P1 machine
+> showed bogus values, when he enabled NOHZ in the config and did not
+> disable it on the kernel command line. The reason is that his machine
+> uses (refined) jiffies as a clocksource which explains why the "fine"
+> grained accounting went into lala land, because it depends on when the
+> system goes and leaves idle relative to the jiffies increment.
+>
+> Provide a tick_nohz_active indicator and let RCU and the accounting
+> code use this instead of tick_nohz_enable.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/pinctrl/pinctrl-sunxi.h | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> @@ -973,7 +968,7 @@ static void tick_nohz_switch_to_nohz(void)
+>         struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+>         ktime_t next;
+>
+> -       if (!tick_nohz_enabled)
+> +       if (!tick_nohz_active)
+>                 return;
 
-diff --git a/drivers/pinctrl/pinctrl-sunxi.h b/drivers/pinctrl/pinctrl-sunxi.h
-index 552b0e9..ef8890d 100644
---- a/drivers/pinctrl/pinctrl-sunxi.h
-+++ b/drivers/pinctrl/pinctrl-sunxi.h
-@@ -25,6 +25,7 @@
- #define PG_BASE	192
- #define PH_BASE	224
- #define PI_BASE	256
-+#define PL_BASE	352
- 
- #define SUNXI_PINCTRL_PIN_PA0	PINCTRL_PIN(PA_BASE + 0, "PA0")
- #define SUNXI_PINCTRL_PIN_PA1	PINCTRL_PIN(PA_BASE + 1, "PA1")
-@@ -323,6 +324,39 @@
- #define SUNXI_PINCTRL_PIN_PI30	PINCTRL_PIN(PI_BASE + 30, "PI30")
- #define SUNXI_PINCTRL_PIN_PI31	PINCTRL_PIN(PI_BASE + 31, "PI31")
- 
-+#define SUNXI_PINCTRL_PIN_PL0	PINCTRL_PIN(PL_BASE + 0, "PL0")
-+#define SUNXI_PINCTRL_PIN_PL1	PINCTRL_PIN(PL_BASE + 1, "PL1")
-+#define SUNXI_PINCTRL_PIN_PL2	PINCTRL_PIN(PL_BASE + 2, "PL2")
-+#define SUNXI_PINCTRL_PIN_PL3	PINCTRL_PIN(PL_BASE + 3, "PL3")
-+#define SUNXI_PINCTRL_PIN_PL4	PINCTRL_PIN(PL_BASE + 4, "PL4")
-+#define SUNXI_PINCTRL_PIN_PL5	PINCTRL_PIN(PL_BASE + 5, "PL5")
-+#define SUNXI_PINCTRL_PIN_PL6	PINCTRL_PIN(PL_BASE + 6, "PL6")
-+#define SUNXI_PINCTRL_PIN_PL7	PINCTRL_PIN(PL_BASE + 7, "PL7")
-+#define SUNXI_PINCTRL_PIN_PL8	PINCTRL_PIN(PL_BASE + 8, "PL8")
-+#define SUNXI_PINCTRL_PIN_PL9	PINCTRL_PIN(PL_BASE + 9, "PL9")
-+#define SUNXI_PINCTRL_PIN_PL10	PINCTRL_PIN(PL_BASE + 10, "PL10")
-+#define SUNXI_PINCTRL_PIN_PL11	PINCTRL_PIN(PL_BASE + 11, "PL11")
-+#define SUNXI_PINCTRL_PIN_PL12	PINCTRL_PIN(PL_BASE + 12, "PL12")
-+#define SUNXI_PINCTRL_PIN_PL13	PINCTRL_PIN(PL_BASE + 13, "PL13")
-+#define SUNXI_PINCTRL_PIN_PL14	PINCTRL_PIN(PL_BASE + 14, "PL14")
-+#define SUNXI_PINCTRL_PIN_PL15	PINCTRL_PIN(PL_BASE + 15, "PL15")
-+#define SUNXI_PINCTRL_PIN_PL16	PINCTRL_PIN(PL_BASE + 16, "PL16")
-+#define SUNXI_PINCTRL_PIN_PL17	PINCTRL_PIN(PL_BASE + 17, "PL17")
-+#define SUNXI_PINCTRL_PIN_PL18	PINCTRL_PIN(PL_BASE + 18, "PL18")
-+#define SUNXI_PINCTRL_PIN_PL19	PINCTRL_PIN(PL_BASE + 19, "PL19")
-+#define SUNXI_PINCTRL_PIN_PL20	PINCTRL_PIN(PL_BASE + 20, "PL20")
-+#define SUNXI_PINCTRL_PIN_PL21	PINCTRL_PIN(PL_BASE + 21, "PL21")
-+#define SUNXI_PINCTRL_PIN_PL22	PINCTRL_PIN(PL_BASE + 22, "PL22")
-+#define SUNXI_PINCTRL_PIN_PL23	PINCTRL_PIN(PL_BASE + 23, "PL23")
-+#define SUNXI_PINCTRL_PIN_PL24	PINCTRL_PIN(PL_BASE + 24, "PL24")
-+#define SUNXI_PINCTRL_PIN_PL25	PINCTRL_PIN(PL_BASE + 25, "PL25")
-+#define SUNXI_PINCTRL_PIN_PL26	PINCTRL_PIN(PL_BASE + 26, "PL26")
-+#define SUNXI_PINCTRL_PIN_PL27	PINCTRL_PIN(PL_BASE + 27, "PL27")
-+#define SUNXI_PINCTRL_PIN_PL28	PINCTRL_PIN(PL_BASE + 28, "PL28")
-+#define SUNXI_PINCTRL_PIN_PL29	PINCTRL_PIN(PL_BASE + 29, "PL29")
-+#define SUNXI_PINCTRL_PIN_PL30	PINCTRL_PIN(PL_BASE + 30, "PL30")
-+#define SUNXI_PINCTRL_PIN_PL31	PINCTRL_PIN(PL_BASE + 31, "PL31")
-+
- #define SUNXI_PIN_NAME_MAX_LEN	5
- 
- #define BANK_MEM_SIZE		0x24
--- 
-1.8.3.2
+Considering the impressive list of Reviewed-by and people involved
+in this patch, I am not sure I am reading the code well here.
 
+The above change isn't required as per my understanding. Otherwise
+we will never pass that check. tick_nohz_active is initialized as zero
+and so we will keep on returning for ever and wouldn't be able to set
+it to 1 ever.
+
+I have a patch to fix it up, but wanted to know your opinion before
+sending it.
+
+>         local_irq_disable();
+> @@ -981,7 +976,7 @@ static void tick_nohz_switch_to_nohz(void)
+>                 local_irq_enable();
+>                 return;
+>         }
+> -
+> +       tick_nohz_active = 1;
+>         ts->nohz_mode = NOHZ_MODE_LOWRES;
+>
+>         /*
