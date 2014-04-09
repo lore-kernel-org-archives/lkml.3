@@ -1,70 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964940AbaDIUIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:08:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54382 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342AbaDIUIi (ORCPT
+	id S934191AbaDIUOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:14:50 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:55050 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933342AbaDIUOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:08:38 -0400
-Date: Wed, 9 Apr 2014 22:08:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <minggr@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: current->sched_class->yield_task is NULL, any hint?
-Message-ID: <20140409200836.GE26782@laptop.programming.kicks-ass.net>
-References: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
- <20140409194742.GC26782@laptop.programming.kicks-ass.net>
+	Wed, 9 Apr 2014 16:14:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409194742.GC26782@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <5345A4FA.1090008@codeaurora.org>
+References: <1396926910-11227-1-git-send-email-keescook@chromium.org>
+	<1396926910-11227-3-git-send-email-keescook@chromium.org>
+	<20140409090204.GA6583@linaro.org>
+	<CAGXu5jL0Exz0TSYE1EaPVwxik5+0y3QXTWLkU6Ti+9+ahHM=ow@mail.gmail.com>
+	<5345A4FA.1090008@codeaurora.org>
+Date: Wed, 9 Apr 2014 13:14:48 -0700
+X-Google-Sender-Auth: 2kh-e-3ySCv2om6vOVFLmKGmh0c
+Message-ID: <CAGXu5jJdy4DVfvaG2smNhW+pHrLEZB+5fTABap3DGRdaKg80kw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] ARM: mm: allow text and rodata sections to be read-only
+From: Kees Cook <keescook@chromium.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 09:47:42PM +0200, Peter Zijlstra wrote:
-> On Wed, Apr 09, 2014 at 10:43:32AM -0700, Lin Ming wrote:
-> > [12890.586996] [<c007a364>] (sys_sched_yield+0x0/0x90) from [<c03cbf90>] (yield+0x2c/0x30)
-> > [12890.594779]  r5:c18f4000 r4:00000000
-> > [12890.598258] [<c03cbf64>] (yield+0x0/0x30) from [<c02eb650>] (netlink_broadcast_filtered+0x3ec/0x400)
-> > [12890.607170] [<c02eb264>] (netlink_broadcast_filtered+0x0/0x400) from [<c02eb68c>] (netlink_broadcast+0x28/0x30)
-> > [12890.616998] [<c02eb664>] (netlink_broadcast+0x0/0x30) from [<c02ed420>] (msg_netlink_broadcast+0xa8/0xb4)
-> > [12890.626337] [<c02ed378>] (msg_netlink_broadcast+0x0/0xb4) from [<c039ad10>] (br_igmp_send_netlink_msg+0xb0/0xbc)
-> > [12890.636256] [<c039ac60>] (br_igmp_send_netlink_msg+0x0/0xbc) from [<c039b4a0>] (br_igmp_mc_fdb_add+0x424/0x6c0)
-> > [12890.646084] [<c039b07c>] (br_igmp_mc_fdb_add+0x0/0x6c0) from [<c039bd34>] (br_igmp_process_v3+0x4a8/0x518)
-> > [12890.655515] [<c039b88c>] (br_igmp_process_v3+0x0/0x518) from [<c039c110>] (br_igmp_snooping+0x36c/0x3e4)
-> > [12890.664762] [<c039bda4>] (br_igmp_snooping+0x0/0x3e4) from [<c039c204>] (br_igmp_mc_forward+0x7c/0x270)
-> > [12890.673918] [<c039c188>] (br_igmp_mc_forward+0x0/0x270) from [<c0393120>] (br_handle_frame_finish+0x160/0x358)
-> > [12890.683654] [<c0392fc0>] (br_handle_frame_finish+0x0/0x358) from [<c0398e7c>] (br_nf_pre_routing_finish+0x348/0x364)
-> > [12890.693940] [<c0398b34>] (br_nf_pre_routing_finish+0x0/0x364) from [<c03994c4>] (br_nf_pre_routing+0x5e0/0x630)
-> > [12890.703767]  r7:c2e5c000 r6:00000000 r5:d71899c0 r4:da6ed0d0
-> > [12890.709291] [<c0398ee4>] (br_nf_pre_routing+0x0/0x630) from [<c02eebf8>] (nf_iterate+0x68/0xa4)
-> > [12890.717746] [<c02eeb90>] (nf_iterate+0x0/0xa4) from [<c02eec9c>] (nf_hook_slow+0x68/0x124)
-> > [12890.725803] [<c02eec34>] (nf_hook_slow+0x0/0x124) from [<c03935ac>] (br_handle_frame+0x294/0x2e4)
-> > [12890.734471] [<c0393318>] (br_handle_frame+0x0/0x2e4) from [<c02c9eb0>] (__netif_receive_skb+0x3b0/0x514)
-> > [12890.743718] [<c02c9b00>] (__netif_receive_skb+0x0/0x514) from [<c02cabf0>] (netif_receive_skb+0xa8/0xbc)
-> > [12890.752966] [<c02cab48>] (netif_receive_skb+0x0/0xbc) from [<c02cd730>] (napi_skb_finish+0x34/0x50)
-> > [12890.761756]  r5:d71899c0 r4:00000003
-> > [12890.765235] [<c02cd6fc>] (napi_skb_finish+0x0/0x50) from [<c02cd848>] (napi_gro_receive+0xfc/0x100)
-> > [12890.774056]  r4:00000000 r3:00000000
-> > [12890.777566] [<c02cd74c>] (napi_gro_receive+0x0/0x100) from [<bf1a1618>] (nss_gmac_receive+0x48/0x4c [qca_nss_gmac])
-> > [12890.787759] [<bf1a15d0>] (nss_gmac_receive+0x0/0x4c [qca_nss_gmac]) from [<bf186e40>] (nss_core_handle_napi+0x440/0xa78 [qca_nss_drv])
-> > [12890.799510]  r5:d71899c0 r4:bf18e410
-> > [12890.802989] [<bf186a00>] (nss_core_handle_napi+0x0/0xa78 [qca_nss_drv]) from [<c02cade4>] (net_rx_action+0x84/0x174)
-> > [12890.813244] [<c02cad60>] (net_rx_action+0x0/0x174) from [<c005ad80>] (__do_softirq+0xbc/0x160)
-> > [12890.821637] [<c005acc4>] (__do_softirq+0x0/0x160) from [<c005b250>] (irq_exit+0x58/0xa4)
-> > [12890.829542] [<c005b1f8>] (irq_exit+0x0/0xa4) from [<c000ed60>] (handle_IRQ+0x8c/0xb8)
-> 
-> Look at that, its calling yield() from a non-preemptible context as
-> well.
-> 
-> That code is full of fail.
+On Wed, Apr 9, 2014 at 12:52 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> On 4/9/2014 9:12 AM, Kees Cook wrote:
+>> On Wed, Apr 9, 2014 at 2:02 AM, Steve Capper <steve.capper@linaro.org> wrote:
+>>> Hi Kees,
+>>>
+>>> On Mon, Apr 07, 2014 at 08:15:10PM -0700, Kees Cook wrote:
+>>>> This introduces CONFIG_DEBUG_RODATA, making kernel text and rodata
+>>>> read-only. Additionally, this splits rodata from text so that rodata can
+>>>> also be NX, which may lead to wasted memory when aligning to SECTION_SIZE.
+>>>>
+>>>> The read-only areas are made writable during ftrace updates. Additional
+>>>> work is needed for kprobes and kexec, so the feature is temporarily
+>>>> marked as unavailable in Kconfig when those options are selected.
+>>>>
+>>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>>> ---
+>>>>  arch/arm/include/asm/cacheflush.h |    9 ++++++++
+>>>>  arch/arm/kernel/ftrace.c          |   17 ++++++++++++++
+>>>>  arch/arm/kernel/vmlinux.lds.S     |    3 +++
+>>>>  arch/arm/mm/Kconfig               |   12 ++++++++++
+>>>>  arch/arm/mm/init.c                |   46 +++++++++++++++++++++++++++++++++++++
+>>>>  5 files changed, 87 insertions(+)
+>>>>
+>>>> diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
+>>>> index 8b8b61685a34..b6fea0a1a88b 100644
+>>>> --- a/arch/arm/include/asm/cacheflush.h
+>>>> +++ b/arch/arm/include/asm/cacheflush.h
+>>>> @@ -487,4 +487,13 @@ int set_memory_rw(unsigned long addr, int numpages);
+>>>>  int set_memory_x(unsigned long addr, int numpages);
+>>>>  int set_memory_nx(unsigned long addr, int numpages);
+>>>>
+>>>> +#ifdef CONFIG_DEBUG_RODATA
+>>>> +void mark_rodata_ro(void);
+>>>> +void set_kernel_text_rw(void);
+>>>> +void set_kernel_text_ro(void);
+>>>> +#else
+>>>> +static inline void set_kernel_text_rw(void) { }
+>>>> +static inline void set_kernel_text_ro(void) { }
+>>>> +#endif
+>>>> +
+>>>>  #endif
+>>>> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+>>>> index af9a8a927a4e..ea446ae09c89 100644
+>>>> --- a/arch/arm/kernel/ftrace.c
+>>>> +++ b/arch/arm/kernel/ftrace.c
+>>>> @@ -15,6 +15,7 @@
+>>>>  #include <linux/ftrace.h>
+>>>>  #include <linux/uaccess.h>
+>>>>  #include <linux/module.h>
+>>>> +#include <linux/stop_machine.h>
+>>>>
+>>>>  #include <asm/cacheflush.h>
+>>>>  #include <asm/opcodes.h>
+>>>> @@ -35,6 +36,22 @@
+>>>>
+>>>>  #define      OLD_NOP         0xe1a00000      /* mov r0, r0 */
+>>>>
+>>>> +static int __ftrace_modify_code(void *data)
+>>>> +{
+>>>> +     int *command = data;
+>>>> +
+>>>> +     set_kernel_text_rw();
+>>>> +     ftrace_modify_all_code(*command);
+>>>> +     set_kernel_text_ro();
+>>>> +
+>>>> +     return 0;
+>>>> +}
+>>>
+>>> Would another approach be to keep all the kernel .text ro then override
+>>> probe_kernel_write (which has a weak reference), to create a separate
+>>> temporary rw mapping to the specific page that needs to be modified?
+>>>
+>>> That way you only worry about TLB and cache maintenance for a smaller
+>>> area. Also, your kernel .text VAs never actually become writable, so
+>>> you don't need to worry as much about unauthorised changes whilst your
+>>> guard is temporarily down.
+>>>
+>>> (Though lots of small changes could probably make this more
+>>> expensive, and you will need to double check aliasing in pre-ARMv7).
+>>
+>> As I understand it, early boot needs some of these areas RWX. Doing
+>> the protection during init-free means we can avoid all that and still
+>> allow the memory to get reclaimed. As to not doing section
+>> re-mappings, I share the same concern about it being very expensive to
+>> do lots of small changes. As such, I think this is the cleanest
+>> approach that is still portable.
+>>
+>
+> FWIW, our out of tree patches set up the permissions at map_lowmem time
+> and we've never run into any issue with incorrect RWX permissions to
+> the best of my knowledge.
 
-*phew* none of that br_igmp_* muck lives in any kernel tree near me so I
-can stop worrying :-)
+I thought there were problems with not being able to free init mem in this case?
 
-In any case, it wrongly passes a GFP_WAIT along to netlink_broadcast.
+> Just for comparison, how many small changes would need to happen for an
+> ftrace use case? Would these changes be happening on a hot path?
+
+I'm not familiar with the internals, but it seemed like it was fixing
+up a lot of entry points.
+
+-Kees
+
+>
+>> -Kees
+>>
+>
+> Thanks,
+> Laura
+> --
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
