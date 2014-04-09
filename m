@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758381AbaDIIEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 04:04:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48827 "EHLO mx2.suse.de"
+	id S1758389AbaDIIF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 04:05:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48837 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758262AbaDIIDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 04:03:54 -0400
-Date: Wed, 09 Apr 2014 10:03:52 +0200
-Message-ID: <s5h8urfq68n.wl%tiwai@suse.de>
+	id S1750814AbaDIIEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 04:04:05 -0400
+Date: Wed, 09 Apr 2014 10:04:04 +0200
+Message-ID: <s5h7g6zq68b.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Christoph Jaeger <christophjaeger@linux.com>
 Cc: perex@perex.cz, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: au1x00: use module_platform_driver()
-In-Reply-To: <1397029352-30889-1-git-send-email-christophjaeger@linux.com>
-References: <1397029352-30889-1-git-send-email-christophjaeger@linux.com>
+Subject: Re: [PATCH] sound: dmasound: use module_platform_driver_probe()
+In-Reply-To: <1397029433-30934-1-git-send-email-christophjaeger@linux.com>
+References: <1397029433-30934-1-git-send-email-christophjaeger@linux.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -23,10 +23,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed,  9 Apr 2014 09:42:32 +0200,
+At Wed,  9 Apr 2014 09:43:53 +0200,
 Christoph Jaeger wrote:
 > 
-> Eliminate boilerplate code by using module_platform_driver().
+> Eliminate boilerplate code by using module_platform_driver_probe().
 > 
 > Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
 
@@ -36,30 +36,34 @@ Thanks, applied.
 Takashi
 
 > ---
->  sound/mips/au1x00.c | 13 +------------
->  1 file changed, 1 insertion(+), 12 deletions(-)
+>  sound/oss/dmasound/dmasound_paula.c | 14 +-------------
+>  1 file changed, 1 insertion(+), 13 deletions(-)
 > 
-> diff --git a/sound/mips/au1x00.c b/sound/mips/au1x00.c
-> index a7cc49e..d10ef76 100644
-> --- a/sound/mips/au1x00.c
-> +++ b/sound/mips/au1x00.c
-> @@ -725,15 +725,4 @@ struct platform_driver au1000_ac97c_driver = {
->  	.remove		= au1000_ac97_remove,
+> diff --git a/sound/oss/dmasound/dmasound_paula.c b/sound/oss/dmasound/dmasound_paula.c
+> index 87910e9..c2d45a5 100644
+> --- a/sound/oss/dmasound/dmasound_paula.c
+> +++ b/sound/oss/dmasound/dmasound_paula.c
+> @@ -733,19 +733,7 @@ static struct platform_driver amiga_audio_driver = {
+>  	},
 >  };
 >  
-> -static int __init au1000_ac97_load(void)
+> -static int __init amiga_audio_init(void)
 > -{
-> -	return platform_driver_register(&au1000_ac97c_driver);
+> -	return platform_driver_probe(&amiga_audio_driver, amiga_audio_probe);
 > -}
 > -
-> -static void __exit au1000_ac97_unload(void)
+> -module_init(amiga_audio_init);
+> -
+> -static void __exit amiga_audio_exit(void)
 > -{
-> -	platform_driver_unregister(&au1000_ac97c_driver);
+> -	platform_driver_unregister(&amiga_audio_driver);
 > -}
 > -
-> -module_init(au1000_ac97_load);
-> -module_exit(au1000_ac97_unload);
-> +module_platform_driver(au1000_ac97c_driver);
+> -module_exit(amiga_audio_exit);
+> +module_platform_driver_probe(amiga_audio_driver, amiga_audio_probe);
+>  
+>  MODULE_LICENSE("GPL");
+>  MODULE_ALIAS("platform:amiga-audio");
 > -- 
 > 1.9.0
 > 
