@@ -1,191 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965024AbaDIV7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 17:59:46 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:35257 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934367AbaDIV7n convert rfc822-to-8bit (ORCPT
+	id S934432AbaDIWBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 18:01:39 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:9703 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933705AbaDIWBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 17:59:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=lF6qCAksB1Css0H9bWG
-	OTQ98xB3W5ghoy/Gyas6cJN/6PvWm289pCkaRf1RZqKivTh2biSdodHjuJJsXQOb
-	Xz9I+8i5oEJ9HPAsHVWO8qxN5sPpLQeFDqlmwzzztUXoIdpj7lXRhyLQeC9EP0LK
-	VbGh5ZfrDIAtSF3tpFm3gVQA=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.9.2
-Date: Wed, 09 Apr 2014 14:59:12 -0700
-Message-ID: <xmqqd2gqyxjj.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 9 Apr 2014 18:01:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnhVADTCRVN5LEcvPGdsb2JhbABZgwaDS4ULtnCFXYEkFwMBAQEBODWCJQEBAQMBOhwjBQsIAxIGCSUPBSUDBwYUE4d0B80LFxaNfwYBAU8HgySBFASYXZYFK4EtCBc
+Date: Thu, 10 Apr 2014 08:01:30 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15-rc1
+Message-ID: <20140409220130.GB27519@dastard>
+References: <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+ <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+ <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+ <87li281wx6.fsf_-_@xmission.com>
+ <87ob28kqks.fsf_-_@xmission.com>
+ <874n3n7czm.fsf_-_@xmission.com>
+ <87wqezl5df.fsf_-_@x220.int.ebiederm.org>
+ <20140409023027.GX18016@ZenIV.linux.org.uk>
+ <20140409023947.GY18016@ZenIV.linux.org.uk>
+ <87sipmbe8x.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 3020A820-C032-11E3-84CA-8D19802839F8-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sipmbe8x.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.9.2 is now available at
-the usual places.
+On Wed, Apr 09, 2014 at 10:32:14AM -0700, Eric W. Biederman wrote:
+> Al Viro <viro@ZenIV.linux.org.uk> writes:
+> 
+> > On Wed, Apr 09, 2014 at 03:30:27AM +0100, Al Viro wrote:
+> >
+> >> > When renaming or unlinking directory entries that are not mountpoints
+> >> > no additional locks are taken so no performance differences can result,
+> >> > and my benchmark reflected that.
+> >> 
+> >> It also means that d_invalidate() now might trigger fs shutdown.  Which
+> >> has bloody huge stack footprint, for obvious reasons.  And d_invalidate()
+> >> can be called with pretty deep stack - walk into wrong dentry while
+> >> resolving a deeply nested symlink and there you go...
+> >
+> > PS: I thought I actually replied with that point back a month or so ago,
+> > but having checked sent-mail...  Looks like I had not.  My deep apologies.
+> >
+> > FWIW, I think that overall this thing is a good idea, provided that we can
+> > live with semantics changes.  The implementation is too optimistic, though -
+> > at the very least, we want this work done upon namespace_unlock() held
+> > back until we are not too deep in stack.  task_work_add() fodder,
+> > perhaps?
+> 
+> Hmm.
+> 
+> Just to confirm what I am dealing with I have proceeded to measure the
+> amount of stack used by these operations.
+> 
+> For resolving a deeply nested symlink that hits the limit of 8 nested
+> symlinks, I find 4688 bytes left on the stack.  Which means we use
+> roughly 3504 bytes of stack when stating a deeply nested symlink.
+> 
+> For umount I had a little trouble measuring as typically the work done
+> by umount was not the largest stack consumer, but I found for a small
+> ext4 filesystem after the umount operation was complete there were
+> 5152 bytes left on the stack, or umount used roughly 3040 bytes.
 
-The release tarballs are found at:
+Try XFS, or make sure that the unmount path that you measure does
+something that requires memory allocation and triggers memory
+reclaim.
 
-    http://www.kernel.org/pub/software/scm/git/
+> 3504 + 3040 = 6544 bytes of stack used or 1684 bytes of stack left
+> unused.  Which certainly isn't a lot of margin but it is not overflowing
+> the kernel stack either. 
+> 
+> Is there a case that see where umount uses a lot more kernel stack?  Is
+> your concern an architecture other than x86_64 with different
+> limitations?
 
-The following public repositories all have a copy of the v1.9.2
-tag and the maint branch that the tag points at:
+Anything that enters the block layer IO path can consume upwards of
+4-5K of stack because memory allocation occurs right at the bottom
+of the IO stack and memory allocation is extremely stack heavy
+(think 2.5-3k of stack for a typical GFP_NOIO context allocation
+when there is no memory available).
 
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+Even scheduling requires you have around 1.5k of stack space
+available for the scheduler to do it's stuff so at 1684 bytes of
+stack left you're borderline for triggering stack overflow issues if
+there's a sleeping lock at that deep leaf function...
 
-The http://code.google.com/p/git-core/downloads/ site no longer
-accepts new tarballs for download; while the older release tarballs
-are still there, this one (and future ones) will not be.
+Cheers,
 
-
-Git v1.9.2 Release Notes
-========================
-
-Fixes since v1.9.1
-------------------
-
- * Documentation and in-code comments had many instances of mistaken
-   use of "nor", which have been corrected.
-
- * "git fetch --prune", when the right-hand-side of multiple fetch
-   refspecs overlap (e.g. storing "refs/heads/*" to
-   "refs/remotes/origin/*", while storing "refs/frotz/*" to
-   "refs/remotes/origin/fr/*"), aggressively thought that lack of
-   "refs/heads/fr/otz" on the origin site meant we should remove
-   "refs/remotes/origin/fr/otz" from us, without checking their
-   "refs/frotz/otz" first.
-
-   Note that such a configuration is inherently unsafe (think what
-   should happen when "refs/heads/fr/otz" does appear on the origin
-   site), but that is not a reason not to be extra careful.
-
- * "git update-ref --stdin" did not fail a request to create a ref
-   when the ref already existed.
-
- * "git diff --no-index -Mq a b" fell into an infinite loop.
-
- * When it is not necessary to edit a commit log message (e.g. "git
-   commit -m" is given a message without specifying "-e"), we used to
-   disable the spawning of the editor by overriding GIT_EDITOR, but
-   this means all the uses of the editor, other than to edit the
-   commit log message, are also affected.
-
- * "git status --porcelain --branch" showed its output with labels
-   "ahead/behind/gone" translated to the user's locale.
-
- * "git mv" that moves a submodule forgot to adjust the array that
-   uses to keep track of which submodules were to be moved to update
-   its configuration.
-
- * Length limit for the pathname used when removing a path in a deep
-   subdirectory has been removed to avoid buffer overflows.
-
- * The test helper lib-terminal always run an actual test_expect_*
-   when included, which screwed up with the use of skil-all that may
-   have to be done later.
-
- * "git index-pack" used a wrong variable to name the keep-file in an
-   error message when the file cannot be written or closed.
-
- * "rebase -i" produced a broken insn sheet when the title of a commit
-   happened to contain '\n' (or ended with '\c') due to a careless use
-   of 'echo'.
-
- * There were a few instances of 'git-foo' remaining in the
-   documentation that should have been spelled 'git foo'.
-
- * Serving objects from a shallow repository needs to write a
-   new file to hold the temporary shallow boundaries but it was not
-   cleaned when we exit due to die() or a signal.
-
- * When "git stash pop" stops after failing to apply the stash
-   (e.g. due to conflicting changes), the stash is not dropped. State
-   that explicitly in the output to let the users know.
-
- * The labels in "git status" output that describe the nature of
-   conflicts (e.g. "both deleted") were limited to 20 bytes, which was
-   too short for some l10n (e.g. fr).
-
-----------------------------------------------------------------
-
-Changes since v1.9.1 are as follows:
-
-Aman Gupta (1):
-      update-ref: fail create operation over stdin if ref already exists
-
-Benoit Pierre (7):
-      merge hook tests: fix missing '&&' in test
-      merge hook tests: use 'test_must_fail' instead of '!'
-      test patch hunk editing with "commit -p -m"
-      commit: fix patch hunk editing with "commit -p -m"
-      merge: fix GIT_EDITOR override for commit hook
-      merge hook tests: fix and update tests
-      run-command: mark run_hook_with_custom_index as deprecated
-
-Carlos Martín Nieto (2):
-      fetch: add a failing test for prunning with overlapping refspecs
-      fetch: handle overlaping refspecs on --prune
-
-Jeff King (6):
-      shallow: use stat_validity to check for up-to-date file
-      shallow: automatically clean up shallow tempfiles
-      t/lib-terminal: make TTY a lazy prerequisite
-      shallow: verify shallow file after taking lock
-      date: recognize bogus FreeBSD gmtime output
-      t4212: loosen far-in-future test for AIX
-
-John Keeping (1):
-      builtin/mv: fix out of bounds write
-
-Jonathan Nieder (2):
-      wt-status: extract the code to compute width for labels
-      wt-status: i18n of section labels
-
-Junio C Hamano (8):
-      stash pop: mention we did not drop the stash upon failing to apply
-      wt-status: make full label string to be subject to l10n
-      wt-status: lift the artificual "at least 20 columns" floor
-      index-pack: report error using the correct variable
-      diff-no-index: correctly diagnose error return from diff_opt_parse()
-      Start preparing for 1.9.1
-      Update draft release notes to 1.9.2
-      Git 1.9.2
-
-Justin Lebar (4):
-      Documentation: fix misuses of "nor"
-      contrib: fix misuses of "nor"
-      comments: fix misuses of "nor"
-      code and test: fix misuses of "nor"
-
-Matthieu Moy (1):
-      status: disable translation when --porcelain is used
-
-Michael Haggerty (2):
-      checkout_entry(): use the strbuf throughout the function
-      entry.c: fix possible buffer overflow in remove_subtree()
-
-Ramkumar Ramachandra (1):
-      Documentation/merge-strategies: avoid hyphenated commands
-
-Thomas Ackermann (1):
-      doc/http-backend: missing accent grave in literal mark-up
-
-Uwe Storbeck (2):
-      rebase -i: do not "echo" random user-supplied strings
-      test-lib.sh: do not "echo" caller-supplied strings
-
-brian m. carlson (1):
-      mv: prevent mismatched data when ignoring errors.
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
