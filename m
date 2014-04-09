@@ -1,120 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938AbaDIPwy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:52:54 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43918 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908AbaDIPwv (ORCPT
+	id S933767AbaDIPzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:55:24 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30165 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908AbaDIPzW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:52:51 -0400
+	Wed, 9 Apr 2014 11:55:22 -0400
+Date: Wed, 9 Apr 2014 11:55:06 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
+        konrad@kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org, keir@xen.org,
+        jbeulich@suse.com
+Subject: Re: [Xen-devel] [XEN PATCH 1/2] hvm: Support more than 32 VCPUS when
+ migrating.
+Message-ID: <20140409155506.GA6746@phenom.dumpdata.com>
+References: <1396859560.22845.4.camel@kazak.uk.xensource.com>
+ <1396977950-8789-1-git-send-email-konrad@kernel.org>
+ <1396977950-8789-2-git-send-email-konrad@kernel.org>
+ <53443D88.6010202@citrix.com>
+ <20140408185346.GA1678@phenom.dumpdata.com>
+ <5344F89D.3020209@citrix.com>
+ <20140409153444.GA6604@phenom.dumpdata.com>
+ <5345697D.8000405@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <534556CF.1010800@pobox.com>
-References: <5344251D.7040805@pobox.com> <CAErSpo6KuYLaoEsxR4jJQ98P23kNEMzMcu_-RyM3nWd6YRxgag@mail.gmail.com>
- <5344679E.1030008@pobox.com> <1397011868.3671.94.camel@pasglop>
- <53454660.5090603@pobox.com> <5345555A.20108@pobox.com> <534556CF.1010800@pobox.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 9 Apr 2014 09:52:30 -0600
-Message-ID: <CAErSpo63gcBZKBvF3XRjgg2jWYhTOs4Tj6yptBvdX6-_NP3VeA@mail.gmail.com>
-Subject: Re: driver skip pci_set_master, fix it? No.
-To: Mark Lord <mlord@pobox.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <5345697D.8000405@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 9, 2014 at 8:18 AM, Mark Lord <mlord@pobox.com> wrote:
-> On 14-04-09 10:12 AM, Mark Lord wrote:
->> On 14-04-09 09:08 AM, Mark Lord wrote:
->>> On 14-04-08 10:51 PM, Benjamin Herrenschmidt wrote:
->>>> On Tue, 2014-04-08 at 17:18 -0400, Mark Lord wrote:
->>>>>> I assume you're talking about the one added by cf3e1feba7f9 ("PCI:
->>>>>> Workaround missing pci_set_master in pci drivers"), but as far as I
->>>>>> can tell, it only calls pci_set_master() for *bridge* devices.  What
->>>>>> am I missing?  Is pci_set_master() being called for your endpoint?
->>>>>> What path is that?
->>>>>
->>>>> Yes, it is being called during execution of the _probe() function in my driver,
->>>>> as evidenced by the annoying (and wrong) message it produces.
->>>>>
->>>>> Next time I've got the hardware at hand, I'll put a "dump_stack()" into there
->>>>> to see the exact calling path.
->>>>
->>>> Note that one of the reason we want to do it early on bridges is that without it,
->>>> we may also not get the PCIe error messages.
->>>
->>> Sure, for bridges.
->>>
->>> I'll get a stack trace later today, but what I suspect is happening
->>> is that this multi-function card is being treated by the PCI layers
->>> as a "bridge" for purposes of the multiple virtual functions it implements.
->>>
->>> We will probably need to distinguish this kind of device from real bridges here.
->>
->> Here's the call trace, all the way back to k7_probe(),
->> the driver's PCI "probe" function, and beyond:
->>
->> [   30.481454] k7: loading driver version 0.80
->> [   30.485561] pcieport 0000:00:1c.0: driver skip pci_set_master, fix it!
+On Wed, Apr 09, 2014 at 04:38:37PM +0100, David Vrabel wrote:
+> On 09/04/14 16:34, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Apr 09, 2014 at 09:37:01AM +0200, Roger Pau Monné wrote:
+> >> On 08/04/14 20:53, Konrad Rzeszutek Wilk wrote:
+> >>> On Tue, Apr 08, 2014 at 08:18:48PM +0200, Roger Pau Monné wrote:
+> >>>> On 08/04/14 19:25, konrad@kernel.org wrote:
+> >>>>> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >>>>>
+> >>>>> When we migrate an HVM guest, by default our shared_info can
+> >>>>> only hold up to 32 CPUs. As such the hypercall
+> >>>>> VCPUOP_register_vcpu_info was introduced which allowed us to
+> >>>>> setup per-page areas for VCPUs. This means we can boot PVHVM
+> >>>>> guest with more than 32 VCPUs. During migration the per-cpu
+> >>>>> structure is allocated fresh by the hypervisor (vcpu_info_mfn
+> >>>>> is set to INVALID_MFN) so that the newly migrated guest
+> >>>>> can do make the VCPUOP_register_vcpu_info hypercall.
+> >>>>>
+> >>>>> Unfortunatly we end up triggering this condition:
+> >>>>> /* Run this command on yourself or on other offline VCPUS. */
+> >>>>>  if ( (v != current) && !test_bit(_VPF_down, &v->pause_flags) )
+> >>>>>
+> >>>>> which means we are unable to setup the per-cpu VCPU structures
+> >>>>> for running vCPUS. The Linux PV code paths make this work by
+> >>>>> iterating over every vCPU with:
+> >>>>>
+> >>>>>  1) is target CPU up (VCPUOP_is_up hypercall?)
+> >>>>>  2) if yes, then VCPUOP_down to pause it.
+> >>>>>  3) VCPUOP_register_vcpu_info
+> >>>>>  4) if it was down, then VCPUOP_up to bring it back up
+> >>>>>
+> >>>>> But since VCPUOP_down, VCPUOP_is_up, and VCPUOP_up are
+> >>>>> not allowed on HVM guests we can't do this. This patch
+> >>>>> enables this.
+> >>>>
+> >>>> Hmmm, this looks like a very convoluted approach to something that could
+> >>>> be solved more easily IMHO. What we do on FreeBSD is put all vCPUs into
+> >>>> suspension, which means that all vCPUs except vCPU#0 will be in the
+> >>>> cpususpend_handler, see:
+> >>>>
+> >>>> http://svnweb.freebsd.org/base/head/sys/amd64/amd64/mp_machdep.c?revision=263878&view=markup#l1460
+> >>>
+> >>> How do you 'suspend' them? If I remember there is a disadvantage of doing
+> >>> this as you have to bring all the CPUs "offline". That in Linux means using
+> >>> the stop_machine which is pretty big hammer and increases the latency for migration.
+> >>
+> >> In order to suspend them an IPI_SUSPEND is sent to all vCPUs except vCPU#0:
+> >>
+> >> http://fxr.watson.org/fxr/source/kern/subr_smp.c#L289
+> >>
+> >> Which makes all APs call cpususpend_handler, so we know all APs are
+> >> stuck in a while loop with interrupts disabled:
+> >>
+> >> http://fxr.watson.org/fxr/source/amd64/amd64/mp_machdep.c#L1459
+> >>
+> >> Then on resume the APs are taken out of the while loop and the first
+> >> thing they do before returning from the IPI handler is registering the
+> >> new per-cpu vcpu_info area. But I'm not sure this is something that can
+> >> be accomplished easily on Linux.
+> > 
+> > That is a bit of what the 'stop_machine' would do. It puts all of the
+> > CPUs in whatever function you want. But I am not sure of the latency impact - as
+> > in what if the migration takes longer and all of the CPUs sit there spinning.
+> > Another variant of that is the 'smp_call_function'.
+> 
+> I tested stop_machine() on all CPUs during suspend once and it was
+> awful:  100s of ms of additional downtime.
 
-This message says we're enabling bus mastering for a PCIe Root Port,
-which I think is the expected behavior and shouldn't cause trouble for
-your device (correct me if I'm wrong).
+Yikes.
+> 
+> Perhaps a hand-rolled IPI-and-park-in-handler would be quicker the full
+> stop_machine().
 
-I don't know the system topology, but I'm guessing the k7 device is
-below that Root Port.  We might be enabling bus mastering for the k7
-device, too, but that's not what this message is about, and we'd have
-to look at the k7 command register to know for sure whether we did
-anything to it.
+But that is clearly a bigger patch than this little bug-fix.
 
->> [   30.485580] CPU: 2 PID: 4401 Comm: insmod Tainted: G           O 3.12.14 #3
->> [   30.485583] Hardware name: Supermicro X9SCI/X9SCA/X9SCI/X9SCA, BIOS 2.0b 09/17/2012
->> [   30.485590]  0000000000000300 ffff88041c11b9b8 ffffffff8156c40b 0000000000000000
->> [   30.485598]  ffff88041d2b7000 ffff88041c11b9d8 ffffffff812dc493 0000000000000300
->> [   30.485603]  ffff88041d399000 ffff88041c11ba08 ffffffff812dc50d 0000000000001000
->> [   30.485607] Call Trace:
->> [   30.485616]  [<ffffffff8156c40b>] dump_stack+0x4f/0x84
->> [   30.485622]  [<ffffffff812dc493>] pci_enable_bridge+0x93/0xa0
->> [   30.485627]  [<ffffffff812dc50d>] pci_enable_device_flags+0x6d/0xe0
->> [   30.485631]  [<ffffffff812dc58e>] pci_enable_device+0xe/0x10
->> [   30.485641]  [<ffffffffa0469c0d>] k7_enable_device+0x3d/0xa30 [k7]
->> [   30.485649]  [<ffffffffa0462d72>] ? k7_devmem_alloc+0x32/0x140 [k7]
->> [   30.485654]  [<ffffffff81572ab6>] ? _raw_spin_lock+0x16/0x40
->> [   30.485658]  [<ffffffff81572721>] ? _raw_spin_unlock+0x11/0x40
->> [   30.485666]  [<ffffffffa046aee8>] k7_probe+0x458/0x630 [k7]
->>
->> [   30.485682]  [<ffffffff812de3d6>] local_pci_probe+0x46/0x80
->> [   30.485696]  [<ffffffff812de6f1>] pci_device_probe+0x101/0x110
->> [   30.485702]  [<ffffffff813941d6>] driver_probe_device+0x76/0x240
->> [   30.485705]  [<ffffffff8139443b>] __driver_attach+0x9b/0xa0
->> [   30.485709]  [<ffffffff813943a0>] ? driver_probe_device+0x240/0x240
->> [   30.485713]  [<ffffffff81392385>] bus_for_each_dev+0x55/0x90
->> [   30.485717]  [<ffffffff81393ce9>] driver_attach+0x19/0x20
->> [   30.485720]  [<ffffffff81393814>] bus_add_driver+0x104/0x290
->> [   30.485724]  [<ffffffff81394abf>] driver_register+0x5f/0xf0
->> [   30.485728]  [<ffffffff812dd3f6>] __pci_register_driver+0x46/0x50
->> [   30.485736]  [<ffffffffa024c16e>] k7_init+0x16e/0x1000 [k7]
->> [   30.485746]  [<ffffffffa024c000>] ? 0xffffffffa024bfff
->> [   30.485765]  [<ffffffff81000302>] do_one_initcall+0x112/0x160
->> [   30.485779]  [<ffffffff81038143>] ? set_memory_nx+0x43/0x50
->> [   30.485785]  [<ffffffff810abbe1>] load_module+0x1e51/0x2480
->> [   30.485789]  [<ffffffff810a8b10>] ? show_initstate+0x50/0x50
->> [   30.485794]  [<ffffffff810ac2ae>] SyS_init_module+0x9e/0xc0
->> [   30.485799]  [<ffffffff8157389b>] tracesys+0xdd/0xe
->>
->
-> The e1000e network driver is suffering from this as well in 3.12.14.
-
-I'll look at this more closely, in 3.12.14 in particular (I was
-looking at 3.14 before).  Can you collect "lspci -vv" output for one
-or both of these systems (the whole system, not just the device in
-question)?
-
-Maybe you could read the PCI command register after the
-pci_enable_device() and verify that bus mastering is actually being
-enabled when you didn't expect it?
-
-Bjorn
+Do you want to just take this patch as is and then later on I can work on
+prototyping the 'IPI-and-park-in-handler'?
