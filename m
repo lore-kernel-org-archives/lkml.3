@@ -1,114 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280AbaDIM7E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 08:59:04 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:60913 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781AbaDIM7B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 08:59:01 -0400
-Message-ID: <5345440E.10800@hitachi.com>
-Date: Wed, 09 Apr 2014 21:58:54 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S933170AbaDINI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:08:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55474 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932674AbaDINIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 09:08:25 -0400
+Date: Wed, 9 Apr 2014 14:08:19 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Josh Berkus <josh@agliodbs.com>
+Cc: Robert Haas <robertmhaas@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andres Freund <andres@2ndquadrant.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, sivanich@sgi.com
+Subject: Re: [PATCH 0/2] Disable zone_reclaim_mode by default
+Message-ID: <20140409130819.GS7292@suse.de>
+References: <1396910068-11637-1-git-send-email-mgorman@suse.de>
+ <5343A494.9070707@suse.cz>
+ <alpine.DEB.2.10.1404080914280.8782@nuc>
+ <CA+TgmoY=vUdtdnJUEK1h-UcaNoqqLUctt44S8vj2B7EVUXUOyA@mail.gmail.com>
+ <WM!55d2a092da9f6180473043487a4eb612ae8195f78d2ffdd83f673ed5cb2cb9659cf61e0c8d5bae23f5c914057bcd2ee4!@asav-3.01.com>
+ <53445481.3030202@agliodbs.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/9] uprobes/x86: Introduce uprobe_xol_ops and arch_uprobe->ops
-References: <20140404185131.GA14738@redhat.com> <5343BCF0.3030605@hitachi.com> <20140408161020.GB31460@redhat.com>
-In-Reply-To: <20140408161020.GB31460@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <53445481.3030202@agliodbs.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/09 1:10), Oleg Nesterov wrote:
-> On 04/08, Masami Hiramatsu wrote:
->>
->> (2014/04/05 3:51), Oleg Nesterov wrote:
->>>
->>> TODO: An error from adjust_ret_addr() shouldn't be silently ignored,
->>> we should teach arch_uprobe_post_xol() or handle_singlestep() paths
->>> to restart the probed insn in this case. And probably "adjust" can
->>> be simplified and turned into set_ret_addr(). It seems that we do
->>> not really need copy_from_user(), we can always calculate the value
->>> we need to write into *regs->sp.
->>
->> It seems that you fixed this in 8/9, we don't need the TODO list in
->> the description.
+On Tue, Apr 08, 2014 at 03:56:49PM -0400, Josh Berkus wrote:
+> On 04/08/2014 03:53 PM, Robert Haas wrote:
+> > In an ideal world, the kernel would put the hottest pages on the local
+> > node and the less-hot pages on remote nodes, moving pages around as
+> > the workload shifts.  In practice, that's probably pretty hard.
+> > Fortunately, it's not nearly as important as making sure we don't
+> > unnecessarily hit the disk, which is infinitely slower than any memory
+> > bank.
 > 
-> Well, OK, I'll update the changelog and remove the "error ... ignored"
-> part. Although to be honest, I do not understand why do you think it
-> is bad to document the other problems you found while you were writing
-> the patch.
-
-Because you know how to fix that and you just can do that in following
-patches :). In that case, you don't need to state it here.
-
-
->>> +	if (auprobe->ops->emulate)
->>> +		return auprobe->ops->emulate(auprobe, regs);
->>> +
->>> +	/* TODO: move this code into ->emulate() hook */
->>
->> If you think this can move into the emulate(),
-> 
-> Yes sure,
-> 
->> you should do in this
->> patch.
-> 
-> No, sorry, I strongly disagree, this should come as a separate change,
-> and only after "Emulate jmp's".
-
-Ah, I see, with your RFC series. :)
-
->> Since the following code runs by default, there should be
->> no problem to do that.
-> 
-> Hmm. Not sure I understand "by default".
-
-I meant that the auprobe->ops->emulate() is always skipped and the
-old code is always run, since the default_emulate_op() is NULL at
-this point.
-
-> If you meant that this should
-> go into default_emulate_op() (which we do not have), then I strongly
-> disagree again.
-> 
-> It should not, if nothing else we need to record insn->length somewhere,
-> this should go into ttt_emulate_op() we add later. And it simply looks
-> much more natural to handle jmp's and nop's together.
-
-I see, OK with ttt_emulate_op() series.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you :)
-
-> 
-> Masami, this time I simply can't understand your objections, please
-> clarify.
-> 
-> Thanks,
-> 
-> Oleg.
-> 
+> Even if the kernel could do this, we would *still* have to disable it
+> for PostgreSQL, since our double-buffering makes our pages look "cold"
+> to the kernel ... as discussed.
 > 
 
+If it's the shared mapping that is being used then automatic NUMA
+balancing should migrate those pages to a node local to the CPU
+accessing it but how well it works will partially depend on how much
+those accesses move around. It's independent of the zone_reclaim_mode
+issue.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Mel Gorman
+SUSE Labs
