@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934400AbaDIUus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:50:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50194 "EHLO mail.zytor.com"
+	id S964985AbaDIUwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:52:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9252 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933590AbaDIUur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:50:47 -0400
-Message-ID: <5345B278.8060703@zytor.com>
-Date: Wed, 09 Apr 2014 13:50:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S933590AbaDIUwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 16:52:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,828,1389772800"; 
+   d="scan'208";a="510390472"
+Date: Wed, 9 Apr 2014 16:51:11 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140409205111.GG5727@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140409102758.GM32103@quack.suse.cz>
 MIME-Version: 1.0
-To: Adam Williamson <awilliam@redhat.com>
-CC: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        rostedt@goodmis.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/reboot] [PATCH] x86: Try the BIOS reboot method before
- the PCI reboot method
-References: <20140404064120.GB11877@gmail.com>			<tip-d122ab8d224a59aa0c3e4ba3540c6ab99556c3e3@git.kernel.org>			<20140404080006.GB6944@gmail.com>	<533EB5F1.8060002@linux.intel.com>			<20140404151359.GB12370@srcf.ucam.org>		 <20140406184023.1e31412d@alan.etchedpixels.co.uk>		 <53419F84.2090204@zytor.com> <53425B2A.10001@linux.intel.com>		 <53431296.10502@zytor.com>	 <1396908292.4958.24.camel@adam.happyassassin.net>	 <5343220A.3060007@zytor.com> <1396912372.4958.41.camel@adam.happyassassin.net>
-In-Reply-To: <1396912372.4958.41.camel@adam.happyassassin.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409102758.GM32103@quack.suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2014 04:12 PM, Adam Williamson wrote:
-> 
-> basically, we know that we probably can't come up with a standard
-> fallback chain that will work for *every* system, and the goal instead
-> is to come up with the approach that requires the *fewest* quirks.
-> 
+On Wed, Apr 09, 2014 at 12:27:58PM +0200, Jan Kara wrote:
+> > +	if (unlikely(vmf->pgoff >= size)) {
+> > +		mutex_unlock(&mapping->i_mmap_mutex);
+> > +		goto sigbus;
+>   You need to release the block you've got from the filesystem in case of
+> error here an below.
 
-Not quite.
-
-The problem is that we can't test everything, so part of it isn't just
-about the amount of quirks but also our confidence level in them.
-
-	-hpa
-
+What's the API to do that?  Call inode->i_op->setattr()?
