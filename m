@@ -1,122 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159AbaDILOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:14:41 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:18267 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560AbaDILOg (ORCPT
+	id S1758458AbaDILQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:16:17 -0400
+Received: from prifuk.cz ([31.31.77.140]:52583 "EHLO devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758261AbaDILQP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:14:36 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-7c-53452b9ac913
-Message-id: <53452B97.8020700@samsung.com>
-Date: Wed, 09 Apr 2014 13:14:31 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-Newsgroups: gmane.comp.video.dri.devel,gmane.linux.drivers.devicetree,gmane.linux.kernel.samsung-soc,gmane.linux.kernel,gmane.linux.drivers.video-input-infrastructure
-To: Rahul Sharma <r.sh.open@gmail.com>, Andrzej Hajda <a.hajda@samsung.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        sunil joshi <joshi@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
-References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
- <1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
- <534506B1.4040908@samsung.com>
- <CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
-In-reply-to: <CAPdUM4M109_kzY6cUMJQPSwgazvWmNDWL1JeXgiqnzvH8dhK2Q@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xq7qztF2DDXo+qFrcWneO1WL+ESBx
-	5et7NosDf3YwWnzf9YXdonfBVTaLC0972CzONr1ht7i8aw6bRc+GrawWM87vY7JY+CLeYsqi
-	w6wWrXuPsFvM+7yTyYHfY+esu+wem1Z1snncubaHzeN+93Emj74tqxg9jt/YzuTxeZNcAHsU
-	l01Kak5mWWqRvl0CV8bdA0+YCvoFKnYdn8XSwHiCp4uRk0NCwETi3rYPLBC2mMSFe+vZuhi5
-	OIQEljJK7Fx+lAnC+cwosaTrIjNIFa+AlsSNx8vYQWwWAVWJy2/+g8XZgCYdW/KZEcQWFYiQ
-	mDtxMxtEvaDEj8n3WEAG8QmsYJQ487UVbJ2IgLfExrebwDYwC7SzSrx/9oYJJCEsYCOx7/Jp
-	FojV7xklVhz4A5bgFAiWOHxsI9hqZgEdif2t09ggbHmJzWveMk9gFJyFZOMsJGWzkJQtYGRe
-	xSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESZ193MC49ZnWIUYCDUYmHV8HSJViINbGsuDL3
-	EKMEB7OSCO9zNtdgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwrfqlGG14r3VM38+KpPwpONcsn
-	hK4Pr1HXsjttICryULb+6Ry/IxIfd0u1Lnnixf3JJX9R2cGCxAetZhaPS71vnro/eV2rF0N0
-	uSDfK07FW3ZCp55O2Cvan1Wwo1LP8OvbRJbY53wGp1ZbLLOY+XPXwd2f/U9K3b9z7mLGxrKF
-	hwu3FnBf2LhCiaU4I9FQi7moOBEA5Cbs65ECAAA=
+	Wed, 9 Apr 2014 07:16:15 -0400
+X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Apr 2014 07:16:15 EDT
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: dmitry.torokhov@gmail.com, jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Elias Vanderstuyft <elias.vds@gmail.com>
+Subject: [PATCH 04/24] Port twl6040-vibra to ff-memless-next
+Date: Wed, 09 Apr 2014 13:16:12 +0200
+Message-ID: <7022354.ZeeqfKrrUN@sigyn>
+User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
+In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
+References: <1609685.QRL9N9sQvX@sigyn>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rahul,
+Port twl6040-vibra to ff-memless-next
 
-On 04/09/2014 11:12 AM, Rahul Sharma wrote:
-> Hi Tomasz,
-> 
-> On 9 April 2014 14:07, Andrzej Hajda <a.hajda@samsung.com> wrote:
->> Hi Tomasz,
->>
->> On 04/08/2014 04:37 PM, Tomasz Stanislawski wrote:
->>> Add exynos-simple-phy driver to support a single register
->>> PHY interfaces present on Exynos4 SoC.
->>>
->>> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+---
+ drivers/input/misc/Kconfig         |  2 +-
+ drivers/input/misc/twl6040-vibra.c | 27 ++++++++++++++++++++++-----
+ 2 files changed, 23 insertions(+), 6 deletions(-)
 
-[snip]
-
->>> +
->>> +     regs = devm_ioremap(dev, res->start, res->end - res->start);
->>> +     if (!regs) {
->>> +             dev_err(dev, "failed to ioremap registers\n");
->>> +             return -EFAULT;
->>> +     }
->>
->> Why not devm_ioremap_resource? If not, resource_size function calculates
->> length of resource correctly.
->>
->> Anyway I like the idea of implementing multiple phys in one driver.
->> The only drawback I see is that some phys will be created even there are
->> no consumers for them. To avoid such situation you can try to use
->> lazy approach - create phy only if there is request for it,
->> exynos_phy_xlate callback should allow this.
->>
->> Regards
->> Andrzej
->>
-> 
-> Idea looks good. How about keeping compatible which is independent
-> of SoC, something like "samsung,exynos-simple-phy" and provide Reg
-> and Bit through phy provider node. This way we can avoid SoC specific
-> hardcoding in phy driver and don't need to look into dt bindings for
-> each new SoC.
-
-A very nice idea BUT there is a very strong pressure from DT guys
-to avoid adding any bit fields/offsets/masks in DT nodes.
-
-Hopefully, as long as driver name starts with "exynos-" prefix
-one can hide SoCs specific tricks deep inside driver code.
-
-The idea behind this driver was not to create a generic phy for 1-bit
-devices but rather to hide SoC-specific issues from client drivers
-like DRM-HDMI.
-
-> 
-> We can use syscon interface to access PMU bits like USB phy.
-> PMU is already registered as system controller
-> 
-
-Ok. I will try to use it in PATCHv3.
-
-> Regards,
-> Rahul Sharma.
-> 
-
-Regards,
-Tomasz Stanislawski
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 1016a1b..91dcae8 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -417,7 +417,7 @@ config INPUT_TWL4030_VIBRA
+ config INPUT_TWL6040_VIBRA
+ 	tristate "Support for TWL6040 Vibrator"
+ 	depends on TWL6040_CORE
+-	select INPUT_FF_MEMLESS
++	select INPUT_FF_MEMLESS_NEXT
+ 	help
+ 	  This option enables support for TWL6040 Vibrator Driver.
+ 
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index 77dc23b..7440a74 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -30,12 +30,14 @@
+ #include <linux/of.h>
+ #include <linux/workqueue.h>
+ #include <linux/input.h>
++#include <linux/input/ff-memless-next.h>
+ #include <linux/mfd/twl6040.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/regulator/consumer.h>
+ 
+ #define EFFECT_DIR_180_DEG	0x8000
++#define FF_UPDATE_RATE		50
+ 
+ /* Recommended modulation index 85% */
+ #define TWL6040_VIBRA_MOD	85
+@@ -197,9 +199,10 @@ static void vibra_play_work(struct work_struct *work)
+ }
+ 
+ static int vibra_play(struct input_dev *input, void *data,
+-		      struct ff_effect *effect)
++		      const struct mlnx_effect_command *command)
+ {
+ 	struct vibra_info *info = input_get_drvdata(input);
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	int ret;
+ 
+ 	/* Do not allow effect, while the routing is set to use audio */
+@@ -209,9 +212,23 @@ static int vibra_play(struct input_dev *input, void *data,
+ 		return -EBUSY;
+ 	}
+ 
+-	info->weak_speed = effect->u.rumble.weak_magnitude;
+-	info->strong_speed = effect->u.rumble.strong_magnitude;
+-	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 1 : -1;
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		info->weak_speed = rumble_force->weak;
++		info->strong_speed = rumble_force->strong;
++		if (info->strong_speed >= info->weak_speed)
++			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ? 1 : -1;
++		else
++			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ? 1 : -1;
++		break;
++	case MLNX_STOP_RUMBLE:
++		info->weak_speed = 0;
++		info->strong_speed = 0;
++		info->direction = 1;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	ret = queue_work(info->workqueue, &info->play_work);
+ 	if (!ret) {
+@@ -367,7 +384,7 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
+ 	info->input_dev->close = twl6040_vibra_close;
+ 	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
+ 
+-	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
++	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "couldn't register vibrator to FF\n");
+ 		goto err_ialloc;
+-- 
+1.9.1
 
 
