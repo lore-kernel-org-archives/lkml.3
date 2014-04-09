@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934244AbaDIS33 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 14:29:29 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44967 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933323AbaDIS3Z (ORCPT
+	id S934249AbaDISaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 14:30:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51989 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932847AbaDISaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 14:29:25 -0400
-Message-ID: <53459182.5090506@linaro.org>
-Date: Wed, 09 Apr 2014 11:29:22 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
+	Wed, 9 Apr 2014 14:30:22 -0400
+Date: Wed, 9 Apr 2014 20:30:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory
- non-volatile
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <1395436655-21670-3-git-send-email-john.stultz@linaro.org> <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com> <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com> <CAHGf_=qC1aUdoUg1QJc8DukXzkHVoJA+5rH6SLmj0x+cibxtig@mail.gmail.com>
-In-Reply-To: <CAHGf_=qC1aUdoUg1QJc8DukXzkHVoJA+5rH6SLmj0x+cibxtig@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/5] sched: Convert thread_group_cputime() to use
+ for_each_thread()
+Message-ID: <20140409183017.GF10526@twins.programming.kicks-ass.net>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+ <1397059882-23063-2-git-send-email-fweisbec@gmail.com>
+ <20140409171607.GA13498@dyad.arnhem.chello.nl>
+ <20140409173233.GA28615@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409173233.GA28615@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2014 02:50 PM, KOSAKI Motohiro wrote:
-> On Sun, Mar 23, 2014 at 1:26 PM, John Stultz <john.stultz@linaro.org> wrote:
->> On Sun, Mar 23, 2014 at 10:50 AM, KOSAKI Motohiro
->> <kosaki.motohiro@gmail.com> wrote:
->>>> +/**
->>>> + * vrange_check_purged_pte - Checks ptes for purged pages
->>>> + *
->>>> + * Iterates over the ptes in the pmd checking if they have
->>>> + * purged swap entries.
->>>> + *
->>>> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
->>>> + */
->>>> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
->>>> +                                       unsigned long end, struct mm_walk *walk)
->>>> +{
->>>> +       struct vrange_walker *vw = walk->private;
->>>> +       pte_t *pte;
->>>> +       spinlock_t *ptl;
->>>> +
->>>> +       if (pmd_trans_huge(*pmd))
->>>> +               return 0;
->>>> +       if (pmd_trans_unstable(pmd))
->>>> +               return 0;
->>>> +
->>>> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
->>>> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
->>>> +               if (!pte_present(*pte)) {
->>>> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
->>>> +
->>>> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
->>>> +                               vw->page_was_purged = 1;
->>>> +                               break;
->>> This function only detect there is vpurge entry or not. But
->>> VRANGE_NONVOLATILE should remove all vpurge entries.
->>> Otherwise, non-volatiled range still makes SIGBUS.
->> So in the following patch (3/5), we only SIGBUS if the swap entry
->> is_vpurged_entry()  && the vma is still marked volatile, so this
->> shouldn't be an issue.
-> When VOLATILE -> NON-VOLATILE -> VOLATILE transition happen,
-> the page immediately marked "was purged"?
->
-> I don't understand why vma check help.
+On Wed, Apr 09, 2014 at 07:32:34PM +0200, Oleg Nesterov wrote:
+> On 04/09, Peter Zijlstra wrote:
+> >
+> > On Wed, Apr 09, 2014 at 06:11:18PM +0200, Frederic Weisbecker wrote:
+> > > do_each_thread/while_each_thread iterators are deprecated by
+> > > for_each_thread/for_each_process_thread() APIs.
+> > >
+> > > Lets convert the callers in the cputime code accounting. The ultimate
+> > > goal is to remove the struct task_struct::thread_group field and
+> > > the corresponding do_each_thread/while_each_thread iterators that are
+> > > RCU unsafe.
+> > >
+> > > It also makes thread_group_cputime() eventually RCU-safe.
+> >
+> > this fails to explain how the current code is broken.
+> 
+> while_each_thread(g, t) will loop forever if g exits and removes itself
+> from ->thread_group. This can happen even if it is the group leader,
+> de_thread() can do this.
+> 
+> Another problem is that it is used wrongly very often, even if
+> while_each_thread() was fine people forget to check pid_alive() to ensure
+> it didn't exit even before we take rcu_read_lock().
+> 
+> for_each_thread(p, t) is always safe. Unless p's task_struct can't go away,
+> of course.
+> 
+> But there is a difference. Ignoring the bug above
+> 
+> 	p = g;
+> 	do {
+> 		printk("pid=%d\n", p->pid);
+> 	} while_each_thread(g, p);
+> 
+> always prints at least one pid.
+> 
+> 	for_each_thread(g, p)
+> 		printk("pid=%d\n", p->pid);
+> 
+> can print nothing if g has already exited.
 
-Ok, you have a good point here. I've changed the code in my tree to
-traverse all the ptes being unmarked and zap any psudo swp entries. This
-is more expensive, but does provide simpler semantics for these corner
-cases.
-
-Thanks again for the great review!
--john
-
-
-
+Cute,.. and all that lives in sched.h and I wasn't even Cc'ed :-(
