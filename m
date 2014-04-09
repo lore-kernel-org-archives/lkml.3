@@ -1,46 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694AbaDIIzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 04:55:17 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44601 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839AbaDIIzP (ORCPT
+	id S932735AbaDII4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 04:56:39 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:56336 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839AbaDII4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 04:55:15 -0400
-Date: Wed, 9 Apr 2014 11:54:57 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Luis Ortega <luiorpe1@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        lisa@xenapiadmin.com, DaeSeok Youn <daeseok.youn@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Lilis Iskandar <veeableful@gmail.com>
-Subject: Re: [PATCH] Staging: bcm: Qos: fixed braces' coding style
-Message-ID: <20140409085457.GD4912@mwanda>
-References: <1396998065-4448-1-git-send-email-luiorpe1@gmail.com>
- <20140408211103.GA17219@kroah.com>
- <CAHLRGxwHjN--1Jj5jGQtr2L6MXA4V9CU8B+v_9W4WVg=00ycWw@mail.gmail.com>
+	Wed, 9 Apr 2014 04:56:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHLRGxwHjN--1Jj5jGQtr2L6MXA4V9CU8B+v_9W4WVg=00ycWw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1396995583-5475-1-git-send-email-markus.mayer@linaro.org>
+References: <1396995583-5475-1-git-send-email-markus.mayer@linaro.org>
+Date: Wed, 9 Apr 2014 10:56:36 +0200
+Message-ID: <CAPDyKFpS3x902iQqEC69hkryHVGieeDykD=rBJX5OqYAD+afwA@mail.gmail.com>
+Subject: Re: [PATCH RESEND] mmc: Delay the card_event callback into the
+ mmc_rescan worker
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Markus Mayer <markus.mayer@linaro.org>
+Cc: Chris Ball <chris@printf.net>, Christian Daudt <bcm@fixthebug.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 10:28:01AM +0200, Luis Ortega wrote:
-> On Tue, Apr 8, 2014 at 11:11 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >
-> > Why the <TAB> before the '{' character?
-> 
-> It must have slipped in accidentally. Feel free to remove.
+On 9 April 2014 00:19, Markus Mayer <markus.mayer@linaro.org> wrote:
+> This change removes the callback from atomic context which it doesn't
+> need to be in, and puts it in line with the debounced rescan.
+>
+> This code is based on these e-mail threads with Christian Daudt:
+>
+>   https://lkml.org/lkml/2013/8/19/539
+>   https://lkml.org/lkml/2014/3/19/79
+>
+> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+> ---
+>  drivers/mmc/core/core.c      |    5 +++++
+>  drivers/mmc/core/slot-gpio.c |    4 +---
+>  include/linux/mmc/host.h     |    2 ++
+>  3 files changed, 8 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 098374b..ff7fd2e 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -2421,6 +2421,11 @@ void mmc_rescan(struct work_struct *work)
+>                 container_of(work, struct mmc_host, detect.work);
+>         int i;
+>
+> +       if (host->trigger_card_event && host->ops->card_event) {
+> +               host->ops->card_event(host);
+> +               host->trigger_card_event = false;
+> +       }
+> +
 
-Send a v2 patch...
+So this might be a stupid question. :-)
 
-https://www.google.com/search?q=how+to+send+a+v2+patch
+Could you elaborate on why the host->ops->card_event then is needed at
+all. Why can't host drivers use host->ops->get_cd to perform the
+actions they need?
 
-regards,
-dan carpenter
+The reason for bringing this up, is because this patch moves the
+invokes of the these callbacks quite close to each other. Earlier they
+were more separated.
 
+Kind regards
+Ulf Hansson
+
+>         if (host->rescan_disable)
+>                 return;
+>
+> diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+> index 46596b71..4029c85 100644
+> --- a/drivers/mmc/core/slot-gpio.c
+> +++ b/drivers/mmc/core/slot-gpio.c
+> @@ -29,9 +29,7 @@ static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
+>         /* Schedule a card detection after a debounce timeout */
+>         struct mmc_host *host = dev_id;
+>
+> -       if (host->ops->card_event)
+> -               host->ops->card_event(host);
+> -
+> +       host->trigger_card_event = true;
+>         mmc_detect_change(host, msecs_to_jiffies(200));
+>
+>         return IRQ_HANDLED;
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index 99f5709..63b983b 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -322,6 +322,8 @@ struct mmc_host {
+>         int                     rescan_disable; /* disable card detection */
+>         int                     rescan_entered; /* used with nonremovable devices */
+>
+> +       bool                    trigger_card_event; /* card_event necessary */
+> +
+>         struct mmc_card         *card;          /* device attached to this host */
+>
+>         wait_queue_head_t       wq;
+> --
+> 1.7.9.5
+>
