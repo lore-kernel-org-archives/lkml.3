@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933890AbaDIPhm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:37:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33497 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933504AbaDIPfW (ORCPT
+	id S933625AbaDIPjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:39:09 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:59985 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908AbaDIPjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:35:22 -0400
-Date: Wed, 9 Apr 2014 17:34:12 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/15] pinctrl: sunxi: retrieve and enable PL reset line
- for A31 SoC
-Message-ID: <20140409153412.GJ28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397051478-4113-14-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 9 Apr 2014 11:39:07 -0400
+X-IronPort-AV: E=Sophos;i="4.97,826,1389744000"; 
+   d="scan'208";a="118353414"
+Message-ID: <5345697D.8000405@citrix.com>
+Date: Wed, 9 Apr 2014 16:38:37 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tAmVnWIZ6lqEAvSf"
-Content-Disposition: inline
-In-Reply-To: <1397051478-4113-14-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
+        <konrad@kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <keir@xen.org>, <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [XEN PATCH 1/2] hvm: Support more than 32 VCPUS when
+ migrating.
+References: <1396859560.22845.4.camel@kazak.uk.xensource.com> <1396977950-8789-1-git-send-email-konrad@kernel.org> <1396977950-8789-2-git-send-email-konrad@kernel.org> <53443D88.6010202@citrix.com> <20140408185346.GA1678@phenom.dumpdata.com> <5344F89D.3020209@citrix.com> <20140409153444.GA6604@phenom.dumpdata.com>
+In-Reply-To: <20140409153444.GA6604@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/04/14 16:34, Konrad Rzeszutek Wilk wrote:
+> On Wed, Apr 09, 2014 at 09:37:01AM +0200, Roger Pau Monné wrote:
+>> On 08/04/14 20:53, Konrad Rzeszutek Wilk wrote:
+>>> On Tue, Apr 08, 2014 at 08:18:48PM +0200, Roger Pau Monné wrote:
+>>>> On 08/04/14 19:25, konrad@kernel.org wrote:
+>>>>> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>>>
+>>>>> When we migrate an HVM guest, by default our shared_info can
+>>>>> only hold up to 32 CPUs. As such the hypercall
+>>>>> VCPUOP_register_vcpu_info was introduced which allowed us to
+>>>>> setup per-page areas for VCPUs. This means we can boot PVHVM
+>>>>> guest with more than 32 VCPUs. During migration the per-cpu
+>>>>> structure is allocated fresh by the hypervisor (vcpu_info_mfn
+>>>>> is set to INVALID_MFN) so that the newly migrated guest
+>>>>> can do make the VCPUOP_register_vcpu_info hypercall.
+>>>>>
+>>>>> Unfortunatly we end up triggering this condition:
+>>>>> /* Run this command on yourself or on other offline VCPUS. */
+>>>>>  if ( (v != current) && !test_bit(_VPF_down, &v->pause_flags) )
+>>>>>
+>>>>> which means we are unable to setup the per-cpu VCPU structures
+>>>>> for running vCPUS. The Linux PV code paths make this work by
+>>>>> iterating over every vCPU with:
+>>>>>
+>>>>>  1) is target CPU up (VCPUOP_is_up hypercall?)
+>>>>>  2) if yes, then VCPUOP_down to pause it.
+>>>>>  3) VCPUOP_register_vcpu_info
+>>>>>  4) if it was down, then VCPUOP_up to bring it back up
+>>>>>
+>>>>> But since VCPUOP_down, VCPUOP_is_up, and VCPUOP_up are
+>>>>> not allowed on HVM guests we can't do this. This patch
+>>>>> enables this.
+>>>>
+>>>> Hmmm, this looks like a very convoluted approach to something that could
+>>>> be solved more easily IMHO. What we do on FreeBSD is put all vCPUs into
+>>>> suspension, which means that all vCPUs except vCPU#0 will be in the
+>>>> cpususpend_handler, see:
+>>>>
+>>>> http://svnweb.freebsd.org/base/head/sys/amd64/amd64/mp_machdep.c?revision=263878&view=markup#l1460
+>>>
+>>> How do you 'suspend' them? If I remember there is a disadvantage of doing
+>>> this as you have to bring all the CPUs "offline". That in Linux means using
+>>> the stop_machine which is pretty big hammer and increases the latency for migration.
+>>
+>> In order to suspend them an IPI_SUSPEND is sent to all vCPUs except vCPU#0:
+>>
+>> http://fxr.watson.org/fxr/source/kern/subr_smp.c#L289
+>>
+>> Which makes all APs call cpususpend_handler, so we know all APs are
+>> stuck in a while loop with interrupts disabled:
+>>
+>> http://fxr.watson.org/fxr/source/amd64/amd64/mp_machdep.c#L1459
+>>
+>> Then on resume the APs are taken out of the while loop and the first
+>> thing they do before returning from the IPI handler is registering the
+>> new per-cpu vcpu_info area. But I'm not sure this is something that can
+>> be accomplished easily on Linux.
+> 
+> That is a bit of what the 'stop_machine' would do. It puts all of the
+> CPUs in whatever function you want. But I am not sure of the latency impact - as
+> in what if the migration takes longer and all of the CPUs sit there spinning.
+> Another variant of that is the 'smp_call_function'.
 
---tAmVnWIZ6lqEAvSf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I tested stop_machine() on all CPUs during suspend once and it was
+awful:  100s of ms of additional downtime.
 
-On Wed, Apr 09, 2014 at 03:51:16PM +0200, Boris BREZILLON wrote:
-> Retrieve and deassert the reset line related to PL pins.
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  drivers/pinctrl/pinctrl-sunxi.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->=20
-> diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-su=
-nxi.c
-> index da76ceb..09eea79 100644
-> --- a/drivers/pinctrl/pinctrl-sunxi.c
-> +++ b/drivers/pinctrl/pinctrl-sunxi.c
-> @@ -26,6 +26,7 @@
->  #include <linux/pinctrl/pinconf-generic.h>
->  #include <linux/pinctrl/pinmux.h>
->  #include <linux/platform_device.h>
-> +#include <linux/reset.h>
->  #include <linux/slab.h>
-> =20
->  #include "core.h"
-> @@ -878,6 +879,7 @@ static int sunxi_pinctrl_probe(struct platform_device=
- *pdev)
->  	const struct of_device_id *device;
->  	struct pinctrl_pin_desc *pins;
->  	struct sunxi_pinctrl *pctl;
-> +	struct reset_control *rstc;
->  	int i, ret, last_pin;
->  	struct clk *clk;
-> =20
-> @@ -905,6 +907,14 @@ static int sunxi_pinctrl_probe(struct platform_devic=
-e *pdev)
->  		ret =3D clk_prepare_enable(clk);
->  		if (ret)
->  			return ret;
-> +
-> +		rstc =3D devm_reset_control_get(&pdev->dev, NULL);
-> +		if (IS_ERR(rstc))
-> +			return PTR_ERR(rstc);
-> +
-> +		ret =3D reset_control_deassert(rstc);
-> +		if (ret)
-> +			return ret;
+Perhaps a hand-rolled IPI-and-park-in-handler would be quicker the full
+stop_machine().
 
-Same thing than in patch 12 :)
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---tAmVnWIZ6lqEAvSf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRWh0AAoJEBx+YmzsjxAgTIAP/R76HlrnrJU+0ObM08Ks4Vv3
-+Pes2DjV0DvghqncJb+REm4qkbHr10o3yZuBx4AH0gJvL6vGKMOomnt0WUsVjbOr
-XGQ01E6oEOm3cHRUpCc9y1NU9rQH5efqYAQuDGcaxVdfpLTQSPVDY1j/CQkcZT4d
-G7W/Kf9zwXq0pZVBdKkmnRKv5bEh94ySExY7jkWUibVb0MsaNp8NVTT8+0kbjJwv
-7DeqCkff2h0RiU+5M6YigxUROIu6OoJPYnBtqXdJt5BddEOCwIDkaZVgqRhnvb3B
-B9Fp92cuGW5Yefu+U7iMPc0TpvAF6rA5B+LjrdxHirJsu9HJNiI57b0Rv7nOQRLb
-q0eVZZbQuZXBFExteJny1nVrYnTliba1lyVWVNv+NR8dovU8qmzxYL0h7aSebinr
-Vl/sH5kmFmWN/mlUMmr59veUElw9dZ27LbeZvF0pOQC+hbRiMTgJpvkAteiRznUy
-qqKD9iCuGOl7YWdEyHdw3npHqEip5pOOXTf4fNNxFTriYtnI7TG9LEzU19drdMYm
-PA21OVL4V/KhRJb3TysaxotL2JYWzpYblMvbCHgN+ajI13eyKDPEiFuRDGEzUj+1
-j5B4PF79/WPV74SERtCEu0hMBviOvF+PelwnvfdPd1ADyVnW1016W4uXSWgGn5aO
-sXQ9gEGhJ/rpIUh3XcfQ
-=ozaJ
------END PGP SIGNATURE-----
-
---tAmVnWIZ6lqEAvSf--
+David
