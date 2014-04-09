@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964930AbaDIQXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:23:36 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:19458 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933909AbaDIQX0 (ORCPT
+	id S934037AbaDIQ0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:26:24 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:31979 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933889AbaDIQXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:23:26 -0400
-X-IronPort-AV: E=Sophos;i="4.97,827,1389772800"; 
-   d="scan'208";a="23659117"
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, "Rob Landley" <rob@landley.net>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Tim Kryger <tim.kryger@linaro.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [RESEND PATCH v5 1/5] Documentation: dt: Add Kona PWM binding
-Date: Wed, 9 Apr 2014 09:23:07 -0700
-Message-ID: <1397060591-5060-2-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397060591-5060-1-git-send-email-tim.kryger@linaro.org>
-References: <1397060591-5060-1-git-send-email-tim.kryger@linaro.org>
+	Wed, 9 Apr 2014 12:23:35 -0400
+Message-ID: <53457404.5070800@fb.com>
+Date: Wed, 9 Apr 2014 10:23:32 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Christoph Hellwig <hch@lst.de>
+CC: Matias Bjorling <m@bjorling.me>, <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3/4] blk-mq: move request structures into struct blk_mq_tags
+References: <1396277175-21382-1-git-send-email-hch@lst.de> <1396277175-21382-4-git-send-email-hch@lst.de>
+In-Reply-To: <1396277175-21382-4-git-send-email-hch@lst.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-09_03:2014-04-09,2014-04-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=2 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404090118
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the binding description for the Kona PWM controller found on Broadcom's
-mobile SoCs.
+On 03/31/2014 08:46 AM, Christoph Hellwig wrote:
+> diff --git a/block/blk-mq.h b/block/blk-mq.h
+> index 238379a..eca3a47 100644
+> --- a/block/blk-mq.h
+> +++ b/block/blk-mq.h
+> @@ -1,6 +1,24 @@
+>   #ifndef INT_BLK_MQ_H
+>   #define INT_BLK_MQ_H
+>
+> +#include <linux/percpu_ida.h>
+> +
+> +/*
+> + * Tag address space map.
+> + */
+> +struct blk_mq_tags {
+> +	unsigned int nr_tags;
+> +	unsigned int nr_reserved_tags;
+> +	unsigned int nr_batch_move;
+> +	unsigned int nr_max_cache;
+> +
+> +	struct percpu_ida free_tags;
+> +	struct percpu_ida reserved_tags;
+> +
+> +	struct request **rqs;
+> +	struct list_head page_list;
+> +};
+> +
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
----
- .../devicetree/bindings/pwm/bcm-kona-pwm.txt       |   21 ++++++++++++++++++++
- 1 file changed, 21 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+This should go into block/blk-mq-tag.h.
 
-diff --git a/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-new file mode 100644
-index 0000000..8eae9fe
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-@@ -0,0 +1,21 @@
-+Broadcom Kona PWM controller device tree bindings
-+
-+This controller has 6 channels.
-+
-+Required Properties :
-+- compatible: should contain "brcm,kona-pwm"
-+- reg: physical base address and length of the controller's registers
-+- clocks: phandle + clock specifier pair for the external clock
-+- #pwm-cells: Should be 3. See pwm.txt in this directory for a
-+  description of the cells format.
-+
-+Refer to clocks/clock-bindings.txt for generic clock consumer properties.
-+
-+Example:
-+
-+pwm: pwm@3e01a000 {
-+	compatible = "brcm,bcm11351-pwm", "brcm,kona-pwm";
-+	reg = <0x3e01a000 0xc4>;
-+	clocks = <&pwm_clk>;
-+	#pwm-cells = <3>;
-+};
+
+> -static inline struct request *blk_mq_tag_to_rq(struct blk_mq_hw_ctx *hctx,
+> -					       unsigned int tag)
+> -{
+> -	return hctx->rqs[tag];
+> -}
+
+We might as well leave this, the mtip32xx conversion ends up using it. 
+So if we pull it now, it'll just be reintroduced shortly.
+
 -- 
-1.7.9.5
+Jens Axboe
 
