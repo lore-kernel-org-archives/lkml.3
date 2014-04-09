@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622AbaDIIMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 04:12:06 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:48554
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757594AbaDIIL7 (ORCPT
+	id S932644AbaDIIRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 04:17:16 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:48057 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758342AbaDIIRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 04:11:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 9 Apr 2014 16:11:38 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-CC: <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <timur@tabi.org>, <Li.Xiubo@freescale.com>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <rob@landley.net>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: Re: [PATCH v3 2/2] ARM: dts: Append clock bindings for sai2 on VF610
- platform
-Message-ID: <20140409081137.GD28420@dragon>
-References: <cover.1396605772.git.Guangyu.Chen@freescale.com>
- <08ba57a2fdce1a404a6bcb61e21e25509fcd6b30.1396605772.git.Guangyu.Chen@freescale.com>
+	Wed, 9 Apr 2014 04:17:12 -0400
+Date: Wed, 9 Apr 2014 10:17:09 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>, Michal Marek <mmarek@suse.cz>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
+Message-ID: <20140409081709.GA283@x4>
+References: <20140407201919.GA15838@sepie.suse.cz>
+ <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
+ <20140408204906.GA3616@cloud>
+ <CA+55aFzhyvZRPjXy7PkUxQO_AMqLSTehh-GNRP+Dx3yKnv-eCA@mail.gmail.com>
+ <20140409013557.GA32556@tassilo.jf.intel.com>
+ <20140409060133.GA6766@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <08ba57a2fdce1a404a6bcb61e21e25509fcd6b30.1396605772.git.Guangyu.Chen@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20140409060133.GA6766@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 06:08:13PM +0800, Nicolin Chen wrote:
-> Since we added fours clock to the DT binding, we should update the current
-> SAI dts/dtsi so as not to break their functions.
-
-For the record, you're asking my ACK to have the dts change go via sound
-tree for not breaking vf610 function on the sound branch,  while
-ignoring the fact that the existing DTB will break with the new kernel
-anyway.
-
-I'm not completely happy with the approach, but considering that the
-existing binding is incorrect, I'm fine with it as long as people agree
-to go this way.
-
-Shawn
-
+On 2014.04.09 at 08:01 +0200, Ingo Molnar wrote:
 > 
-> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> Tested-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  arch/arm/boot/dts/vf610.dtsi | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+> * Andi Kleen <ak@linux.intel.com> wrote:
 > 
-> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-> index d31ce1b..9fd0007 100644
-> --- a/arch/arm/boot/dts/vf610.dtsi
-> +++ b/arch/arm/boot/dts/vf610.dtsi
-> @@ -139,8 +139,10 @@
->  				compatible = "fsl,vf610-sai";
->  				reg = <0x40031000 0x1000>;
->  				interrupts = <0 86 0x04>;
-> -				clocks = <&clks VF610_CLK_SAI2>;
-> -				clock-names = "sai";
-> +				clocks = <&clks VF610_CLK_SAI2>,
-> +				       <&clks VF610_CLK_SAI2>,
-> +				       <&clks 0>, <&clks 0>;
-> +				clock-names = "bus", "mclk1", "mclk2", "mclk3";
->  				status = "disabled";
->  			};
->  
-> -- 
-> 1.8.4
+> > On Tue, Apr 08, 2014 at 03:44:25PM -0700, Linus Torvalds wrote:
+> > > On Tue, Apr 8, 2014 at 1:49 PM,  <josh@joshtriplett.org> wrote:
+> > > >
+> > > > In addition to making the kernel smaller and such (I'll leave the
+> > > > specific stats there to Andi), here's the key awesomeness of LTO that
+> > > > you, personally, should find useful and compelling: LTO will eliminate
+> > > > the need to add many lower-level Kconfig symbols to compile out bits of
+> > > > the kernel.
+> > > 
+> > > Actually that, to me, is a negative right now.
+> > > 
+> > > Since there's no way we'll make LTO the default in the foreseeable
+> > > future, people starting to use it like that is just a bad bad thing.
+> > > 
+> > > So really, the main advantage of LTO would be any actual 
+> > > optimizations it can do. And call me anal, but I want *numbers* 
+> > > for that before I merge it. Not handwaving. I'm not actually aware 
+> > > of how well - if at all - code generation actually improves.
+> > 
+> > Well it looks very different if you look at the generated code. gcc 
+> > becomes a lot more aggressive.
+> > 
+> > But as I said there's currently no significant performance 
+> > improvement known, so if your only goal is better performance this 
+> > patch (as currently) known is not a big winner.  My suspicion is 
+> > that's mostly because the standard benchmarks we run are not too 
+> > compiler sensitive.
+> > 
+> > However the users seem to care about the other benefits, like code 
+> > size.
+> > 
+> > And there may well be loads that are compiler sensitive. As Honza 
+> > posted, for non kernel workloads LTO is known to have large 
+> > benefits.
+> > 
+> > Besides at this point it's pretty much just some additions to the 
+> > Makefiles.
 > 
+> So the reason I've been mostly ignoring the LTO patches myself (I only 
+> took LTO related changes that had other justifications such as 
+> cleanups) is that I've actually implemented full LTO in a userspace 
+> project myself, and my experience was:
 > 
+>   1) There was very little if any measurable LTO runtime speedup, 
+>      despite agressive GCC options and despite user-space generally 
+>      offering more optimizations opportunities than kernel space.
+> 
+>   2) LTO with current build tools meant a 1.5x-3x build speed
+>      slowdown (on a very fast box with tons of CPUs and RAM),
+>      which made LTO essentially a non-starter for development
+>      work. (And that was with the Gold linker.)
+> 
+> and looking at your characterisation of LTO you only conceded
+> #1 much after you started pushing LTO and you are clearly trying
+> to avoid talking about #2 while it's very much relevant...
+> 
+> I'm willing to be convinced by actual numbers, and LTO tooling might 
+> eventually improve, etc., but right now LTO is much ado about very 
+> little, being pushed in a somewhat dishonest way.
 
+I did some measurements on Andi's lto-3.14 branch:
+
+options    size     build time
+------------------------------
+-O2        4408880  1:56.98
+-flto -O2  4213072  2:36.22
+-Os        3833248  1:45.13         
+-flto -Os  3651504  2:34.51
+
+This was measured on my AMD 4 core machine with a monolithic .config
+where "CONFIG_MODULES is not set". The compiler is gcc trunk (4.9).
+So on x86_86 you get 5% size reduction for 25-30% build time slowdown.
+
+The huge RAM requirements of LTO are solved with gcc-4.9.
+
+As for tooling support, the next version of binutils will support
+automatic loading of the liblto_plugin and that will allow one to get
+rid of the gcc wrappers (gcc-ar, etc.). 
+
+It is unfortunate that a special version of binutils is still required
+to build the kernel, but that will change as soon as all "ld -r"
+invocations are eliminated (I think Sam Ravnborg has a patch for this).
+
+-- 
+Markus
