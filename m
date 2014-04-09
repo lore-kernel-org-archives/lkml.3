@@ -1,211 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207AbaDILbi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:31:38 -0400
-Received: from prifuk.cz ([31.31.77.140]:52641 "EHLO devoid-pointer.net"
+	id S933247AbaDILc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:32:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35688 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932542AbaDILbg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:31:36 -0400
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
-To: dmitry.torokhov@gmail.com, jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Elias Vanderstuyft <elias.vds@gmail.com>
-Subject: [PATCH 21/24] Port xpad to ff-memless-next
-Date: Wed, 09 Apr 2014 13:31:32 +0200
-Message-ID: <8572858.2DKqCynByL@sigyn>
-User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
-In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
-References: <1609685.QRL9N9sQvX@sigyn>
+	id S932542AbaDILcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 07:32:53 -0400
+Date: Wed, 9 Apr 2014 13:32:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+Cc: dougthompson@xmission.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
+        michal.simek@xilinx.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, kpc528@gmail.com,
+        kalluripunnaiahchoudary@gmail.com, punnaia@xilinx.com
+Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
+Message-ID: <20140409113246.GA8778@pd.tnic>
+References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com>
+ <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port xpad to ff-memless-next
+On Sun, Mar 02, 2014 at 08:02:40PM +0530, Punnaiah Choudary Kalluri wrote:
+> Add support for ARM Pl310 L2 cache controller parity error
+> 
+> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+> ---
+>  .../devicetree/bindings/edac/pl310_edac_l2.txt     |   19 ++
+>  drivers/edac/Kconfig                               |    7 +
+>  drivers/edac/Makefile                              |    1 +
+>  drivers/edac/pl310_edac_l2.c                       |  236 ++++++++++++++++++++
+>  4 files changed, 263 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/edac/pl310_edac_l2.txt
+>  create mode 100644 drivers/edac/pl310_edac_l2.c
+> 
+> diff --git a/Documentation/devicetree/bindings/edac/pl310_edac_l2.txt b/Documentation/devicetree/bindings/edac/pl310_edac_l2.txt
+> new file mode 100644
+> index 0000000..94fbb8d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/edac/pl310_edac_l2.txt
+> @@ -0,0 +1,19 @@
+> +Pl310 L2 Cache EDAC driver, it does reports the data and tag ram parity errors.
+> +
+> +Required properties:
+> +- compatible: Should be "arm,pl310-cache".
+> +- intterupts: Interrupt number to the cpu.
+> +- reg: Physical base address and size of cache controller's memory mapped
+> +  registers
+> +
+> +Example:
+> +++++++++
+> +
+> +	L2: cache-controller {
+> +		compatible = "arm,pl310-cache";
+> +		interrupts = <0 2 4>;
+> +		reg = <0xf8f02000 0x1000>;
+> +	};
+> +
+> +PL310 L2 Cache EDAC driver detects the Parity enable state by reading the
+> +appropriate control register.
+> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+> index 878f090..059ac31 100644
+> --- a/drivers/edac/Kconfig
+> +++ b/drivers/edac/Kconfig
+> @@ -326,6 +326,13 @@ config EDAC_TILE
+>  	  Support for error detection and correction on the
+>  	  Tilera memory controller.
+>  
+> +config EDAC_PL310_L2
+> +	tristate "Pl310 L2 Cache Controller"
+> +	depends on EDAC_MM_EDAC && ARM
+> +	help
+> +	  Support for parity error detection on L2 cache controller
+> +	  data and tag ram memory
+> +
 
-Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
----
- drivers/input/joystick/Kconfig |   2 +-
- drivers/input/joystick/xpad.c  | 125 +++++++++++++++++++++++------------------
- 2 files changed, 71 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
-index 2dd3ba1..9f26e48 100644
---- a/drivers/input/joystick/Kconfig
-+++ b/drivers/input/joystick/Kconfig
-@@ -294,7 +294,7 @@ config JOYSTICK_XPAD
- config JOYSTICK_XPAD_FF
- 	bool "X-Box gamepad rumble support"
- 	depends on JOYSTICK_XPAD && INPUT
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	---help---
- 	  Say Y here if you want to take advantage of xbox 360 rumble features.
- 
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index 603fe0d..5d9c8a2 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -78,6 +78,7 @@
- #include <linux/stat.h>
- #include <linux/module.h>
- #include <linux/usb/input.h>
-+#include <linux/input/ff-memless-next.h>
- 
- #define DRIVER_AUTHOR "Marko Friedemann <mfr@bmx-chemnitz.de>"
- #define DRIVER_DESC "X-Box pad driver"
-@@ -97,6 +98,8 @@
- #define XTYPE_XBOX360W    2
- #define XTYPE_UNKNOWN     3
- 
-+#define FF_UPDATE_RATE 50
-+
- static bool dpad_to_buttons;
- module_param(dpad_to_buttons, bool, S_IRUGO);
- MODULE_PARM_DESC(dpad_to_buttons, "Map D-PAD to buttons rather than axes for unknown pads");
-@@ -628,63 +631,75 @@ static void xpad_stop_output(struct usb_xpad *xpad) {}
- #endif
- 
- #ifdef CONFIG_JOYSTICK_XPAD_FF
--static int xpad_play_effect(struct input_dev *dev, void *data, struct ff_effect *effect)
-+static int xpad_play_effect(struct input_dev *dev, void *data,
-+			    const struct mlnx_effect_command *command)
- {
- 	struct usb_xpad *xpad = input_get_drvdata(dev);
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+	__u16 strong, weak;
- 
--	if (effect->type == FF_RUMBLE) {
--		__u16 strong = effect->u.rumble.strong_magnitude;
--		__u16 weak = effect->u.rumble.weak_magnitude;
--
--		switch (xpad->xtype) {
--
--		case XTYPE_XBOX:
--			xpad->odata[0] = 0x00;
--			xpad->odata[1] = 0x06;
--			xpad->odata[2] = 0x00;
--			xpad->odata[3] = strong / 256;	/* left actuator */
--			xpad->odata[4] = 0x00;
--			xpad->odata[5] = weak / 256;	/* right actuator */
--			xpad->irq_out->transfer_buffer_length = 6;
--
--			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
--
--		case XTYPE_XBOX360:
--			xpad->odata[0] = 0x00;
--			xpad->odata[1] = 0x08;
--			xpad->odata[2] = 0x00;
--			xpad->odata[3] = strong / 256;  /* left actuator? */
--			xpad->odata[4] = weak / 256;	/* right actuator? */
--			xpad->odata[5] = 0x00;
--			xpad->odata[6] = 0x00;
--			xpad->odata[7] = 0x00;
--			xpad->irq_out->transfer_buffer_length = 8;
--
--			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
--
--		case XTYPE_XBOX360W:
--			xpad->odata[0] = 0x00;
--			xpad->odata[1] = 0x01;
--			xpad->odata[2] = 0x0F;
--			xpad->odata[3] = 0xC0;
--			xpad->odata[4] = 0x00;
--			xpad->odata[5] = strong / 256;
--			xpad->odata[6] = weak / 256;
--			xpad->odata[7] = 0x00;
--			xpad->odata[8] = 0x00;
--			xpad->odata[9] = 0x00;
--			xpad->odata[10] = 0x00;
--			xpad->odata[11] = 0x00;
--			xpad->irq_out->transfer_buffer_length = 12;
--
--			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
--
--		default:
--			dev_dbg(&xpad->dev->dev,
--				"%s - rumble command sent to unsupported xpad type: %d\n",
--				__func__, xpad->xtype);
--			return -1;
--		}
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		strong = rumble_force->strong;
-+		weak = rumble_force->weak;
-+		break;
-+	case MLNX_STOP_RUMBLE:
-+		strong = 0;
-+		weak = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+
-+	switch (xpad->xtype) {
-+
-+	case XTYPE_XBOX:
-+		xpad->odata[0] = 0x00;
-+		xpad->odata[1] = 0x06;
-+		xpad->odata[2] = 0x00;
-+		xpad->odata[3] = strong / 256;	/* left actuator */
-+		xpad->odata[4] = 0x00;
-+		xpad->odata[5] = weak / 256;	/* right actuator */
-+		xpad->irq_out->transfer_buffer_length = 6;
-+
-+		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
-+
-+	case XTYPE_XBOX360:
-+		xpad->odata[0] = 0x00;
-+		xpad->odata[1] = 0x08;
-+		xpad->odata[2] = 0x00;
-+		xpad->odata[3] = strong / 256;  /* left actuator? */
-+		xpad->odata[4] = weak / 256;	/* right actuator? */
-+		xpad->odata[5] = 0x00;
-+		xpad->odata[6] = 0x00;
-+		xpad->odata[7] = 0x00;
-+		xpad->irq_out->transfer_buffer_length = 8;
-+
-+		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
-+
-+	case XTYPE_XBOX360W:
-+		xpad->odata[0] = 0x00;
-+		xpad->odata[1] = 0x01;
-+		xpad->odata[2] = 0x0F;
-+		xpad->odata[3] = 0xC0;
-+		xpad->odata[4] = 0x00;
-+		xpad->odata[5] = strong / 256;
-+		xpad->odata[6] = weak / 256;
-+		xpad->odata[7] = 0x00;
-+		xpad->odata[8] = 0x00;
-+		xpad->odata[9] = 0x00;
-+		xpad->odata[10] = 0x00;
-+		xpad->odata[11] = 0x00;
-+		xpad->irq_out->transfer_buffer_length = 12;
-+
-+		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
-+
-+	default:
-+		dev_dbg(&xpad->dev->dev,
-+			"%s - rumble command sent to unsupported xpad type: %d\n",
-+			__func__, xpad->xtype);
-+		return -1;
- 	}
- 
- 	return 0;
-@@ -697,7 +712,7 @@ static int xpad_init_ff(struct usb_xpad *xpad)
- 
- 	input_set_capability(xpad->dev, EV_FF, FF_RUMBLE);
- 
--	return input_ff_create_memless(xpad->dev, NULL, xpad_play_effect);
-+	return input_ff_create_mlnx(xpad->dev, NULL, xpad_play_effect, FF_UPDATE_RATE);
- }
- 
- #else
+Ok, so I'm looking at this after having looked at the synopsys thing
+and it looks very similar in functionality - it does the basic dance of
+registering and setting up stuff, only using different devicetree nodes,
+regs, etc.
+
+However, it adds a new file under drivers/edac/ and I'm wondering if it
+wouldn't be better to simply create a xilinx_edac.c and put all your
+stuff in there, maybe even share code by abstracting it nicely. Having
+a separate driver only for a single L2 cache controller seems kinda too
+granulary for me.
+
+Thanks.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
