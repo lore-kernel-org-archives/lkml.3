@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933956AbaDIQLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:11:34 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:46896 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933100AbaDIQL3 (ORCPT
+	id S964926AbaDIQQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:16:46 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:56716 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933869AbaDIQLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:11:29 -0400
+	Wed, 9 Apr 2014 12:11:33 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 0/5] core: Convert thread iteration to use for_each[_process]_thread APIs, 1st pile
-Date: Wed,  9 Apr 2014 18:11:17 +0200
-Message-Id: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 2/5] tracepoint: Convert process iteration to use for_each_process_thread()
+Date: Wed,  9 Apr 2014 18:11:19 +0200
+Message-Id: <1397059882-23063-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+do_each_thread/while_each_thread iterators are deprecated by
+for_each_thread/for_each_process_thread() APIs.
 
-This is the first pile of a longer series that convert deprecated and
-RCU-unsafe thread group iterators (do_each_thread, while_each_thread)
-to use for_each_thread/for_each_process_thread RCU-safe iterators that
-have been introduced by Oleg.
+Lets convert the callers in the tracepoint code. The ultimate
+goal is to remove the struct task_struct::thread_group field and
+the corresponding do_each_thread/while_each_thread iterators that are
+RCU unsafe.
 
-for_each[_process]_thread() is already upstream so these patches don't
-depend on any pending preparatory work.
-
-So ideally it would be nice if maintainers cherry-pick the patches
-corresponding to their own subsystem.
-
-Thanks,
-	Frederic
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ kernel/tracepoint.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Frederic Weisbecker (5):
-      sched: Convert thread_group_cputime() to use for_each_thread()
-      tracepoint: Convert process iteration to use for_each_process_thread()
-      hung_task: Convert process iteration to use for_each_process_thread()
-      procfs: Convert process iteration to use for_each_thread()
-      sched: Convert tasks iteration to use for_each_process_thread()
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index fb0a38a..00a7e8b 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -561,15 +561,15 @@ static int sys_tracepoint_refcount;
+ void syscall_regfunc(void)
+ {
+ 	unsigned long flags;
+-	struct task_struct *g, *t;
++	struct task_struct *p, *t;
+ 
+ 	if (!sys_tracepoint_refcount) {
+ 		read_lock_irqsave(&tasklist_lock, flags);
+-		do_each_thread(g, t) {
++		for_each_process_thread(p, t) {
+ 			/* Skip kernel threads. */
+ 			if (t->mm)
+ 				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+-		} while_each_thread(g, t);
++		}
+ 		read_unlock_irqrestore(&tasklist_lock, flags);
+ 	}
+ 	sys_tracepoint_refcount++;
+@@ -578,14 +578,14 @@ void syscall_regfunc(void)
+ void syscall_unregfunc(void)
+ {
+ 	unsigned long flags;
+-	struct task_struct *g, *t;
++	struct task_struct *p, *t;
+ 
+ 	sys_tracepoint_refcount--;
+ 	if (!sys_tracepoint_refcount) {
+ 		read_lock_irqsave(&tasklist_lock, flags);
+-		do_each_thread(g, t) {
++		for_each_process_thread(p, t) {
+ 			clear_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+-		} while_each_thread(g, t);
++		}
+ 		read_unlock_irqrestore(&tasklist_lock, flags);
+ 	}
+ }
+-- 
+1.8.3.1
 
-
- fs/proc/array.c        |  7 ++++---
- fs/proc/base.c         |  4 ++--
- kernel/hung_task.c     |  8 ++++----
- kernel/sched/core.c    | 13 ++++++-------
- kernel/sched/cputime.c | 13 ++++++-------
- kernel/tracepoint.c    | 12 ++++++------
- 6 files changed, 28 insertions(+), 29 deletions(-)
