@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176AbaDIXsR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 19:48:17 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44483 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977AbaDIXsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 19:48:16 -0400
-Message-ID: <1397087273.3671.150.camel@pasglop>
-Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jens Axboe <axboe@fb.com>
-Cc: Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Brian J King <bjking1@us.ibm.com>
-Date: Thu, 10 Apr 2014 09:47:53 +1000
-In-Reply-To: <53454CBC.9060905@fb.com>
-References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
+	id S964999AbaDIXub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 19:50:31 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53179 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934094AbaDIXu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 19:50:28 -0400
+Message-ID: <1397087425.9519.67.camel@dabdike>
+Subject: Re: hpsa driver bug crack kernel down!
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
+        scameron@beardog.cce.hp.com, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Date: Wed, 09 Apr 2014 16:50:25 -0700
+In-Reply-To: <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
+	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
+	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 07:35 -0600, Jens Axboe wrote:
-> On 04/08/2014 10:44 PM, Benjamin Herrenschmidt wrote:
-> > Hi folks !
-> >
-> > While testing a branch of fixes before I send it to Linus, which
-> > happens to be based on 18a1a7a1d862ae0794a0179473d08a414dd49234,
-> > I hit this:
-> >
-> > kernel BUG at /home/benh/linux-powerpc-test/block/cfq-iosched.c:3145!
-> > cpu 0x3c: Vector: 700 (Program Check) at [c000003ca69bb190]
-> >      pc: c00000000033b05c: .cfq_dispatch_requests+0x90/0x99c
-> >      lr: c00000000033b038: .cfq_dispatch_requests+0x6c/0x99c
-> >      sp: c000003ca69bb410
-> >     msr: 9000000000029032
-> >    current = 0xc000003ca63d32a0
-> >    paca    = 0xc00000000ffef000	 softe: 0	 irq_happened: 0x01
-> >      pid   = 3487, comm = smartd
-> > kernel BUG at /home/benh/linux-powerpc-test/block/cfq-iosched.c:3145!
-> > enter ? for help
-> > [c000003ca69bb4c0] c00000000032000c .elv_drain_elevator+0x70/0xc8
-> > [c000003ca69bb540] c000000000320140 .__elv_add_request+0xdc/0x27c
-> > [c000003ca69bb5e0] c0000000003286f8 .blk_execute_rq_nowait+0xc0/0xf8
-> > [c000003ca69bb670] c0000000003287ec .blk_execute_rq+0xbc/0xe8
-> > [c000003ca69bb810] c000000000332350 .sg_io+0x218/0x39c
-> > [c000003ca69bb930] c000000000332c3c .scsi_cmd_ioctl+0x270/0x4ac
-> > [c000003ca69bba70] c0000000005d559c .sd_ioctl+0xa4/0xd8
-> > [c000003ca69bbb20] c00000000032eb1c .__blkdev_driver_ioctl+0x34/0x54
-> > [c000003ca69bbb90] c00000000032f83c .blkdev_ioctl+0x7b8/0x850
-> > [c000003ca69bbc40] c00000000018d6e0 .block_ioctl+0x4c/0x60
-> > [c000003ca69bbcb0] c0000000001691cc .do_vfs_ioctl+0x5cc/0x670
-> > [c000003ca69bbd90] c0000000001692b4 .SyS_ioctl+0x44/0x70
-> > [c000003ca69bbe30] c00000000000a024 syscall_exit+0x0/0x98
-> > --- Exception: c00 (System Call) at 00003fffb5240ee0
-> >
-> > The storage driver is our usual IBM "IPR".
-> >
-> > Is that a known issue ?
+On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
+> On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
+> > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
+> > > [+linux-scsi]
+> > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
+> > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
+> > > > > Hi,
+> > > > > 
+> > > > > The kernel is 3.14.0+ which is pulled just now. 
+> > > > 
+> > > > Cc'ing more people.
+> > > > 
+> > > > While the hpsa driver appears to be involved in some way, I'm sure if
+> > > > this is a related issue, but as of today's pull I'm getting another
+> > > > problem that causes my DL980 not to come up.
+> > > > 
+> > > > *Massive* amounts of:
+> > > > 
+> > > > DMAR:[fault reason 02] Present bit in context entry is clear
+> > > > dmar: DRHD: handling fault status reg 602
+> > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
+> > > > 
+> > > > Then:
+> > > > 
+> > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
+> > > > ...
+> > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
+> > > > ...
+> > > > 
+> > > > Screenshot of the actual LOCKUP: 
+> > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
+> > > > 
+> > > > While I haven't bisected, things worked fine until at least until commit
+> > > > 39de65aa2c3e (April 2nd).
+> > > > 
+> > > > Any ideas?
+> > > 
+> > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
+> > > that everything worked fine until 39de65aa2c3e would tend to vindicate
+> > > hpsa, 
 > 
-> Nope, that's not a known issue. This must be related to the FIFO 
-> changes... How reproducible is this?
+> Hmm here you mean DMA, right?
 
-Dunno yet, haven't had a chance to dig. I'll try to grab that machine
-later today and reproduce &| bisect.
+No, it vindicates the hpsa changes ... they don't seem to be causing
+problems until something goes wrong with dma remapping.
 
-Cheers,
-Ben.
+> > because all the hpsa changes went in before that under
+> > Missing crucial info:
+> > 
+> > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
+> > 
+> > > Merge: 3e75c6d b2bff6c
+> > > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > > Date:   Tue Apr 1 18:49:04 2014 -0700
+> > > 
+> > >     Merge tag 'scsi-misc' of
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
+> > > 
+> > > can you revalidate that this commit works OK just to make sure?
+> 
+> Ok so I don't see those DMA messages and system starts just fine. I'm
+> thinking perhaps something broke after the IO mmu stuff in commit 
+> 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
+> causing the CPU stalls and just blame hpsa in the path as a side effect?
+> 
+> /me goes out to try the commit.
+
+That's my guess.  The DMAR messages are DMA remapping issues caused in
+the IOMMU.  If I had to guess, I'd say the DMAR fault message is
+indicating the IOMMU is calling for a mapping address before it can
+satisfy the driver read request, which is causing the hang apparently in
+the hpsa driver.
+
+I've added linux-pci to the cc; I think they deal with iommu issues on
+x86.
+
+James
 
 
