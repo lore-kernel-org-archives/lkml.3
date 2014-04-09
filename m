@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060AbaDICgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 22:36:10 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:12860 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246AbaDICgH (ORCPT
+	id S1757285AbaDICjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 22:39:52 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55683 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263AbaDICju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 22:36:07 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: <rjw@rjwysocki.net>
-CC: <viresh.kumar@linaro.org>, <mark.langsdorf@calxeda.com>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <guohanjun@huawei.com>,
-        Kefeng Wang <wangkefeng.wang@huawei.com>
-Subject: [PATCH] cpufreq: highbank: fix ARM_HIGHBANK_CPUFREQ dependency warning
-Date: Wed, 9 Apr 2014 10:34:33 +0800
-Message-ID: <1397010873-11020-1-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.8.3.msysgit.0
+	Tue, 8 Apr 2014 22:39:50 -0400
+Date: Wed, 9 Apr 2014 03:39:47 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15-rc1
+Message-ID: <20140409023947.GY18016@ZenIV.linux.org.uk>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+ <87a9kkax0j.fsf@xmission.com>
+ <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+ <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+ <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+ <87li281wx6.fsf_-_@xmission.com>
+ <87ob28kqks.fsf_-_@xmission.com>
+ <874n3n7czm.fsf_-_@xmission.com>
+ <87wqezl5df.fsf_-_@x220.int.ebiederm.org>
+ <20140409023027.GX18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.21.224]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409023027.GX18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When make ARCH=arm multi_v7_defconfig, we get the following warnings:
+On Wed, Apr 09, 2014 at 03:30:27AM +0100, Al Viro wrote:
 
-warning: (ARM_HIGHBANK_CPUFREQ) selects GENERIC_CPUFREQ_CPU0 which has
-unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && HAVE_CLK
-&& REGULATOR && OF && THERMAL && CPU_THERMAL)
+> > When renaming or unlinking directory entries that are not mountpoints
+> > no additional locks are taken so no performance differences can result,
+> > and my benchmark reflected that.
+> 
+> It also means that d_invalidate() now might trigger fs shutdown.  Which
+> has bloody huge stack footprint, for obvious reasons.  And d_invalidate()
+> can be called with pretty deep stack - walk into wrong dentry while
+> resolving a deeply nested symlink and there you go...
 
-To fix this, make ARM_HIGHBANK_CPUFREQ depend on ARCH_HAS_CPUFREQ and
-REGULATOR instead of selecting them, PM_OPP will be selected by ARCH_HAS_CPUFREQ.
+PS: I thought I actually replied with that point back a month or so ago,
+but having checked sent-mail...  Looks like I had not.  My deep apologies.
 
-Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
----
- drivers/cpufreq/Kconfig.arm | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 1e2b9db..30dfaef 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -92,11 +92,7 @@ config ARM_EXYNOS_CPU_FREQ_BOOST_SW
- 
- config ARM_HIGHBANK_CPUFREQ
- 	tristate "Calxeda Highbank-based"
--	depends on ARCH_HIGHBANK
--	select GENERIC_CPUFREQ_CPU0
--	select PM_OPP
--	select REGULATOR
--
-+	depends on ARCH_HIGHBANK && GENERIC_CPUFREQ_CPU0 && REGULATOR
- 	default m
- 	help
- 	  This adds the CPUFreq driver for Calxeda Highbank SoC
--- 
-1.8.2.2
-
-
+FWIW, I think that overall this thing is a good idea, provided that we can
+live with semantics changes.  The implementation is too optimistic, though -
+at the very least, we want this work done upon namespace_unlock() held
+back until we are not too deep in stack.  task_work_add() fodder, perhaps?
