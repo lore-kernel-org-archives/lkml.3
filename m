@@ -1,332 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757021AbaDIAnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:43:03 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45308 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572AbaDIAmr (ORCPT
+	id S1757295AbaDIAqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:46:24 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:47213 "HELO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756235AbaDIAqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:42:47 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53449759.6040207@jp.fujitsu.com>
-Date: Wed, 9 Apr 2014 09:42:01 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 8 Apr 2014 20:46:22 -0400
 MIME-Version: 1.0
-To: Luiz Capitulino <lcapitulino@redhat.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <mtosatti@redhat.com>, <aarcange@redhat.com>, <mgorman@suse.de>,
-        <akpm@linux-foundation.org>, <andi@firstfloor.org>, <davidlohr@hp.com>,
-        <rientjes@google.com>, <yinghai@kernel.org>, <riel@redhat.com>,
-        <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH 5/5] hugetlb: add support for gigantic page allocation
- at runtime
-References: <1396983740-26047-1-git-send-email-lcapitulino@redhat.com> <1396983740-26047-6-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1396983740-26047-6-git-send-email-lcapitulino@redhat.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+In-Reply-To: <158dbf4d.1b3c.145301dbf7a.Coremail.asuka.com@163.com>
+References: <1396398194-4163-1-git-send-email-asuka.com@163.com>
+ <CAEP_g=9WRyaSmRKHDZmWXwzjDyex8NheyveGzfH4qmMbhgGHdQ@mail.gmail.com> <158dbf4d.1b3c.145301dbf7a.Coremail.asuka.com@163.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Tue, 8 Apr 2014 17:46:00 -0700
+Message-ID: <CAEP_g=8VE8KWu8CqTNeub8rTwiVZD-SWGDr9mZzgAZ-0-T2AMQ@mail.gmail.com>
+Subject: Re: [PATCH v2] openvswitch: supply a dummy err_handler of
+ gre_cisco_protocol to prevent kernel crash
+To: wei zhang <asuka.com@163.com>
+Cc: David Miller <davem@davemloft.net>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/09 4:02), Luiz Capitulino wrote:
-> HugeTLB is limited to allocating hugepages whose size are less than
-> MAX_ORDER order. This is so because HugeTLB allocates hugepages via
-> the buddy allocator. Gigantic pages (that is, pages whose size is
-> greater than MAX_ORDER order) have to be allocated at boottime.
-> 
-> However, boottime allocation has at least two serious problems. First,
-> it doesn't support NUMA and second, gigantic pages allocated at
-> boottime can't be freed.
-> 
-> This commit solves both issues by adding support for allocating gigantic
-> pages during runtime. It works just like regular sized hugepages,
-> meaning that the interface in sysfs is the same, it supports NUMA,
-> and gigantic pages can be freed.
-> 
-> For example, on x86_64 gigantic pages are 1GB big. To allocate two 1G
-> gigantic pages on node 1, one can do:
-> 
->   # echo 2 > \
->     /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-> 
-> And to free them all:
-> 
->   # echo 0 > \
->     /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-> 
-> The one problem with gigantic page allocation at runtime is that it
-> can't be serviced by the buddy allocator. To overcome that problem, this
-> commit scans all zones from a node looking for a large enough contiguous
-> region. When one is found, it's allocated by using CMA, that is, we call
-> alloc_contig_range() to do the actual allocation. For example, on x86_64
-> we scan all zones looking for a 1GB contiguous region. When one is found,
-> it's allocated by alloc_contig_range().
-> 
-> One expected issue with that approach is that such gigantic contiguous
-> regions tend to vanish as runtime goes by. The best way to avoid this for
-> now is to make gigantic page allocations very early during system boot, say
-> from a init script. Other possible optimization include using compaction,
-> which is supported by CMA but is not explicitly used by this commit.
-> 
-> It's also important to note the following:
-> 
->   1. Gigantic pages allocated at boottime by the hugepages= command-line
->      option can be freed at runtime just fine
-> 
->   2. This commit adds support for gigantic pages only to x86_64. The
->      reason is that I don't have access to nor experience with other archs.
->      The code is arch indepedent though, so it should be simple to add
->      support to different archs
-> 
->   3. I didn't add support for hugepage overcommit, that is allocating
->      a gigantic page on demand when
->     /proc/sys/vm/nr_overcommit_hugepages > 0. The reason is that I don't
->     think it's reasonable to do the hard and long work required for
->     allocating a gigantic page at fault time. But it should be simple
->     to add this if wanted
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> ---
->   mm/hugetlb.c | 158 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
->   1 file changed, 147 insertions(+), 11 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 9dded98..2258045 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -679,11 +679,141 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
->   		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
->   		nr_nodes--)
->   
-> +#if defined(CONFIG_CMA) && defined(CONFIG_X86_64)
-> +static void destroy_compound_gigantic_page(struct page *page,
-> +					unsigned long order)
-> +{
-> +	int i;
-> +	int nr_pages = 1 << order;
-> +	struct page *p = page + 1;
-> +
-> +	for (i = 1; i < nr_pages; i++, p = mem_map_next(p, page, i)) {
-> +		__ClearPageTail(p);
-> +		set_page_refcounted(p);
-> +		p->first_page = NULL;
-> +	}
-> +
-> +	set_compound_order(page, 0);
-> +	__ClearPageHead(page);
-> +}
-> +
-> +static void free_gigantic_page(struct page *page, unsigned order)
-> +{
-> +	free_contig_range(page_to_pfn(page), 1 << order);
-> +}
-> +
-> +static int __alloc_gigantic_page(unsigned long start_pfn, unsigned long count)
-> +{
-> +	unsigned long end_pfn = start_pfn + count;
-> +	return alloc_contig_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
-> +}
-> +
-> +static bool pfn_range_valid_gigantic(unsigned long start_pfn,
-> +				unsigned long nr_pages)
-> +{
-> +	unsigned long i, end_pfn = start_pfn + nr_pages;
-> +	struct page *page;
-> +
-> +	for (i = start_pfn; i < end_pfn; i++) {
-> +		if (!pfn_valid(i))
-> +			return false;
-> +
-> +		page = pfn_to_page(i);
-> +
-> +		if (PageReserved(page))
-> +			return false;
-> +
-> +		if (page_count(page) > 0)
-> +			return false;
-> +
-> +		if (PageHuge(page))
-> +			return false;
-> +	}
-> +
-> +	return true;
-> +}
-> +
-> +static struct page *alloc_gigantic_page(int nid, unsigned order)
-> +{
-> +	unsigned long nr_pages = 1 << order;
-> +	unsigned long ret, pfn, flags;
-> +	struct zone *z;
-> +
-> +	z = NODE_DATA(nid)->node_zones;
-> +	for (; z - NODE_DATA(nid)->node_zones < MAX_NR_ZONES; z++) {
-> +		spin_lock_irqsave(&z->lock, flags);
-> +
-> +		pfn = ALIGN(z->zone_start_pfn, nr_pages);
-> +		for (; pfn < zone_end_pfn(z); pfn += nr_pages) {
+On Fri, Apr 4, 2014 at 9:20 PM, wei zhang <asuka.com@163.com> wrote:
+> At 2014-04-05 07:05:59,"Jesse Gross" <jesse@nicira.com> wrote:
+>>On Tue, Apr 1, 2014 at 5:23 PM, Wei Zhang <asuka.com@163.com> wrote:
+>>>
+>>> v2 -> v1: use the same logic of the gre_rcv() to distinguish which packet is
+>>> intended to us!
+>>
+>>As a tip on kernel process: if you put the version information after
+>>three dashes below the signed-off-by line then git will automatically
+>>remove it when the final patch is applied.
+>
+> Thanks, should I modify it and send a v3 patch?
+>
+>>
+>>> diff --git a/net/openvswitch/vport-gre.c b/net/openvswitch/vport-gre.c
+>>> index a3d6951..f391df1 100644
+>>> --- a/net/openvswitch/vport-gre.c
+>>> +++ b/net/openvswitch/vport-gre.c
+>>> @@ -110,6 +110,21 @@ static int gre_rcv(struct sk_buff *skb,
+>>>         return PACKET_RCVD;
+>>>  }
+>>>
+>>> +/* Called with rcu_read_lock and BH disabled. */
+>>> +static int gre_err(struct sk_buff *skb, u32 info,
+>>> +                  const struct tnl_ptk_info *tpi)
+>>> +{
+>>> +       struct ovs_net *ovs_net;
+>>> +       struct vport *vport;
+>>> +
+>>> +       ovs_net = net_generic(dev_net(skb->dev), ovs_net_id);
+>>> +       vport = rcu_dereference(ovs_net->vport_net.gre_vport);
+>>> +       if (unlikely(!vport))
+>>> +               return PACKET_REJECT;
+>>> +       else
+>>> +               return PACKET_RCVD;
+>>
+>>Sorry, I forgot to say this before - if we receive the packet then we
+>>should also call consume_skb() on it.
+>
+> Maybe there is no need to call consume_skb()? The icmp_rcv() would
+> call kfree_skb() for us. I also checked the ipgre_err(), it return
+> PACKET_RCVD without call consume_skb() too.
 
-> +			if (pfn_range_valid_gigantic(pfn, nr_pages)) {
-
-How about it. It can reduce the indentation level.
-			if (!pfn_range_valid_gigantic(...))
-				continue;
-
-And I think following check is necessary:
-			if (pfn + nr_pages >= zone_end_pfn(z))
-				break;
-Thanks,
-Yasuaki Ishimatsu
-
-> +				/*
-> +				 * We release the zone lock here because
-> +				 * alloc_contig_range() will also lock the zone
-> +				 * at some point. If there's an allocation
-> +				 * spinning on this lock, it may win the race
-> +				 * and cause alloc_contig_range() to fail...
-> +				 */
-> +				spin_unlock_irqrestore(&z->lock, flags);
-> +				ret = __alloc_gigantic_page(pfn, nr_pages);
-> +				if (!ret)
-> +					return pfn_to_page(pfn);
-> +				spin_lock_irqsave(&z->lock, flags);
-> +			}
-> +		}
-> +
-> +		spin_unlock_irqrestore(&z->lock, flags);
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +static void prep_new_huge_page(struct hstate *h, struct page *page, int nid);
-> +static void prep_compound_gigantic_page(struct page *page, unsigned long order);
-> +
-> +static struct page *alloc_fresh_gigantic_page_node(struct hstate *h, int nid)
-> +{
-> +	struct page *page;
-> +
-> +	page = alloc_gigantic_page(nid, huge_page_order(h));
-> +	if (page) {
-> +		prep_compound_gigantic_page(page, huge_page_order(h));
-> +		prep_new_huge_page(h, page, nid);
-> +	}
-> +
-> +	return page;
-> +}
-> +
-> +static int alloc_fresh_gigantic_page(struct hstate *h,
-> +				nodemask_t *nodes_allowed)
-> +{
-> +	struct page *page = NULL;
-> +	int nr_nodes, node;
-> +
-> +	for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
-> +		page = alloc_fresh_gigantic_page_node(h, node);
-> +		if (page)
-> +			return 1;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static inline bool gigantic_page_supported(void) { return true; }
-> +#else
-> +static inline bool gigantic_page_supported(void) { return false; }
-> +static inline void free_gigantic_page(struct page *page, unsigned order) { }
-> +static inline void destroy_compound_gigantic_page(struct page *page,
-> +						unsigned long order) { }
-> +static inline int alloc_fresh_gigantic_page(struct hstate *h,
-> +					nodemask_t *nodes_allowed) { return 0; }
-> +#endif
-> +
->   static void update_and_free_page(struct hstate *h, struct page *page)
->   {
->   	int i;
->   
-> -	VM_BUG_ON(hstate_is_gigantic(h));
-> +	if (hstate_is_gigantic(h) && !gigantic_page_supported())
-> +		return;
->   
->   	h->nr_huge_pages--;
->   	h->nr_huge_pages_node[page_to_nid(page)]--;
-> @@ -697,8 +827,13 @@ static void update_and_free_page(struct hstate *h, struct page *page)
->   	VM_BUG_ON_PAGE(hugetlb_cgroup_from_page(page), page);
->   	set_compound_page_dtor(page, NULL);
->   	set_page_refcounted(page);
-> -	arch_release_hugepage(page);
-> -	__free_pages(page, huge_page_order(h));
-> +	if (hstate_is_gigantic(h)) {
-> +		destroy_compound_gigantic_page(page, huge_page_order(h));
-> +		free_gigantic_page(page, huge_page_order(h));
-> +	} else {
-> +		arch_release_hugepage(page);
-> +		__free_pages(page, huge_page_order(h));
-> +	}
->   }
->   
->   struct hstate *size_to_hstate(unsigned long size)
-> @@ -737,7 +872,7 @@ static void free_huge_page(struct page *page)
->   	if (restore_reserve)
->   		h->resv_huge_pages++;
->   
-> -	if (h->surplus_huge_pages_node[nid] && !hstate_is_gigantic(h)) {
-> +	if (h->surplus_huge_pages_node[nid]) {
->   		/* remove the page from active list */
->   		list_del(&page->lru);
->   		update_and_free_page(h, page);
-> @@ -841,9 +976,6 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
->   {
->   	struct page *page;
->   
-> -	if (hstate_is_gigantic(h))
-> -		return NULL;
-> -
->   	page = alloc_pages_exact_node(nid,
->   		htlb_alloc_mask(h)|__GFP_COMP|__GFP_THISNODE|
->   						__GFP_REPEAT|__GFP_NOWARN,
-> @@ -1477,7 +1609,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
->   {
->   	unsigned long min_count, ret;
->   
-> -	if (hstate_is_gigantic(h))
-> +	if (hstate_is_gigantic(h) && !gigantic_page_supported())
->   		return h->max_huge_pages;
->   
->   	/*
-> @@ -1504,7 +1636,11 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
->   		 * and reducing the surplus.
->   		 */
->   		spin_unlock(&hugetlb_lock);
-> -		ret = alloc_fresh_huge_page(h, nodes_allowed);
-> +		if (hstate_is_gigantic(h)) {
-> +			ret = alloc_fresh_gigantic_page(h, nodes_allowed);
-> +		} else {
-> +			ret = alloc_fresh_huge_page(h, nodes_allowed);
-> +		}
->   		spin_lock(&hugetlb_lock);
->   		if (!ret)
->   			goto out;
-> @@ -1603,7 +1739,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
->   		goto out;
->   
->   	h = kobj_to_hstate(kobj, &nid);
-> -	if (hstate_is_gigantic(h)) {
-> +	if (hstate_is_gigantic(h) && !gigantic_page_supported()) {
->   		err = -EINVAL;
->   		goto out;
->   	}
-> @@ -2111,7 +2247,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
->   
->   	tmp = h->max_huge_pages;
->   
-> -	if (write && hstate_is_gigantic(h))
-> +	if (write && hstate_is_gigantic(h) && !gigantic_page_supported())
->   		return -EINVAL;
->   
->   	table->data = &tmp;
-> 
-
-
+Thanks, you are right. I applied your patch as is.
