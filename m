@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964902AbaDIS0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 14:26:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34597 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933143AbaDIS0P (ORCPT
+	id S934171AbaDIS0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 14:26:42 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:49840 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933411AbaDIS0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 14:26:15 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] pwm: atmel: set pwm_chip can_sleep flag
-Date: Wed,  9 Apr 2014 20:26:09 +0200
-Message-Id: <1397067969-19905-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 9 Apr 2014 14:26:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <53452817.5060502@broadcom.com>
+References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+ <53452817.5060502@broadcom.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 9 Apr 2014 11:25:56 -0700
+X-Google-Sender-Auth: 1Uv1eEL_S72hKF_xwrZGd6n6u9g
+Message-ID: <CAB=NE6Udgtpbht+TJox1yt4AVAHw8RUZ=aZsA29neT41N2vJxg@mail.gmail.com>
+Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
+To: Arend van Spriel <arend@broadcom.com>
+Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Felix Fietkau <nbd@openwrt.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-atmel_pwm_config() calls clk_get_rate() which might sleep, so we need to set
-pwm_chip can_sleep flag.
+On Wed, Apr 9, 2014 at 3:59 AM, Arend van Spriel <arend@broadcom.com> wrote:
+>
+> A lot of test teams in broadcom wlan are still using Fedora 15 running a
+> 2.6.38 kernel. We are pushing them to move to Fedora 19.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/pwm/pwm-atmel.c | 1 +
- 1 file changed, 1 insertion(+)
+Fedora 19 seems to be on 3.13, neat!
 
-diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-index 0e589594b1cb..180e34e46617 100644
---- a/drivers/pwm/pwm-atmel.c
-+++ b/drivers/pwm/pwm-atmel.c
-@@ -369,6 +369,7 @@ static int atmel_pwm_probe(struct platform_device *pdev)
- 
- 	atmel_pwm->chip.base = -1;
- 	atmel_pwm->chip.npwm = 4;
-+	atmel_pwm->chip.can_sleep = true;
- 	atmel_pwm->config = data->config;
- 
- 	ret = pwmchip_add(&atmel_pwm->chip);
--- 
-1.8.3.2
-
+  Luis
