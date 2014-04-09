@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965048AbaDIUm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:42:26 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:60112 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934010AbaDIUmW (ORCPT
+	id S934264AbaDIUnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:43:25 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:49104 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933590AbaDIUnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:42:22 -0400
+	Wed, 9 Apr 2014 16:43:24 -0400
+Date: Wed, 9 Apr 2014 21:43:12 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, matt.fleming@intel.com,
+        ak@linux.intel.com, viro@zeniv.linux.org.uk, geert@linux-m68k.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, tpowa@archlinux.org, hpa@zytor.com
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+Message-ID: <20140409204312.GK5222@console-pimps.org>
+References: <53430646.40507@archlinux.org>
+ <20140407204221.GW32556@tassilo.jf.intel.com>
+ <CAL01qpvjZz-XnVT+S3E5E2XGcuFoetE5cwnArYfW-TwYZVKtKw@mail.gmail.com>
+ <201404080646.BID87018.SOOVJMFOLFtQHF@I-love.SAKURA.ne.jp>
+ <20140408121400.GI5222@console-pimps.org>
+ <53444681.1070902@archlinux.org>
+ <53445660.1010908@archlinux.org>
+ <20140409082536.GJ5222@console-pimps.org>
+ <5345051C.2060104@archlinux.org>
+ <53458ADE.70000@archlinux.org>
 MIME-Version: 1.0
-In-Reply-To: <1396631237-11813-1-git-send-email-tolga@cevel.net>
-References: <1396631237-11813-1-git-send-email-tolga@cevel.net>
-Date: Wed, 9 Apr 2014 16:42:21 -0400
-Message-ID: <CAN+gG=HFEcsVdmuf6o2GyfSmjWRansS02MVbXdjws7xVNp1QGw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] HID: microsoft: undefining ms_map_key_clear after usage
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Tolga Cakir <tolga@cevel.net>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Derya <derya.kiran@yahoo.de>, Jiri Kosina <jkosina@suse.cz>,
-        Reyad Attiyat <reyad.attiyat@gmail.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53458ADE.70000@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 4, 2014 at 1:07 PM, Tolga Cakir <tolga@cevel.net> wrote:
-> This is inspired by various other hid drivers.
->
-> Signed-off-by: Tolga Cakir <tolga@cevel.net>
-> ---
->  drivers/hid/hid-microsoft.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-> index 5674c0c..5281d2d 100644
-> --- a/drivers/hid/hid-microsoft.c
-> +++ b/drivers/hid/hid-microsoft.c
-> @@ -211,6 +211,8 @@ static int ms_sidewinder_kb_quirk(struct hid_input *hi, struct hid_usage *usage,
->         return 1;
->  }
->
-> +#undef ms_map_key_clear
-> +
+On Wed, 09 Apr, at 08:01:02PM, Thomas Bächler wrote:
+> 
+> Hello again Matt,
+> 
+> that patch seems to help. Thank you so much.
+> 
+> (I am going to apply this patch and backport dc53324060, too, so
+> everything should be in order then.)
 
-Not sure this is really needed. The macro is prefixed by ms_, so I
-will simply let it there.
+That's great to hear, thanks for testing. I'll get this applied.
 
-Cheers,
-Benjamin
-
->  static int ms_sidewinder_control(struct hid_device *hdev, __u8 setup)
->  {
->         struct ms_data *sc = hid_get_drvdata(hdev);
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Matt Fleming, Intel Open Source Technology Center
