@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936AbaDIKIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:08:38 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:46090 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932772AbaDIKIg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:08:36 -0400
+	id S932828AbaDIKPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 06:15:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51570 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932712AbaDIKPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 06:15:15 -0400
+Date: Wed, 9 Apr 2014 12:15:12 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: Re: [PATCH v7 18/22] xip: Add xip_zero_page_range
+Message-ID: <20140409101512.GL32103@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <5a87acda8c3e4d2b7ea5dd1249fcbf8be23b9645.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-Date: Wed, 9 Apr 2014 12:08:35 +0200
-Message-ID: <CADDKRnCakz_HE2P+vZat2QVEbpebv4zr2gN3+RbkQvw1rA_Bpg@mail.gmail.com>
-Subject: [ 3.14.0-12041-g75ff24f ] regression: drm warning
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5a87acda8c3e4d2b7ea5dd1249fcbf8be23b9645.1395591795.git.matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel 3.14.0-12041-g75ff24f from 9.4.2014 introduces the following
-on the console (driver is i915):
+On Sun 23-03-14 15:08:44, Matthew Wilcox wrote:
+> This new function allows us to support hole-punch for XIP files by zeroing
+> a partial page, as opposed to the xip_truncate_page() function which can
+> only truncate to the end of the page.  Reimplement xip_truncate_page() as
+> a macro that calls xip_zero_page_range().
+> 
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> [ported to 3.13-rc2]
+> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+  Two comments below...
 
-[drm:ivb_err_int_handler] *ERROR* Pipe B FIFO underrun
-[drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
-[drm:cpt_serr_int_handler] *ERROR* PCH transcoder B FIFO underrun
+...
+> diff --git a/fs/dax.c b/fs/dax.c
+> index 45a0a41..2d6b4bc 100644
+> --- a/fs/dax.c
+> +++ b/fs/dax.c
+...
+> @@ -491,11 +494,16 @@ int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
+>  	if (buffer_written(&bh)) {
+>  		void *addr;
+>  		err = dax_get_addr(inode, &bh, &addr);
+> -		if (err)
+> +		if (err < 0)
+>  			return err;
+> +		/*
+> +		 * ext4 sometimes asks to zero past the end of a block.  It
+> +		 * really just wants to zero to the end of the block.
+> +		 */
+  Then we should really fix ext4 I believe...
 
-In syslog I find:
+> +		length = min_t(unsigned, length, PAGE_CACHE_SIZE - offset);
+>  		memset(addr + offset, 0, length);
+>  	}
+>  
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(dax_truncate_page);
+> +EXPORT_SYMBOL_GPL(dax_zero_page_range);
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index bff394d..d0381ab 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2521,6 +2521,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
+>  
+>  #ifdef CONFIG_FS_DAX
+>  int dax_clear_blocks(struct inode *, sector_t block, long size);
+> +int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t);
+>  int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+>  ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, const struct iovec *,
+>  		loff_t, unsigned segs, get_block_t, dio_iodone_t, int flags);
+> @@ -2532,7 +2533,8 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+>  	return 0;
+>  }
+>  
+> -static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
+> +static inline int dax_zero_page_range(struct inode *inode, loff_t from,
+> +						unsigned len, get_block_t gb)
+>  {
+>  	return 0;
+>  }
+> @@ -2545,6 +2547,11 @@ static inline ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
+>  }
+>  #endif
+>  
+> +/* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
+> +#define dax_truncate_page(inode, from, get_block)	\
+> +	dax_zero_page_range(inode, from, PAGE_CACHE_SIZE, get_block)
+                                         ^^^^
+This should be (PAGE_CACHE_SIZE - (from & (PAGE_CACHE_SIZE - 1))), shouldn't it?
 
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 1 at
-/data/kernel/linux/drivers/gpu/drm/drm_mm.c:211 0xffffffffb22a70fa()
-no hole found for node 0x0 + 0x300000
-CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.14.0-12041-g75ff24f #45
-Hardware name: FUJITSU LIFEBOOK AH532/FJNBB1C, BIOS Version 1.09 05/22/2012
- 0000000000000000 ffffffffb2967138 ffffffffb262ae5d ffff8802160d5a58
- ffffffffb20391ad ffff880214994000 0000000000300000 0000000000000000
- ffff880214952800 0000000000000000 ffffffffb2039255 ffffffffb2967190
-Call Trace:
- [<ffffffffb262ae5d>] ? 0xffffffffb262ae5d
- [<ffffffffb20391ad>] ? 0xffffffffb20391ad
- [<ffffffffb2039255>] ? 0xffffffffb2039255
- [<ffffffffb22a70fa>] ? 0xffffffffb22a70fa
- [<ffffffffb22d4b11>] ? 0xffffffffb22d4b11
- [<ffffffffb2300f92>] ? 0xffffffffb2300f92
- [<ffffffffb232af7b>] ? 0xffffffffb232af7b
- [<ffffffffb232f675>] ? 0xffffffffb232f675
- [<ffffffffb21fa38c>] ? 0xffffffffb21fa38c
- [<ffffffffb232ec04>] ? 0xffffffffb232ec04
- [<ffffffffb2622997>] ? 0xffffffffb2622997
- [<ffffffffb232ee62>] ? 0xffffffffb232ee62
- [<ffffffffb22a6a5b>] ? 0xffffffffb22a6a5b
- [<ffffffffb22a3994>] ? 0xffffffffb22a3994
- [<ffffffffb22a5a38>] ? 0xffffffffb22a5a38
- [<ffffffffb221a019>] ? 0xffffffffb221a019
- [<ffffffffb23327b8>] ? 0xffffffffb23327b8
- [<ffffffffb2332a03>] ? 0xffffffffb2332a03
- [<ffffffffb2332970>] ? 0xffffffffb2332970
- [<ffffffffb2330c45>] ? 0xffffffffb2330c45
- [<ffffffffb2331534>] ? 0xffffffffb2331534
- [<ffffffffb2332fce>] ? 0xffffffffb2332fce
- [<ffffffffb2aa2cc5>] ? 0xffffffffb2aa2cc5
- [<ffffffffb2a7fe45>] ? 0xffffffffb2a7fe45
- [<ffffffffb2052100>] ? 0xffffffffb2052100
- [<ffffffffb2a7ffe2>] ? 0xffffffffb2a7ffe2
- [<ffffffffb2a7f79e>] ? 0xffffffffb2a7f79e
- [<ffffffffb2624d20>] ? 0xffffffffb2624d20
- [<ffffffffb2624d29>] ? 0xffffffffb2624d29
- [<ffffffffb263223c>] ? 0xffffffffb263223c
- [<ffffffffb2624d20>] ? 0xffffffffb2624d20
----[ end trace 0d3f14b61bc31dab ]---
+> +
+> +
+>  #ifdef CONFIG_BLOCK
+>  typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
 
-This does not happen in 3.14.0-11030-ga7963eb from 8.4.2014 and never
-before.
-
-Suppose merge
-12024   e9f37d3 Merge branch 'drm-next' of
-git://people.freedesktop.org/~airlied/linux
-produces this problem.
-
-Jörg
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
