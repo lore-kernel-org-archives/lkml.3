@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920AbaDIK5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:57:39 -0400
-Received: from smtp-out-069.synserver.de ([212.40.185.69]:1046 "EHLO
-	smtp-out-115.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758311AbaDIK5i (ORCPT
+	id S932960AbaDIK7s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 06:59:48 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:39168 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758317AbaDIK7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:57:38 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 12816
-Message-ID: <5345279F.6070005@metafoo.de>
-Date: Wed, 09 Apr 2014 12:57:35 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 9 Apr 2014 06:59:46 -0400
+X-IronPort-AV: E=Sophos;i="4.97,825,1389772800"; 
+   d="scan'208";a="23610046"
+Message-ID: <53452817.5060502@broadcom.com>
+Date: Wed, 9 Apr 2014 12:59:35 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: core: Fix Sparse incompatible types warning
-References: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Felix Fietkau <nbd@openwrt.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
+References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+In-Reply-To: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 09:21 AM, Krzysztof Kozlowski wrote:
-> Fix following Sparse warning:
-> sound/soc/soc-core.c:252:20: error: incompatible types in comparison expression (different type sizes)
+On 09/04/14 03:03, Luis R. Rodriguez wrote:
+> Folks,
 >
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->   sound/soc/soc-core.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-> index 051c006281f5..41f6178249df 100644
-> --- a/sound/soc/soc-core.c
-> +++ b/sound/soc/soc-core.c
-> @@ -249,7 +249,7 @@ static ssize_t codec_reg_write_file(struct file *file,
->   	struct snd_soc_codec *codec = file->private_data;
->   	int ret;
->
-> -	buf_size = min(count, (sizeof(buf)-1));
-> +	buf_size = min(count, (size_t)(sizeof(buf)-1));
 
-But shouldn't the type of sizeof already be size_t?
+[...]
+
+> To start off -- what's the *last* kernel you realistically need for
+> your users to use backports right now? Is it really 2.6.25? Would
+> anyone kick and scream if for the backports-3.15 release try take
+> things up to support only down to least 3.0 *right now* ?
+
+A lot of test teams in broadcom wlan are still using Fedora 15 running a 
+2.6.38 kernel. We are pushing them to move to Fedora 19.
+
+Regards,
+Arend
+
+> [0] http://www.do-not-panic.com/2014/04/automatic-linux-kernel-backporting-with-coccinelle.html
+>
+>    Luis
+> --
+> To unsubscribe from this list: send the line "unsubscribe backports" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
